@@ -1,0 +1,10 @@
+# Repository-local .NET build output and generated source
+/Build/bin/
+/Build/obj/
+/Build/generated/
+/Build/packages/
+
+# IDE/user files
+*.user
+*.suo
+.vs/

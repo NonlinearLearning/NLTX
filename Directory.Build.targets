@@ -1,0 +1,5 @@
+<Project>
+  <PropertyGroup>
+    <CompilerGeneratedFilesOutputPath>$(MSBuildThisFileDirectory)Build\generated\$(MSBuildProjectName)\$(Configuration)\$(TargetFramework)</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+</Project>
