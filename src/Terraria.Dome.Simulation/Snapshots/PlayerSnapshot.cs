@@ -6,4 +6,10 @@ public readonly record struct PlayerSnapshot(
   SimulationVector Velocity,
   int Facing,
   bool IsGrounded,
-  int Health);
+  int Health,
+  bool IsActive,
+  int RespawnTicks,
+  string AccountUuid = "",
+  byte AssignedSlot = 0,
+  int Mana = 0,
+  int MaximumMana = 0);

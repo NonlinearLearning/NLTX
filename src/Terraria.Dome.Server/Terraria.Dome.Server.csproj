@@ -5,7 +5,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Terraria.Dome.Protocol.V1456\Terraria.Dome.Protocol.V1456.csproj" />
     <ProjectReference Include="..\Terraria.Dome.Simulation\Terraria.Dome.Simulation.csproj" />
-    <ProjectReference Include="..\Terraria.Dome.Transport\Terraria.Dome.Transport.csproj" />
+    <ProjectReference Include="..\Terraria.WorldCompatibility\Terraria.WorldCompatibility.csproj" />
+    <ProjectReference Include="..\Terraria.WorldFile.V319\Terraria.WorldFile.V319.csproj" />
   </ItemGroup>
 </Project>

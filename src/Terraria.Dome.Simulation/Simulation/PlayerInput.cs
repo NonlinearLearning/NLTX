@@ -5,4 +5,7 @@ public readonly record struct PlayerInput(
   bool MoveLeft,
   bool MoveRight,
   bool Jump,
-  bool Fire);
+  bool Fire,
+  int SelectedSlot = 0,
+  bool UseItem = false,
+  int Facing = 0);

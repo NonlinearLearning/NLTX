@@ -1,11 +1,13 @@
-using Arch.Core;
-
 namespace Terraria.Dome.Simulation.Commands;
 
 public readonly record struct SpawnProjectileCommand(
-  Entity Owner,
+  PlayerHandle Owner,
   float X,
   float Y,
   int Facing,
   int Damage,
-  int LifetimeTicks);
+  int LifetimeTicks,
+  int ProjectileType = 1,
+  int BehaviorId = 1,
+  float InitialVelocityY = 0.0f,
+  int MaximumPenetration = 1);

@@ -4,9 +4,15 @@
     <BaseOutputPath>$(MSBuildThisFileDirectory)Build\bin\$(MSBuildProjectName)\</BaseOutputPath>
     <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
     <RestorePackagesPath>$(MSBuildThisFileDirectory)Build\packages\</RestorePackagesPath>
+    <LangVersion>preview</LangVersion>
+    <DefaultItemExcludes>$(DefaultItemExcludes);Build\**\*</DefaultItemExcludes>
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
     <AppendRuntimeIdentifierToOutputPath>true</AppendRuntimeIdentifierToOutputPath>
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(FixtureHostBuild)' == 'true'">
+    <BaseOutputPath>$(MSBuildThisFileDirectory)Build\bin\FixtureHost\$(MSBuildProjectName)\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Build\obj\FixtureHost\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
   </PropertyGroup>
 </Project>

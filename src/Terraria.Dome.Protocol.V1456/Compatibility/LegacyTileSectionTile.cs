@@ -1,0 +1,27 @@
+namespace Terraria.Dome.Protocol.V1456.Compatibility;
+
+public readonly record struct LegacyTileSectionTile(
+  bool IsActive,
+  bool HasWall,
+  byte LiquidAmount,
+  LegacyTileSectionLiquidKind LiquidKind,
+  bool HasWire1,
+  bool HasWire2,
+  bool HasWire3,
+  bool HasWire4,
+  bool IsHalfBrick,
+  byte Slope,
+  bool HasActuator,
+  bool IsInactive,
+  byte TileColor,
+  byte WallColor,
+  bool IsInvisibleBlock,
+  bool IsInvisibleWall,
+  bool IsFullBrightBlock,
+  bool IsFullBrightWall,
+  ushort TileType,
+  bool IsFrameImportant,
+  short FrameX,
+  short FrameY,
+  ushort WallType,
+  bool AllowsRleBatching);

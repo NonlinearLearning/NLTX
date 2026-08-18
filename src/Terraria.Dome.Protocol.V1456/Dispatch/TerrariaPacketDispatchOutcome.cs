@@ -1,0 +1,21 @@
+namespace Terraria.Dome.Protocol.V1456.Dispatch;
+
+public enum TerrariaPacketDispatchOutcome
+{
+  PlayerProfileAccepted,
+  PlayerBootstrapAccepted,
+  PlayerControlsAccepted,
+  ActiveSynchronizationAccepted,
+  ClientProjectileTerminationAccepted,
+  NetModuleAccepted,
+  TileManipulationAccepted,
+  SectionRequested,
+  WorldDataRequested,
+  TileDataRequested,
+  PlayerSpawnAccepted,
+  PlayerSpawnUpdated,
+  ChestOpenAccepted,
+  DoorToggleAccepted,
+  SignUpdateAccepted,
+  ChestTransferAccepted
+}

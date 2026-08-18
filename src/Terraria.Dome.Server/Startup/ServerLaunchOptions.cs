@@ -1,0 +1,60 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+
+namespace Terraria.Dome.Server.Startup;
+
+public sealed record ServerLaunchOptions(string WorldPath, int Port)
+{
+  public static ServerLaunchOptions Parse(IReadOnlyList<string> args)
+  {
+    ArgumentNullException.ThrowIfNull(args);
+    string? worldPath = null;
+    int? port = null;
+    for (int index = 0; index < args.Count; index++)
+    {
+      string argument = args[index];
+      switch (argument)
+      {
+        case "--world":
+          if (worldPath is not null || ++index >= args.Count ||
+              string.IsNullOrWhiteSpace(args[index]))
+          {
+            throw new ArgumentException("--world must be provided exactly once.", nameof(args));
+          }
+
+          worldPath = args[index];
+          break;
+        case "--port":
+          if (port.HasValue || ++index >= args.Count ||
+              !int.TryParse(args[index], out int parsedPort))
+          {
+            throw new ArgumentException("--port must be provided exactly once.", nameof(args));
+          }
+
+          port = parsedPort;
+          break;
+        default:
+          throw new ArgumentException($"Unknown server argument '{argument}'.", nameof(args));
+      }
+    }
+
+    if (worldPath is null || !port.HasValue)
+    {
+      throw new ArgumentException("Both --world and --port are required.", nameof(args));
+    }
+
+    if (!Path.IsPathFullyQualified(worldPath) ||
+        !string.Equals(Path.GetExtension(worldPath), ".wld", StringComparison.OrdinalIgnoreCase))
+    {
+      throw new ArgumentException("--world must be an absolute .wld path.", nameof(args));
+    }
+
+    if (port.Value is < 1 or > 65535 || port.Value == 7778)
+    {
+      throw new ArgumentOutOfRangeException(nameof(args), "The requested port is not allowed.");
+    }
+
+    return new ServerLaunchOptions(Path.GetFullPath(worldPath), port.Value);
+  }
+}

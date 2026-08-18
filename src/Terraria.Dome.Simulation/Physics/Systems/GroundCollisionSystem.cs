@@ -1,12 +1,13 @@
 using System.Collections.Generic;
 using Arch.Core;
+using World = Arch.Core.World;
 using Terraria.Dome.Simulation.Components;
 
 namespace Terraria.Dome.Simulation.Physics.Systems;
 
 internal sealed class GroundCollisionSystem
 {
-  public void Apply(World world, IReadOnlyCollection<Entity> players)
+  public void Apply(Arch.Core.World world, IReadOnlyCollection<Entity> players)
   {
     foreach (Entity entity in players)
     {
