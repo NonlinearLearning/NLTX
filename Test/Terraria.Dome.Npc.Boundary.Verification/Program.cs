@@ -24,7 +24,7 @@ int fileCount = 0;
 foreach (string file in Directory.EnumerateFiles(simulationRoot, "*.cs", SearchOption.AllDirectories))
 {
   string relativePath = Path.GetRelativePath(repositoryRoot, file);
-  if (relativePath.StartsWith("Build", StringComparison.OrdinalIgnoreCase))
+  if (IsBuildPath(relativePath))
   {
     continue;
   }
@@ -49,6 +49,22 @@ if (violations.Count > 0)
 }
 
 Console.WriteLine($"PASS: checked {fileCount} Simulation source files; legacy NPC violations 0");
+
+static bool IsBuildPath(string relativePath)
+{
+  string[] segments = relativePath.Split(
+    new[] { Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar },
+    StringSplitOptions.RemoveEmptyEntries);
+  for (int index = 0; index < segments.Length; index++)
+  {
+    if (string.Equals(segments[index], "Build", StringComparison.OrdinalIgnoreCase))
+    {
+      return true;
+    }
+  }
+
+  return false;
+}
 
 static string FindRepositoryRoot()
 {
