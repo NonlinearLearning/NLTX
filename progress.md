@@ -885,7 +885,7 @@ dotnet run --project Test/Terraria.Dome.Npc.Protocol.Verification/Terraria.Dome.
 exit 0; NPC state snapshot and SyncNPC projection/codec fixtures passed
 
 dotnet run --project Test/Terraria.Dome.Npc.Boundary.Verification/Terraria.Dome.Npc.Boundary.Verification.csproj -p:UseSharedCompilation=false
-exit 0; checked 357 Simulation source files; legacy NPC violations 0
+exit 0; checked 353 Simulation source files; legacy NPC violations 0
 ```
 
 `dotnet msbuild` resolved `BaseOutputPath` to `Build/bin/Terraria.Dome.Simulation`,
