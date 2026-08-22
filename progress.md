@@ -1,5 +1,15 @@
 # Project Progress Summary
 
+# 2026-08-22 Entity/event lifecycle gap matrix
+
+Added a source-backed accounting matrix for player/NPC/projectile/item lifecycle, invasion/weather
+events, static tables, random starts and client/presentation branches. Existing narrow owners remain
+scoped to their accepted predicates; unresolved tables, global random ordering, NPC-driven invasion
+spawns and client effects remain explicitly deferred. No production code or default table was added.
+Evidence:
+`docs/research/2026-08-22-entity-event-lifecycle-gap-matrix.md` and
+`Build/diagnostics/main-migration/task-13-entity-event-lifecycle-gap/20260822-100000/`.
+
 Last updated: 2026-08-22
 
 完整历史记录已归档至

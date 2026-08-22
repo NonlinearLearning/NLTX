@@ -14,3 +14,8 @@
 /client-crashlog.txt
 /TRbackupNLTXsrcTerraria.Dome.SimulationItemsInventoryComponent.cs
 /Build/diagnostics/
+
+# Ignore build output nested inside individual test and source projects too.
+**/Build/*
+!Build/Tools/
+!Build/Tools/**

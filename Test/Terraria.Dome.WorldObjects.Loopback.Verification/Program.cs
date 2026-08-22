@@ -100,6 +100,53 @@ await first.WriteAsync(TerrariaPacketCodec.EncodeSignOpenRequest(
 await AssertSignOpenResponseAsync(first, firstSlot, signId, "Updated");
 Console.WriteLine("PASS: source OpenSignRequest receives a targeted V1456 sign response");
 
+const short trainingDummyX = 2000;
+const short trainingDummyY = 0;
+await first.WriteAsync(TerrariaPacketCodec.EncodeServerTileManipulation(
+  (byte)TileManipulationAction.PlaceTile,
+  trainingDummyX,
+  trainingDummyY,
+  378,
+  0));
+
+TrainingDummySharingFrame placed = await ReadTrainingDummySharingAsync(
+  first,
+  expectedEntityId: null,
+  expectedPresent: true,
+  TimeSpan.FromSeconds(3));
+if (placed.TileX != trainingDummyX || placed.TileY != trainingDummyY ||
+    placed.NpcId != -1 || await HasTrainingDummyFrameAsync(hidden, TimeSpan.FromMilliseconds(500)) ||
+    server.World.GetTile(trainingDummyX, trainingDummyY).Type != 378 ||
+    !server.World.GetTile(trainingDummyX, trainingDummyY).IsActive ||
+    server.CreatePersistenceSnapshot(server.LatestSnapshot.World.Metadata).TileEntities.Count != 1)
+{
+  throw new InvalidOperationException(
+    "TrainingDummy placement did not preserve server ownership or PVS isolation.");
+}
+
+Console.WriteLine("PASS: TrainingDummy placement publishes visible message 86 and isolates hidden session");
+
+await first.WriteAsync(TerrariaPacketCodec.EncodeServerTileManipulation(
+  (byte)TileManipulationAction.KillTile,
+  trainingDummyX,
+  trainingDummyY,
+  0,
+  0));
+TrainingDummySharingFrame removed = await ReadTrainingDummySharingAsync(
+  first,
+  placed.EntityId,
+  expectedPresent: false,
+  TimeSpan.FromSeconds(3));
+if (removed.EntityId != placed.EntityId ||
+    server.World.GetTile(trainingDummyX, trainingDummyY).IsActive ||
+    server.CreatePersistenceSnapshot(server.LatestSnapshot.World.Metadata).TileEntities.Count != 0)
+{
+  throw new InvalidOperationException(
+    "TrainingDummy removal did not publish the tombstone or clear authoritative state.");
+}
+
+Console.WriteLine("PASS: TrainingDummy removal publishes message 86 tombstone and clears owner");
+
 static async Task WaitForChestOpenerAsync(DomeServer server, int chestId, byte opener)
 {
   using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(3));
@@ -230,6 +277,86 @@ static async Task AssertSignOpenResponseAsync(
 
   throw new InvalidOperationException("OpenSignRequest did not receive a targeted source sign frame.");
 }
+
+static async Task<TrainingDummySharingFrame> ReadTrainingDummySharingAsync(
+  NetworkStream stream,
+  int? expectedEntityId,
+  bool expectedPresent,
+  TimeSpan timeout)
+{
+  using CancellationTokenSource cancellation = new(timeout);
+  while (!cancellation.IsCancellationRequested)
+  {
+    TerrariaFrame frame = TerrariaFrameCodec.Decode(
+      await ReadFrameAsync(stream, cancellation.Token));
+    if (frame.MessageId != TerrariaMessageId.TileEntitySharing)
+    {
+      continue;
+    }
+
+    TrainingDummySharingFrame sharing = DecodeTrainingDummySharing(frame);
+    if (sharing.Present == expectedPresent &&
+        (expectedEntityId is null || sharing.EntityId == expectedEntityId.Value))
+    {
+      return sharing;
+    }
+  }
+
+  throw new TimeoutException("TrainingDummy message 86 was not received in the expected state.");
+}
+
+static async Task<bool> HasTrainingDummyFrameAsync(NetworkStream stream, TimeSpan timeout)
+{
+  using CancellationTokenSource cancellation = new(timeout);
+  try
+  {
+    while (!cancellation.IsCancellationRequested)
+    {
+      TerrariaFrame frame = TerrariaFrameCodec.Decode(
+        await ReadFrameAsync(stream, cancellation.Token));
+      if (frame.MessageId == TerrariaMessageId.TileEntitySharing)
+      {
+        return true;
+      }
+    }
+  }
+  catch (OperationCanceledException)
+  {
+  }
+
+  return false;
+}
+
+static TrainingDummySharingFrame DecodeTrainingDummySharing(TerrariaFrame frame)
+{
+  using MemoryStream stream = new(frame.Payload.ToArray(), writable: false);
+  using BinaryReader reader = new(stream);
+  int entityId = reader.ReadInt32();
+  bool present = reader.ReadBoolean();
+  if (!present)
+  {
+    return new TrainingDummySharingFrame(entityId, false, 0, 0, 0);
+  }
+
+  byte entityType = reader.ReadByte();
+  int repeatedEntityId = reader.ReadInt32();
+  short tileX = reader.ReadInt16();
+  short tileY = reader.ReadInt16();
+  short npcId = reader.ReadInt16();
+  if (entityType != 0 || repeatedEntityId != entityId || stream.Position != stream.Length)
+  {
+    throw new InvalidDataException("TrainingDummy message 86 had invalid typed fields.");
+  }
+
+  return new TrainingDummySharingFrame(entityId, true, tileX, tileY, npcId);
+}
+
+readonly record struct TrainingDummySharingFrame(
+  int EntityId,
+  bool Present,
+  short TileX,
+  short TileY,
+  short NpcId);
 
 static async Task<int> CountFramesAsync(NetworkStream stream, TerrariaMessageId messageId, TimeSpan timeout)
 {
