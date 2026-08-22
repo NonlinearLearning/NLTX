@@ -46,7 +46,8 @@ public sealed class WorldItemStore
 
   public void Add(WorldItemComponent item)
   {
-    if (item.ReplicationId <= 0)
+    if (item.ReplicationId <= 0 ||
+        !float.IsFinite(item.Position.X) || !float.IsFinite(item.Position.Y))
     {
       throw new ArgumentOutOfRangeException(nameof(item));
     }
@@ -83,6 +84,11 @@ public sealed class WorldItemStore
 
   public void RecordPickup(int replicationId, PlayerHandle player)
   {
+    if (!player.IsValid)
+    {
+      throw new ArgumentOutOfRangeException(nameof(player));
+    }
+
     if (!_entities.TryGetValue(replicationId, out Entity entity))
     {
       throw new ArgumentOutOfRangeException(nameof(replicationId));

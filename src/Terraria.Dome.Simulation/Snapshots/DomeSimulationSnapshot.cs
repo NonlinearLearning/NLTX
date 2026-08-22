@@ -21,7 +21,9 @@ public sealed class DomeSimulationSnapshot
     WorldClockSnapshot? worldClock = null,
     IReadOnlyList<NpcStateSnapshot>? npcStates = null,
     WorldRuleState? worldRules = null,
-    WorldProgressionState? progression = null)
+    WorldProgressionState? progression = null,
+    WorldEventRandomState? worldEventRandomState = null,
+    WorldTimeRateSnapshot? worldTimeRate = null)
   {
     ArgumentNullException.ThrowIfNull(world);
     ArgumentNullException.ThrowIfNull(npcs);
@@ -52,6 +54,9 @@ public sealed class DomeSimulationSnapshot
 
     WorldRules = worldRules ?? new WorldRuleState();
     Progression = progression ?? new WorldProgressionState();
+    WorldEventRandomState = worldEventRandomState ??
+      new WorldEventRandomState(unchecked((uint)world.Metadata.Seed.Value));
+    WorldTimeRate = worldTimeRate ?? WorldTimeRateSnapshot.Unavailable;
   }
 
   public IReadOnlyList<ChestPersistentState> Chests { get; }
@@ -59,6 +64,8 @@ public sealed class DomeSimulationSnapshot
   public WorldClockSnapshot Clock { get; }
 
   public WorldProgressionState Progression { get; }
+  public WorldEventRandomState WorldEventRandomState { get; }
+  public WorldTimeRateSnapshot WorldTimeRate { get; }
 
   public WorldGridSnapshot World { get; }
   public IReadOnlyList<NpcReplicationSnapshot> Npcs { get; }

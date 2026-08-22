@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Globalization;
 using Terraria.WorldFile.V319.Model;
 
 namespace Terraria.WorldFile.V319.Format;
@@ -12,23 +13,26 @@ internal static class WldHeaderReader
     WldReadLimits limits)
   {
     string name = reader.ReadString();
+    ulong? worldGeneratorVersion = null;
+    Guid? uniqueId = null;
+    string? seedText = null;
     if (version >= 179)
     {
       if (version == 179)
       {
-        _ = reader.ReadInt32();
+        seedText = reader.ReadInt32().ToString(CultureInfo.InvariantCulture);
       }
       else
       {
-        _ = reader.ReadString();
+        seedText = reader.ReadString();
       }
 
-      _ = reader.ReadUInt64();
+      worldGeneratorVersion = reader.ReadUInt64();
     }
 
     if (version >= 181)
     {
-      _ = reader.ReadBytes(16);
+      uniqueId = new Guid(reader.ReadBytes(16));
     }
 
     int worldId = reader.ReadInt32();
@@ -40,20 +44,22 @@ internal static class WldHeaderReader
     int width = reader.ReadInt32();
     limits.ValidateWorldDimensions(width, height);
 
+    int gameMode = 0;
+    bool? isRemixWorld = null;
     if (version >= 209)
     {
-      _ = reader.ReadInt32();
+      gameMode = reader.ReadInt32();
       if (version >= 222)
       {
-        ReadBooleanValues(reader, version >= 302 ? 9 : 8);
+        isRemixWorld = ReadWorldVariantBooleans(version, reader);
       }
     }
     else if (version >= 112)
     {
-      _ = reader.ReadBoolean();
-      if (version == 208)
+      gameMode = reader.ReadBoolean() ? 1 : 0;
+      if (version == 208 && reader.ReadBoolean())
       {
-        _ = reader.ReadBoolean();
+        gameMode = 2;
       }
     }
 
@@ -74,31 +80,59 @@ internal static class WldHeaderReader
     ValidateCoordinates(spawnX, spawnY, width, height);
     double worldSurface = reader.ReadDouble();
     double rockLayer = reader.ReadDouble();
-    _ = reader.ReadDouble();
-    _ = reader.ReadBoolean();
-    _ = reader.ReadInt32();
-    _ = reader.ReadBoolean();
-    _ = reader.ReadBoolean();
+    double timeOfDay = reader.ReadDouble();
+    bool isDayTime = reader.ReadBoolean();
+    byte moonPhase = ReadMoonPhase(reader);
+    bool isBloodMoon = reader.ReadBoolean();
+    bool isEclipse = reader.ReadBoolean();
     ReadInt32Values(reader, 2);
-    ReadBooleanValues(reader, 1 + 3 + 1 + 4 + 2);
+    bool isCrimsonWorld = reader.ReadBoolean();
+    bool defeatedEyeOfCthulhu = reader.ReadBoolean();
+    bool defeatedEaterOrBrain = reader.ReadBoolean();
+    bool defeatedSkeletron = reader.ReadBoolean();
+    _ = reader.ReadBoolean();
+    ReadBooleanValues(reader, 3);
+    bool defeatedMechanicalBoss = reader.ReadBoolean();
+    bool defeatedPlantera = reader.ReadBoolean();
+    bool defeatedGolem = reader.ReadBoolean();
     if (version >= 118)
     {
       _ = reader.ReadBoolean();
     }
 
-    ReadBooleanValues(reader, 4 + 3);
+    bool defeatedGoblins = false;
+    bool defeatedFrost = false;
+    bool defeatedPirates = false;
+    for (int index = 0; index < 7; index++)
+    {
+      bool value = reader.ReadBoolean();
+      if (index == 3)
+      {
+        defeatedGoblins = value;
+      }
+      else if (index == 5)
+      {
+        defeatedFrost = value;
+      }
+      else if (index == 6)
+      {
+        defeatedPirates = value;
+      }
+    }
     _ = reader.ReadBoolean();
-    _ = reader.ReadBoolean();
+    bool isMeteorScheduled = reader.ReadBoolean();
     _ = reader.ReadByte();
     _ = reader.ReadInt32();
-    _ = reader.ReadBoolean();
+    bool isHardMode = reader.ReadBoolean();
     if (version >= 257)
     {
       _ = reader.ReadBoolean();
     }
 
-    ReadInt32Values(reader, 3);
-    _ = reader.ReadDouble();
+    _ = reader.ReadInt32();
+    int invasionSize = reader.ReadInt32();
+    int invasionType = reader.ReadInt32();
+    double invasionX = reader.ReadDouble();
     if (version >= 118)
     {
       _ = reader.ReadDouble();
@@ -109,15 +143,25 @@ internal static class WldHeaderReader
       _ = reader.ReadByte();
     }
 
-    _ = reader.ReadBoolean();
-    _ = reader.ReadInt32();
-    _ = reader.ReadSingle();
+    bool? isRaining = null;
+    int? rainTimeTicks = null;
+    float? maximumRainStrength = null;
+    if (version >= 53)
+    {
+      isRaining = reader.ReadBoolean();
+      rainTimeTicks = reader.ReadInt32();
+      maximumRainStrength = reader.ReadSingle();
+    }
     ReadInt32Values(reader, 3);
     ReadByteValues(reader, 8);
     _ = reader.ReadInt32();
-    _ = reader.ReadInt16();
-    _ = reader.ReadSingle();
-    ReadLaterFields(version, reader, limits);
+    float? windSpeedTarget = null;
+    if (version >= 62)
+    {
+      _ = reader.ReadInt16();
+      windSpeedTarget = reader.ReadSingle();
+    }
+    ReadLaterFields(version, reader, limits, out bool defeatedMartians);
 
     return new LegacyWorldMetadata(
       name,
@@ -131,11 +175,62 @@ internal static class WldHeaderReader
       topWorld,
       bottomWorld,
       worldSurface,
-      rockLayer);
+      rockLayer,
+      moonPhase,
+      isBloodMoon,
+      isEclipse,
+      isCrimsonWorld,
+      isHardMode,
+      defeatedEyeOfCthulhu,
+      defeatedEaterOrBrain,
+      defeatedSkeletron,
+      defeatedMechanicalBoss,
+      defeatedPlantera,
+      defeatedGolem,
+      InvasionType: invasionType,
+      InvasionSize: invasionSize,
+      InvasionX: invasionX,
+      DefeatedGoblins: defeatedGoblins,
+      DefeatedFrost: defeatedFrost,
+      DefeatedPirates: defeatedPirates,
+      DefeatedMartians: defeatedMartians,
+      GameMode: gameMode,
+      IsMeteorScheduled: isMeteorScheduled,
+      WindSpeedTarget: windSpeedTarget,
+      IsRaining: isRaining,
+      RainTimeTicks: rainTimeTicks,
+      MaximumRainStrength: maximumRainStrength,
+      IsRemixWorld: isRemixWorld,
+      TimeOfDay: timeOfDay,
+      IsDayTime: isDayTime,
+      WorldGeneratorVersion: worldGeneratorVersion,
+      UniqueId: uniqueId,
+      SeedText: seedText);
   }
 
-  private static void ReadLaterFields(int version, WldBinaryReader reader, WldReadLimits limits)
+  private static bool? ReadWorldVariantBooleans(int version, WldBinaryReader reader)
   {
+    bool? isRemixWorld = null;
+    int count = version >= 302 ? 9 : 8;
+    for (int index = 0; index < count; index++)
+    {
+      bool value = reader.ReadBoolean();
+      if (version >= 249 && index == 5)
+      {
+        isRemixWorld = value;
+      }
+    }
+
+    return isRemixWorld;
+  }
+
+  private static void ReadLaterFields(
+    int version,
+    WldBinaryReader reader,
+    WldReadLimits limits,
+    out bool defeatedMartians)
+  {
+    defeatedMartians = false;
     if (version < 95)
     {
       return;
@@ -202,7 +297,14 @@ internal static class WldHeaderReader
       return;
     }
 
-    ReadBooleanValues(reader, 9);
+    for (int index = 0; index < 9; index++)
+    {
+      bool value = reader.ReadBoolean();
+      if (index == 1)
+      {
+        defeatedMartians = value;
+      }
+    }
     if (version < 140)
     {
       return;
@@ -369,6 +471,17 @@ internal static class WldHeaderReader
     {
       _ = reader.ReadBoolean();
     }
+  }
+
+  private static byte ReadMoonPhase(WldBinaryReader reader)
+  {
+    int moonPhase = reader.ReadInt32();
+    if (moonPhase is < 0 or > 7)
+    {
+      throw new InvalidDataException("The WLD moon phase is outside the supported range.");
+    }
+
+    return (byte)moonPhase;
   }
 
   private static void ReadByteValues(WldBinaryReader reader, int count)

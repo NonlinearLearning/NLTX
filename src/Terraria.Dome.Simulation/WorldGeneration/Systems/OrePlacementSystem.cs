@@ -18,33 +18,22 @@ public sealed class OrePlacementSystem
     ArgumentNullException.ThrowIfNull(snapshot);
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(commands);
-    if (state.Stage < WorldGenerationStage.Ore &&
-        !state.TryAdvance(WorldGenerationStage.Ore))
+    OrePlacementTransactionSystem transactionSystem = new();
+    if (!transactionSystem.TryPrepare(
+          snapshot,
+          request,
+          definition,
+          protection,
+          out OrePlacementPreparationResult preparation))
     {
-      throw new InvalidOperationException("Ore stage could not be started.");
+      return;
     }
 
-    int depthRange = Math.Max(1, definition.MaxDepth - definition.MinDepth + 1);
-    int centerX = Math.Abs(request.Metadata.Seed.Value) % snapshot.Metadata.Width;
-    int centerY = definition.MinDepth + Math.Abs(request.Metadata.Seed.Value) % depthRange;
-    for (int offsetX = -definition.VeinRadius; offsetX <= definition.VeinRadius; offsetX++)
-    {
-      for (int offsetY = -definition.VeinRadius; offsetY <= definition.VeinRadius; offsetY++)
-      {
-        int x = centerX + offsetX;
-        int y = centerY + offsetY;
-        if (!snapshot.Metadata.IsInside(x, y) || protection.IsProtected(x, y))
-        {
-          continue;
-        }
-
-        commands.Add(new TileChangeCommand(
-          state.ReserveSequence(),
-          x,
-          y,
-          TileChangeKind.Place,
-          definition.TileType));
-      }
-    }
+    _ = transactionSystem.TryAppendCommands(
+      snapshot,
+      preparation,
+      protection,
+      ref state,
+      commands);
   }
 }

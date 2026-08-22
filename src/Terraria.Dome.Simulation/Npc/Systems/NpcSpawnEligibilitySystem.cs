@@ -2,15 +2,23 @@ using System;
 using System.Collections.Generic;
 using Terraria.Dome.Simulation.Npc.Commands;
 using Terraria.Dome.Simulation.Npc.Snapshots;
+using Terraria.Dome.Simulation.WorldModel.Systems;
 
 namespace Terraria.Dome.Simulation.Npc.Systems;
 
 public sealed class NpcSpawnEligibilitySystem
 {
+  private readonly WorldInvasionSpawnEligibilitySystem _invasionSpawnEligibilitySystem = new();
+
   public IReadOnlyList<SpawnNpcCommand> Evaluate(NpcSpawnSnapshot snapshot)
   {
     ArgumentNullException.ThrowIfNull(snapshot);
     List<SpawnNpcCommand> commands = new();
+    if (!snapshot.SpawnAuthorityEnabled)
+    {
+      return commands;
+    }
+
     HashSet<int> requestedIds = new(snapshot.ExistingReplicationIds);
     int activeCount = snapshot.ActiveNpcCount;
     int protectedCount = snapshot.ProtectedSlotCount;
@@ -18,9 +26,34 @@ public sealed class NpcSpawnEligibilitySystem
     {
       NpcSpawnCandidate candidate = snapshot.Candidates[index];
       SpawnNpcCommand command = candidate.Command;
-      if (candidate.IsOccupied || command.DefinitionId <= 0 || command.DifficultyScale <= 0.0f)
+      bool canSpawnEnemiesNear = candidate.PlayerReadiness.HasValue
+        ? NpcSpawnPlayerReadinessQuery.CanSpawnEnemiesNear(candidate.PlayerReadiness.Value)
+        : candidate.CanSpawnEnemiesNear;
+      if (candidate.IsOccupied ||
+          !canSpawnEnemiesNear ||
+          command.DefinitionId <= 0 ||
+          command.DifficultyScale <= 0.0f ||
+          !float.IsFinite(command.Position.X) ||
+          !float.IsFinite(command.Position.Y))
       {
         continue;
+      }
+
+      if (candidate.IsInvasionCandidate)
+      {
+        if (!snapshot.InvasionState.HasValue)
+        {
+          continue;
+        }
+
+        NpcInvasionSpawnState invasionState = snapshot.InvasionState.Value;
+        if (!_invasionSpawnEligibilitySystem.CanSpawn(
+          invasionState.InvasionType,
+          invasionState.InvasionSize,
+          invasionState.InvasionDelayTicks))
+        {
+          continue;
+        }
       }
 
       if (candidate.IsProtectedSlot)

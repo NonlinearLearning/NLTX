@@ -168,6 +168,15 @@ public static class TerrariaV1456Compatibility
     IReadOnlyList<ChestSnapshot> chests,
     IReadOnlyList<SignReplicationSnapshot> signs)
   {
+    return EncodeTileSection(snapshot, chests, signs, []);
+  }
+
+  public static byte[] EncodeTileSection(
+    WorldSectionSnapshot snapshot,
+    IReadOnlyList<ChestSnapshot> chests,
+    IReadOnlyList<SignReplicationSnapshot> signs,
+    IReadOnlyList<LegacyTileEntity> tileEntities)
+  {
     ArgumentNullException.ThrowIfNull(snapshot);
     ArgumentNullException.ThrowIfNull(chests);
     ArgumentNullException.ThrowIfNull(signs);
@@ -183,7 +192,7 @@ public static class TerrariaV1456Compatibility
       WriteTileSectionTiles(writer, snapshot);
       WriteSectionChests(writer, snapshot.Coordinates, chests);
       WriteSectionSigns(writer, snapshot.Coordinates, signs);
-      writer.Write((short)0);
+      WriteTileEntities(writer, tileEntities);
     }
 
     return EncodeFrame(TerrariaMessageId.TileSection, payload.ToArray());

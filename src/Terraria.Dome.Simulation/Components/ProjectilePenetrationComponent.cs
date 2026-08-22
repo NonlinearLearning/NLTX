@@ -1,9 +1,16 @@
+using System;
+
 namespace Terraria.Dome.Simulation.Components;
 
 public struct ProjectilePenetrationComponent
 {
   public ProjectilePenetrationComponent(int maximumPenetration)
   {
+    if (maximumPenetration == 0 || maximumPenetration < -1)
+    {
+      throw new ArgumentOutOfRangeException(nameof(maximumPenetration));
+    }
+
     MaximumPenetration = maximumPenetration;
     RemainingPenetration = maximumPenetration;
   }

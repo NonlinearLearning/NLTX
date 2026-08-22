@@ -17,4 +17,5 @@ public readonly record struct ItemDefinition(
   int Height = 0,
   int Value = 0,
   int Rarity = 0,
-  ItemPrefixDefinition? Prefixes = null);
+  ItemPrefixDefinition? Prefixes = null,
+  ItemExtractinatorDefinition? Extractinator = null);

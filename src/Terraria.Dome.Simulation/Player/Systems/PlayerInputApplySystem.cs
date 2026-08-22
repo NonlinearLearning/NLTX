@@ -22,6 +22,13 @@ internal sealed class PlayerInputApplySystem
         throw new ArgumentException("Input references an unknown player.", nameof(inputBatch));
       }
 
+      if (supplied.Facing < -1 || supplied.Facing > 1)
+      {
+        throw new ArgumentException(
+          "Input facing must be -1, 0 or 1.",
+          nameof(inputBatch));
+      }
+
       if (!seenPlayers.Add(supplied.Player))
       {
         throw new ArgumentException(
@@ -41,6 +48,7 @@ internal sealed class PlayerInputApplySystem
       PlayerInput supplied = inputBatch.Inputs[index];
       Entity entity = players[supplied.Player];
       ref PlayerInputComponent input = ref world.Get<PlayerInputComponent>(entity);
+      input.Down = supplied.Down;
       input.MoveLeft = supplied.MoveLeft;
       input.MoveRight = supplied.MoveRight;
       input.Jump = supplied.Jump;

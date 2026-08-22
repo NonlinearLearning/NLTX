@@ -6,6 +6,16 @@ public sealed class ItemUseCooldownSystem
 {
   public void Tick(ref ItemUseStateComponent state)
   {
+    if (state.CooldownTicks < 0)
+    {
+      state.CooldownTicks = 0;
+    }
+
+    if (state.AnimationTicks < 0)
+    {
+      state.AnimationTicks = 0;
+    }
+
     if (state.CooldownTicks > 0)
     {
       state.CooldownTicks--;

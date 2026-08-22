@@ -27,7 +27,7 @@ public sealed class InventoryReplicationAssembler
         (byte)instance.State.PrefixId,
         instance.Stack.ItemType,
         instance.State.IsFavorited,
-        IsNewAndShiny: false)));
+        instance.State.IsNewAndShiny)));
     }
 
     return frames;

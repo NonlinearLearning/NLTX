@@ -65,6 +65,11 @@ public static class ItemDefinitionCompiler
         throw new ArgumentException("Combat values cannot be negative.", nameof(definition));
       }
 
+      if (!Enum.IsDefined(combat.DamageClass))
+      {
+        throw new ArgumentException("The item damage class is invalid.", nameof(definition));
+      }
+
       if (combat.ConsumesAmmo && combat.AmmoType == 0)
       {
         throw new ArgumentException("Ammo-consuming combat items require an ammo type.", nameof(definition));
@@ -116,16 +121,25 @@ public static class ItemDefinitionCompiler
 
     if (definition.Equipment is ItemEquipmentDefinition equipment)
     {
-      if (equipment.Defense < 0)
+      if (equipment.Defense < 0 || equipment.LifeRegen < 0)
       {
-        throw new ArgumentException("Equipment defense cannot be negative.", nameof(definition));
+        throw new ArgumentException(
+          "Equipment defense and life regeneration cannot be negative.",
+          nameof(definition));
       }
 
       if (equipment.Slot == ItemEquipmentSlot.None &&
-          (equipment.Accessory || equipment.Vanity || equipment.Social || equipment.Defense != 0))
+          (equipment.Accessory || equipment.Vanity || equipment.Social || equipment.Defense != 0 ||
+           equipment.LifeRegen != 0))
       {
         throw new ArgumentException("Equipment attributes require an equipment slot.", nameof(definition));
       }
+    }
+
+    if (definition.Extractinator is ItemExtractinatorDefinition extractinator &&
+        !ExtractinatorRuleRegistry.IsSupportedMode(extractinator.ExtractionMode))
+    {
+      throw new ArgumentException("The Extractinator mode is invalid.", nameof(definition));
     }
   }
 

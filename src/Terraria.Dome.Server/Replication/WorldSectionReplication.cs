@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using Terraria.Dome.Protocol.V1456.Compatibility;
 using Terraria.Dome.Protocol.V1456.Packets;
 using Terraria.Dome.Protocol.V1456.Protocol;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldObjects;
+using Terraria.Dome.Simulation.WorldObjects.Definitions;
 
 namespace Terraria.Dome.Server.Replication;
 
@@ -49,7 +51,8 @@ public sealed class WorldSectionReplication
   public IReadOnlyList<byte[]> CreateInitialWorldStream(
     SpawnTileDataRequestPacket request,
     SessionReplicationState state,
-    IReadOnlyList<ChestSnapshot> chests)
+    IReadOnlyList<ChestSnapshot> chests,
+    IReadOnlyList<TileEntityPersistentState> tileEntities)
   {
     ArgumentNullException.ThrowIfNull(state);
     ArgumentNullException.ThrowIfNull(chests);
@@ -62,13 +65,35 @@ public sealed class WorldSectionReplication
     for (int snapshotIndex = 0; snapshotIndex < snapshots.Count; snapshotIndex++)
     {
       WorldSectionSnapshot snapshot = snapshots[snapshotIndex];
-      frames.Add(TerrariaPacketCodec.Encode(snapshot, chests));
+      IReadOnlyList<LegacyTileEntity> entities = GetEntitiesForSection(
+        snapshot.Coordinates,
+        tileEntities);
+      frames.Add(TerrariaPacketCodec.Encode(snapshot, chests, [], entities));
+      for (int entityIndex = 0; entityIndex < entities.Count; entityIndex++)
+      {
+        LegacyTrainingDummyTileEntity entity = (LegacyTrainingDummyTileEntity)entities[entityIndex];
+        state.MarkTileEntitySent(new TileEntityPersistentState(
+          entity.EntityId,
+          0,
+          entity.TileX,
+          entity.TileY,
+          [(byte)(entity.NpcId & 0xFF), (byte)((entity.NpcId >> 8) & 0xFF)],
+          isOpaque: false));
+      }
       AddChestContentsForSection(frames, snapshot.Coordinates, chests);
     }
 
     frames.Add(TerrariaFrameCodec.Encode(
       new TerrariaFrame(TerrariaMessageId.InitialSpawn, Array.Empty<byte>())));
     return frames;
+  }
+
+  public IReadOnlyList<byte[]> CreateInitialWorldStream(
+    SpawnTileDataRequestPacket request,
+    SessionReplicationState state,
+    IReadOnlyList<ChestSnapshot> chests)
+  {
+    return CreateInitialWorldStream(request, state, chests, []);
   }
 
   public IReadOnlyList<byte[]> CreateChangedWorldStream(SessionReplicationState state)
@@ -94,7 +119,8 @@ public sealed class WorldSectionReplication
   public IReadOnlyList<byte[]> CreateRequestedSectionStream(
     RequestSectionPacket request,
     SessionReplicationState state,
-    IReadOnlyList<ChestSnapshot> chests)
+    IReadOnlyList<ChestSnapshot> chests,
+    IReadOnlyList<TileEntityPersistentState> tileEntities)
   {
     ArgumentNullException.ThrowIfNull(state);
     ArgumentNullException.ThrowIfNull(chests);
@@ -108,9 +134,31 @@ public sealed class WorldSectionReplication
     _ = state.CollectChangedSections([snapshot]);
 
     List<byte[]> frames = new(1 + chests.Count * (ChestComponent.SlotCount + 1));
-    frames.Add(TerrariaPacketCodec.Encode(snapshot, chests));
+    IReadOnlyList<LegacyTileEntity> entities = GetEntitiesForSection(
+      coordinates,
+      tileEntities);
+    frames.Add(TerrariaPacketCodec.Encode(snapshot, chests, [], entities));
+    for (int entityIndex = 0; entityIndex < entities.Count; entityIndex++)
+    {
+      LegacyTrainingDummyTileEntity entity = (LegacyTrainingDummyTileEntity)entities[entityIndex];
+      state.MarkTileEntitySent(new TileEntityPersistentState(
+        entity.EntityId,
+        0,
+        entity.TileX,
+        entity.TileY,
+        [(byte)(entity.NpcId & 0xFF), (byte)((entity.NpcId >> 8) & 0xFF)],
+        isOpaque: false));
+    }
     AddChestContentsForSection(frames, coordinates, chests);
     return frames;
+  }
+
+  public IReadOnlyList<byte[]> CreateRequestedSectionStream(
+    RequestSectionPacket request,
+    SessionReplicationState state,
+    IReadOnlyList<ChestSnapshot> chests)
+  {
+    return CreateRequestedSectionStream(request, state, chests, []);
   }
 
   public IReadOnlyList<byte[]> UpdatePlayerVisibility(
@@ -244,6 +292,31 @@ public sealed class WorldSectionReplication
           Revision: chest.Revision)));
       }
     }
+  }
+
+  private IReadOnlyList<LegacyTileEntity> GetEntitiesForSection(
+    WorldSectionCoordinates section,
+    IReadOnlyList<TileEntityPersistentState> tileEntities)
+  {
+    List<LegacyTileEntity> result = new();
+    for (int index = 0; index < tileEntities.Count; index++)
+    {
+      TileEntityPersistentState entity = tileEntities[index];
+      if (entity.Type != 0 || entity.IsOpaque ||
+          _world.GetSectionCoordinates(entity.TileX, entity.TileY) != section ||
+          !TrainingDummyTileEntityState.TryRead(entity, out TrainingDummyTileEntityState state))
+      {
+        continue;
+      }
+
+      result.Add(new LegacyTrainingDummyTileEntity(
+        state.EntityId,
+        checked((short)state.TileX),
+        checked((short)state.TileY),
+        state.NpcId));
+    }
+
+    return result;
   }
 
   private int SectionColumns => _world.Width / WorldGrid.SectionWidth;

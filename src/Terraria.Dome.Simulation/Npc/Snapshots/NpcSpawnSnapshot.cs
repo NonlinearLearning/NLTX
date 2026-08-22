@@ -8,7 +8,10 @@ namespace Terraria.Dome.Simulation.Npc.Snapshots;
 public readonly record struct NpcSpawnCandidate(
   SpawnNpcCommand Command,
   bool IsOccupied,
-  bool IsProtectedSlot);
+  bool IsProtectedSlot,
+  bool CanSpawnEnemiesNear = true,
+  bool IsInvasionCandidate = false,
+  NpcSpawnPlayerReadiness? PlayerReadiness = null);
 
 public sealed class NpcSpawnSnapshot
 {
@@ -17,7 +20,9 @@ public sealed class NpcSpawnSnapshot
     int activeNpcCount,
     int maximumNpcCount,
     int protectedSlotCount,
-    IReadOnlySet<int> existingReplicationIds)
+    IReadOnlySet<int> existingReplicationIds,
+    bool spawnAuthorityEnabled = true,
+    NpcInvasionSpawnState? invasionState = null)
   {
     ArgumentNullException.ThrowIfNull(candidates);
     ArgumentNullException.ThrowIfNull(existingReplicationIds);
@@ -31,6 +36,8 @@ public sealed class NpcSpawnSnapshot
     MaximumNpcCount = maximumNpcCount;
     ProtectedSlotCount = protectedSlotCount;
     ExistingReplicationIds = existingReplicationIds;
+    SpawnAuthorityEnabled = spawnAuthorityEnabled;
+    InvasionState = invasionState;
   }
 
   public IReadOnlyList<NpcSpawnCandidate> Candidates { get; }
@@ -38,4 +45,6 @@ public sealed class NpcSpawnSnapshot
   public int MaximumNpcCount { get; }
   public int ProtectedSlotCount { get; }
   public IReadOnlySet<int> ExistingReplicationIds { get; }
+  public NpcInvasionSpawnState? InvasionState { get; }
+  public bool SpawnAuthorityEnabled { get; }
 }

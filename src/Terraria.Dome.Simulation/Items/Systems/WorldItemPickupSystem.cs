@@ -22,7 +22,14 @@ public sealed class WorldItemPickupSystem
     ArgumentNullException.ThrowIfNull(inventory);
     ArgumentNullException.ThrowIfNull(definitions);
     if (!item.IsActive || item.ReplicationId != command.WorldItemId ||
-        item.WorldState.PickupDelayTicks > 0)
+        item.WorldState.PickupDelayTicks > 0 ||
+        !item.WorldState.CanBePickedUpBy(command.Player) ||
+        !float.IsFinite(pickupRange) ||
+        !float.IsFinite(item.Position.X) ||
+        !float.IsFinite(item.Position.Y) ||
+        pickupRange < 0.0f ||
+        !float.IsFinite(playerPosition.X) ||
+        !float.IsFinite(playerPosition.Y))
     {
       pickupEvent = default;
       rejection = ItemCommandRejection.Invalid("World item is inactive or pickup is delayed.");

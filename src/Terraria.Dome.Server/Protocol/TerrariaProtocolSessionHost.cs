@@ -37,6 +37,7 @@ internal sealed class TerrariaProtocolSessionHost
   private readonly Func<IReadOnlyList<ChestSnapshot>> _createChestSnapshots;
   private readonly Func<IReadOnlyList<NpcHomeSnapshot>> _createNpcHomeSnapshots;
   private readonly Func<IReadOnlyList<NpcReplicationSnapshot>> _createNpcReplicationSnapshots;
+  private readonly Func<IReadOnlyList<TileEntityPersistentState>> _createTileEntitySnapshots;
   private readonly Func<WorldJoinStateSnapshot> _createWorldJoinState;
   private readonly Func<LegacyWorldDataContext> _createWorldDataContext;
   private readonly Func<PlayerBootstrapState, CancellationToken, Task<PlayerPersistentState>>
@@ -51,6 +52,7 @@ internal sealed class TerrariaProtocolSessionHost
     Func<IReadOnlyList<ChestSnapshot>> createChestSnapshots,
     Func<IReadOnlyList<NpcHomeSnapshot>> createNpcHomeSnapshots,
     Func<IReadOnlyList<NpcReplicationSnapshot>> createNpcReplicationSnapshots,
+    Func<IReadOnlyList<TileEntityPersistentState>> createTileEntitySnapshots,
     Func<WorldJoinStateSnapshot> createWorldJoinState,
     Func<PlayerBootstrapState, CancellationToken, Task<PlayerPersistentState>>
       resolvePlayerAccountAsync,
@@ -78,6 +80,8 @@ internal sealed class TerrariaProtocolSessionHost
       throw new ArgumentNullException(nameof(createNpcHomeSnapshots));
     _createNpcReplicationSnapshots = createNpcReplicationSnapshots ??
       throw new ArgumentNullException(nameof(createNpcReplicationSnapshots));
+    _createTileEntitySnapshots = createTileEntitySnapshots ??
+      throw new ArgumentNullException(nameof(createTileEntitySnapshots));
     _createWorldJoinState = createWorldJoinState ??
       throw new ArgumentNullException(nameof(createWorldJoinState));
     _createWorldDataContext = createWorldDataContext ??
@@ -160,7 +164,8 @@ internal sealed class TerrariaProtocolSessionHost
             IReadOnlyList<byte[]> initialWorldStream = _worldReplication.CreateInitialWorldStream(
               request,
               replicationState,
-              _createChestSnapshots());
+              _createChestSnapshots(),
+              _createTileEntitySnapshots());
             int initialSpawnIndex = initialWorldStream.Count - 1;
             List<byte[]> initialFrames = new(initialWorldStream.Count + 29)
             {
@@ -206,7 +211,8 @@ internal sealed class TerrariaProtocolSessionHost
               _worldReplication.CreateRequestedSectionStream(
                 request,
                 replicationState,
-                _createChestSnapshots());
+                _createChestSnapshots(),
+                _createTileEntitySnapshots());
             if (requestedSectionStream.Count > 0)
             {
               await replicationState.WriteFramesAsync(requestedSectionStream, cancellationToken);
@@ -232,12 +238,15 @@ internal sealed class TerrariaProtocolSessionHost
               replicationState,
               cancellationToken);
             IReadOnlyList<NpcHomeSnapshot> npcHomes = _createNpcHomeSnapshots();
-            List<byte[]> completionFrames = new(npcHomes.Count + 8);
+            List<byte[]> completionFrames = new(npcHomes.Count + 16);
             for (int index = 0; index < npcHomes.Count; index++)
             {
               completionFrames.Add(TerrariaPacketCodec.EncodeNpcHome(npcHomes[index]));
             }
 
+            completionFrames.Add(PlayerPersistentStateMapper.ToProfileFrame(playerSlot, account));
+            completionFrames.AddRange(PlayerBootstrapProjection.CreateFrames(playerSlot, account));
+            completionFrames.AddRange(CreateInitialPlayerStateFrames(playerSlot, initialProjection));
             completionFrames.Add(TerrariaPacketCodec.EncodeHostStatus(playerSlot, isHost: true));
             completionFrames.AddRange(TerrariaPacketCodec.CreateJoinGreetingNetModules(
               account.Profile.Name));
@@ -301,10 +310,28 @@ internal sealed class TerrariaProtocolSessionHost
   private void EnqueueInboundFrame(byte playerSlot, ReadOnlySpan<byte> frameBytes)
   {
     NetworkInboundEnvelope envelope = NetworkInboundEnvelope.FromFrame(playerSlot, frameBytes);
-    if (!_enqueueInboundEnvelope(envelope))
-    {
-      throw new IOException("The isolated network input queue is full.");
-    }
+    _ = _enqueueInboundEnvelope(envelope);
+  }
+
+  private static IReadOnlyList<byte[]> CreateInitialPlayerStateFrames(
+    byte playerSlot,
+    PlayerInitialProjection projection)
+  {
+    return
+    [
+      TerrariaPacketCodec.EncodePlayerActive(playerSlot, projection.IsActive),
+      TerrariaPacketCodec.EncodePlayerControls(
+        new PlayerControlIntent(
+          playerSlot,
+          MoveLeft: false,
+          MoveRight: false,
+          Jump: false,
+          UseItem: false,
+          FacingRight: projection.IsFacingRight,
+          SelectedItem: 0),
+        TerrariaWorldCoordinates.ToPixels(projection.PositionX),
+        TerrariaWorldCoordinates.ToPixels(projection.PositionY))
+    ];
   }
 
   private static async Task<byte[]> ReadFrameAsync(

@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "description": "Deterministic player ECS core scenarios",
+  "scenarios": [
+    {
+      "name": "horizontal-movement",
+      "spawn": { "x": 10.0, "y": 0.0 },
+      "inputs": [
+        { "moveRight": true },
+        { "moveRight": true },
+        { "moveLeft": true }
+      ],
+      "expected": { "facing": -1, "isGrounded": true }
+    },
+    {
+      "name": "jump-and-gravity",
+      "spawn": { "x": 10.0, "y": 0.0 },
+      "inputs": [ { "jump": true }, {}, {}, {}, {} ],
+      "expected": { "isGrounded": true, "finalY": 0.0 }
+    },
+    {
+      "name": "damage-death-respawn",
+      "spawn": { "x": 10.0, "y": 0.0 },
+      "damage": 100,
+      "respawnDelayTicks": 3,
+      "expected": { "deadHealth": 0, "respawnHealth": 100, "isActive": true }
+    },
+    {
+      "name": "inventory-use",
+      "slot": 0,
+      "itemType": 1,
+      "quantity": 2,
+      "expected": { "healthIncreases": true, "quantityAfterUse": 1 }
+    },
+    {
+      "name": "server-record-restoration",
+      "uuid": "2eecdeea-c45e-456f-8244-75ec32da6172",
+      "life": 120,
+      "mana": 80,
+      "selectedLoadout": 1,
+      "unsupportedProtocolSlotsPreserved": true
+    }
+  ]
+}

@@ -54,6 +54,28 @@ public sealed class InventoryComponent
     }
   }
 
+  public bool TryConsume(ushort itemType)
+  {
+    if (itemType == 0)
+    {
+      return false;
+    }
+
+    for (int index = 0; index < SlotCount; index++)
+    {
+      ItemStack stack = _slots[index];
+      if (stack.IsEmpty || stack.ItemType != itemType)
+      {
+        continue;
+      }
+
+      SetSlot(index, stack.WithQuantity(stack.Quantity - 1));
+      return true;
+    }
+
+    return false;
+  }
+
   public ItemInstanceStateComponent GetInstanceState(int slot)
   {
     ValidateSlot(slot);

@@ -14,8 +14,17 @@ public sealed class ChestReplicationCursor
       return false;
     }
 
-    _revisions[snapshot.ChestId] = snapshot.Revision;
     return true;
+  }
+
+  public void MarkSent(ChestSnapshot snapshot)
+  {
+    _revisions[snapshot.ChestId] = snapshot.Revision;
+  }
+
+  public bool TryGetRevision(int chestId, out long revision)
+  {
+    return _revisions.TryGetValue(chestId, out revision);
   }
 
   public void Clear()

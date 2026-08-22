@@ -13,7 +13,12 @@ public sealed record WorldMetadata
     int? spawnX = null,
     int? spawnY = null,
     string seedVariant = "default",
-    int randomStreamVersion = 1)
+    int randomStreamVersion = 1,
+    double? worldSurface = null,
+    bool? isRemixWorld = null,
+    ulong? worldGeneratorVersion = null,
+    Guid? uniqueId = null,
+    string? seedText = null)
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(name);
     ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
@@ -36,6 +41,11 @@ public sealed record WorldMetadata
     SpawnY = spawnY ?? height / 4;
     SeedVariant = seedVariant;
     RandomStreamVersion = randomStreamVersion;
+    WorldSurface = worldSurface;
+    IsRemixWorld = isRemixWorld;
+    WorldGeneratorVersion = worldGeneratorVersion;
+    UniqueId = uniqueId;
+    SeedText = seedText;
     if (WorldId < 0)
     {
       throw new ArgumentOutOfRangeException(nameof(worldId));
@@ -61,6 +71,11 @@ public sealed record WorldMetadata
   public int SpawnY { get; }
   public int RandomStreamVersion { get; }
   public string SeedVariant { get; }
+  public double? WorldSurface { get; }
+  public bool? IsRemixWorld { get; }
+  public ulong? WorldGeneratorVersion { get; }
+  public Guid? UniqueId { get; }
+  public string? SeedText { get; }
 
   public bool IsInside(int x, int y)
   {

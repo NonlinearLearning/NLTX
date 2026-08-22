@@ -10,10 +10,14 @@ namespace Terraria.WorldCompatibility.Projection;
 
 public static class CompatibilityToDomeProjection
 {
+  private const int EndlessRainRepairLastAffectedVersion = 317;
+  private const int EndlessRainRepairThresholdTicks = 5184000;
+
   public static DomeSimulationSnapshot Project(
     CompatibilityWorldSnapshot snapshot,
     WorldSeed seed,
-    bool strictImport = true)
+    bool strictImport = true,
+    bool? isRainsForAYearSecretSeedActive = null)
   {
     ArgumentNullException.ThrowIfNull(snapshot);
     if (strictImport && HasRequiredUnsupportedRecords(snapshot.LoadReport))
@@ -29,7 +33,12 @@ public static class CompatibilityToDomeProjection
       snapshot.Metadata.Height,
       snapshot.Metadata.WorldId,
       snapshot.Metadata.SpawnX,
-      snapshot.Metadata.SpawnY);
+      snapshot.Metadata.SpawnY,
+      worldSurface: snapshot.Metadata.WorldSurface,
+      isRemixWorld: snapshot.Metadata.IsRemixWorld,
+      worldGeneratorVersion: snapshot.Metadata.WorldGeneratorVersion,
+      uniqueId: snapshot.Metadata.UniqueId,
+      seedText: snapshot.Metadata.SeedText);
     WorldGrid world = new(metadata.Width, metadata.Height);
     for (int index = 0; index < snapshot.Tiles.Count; index++)
     {
@@ -140,10 +149,36 @@ public static class CompatibilityToDomeProjection
       npcs,
       [],
       0,
+      worldClock: new WorldClockSnapshot(
+        0,
+        GetValidatedTimeOfDay(snapshot.Metadata),
+        snapshot.Metadata.IsDayTime,
+        false,
+        1,
+        MoonPhase: snapshot.Metadata.MoonPhase),
       chests: chests,
       signs: signs,
       tileEntities: tileEntities,
-      opaqueCompatibilityRecords: opaqueRecords);
+      opaqueCompatibilityRecords: opaqueRecords,
+      worldRules: CreateWorldRules(snapshot, isRainsForAYearSecretSeedActive),
+      progression: new WorldProgressionState(
+        isHardMode: snapshot.Metadata.IsHardMode,
+        defeatedEyeOfCthulhu: snapshot.Metadata.DefeatedEyeOfCthulhu,
+        defeatedEaterOrBrain: snapshot.Metadata.DefeatedEaterOrBrain,
+        defeatedSkeletron: snapshot.Metadata.DefeatedSkeletron,
+        defeatedMechanicalBoss: snapshot.Metadata.DefeatedMechanicalBoss,
+        defeatedPlantera: snapshot.Metadata.DefeatedPlantera,
+        defeatedGolem: snapshot.Metadata.DefeatedGolem,
+        invasionType: snapshot.Metadata.InvasionType,
+        invasionSize: snapshot.Metadata.InvasionSize,
+        invasionX: snapshot.Metadata.InvasionX,
+        defeatedGoblins: snapshot.Metadata.DefeatedGoblins,
+        defeatedFrost: snapshot.Metadata.DefeatedFrost,
+        defeatedPirates: snapshot.Metadata.DefeatedPirates,
+        defeatedMartians: snapshot.Metadata.DefeatedMartians,
+        isMeteorScheduled: snapshot.Metadata.IsMeteorScheduled,
+        isBloodMoon: snapshot.Metadata.IsBloodMoon,
+        isEclipse: snapshot.Metadata.IsEclipse));
   }
 
   private static WorldSectionCoordinates GetSection(float x, float y)
@@ -151,6 +186,101 @@ public static class CompatibilityToDomeProjection
     return new WorldSectionCoordinates(
       Math.Max(0, (int)x / WorldGrid.SectionWidth),
       Math.Max(0, (int)y / WorldGrid.SectionHeight));
+  }
+
+  private static double GetValidatedTimeOfDay(CompatibilityWorldMetadata metadata)
+  {
+    try
+    {
+      WorldClock clock = new(
+        timeOfDay: metadata.TimeOfDay,
+        isDayTime: metadata.IsDayTime);
+      return clock.TimeOfDay;
+    }
+    catch (ArgumentException exception)
+    {
+      throw new InvalidOperationException(
+        "Compatibility import rejected an invalid WLD world time.",
+        exception);
+    }
+  }
+
+  private static WorldRuleState CreateWorldRules(
+    CompatibilityWorldSnapshot snapshot,
+    bool? isRainsForAYearSecretSeedActive)
+  {
+    CompatibilityWorldMetadata metadata = snapshot.Metadata;
+    bool hasRainFacts = metadata.IsRaining.HasValue ||
+      metadata.RainTimeTicks.HasValue ||
+      metadata.MaximumRainStrength.HasValue;
+    if (hasRainFacts && (!metadata.IsRaining.HasValue || !metadata.RainTimeTicks.HasValue ||
+                         !metadata.MaximumRainStrength.HasValue))
+    {
+      throw new InvalidOperationException(
+        "Compatibility import rejected an incomplete WLD rain-state triple.");
+    }
+
+    bool requiresEndlessRainRepair = hasRainFacts &&
+      snapshot.Version <= EndlessRainRepairLastAffectedVersion &&
+      metadata.RainTimeTicks >= EndlessRainRepairThresholdTicks;
+    if (requiresEndlessRainRepair && !isRainsForAYearSecretSeedActive.HasValue)
+    {
+      throw new InvalidOperationException(
+        "Compatibility import rejected a legacy rain repair without secret-seed context.");
+    }
+
+    bool isRainsForAYearActive = isRainsForAYearSecretSeedActive.GetValueOrDefault();
+    if (requiresEndlessRainRepair && !isRainsForAYearActive)
+    {
+      return new WorldRuleState(
+        difficulty: GetBaseDifficulty(metadata.GameMode),
+        isExpertMode: metadata.GameMode is 1 or 2,
+        isMasterMode: metadata.GameMode == 2,
+        isCrimsonWorld: metadata.IsCrimsonWorld,
+        gameMode: GetGameMode(metadata.GameMode),
+        windSpeedTarget: metadata.WindSpeedTarget ?? 0.0f,
+        windSpeedCurrent: metadata.WindSpeedTarget ?? 0.0f);
+    }
+
+    return new WorldRuleState(
+      difficulty: GetBaseDifficulty(metadata.GameMode),
+      isExpertMode: metadata.GameMode is 1 or 2,
+      isMasterMode: metadata.GameMode == 2,
+      isCrimsonWorld: metadata.IsCrimsonWorld,
+      rainTimeTicks: metadata.RainTimeTicks ?? 0,
+      gameMode: GetGameMode(metadata.GameMode),
+      isRaining: metadata.IsRaining,
+      maximumRainStrength: metadata.MaximumRainStrength,
+      windSpeedTarget: metadata.WindSpeedTarget ?? 0.0f,
+      windSpeedCurrent: metadata.WindSpeedTarget ?? 0.0f);
+  }
+
+  private static int GetBaseDifficulty(int gameMode)
+  {
+    return gameMode switch
+    {
+      0 => 0,
+      1 => 1,
+      2 => 2,
+      3 => 0,
+      _ => throw new ArgumentOutOfRangeException(
+        nameof(gameMode),
+        "The WLD game mode is outside the supported range.")
+    };
+  }
+
+  private static WorldGameMode GetGameMode(int gameMode)
+  {
+    return gameMode switch
+    {
+      0 => WorldGameMode.Classic,
+      1 => WorldGameMode.Expert,
+      2 => WorldGameMode.Master,
+      3 => WorldGameMode.Journey,
+      _ => throw new ArgumentOutOfRangeException(
+        nameof(gameMode),
+        "The WLD game mode is outside the supported range.")
+    };
   }
 
   private static bool HasRequiredUnsupportedRecords(CompatibilityLoadReport report)

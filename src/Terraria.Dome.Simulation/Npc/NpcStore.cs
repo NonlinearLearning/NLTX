@@ -19,6 +19,11 @@ public sealed class NpcStore : IReadOnlyDictionary<NpcHandle, Entity>
 
   public void Add(NpcHandle npc, Entity entity)
   {
+    if (!npc.IsValid)
+    {
+      throw new ArgumentOutOfRangeException(nameof(npc));
+    }
+
     if (!_entities.TryAdd(npc, entity))
     {
       throw new ArgumentException("The NPC handle is already owned.", nameof(npc));

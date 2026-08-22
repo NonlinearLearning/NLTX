@@ -8,6 +8,10 @@
 
 **Tech Stack:** .NET 10、C#、Arch ECS、现有 `Terraria.Dome.Simulation`、`Terraria.Dome.Server`、V1456 协议和仓库内 executable verification 项目。
 
+> 执行状态（2026-08-19）：Task 0-8 的服务器权威切片已有当前实现与验证证据；Task 9 的
+> artifact boundary 已通过（`src/**/Build/(bin|obj|generated)` 当前为 0），但整体仍为
+> `PARTIAL`，因为延期的 Version4/UI 成员未被声称迁移。
+
 ---
 
 ## 执行边界

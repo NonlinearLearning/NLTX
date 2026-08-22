@@ -19,7 +19,7 @@ public sealed class TileChangeCommitSystem
     for (int index = 0; index < orderedCommands.Count; index++)
     {
       TileFrameCommand command = orderedCommands[index];
-      if (command.Sequence < 0)
+      if (command.Sequence < 0 || command.Sequence == long.MaxValue)
       {
         result = TileFrameCommitResult.Failed("Tile frame command sequence cannot be negative.");
         return false;
@@ -42,10 +42,13 @@ public sealed class TileChangeCommitSystem
     for (int index = 0; index < orderedCommands.Count; index++)
     {
       TileFrameCommand command = orderedCommands[index];
-      WorldTile tile = world.GetTile(command.X, command.Y) with
+      WorldTile current = world.GetTile(command.X, command.Y);
+      WorldTile tile = current with
       {
         FrameX = command.FrameX,
-        FrameY = command.FrameY
+        FrameY = command.FrameY,
+        IsHalfBrick = command.IsHalfBrick ?? current.IsHalfBrick,
+        Slope = command.Slope ?? current.Slope
       };
       if (!world.TrySetTile(command.X, command.Y, tile))
       {
@@ -73,7 +76,7 @@ public sealed class TileChangeCommitSystem
     for (int index = 0; index < orderedCommands.Count; index++)
     {
       TileChangeCommand command = orderedCommands[index];
-      if (command.Sequence < 0)
+      if (command.Sequence < 0 || command.Sequence == long.MaxValue)
       {
         result = TileChangeCommitResult.Failed("Tile command sequence cannot be negative.");
         return false;
@@ -102,15 +105,9 @@ public sealed class TileChangeCommitSystem
     for (int index = 0; index < orderedCommands.Count; index++)
     {
       TileChangeCommand command = orderedCommands[index];
-      WorldTile tile = command.Kind switch
-      {
-        TileChangeKind.Kill => default,
-        TileChangeKind.SetWall => world.GetTile(command.X, command.Y) with
-        {
-          WallType = command.WallType
-        },
-        _ => new WorldTile(IsActive: true, command.TileType)
-      };
+      WorldTile tile = TileMutationProjection.Apply(
+        world.GetTile(command.X, command.Y),
+        command);
       if (!world.TrySetTile(command.X, command.Y, tile))
       {
         result = TileChangeCommitResult.Failed("Tile command could not be applied.");

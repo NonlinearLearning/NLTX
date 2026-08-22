@@ -5,6 +5,7 @@ using Terraria.Dome.Simulation.Commands;
 using Terraria.Dome.Simulation.Player.Commands;
 using Terraria.Dome.Simulation.Items.Commands;
 using Terraria.Dome.Simulation.Npc.Commands;
+using Terraria.Dome.Simulation.Wiring.Commands;
 
 namespace Terraria.Dome.Simulation.Tick;
 
@@ -24,6 +25,8 @@ public sealed class SimulationCommandQueue
   private readonly List<MergeItemStackCommand> _mergeItemStackCommands = new();
   private readonly List<DropItemCommand> _dropItemCommands = new();
   private readonly List<UseItemCommand> _useItemCommands = new();
+  private readonly List<UseExtractinatorCommand> _useExtractinatorCommands = new();
+  private readonly List<TriggerExtractinatorCommand> _triggerExtractinatorCommands = new();
   private readonly List<UsePlayerInteractionCommand> _usePlayerInteractionCommands = new();
   private readonly List<LiquidChangeCommand> _liquidChangeCommands = new();
   private readonly List<LiquidTransferCommand> _liquidTransferCommands = new();
@@ -46,6 +49,10 @@ public sealed class SimulationCommandQueue
   public IReadOnlyList<MergeItemStackCommand> MergeItemStackCommands => _mergeItemStackCommands;
   public IReadOnlyList<DropItemCommand> DropItemCommands => _dropItemCommands;
   public IReadOnlyList<UseItemCommand> UseItemCommands => _useItemCommands;
+  public IReadOnlyList<UseExtractinatorCommand> UseExtractinatorCommands =>
+    _useExtractinatorCommands;
+  public IReadOnlyList<TriggerExtractinatorCommand> TriggerExtractinatorCommands =>
+    _triggerExtractinatorCommands;
   public IReadOnlyList<UsePlayerInteractionCommand> UsePlayerInteractionCommands =>
     _usePlayerInteractionCommands;
   public IReadOnlyList<LiquidChangeCommand> LiquidChangeCommands
@@ -94,6 +101,8 @@ public sealed class SimulationCommandQueue
     _mergeItemStackCommands.Clear();
     _dropItemCommands.Clear();
     _useItemCommands.Clear();
+    _useExtractinatorCommands.Clear();
+    _triggerExtractinatorCommands.Clear();
     _usePlayerInteractionCommands.Clear();
     _liquidChangeCommands.Clear();
     _liquidTransferCommands.Clear();
@@ -170,6 +179,18 @@ public sealed class SimulationCommandQueue
   public void Enqueue(UseItemCommand command)
   {
     _useItemCommands.Add(command);
+  }
+
+  public void Enqueue(UseExtractinatorCommand command)
+  {
+    ValidateSequence(command.Sequence);
+    _useExtractinatorCommands.Add(command);
+  }
+
+  public void Enqueue(TriggerExtractinatorCommand command)
+  {
+    ValidateSequence(command.Sequence);
+    _triggerExtractinatorCommands.Add(command);
   }
 
   public void Enqueue(UsePlayerInteractionCommand command)

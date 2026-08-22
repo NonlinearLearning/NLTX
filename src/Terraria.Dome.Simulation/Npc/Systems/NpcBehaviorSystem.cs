@@ -16,11 +16,18 @@ public sealed class NpcBehaviorSystem
     SimulationVector targetPosition,
     bool isDayTime)
   {
+    if (!float.IsFinite(npcPosition.X) || !float.IsFinite(npcPosition.Y) ||
+        !float.IsFinite(targetPosition.X) || !float.IsFinite(targetPosition.Y))
+    {
+      throw new ArgumentOutOfRangeException(nameof(npcPosition));
+    }
+
     return state.BehaviorId switch
     {
       NpcBehaviorId.OrdinaryChase => EvaluateChase(state.Chase, target, npcPosition, targetPosition),
       NpcBehaviorId.TownHome => EvaluateTownHome(state.TownHome, npcPosition, isDayTime),
       NpcBehaviorId.Segment => new NpcBehaviorResult(default, 0),
+      NpcBehaviorId.TrainingDummy => new NpcBehaviorResult(default, 0),
       _ => new NpcBehaviorResult(default, 0)
     };
   }

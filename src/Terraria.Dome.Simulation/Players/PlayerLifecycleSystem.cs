@@ -18,8 +18,24 @@ public sealed class PlayerLifecycleSystem
     ArgumentNullException.ThrowIfNull(enqueueRespawn);
     foreach (KeyValuePair<PlayerHandle, Entity> entry in players)
     {
+      if (!world.IsAlive(entry.Value))
+      {
+        continue;
+      }
+
       ref PlayerLifecycleComponent lifecycle = ref world.Get<PlayerLifecycleComponent>(entry.Value);
-      if (lifecycle.IsActive || lifecycle.RespawnTicks <= 0)
+      if (lifecycle.IsActive)
+      {
+        continue;
+      }
+
+      if (lifecycle.RespawnTicks < 0)
+      {
+        lifecycle.RespawnTicks = 0;
+        continue;
+      }
+
+      if (lifecycle.RespawnTicks == 0)
       {
         continue;
       }

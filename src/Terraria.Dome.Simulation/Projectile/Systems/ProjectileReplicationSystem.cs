@@ -16,6 +16,16 @@ public sealed class ProjectileReplicationSystem
     WorldSectionCoordinates section)
   {
     ArgumentNullException.ThrowIfNull(world);
+    if (replicationId <= 0 || revision < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(replicationId));
+    }
+
+    if (!world.IsAlive(entity))
+    {
+      throw new ArgumentException("Projectile entity is not alive in the supplied world.", nameof(entity));
+    }
+
     TransformComponent transform = world.Get<TransformComponent>(entity);
     VelocityComponent velocity = world.Get<VelocityComponent>(entity);
     ProjectileOwnerComponent owner = world.Get<ProjectileOwnerComponent>(entity);

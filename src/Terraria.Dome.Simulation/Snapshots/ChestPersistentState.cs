@@ -12,7 +12,8 @@ public sealed class ChestPersistentState
     int tileY,
     IReadOnlyList<ItemStack> slots,
     long revision,
-    string name = "")
+    string name = "",
+    bool isLocked = false)
   {
     if (chestId <= 0)
     {
@@ -42,6 +43,7 @@ public sealed class ChestPersistentState
     Slots = new SnapshotReadOnlyList<ItemStack>(slots);
     Revision = revision;
     Name = name;
+    IsLocked = isLocked;
   }
 
   public int ChestId { get; }
@@ -55,4 +57,6 @@ public sealed class ChestPersistentState
   public int TileX { get; }
 
   public int TileY { get; }
+
+  public bool IsLocked { get; }
 }

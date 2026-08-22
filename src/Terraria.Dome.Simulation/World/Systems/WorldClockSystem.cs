@@ -10,4 +10,16 @@ public sealed class WorldClockSystem
     ArgumentNullException.ThrowIfNull(clock);
     clock.Advance();
   }
+
+  public void Tick(WorldClock clock, WorldTimeRateSnapshot timeRate)
+  {
+    ArgumentNullException.ThrowIfNull(clock);
+    if (!timeRate.IsAvailable)
+    {
+      clock.Advance();
+      return;
+    }
+
+    clock.Advance(timeRate.Rate);
+  }
 }

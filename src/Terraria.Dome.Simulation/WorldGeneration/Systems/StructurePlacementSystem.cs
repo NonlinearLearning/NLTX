@@ -56,6 +56,7 @@ public sealed class StructurePlacementSystem
     WorldGridSnapshot snapshot,
     StructureDefinition definition,
     StructurePlacementComponent placement,
+    TileProtectionComponent protection,
     ref WorldGenerationStateComponent state,
     List<TileChangeCommand> commands)
   {
@@ -65,6 +66,20 @@ public sealed class StructurePlacementSystem
         placement.Footprint != new StructureFootprintComponent(definition.Width, definition.Height))
     {
       return false;
+    }
+
+    for (int localY = 0; localY < definition.Height; localY++)
+    {
+      for (int localX = 0; localX < definition.Width; localX++)
+      {
+        int x = placement.OriginX + localX;
+        int y = placement.OriginY + localY;
+        if (!snapshot.Metadata.IsInside(x, y) || protection.IsProtected(x, y) ||
+            (!definition.AllowReplaceExisting && snapshot.GetTile(x, y).IsActive))
+        {
+          return false;
+        }
+      }
     }
 
     if (state.Stage < WorldGenerationStage.Structure &&

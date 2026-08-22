@@ -1,0 +1,192 @@
+{
+  "schemaVersion": 1,
+  "canRemoveLegacyWorldGen": false,
+  "source": {
+    "path": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\WorldGen.cs",
+    "sha256": "A06A8463E39EA065441FF1EF702A787D3450ADAE5CD3065CF30BF76784D3EA1D",
+    "bytes": 1901533,
+    "lines": 73355
+  },
+  "inventory": {
+    "methodCount": 684,
+    "fieldCount": 233,
+    "partialMethodCount": 227,
+    "unmappedMethodCount": 457,
+    "unmappedFieldCount": 233
+  },
+  "replay": {
+    "seed": 1456,
+    "width": 400,
+    "height": 300,
+    "spawnX": 200,
+    "surfaceY": 80,
+    "snapshotFingerprint": "92BE1D99899B91474367F586A6D369B0ECDB8DBAFF8613B59B1F518990123A32",
+    "sectionVersions": {
+      "0,0": 14125,
+      "1,0": 14119,
+      "0,1": 30000,
+      "1,1": 30000
+    }
+  },
+  "blockingReasons": [
+    "A complete source-built baseline oracle replay compared 5040000 tiles and found 5040000 mismatches; it has 2640402 active tiles while the ECS fixture has 3671879 active tiles.",
+    "The baseline differential selects spawn X 2099, world surface Y 325, and rock layer Y 397 from WLD metadata. Secret-seed and world-generation option inputs are captured only as explicitly unsupported rules, not legacy-compatible behavior.",
+    "The captured default seed-1456 DirtWallBackgrounds oracle reduces extended-state mismatches to 1046843 and WallType mismatches to 995054, but all 5040000 tiles still differ and full semantic parity is not established.",
+    "Inventory contains 457 unmapped methods and 227 bounded partial mappings including the existing pure tile, framing, plant, tree, liquid, object, and item slices; the latest partial mappings add Housing_CheckIfInRoom alongside RoomNeeds, ScoreRoom_CanBeHomeSpot, Housing_GetTestedRoomBounds, CountTileTypesInArea, GetTileTypeCountByCategory, IsConsideredTheSpawnArea, Cull, RangeFrame, SquareWallFrame, SquareTileFrame, CheckVines, InvalidTileForPilesOrSpeleothems, GetHollowTreeFoliageStyle, SetForestBGSet, coatingColors, coatingColor, paintColor, IsTreeType, and GetTileMergeCulling. The room occupancy mapping preserves explicit coordinate membership while mutable roomTiles ownership, scanning, and scheduling remain deferred. Other deterministic predicates still exclude scans, cryptographic transforms, random overrides, notifications, destruction, and host side effects. The inventory still contains 233 unmapped fields.",
+    "Secret-seed, legacy structure and full liquid behavior parity is not established.",
+    "The complete solution verification suite was attempted (33 projects); 25 passed and 8 failed on non-WorldGen combat, load, persistence, player, and world-rules paths. A serial rerun reduced this to 6 stable failures.",
+    "The legacy WorldGen entry must remain available until all target-mode entries are mapped and replay fingerprints agree."
+  ],
+  "verification": {
+    "worldGeneration": "full-bounded-verifier-passed-differential-failed",
+    "simulationBuild": {
+      "status": "passed-with-warnings",
+      "command": "dotnet build src/Terraria.Dome.Simulation/Terraria.Dome.Simulation.csproj -p:UseSharedCompilation=false",
+      "warnings": [
+        "DomeSimulation.cs(2742): CaptureInventorySlots may receive null.",
+        "DomeSimulation.cs(2763): CaptureInventorySlots may receive null.",
+        "DomeSimulation.cs(2784): CaptureInventorySlots may receive null.",
+        "DomeSimulation.cs(2835): possible null dereference."
+      ],
+      "verifiedOn": "2026-08-19"
+    },
+    "worldTileProjection": {
+      "status": "passed-full-dependency-graph",
+      "scope": [
+        "full WorldTile state copied from compatibility import",
+        "V1456 section encoding preserves extended tile state",
+        "world persistence format v2 round-trips extended tile state",
+        "world persistence format v1 reads with default extended state"
+      ],
+      "projects": [
+        "Terraria.Dome.WorldMechanics.Verification",
+        "Terraria.Dome.WorldObjects.Verification",
+        "Terraria.Dome.World.Protocol.Verification",
+        "Terraria.Dome.World.Loopback.Verification",
+        "Terraria.Dome.WorldImport.Verification",
+        "Terraria.Dome.Persistence.Verification"
+      ],
+      "verifiedOn": "2026-08-19"
+    },
+    "legacyOracleReplay": {
+      "status": "passed",
+      "semanticValidity": "valid-complete-baseline",
+      "sourceExecutable": "D:\\TRbackup\\无任何删减通过编译\\bin\\Debug\\net40\\TerrariaServer.exe",
+      "sourceExecutableSha256": "5DF17C809726AF6EF72EDB893495BAA21DFA5650E29A4C2CC9B39DECD8069F42",
+      "normalizedFingerprint": "70306C2429385CEEB073A4963EBC3326BAC13C84BD06CFCEBE36FDD58F2A9917",
+      "runs": 2,
+      "verifiedOn": "2026-08-19"
+    },
+    "legacyImportProjection": {
+      "status": "passed",
+      "legacyPath": "D:\\TRbackup\\NLTX\\Build\\worldgen-oracle\\full-baseline-1456-repeat.wld",
+      "legacySha256": "BCA5B9BDC36052C2B98CDC0F3A6D1E44807DB99A6EE153185280D6B416F58178",
+      "comparedTiles": 5040000,
+      "mismatchTiles": 0,
+      "opaqueNonTileRecords": 1,
+      "evidence": "docs/worldgen/legacy-worldgen-import-parity.json",
+      "verifiedOn": "2026-08-19"
+    },
+    "proposalRegressionSubset": {
+      "status": "passed",
+      "projects": [
+        "Terraria.Dome.WorldMechanics.Verification",
+        "Terraria.Dome.WorldObjects.Verification",
+        "Terraria.Dome.World.Protocol.Verification",
+        "Terraria.Dome.World.Loopback.Verification"
+      ],
+      "verifiedOn": "2026-08-19"
+    },
+    "legacyDifferentialReplay": {
+      "status": "mismatch",
+      "comparedTiles": 5040000,
+      "mismatchTiles": 5040000,
+      "extendedStateMismatchTiles": 1046843,
+      "extendedStateMismatchFieldCounts": {
+        "Actuated": 1352,
+        "FullbrightBlock": 0,
+        "FullbrightWall": 0,
+        "HalfBrick": 12621,
+        "Inactive": 234,
+        "InvisibleBlock": 0,
+        "InvisibleWall": 0,
+        "Slope": 58753,
+        "TileColor": 0,
+        "WallColor": 348,
+        "WallType": 995054,
+        "Wire": 5957,
+        "Wire2": 172,
+        "Wire3": 192,
+        "Wire4": 0
+      },
+      "activeLegacyTiles": 2640402,
+      "activeGeneratedTiles": 3671879,
+      "legacyFingerprint": "70306C2429385CEEB073A4963EBC3326BAC13C84BD06CFCEBE36FDD58F2A9917",
+      "generatedFingerprint": "F1942804AFBEB0EDFC98B54376FD3B5DB8804B6B3DE852B84A1823680F86C200",
+      "legacyMetadataSpawn": [2099, 248],
+      "ecsInputSpawn": [2099, 325],
+      "legacyRockLayerY": 397,
+      "ecsInputRockLayerY": 397,
+      "dirtWallOffsetArtifact": "Build/worldgen-oracle/instrumented-same-name-full-baseline-1456.dirt-wall-offsets.csv",
+      "dirtWallOffsetArtifactSha256": "A4AB031A512188153A9EED1CE5CE2047F05BC474D22D351F973ADE9A06ACAD5E",
+      "dirtWallOffsetCount": 4198,
+      "spawnSource": "legacy-metadata",
+      "surfaceYSource": "legacy-world-surface",
+      "rockLayerSource": "legacy-rock-layer",
+      "evidence": "docs/worldgen/legacy-worldgen-differential.json",
+      "verifiedOn": "2026-08-19"
+    },
+    "legacyDifferentialLocalization": {
+      "status": "passed",
+      "semanticValidity": "diagnostic-consistency-only",
+      "fieldCount": 21,
+      "regionCount": 3,
+      "sectionCount": 168,
+      "regions": [
+        "AboveWorldSurface: y=0..324, 1365000 compared, 1365000 mismatched",
+        "SurfaceToRockLayer: y=325..396, 302400 compared, 302400 mismatched",
+        "BelowRockLayer: y=397..1199, 3372600 compared, 3372600 mismatched"
+      ],
+      "reconciliation": "Each field's global count equals the sum of all section and spatial-region counts.",
+      "evidence": "docs/worldgen/legacy-worldgen-differential.json",
+      "verifiedOn": "2026-08-19"
+    },
+    "cursorRestartReplay": {
+      "status": "passed",
+      "checkpointStage": "Terrain",
+      "resumedStage": "Cave",
+      "snapshotFingerprint": "8A56DC520D3B3B4DB164285DD874D8DA0ACDAB7C9515C23F90DC86E60F11EF54",
+      "nextSequence": 88112,
+      "verifiedOn": "2026-08-19"
+    },
+    "fullRegressionSuite": {
+      "status": "failed",
+      "projects": 33,
+      "passed": 25,
+      "failed": 8,
+      "initialFailedProjects": [
+        "Terraria.Dome.Combat.Loopback.Verification",
+        "Terraria.Dome.Hardening.Loopback.Verification",
+        "Terraria.Dome.Load.Verification",
+        "Terraria.Dome.Persistence.Loopback.Verification",
+        "Terraria.Dome.PlayerAuthority.Verification",
+        "Terraria.Dome.PlayerLifecycle.Loopback.Verification",
+        "Terraria.Dome.Verification",
+        "Terraria.Dome.WorldRules.Loopback.Verification"
+      ],
+      "rerunProjects": 8,
+      "rerunPassed": 2,
+      "rerunFailed": 6,
+      "rerunFailedProjects": [
+        "Terraria.Dome.Combat.Loopback.Verification",
+        "Terraria.Dome.Load.Verification",
+        "Terraria.Dome.Persistence.Loopback.Verification",
+        "Terraria.Dome.PlayerAuthority.Verification",
+        "Terraria.Dome.Verification",
+        "Terraria.Dome.WorldRules.Loopback.Verification"
+      ],
+      "evidence": "Build/full-regression-20260819-rerun.log",
+      "verifiedOn": "2026-08-19"
+    }
+  }
+}

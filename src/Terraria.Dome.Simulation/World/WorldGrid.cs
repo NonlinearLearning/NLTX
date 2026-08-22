@@ -13,6 +13,7 @@ public sealed class WorldGrid
   private readonly long[,] _sectionVersions;
   private readonly WorldTile[,] _tiles;
   private readonly List<TileChangeCommand> _tileChanges = new();
+  private readonly List<TileFrameCommand> _tileFrameChanges = new();
 
   public WorldGrid(int width, int height)
   {
@@ -141,6 +142,16 @@ public sealed class WorldGrid
     _tileChanges.Add(command);
   }
 
+  public void EnqueueTileFrameChange(TileFrameCommand command)
+  {
+    if (command.Sequence < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(command));
+    }
+
+    _tileFrameChanges.Add(command);
+  }
+
   public void CommitTileChanges()
   {
     TileChangeCommitSystem commitSystem = new();
@@ -151,6 +162,13 @@ public sealed class WorldGrid
     }
 
     _tileChanges.Clear();
+    if (!commitSystem.TryCommit(this, _tileFrameChanges, out TileFrameCommitResult frameResult))
+    {
+      _tileFrameChanges.Clear();
+      throw new InvalidOperationException(frameResult.FailureReason);
+    }
+
+    _tileFrameChanges.Clear();
   }
 
   public WorldGridSnapshot CreateSnapshot(WorldMetadata metadata)

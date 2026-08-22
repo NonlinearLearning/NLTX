@@ -1,0 +1,124 @@
+{
+  "schemaVersion": 1,
+  "auditNotes": {
+    "verifiedOn": "2026-08-22",
+    "physicalDeletionLedger": "docs/migrations/version4-physical-deletion-ledger.csv",
+    "physicalDeletionGate": "failed-server-relevant-evidence",
+    "worldGenDeletionGate": "canRemoveLegacyWorldGen=false",
+    "boundedWorldGenerationVerifier": "passed",
+    "weightedCoreCapabilityScore": 92,
+    "fullLegacyWorldGenerationParity": "failed"
+  },
+  "families": [
+    {
+      "id": "A",
+      "name": "Tick, session identity, command ordering, disconnect lifecycle",
+      "weight": 8,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\MessageBuffer.cs session message handling; RemoteClient.cs section/session lifecycle",
+      "authority": "DomeServer monotonic protocol sequence, bounded command queue, SimulationLoopAsync and session teardown",
+      "projection": "V1456 session-owned PlayerSpawn/PlayerControls/TileManipulation routes with per-session replication state and disconnect cleanup",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.TileInteraction.Verification\\Terraria.Dome.TileInteraction.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Load.Verification\\Terraria.Dome.Load.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.SessionReplication.Verification\\Terraria.Dome.SessionReplication.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "B",
+      "name": "World tiles, section snapshots, section PVS, authoritative mutation",
+      "weight": 12,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\MessageBuffer.cs:case 17",
+      "authority": "WorldGrid, TileInteractionValidator, SessionReplicationState and SectionVisibilitySelector",
+      "projection": "TileManipulationIntent and V1456 TileSection frames",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.TileInteraction.Verification\\Terraria.Dome.TileInteraction.Verification.csproj -c Release -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.SessionReplication.Verification\\Terraria.Dome.SessionReplication.Verification.csproj -c Release -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "C",
+      "name": "Tile collision, player movement, spawn, death and respawn",
+      "weight": 10,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\Player.cs movement/lifecycle paths; MessageBuffer.cs:cases 13,14,16",
+      "authority": "DomeSimulation TileCollisionSystem, PlayerLifecycleComponent, DamagePlayerCommand, NPC contact damage and automatic server respawn",
+      "projection": "V1456 PlayerActive and PlayerLifeMana frames with authoritative PlayerControls position projection through SessionReplicationState PVS",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.PlayerAuthority.Verification\\Terraria.Dome.PlayerAuthority.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.PlayerLifecycle.Loopback.Verification\\Terraria.Dome.PlayerLifecycle.Loopback.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "D",
+      "name": "Player inventory, health/mana, item use, pickups and drops",
+      "weight": 12,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\MessageBuffer.cs:case 5 and case 21; NetMessage.cs:cases 5 and 21",
+      "authority": "DomeSimulation InventoryComponent, ItemDefinitionRegistry, UseItemCommand, deterministic proximity pickup and ItemInteractionValidator",
+      "projection": "V1456 PlayerControls UseItem/SelectedItem assertion plus server-only SyncItem frames through ItemReplicationAssembler and SessionReplicationState PVS cursor",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.Items.Verification\\Terraria.Dome.Items.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Items.Loopback.Verification\\Terraria.Dome.Items.Loopback.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "E",
+      "name": "NPC lifecycle, AI, combat, drops and PVS replication",
+      "weight": 12,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\NetMessage.cs:case 23 and section PVS send path",
+      "authority": "DomeSimulation NpcReplicationSnapshot, DamageNpcCommand, LootTable and world-owned DomeChaserNpc lifecycle",
+      "projection": "V1456 SyncNPC through CombatReplicationAssembler and SessionReplicationState PVS revision cursor",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.Combat.Verification\\Terraria.Dome.Combat.Verification.csproj -c Release -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Combat.Protocol.Verification\\Terraria.Dome.Combat.Protocol.Verification.csproj -c Release -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Combat.Loopback.Verification\\Terraria.Dome.Combat.Loopback.Verification.csproj -c Release -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "F",
+      "name": "Projectile lifecycle, collision, damage, ownership and PVS replication",
+      "weight": 8,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\NetMessage.cs:cases 27 and 29 plus section PVS send path",
+      "authority": "DomeSimulation ProjectileReplicationSnapshot, PlayerHandle ownership, fire cooldown, swept collision and inactive tombstones",
+      "projection": "V1456 SyncProjectile and KillProjectile through CombatReplicationAssembler and SessionReplicationState PVS revision cursor",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.Combat.Verification\\Terraria.Dome.Combat.Verification.csproj -c Release -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Combat.Protocol.Verification\\Terraria.Dome.Combat.Protocol.Verification.csproj -c Release -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Combat.Loopback.Verification\\Terraria.Dome.Combat.Loopback.Verification.csproj -c Release -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "G",
+      "name": "Containers, signs, tile entities and interaction ownership",
+      "weight": 8,
+      "status": "partial",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\Chest.cs; MessageBuffer.cs:31; NetMessage.cs:32 and sign handling",
+      "authority": "DomeSimulation chest opener/revision and sign state; DomeServer range, PVS, exclusive ownership and disconnect cleanup",
+      "projection": "V1456 RequestChestOpen, SyncChestItem, SyncPlayerChest, OpenSignRequest and OpenSignResponse",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.WorldObjects.Verification\\Terraria.Dome.WorldObjects.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.WorldObjects.Loopback.Verification\\Terraria.Dome.WorldObjects.Loopback.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "H",
+      "name": "World persistence, metadata, deterministic base generation and recovery",
+      "weight": 10,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\IO\\WorldFile.cs and world metadata call sites",
+      "authority": "DomeSimulationSnapshot, WorldGridSnapshot, DomeStatePersistenceFormat and atomic DomeStateSaveCoordinator",
+      "projection": "Value-only restored world/NPC/world-item snapshots adopted by DomeServer; session players are recreated after reload",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.Persistence.Verification\\Terraria.Dome.Persistence.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Persistence.Loopback.Verification\\Terraria.Dome.Persistence.Loopback.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "I",
+      "name": "Liquids, wires, doors, actuators and tile-object updates",
+      "weight": 8,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\WorldGen.cs tile action paths and MessageBuffer.cs:19 ToggleDoorState",
+      "authority": "DomeSimulation DoorSnapshot plus Wiring/Liquid components, bounded tick systems, typed TileChange/LiquidTransfer/LiquidChange commits and deterministic replication",
+      "projection": "V1456 ToggleDoorState and NetLiquidModule server projections; unsupported wiring message families remain explicitly isolated",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.WorldMechanics.Verification\\Terraria.Dome.WorldMechanics.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.WorldMechanics.Loopback.Verification\\Terraria.Dome.WorldMechanics.Loopback.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Liquid.Verification\\Terraria.Dome.Liquid.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Wiring.Verification\\Terraria.Dome.Wiring.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.WiringLiquidChest.Loopback.Verification\\Terraria.Dome.WiringLiquidChest.Loopback.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "J",
+      "name": "Core events, time, progression, spawn selection and world rules",
+      "weight": 6,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\Main.cs world time state and NetMessage.cs SetTime projection",
+      "authority": "DomeSimulation WorldRuleSnapshot advances deterministic day/night time only at simulation tick boundaries; SessionReplicationState owns bounded per-session rule cursors",
+      "projection": "V1456 SetTime is server-to-client only and encodes the immutable WorldRuleSnapshot",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.WorldRules.Verification\\Terraria.Dome.WorldRules.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.WorldRules.Loopback.Verification\\Terraria.Dome.WorldRules.Loopback.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false"
+    },
+    {
+      "id": "K",
+      "name": "V1456 authority coverage and compatibility hardening",
+      "weight": 6,
+      "status": "evidenced",
+      "reference": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\MessageBuffer.cs packet validation and RemoteClient.cs per-connection isolation",
+      "authority": "TerrariaPacketDispatcher accepts only backed typed routes; DomeServer owns bounded protocol queues and SessionReplicationState owns bounded asynchronous per-session replication",
+      "projection": "V1456 typed intents and server-owned SetUserSlot, state snapshots and explicit unsupported-frame rejection",
+      "verifierCommand": "dotnet run --project Test\\Terraria.Dome.Hardening.Loopback.Verification\\Terraria.Dome.Hardening.Loopback.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false; dotnet run --project Test\\Terraria.Dome.Verification\\Terraria.Dome.Verification.csproj -c Release --no-build -p:UseSharedCompilation=false"
+    }
+  ]
+}

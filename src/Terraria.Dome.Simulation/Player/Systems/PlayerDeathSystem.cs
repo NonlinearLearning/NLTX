@@ -6,12 +6,15 @@ namespace Terraria.Dome.Simulation.Player.Systems;
 
 public sealed class PlayerDeathSystem
 {
+  private const int MaxRespawnDelayTicks = 3600;
+
   public bool TryBeginDeath(
     ref PlayerLifecycleComponent lifecycle,
     HealthComponent health,
     int respawnDelayTicks)
   {
     ArgumentOutOfRangeException.ThrowIfNegativeOrZero(respawnDelayTicks);
+    ArgumentOutOfRangeException.ThrowIfGreaterThan(respawnDelayTicks, MaxRespawnDelayTicks);
     if (!lifecycle.IsActive || health.Current > 0)
     {
       return false;

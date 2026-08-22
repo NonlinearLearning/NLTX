@@ -14,6 +14,11 @@ public sealed class NpcMovementIntentSystem
   public void Apply(ArchWorld world, Entity npc, bool isDayTime)
   {
     ArgumentNullException.ThrowIfNull(world);
+    if (!world.IsAlive(npc))
+    {
+      return;
+    }
+
     NpcComponents.NpcBehaviorStateComponent behavior =
       world.Get<NpcComponents.NpcBehaviorStateComponent>(npc);
     NpcComponents.NpcTargetComponent target =

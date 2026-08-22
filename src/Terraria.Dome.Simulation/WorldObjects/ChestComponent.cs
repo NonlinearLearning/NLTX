@@ -69,6 +69,21 @@ public sealed class ChestComponent
     return Access.TryOpen(player);
   }
 
+  public bool IsLocked { get; private set; }
+  public ChestLockDefinition LockDefinition { get; private set; }
+
+  public void SetLocked(bool isLocked, ChestLockDefinition? lockDefinition = null)
+  {
+    if (isLocked)
+    {
+      ChestLockDefinition resolvedDefinition = lockDefinition ?? ChestLockDefinition.GoldKey;
+      resolvedDefinition.Validate();
+      LockDefinition = resolvedDefinition;
+    }
+
+    IsLocked = isLocked;
+  }
+
   public bool TryRename(string name)
   {
     ArgumentNullException.ThrowIfNull(name);

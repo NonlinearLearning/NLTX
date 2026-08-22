@@ -1,10 +1,51 @@
 using System;
+using Terraria.Dome.Simulation.Combat.Components;
 using Terraria.Dome.Simulation.Inventory.Components;
+using Terraria.Dome.Simulation.Items;
+using Terraria.Dome.Simulation.Items.Components;
+using Terraria.Dome.Simulation.Items.Definitions;
 
 namespace Terraria.Dome.Simulation.Inventory.Systems;
 
 public sealed class EquipmentStatSystem
 {
+  public void Apply(
+    ref DefenseComponent defense,
+    ref HealthRegenerationComponent healthRegeneration,
+    EquipmentStateCollectionComponent equipmentStates,
+    InventoryComponent inventory,
+    ItemDefinitionRegistry itemDefinitions)
+  {
+    ArgumentNullException.ThrowIfNull(equipmentStates);
+    ArgumentNullException.ThrowIfNull(inventory);
+    ArgumentNullException.ThrowIfNull(itemDefinitions);
+
+    int totalDefense = 0;
+    int totalLifeRegen = 0;
+    foreach (ItemEquipmentStateComponent state in equipmentStates.States.Values)
+    {
+      if (state.IsVanity || state.SourceSlot < 0 ||
+          state.SourceSlot >= InventoryComponent.SlotCount)
+      {
+        continue;
+      }
+
+      ItemStack stack = inventory.GetSlot(state.SourceSlot);
+      if (stack.IsEmpty || !itemDefinitions.TryGet(stack.ItemType, out ItemDefinition definition) ||
+          definition.Equipment is not ItemEquipmentDefinition equipment ||
+          equipment.Slot != state.Slot)
+      {
+        continue;
+      }
+
+      totalDefense = checked(totalDefense + equipment.Defense);
+      totalLifeRegen = checked(totalLifeRegen + equipment.LifeRegen);
+    }
+
+    defense.Value = totalDefense;
+    healthRegeneration.SetEquipmentRegenUnitsPerTick(totalLifeRegen);
+  }
+
   public void Apply(
     ref EquipmentLoadoutComponent loadout,
     byte selectedLoadout,

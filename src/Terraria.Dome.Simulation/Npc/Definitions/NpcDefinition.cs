@@ -6,7 +6,8 @@ public enum NpcBehaviorId
 {
   OrdinaryChase = 1,
   TownHome = 2,
-  Segment = 3
+  Segment = 3,
+  TrainingDummy = 4
 }
 
 public enum NpcFaction
@@ -35,7 +36,10 @@ public readonly record struct NpcDefinition
     NpcBehaviorId BehaviorId,
     int LootTableId,
     NpcFaction Faction = NpcFaction.Hostile,
-    NpcCategory Category = NpcCategory.Enemy)
+    NpcCategory Category = NpcCategory.Enemy,
+    int AiStyle = 0,
+    bool IsImmortal = false,
+    bool AlwaysReplicate = false)
   {
     if (DefinitionId <= 0)
     {
@@ -67,6 +71,9 @@ public readonly record struct NpcDefinition
     this.LootTableId = LootTableId;
     this.Faction = Faction;
     this.Category = Category;
+    this.AiStyle = AiStyle;
+    this.IsImmortal = IsImmortal;
+    this.AlwaysReplicate = AlwaysReplicate;
   }
 
   public int DefinitionId { get; }
@@ -79,4 +86,7 @@ public readonly record struct NpcDefinition
   public int LootTableId { get; }
   public NpcFaction Faction { get; }
   public NpcCategory Category { get; }
+  public int AiStyle { get; }
+  public bool IsImmortal { get; }
+  public bool AlwaysReplicate { get; }
 }

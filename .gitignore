@@ -8,3 +8,9 @@
 *.user
 *.suo
 .vs/
+
+# Local diagnostics and migration scratch files. Keep these out of Git and
+# out of tools that derive workspace context from Git's untracked-file set.
+/client-crashlog.txt
+/TRbackupNLTXsrcTerraria.Dome.SimulationItemsInventoryComponent.cs
+/Build/diagnostics/

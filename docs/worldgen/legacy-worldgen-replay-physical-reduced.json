@@ -1,0 +1,57 @@
+{
+  "schemaVersion": 1,
+  "sourceExecutable": "D:\\TRbackup\\Version4物理删除了某些文件\\bin\\Debug\\net40\\TerrariaServer.exe",
+  "seed": "1456",
+  "worldSize": {
+    "width": 4200,
+    "height": 1200
+  },
+  "metadata": {
+    "version": 319,
+    "formatVersion": "PointerTableV88ToV319",
+    "name": "WorldGenOracle",
+    "worldId": 1534092035,
+    "spawnX": 0,
+    "spawnY": 0,
+    "tileCount": 5040000,
+    "liquidTileCount": 0
+  },
+  "sourceBuildEvidence": {
+    "oracleExecutableLastWrite": "2026-08-15T17:16:01",
+    "successfulBuildLog": "D:\\TRbackup\\Version4物理删除了某些文件\\build-final.log",
+    "successfulBuildTargetInLog": "D:\\TRbackup\\Version3删除多余同时人工审查代码-unreferenced-type-files-deleted-20260812-224142\\TerrariaServer.csproj",
+    "currentVersion4SourceBuild": "failed-missing-dependencies",
+    "generationStubEvidence": [
+      "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria.GameContent.Biomes\\TerrainPass.cs:40 has an empty ApplyPass body",
+      "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria.WorldBuilding\\WorldGenerator.cs:341 returns an empty GenPassResult from RunPass without invoking GenPass.ApplyPass"
+    ]
+  },
+  "runs": [
+    {
+      "path": "Build/worldgen-oracle/legacy-1456.wld",
+      "bytes": 15193,
+      "fileSha256": "EE8AAB0923002C59F9193C894F47D36E74E5F65F259CC90592608625136F0CA6",
+      "normalizedFingerprint": "1ABD17BC699AC35144A7F83EC5FFC74D08C47C956EED65193460FDB834E5B2AE"
+    },
+    {
+      "path": "Build/worldgen-oracle/legacy-1456-repeat.wld",
+      "bytes": 15193,
+      "fileSha256": "891EB69117517D4212406876105EF460D52D258FA5BE6454A342E84FA0A91C41",
+      "normalizedFingerprint": "1ABD17BC699AC35144A7F83EC5FFC74D08C47C956EED65193460FDB834E5B2AE"
+    }
+  ],
+  "normalizedReplay": "passed",
+  "semanticValidity": "invalid-empty-generation-artifact",
+  "semanticDifferentialReplay": {
+    "status": "mismatch",
+    "comparedTiles": 5040000,
+    "mismatchTiles": 5040000,
+    "unsupportedLegacyTiles": 0,
+    "activeLegacyTiles": 0,
+    "activeGeneratedTiles": 3776885,
+    "legacyMetadataSpawn": [0, 0],
+    "ecsInputSpawn": [2100, 300],
+    "evidence": "docs/worldgen/legacy-worldgen-differential.json",
+    "verifiedOn": "2026-08-19"
+  }
+}

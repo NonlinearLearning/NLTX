@@ -8,6 +8,7 @@ using Terraria.Dome.Simulation.Items;
 using Terraria.Dome.Simulation.Items.Components;
 using Terraria.Dome.Simulation.Players;
 using Terraria.Dome.Simulation.WorldModel;
+using Terraria.Dome.Simulation.WorldModel.Systems;
 using Terraria.Dome.Simulation.WorldObjects;
 
 namespace Terraria.Dome.Server.Persistence;
@@ -15,7 +16,7 @@ namespace Terraria.Dome.Server.Persistence;
 public static class DomeStatePersistenceFormat
 {
   private const int Magic = 0x44535444;
-  private const int CurrentFormatVersion = 10;
+  private const int CurrentFormatVersion = 31;
   private const int FirstFormatVersion = 1;
   private const int ObjectStateFormatVersion = 3;
   private const int WorldStateFormatVersion = 4;
@@ -24,6 +25,29 @@ public static class DomeStatePersistenceFormat
   private const int WorldEventStateFormatVersion = 7;
   private const int RainStateFormatVersion = 9;
   private const int SlimeRainStateFormatVersion = 10;
+  private const int WindStateFormatVersion = 11;
+  private const int LanternNightStateFormatVersion = 12;
+  private const int MeteorScheduleStateFormatVersion = 13;
+  private const int ItemNewAndShinyStateFormatVersion = 14;
+  private const int SlimeRainCooldownStateFormatVersion = 15;
+  private const int LanternNightScheduleStateFormatVersion = 16;
+  private const int LanternNightCooldownStateFormatVersion = 17;
+  private const int WorldSurfaceStateFormatVersion = 18;
+  private const int MoonPhaseStateFormatVersion = 19;
+  private const int GameModeStateFormatVersion = 20;
+  private const int RawWeatherStateFormatVersion = 21;
+  private const int WorldEventRandomStateFormatVersion = 22;
+  private const int InvasionSizeStartStateFormatVersion = 23;
+  private const int InvasionDelayStateFormatVersion = 24;
+  private const int InvasionXStateFormatVersion = 25;
+  private const int InvasionClearFlagsStateFormatVersion = 26;
+  private const int WorldTimeRateStateFormatVersion = 27;
+  private const int FractionalWorldClockStateFormatVersion = 28;
+  private const int WorldGeneratorVersionStateFormatVersion = 29;
+  private const int WorldUniqueIdStateFormatVersion = 30;
+  private const int WorldSeedTextStateFormatVersion = 31;
+  private const byte WorldUniqueIdTailBit = 1;
+  private const byte WorldSeedTextTailBit = 2;
   private const int MaximumNpcCount = 4096;
   private const int MaximumPlayerAccountCount = 1024;
   private const int MaximumPlayerNameLength = 20;
@@ -86,16 +110,122 @@ public static class DomeStatePersistenceFormat
     WorldClockSnapshot clock = new(tickNumber, 0, true, false, 1);
     WorldRuleState worldRules = new();
     WorldProgressionState progression = new();
-    if (formatVersion >= WorldStateFormatVersion)
-    {
-      clock = ReadWorldClock(reader, tickNumber);
-      WorldMetadata metadata = ReadWorldMetadata(reader, world.Metadata);
-      world = WorldGrid.FromSnapshot(world).CreateSnapshot(metadata);
-      worldRules = ReadWorldRules(reader, formatVersion);
-      progression = ReadWorldProgression(reader, formatVersion);
-    }
+    WorldEventRandomState worldEventRandomState = new(unchecked((uint)world.Metadata.Seed.Value));
+    WorldTimeRateSnapshot worldTimeRate = WorldTimeRateSnapshot.Unavailable;
+    ulong? worldGeneratorVersion = null;
+    Guid? uniqueId = null;
+    string? seedText = null;
+      if (formatVersion >= WorldStateFormatVersion)
+      {
+        clock = ReadWorldClock(reader, tickNumber);
+        WorldMetadata metadata = ReadWorldMetadata(reader, world.Metadata, formatVersion);
+        worldRules = ReadWorldRules(reader, formatVersion);
+        progression = ReadWorldProgression(reader, formatVersion);
+        double? worldSurface = ReadWorldSurface(reader, formatVersion);
+        clock = clock with { MoonPhase = ReadMoonPhase(reader, formatVersion) };
+        worldRules = worldRules.WithGameMode(ReadGameMode(reader, formatVersion));
+        worldRules = ReadRawWeather(reader, formatVersion, worldRules);
+        worldEventRandomState = ReadWorldEventRandomState(
+          reader,
+          formatVersion,
+          world.Metadata.Seed);
+        if (formatVersion >= InvasionSizeStartStateFormatVersion)
+        {
+          progression = progression.WithInvasionSizeStart(reader.ReadInt32());
+        }
+        if (formatVersion >= InvasionDelayStateFormatVersion)
+        {
+          progression = progression.WithInvasionDelayTicks(reader.ReadInt32());
+        }
+        if (formatVersion >= InvasionXStateFormatVersion)
+        {
+          progression = progression.WithInvasionX(reader.ReadDouble());
+        }
+        if (formatVersion >= InvasionClearFlagsStateFormatVersion)
+        {
+          if (reader.ReadBoolean())
+          {
+            progression = progression.WithInvasionClearFlag(WorldInvasionClearFlag.Goblins);
+          }
+          if (reader.ReadBoolean())
+          {
+            progression = progression.WithInvasionClearFlag(WorldInvasionClearFlag.Frost);
+          }
+          if (reader.ReadBoolean())
+          {
+            progression = progression.WithInvasionClearFlag(WorldInvasionClearFlag.Pirates);
+          }
+          if (reader.ReadBoolean())
+          {
+            progression = progression.WithInvasionClearFlag(WorldInvasionClearFlag.Martians);
+          }
+        }
+        if (formatVersion >= WorldTimeRateStateFormatVersion)
+        {
+          worldTimeRate = ReadWorldTimeRate(reader);
+        }
+        if (formatVersion >= FractionalWorldClockStateFormatVersion)
+        {
+          clock = clock with { TimeOfDay = ReadFractionalWorldTime(reader) };
+        }
+        if (formatVersion >= WorldSeedTextStateFormatVersion)
+        {
+          bool hasGeneratorVersion = reader.ReadBoolean();
+          if (hasGeneratorVersion)
+          {
+            worldGeneratorVersion = reader.ReadUInt64();
+          }
 
-    if (reader.BaseStream.ReadByte() != -1)
+          byte identityFlags = hasGeneratorVersion || reader.PeekChar() != -1
+            ? reader.ReadByte()
+            : (byte)0;
+          if ((identityFlags & ~(WorldUniqueIdTailBit | WorldSeedTextTailBit)) != 0)
+          {
+            throw new InvalidDataException("The persisted world identity flags are invalid.");
+          }
+
+          if ((identityFlags & WorldUniqueIdTailBit) != 0)
+          {
+            uniqueId = new Guid(reader.ReadBytes(16));
+          }
+
+          if ((identityFlags & WorldSeedTextTailBit) != 0)
+          {
+            seedText = ReadBoundedString(reader, MaximumCompatibilityTextLength, "world seed text");
+          }
+        }
+        else if (formatVersion >= WorldUniqueIdStateFormatVersion)
+        {
+          worldGeneratorVersion = reader.ReadBoolean() ? reader.ReadUInt64() : null;
+          if (reader.PeekChar() != -1)
+          {
+            uniqueId = reader.ReadBoolean() ? new Guid(reader.ReadBytes(16)) : null;
+          }
+        }
+        else if (formatVersion >= WorldGeneratorVersionStateFormatVersion &&
+                 reader.PeekChar() != -1)
+        {
+          worldGeneratorVersion = reader.ReadBoolean() ? reader.ReadUInt64() : null;
+        }
+          metadata = new WorldMetadata(
+          metadata.Name,
+          metadata.Seed,
+          metadata.Width,
+          metadata.Height,
+          metadata.WorldId,
+          metadata.SpawnX,
+          metadata.SpawnY,
+          metadata.SeedVariant,
+          metadata.RandomStreamVersion,
+          worldSurface,
+          world.Metadata.IsRemixWorld,
+          worldGeneratorVersion,
+          uniqueId,
+          seedText);
+        world = WorldGrid.FromSnapshot(world).CreateSnapshot(metadata);
+      }
+
+    if (formatVersion >= WorldGeneratorVersionStateFormatVersion && reader.PeekChar() != -1)
     {
       throw new InvalidDataException("The Dome state contains trailing data.");
     }
@@ -112,7 +242,9 @@ public static class DomeStatePersistenceFormat
       opaqueRecords,
       worldClock: clock,
       worldRules: worldRules,
-      progression: progression);
+      progression: progression,
+      worldEventRandomState: worldEventRandomState,
+      worldTimeRate: worldTimeRate);
   }
 
   public static void Write(Stream output, DomeSimulationSnapshot snapshot)
@@ -140,6 +272,50 @@ public static class DomeStatePersistenceFormat
     WriteWorldMetadata(writer, snapshot.World.Metadata);
     WriteWorldRules(writer, snapshot.WorldRules);
     WriteWorldProgression(writer, snapshot.Progression);
+    WriteWorldSurface(writer, snapshot.World.Metadata.WorldSurface);
+    WriteMoonPhase(writer, snapshot.Clock.MoonPhase);
+    WriteGameMode(writer, snapshot.WorldRules.GameMode);
+    WriteRawWeather(writer, snapshot.WorldRules);
+    WriteWorldEventRandomState(writer, snapshot.WorldEventRandomState);
+    writer.Write(snapshot.Progression.InvasionSizeStart);
+    writer.Write(snapshot.Progression.InvasionDelayTicks);
+    writer.Write(snapshot.Progression.InvasionX);
+    writer.Write(snapshot.Progression.DefeatedGoblins);
+    writer.Write(snapshot.Progression.DefeatedFrost);
+    writer.Write(snapshot.Progression.DefeatedPirates);
+    writer.Write(snapshot.Progression.DefeatedMartians);
+    WriteWorldTimeRate(writer, snapshot.WorldTimeRate);
+    writer.Write(snapshot.Clock.TimeOfDay);
+    writer.Write(snapshot.World.Metadata.WorldGeneratorVersion.HasValue);
+    if (snapshot.World.Metadata.WorldGeneratorVersion.HasValue)
+    {
+      writer.Write(snapshot.World.Metadata.WorldGeneratorVersion.Value);
+    }
+
+    byte identityFlags = 0;
+    if (snapshot.World.Metadata.UniqueId.HasValue)
+    {
+      identityFlags |= WorldUniqueIdTailBit;
+    }
+
+    if (snapshot.World.Metadata.SeedText is not null)
+    {
+      identityFlags |= WorldSeedTextTailBit;
+    }
+
+    if (identityFlags != 0 || snapshot.World.Metadata.WorldGeneratorVersion.HasValue)
+    {
+      writer.Write(identityFlags);
+      if ((identityFlags & WorldUniqueIdTailBit) != 0)
+      {
+        writer.Write(snapshot.World.Metadata.UniqueId!.Value.ToByteArray());
+      }
+
+      if ((identityFlags & WorldSeedTextTailBit) != 0)
+      {
+        WriteBoundedString(writer, snapshot.World.Metadata.SeedText!, "world seed text");
+      }
+    }
   }
 
   private static WorldClockSnapshot ReadWorldClock(BinaryReader reader, long tickNumber)
@@ -167,9 +343,33 @@ public static class DomeStatePersistenceFormat
     }
   }
 
+  private static WorldTimeRateSnapshot ReadWorldTimeRate(BinaryReader reader)
+  {
+    try
+    {
+      return WorldTimeRateSnapshot.FromPersisted(reader.ReadBoolean(), reader.ReadInt32());
+    }
+    catch (ArgumentException exception)
+    {
+      throw new InvalidDataException("The persisted world time rate is invalid.", exception);
+    }
+  }
+
+  private static double ReadFractionalWorldTime(BinaryReader reader)
+  {
+    double timeOfDay = reader.ReadDouble();
+    if (!double.IsFinite(timeOfDay))
+    {
+      throw new InvalidDataException("The persisted fractional world time is invalid.");
+    }
+
+    return timeOfDay;
+  }
+
   private static WorldMetadata ReadWorldMetadata(
     BinaryReader reader,
-    WorldMetadata persistedWorldMetadata)
+    WorldMetadata persistedWorldMetadata,
+    int formatVersion)
   {
     try
     {
@@ -190,6 +390,81 @@ public static class DomeStatePersistenceFormat
     }
   }
 
+  private static double? ReadWorldSurface(BinaryReader reader, int formatVersion)
+  {
+    if (formatVersion < WorldSurfaceStateFormatVersion || !reader.ReadBoolean())
+    {
+      return null;
+    }
+
+    return reader.ReadDouble();
+  }
+
+  private static byte ReadMoonPhase(BinaryReader reader, int formatVersion)
+  {
+    if (formatVersion < MoonPhaseStateFormatVersion)
+    {
+      return 0;
+    }
+
+    byte moonPhase = reader.ReadByte();
+    if (moonPhase > 7)
+    {
+      throw new InvalidDataException("The persisted moon phase is invalid.");
+    }
+
+    return moonPhase;
+  }
+
+  private static WorldGameMode ReadGameMode(BinaryReader reader, int formatVersion)
+  {
+    if (formatVersion < GameModeStateFormatVersion)
+    {
+      return WorldGameMode.Classic;
+    }
+
+    int gameMode = reader.ReadInt32();
+    if (!Enum.IsDefined((WorldGameMode)gameMode))
+    {
+      throw new InvalidDataException("The persisted world game mode is invalid.");
+    }
+
+    return (WorldGameMode)gameMode;
+  }
+
+  private static WorldEventRandomState ReadWorldEventRandomState(
+    BinaryReader reader,
+    int formatVersion,
+    WorldSeed seed)
+  {
+    if (formatVersion < WorldEventRandomStateFormatVersion)
+    {
+      return new WorldEventRandomState(unchecked((uint)seed.Value));
+    }
+
+    return new WorldEventRandomState(reader.ReadUInt32());
+  }
+
+  private static WorldRuleState ReadRawWeather(
+    BinaryReader reader,
+    int formatVersion,
+    WorldRuleState worldRules)
+  {
+    if (formatVersion < RawWeatherStateFormatVersion)
+    {
+      return worldRules;
+    }
+
+    try
+    {
+      return worldRules.WithRawRain(reader.ReadBoolean(), reader.ReadSingle());
+    }
+    catch (ArgumentException exception)
+    {
+      throw new InvalidDataException("The persisted raw weather state is invalid.", exception);
+    }
+  }
+
   private static WorldProgressionState ReadWorldProgression(BinaryReader reader, int formatVersion)
   {
     try
@@ -205,9 +480,20 @@ public static class DomeStatePersistenceFormat
       bool defeatedGolem = reader.ReadBoolean();
       bool isBloodMoon = reader.ReadBoolean();
       bool isEclipse = reader.ReadBoolean();
+      bool isLanternNight = formatVersion >= LanternNightStateFormatVersion && reader.ReadBoolean();
       int invasionType = reader.ReadInt32();
       int invasionSize = reader.ReadInt32();
       int slimeRainTimeTicks = formatVersion >= SlimeRainStateFormatVersion
+        ? reader.ReadInt32()
+        : 0;
+      bool isMeteorScheduled = formatVersion >= MeteorScheduleStateFormatVersion &&
+        reader.ReadBoolean();
+      int slimeRainCooldownTicks = formatVersion >= SlimeRainCooldownStateFormatVersion
+        ? reader.ReadInt32()
+        : 0;
+      bool isNextNightLanternNight = formatVersion >= LanternNightScheduleStateFormatVersion &&
+        reader.ReadBoolean();
+      int lanternNightCooldownTicks = formatVersion >= LanternNightCooldownStateFormatVersion
         ? reader.ReadInt32()
         : 0;
       return new WorldProgressionState(
@@ -221,13 +507,20 @@ public static class DomeStatePersistenceFormat
         defeatedGolem,
         isBloodMoon,
         isEclipse,
+        isLanternNight,
         invasionType,
         invasionSize,
-        slimeRainTimeTicks);
+        slimeRainTimeTicks,
+        isMeteorScheduled,
+        slimeRainCooldownTicks: slimeRainCooldownTicks,
+        isNextNightLanternNight: isNextNightLanternNight,
+        lanternNightCooldownTicks: lanternNightCooldownTicks);
     }
     catch (ArgumentException exception)
     {
-      throw new InvalidDataException("The persisted world progression is invalid.", exception);
+      throw new InvalidDataException(
+        $"The persisted world progression is invalid: {exception.Message}",
+        exception);
     }
   }
 
@@ -241,13 +534,17 @@ public static class DomeStatePersistenceFormat
       bool isCrimsonWorld = reader.ReadBoolean();
       int rainTimeTicks = formatVersion >= RainStateFormatVersion ? reader.ReadInt32() : 0;
       float rainStrength = formatVersion >= RainStateFormatVersion ? reader.ReadSingle() : 0.0f;
+      float windSpeedTarget = formatVersion >= WindStateFormatVersion ? reader.ReadSingle() : 0.0f;
+      float windSpeedCurrent = formatVersion >= WindStateFormatVersion ? reader.ReadSingle() : 0.0f;
       return new WorldRuleState(
         difficulty,
         isExpertMode,
         isMasterMode,
         isCrimsonWorld,
         rainTimeTicks,
-        rainStrength);
+        rainStrength,
+        windSpeedTarget,
+        windSpeedCurrent);
     }
     catch (ArgumentException exception)
     {
@@ -537,6 +834,7 @@ public static class DomeStatePersistenceFormat
           reader.ReadByte(),
           reader.ReadByte(),
           reader.ReadBoolean(),
+          formatVersion >= ItemNewAndShinyStateFormatVersion && reader.ReadBoolean(),
           nameOverride);
       }
 
@@ -641,6 +939,7 @@ public static class DomeStatePersistenceFormat
       writer.Write(instanceState.Dye);
       writer.Write(instanceState.Paint);
       writer.Write(instanceState.IsFavorited);
+      writer.Write(instanceState.IsNewAndShiny);
 
       ItemWorldStateComponent worldState = item.WorldState;
       if (worldState.Revision == 0 && item.Revision > 0)
@@ -955,12 +1254,18 @@ public static class DomeStatePersistenceFormat
   private static void WriteWorldClock(BinaryWriter writer, WorldClockSnapshot clock)
   {
     writer.Write(clock.TickNumber);
-    writer.Write(clock.TimeOfDay);
+    writer.Write(checked((int)Math.Truncate(clock.TimeOfDay)));
     writer.Write(clock.IsDayTime);
     writer.Write(clock.IsPaused);
     writer.Write(clock.TicksPerUpdate);
     writer.Write(clock.DayLengthTicks);
     writer.Write(clock.NightLengthTicks);
+  }
+
+  private static void WriteWorldTimeRate(BinaryWriter writer, WorldTimeRateSnapshot worldTimeRate)
+  {
+    writer.Write(worldTimeRate.IsAvailable);
+    writer.Write(worldTimeRate.Rate);
   }
 
   private static void WriteWorldMetadata(BinaryWriter writer, WorldMetadata metadata)
@@ -988,9 +1293,57 @@ public static class DomeStatePersistenceFormat
     writer.Write(progression.DefeatedGolem);
     writer.Write(progression.IsBloodMoon);
     writer.Write(progression.IsEclipse);
+    writer.Write(progression.IsLanternNight);
     writer.Write(progression.InvasionType);
     writer.Write(progression.InvasionSize);
     writer.Write(progression.SlimeRainTimeTicks);
+    writer.Write(progression.IsMeteorScheduled);
+    writer.Write(progression.SlimeRainCooldownTicks);
+    writer.Write(progression.IsNextNightLanternNight);
+    writer.Write(progression.LanternNightCooldownTicks);
+  }
+
+  private static void WriteWorldSurface(BinaryWriter writer, double? worldSurface)
+  {
+    writer.Write(worldSurface.HasValue);
+    if (worldSurface.HasValue)
+    {
+      writer.Write(worldSurface.Value);
+    }
+  }
+
+
+  private static void WriteMoonPhase(BinaryWriter writer, byte moonPhase)
+  {
+    if (moonPhase > 7)
+    {
+      throw new ArgumentOutOfRangeException(nameof(moonPhase));
+    }
+
+    writer.Write(moonPhase);
+  }
+
+  private static void WriteGameMode(BinaryWriter writer, WorldGameMode gameMode)
+  {
+    if (!Enum.IsDefined(gameMode))
+    {
+      throw new ArgumentOutOfRangeException(nameof(gameMode));
+    }
+
+    writer.Write((int)gameMode);
+  }
+
+  private static void WriteRawWeather(BinaryWriter writer, WorldRuleState worldRules)
+  {
+    writer.Write(worldRules.IsRaining);
+    writer.Write(worldRules.MaximumRainStrength);
+  }
+
+  private static void WriteWorldEventRandomState(
+    BinaryWriter writer,
+    WorldEventRandomState randomState)
+  {
+    writer.Write(randomState.Value);
   }
 
   private static void WriteWorldRules(BinaryWriter writer, WorldRuleState worldRules)
@@ -1002,6 +1355,8 @@ public static class DomeStatePersistenceFormat
     writer.Write(worldRules.IsCrimsonWorld);
     writer.Write(worldRules.RainTimeTicks);
     writer.Write(worldRules.RainStrength);
+    writer.Write(worldRules.WindSpeedTarget);
+    writer.Write(worldRules.WindSpeedCurrent);
   }
 
   private static void WriteBoundedPayload(BinaryWriter writer, IReadOnlyList<byte> payload)

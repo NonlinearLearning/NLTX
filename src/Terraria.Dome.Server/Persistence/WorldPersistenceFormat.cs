@@ -7,8 +7,10 @@ namespace Terraria.Dome.Server.Persistence;
 
 public static class WorldPersistenceFormat
 {
-  private const int FormatVersion = 2;
+  private const int FormatVersion = 4;
+  private const int WorldSurfaceFormatVersion = 3;
   private const int LegacyFormatVersion = 1;
+  private const int PreviousFormatVersion = 2;
   private const int Magic = 0x574D4F44;
   private const int MaximumWorldNameBytes = 1024;
   private const int MaximumWorldTileCount = 10_080_000;
@@ -23,7 +25,7 @@ public static class WorldPersistenceFormat
     }
 
     int formatVersion = reader.ReadInt32();
-    if (formatVersion is not LegacyFormatVersion and not FormatVersion)
+    if (formatVersion < LegacyFormatVersion || formatVersion > FormatVersion)
     {
       throw new InvalidDataException("The world file format version is not supported.");
     }
@@ -33,7 +35,15 @@ public static class WorldPersistenceFormat
     ValidateDimensions(width, height);
     WorldSeed seed = new(reader.ReadInt32());
     string name = ReadName(reader);
-    WorldMetadata metadata = new(name, seed, width, height);
+    double? worldSurface = ReadWorldSurface(reader, formatVersion);
+    bool? isRemixWorld = ReadIsRemixWorld(reader, formatVersion);
+    WorldMetadata metadata = new(
+      name,
+      seed,
+      width,
+      height,
+      worldSurface: worldSurface,
+      isRemixWorld: isRemixWorld);
     WorldTile[,] tiles = new WorldTile[width, height];
     for (int y = 0; y < height; y++)
     {
@@ -88,6 +98,8 @@ public static class WorldPersistenceFormat
     writer.Write(snapshot.Metadata.Height);
     writer.Write(snapshot.Metadata.Seed.Value);
     WriteName(writer, snapshot.Metadata.Name);
+    WriteWorldSurface(writer, snapshot.Metadata.WorldSurface);
+    WriteIsRemixWorld(writer, snapshot.Metadata.IsRemixWorld);
     for (int y = 0; y < snapshot.Metadata.Height; y++)
     {
       for (int x = 0; x < snapshot.Metadata.Width; x++)
@@ -136,6 +148,27 @@ public static class WorldPersistenceFormat
 
     return new WorldTile(state == 1, reader.ReadUInt16());
   }
+
+  private static double? ReadWorldSurface(BinaryReader reader, int formatVersion)
+  {
+    if (formatVersion < WorldSurfaceFormatVersion || !reader.ReadBoolean())
+    {
+      return null;
+    }
+
+    return reader.ReadDouble();
+  }
+
+  private static bool? ReadIsRemixWorld(BinaryReader reader, int formatVersion)
+  {
+    if (formatVersion < FormatVersion || !reader.ReadBoolean())
+    {
+      return null;
+    }
+
+    return reader.ReadBoolean();
+  }
+
 
   private static WorldTile ReadTile(BinaryReader reader)
   {
@@ -190,6 +223,25 @@ public static class WorldPersistenceFormat
     writer.Write(bytes.Length);
     writer.Write(bytes);
   }
+
+  private static void WriteWorldSurface(BinaryWriter writer, double? worldSurface)
+  {
+    writer.Write(worldSurface.HasValue);
+    if (worldSurface.HasValue)
+    {
+      writer.Write(worldSurface.Value);
+    }
+  }
+
+  private static void WriteIsRemixWorld(BinaryWriter writer, bool? isRemixWorld)
+  {
+    writer.Write(isRemixWorld.HasValue);
+    if (isRemixWorld.HasValue)
+    {
+      writer.Write(isRemixWorld.Value);
+    }
+  }
+
 
   private static void WriteTile(BinaryWriter writer, WorldTile tile)
   {

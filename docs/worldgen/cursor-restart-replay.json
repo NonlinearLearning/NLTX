@@ -1,0 +1,10 @@
+{
+  "CheckpointStage": "Terrain",
+  "ResumedStage": "Cave",
+  "SectionX": 0,
+  "SectionY": 1,
+  "RandomState": 633232768,
+  "SnapshotFingerprint": "8A56DC520D3B3B4DB164285DD874D8DA0ACDAB7C9515C23F90DC86E60F11EF54",
+  "UninterruptedNextSequence": 88112,
+  "RestartedNextSequence": 88112
+}

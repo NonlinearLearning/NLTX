@@ -1,0 +1,264 @@
+using System;
+using Terraria.Dome.Simulation.Items;
+using Terraria.Dome.Simulation.Items.Definitions;
+using Terraria.Dome.Simulation.Items.Systems;
+
+ItemDefinition validHealing = new(
+  1,
+  99,
+  HealthRestore: 25,
+  UseCooldownTicks: 10,
+  Identity: new ItemIdentityDefinition("Item.HealingPotion", IsMaterial: false),
+  Use: new ItemUseDefinition(
+    UseTime: 10,
+    UseAnimation: 10,
+    Consumable: true,
+    HealthRestore: 25,
+    CooldownTicks: 10));
+
+ItemDefinition projectile = new(
+  2,
+  999,
+  Combat: new ItemCombatDefinition(
+    Damage: 10,
+    CriticalChance: 12,
+    ArmorPenetration: 4,
+    DamageClass: ItemDamageClass.Ranged));
+ItemDefinition dimensional = new(
+  3,
+  20,
+  Width: 24,
+  Height: 18,
+  Value: 1250,
+  Rarity: 4);
+ItemDefinitionRegistry registry = new([validHealing, projectile, dimensional]);
+if (registry.Count != 3 || registry.Get(1) != validHealing ||
+    registry.Get(3) != dimensional)
+{
+  throw new InvalidOperationException("Valid immutable definitions were not retained.");
+}
+
+if (registry.Get(3).Width != 24 || registry.Get(3).Height != 18 ||
+    registry.Get(3).Value != 1250 || registry.Get(3).Rarity != 4)
+{
+  throw new InvalidOperationException(
+    "The immutable item definition discarded dimensions, value or rarity metadata.");
+}
+
+ItemCombatDefinition combat = registry.Get(2).Combat!.Value;
+if (combat.CriticalChance != 12 || combat.ArmorPenetration != 4 ||
+    combat.DamageClass != ItemDamageClass.Ranged)
+{
+  throw new InvalidOperationException(
+    "The immutable combat definition discarded critical, armor penetration or damage-class metadata.");
+}
+
+if (ItemPriceSystem.CalculateBuyPrice(1, 2, 3, 4) != 1020304 ||
+    ItemPriceSystem.CalculateSellPrice(1, 2, 3, 4) != 5101520 ||
+    ItemPriceSystem.ShadowOrbPrice != 75000 ||
+    ItemPriceSystem.DungeonPrice != 87500 ||
+    ItemPriceSystem.QueenBeePrice != 100000 ||
+    ItemPriceSystem.HellPrice != 125000 ||
+    ItemPriceSystem.EclipsePrice != 375000 ||
+    ItemPriceSystem.EclipsePostPlanteraPrice != 500000 ||
+    ItemPriceSystem.EclipseMothronPrice != 625000)
+{
+  throw new InvalidOperationException(
+    "Item currency conversion did not preserve the authoritative buy/sell price contract.");
+}
+
+AssertRejects(
+  () => ItemPriceSystem.CalculateBuyPrice(copper: -1),
+  "negative item currency values");
+AssertRejects(
+  () => ItemPriceSystem.CalculateBuyPrice(platinum: int.MaxValue),
+  "overflowing buy price");
+AssertRejects(
+  () => ItemPriceSystem.CalculateSellPrice(platinum: 2000),
+  "overflowing sell price");
+
+AssertRejects(
+  () => new ItemDefinitionRegistry([new ItemDefinition(1, 10), new ItemDefinition(1, 20)]),
+  "duplicate item type");
+AssertRejects(
+  () => new ItemDefinitionRegistry([new ItemDefinition(0, 10)]),
+  "zero item type");
+AssertRejects(
+  () => new ItemDefinitionRegistry([new ItemDefinition(1, 0)]),
+  "invalid stack limit");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(1, 10, Use: new ItemUseDefinition(ConsumesAmmo: true))]),
+  "ammo without an ammo type");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(
+      1,
+      10,
+      Use: new ItemUseDefinition(AmmoType: 2, ConsumesAmmo: true),
+      Combat: new ItemCombatDefinition(AmmoType: 3, ConsumesAmmo: true)),
+    new ItemDefinition(2, 99),
+    new ItemDefinition(3, 99)]),
+  "conflicting use and combat ammo contracts");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(1, 10, Use: new ItemUseDefinition(ShootType: 99))]),
+  "unknown dependent item type");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(
+      1,
+      10,
+      Equipment: new ItemEquipmentDefinition(Defense: 5))]),
+  "equipment attributes without a slot");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(
+      1,
+      10,
+      Equipment: new ItemEquipmentDefinition(ItemEquipmentSlot.Head, LifeRegen: -1))]),
+  "negative equipment life regeneration");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(1, 10, Use: new ItemUseDefinition(UseTime: 20, UseAnimation: 10))]),
+  "use time after animation");
+AssertRejects(
+  () => new ItemDefinitionRegistry([new ItemDefinition(1, 10, Value: -1)]),
+  "negative item value");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(1, 10, Combat: new ItemCombatDefinition(CriticalChance: -1))]),
+  "negative combat critical chance");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(1, 10, Combat: new ItemCombatDefinition(ArmorPenetration: -1))]),
+  "negative combat armor penetration");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(
+      1,
+      10,
+      Combat: new ItemCombatDefinition(DamageClass: (ItemDamageClass)255))]),
+  "unknown combat damage class");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(
+      1,
+      10,
+      Placement: new ItemPlacementDefinition(WallType: -2))]),
+  "negative wall placement type");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(
+      1,
+      10,
+      Placement: new ItemPlacementDefinition(TileType: 2, WallType: 3))]),
+  "ambiguous tile and wall placement types");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(
+      1,
+      10,
+      Recovery: new ItemRecoveryDefinition(BuffType: 5))]),
+  "buff recovery without a duration");
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(
+      1,
+      10,
+      Recovery: new ItemRecoveryDefinition(BuffDurationTicks: 30))]),
+  "buff recovery without a buff type");
+
+ExtractinatorRuleRegistry extractinatorRules = ExtractinatorRuleRegistry.CreateVersion4();
+foreach ((ushort itemType, int mode) in new (ushort ItemType, int Mode)[]
+{
+  (424, 0), (1103, 0), (3347, 1), (2339, 2), (2338, 2), (2337, 2),
+  (4354, 3), (4389, 3), (4377, 3), (4378, 3), (5127, 3), (5128, 3),
+  (5395, 4), (1124, 5), (4090, 6), (173, 6)
+})
+{
+  if (!extractinatorRules.TryGetMode(itemType, out int actualMode) || actualMode != mode)
+  {
+    throw new InvalidOperationException("The Version4 Extractinator input-mode mapping was not retained.");
+  }
+}
+
+if (extractinatorRules.TryGetMode(1, out _))
+{
+  throw new InvalidOperationException("An unmapped item type was accepted as Extractinator input.");
+}
+
+foreach ((ushort source, ushort output) in new (ushort Source, ushort Output)[]
+{
+  (12, 699), (699, 12), (11, 700), (700, 11), (14, 701), (701, 14), (13, 702), (702, 13),
+  (56, 880), (880, 56), (364, 1104), (1104, 364), (365, 1105), (1105, 365), (366, 1106),
+  (1106, 366), (134, 137), (137, 139), (139, 134), (20, 703), (703, 20), (22, 704),
+  (704, 22), (21, 705), (705, 21), (19, 706), (706, 19), (57, 1257), (1257, 57),
+  (381, 1184), (1184, 381), (382, 1191), (1191, 382), (391, 1198), (1198, 391),
+  (86, 1329), (1329, 86), (61, 3), (836, 3), (409, 3), (370, 169), (1246, 169),
+  (408, 169), (833, 664), (835, 664), (834, 664), (3276, 3271), (3277, 3271),
+  (3339, 3271), (3274, 3272), (3275, 3272), (3338, 3272)
+})
+{
+  if (!extractinatorRules.TryGetChlorophyteTrade(source, out ushort actualOutput) ||
+      actualOutput != output)
+  {
+    throw new InvalidOperationException("The Version4 Chlorophyte trade table was not retained.");
+  }
+}
+
+_ = extractinatorRules.TryGetMode(424, out int siltMode);
+
+ExtractinatorSystem extractinator = new();
+ExtractinatorResult chlorophyteTrade = extractinator.Roll(
+  extractinatorRules,
+  extractionMode: -1,
+  extractinatorTileType: ExtractinatorSystem.ChlorophyteExtractinatorTileType,
+  sourceItemType: 12,
+  isHardMode: false,
+  new ExtractinatorRandom(123));
+if (!chlorophyteTrade.IsAccepted || chlorophyteTrade.Output != new ItemStack(699, 1) ||
+    !chlorophyteTrade.IsTrade)
+{
+  throw new InvalidOperationException("The Chlorophyte Extractinator ore trade was not retained.");
+}
+
+ExtractinatorResult firstRoll = extractinator.Roll(
+  extractinatorRules,
+  siltMode,
+  ExtractinatorSystem.ExtractinatorTileType,
+  sourceItemType: 424,
+  isHardMode: false,
+  new ExtractinatorRandom(456));
+ExtractinatorResult secondRoll = extractinator.Roll(
+  extractinatorRules,
+  siltMode,
+  ExtractinatorSystem.ExtractinatorTileType,
+  sourceItemType: 424,
+  isHardMode: false,
+  new ExtractinatorRandom(456));
+if (!firstRoll.IsAccepted || firstRoll != secondRoll || firstRoll.Output.IsEmpty)
+{
+  throw new InvalidOperationException("Extractinator output was not deterministic for an identical seed.");
+}
+
+AssertRejects(
+  () => new ItemDefinitionRegistry([
+    new ItemDefinition(1, 10, Extractinator: new ItemExtractinatorDefinition(7))]),
+  "unsupported Extractinator mode");
+
+Console.WriteLine("PASS: immutable item definition registry accepts valid data and rejects invalid references");
+
+static void AssertRejects(Action action, string scenario)
+{
+  try
+  {
+    action();
+  }
+  catch (ArgumentException)
+  {
+    return;
+  }
+
+  throw new InvalidOperationException($"Definition registry accepted {scenario}.");
+}

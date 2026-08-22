@@ -11,7 +11,8 @@ public readonly record struct NpcTargetCandidate(
   int StablePlayerId,
   SimulationVector Position,
   bool IsActive,
-  int Health);
+  int Health,
+  bool IsGhost = false);
 
 public sealed class NpcTargetSelectionSystem
 {
@@ -20,13 +21,20 @@ public sealed class NpcTargetSelectionSystem
     IReadOnlyList<NpcTargetCandidate> candidates)
   {
     ArgumentNullException.ThrowIfNull(candidates);
+    if (!float.IsFinite(npcPosition.X) || !float.IsFinite(npcPosition.Y))
+    {
+      return new(default, 0, NpcTargetLockReason.NoValidTarget);
+    }
+
     NpcTargetCandidate selected = default;
     float closestDistanceSquared = float.MaxValue;
     bool hasTarget = false;
     for (int index = 0; index < candidates.Count; index++)
     {
       NpcTargetCandidate candidate = candidates[index];
-      if (!candidate.IsActive || candidate.Health <= 0)
+      if (candidate.Entity == default || candidate.StablePlayerId <= 0 ||
+          !candidate.IsActive || candidate.Health <= 0 || candidate.IsGhost ||
+          !float.IsFinite(candidate.Position.X) || !float.IsFinite(candidate.Position.Y))
       {
         continue;
       }

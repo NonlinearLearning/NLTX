@@ -13,8 +13,12 @@ public sealed class WorldItemSpawnSystem
     out WorldItemComponent item,
     out ItemCommandRejection rejection)
   {
-    if (nextReplicationId <= 0 || command.Stack.IsEmpty || command.SpawnSource < 0 ||
-        command.PickupDelayTicks < 0)
+    if (nextReplicationId <= 0 ||
+        command.Stack.IsEmpty ||
+        command.SpawnSource < 0 ||
+        command.PickupDelayTicks < 0 ||
+        !float.IsFinite(command.Position.X) ||
+        !float.IsFinite(command.Position.Y))
     {
       item = default;
       rejection = ItemCommandRejection.Invalid("World item creation input is invalid.");

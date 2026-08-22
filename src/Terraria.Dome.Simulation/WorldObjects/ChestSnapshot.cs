@@ -10,4 +10,5 @@ public readonly record struct ChestSnapshot(
   PlayerHandle? Opener,
   ItemStack[] Slots,
   long Revision,
-  WorldSectionCoordinates Section);
+  WorldSectionCoordinates Section,
+  bool IsLocked);

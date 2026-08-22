@@ -21,7 +21,9 @@ public sealed class SessionReplicationState : IDisposable
   private readonly SemaphoreSlim _writeGate = new(1, 1);
   private readonly SemaphoreSlim _pendingFrameSignal = new(0);
   private readonly object _viewPositionGate = new();
-  private readonly ConcurrentQueue<byte[]> _pendingFrames = new();
+  private readonly ConcurrentDictionary<TaskCompletionSource<bool>, byte>
+    _pendingWriteCompletions = new();
+  private readonly ConcurrentQueue<PendingFrame> _pendingFrames = new();
   private readonly SessionSectionVisibility _visibility = new();
   private readonly PlayerReplicationCursor _playerCursor = new();
   private readonly ItemReplicationCursor _itemCursor = new();
@@ -29,6 +31,7 @@ public sealed class SessionReplicationState : IDisposable
   private readonly ChestReplicationCursor _chestCursor = new();
   private readonly DoorReplicationCursor _doorCursor = new();
   private readonly SignReplicationCursor _signCursor = new();
+  private readonly TileEntityReplicationCursor _tileEntityCursor = new();
   private readonly HashSet<WorldSectionCoordinates> _visibleSections = new();
   private readonly Task _writerTask;
   private Exception? _writeFailure;
@@ -39,6 +42,10 @@ public sealed class SessionReplicationState : IDisposable
   private bool _isInitialVisibilityLocked;
   private bool _worldRulesSent;
   private SimulationVector? _clientViewPosition;
+
+  private readonly record struct PendingFrame(
+    byte[] Frame,
+    TaskCompletionSource<bool>? Completion);
 
   public SessionReplicationState(Func<byte[], CancellationToken, Task> writeFrameAsync)
   {
@@ -77,6 +84,7 @@ public sealed class SessionReplicationState : IDisposable
     _chestCursor.Clear();
     _doorCursor.Clear();
     _signCursor.Clear();
+    _tileEntityCursor.Clear();
     _visibleSections.Clear();
     lock (_viewPositionGate)
     {
@@ -225,6 +233,20 @@ public sealed class SessionReplicationState : IDisposable
     return _combatCursor.WasProjectileSent(replicationId);
   }
 
+  public void ConfirmCombatBatch(CombatReplicationBatch batch)
+  {
+    ThrowIfDisposed();
+    foreach (NpcReplicationSnapshot npc in batch.Npcs)
+    {
+      _combatCursor.MarkNpcSent(npc);
+    }
+
+    foreach (ProjectileReplicationSnapshot projectile in batch.Projectiles)
+    {
+      _combatCursor.MarkProjectileSent(projectile);
+    }
+  }
+
   public bool ShouldSendItem(ItemReplicationSnapshot snapshot)
   {
     ThrowIfDisposed();
@@ -235,6 +257,18 @@ public sealed class SessionReplicationState : IDisposable
   {
     ThrowIfDisposed();
     return _chestCursor.ShouldSend(snapshot);
+  }
+
+  public void MarkChestSent(ChestSnapshot snapshot)
+  {
+    ThrowIfDisposed();
+    _chestCursor.MarkSent(snapshot);
+  }
+
+  public bool TryGetChestRevision(int chestId, out long revision)
+  {
+    ThrowIfDisposed();
+    return _chestCursor.TryGetRevision(chestId, out revision);
   }
 
   public bool ShouldSendWorldRules(long tick, int intervalTicks)
@@ -261,6 +295,45 @@ public sealed class SessionReplicationState : IDisposable
     return _signCursor.ShouldSend(snapshot);
   }
 
+  public void MarkSignSent(SignSnapshot snapshot)
+  {
+    ThrowIfDisposed();
+    _signCursor.MarkSent(snapshot);
+  }
+
+  public bool ShouldSendTileEntity(TileEntityPersistentState snapshot)
+  {
+    ThrowIfDisposed();
+    return _tileEntityCursor.ShouldSend(snapshot);
+  }
+
+  public void MarkTileEntitySent(TileEntityPersistentState snapshot)
+  {
+    ThrowIfDisposed();
+    _tileEntityCursor.MarkSent(snapshot);
+  }
+
+  public bool WasTileEntitySent(int entityId)
+  {
+    ThrowIfDisposed();
+    return _tileEntityCursor.WasSent(entityId);
+  }
+
+  public IReadOnlyCollection<int> SentTileEntityIds
+  {
+    get
+    {
+      ThrowIfDisposed();
+      return _tileEntityCursor.SentEntityIds;
+    }
+  }
+
+  public void MarkTileEntityRemoved(int entityId)
+  {
+    ThrowIfDisposed();
+    _tileEntityCursor.MarkRemoved(entityId);
+  }
+
   public Task WriteFramesAsync(
     IReadOnlyList<byte[]> frames,
     CancellationToken cancellationToken)
@@ -268,6 +341,14 @@ public sealed class SessionReplicationState : IDisposable
     ThrowIfDisposed();
     ThrowIfWriteFailed();
     cancellationToken.ThrowIfCancellationRequested();
+    if (frames.Count == 0)
+    {
+      return Task.CompletedTask;
+    }
+
+    TaskCompletionSource<bool> completion = new(
+      TaskCreationOptions.RunContinuationsAsynchronously);
+    _pendingWriteCompletions.TryAdd(completion, 0);
     for (int index = 0; index < frames.Count; index++)
     {
       int pendingFrames = Interlocked.Increment(ref _pendingFrameCount);
@@ -277,11 +358,14 @@ public sealed class SessionReplicationState : IDisposable
         throw new IOException("The session replication queue budget was exceeded.");
       }
 
-      _pendingFrames.Enqueue(frames[index]);
+      bool isLastFrame = index == frames.Count - 1;
+      _pendingFrames.Enqueue(new PendingFrame(
+        frames[index],
+        isLastFrame ? completion : null));
       _pendingFrameSignal.Release();
     }
 
-    return Task.CompletedTask;
+    return completion.Task;
   }
 
   private async Task WritePendingFramesAsync()
@@ -291,7 +375,7 @@ public sealed class SessionReplicationState : IDisposable
       while (!_writeCancellation.IsCancellationRequested)
       {
         await _pendingFrameSignal.WaitAsync(_writeCancellation.Token);
-        if (!_pendingFrames.TryDequeue(out byte[]? frame))
+        if (!_pendingFrames.TryDequeue(out PendingFrame pendingFrame))
         {
           continue;
         }
@@ -303,7 +387,12 @@ public sealed class SessionReplicationState : IDisposable
         await _writeGate.WaitAsync(frameCancellation.Token);
         try
         {
-          await _writeFrameAsync(frame, frameCancellation.Token);
+          await _writeFrameAsync(pendingFrame.Frame, frameCancellation.Token);
+          if (pendingFrame.Completion is TaskCompletionSource<bool> completion)
+          {
+            _pendingWriteCompletions.TryRemove(completion, out _);
+            completion.TrySetResult(true);
+          }
         }
         finally
         {
@@ -317,14 +406,26 @@ public sealed class SessionReplicationState : IDisposable
     catch (SocketException exception)
     {
       _writeFailure = new IOException("The session socket was closed while writing a frame.", exception);
+      FailPendingWrites(_writeFailure);
     }
     catch (OperationCanceledException)
     {
       _writeFailure = new IOException("The session replication write budget was exceeded.");
+      FailPendingWrites(_writeFailure);
     }
     catch (IOException exception)
     {
       _writeFailure = exception;
+      FailPendingWrites(_writeFailure);
+    }
+  }
+
+  private void FailPendingWrites(Exception exception)
+  {
+    foreach (TaskCompletionSource<bool> completion in _pendingWriteCompletions.Keys)
+    {
+      _pendingWriteCompletions.TryRemove(completion, out _);
+      completion.TrySetException(exception);
     }
   }
 

@@ -14,6 +14,18 @@ public sealed class TerrainBaseSystem
     ref WorldGenerationStateComponent state,
     List<TileChangeCommand> commands)
   {
+    GenerationRandomState random = new(unchecked((uint)request.Metadata.Seed.Value));
+    AppendCommands(world, request, profile, ref state, ref random, commands);
+  }
+
+  public void AppendCommands(
+    WorldGrid world,
+    WorldGenerationRequest request,
+    TerrainProfileComponent profile,
+    ref WorldGenerationStateComponent state,
+    ref GenerationRandomState random,
+    List<TileChangeCommand> commands)
+  {
     ArgumentNullException.ThrowIfNull(world);
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(commands);
@@ -24,10 +36,9 @@ public sealed class TerrainBaseSystem
     }
 
     TerrainDefinition definition = TerrainDefinition.Default;
-    DeterministicRandom random = new(request.Metadata.Seed.Value);
     for (int x = 0; x < world.Width; x++)
     {
-      int surfaceVariation = random.NextInclusive(
+      (random, int surfaceVariation) = random.NextInclusive(
         -definition.SurfaceVariation,
         definition.SurfaceVariation);
       int surfaceY = Math.Clamp(
@@ -46,20 +57,4 @@ public sealed class TerrainBaseSystem
     }
   }
 
-  private sealed class DeterministicRandom
-  {
-    private uint _state;
-
-    public DeterministicRandom(int seed)
-    {
-      _state = unchecked((uint)seed);
-    }
-
-    public int NextInclusive(int minimum, int maximum)
-    {
-      _state = (_state * 1664525U) + 1013904223U;
-      uint range = (uint)(maximum - minimum + 1);
-      return minimum + (int)(_state % range);
-    }
-  }
 }

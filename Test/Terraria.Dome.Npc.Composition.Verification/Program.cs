@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Arch.Core;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Components;
 using Terraria.Dome.Simulation.Movement.Components;
+using Terraria.Dome.Simulation.Npc.Commands;
 using Terraria.Dome.Simulation.Npc.Components;
 using Terraria.Dome.Simulation.Npc.Systems;
 
@@ -76,7 +78,7 @@ using (ArchWorld world = ArchWorld.Create())
   NpcSegmentState[] segmentStates =
   [
     new(childNpc, childSegment, IsActive: true, IsDead: false),
-    new(rootNpc, rootSegment, IsActive: true, IsDead: false)
+    new(rootNpc, rootSegment, IsActive: false, IsDead: true)
   ];
   NpcSegmentLifecycleSystem segmentSystem = new();
   NpcSegmentValidationResult validation = segmentSystem.Validate(segmentStates);
@@ -89,6 +91,37 @@ using (ArchWorld world = ArchWorld.Create())
   if (!deathOrder.SequenceEqual([childNpc, rootNpc]))
   {
     throw new InvalidOperationException("Segment death order did not resolve child before root.");
+  }
+
+  IReadOnlyList<DespawnNpcCommand> wormDespawns = segmentSystem.GetWormFollowUpDespawns(
+    segmentStates,
+    rootNpc,
+    new HashSet<NpcHandle> { childNpc });
+  if (wormDespawns.Count != 1 || wormDespawns[0].Npc != childNpc ||
+      wormDespawns[0].Reason != NpcDespawnReason.Killed)
+  {
+    throw new InvalidOperationException("Worm follow-up despawn did not stop at the typed child chain.");
+  }
+
+  NpcSegmentState[] livingSegmentStates =
+  [
+    new(childNpc, childSegment, IsActive: true, IsDead: false),
+    new(rootNpc, rootSegment, IsActive: true, IsDead: false)
+  ];
+  if (segmentSystem.GetWormFollowUpDespawns(
+        livingSegmentStates,
+        rootNpc,
+        new HashSet<NpcHandle> { childNpc }).Count != 0)
+  {
+    throw new InvalidOperationException("An active, living trigger incorrectly despawned worm children.");
+  }
+
+  if (segmentSystem.GetWormFollowUpDespawns(
+        segmentStates,
+        rootNpc,
+        new HashSet<NpcHandle>()).Count != 0)
+  {
+    throw new InvalidOperationException("Non-worm segments were incorrectly despawned.");
   }
 
   SegmentSnapshotValue[] segmentSnapshots = segmentStates

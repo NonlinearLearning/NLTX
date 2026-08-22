@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Terraria.Dome.Simulation.Npc.Commands;
 using Terraria.Dome.Simulation.Npc.Components;
 
 namespace Terraria.Dome.Simulation.Npc.Systems;
@@ -85,5 +86,48 @@ public sealed class NpcSegmentLifecycleSystem
       .ThenByDescending(segment => segment.Handle.Value)
       .Select(segment => segment.Handle)
       .ToArray();
+  }
+
+  public IReadOnlyList<DespawnNpcCommand> GetWormFollowUpDespawns(
+    IReadOnlyList<NpcSegmentState> segments,
+    NpcHandle trigger,
+    IReadOnlySet<NpcHandle> wormSegments)
+  {
+    ArgumentNullException.ThrowIfNull(segments);
+    ArgumentNullException.ThrowIfNull(wormSegments);
+
+    NpcSegmentValidationResult validation = Validate(segments);
+    if (!validation.IsValid)
+    {
+      throw new ArgumentException(validation.FailureReason, nameof(segments));
+    }
+
+    Dictionary<NpcHandle, NpcSegmentState> byHandle = segments.ToDictionary(
+      segment => segment.Handle,
+      segment => segment);
+    if (!byHandle.TryGetValue(trigger, out NpcSegmentState triggerState) ||
+        (triggerState.IsActive && !triggerState.IsDead))
+    {
+      return Array.Empty<DespawnNpcCommand>();
+    }
+
+    List<DespawnNpcCommand> commands = new();
+    HashSet<NpcHandle> visited = new();
+    NpcHandle next = triggerState.Segment.Child;
+
+    while (next.IsValid &&
+           visited.Add(next) &&
+           byHandle.TryGetValue(next, out NpcSegmentState state))
+    {
+      if (!wormSegments.Contains(next) || !state.IsActive)
+      {
+        break;
+      }
+
+      commands.Add(new DespawnNpcCommand(next, NpcDespawnReason.Killed));
+      next = state.Segment.Child;
+    }
+
+    return commands;
   }
 }

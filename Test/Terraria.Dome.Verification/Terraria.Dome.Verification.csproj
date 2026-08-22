@@ -5,8 +5,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Terraria.Dome.Protocol.V1456\Terraria.Dome.Protocol.V1456.csproj" />
     <ProjectReference Include="..\..\src\Terraria.Dome.Simulation\Terraria.Dome.Simulation.csproj" />
-    <ProjectReference Include="..\..\src\Terraria.Dome.Client\Terraria.Dome.Client.csproj" />
     <ProjectReference Include="..\..\src\Terraria.Dome.Server\Terraria.Dome.Server.csproj" />
   </ItemGroup>
 </Project>

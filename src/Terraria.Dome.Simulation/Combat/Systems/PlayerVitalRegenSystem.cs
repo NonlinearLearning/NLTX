@@ -26,11 +26,21 @@ public sealed class PlayerVitalRegenSystem
       }
       else
       {
-        healthRegeneration.RegenerationAccumulator++;
-        if (healthRegeneration.RegenerationAccumulator >= 2)
+        healthRegeneration.RegenerationAccumulator = checked(
+          healthRegeneration.RegenerationAccumulator +
+          HealthRegenerationComponent.DefaultRegenUnitsPerTick +
+          healthRegeneration.EquipmentRegenUnitsPerTick);
+        while (healthRegeneration.RegenerationAccumulator >=
+               HealthRegenerationComponent.RegenUnitsPerHealthPoint)
         {
           health.Current = Math.Min(health.Current + 1, health.Maximum);
-          healthRegeneration.RegenerationAccumulator = 0;
+          healthRegeneration.RegenerationAccumulator -=
+            HealthRegenerationComponent.RegenUnitsPerHealthPoint;
+          if (health.Current >= health.Maximum)
+          {
+            healthRegeneration.RegenerationAccumulator = 0;
+            break;
+          }
         }
       }
 

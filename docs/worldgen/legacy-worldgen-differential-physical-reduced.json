@@ -1,0 +1,1026 @@
+{
+  "LegacyPath": "D:\\TRbackup\\NLTX\\Build\\worldgen-oracle\\legacy-1456-repeat.wld",
+  "Width": 4200,
+  "Height": 1200,
+  "SpawnX": 2100,
+  "SurfaceY": 300,
+  "LegacyMetadataSpawnX": 0,
+  "LegacyMetadataSpawnY": 0,
+  "ComparedTiles": 5040000,
+  "MismatchTiles": 5040000,
+  "UnsupportedLegacyTiles": 0,
+  "ActiveLegacyTiles": 0,
+  "ActiveGeneratedTiles": 3776885,
+  "LegacyFingerprint": "1ABD17BC699AC35144A7F83EC5FFC74D08C47C956EED65193460FDB834E5B2AE",
+  "GeneratedFingerprint": "57A9A97815952E2457E864309EC2972E6E1D103F99FEDEEECFD4902F5A27898F",
+  "Sections": [
+    {
+      "SectionX": 0,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 1,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 2,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 3,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 4,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 5,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 6,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 7,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 8,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 9,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 10,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 11,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 12,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 13,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 14,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 15,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 16,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 17,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 18,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 19,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 20,
+      "SectionY": 0,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 0,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 1,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 2,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 3,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 4,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 5,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 6,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 7,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 8,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 9,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 10,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 11,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 12,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 13,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 14,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 15,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 16,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 17,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 18,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 19,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 20,
+      "SectionY": 1,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 0,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 1,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 2,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 3,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 4,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 5,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 6,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 7,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 8,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 9,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 10,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 11,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 12,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 13,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 14,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 15,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 16,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 17,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 18,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 19,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 20,
+      "SectionY": 2,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 0,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 1,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 2,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 3,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 4,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 5,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 6,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 7,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 8,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 9,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 10,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 11,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 12,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 13,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 14,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 15,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 16,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 17,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 18,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 19,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 20,
+      "SectionY": 3,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 0,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 1,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 2,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 3,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 4,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 5,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 6,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 7,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 8,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 9,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 10,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 11,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 12,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 13,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 14,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 15,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 16,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 17,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 18,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 19,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 20,
+      "SectionY": 4,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 0,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 1,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 2,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 3,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 4,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 5,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 6,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 7,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 8,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 9,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 10,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 11,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 12,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 13,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 14,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 15,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 16,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 17,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 18,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 19,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 20,
+      "SectionY": 5,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 0,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 1,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 2,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 3,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 4,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 5,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 6,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 7,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 8,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 9,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 10,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 11,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 12,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 13,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 14,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 15,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 16,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 17,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 18,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 19,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 20,
+      "SectionY": 6,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 0,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 1,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 2,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 3,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 4,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 5,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 6,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 7,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 8,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 9,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 10,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 11,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 12,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 13,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 14,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 15,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 16,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 17,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 18,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 19,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    },
+    {
+      "SectionX": 20,
+      "SectionY": 7,
+      "MismatchTiles": 30000,
+      "UnsupportedLegacyTiles": 0
+    }
+  ]
+}

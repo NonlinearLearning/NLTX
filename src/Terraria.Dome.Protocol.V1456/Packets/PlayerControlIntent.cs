@@ -7,4 +7,5 @@ public readonly record struct PlayerControlIntent(
   bool Jump,
   bool UseItem,
   bool FacingRight,
-  byte SelectedItem);
+  byte SelectedItem,
+  bool Down = false);

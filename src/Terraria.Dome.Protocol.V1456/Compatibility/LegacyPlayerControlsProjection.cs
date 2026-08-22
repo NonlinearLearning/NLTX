@@ -16,7 +16,8 @@ public sealed record LegacyPlayerControlsProjection(
         (state.ControlFlags & (1 << 4)) != 0,
         (state.ControlFlags & (1 << 5)) != 0,
         (state.ControlFlags & (1 << 6)) != 0,
-        state.SelectedItem),
+        state.SelectedItem,
+        (state.ControlFlags & (1 << 1)) != 0),
       state);
   }
 }

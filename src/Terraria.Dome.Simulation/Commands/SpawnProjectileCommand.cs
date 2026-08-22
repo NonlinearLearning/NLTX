@@ -10,4 +10,5 @@ public readonly record struct SpawnProjectileCommand(
   int ProjectileType = 1,
   int BehaviorId = 1,
   float InitialVelocityY = 0.0f,
-  int MaximumPenetration = 1);
+  int MaximumPenetration = 1,
+  float ProjectileSpeed = 0.0f);

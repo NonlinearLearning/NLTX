@@ -39,6 +39,11 @@ public sealed class CombatReplicationCursor
     return _projectileRevisions.ContainsKey(replicationId);
   }
 
+  public void MarkProjectileSent(ProjectileReplicationSnapshot snapshot)
+  {
+    _projectileRevisions[snapshot.ReplicationId] = snapshot.Revision;
+  }
+
   private static bool ShouldSend(Dictionary<int, long> revisions, int replicationId, long revision)
   {
     if (revisions.TryGetValue(replicationId, out long lastRevision) && lastRevision >= revision)
@@ -46,7 +51,6 @@ public sealed class CombatReplicationCursor
       return false;
     }
 
-    revisions[replicationId] = revision;
     return true;
   }
 }

@@ -5,7 +5,8 @@ public enum NpcSpawnSource
   Natural = 1,
   Statue = 2,
   Event = 3,
-  Command = 4
+  Command = 4,
+  TileEntity = 5
 }
 
 public readonly record struct NpcSpawnStateComponent(

@@ -14,8 +14,12 @@ public sealed class SignReplicationCursor
       return false;
     }
 
-    _revisions[snapshot.SignId] = snapshot.Revision;
     return true;
+  }
+
+  public void MarkSent(SignSnapshot snapshot)
+  {
+    _revisions[snapshot.SignId] = snapshot.Revision;
   }
 
   public void Clear()

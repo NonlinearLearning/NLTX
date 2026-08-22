@@ -31,7 +31,12 @@ public static class LegacyItemImportAdapter
       new ItemStack((ushort)item.ItemType, quantity),
       new ItemInstanceStateComponent(
         PrefixId: item.Prefix,
-        IsFavorited: item.IsFavorited));
+        VariantId: item.VariantId,
+        Dye: item.Dye,
+        Paint: item.Paint,
+        IsFavorited: item.IsFavorited,
+        IsNewAndShiny: item.IsNewAndShiny,
+        NameOverride: item.NameOverride));
     return true;
   }
 }

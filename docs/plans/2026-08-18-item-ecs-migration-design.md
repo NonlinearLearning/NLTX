@@ -1,6 +1,6 @@
 # Item ECS Migration Design
 
-> 状态：已确认设计，尚未执行迁移。
+> 状态：已确认设计；服务器权威迁移切片已执行并验证，完整 Terraria parity 保持 `PARTIAL`。
 
 ## 目标
 

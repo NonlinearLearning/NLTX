@@ -12,16 +12,29 @@ public sealed class CombatReplicationAssembler
     IReadOnlyList<NpcReplicationSnapshot> npcs,
     IReadOnlyList<ProjectileReplicationSnapshot> projectiles)
   {
+    CombatReplicationBatch batch = CollectBatch(session, npcs, projectiles);
+    session.ConfirmCombatBatch(batch);
+    return batch.Frames;
+  }
+
+  public CombatReplicationBatch CollectBatch(
+    SessionReplicationState session,
+    IReadOnlyList<NpcReplicationSnapshot> npcs,
+    IReadOnlyList<ProjectileReplicationSnapshot> projectiles)
+  {
     ArgumentNullException.ThrowIfNull(session);
     ArgumentNullException.ThrowIfNull(npcs);
     ArgumentNullException.ThrowIfNull(projectiles);
     List<byte[]> frames = new();
+    List<NpcReplicationSnapshot> sentNpcs = new();
+    List<ProjectileReplicationSnapshot> sentProjectiles = new();
     if (session.TryTakeDefaultNpcReconciliation() && npcs.Count > 0)
     {
       NpcReplicationSnapshot firstNpc = npcs[0];
       if (firstNpc.IsActive && session.VisibleSections.Contains(firstNpc.Section))
       {
         frames.Add(TerrariaPacketCodec.EncodeNpcReplication(firstNpc));
+        sentNpcs.Add(firstNpc);
         if (npcs.Count == 1)
         {
           session.MarkDefaultCombatNpcSent(firstNpc);
@@ -41,6 +54,7 @@ public sealed class CombatReplicationAssembler
       }
 
       frames.Add(TerrariaPacketCodec.EncodeNpcReplication(npc));
+      sentNpcs.Add(npc);
     }
 
     for (int index = 0; index < projectiles.Count; index++)
@@ -65,8 +79,9 @@ public sealed class CombatReplicationAssembler
       frames.Add(projectile.IsActive
         ? TerrariaPacketCodec.EncodeProjectileSync(ProjectileStateProjection.Project(projectile))
         : TerrariaPacketCodec.EncodeProjectileDespawn(projectile));
+      sentProjectiles.Add(projectile);
     }
 
-    return frames;
+    return new CombatReplicationBatch(frames, sentNpcs, sentProjectiles);
   }
 }

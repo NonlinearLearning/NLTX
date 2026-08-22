@@ -5,6 +5,7 @@ using Arch.Buffer;
 using Arch.Core;
 using World = Arch.Core.World;
 using Terraria.Dome.Simulation.Commands;
+using Terraria.Dome.Simulation.Combat;
 using Terraria.Dome.Simulation.Combat.Commands;
 using Terraria.Dome.Simulation.Combat.Components;
 using Terraria.Dome.Simulation.Combat.Systems;
@@ -22,6 +23,7 @@ using Terraria.Dome.Simulation.StatusEffects.Systems;
 using Terraria.Dome.Simulation.Tick;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Systems;
+using Terraria.Dome.Simulation.World.Events;
 using Terraria.Dome.Simulation.Items;
 using Terraria.Dome.Simulation.Items.Components;
 using Terraria.Dome.Simulation.Items.Commands;
@@ -41,6 +43,7 @@ using Terraria.Dome.Simulation.Combat.Events;
 using Terraria.Dome.Simulation.WorldObjects;
 using Terraria.Dome.Simulation.WorldObjects.Chest.Commands;
 using Terraria.Dome.Simulation.WorldObjects.Chest.Systems;
+using Terraria.Dome.Simulation.WorldObjects.Definitions;
 using Terraria.Dome.Simulation.Npc.Commands;
 using Terraria.Dome.Simulation.Npc.Definitions;
 using Terraria.Dome.Simulation.Npc;
@@ -48,6 +51,7 @@ using Terraria.Dome.Simulation.Npc.Snapshots;
 using Terraria.Dome.Simulation.Npc.Systems;
 using Terraria.Dome.Simulation.Wiring.Commands;
 using Terraria.Dome.Simulation.Wiring.Components;
+using Terraria.Dome.Simulation.Wiring.Definitions;
 using Terraria.Dome.Simulation.Wiring.Snapshots;
 using Terraria.Dome.Simulation.Wiring.Systems;
 using NpcComponents = Terraria.Dome.Simulation.Npc.Components;
@@ -71,23 +75,37 @@ public sealed partial class DomeSimulation : IDisposable
   private const int NpcContactDamage = 25;
   private const int NpcHitImmunityTicks = 2;
   private const float PickupRange = 3.0f;
+  private const float WorldItemStackingRange = 1.0f;
   private const float MaximumInteractionRange = 12.0f;
   private const int DomeChaserNpcType = 1;
   public const int FixtureNpcType = 2;
   private const int DomeBoltProjectileType = 1;
   private const int MaximumSignCount = 32000;
+  private const int MaximumNpcCount = 200;
+  private const int TrainingDummyNpcType = 488;
   private static readonly ItemDropDefinition[] DefaultNpcItemDrops = [new(1, 1, 2)];
   private readonly WorldClock _worldClock;
   private readonly WorldClockSystem _worldClockSystem = new();
+  private readonly WorldInvasionTravelSystem _worldInvasionTravelSystem = new();
   private readonly WorldProgressionSystem _worldProgressionSystem = new();
+  private readonly WorldTimeRateSystem _worldTimeRateSystem = new();
+  private readonly WorldInvasionStartEligibilitySystem _worldInvasionStartEligibilitySystem = new();
+  private readonly WorldInvasionClearFlagSystem _worldInvasionClearFlagSystem = new();
+  private readonly WorldSlimeRainEligibilitySystem _worldSlimeRainEligibilitySystem = new();
   private readonly WorldWeatherSystem _worldWeatherSystem = new();
   private readonly WorldMeteorImpactSystem _worldMeteorImpactSystem = new();
+  private readonly WorldMeteorScheduleSystem _worldMeteorScheduleSystem = new();
   private readonly List<WorldEventStartCommand> _worldEventStartRequests = new();
+  private readonly List<WorldLanternNightScheduleCommand> _worldLanternNightScheduleRequests = new();
   private readonly List<WorldInvasionStartCommand> _worldInvasionStartRequests = new();
   private readonly List<WorldInvasionProgressCommand> _worldInvasionProgressRequests = new();
   private readonly List<WorldRainStartCommand> _worldRainStartRequests = new();
+  private readonly List<WorldWindChangeCommand> _worldWindChangeRequests = new();
   private readonly List<WorldSlimeRainStartCommand> _worldSlimeRainStartRequests = new();
+  private readonly List<WorldSlimeRainStopCommand> _worldSlimeRainStopRequests = new();
   private readonly List<WorldMeteorImpactCommand> _worldMeteorImpactRequests = new();
+  private readonly List<WorldMeteorScheduleCommand> _worldMeteorScheduleRequests = new();
+  private readonly List<WorldMeteorImpactCommand> _scheduledMeteorImpactRequests = new();
   private readonly SimulationCommandQueue _commands = new();
   private readonly NpcStore _npcs = new();
   private readonly Dictionary<NpcHandle, NpcReplicationSnapshot> _npcReplications = new();
@@ -150,20 +168,33 @@ public sealed partial class DomeSimulation : IDisposable
   private readonly List<WorldItemPickedUpEvent> _worldItemPickedUpEvents = new();
   private readonly List<WorldItemDestroyedEvent> _worldItemDestroyedEvents = new();
   private readonly List<ItemDroppedEvent> _itemDroppedEvents = new();
+  private readonly List<ExtractinatorResultEvent> _extractinatorResultEvents = new();
+  private readonly Dictionary<(int X, int Y), long> _extractinatorCooldowns = new();
+  private readonly HashSet<(int X, int Y)> _extractinatorTargetsCommittedThisTick = new();
+  private readonly List<WorldSlimeRainWarningEvent> _worldSlimeRainWarningEvents = new();
+  private readonly List<WorldInvasionCompletedEvent> _worldInvasionCompletedEvents = new();
   private readonly Dictionary<int, TileEntityPersistentState> _tileEntities = new();
+  private readonly Dictionary<int, TrainingDummyOwnershipState> _trainingDummyOwnerships = new();
+  private readonly List<int> _pendingTrainingDummyActivations = new();
   private readonly List<PlaceItemCommand> _placeItemCommands = new();
   private readonly List<EquipItemCommand> _equipItemCommands = new();
   private readonly List<UnequipItemCommand> _unequipItemCommands = new();
   private readonly List<ApplyItemPrefixCommand> _itemPrefixCommands = new();
   private readonly List<ApplyItemVariantCommand> _itemVariantCommands = new();
   private readonly ItemDefinitionRegistry _itemDefinitions = new([
-    new ItemDefinition(1, 99, HealthRestore: 25, UseCooldownTicks: 10),
+    new ItemDefinition(
+      1,
+      99,
+      HealthRestore: 25,
+      UseCooldownTicks: 10,
+      Prefixes: new ItemPrefixDefinition([11, 17])),
     new ItemDefinition(
       2,
       99,
       Use: new ItemUseDefinition(
         UseTime: 1,
-        ShootType: 1,
+        ShootType: 2,
+        ShootSpeed: 6.0f,
         AmmoType: 3,
         ConsumesAmmo: true,
         CooldownTicks: 3)),
@@ -174,7 +205,11 @@ public sealed partial class DomeSimulation : IDisposable
     new ItemDefinition(
       4,
       1,
-      Equipment: new ItemEquipmentDefinition(ItemEquipmentSlot.Head, Defense: 5)),
+      Equipment: new ItemEquipmentDefinition(
+        ItemEquipmentSlot.Head,
+        Defense: 5,
+        LifeRegen: 60),
+      Prefixes: new ItemPrefixDefinition([])),
     new ItemDefinition(
       5,
       99,
@@ -189,15 +224,34 @@ public sealed partial class DomeSimulation : IDisposable
       Recovery: new ItemRecoveryDefinition(
         BuffType: 19,
         BuffDurationTicks: 60,
-        Consumable: true))]);
+        Consumable: true)),
+    new ItemDefinition(
+      8,
+      99,
+      Combat: new ItemCombatDefinition(
+        Damage: 14,
+        ProjectileType: 2,
+        ProjectileSpeed: 5.0f)),
+    new ItemDefinition(62, 999),
+    new ItemDefinition(194, 999),
+    new ItemDefinition(195, 999),
+    new ItemDefinition(
+      5395,
+      999,
+      Extractinator: new ItemExtractinatorDefinition(4))]);
   private readonly InventoryTransferSystem _inventoryTransfers = new();
   private readonly ItemAmmoConsumptionSystem _itemAmmoConsumptionSystem = new();
+  private readonly ItemInventorySanitizationSystem _itemInventorySanitizationSystem = new();
+  private readonly WorldItemStackingSystem _worldItemStackingSystem = new();
   private readonly InventoryCommandSystem _inventoryCommandSystem = new();
   private readonly ItemInputValidationSystem _itemInputValidationSystem = new();
   private readonly ItemDropRuleSystem _itemDropRuleSystem = new();
   private readonly ItemPlacementSystem _itemPlacementSystem = new();
   private readonly ItemUseCooldownSystem _itemUseCooldownSystem = new();
   private readonly ItemUseSystem _itemUseSystem = new();
+  private readonly ExtractinatorSystem _extractinatorSystem = new();
+  private readonly ExtractinatorRuleRegistry _extractinatorRules =
+    ExtractinatorRuleRegistry.CreateVersion4();
   private readonly ItemEquipmentSystem _itemEquipmentSystem = new();
   private readonly ItemPrefixSystem _itemPrefixSystem = new();
   private readonly ItemVariantSystem _itemVariantSystem = new();
@@ -208,6 +262,7 @@ public sealed partial class DomeSimulation : IDisposable
   private readonly WorldItemDestroySystem _worldItemDestroySystem = new();
   private readonly ItemSelectionSystem _itemSelectionSystem = new();
   private readonly EquipmentStatSystem _equipmentStatSystem = new();
+  private readonly DamageCalculationSystem _damageCalculationSystem = new();
   private readonly NpcDefinitionRegistry _npcDefinitions = new([
     new NpcDefinition(
       DefinitionId: 1,
@@ -226,7 +281,21 @@ public sealed partial class DomeSimulation : IDisposable
       ColliderWidth: 1.0f,
       ColliderHeight: 2.0f,
       BehaviorId: NpcBehaviorId.TownHome,
-      LootTableId: 1)]);
+      LootTableId: 1),
+    new NpcDefinition(
+      DefinitionId: TrainingDummyNpcType,
+      NetId: TrainingDummyNpcType,
+      MaximumHealth: 1000,
+      Defense: 0,
+      ColliderWidth: 18.0f,
+      ColliderHeight: 40.0f,
+      BehaviorId: NpcBehaviorId.TrainingDummy,
+      LootTableId: 0,
+      Faction: NpcFaction.Neutral,
+      Category: NpcCategory.Town,
+      AiStyle: 92,
+      IsImmortal: true,
+      AlwaysReplicate: true)]);
   private readonly NpcSystemPipeline _npcSystemPipeline = new();
   private readonly PlayerLifecycleSystem _playerLifecycleSystem = new();
   private readonly NpcSpawnCommitSystem _npcSpawnCommitSystem = new();
@@ -239,6 +308,7 @@ public sealed partial class DomeSimulation : IDisposable
   private readonly WorldSeed _worldSeed = new(1);
   private readonly GroundCollisionSystem _groundCollisionSystem = new();
   private readonly TileCollisionSystem _tileCollisionSystem = new();
+  private readonly TopSlopeContactSystem _topSlopeContactSystem = new();
   private readonly MovementSystem _movementSystem = new();
   private readonly PlayerControlSystem _playerControlSystem = new();
   private readonly PlayerDeathSystem _playerDeathSystem = new();
@@ -259,6 +329,7 @@ public sealed partial class DomeSimulation : IDisposable
     ProjectileBehaviorSystem.CreateDefault();
   private readonly ProjectileReplicationSystem _projectileReplicationSystem = new();
   private readonly ProjectileDamageSystem _projectileDamageSystem = new();
+  private readonly ProjectileTargetEligibilitySystem _projectileTargetEligibilitySystem = new();
   private readonly ProjectileHitImmunityComponent _projectileHitImmunity = new();
   private readonly QueryDescription _npcMovementQuery = new QueryDescription()
     .WithAll<NpcTagComponent, TransformComponent, VelocityComponent>();
@@ -277,6 +348,7 @@ public sealed partial class DomeSimulation : IDisposable
   private long _nextChestMutationSequence;
   private int _nextDoorId = 1;
   private int _nextSignId;
+  private int _nextTileEntityId = 1;
   private long _nextLiquidSequence;
   private long _nextWiringSequence;
   private const ushort ClosedTallGateTileType = 388;
@@ -284,8 +356,12 @@ public sealed partial class DomeSimulation : IDisposable
   private const ushort OpenTallGateTileType = 389;
   private const ushort OpenTrapdoorTileType = 387;
   private bool _disposed;
+  private WorldMetadata? _worldMetadata;
   private WorldRuleState _worldRules = new();
   private WorldProgressionState _worldProgression = new();
+  private WorldEventRandomState _worldEventRandomState;
+  private WorldTimeRateInput? _worldTimeRateInput;
+  private WorldTimeRateSnapshot _worldTimeRate = WorldTimeRateSnapshot.Unavailable;
   private IReadOnlyList<string> _lastNpcPipelineSystemNames = [];
 
   public DomeSimulation()
@@ -316,8 +392,11 @@ public sealed partial class DomeSimulation : IDisposable
   {
     ArgumentNullException.ThrowIfNull(snapshot);
     _worldClock.Restore(snapshot.Clock);
+    _worldMetadata = snapshot.World.Metadata;
     _worldRules = snapshot.WorldRules;
     _worldProgression = snapshot.Progression;
+    _worldEventRandomState = snapshot.WorldEventRandomState;
+    _worldTimeRate = snapshot.WorldTimeRate;
     if (snapshot.NpcStates.Count > 0)
     {
       for (int index = 0; index < snapshot.NpcStates.Count; index++)
@@ -381,6 +460,10 @@ public sealed partial class DomeSimulation : IDisposable
           "Persistence snapshot contains duplicate tile entity IDs.",
           nameof(snapshot));
       }
+
+      _nextTileEntityId = Math.Max(_nextTileEntityId, entity.Id + 1);
+
+      TryRestoreTrainingDummyOwnership(entity);
     }
   }
 
@@ -388,8 +471,9 @@ public sealed partial class DomeSimulation : IDisposable
   public WorldGrid WorldGrid { get; }
   public int NpcCount => _npcReplications.Count;
   public long TickNumber => _worldClock.TickNumber;
-  public int TimeOfDay => _worldClock.TimeOfDay;
+  public double TimeOfDay => _worldClock.TimeOfDay;
   public bool IsDayTime => _worldClock.IsDayTime;
+  public byte MoonPhase => _worldClock.MoonPhase;
   public IReadOnlyList<string> LastNpcPipelineSystemNames => _lastNpcPipelineSystemNames;
   public IReadOnlyList<string> NpcPipelineSystemNames => _npcSystemPipeline.SystemNames;
   public IReadOnlyList<SimulationTickPhase> LastTickPhases => _lastTickPhases;
@@ -399,6 +483,12 @@ public sealed partial class DomeSimulation : IDisposable
   {
     ThrowIfDisposed();
     return _worldProgression;
+  }
+
+  public WorldTimeRateSnapshot CreateWorldTimeRateSnapshot()
+  {
+    ThrowIfDisposed();
+    return _worldTimeRate;
   }
 
   public bool TryQueueWorldEvent(WorldEventStartCommand command)
@@ -421,6 +511,29 @@ public sealed partial class DomeSimulation : IDisposable
     return true;
   }
 
+  public bool TryQueueNpcGameEventFirstClear(NpcGameEventFirstClearCommand command)
+  {
+    ThrowIfDisposed();
+    if (!command.IsValid || !command.SchedulesLanternNight)
+    {
+      return false;
+    }
+
+    return TryQueueWorldLanternNightSchedule(new WorldLanternNightScheduleCommand(command.Sequence));
+  }
+
+  private bool TryQueueWorldLanternNightSchedule(WorldLanternNightScheduleCommand command)
+  {
+    if (!command.IsValid || _worldProgression.IsNextNightLanternNight ||
+        _worldLanternNightScheduleRequests.Count != 0)
+    {
+      return false;
+    }
+
+    _worldLanternNightScheduleRequests.Add(command);
+    return true;
+  }
+
   public bool TryQueueWorldInvasion(WorldInvasionStartCommand command)
   {
     ThrowIfDisposed();
@@ -434,11 +547,43 @@ public sealed partial class DomeSimulation : IDisposable
     return true;
   }
 
+  public bool TryQueueWorldInvasion(
+    WorldInvasionStartCommand command,
+    IReadOnlyList<WorldInvasionPlayerSnapshot> players)
+  {
+    ThrowIfDisposed();
+    ArgumentNullException.ThrowIfNull(players);
+    if (!_worldInvasionStartEligibilitySystem.CanStart(command.Type, players))
+    {
+      return false;
+    }
+
+    return TryQueueWorldInvasion(command);
+  }
+
+  public bool TryQueueWorldInvasion(
+    int invasionType,
+    long sequence,
+    IReadOnlyList<WorldInvasionPlayerSnapshot> players)
+  {
+    ThrowIfDisposed();
+    ArgumentNullException.ThrowIfNull(players);
+    if (!_worldInvasionStartEligibilitySystem.CanStart(invasionType, players))
+    {
+      return false;
+    }
+
+    int qualifiedPlayers = _worldInvasionStartEligibilitySystem.CountQualifiedPlayers(players);
+    int size = new WorldInvasionSizeSystem().Resolve(invasionType, qualifiedPlayers);
+    return TryQueueWorldInvasion(new WorldInvasionStartCommand(invasionType, size, sequence));
+  }
+
   public bool TryQueueWorldInvasionProgress(WorldInvasionProgressCommand command)
   {
     ThrowIfDisposed();
     if (!command.IsValid || _worldProgression.InvasionType == 0 ||
-        _worldProgression.InvasionSize == 0)
+        _worldProgression.InvasionSize == 0 ||
+        HasPendingWorldInvasionProgressSequence(command.Sequence))
     {
       return false;
     }
@@ -447,10 +592,23 @@ public sealed partial class DomeSimulation : IDisposable
     return true;
   }
 
+  private bool HasPendingWorldInvasionProgressSequence(long sequence)
+  {
+    for (int index = 0; index < _worldInvasionProgressRequests.Count; index++)
+    {
+      if (_worldInvasionProgressRequests[index].Sequence == sequence)
+      {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   public bool TryQueueWorldRain(WorldRainStartCommand command)
   {
     ThrowIfDisposed();
-    if (!command.IsValid || _worldRules.IsRaining ||
+    if (!command.IsValid || _worldRules.IsRaining || _worldProgression.IsLanternNight ||
         _worldRainStartRequests.Count > 0 || _worldProgression.IsSlimeRaining ||
         _worldSlimeRainStartRequests.Count > 0)
     {
@@ -464,8 +622,15 @@ public sealed partial class DomeSimulation : IDisposable
   public bool TryQueueWorldSlimeRain(WorldSlimeRainStartCommand command)
   {
     ThrowIfDisposed();
+    if (_worldMetadata is not null &&
+        !_worldSlimeRainEligibilitySystem.Evaluate(_worldMetadata).IsEligible)
+    {
+      return false;
+    }
+
     if (!command.IsValid || _worldRules.IsRaining || _worldRainStartRequests.Count > 0 ||
-        _worldProgression.IsSlimeRaining || _worldSlimeRainStartRequests.Count > 0)
+        _worldProgression.IsSlimeRaining || _worldProgression.IsSlimeRainCoolingDown ||
+        _worldSlimeRainStartRequests.Count > 0)
     {
       return false;
     }
@@ -474,10 +639,36 @@ public sealed partial class DomeSimulation : IDisposable
     return true;
   }
 
+  public bool TryQueueWorldSlimeRainStop(WorldSlimeRainStopCommand command)
+  {
+    ThrowIfDisposed();
+    if (!command.IsValid || !_worldProgression.IsSlimeRaining ||
+        _worldSlimeRainStopRequests.Count > 0)
+    {
+      return false;
+    }
+
+    _worldSlimeRainStopRequests.Add(command);
+    return true;
+  }
+
+  public bool TryQueueWorldWind(WorldWindChangeCommand command)
+  {
+    ThrowIfDisposed();
+    if (!command.IsValid || _worldWindChangeRequests.Count > 0)
+    {
+      return false;
+    }
+
+    _worldWindChangeRequests.Add(command);
+    return true;
+  }
+
   public bool TryQueueWorldMeteorImpact(WorldMeteorImpactCommand command)
   {
     ThrowIfDisposed();
-    if (!command.IsValid || _worldMeteorImpactRequests.Count > 0)
+    if (!command.IsValid || _worldProgression.IsMeteorScheduled ||
+        _worldMeteorImpactRequests.Count > 0 || _scheduledMeteorImpactRequests.Count > 0)
     {
       return false;
     }
@@ -497,6 +688,46 @@ public sealed partial class DomeSimulation : IDisposable
     return true;
   }
 
+  public bool TryQueueWorldMeteorSchedule(WorldMeteorScheduleCommand command)
+  {
+    ThrowIfDisposed();
+    if (!command.IsValid || _worldClock.IsDayTime ||
+        !_worldProgression.DefeatedEaterOrBrain ||
+        _worldProgression.IsMeteorScheduled || _worldMeteorScheduleRequests.Count > 0)
+    {
+      return false;
+    }
+
+    _worldMeteorScheduleRequests.Add(command);
+    return true;
+  }
+
+  public bool TryQueueScheduledWorldMeteorImpact(WorldMeteorImpactCommand command)
+  {
+    ThrowIfDisposed();
+    if (!command.IsValid || !_worldClock.IsDayTime ||
+        _worldClock.TimeOfDay <= WorldMeteorScheduleSystem.MeteorScheduleCutoffTime ||
+        !_worldProgression.IsMeteorScheduled || _scheduledMeteorImpactRequests.Count > 0 ||
+        _worldMeteorImpactRequests.Count > 0)
+    {
+      return false;
+    }
+
+    if (!_worldMeteorImpactSystem.TryCreateCommands(
+          WorldGrid,
+          command,
+          CreateMeteorOccupants(),
+          firstSequence: 0,
+          out _,
+          out _))
+    {
+      return false;
+    }
+
+    _scheduledMeteorImpactRequests.Add(command);
+    return true;
+  }
+
   private bool CanQueueWorldEvent(WorldEventKind kind)
   {
     return kind switch
@@ -504,14 +735,35 @@ public sealed partial class DomeSimulation : IDisposable
       WorldEventKind.BloodMoon => !_worldClock.IsDayTime && !_worldProgression.IsBloodMoon,
       WorldEventKind.Eclipse => _worldClock.IsDayTime && _worldProgression.IsHardMode &&
         _worldProgression.DefeatedMechanicalBoss && !_worldProgression.IsEclipse,
+      WorldEventKind.LanternNight => !_worldClock.IsDayTime && !_worldProgression.IsLanternNight,
       _ => false
     };
+  }
+
+  private bool HasPendingLanternNightStart()
+  {
+    for (int index = 0; index < _worldEventStartRequests.Count; index++)
+    {
+      WorldEventStartCommand request = _worldEventStartRequests[index];
+      if (request.IsValid && request.Kind == WorldEventKind.LanternNight)
+      {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   public void SetWorldTimePaused(bool isPaused)
   {
     ThrowIfDisposed();
     _worldClock.SetPaused(isPaused);
+  }
+
+  public void ConfigureWorldTimeRate(WorldTimeRateInput input)
+  {
+    ThrowIfDisposed();
+    _worldTimeRateInput = input;
   }
 
   public bool TryQueueLiquidSource(PipelineLiquidSourceComponent source)
@@ -1018,7 +1270,8 @@ public sealed partial class DomeSimulation : IDisposable
         chest.Opener,
         slots,
         chest.Revision,
-        chest.Section));
+        chest.Section,
+        chest.IsLocked));
     }
 
     return snapshots;
@@ -1036,7 +1289,8 @@ public sealed partial class DomeSimulation : IDisposable
         chest.TileY,
         chest.Slots,
         chest.Revision,
-        _chests[chest.ChestId].Name));
+        _chests[chest.ChestId].Name,
+        chest.IsLocked));
     }
 
     return snapshots;
@@ -1045,7 +1299,253 @@ public sealed partial class DomeSimulation : IDisposable
   public IReadOnlyList<TileEntityPersistentState> CreateTileEntitySnapshots()
   {
     ThrowIfDisposed();
-    return _tileEntities.Values.OrderBy(entity => entity.Id).ToArray();
+    List<TileEntityPersistentState> snapshots = new(_tileEntities.Count);
+    foreach (TileEntityPersistentState entity in _tileEntities.Values)
+    {
+      if (_trainingDummyOwnerships.TryGetValue(
+            entity.Id,
+            out TrainingDummyOwnershipState ownership) &&
+          TrainingDummyPersistenceProjection.TryProject(
+            entity,
+            ownership,
+            out TileEntityPersistentState projected))
+      {
+        snapshots.Add(projected);
+      }
+      else
+      {
+        snapshots.Add(entity);
+      }
+    }
+
+    return snapshots.OrderBy(entity => entity.Id).ToArray();
+  }
+
+  public bool TryPlaceTrainingDummy(int tileX, int tileY, out int entityId)
+  {
+    ThrowIfDisposed();
+    entityId = 0;
+    if (!WorldGrid.Contains(tileX, tileY) ||
+        !TileEntityTrainingDummyValidityQuery.IsValid(WorldGrid.GetTile(tileX, tileY)) ||
+        _tileEntities.Values.Any(entity => entity.TileX == tileX && entity.TileY == tileY))
+    {
+      return false;
+    }
+
+    entityId = _nextTileEntityId++;
+    _tileEntities.Add(entityId, new TileEntityPersistentState(
+      entityId,
+      0,
+      tileX,
+      tileY,
+      [0xFF, 0xFF],
+      isOpaque: false));
+    return true;
+  }
+
+  public bool TryRemoveTrainingDummy(int tileX, int tileY)
+  {
+    ThrowIfDisposed();
+    int entityId = _tileEntities.Values
+      .Where(entity => entity.Type == 0 && entity.TileX == tileX && entity.TileY == tileY)
+      .Select(entity => entity.Id)
+      .FirstOrDefault();
+    if (entityId <= 0 || !_tileEntities.Remove(entityId))
+    {
+      return false;
+    }
+
+    if (_trainingDummyOwnerships.Remove(entityId, out TrainingDummyOwnershipState ownership) &&
+        ownership.Npc.IsValid)
+    {
+      _commands.Enqueue(new DespawnNpcCommand(
+        ownership.Npc,
+        NpcComponents.NpcDespawnReason.OutOfRange));
+    }
+
+    return true;
+  }
+
+  public bool TryLinkTrainingDummyNpc(
+    int entityId,
+    NpcHandle npc,
+    TrainingDummyNpcLinkSnapshot npcSnapshot,
+    out long revision)
+  {
+    ThrowIfDisposed();
+    revision = 0;
+    if (_trainingDummyOwnerships.TryGetValue(entityId, out TrainingDummyOwnershipState existing) &&
+        existing.Npc.IsValid)
+    {
+      return false;
+    }
+
+    if (!_tileEntities.TryGetValue(entityId, out TileEntityPersistentState? persistent) ||
+        persistent is null)
+    {
+      return false;
+    }
+
+    if (!TrainingDummyTileEntityState.TryRead(
+          persistent,
+          out TrainingDummyTileEntityState entity) ||
+        !_npcReplications.TryGetValue(npc, out NpcReplicationSnapshot replication) ||
+        !replication.IsActive ||
+        replication.NpcType != 488)
+    {
+      return false;
+    }
+
+    if (!TrainingDummyOwnershipState.TryLink(
+          entity,
+          npc,
+          npcSnapshot,
+          out TrainingDummyOwnershipState ownership))
+    {
+      return false;
+    }
+
+    _trainingDummyOwnerships[entityId] = ownership;
+    revision = ownership.Revision;
+    return true;
+  }
+
+  public bool TryClearTrainingDummyNpc(
+    int entityId,
+    TrainingDummyNpcLinkSnapshot npcSnapshot,
+    out long revision)
+  {
+    ThrowIfDisposed();
+    revision = 0;
+    if (!_tileEntities.TryGetValue(entityId, out TileEntityPersistentState? persistent) ||
+        persistent is null ||
+        !_trainingDummyOwnerships.TryGetValue(entityId, out TrainingDummyOwnershipState current))
+    {
+      return false;
+    }
+
+    if (!TrainingDummyTileEntityState.TryRead(
+          persistent,
+          out TrainingDummyTileEntityState entity) ||
+        !TrainingDummyOwnershipState.TryClear(
+          current,
+          entity,
+          npcSnapshot,
+          out TrainingDummyOwnershipState cleared))
+    {
+      return false;
+    }
+
+    _trainingDummyOwnerships[entityId] = cleared;
+    revision = cleared.Revision;
+    return true;
+  }
+
+  private void TryRestoreTrainingDummyOwnership(TileEntityPersistentState persistent)
+  {
+    if (!TrainingDummyTileEntityState.TryRead(
+          persistent,
+          out TrainingDummyTileEntityState entity) ||
+        entity.NpcId < 0)
+    {
+      return;
+    }
+
+    NpcHandle npcHandle = new(entity.NpcId);
+    if (!_npcReplications.TryGetValue(npcHandle, out NpcReplicationSnapshot npc) ||
+        npc.Position.X != entity.TileX ||
+        npc.Position.Y != entity.TileY)
+    {
+      return;
+    }
+
+    TrainingDummyNpcLinkSnapshot link = new(
+      npc.IsActive,
+      npc.NpcType,
+      entity.TileX,
+      entity.TileY);
+    if (TrainingDummyOwnershipState.TryRestore(
+          entity,
+          npcHandle,
+          link,
+          out TrainingDummyOwnershipState ownership))
+    {
+      _trainingDummyOwnerships[entity.EntityId] = ownership;
+    }
+  }
+
+  private void EvaluateTrainingDummyLifecycle(IReadOnlyList<Entity> activePlayers)
+  {
+    _pendingTrainingDummyActivations.Clear();
+    List<TrainingDummyPlayerHitboxSnapshot> players = new(activePlayers.Count);
+    for (int index = 0; index < activePlayers.Count; index++)
+    {
+      Entity player = activePlayers[index];
+      TransformComponent transform = World.Get<TransformComponent>(player);
+      ColliderComponent collider = World.Get<ColliderComponent>(player);
+      players.Add(new TrainingDummyPlayerHitboxSnapshot(
+        IsActive: true,
+        X: checked((int)MathF.Floor(transform.X)),
+        Y: checked((int)MathF.Floor(transform.Y)),
+        Width: checked((int)MathF.Ceiling(collider.Width)),
+        Height: checked((int)MathF.Ceiling(collider.Height))));
+    }
+
+    int activeNpcCount = _npcReplications.Values.Count(npc => npc.IsActive);
+    foreach (TileEntityPersistentState persistent in _tileEntities.Values.OrderBy(entity => entity.Id))
+    {
+      if (!TrainingDummyTileEntityState.TryRead(
+            persistent,
+            out TrainingDummyTileEntityState entity) ||
+          !TileEntityTrainingDummyValidityQuery.IsValid(
+            WorldGrid.GetTile(entity.TileX, entity.TileY)))
+      {
+        continue;
+      }
+
+      if (_trainingDummyOwnerships.TryGetValue(
+            entity.EntityId,
+            out TrainingDummyOwnershipState ownership) &&
+          ownership.Npc.IsValid)
+      {
+        if (!_npcReplications.TryGetValue(ownership.Npc, out NpcReplicationSnapshot npc))
+        {
+          continue;
+        }
+
+        TrainingDummyNpcLinkSnapshot link = new(
+          npc.IsActive,
+          npc.NpcType,
+          entity.TileX,
+          entity.TileY);
+        if (TrainingDummyDeactivationDecisionQuery.ShouldDeactivate(entity, link) &&
+            TryClearTrainingDummyNpc(entity.EntityId, link, out _))
+        {
+          _commands.Enqueue(new DespawnNpcCommand(
+            ownership.Npc,
+            NpcComponents.NpcDespawnReason.OutOfRange));
+        }
+
+        continue;
+      }
+
+      TrainingDummyActivationDecisionResult decision =
+        TrainingDummyActivationDecisionQuery.Evaluate(
+          entity,
+          players,
+          activeNpcCount >= MaximumNpcCount);
+      if (!decision.ShouldActivate)
+      {
+        continue;
+      }
+
+      _pendingTrainingDummyActivations.Add(entity.EntityId);
+      _commands.Enqueue(new SpawnNpcCommand(
+        DefinitionId: TrainingDummyNpcType,
+        Position: new SimulationVector(entity.TileX, entity.TileY),
+        Source: NpcComponents.NpcSpawnSource.TileEntity));
+      activeNpcCount++;
+    }
   }
 
   public bool TryOpenChest(int chestId, PlayerHandle player, SimulationVector playerPosition)
@@ -1054,7 +1554,8 @@ public sealed partial class DomeSimulation : IDisposable
     if (!_chests.TryGetValue(chestId, out ChestComponent? chest) ||
         !_chestOpenSystem.TryApply(
           chest,
-          new ChestOpenCommand(TickNumber, chestId, player, playerPosition)))
+          new ChestOpenCommand(TickNumber, chestId, player, playerPosition),
+          GetInventory(player)))
     {
       return false;
     }
@@ -1083,10 +1584,12 @@ public sealed partial class DomeSimulation : IDisposable
     int inventorySlot,
     int chestSlot,
     bool withdraw,
-    SimulationVector playerPosition)
+    SimulationVector playerPosition,
+    long expectedRevision = -1)
   {
     ThrowIfDisposed();
     if (!_chests.TryGetValue(chestId, out ChestComponent? chest) || chest.Opener != player ||
+        (expectedRevision >= 0 && chest.Revision != expectedRevision) ||
         !_players.TryGetValue(player, out Entity playerEntity) ||
         !World.Has<InventoryComponent>(playerEntity) ||
         !IsChestInRange(chest, playerPosition))
@@ -1178,6 +1681,21 @@ public sealed partial class DomeSimulation : IDisposable
     return player;
   }
 
+  public IReadOnlyList<WorldInvasionPlayerSnapshot> CreateWorldInvasionPlayerSnapshots()
+  {
+    ThrowIfDisposed();
+    List<WorldInvasionPlayerSnapshot> snapshots = new(_players.Count);
+    foreach (PlayerHandle player in _players.Keys.OrderBy(handle => handle.Value))
+    {
+      Entity entity = _players[player];
+      PlayerLifecycleComponent lifecycle = World.Get<PlayerLifecycleComponent>(entity);
+      HealthComponent health = World.Get<HealthComponent>(entity);
+      snapshots.Add(new WorldInvasionPlayerSnapshot(lifecycle.IsActive, health.Maximum));
+    }
+
+    return snapshots;
+  }
+
   public PlayerHandle CreatePlayer(PlayerPersistentState account, SimulationVector spawn)
   {
     return CreatePlayer(account, spawn, (byte)Math.Clamp(_nextPlayerHandle - 1, 0, byte.MaxValue));
@@ -1234,9 +1752,11 @@ public sealed partial class DomeSimulation : IDisposable
           Dye: item.Dye,
           Paint: item.Paint,
           IsFavorited: item.IsFavorited,
+          IsNewAndShiny: item.IsNewAndShiny,
           NameOverride: item.NameOverride));
     }
 
+    _itemInventorySanitizationSystem.Sanitize(inventory, _itemDefinitions);
     _playerAccountUuids.Add(player, serverAccount.Uuid);
     return player;
   }
@@ -1314,6 +1834,12 @@ public sealed partial class DomeSimulation : IDisposable
   }
 
   public void QueueNpcDespawn(DespawnNpcCommand command)
+  {
+    ThrowIfDisposed();
+    _commands.Enqueue(command);
+  }
+
+  public void QueueProjectileSpawn(SpawnProjectileCommand command)
   {
     ThrowIfDisposed();
     _commands.Enqueue(command);
@@ -1698,6 +2224,27 @@ public sealed partial class DomeSimulation : IDisposable
       _nextWiringSequence++));
   }
 
+  public void QueueUseExtractinator(PlayerHandle player, int sourceSlot, int targetX, int targetY)
+  {
+    ThrowIfDisposed();
+    ValidatePlayerCommandPlayer(player);
+    _commands.Enqueue(new UseExtractinatorCommand(
+      player,
+      sourceSlot,
+      targetX,
+      targetY,
+      _nextWiringSequence++));
+  }
+
+  public void QueueTriggerExtractinator(int targetX, int targetY)
+  {
+    ThrowIfDisposed();
+    _commands.Enqueue(new TriggerExtractinatorCommand(
+      targetX,
+      targetY,
+      _nextWiringSequence++));
+  }
+
   public void QueueEquipItem(PlayerHandle player, int sourceSlot, bool isVanity)
   {
     ThrowIfDisposed();
@@ -1791,6 +2338,12 @@ public sealed partial class DomeSimulation : IDisposable
     }
 
     return items;
+  }
+
+  public IReadOnlyList<ExtractinatorResultEvent> CreateExtractinatorResultEvents()
+  {
+    ThrowIfDisposed();
+    return _extractinatorResultEvents.ToArray();
   }
 
   public IReadOnlyList<ItemReplicationSnapshot> CreateItemReplicationSnapshots()
@@ -1900,6 +2453,18 @@ public sealed partial class DomeSimulation : IDisposable
   {
     ThrowIfDisposed();
     return _worldItemDestroyedEvents.ToArray();
+  }
+
+  public IReadOnlyList<WorldSlimeRainWarningEvent> CreateWorldSlimeRainWarningEvents()
+  {
+    ThrowIfDisposed();
+    return _worldSlimeRainWarningEvents.ToArray();
+  }
+
+  public IReadOnlyList<WorldInvasionCompletedEvent> CreateWorldInvasionCompletedEvents()
+  {
+    ThrowIfDisposed();
+    return _worldInvasionCompletedEvents.ToArray();
   }
 
   public IReadOnlyList<ItemDroppedEvent> CreateItemDroppedEvents()
@@ -2031,6 +2596,7 @@ public sealed partial class DomeSimulation : IDisposable
     WorldProgressionState? progression = null)
   {
     ThrowIfDisposed();
+    _worldMetadata = metadata ?? throw new ArgumentNullException(nameof(metadata));
     WorldClockSnapshot worldClock = _worldClock.CreateSnapshot();
     List<PlayerHandle> accountPlayers = new(_playerAccountUuids.Keys);
     for (int index = 0; index < accountPlayers.Count; index++)
@@ -2050,7 +2616,9 @@ public sealed partial class DomeSimulation : IDisposable
       worldClock: worldClock,
       npcStates: CreateNpcStateSnapshots(),
       worldRules: worldRules ?? _worldRules,
-      progression: progression ?? _worldProgression);
+      progression: progression ?? _worldProgression,
+      worldEventRandomState: _worldEventRandomState,
+      worldTimeRate: _worldTimeRate);
   }
 
   public void Dispose()
@@ -2082,8 +2650,16 @@ public sealed partial class DomeSimulation : IDisposable
     _worldItemPickedUpEvents.Clear();
     _worldItemDestroyedEvents.Clear();
     _itemDroppedEvents.Clear();
+    _extractinatorResultEvents.Clear();
+    _worldSlimeRainWarningEvents.Clear();
+    _worldInvasionCompletedEvents.Clear();
     tick.Enter(SimulationTickPhase.ApplyWorldClock);
-    _worldClockSystem.Tick(_worldClock);
+    if (_worldTimeRateInput is WorldTimeRateInput timeRateInput)
+    {
+      _worldTimeRate = _worldTimeRateSystem.Resolve(timeRateInput);
+    }
+
+    _worldClockSystem.Tick(_worldClock, _worldTimeRate);
     if (_worldClock.IsPaused)
     {
       tick.CompleteWhilePaused();
@@ -2094,20 +2670,54 @@ public sealed partial class DomeSimulation : IDisposable
     _worldRules = _worldWeatherSystem.Advance(
       _worldClock.CreateSnapshot(),
       _worldRules,
-      _worldRainStartRequests);
+      _worldRainStartRequests,
+      _worldWindChangeRequests,
+      _worldProgression.IsLanternNight || HasPendingLanternNightStart());
     _worldRainStartRequests.Clear();
+    _worldWindChangeRequests.Clear();
 
+    WorldProgressionState previousProgression = _worldProgression;
     _worldProgression = _worldProgressionSystem.Advance(
       _worldClock.CreateSnapshot(),
       _worldProgression,
       _worldEventStartRequests,
+      _worldLanternNightScheduleRequests,
       _worldInvasionStartRequests,
       _worldInvasionProgressRequests,
-      _worldSlimeRainStartRequests);
+      _worldSlimeRainStartRequests,
+      _worldSlimeRainStopRequests);
+    AdvanceWorldInvasionTravel();
+    if (previousProgression.InvasionType > 0 &&
+        previousProgression.InvasionSize > 0 &&
+        _worldProgression.InvasionType == 0 &&
+        _worldProgression.InvasionSize == 0)
+    {
+      WorldInvasionClearFlag clearFlag =
+        _worldInvasionClearFlagSystem.Resolve(previousProgression.InvasionType);
+      _worldProgression = _worldProgression.WithInvasionClearFlag(clearFlag);
+      _worldInvasionCompletedEvents.Add(
+        new WorldInvasionCompletedEvent(
+          previousProgression.InvasionType,
+          clearFlag));
+    }
+    if (previousProgression.SlimeRainWarningTicks > 0 &&
+        _worldProgression.SlimeRainWarningTicks == 0)
+    {
+      _worldSlimeRainWarningEvents.Add(
+        new WorldSlimeRainWarningEvent(_worldProgression.IsSlimeRaining));
+    }
+    ResolveScheduledWorldMeteorImpacts();
+    _worldProgression = _worldMeteorScheduleSystem.Advance(
+      _worldClock.CreateSnapshot(),
+      _worldProgression,
+      _worldMeteorScheduleRequests);
     _worldEventStartRequests.Clear();
+    _worldLanternNightScheduleRequests.Clear();
     _worldInvasionStartRequests.Clear();
     _worldInvasionProgressRequests.Clear();
     _worldSlimeRainStartRequests.Clear();
+    _worldSlimeRainStopRequests.Clear();
+    _worldMeteorScheduleRequests.Clear();
 
     tick.Enter(SimulationTickPhase.ApplyPlayerInputs);
     _playerInputApplySystem.Apply(World, _players, FilterActivePlayerInputs(inputBatch));
@@ -2123,6 +2733,7 @@ public sealed partial class DomeSimulation : IDisposable
     _playerVitalRegenSystem.Apply(World, activePlayers);
     AdvancePlayerBuffs(activePlayers);
     AdvancePlayerImmunity();
+    EvaluateTrainingDummyLifecycle(activePlayers);
     List<string> npcPipelineStages = new();
     tick.Enter(SimulationTickPhase.SelectNpcTargets);
     RunNpcSystemPipeline(
@@ -2151,6 +2762,24 @@ public sealed partial class DomeSimulation : IDisposable
     tick.Enter(SimulationTickPhase.EndTick);
     tick.CompleteNormally();
     _lastTickPhases = tick.Phases;
+  }
+
+  private void AdvanceWorldInvasionTravel()
+  {
+    if (_worldMetadata is null ||
+        !_worldTimeRate.IsAvailable ||
+        _worldProgression.InvasionType == 0 ||
+        _worldProgression.InvasionSize == 0 ||
+        _worldProgression.InvasionX == _worldMetadata.SpawnX)
+    {
+      return;
+    }
+
+    WorldInvasionTravelResult travel = _worldInvasionTravelSystem.Advance(
+      _worldProgression.InvasionX,
+      _worldMetadata.SpawnX,
+      _worldTimeRate.Rate);
+    _worldProgression = _worldProgression.WithInvasionX(travel.Position);
   }
 
   private void AdvanceLiquid()
@@ -2214,6 +2843,7 @@ public sealed partial class DomeSimulation : IDisposable
       _liquidState,
       _nextLiquidSequence);
     _nextLiquidSequence = propagation.NextSequence;
+    EnqueueLiquidContactTileChanges(propagation.TileCommands);
     if (propagation.Commands.Count == 0)
     {
       committed.AddRange(CommitLiquidMergeChanges(merges));
@@ -2349,6 +2979,27 @@ public sealed partial class DomeSimulation : IDisposable
     }
   }
 
+  private void EnqueueLiquidContactTileChanges(IReadOnlyList<TileChangeCommand> commands)
+  {
+    for (int index = 0; index < commands.Count; index++)
+    {
+      TileChangeCommand command = commands[index];
+      WorldGrid.EnqueueTileChange(command with { Sequence = _nextWiringSequence++ });
+    }
+  }
+
+  private bool CanKillTileForActuator(int tileX, int tileY)
+  {
+    return LegacyCanKillTileQuery.TryGetCanKill(
+      WorldGrid,
+      tileX,
+      tileY,
+      _worldProgression.IsHardMode,
+      _chests,
+      _chestIndexSystem,
+      out bool canKill) && canKill;
+  }
+
   private void AdvanceWiring()
   {
     if (_wiringInputs.Count == 0 && _pressurePlates.Count == 0)
@@ -2472,9 +3123,13 @@ public sealed partial class DomeSimulation : IDisposable
           actuator is not null)
       {
         IReadOnlyList<TileChangeCommand> tileChanges = _actuatorCommandSystem.CreateCommands(
-          actuator,
-          activation,
-          _nextWiringSequence);
+        WorldGrid,
+        actuator,
+        activation,
+        _nextWiringSequence,
+        CanKillTileForActuator,
+        _worldMetadata,
+        _worldProgression);
         _nextWiringSequence += tileChanges.Count;
         for (int commandIndex = 0; commandIndex < tileChanges.Count; commandIndex++)
         {
@@ -2484,6 +3139,42 @@ public sealed partial class DomeSimulation : IDisposable
 
       if (_lamps.TryGetValue(activation.MechanismId, out LampComponent? lamp))
       {
+        bool isFrameBacked = _lampCommandSystem.TryCreateFrameCommands(
+          WorldGrid,
+          LampDefinitionRegistry.SourceDerived,
+          lamp.Tile.X,
+          lamp.Tile.Y,
+          activation.Kind,
+          _nextWiringSequence,
+          out IReadOnlyList<TileFrameCommand> frameChanges);
+        if (isFrameBacked)
+        {
+          if (frameChanges.Count != 0)
+          {
+            _nextWiringSequence += frameChanges.Count;
+            for (int commandIndex = 0; commandIndex < frameChanges.Count; commandIndex++)
+            {
+              WorldGrid.EnqueueTileFrameChange(frameChanges[commandIndex]);
+            }
+          }
+
+          if (activation.Kind == MechanismActivationKind.Close)
+          {
+            lamp.SetLit(false);
+          }
+          else if (activation.Kind == MechanismActivationKind.Activate ||
+              activation.Kind == MechanismActivationKind.Open)
+          {
+            lamp.SetLit(true);
+          }
+          else if (activation.Kind == MechanismActivationKind.Toggle)
+          {
+            lamp.SetLit(!lamp.IsLit);
+          }
+
+          continue;
+        }
+
         IReadOnlyList<TileChangeCommand> tileChanges = _lampCommandSystem.CreateCommands(
           lamp,
           activation,
@@ -2603,8 +3294,17 @@ public sealed partial class DomeSimulation : IDisposable
       ref TransformComponent transform = ref World.Get<TransformComponent>(entity);
       ref VelocityComponent velocity = ref World.Get<VelocityComponent>(entity);
       ref PhysicsStateComponent physics = ref World.Get<PhysicsStateComponent>(entity);
+      PlayerInputComponent input = World.Get<PlayerInputComponent>(entity);
       ColliderComponent collider = World.Get<ColliderComponent>(entity);
       _tileCollisionSystem.MoveAndResolve(
+        WorldGrid,
+        ref transform,
+        ref velocity,
+        ref physics,
+        collider,
+        input.Down,
+        deferTopSlopeCollision: true);
+      _topSlopeContactSystem.Resolve(
         WorldGrid,
         ref transform,
         ref velocity,
@@ -2617,14 +3317,19 @@ public sealed partial class DomeSimulation : IDisposable
   {
     CommitPlayerInteractions();
     CommitInventoryCommands();
+    _extractinatorTargetsCommittedThisTick.Clear();
+    CommitExtractinatorUses();
+    CommitTriggeredExtractinators();
     CommitItemUses();
     CommitItemPrefixes();
     CommitItemVariants();
     CommitItemUnequipment();
     CommitItemEquipment();
+    RecalculateEquipmentStats();
     CommitItemPlacements();
     CommitWorldItemMoves();
     CommitWorldItemDestructions();
+    CommitWorldItemPassiveStacking();
     CommitWorldItemPickups();
     AdvanceWorldItemPickupDelays();
     CommitWorldMeteorImpacts();
@@ -2651,6 +3356,8 @@ public sealed partial class DomeSimulation : IDisposable
         defense,
         ref immunity,
         command.Amount,
+        DamageTargetKind.Player,
+        _worldRules,
         out int appliedAmount);
       if (applied)
       {
@@ -2702,6 +3409,19 @@ public sealed partial class DomeSimulation : IDisposable
     for (int index = 0; index < _commands.SpawnProjectileCommands.Count; index++)
     {
       SpawnProjectileCommand command = _commands.SpawnProjectileCommands[index];
+      if (!_players.TryGetValue(command.Owner, out Entity ownerEntity) ||
+          !World.Get<PlayerLifecycleComponent>(ownerEntity).IsActive ||
+          !float.IsFinite(command.X) ||
+          !float.IsFinite(command.Y) ||
+          !float.IsFinite(command.InitialVelocityY) ||
+          !float.IsFinite(command.ProjectileSpeed) ||
+          command.LifetimeTicks <= 0 ||
+          command.MaximumPenetration == 0 ||
+          command.MaximumPenetration < -1)
+      {
+        continue;
+      }
+
       if (!_projectileDefinitions.TryGet(command.ProjectileType,
           out ProjectileDefinition definition))
       {
@@ -2718,7 +3438,7 @@ public sealed partial class DomeSimulation : IDisposable
       _projectileIdsByEntity.Add(projectile, replicationId);
       _projectileReplications.Add(replicationId, new ProjectileReplicationSnapshot(
         replicationId,
-        DomeBoltProjectileType,
+        command.ProjectileType,
         command.Owner,
         position,
         velocity,
@@ -2734,11 +3454,13 @@ public sealed partial class DomeSimulation : IDisposable
     {
       DamageCommand command = _commands.DamageCommands[index];
       ref HealthComponent health = ref World.Get<HealthComponent>(command.Target);
-      health.Current -= command.Amount;
-      if (health.Current < 0)
-      {
-        health.Current = 0;
-      }
+      DefenseComponent defense = World.Get<DefenseComponent>(command.Target);
+      int appliedAmount = _damageCalculationSystem.CalculateAppliedAmount(
+        command.Amount,
+        defense.Value,
+        DamageTargetKind.Npc,
+        _worldRules);
+      health.Current = Math.Max(0, health.Current - appliedAmount);
 
       UpdateNpcReplication(command.Target);
     }
@@ -2788,6 +3510,27 @@ public sealed partial class DomeSimulation : IDisposable
     }
 
     _worldMeteorImpactRequests.Clear();
+  }
+
+  private void ResolveScheduledWorldMeteorImpacts()
+  {
+    for (int index = 0; index < _scheduledMeteorImpactRequests.Count; index++)
+    {
+      WorldMeteorImpactCommand impact = _scheduledMeteorImpactRequests[index];
+      if (!_worldMeteorScheduleSystem.IsReadyForResolution(
+            _worldClock.CreateSnapshot(),
+            _worldProgression,
+            impact))
+      {
+        continue;
+      }
+
+      _worldMeteorImpactRequests.Add(impact);
+      _worldProgression = _worldProgression.WithMeteorScheduled(false);
+      break;
+    }
+
+    _scheduledMeteorImpactRequests.Clear();
   }
 
   private IReadOnlyCollection<WorldMeteorOccupant> CreateMeteorOccupants()
@@ -2860,7 +3603,22 @@ public sealed partial class DomeSimulation : IDisposable
         Revision: 1,
         GetSectionCoordinates(command.Position)));
       _nextNpcHandle = Math.Max(_nextNpcHandle, replicationId + 1);
+
+      if (command.Source == NpcComponents.NpcSpawnSource.TileEntity &&
+          _pendingTrainingDummyActivations.Count > 0)
+      {
+        int entityId = _pendingTrainingDummyActivations[0];
+        _pendingTrainingDummyActivations.RemoveAt(0);
+        TrainingDummyNpcLinkSnapshot link = new(
+          IsActive: true,
+          NpcType: definition.NetId,
+          AiTileX: (int)command.Position.X,
+          AiTileY: (int)command.Position.Y);
+        TryLinkTrainingDummyNpc(entityId, npc, link, out _);
+      }
     }
+
+    _pendingTrainingDummyActivations.Clear();
   }
 
   private void CommitNpcDespawnCommands()
@@ -2880,6 +3638,31 @@ public sealed partial class DomeSimulation : IDisposable
       lifecycle.IsActive = false;
       lifecycle.DespawnReason = command.Reason;
       _npcReplications[command.Npc] = current with { IsActive = false, Revision = current.Revision + 1 };
+      ClearTrainingDummyOwnershipForNpc(command.Npc, current with { IsActive = false });
+    }
+  }
+
+  private void ClearTrainingDummyOwnershipForNpc(
+    NpcHandle npc,
+    NpcReplicationSnapshot replication)
+  {
+    foreach (KeyValuePair<int, TrainingDummyOwnershipState> entry in _trainingDummyOwnerships)
+    {
+      if (entry.Value.Npc != npc ||
+          !_tileEntities.TryGetValue(entry.Key, out TileEntityPersistentState? persistent) ||
+          !TrainingDummyTileEntityState.TryRead(
+            persistent,
+            out TrainingDummyTileEntityState entity))
+      {
+        continue;
+      }
+
+      TrainingDummyNpcLinkSnapshot link = new(
+        replication.IsActive,
+        replication.NpcType,
+        entity.TileX,
+        entity.TileY);
+      _ = TryClearTrainingDummyNpc(entity.EntityId, link, out _);
     }
   }
 
@@ -3069,6 +3852,198 @@ public sealed partial class DomeSimulation : IDisposable
     }
   }
 
+  private void CommitExtractinatorUses()
+  {
+    for (int index = 0; index < _commands.UseExtractinatorCommands.Count; index++)
+    {
+      UseExtractinatorCommand command = _commands.UseExtractinatorCommands[index];
+      if (_extractinatorTargetsCommittedThisTick.Contains((command.TargetX, command.TargetY)) ||
+          !_players.TryGetValue(command.Player, out Entity playerEntity) ||
+          !World.Has<InventoryComponent>(playerEntity) ||
+          !WorldGrid.Contains(command.TargetX, command.TargetY))
+      {
+        continue;
+      }
+
+      InventoryComponent inventory = World.Get<InventoryComponent>(playerEntity);
+      PlayerLifecycleComponent lifecycle = World.Get<PlayerLifecycleComponent>(playerEntity);
+      if (!lifecycle.IsActive || command.SourceSlot != inventory.SelectedSlot ||
+          command.SourceSlot < 0 || command.SourceSlot >= InventoryComponent.SlotCount)
+      {
+        continue;
+      }
+
+      TransformComponent transform = World.Get<TransformComponent>(playerEntity);
+      float deltaX = transform.X - command.TargetX;
+      float deltaY = transform.Y - command.TargetY;
+      if (deltaX * deltaX + deltaY * deltaY > MaximumInteractionRange * MaximumInteractionRange)
+      {
+        continue;
+      }
+
+      WorldTile target = WorldGrid.GetTile(command.TargetX, command.TargetY);
+      ItemStack input = inventory.GetSlot(command.SourceSlot);
+      if (!target.IsActive || input.IsEmpty || !_itemDefinitions.TryGet(input.ItemType, out ItemDefinition definition))
+      {
+        continue;
+      }
+
+      int extractionMode = definition.Extractinator?.ExtractionMode ?? -1;
+      if (target.Type == ExtractinatorSystem.ExtractinatorTileType && extractionMode < 0 &&
+          !_extractinatorRules.TryGetMode(input.ItemType, out extractionMode))
+      {
+        continue;
+      }
+
+      int seed = unchecked(_worldSeed.Value ^ (int)TickNumber ^ (int)command.Sequence ^
+        input.ItemType * 1103515245 ^ command.TargetX * 486187739 ^ command.TargetY);
+      ExtractinatorResult result = _extractinatorSystem.Roll(
+        _extractinatorRules,
+        extractionMode,
+        target.Type,
+        input.ItemType,
+        _worldProgression.IsHardMode,
+        new ExtractinatorRandom(seed));
+      if (!result.IsAccepted || result.Output.IsEmpty ||
+          !_itemDefinitions.TryGet(result.Output.ItemType, out _))
+      {
+        continue;
+      }
+
+      _extractinatorTargetsCommittedThisTick.Add((command.TargetX, command.TargetY));
+
+      ItemInstanceSnapshot[] inventoryBefore = CaptureInventorySlots(inventory);
+      inventory.SetSlot(command.SourceSlot, input.WithQuantity(input.Quantity - 1));
+      int remainder = result.Output.Quantity;
+      for (int slot = 0; slot < InventoryComponent.SlotCount && remainder > 0; slot++)
+      {
+        remainder = _inventoryTransfers.TransferIntoSlot(
+          inventory,
+          slot,
+          new ItemStack(result.Output.ItemType, remainder),
+          _itemDefinitions);
+      }
+
+      if (remainder > 0)
+      {
+        _ = CommitWorldItemSpawn(new CreateWorldItemCommand(
+          new ItemStack(result.Output.ItemType, remainder),
+          new SimulationVector(command.TargetX, command.TargetY),
+          GetSectionCoordinates(new SimulationVector(command.TargetX, command.TargetY)),
+          command.Player.Value));
+      }
+
+      PublishInventoryChanges(command.Player, inventory, inventoryBefore);
+      _extractinatorResultEvents.Add(new ExtractinatorResultEvent(
+        command.Player,
+        input.WithQuantity(1),
+        result.Output,
+        target.Type,
+        command.Sequence));
+    }
+  }
+
+  private void CommitTriggeredExtractinators()
+  {
+    for (int index = 0; index < _commands.TriggerExtractinatorCommands.Count; index++)
+    {
+      TriggerExtractinatorCommand command = _commands.TriggerExtractinatorCommands[index];
+      if (!WorldGrid.Contains(command.TargetX, command.TargetY) ||
+          _extractinatorTargetsCommittedThisTick.Contains((command.TargetX, command.TargetY)) ||
+          (_extractinatorCooldowns.TryGetValue((command.TargetX, command.TargetY), out long lastTick) &&
+           TickNumber - lastTick < 60))
+      {
+        continue;
+      }
+
+      WorldTile sourceTile = WorldGrid.GetTile(command.TargetX, command.TargetY);
+      if (!sourceTile.IsActive ||
+          (sourceTile.Type != ExtractinatorSystem.ExtractinatorTileType &&
+           sourceTile.Type != ExtractinatorSystem.ChlorophyteExtractinatorTileType))
+      {
+        continue;
+      }
+
+      int originX = command.TargetX - (sourceTile.FrameX % 54) / 18;
+      int originY = command.TargetY - (sourceTile.FrameY % 54) / 18;
+      ChestComponent? chest = FindExtractinatorChest(originX, originY);
+      if (chest is null)
+      {
+        continue;
+      }
+
+      for (int slot = ChestComponent.SlotCount - 1; slot >= 0; slot--)
+      {
+        ItemStack input = chest.GetSlot(slot);
+        if (input.IsEmpty || !_itemDefinitions.TryGet(input.ItemType, out ItemDefinition definition))
+        {
+          continue;
+        }
+
+        int extractionMode = definition.Extractinator?.ExtractionMode ?? -1;
+        if (sourceTile.Type == ExtractinatorSystem.ExtractinatorTileType && extractionMode < 0 &&
+            !_extractinatorRules.TryGetMode(input.ItemType, out extractionMode))
+        {
+          continue;
+        }
+
+        int seed = unchecked(_worldSeed.Value ^ (int)TickNumber ^ (int)command.Sequence ^
+          input.ItemType * 1103515245 ^ originX * 486187739 ^ originY);
+        ExtractinatorResult result = _extractinatorSystem.Roll(
+          _extractinatorRules,
+          extractionMode,
+          sourceTile.Type,
+          input.ItemType,
+          _worldProgression.IsHardMode,
+          new ExtractinatorRandom(seed));
+        if (!result.IsAccepted || result.Output.IsEmpty ||
+            !_itemDefinitions.TryGet(result.Output.ItemType, out _))
+        {
+          continue;
+        }
+
+        chest.SetSlot(slot, input.WithQuantity(input.Quantity - 1));
+        chest.IncrementRevision();
+        _ = CommitWorldItemSpawn(new CreateWorldItemCommand(
+          result.Output,
+          new SimulationVector(originX, originY),
+          GetSectionCoordinates(new SimulationVector(originX, originY)),
+          0));
+        _extractinatorCooldowns[(command.TargetX, command.TargetY)] = TickNumber;
+        _extractinatorTargetsCommittedThisTick.Add((command.TargetX, command.TargetY));
+        _extractinatorResultEvents.Add(new ExtractinatorResultEvent(
+          default,
+          input.WithQuantity(1),
+          result.Output,
+          sourceTile.Type,
+          command.Sequence,
+          ExtractinatorSourceKind.Wiring));
+        break;
+      }
+    }
+  }
+
+  private ChestComponent? FindExtractinatorChest(int originX, int originY)
+  {
+    ChestComponent? selected = null;
+    foreach (ChestComponent chest in _chests.Values)
+    {
+      if (chest.IsLocked || chest.Opener is not null || chest.TileX < originX - 2 ||
+          chest.TileX > originX + 5 ||
+          chest.TileY < originY - 2 || chest.TileY > originY + 5)
+      {
+        continue;
+      }
+
+      if (selected is null || chest.ChestId < selected.ChestId)
+      {
+        selected = chest;
+      }
+    }
+
+    return selected;
+  }
+
   private void CommitItemUses()
   {
     for (int index = 0; index < _commands.UseItemCommands.Count; index++)
@@ -3126,6 +4101,13 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
+      if (result.ProjectileType != 0 &&
+          !_projectileDefinitions.TryGet(result.ProjectileType, out ProjectileDefinition _))
+      {
+        useState = originalUseState;
+        continue;
+      }
+
       if (result.BuffType != 0 && !buffs.CanAccept(result.BuffType))
       {
         useState = originalUseState;
@@ -3145,6 +4127,21 @@ public sealed partial class DomeSimulation : IDisposable
       if (result.BuffType != 0)
       {
         buffs.Add(result.BuffType, result.BuffDurationTicks, command.Player);
+      }
+      if (result.ProjectileType != 0)
+      {
+        TransformComponent transform = World.Get<TransformComponent>(playerEntity);
+        FacingComponent facing = World.Get<FacingComponent>(playerEntity);
+        int projectileDamage = definition.Combat?.Damage ?? ProjectileDamage;
+        _commands.Enqueue(new SpawnProjectileCommand(
+          command.Player,
+          transform.X,
+          transform.Y + 0.75f,
+          facing.Horizontal,
+          projectileDamage,
+          ProjectileLifetimeTicks,
+          ProjectileType: result.ProjectileType,
+          ProjectileSpeed: result.ProjectileSpeed));
       }
       if (result.ConsumedQuantity > 0)
       {
@@ -3343,6 +4340,31 @@ public sealed partial class DomeSimulation : IDisposable
     _unequipItemCommands.Clear();
   }
 
+  private void RecalculateEquipmentStats()
+  {
+    foreach (Entity playerEntity in _players.Values)
+    {
+      if (!World.Has<InventoryComponent>(playerEntity) ||
+          !World.Has<EquipmentStateCollectionComponent>(playerEntity))
+      {
+        continue;
+      }
+
+      ref DefenseComponent defense = ref World.Get<DefenseComponent>(playerEntity);
+      ref HealthRegenerationComponent healthRegeneration =
+        ref World.Get<HealthRegenerationComponent>(playerEntity);
+      EquipmentStateCollectionComponent equipmentStates =
+        World.Get<EquipmentStateCollectionComponent>(playerEntity);
+      InventoryComponent inventory = World.Get<InventoryComponent>(playerEntity);
+      _equipmentStatSystem.Apply(
+        ref defense,
+        ref healthRegeneration,
+        equipmentStates,
+        inventory,
+        _itemDefinitions);
+    }
+  }
+
   private void CommitItemPrefixes()
   {
     for (int index = 0; index < _itemPrefixCommands.Count; index++)
@@ -3468,6 +4490,46 @@ public sealed partial class DomeSimulation : IDisposable
     }
   }
 
+  private void CommitWorldItemPassiveStacking()
+  {
+    List<int> worldItemIds = new(_worldItems.Keys);
+    worldItemIds.Sort();
+    for (int receiverIndex = 0; receiverIndex < worldItemIds.Count; receiverIndex++)
+    {
+      int receiverId = worldItemIds[receiverIndex];
+      if (!_worldItems.TryGetValue(receiverId, out WorldItemComponent receiver) ||
+          !receiver.IsActive)
+      {
+        continue;
+      }
+
+      for (int donorIndex = receiverIndex + 1; donorIndex < worldItemIds.Count; donorIndex++)
+      {
+        int donorId = worldItemIds[donorIndex];
+        if (!_worldItems.TryGetValue(donorId, out WorldItemComponent donor) ||
+            !_worldItemStackingSystem.TryMerge(
+              receiver,
+              donor,
+              _itemDefinitions,
+              TickNumber,
+              WorldItemStackingRange,
+              out WorldItemComponent mergedReceiver,
+              out WorldItemComponent mergedDonor))
+        {
+          continue;
+        }
+
+        receiver = mergedReceiver;
+        _worldItems[receiverId] = receiver;
+        _worldItems[donorId] = mergedDonor;
+        if (!receiver.IsActive)
+        {
+          break;
+        }
+      }
+    }
+  }
+
   private void CommitWorldItemPickups()
   {
     HashSet<int> pickupWinners = new();
@@ -3479,15 +4541,15 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
-      if (!_players.ContainsKey(command.Player) ||
+      if (!_players.TryGetValue(command.Player, out Entity playerEntity) ||
           !_worldItems.TryGetValue(command.WorldItemId, out WorldItemComponent item) ||
           !item.IsActive)
       {
         continue;
       }
 
-      Entity playerEntity = _players[command.Player];
-      if (!World.Has<InventoryComponent>(playerEntity))
+      if (!World.Get<PlayerLifecycleComponent>(playerEntity).IsActive ||
+          !World.Has<InventoryComponent>(playerEntity))
       {
         continue;
       }
@@ -3546,6 +4608,8 @@ public sealed partial class DomeSimulation : IDisposable
       }
 
       ref HealthComponent health = ref World.Get<HealthComponent>(npcEntity);
+      NpcComponents.NpcAuthorityComponent authority =
+        World.Get<NpcComponents.NpcAuthorityComponent>(npcEntity);
       ref ImmunityComponent immunity = ref World.Get<ImmunityComponent>(npcEntity);
       DefenseComponent defense = World.Get<DefenseComponent>(npcEntity);
       bool applied = _damageResolutionSystem.TryResolve(
@@ -3553,6 +4617,8 @@ public sealed partial class DomeSimulation : IDisposable
         defense,
         ref immunity,
         command.Amount,
+        DamageTargetKind.Npc,
+        _worldRules,
         out _);
       if (applied)
       {
@@ -3561,7 +4627,10 @@ public sealed partial class DomeSimulation : IDisposable
 
       ref NpcComponents.NpcLifecycleComponent lifecycle =
         ref World.Get<NpcComponents.NpcLifecycleComponent>(npcEntity);
-      _ = _npcLifecycleSystem.Advance(ref lifecycle, health.Current);
+      _ = _npcLifecycleSystem.Advance(
+        ref lifecycle,
+        health.Current,
+        authority.IsImmortal);
       UpdateNpcReplication(npcEntity);
     }
   }
@@ -3575,8 +4644,14 @@ public sealed partial class DomeSimulation : IDisposable
       (Entity projectileEntity, ref TransformComponent projectileTransform,
         ref ColliderComponent projectileCollider, ref ProjectileDamageComponent damage,
         ref VelocityComponent projectileVelocity,
-        ref ProjectileNetworkIdentityComponent identity) =>
+        ref ProjectileNetworkIdentityComponent identity,
+        ref ProjectileDefinitionComponent definition) =>
       {
+        if (!_projectileTargetEligibilitySystem.CanDamageNpc(definition))
+        {
+          return;
+        }
+
         TransformComponent previousTransform = new(
           projectileTransform.X - projectileVelocity.X,
           projectileTransform.Y - projectileVelocity.Y);
@@ -3868,15 +4943,23 @@ public sealed partial class DomeSimulation : IDisposable
   {
     foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
     {
-      if (!_npcReplications[entry.Key].IsActive)
+      ref NpcComponents.NpcLifecycleComponent lifecycle =
+        ref World.Get<NpcComponents.NpcLifecycleComponent>(entry.Value);
+      HealthComponent health = World.Get<HealthComponent>(entry.Value);
+      NpcComponents.NpcAuthorityComponent authority =
+        World.Get<NpcComponents.NpcAuthorityComponent>(entry.Value);
+      if (!_npcReplications[entry.Key].IsActive &&
+          (health.Current > 0 ||
+            lifecycle.DespawnReason !=
+              Terraria.Dome.Simulation.Npc.Components.NpcDespawnReason.None))
       {
         continue;
       }
 
-      ref NpcComponents.NpcLifecycleComponent lifecycle =
-        ref World.Get<NpcComponents.NpcLifecycleComponent>(entry.Value);
-      HealthComponent health = World.Get<HealthComponent>(entry.Value);
-      _ = _npcLifecycleSystem.Advance(ref lifecycle, health.Current);
+      _ = _npcLifecycleSystem.Advance(
+        ref lifecycle,
+        health.Current,
+        authority.IsImmortal);
     }
   }
 
@@ -3930,6 +5013,14 @@ public sealed partial class DomeSimulation : IDisposable
       ref PhysicsStateComponent physics = ref World.Get<PhysicsStateComponent>(entry.Value);
       MovementIntentComponent intent = World.Get<MovementIntentComponent>(entry.Value);
       ColliderComponent collider = World.Get<ColliderComponent>(entry.Value);
+      NpcComponents.NpcBehaviorStateComponent behavior =
+        World.Get<NpcComponents.NpcBehaviorStateComponent>(entry.Value);
+      if (behavior.BehaviorId == NpcBehaviorId.TrainingDummy)
+      {
+        velocity = new VelocityComponent(0.0f, 0.0f);
+        continue;
+      }
+
       if (intent.HasNpcIntent)
       {
         velocity.X = intent.NpcHorizontalVelocity;
@@ -4052,6 +5143,12 @@ public sealed partial class DomeSimulation : IDisposable
   {
     NpcReplicationSnapshot snapshot = state.Replication;
     NpcHandle npc = new(snapshot.ReplicationId);
+    NpcComponents.NpcAuthorityComponent authority = ResolveNpcAuthority(state);
+    if (!state.Lifecycle.IsActive &&
+        state.Lifecycle.DespawnReason == NpcComponents.NpcDespawnReason.Killed)
+    {
+      _publishedNpcDeaths.Add(npc);
+    }
     Entity entity = World.Create(
       new NpcTagComponent(),
       new TransformComponent(snapshot.Position.X, snapshot.Position.Y),
@@ -4071,6 +5168,7 @@ public sealed partial class DomeSimulation : IDisposable
         state.NetId,
         state.Faction,
         state.Category),
+      authority,
       new NpcComponents.NpcTargetComponent(
         default,
         state.TargetStableId,
@@ -4095,6 +5193,24 @@ public sealed partial class DomeSimulation : IDisposable
     _npcs.Add(npc, entity);
     _npcReplications.Add(npc, snapshot);
     _nextNpcHandle = Math.Max(_nextNpcHandle, snapshot.ReplicationId + 1);
+  }
+
+  private NpcComponents.NpcAuthorityComponent ResolveNpcAuthority(NpcStateSnapshot state)
+  {
+    if (_npcDefinitions.TryGet(state.DefinitionId, out NpcDefinition definition))
+    {
+      return new NpcComponents.NpcAuthorityComponent(
+        definition.AiStyle,
+        definition.IsImmortal,
+        definition.AlwaysReplicate);
+    }
+
+    bool isTrainingDummy = state.NetId == 488 &&
+      state.Behavior.BehaviorId == NpcBehaviorId.TrainingDummy;
+    return new NpcComponents.NpcAuthorityComponent(
+      isTrainingDummy ? 92 : 0,
+      isTrainingDummy,
+      isTrainingDummy);
   }
 
   private void RestoreChest(ChestPersistentState snapshot)
@@ -4126,6 +5242,8 @@ public sealed partial class DomeSimulation : IDisposable
     {
       chest.SetSlot(slot, snapshot.Slots[slot]);
     }
+
+    chest.SetLocked(snapshot.IsLocked);
 
     _nextChestId = Math.Max(_nextChestId, snapshot.ChestId + 1);
   }
@@ -4167,9 +5285,9 @@ public sealed partial class DomeSimulation : IDisposable
 
         transform = World.Get<TransformComponent>(projectileEntity);
         velocity = World.Get<VelocityComponent>(projectileEntity);
-        lifetime.RemainingTicks--;
+        bool expired = _projectileLifetimeSystem.Advance(projectileEntity, World);
         UpdateProjectileReplication(projectileEntity, transform, velocity, lifetime);
-        if (lifetime.RemainingTicks <= 0)
+        if (expired)
         {
           _commands.Enqueue(new DespawnEntityCommand(projectileEntity));
         }
@@ -4262,6 +5380,7 @@ public sealed partial class DomeSimulation : IDisposable
     }
 
     InventoryComponent inventory = World.Get<InventoryComponent>(playerEntity);
+    _itemInventorySanitizationSystem.Sanitize(inventory, _itemDefinitions);
     PlayerPersistentItem[] items = account.Items.ToArray();
     for (int slotId = 0; slotId < InventoryComponent.HotbarSlotCount; slotId++)
     {
@@ -4287,6 +5406,7 @@ public sealed partial class DomeSimulation : IDisposable
         Prefix = (byte)instanceState.PrefixId,
         ItemType = runtimeItem.ItemType,
         IsFavorited = instanceState.IsFavorited,
+        IsNewAndShiny = instanceState.IsNewAndShiny,
         VariantId = instanceState.VariantId,
         Dye = instanceState.Dye,
         Paint = instanceState.Paint,

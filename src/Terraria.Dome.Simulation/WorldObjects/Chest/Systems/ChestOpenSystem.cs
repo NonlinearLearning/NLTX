@@ -1,11 +1,15 @@
 using System;
+using Terraria.Dome.Simulation.Items;
 using Terraria.Dome.Simulation.WorldObjects.Chest.Commands;
 
 namespace Terraria.Dome.Simulation.WorldObjects.Chest.Systems;
 
 public sealed class ChestOpenSystem
 {
-  public bool TryApply(ChestComponent chest, ChestOpenCommand command)
+  public bool TryApply(
+    ChestComponent chest,
+    ChestOpenCommand command,
+    InventoryComponent? inventory = null)
   {
     ArgumentNullException.ThrowIfNull(chest);
     if (command.Sequence < 0 || !IsInRange(chest, command.PlayerPosition))
@@ -13,13 +17,47 @@ public sealed class ChestOpenSystem
       return false;
     }
 
-    if (!chest.TryOpen(command.Player))
+    if (chest.IsLocked)
+    {
+      if (inventory is null || !HasKey(inventory, chest.LockDefinition.KeyItemType))
+      {
+        return false;
+      }
+    }
+
+    if (chest.Opener is PlayerHandle opener && opener != command.Player)
     {
       return false;
     }
 
+    if (chest.IsLocked)
+    {
+      if (chest.LockDefinition.ConsumesKey && !inventory!.TryConsume(chest.LockDefinition.KeyItemType))
+      {
+        return false;
+      }
+
+      chest.SetLocked(false);
+    }
+
+    _ = chest.TryOpen(command.Player);
+
     chest.IncrementRevision();
     return true;
+  }
+
+  private static bool HasKey(InventoryComponent inventory, ushort itemType)
+  {
+    for (int index = 0; index < InventoryComponent.SlotCount; index++)
+    {
+      ItemStack stack = inventory.GetSlot(index);
+      if (!stack.IsEmpty && stack.ItemType == itemType)
+      {
+        return true;
+      }
+    }
+
+    return false;
   }
 
   private static bool IsInRange(ChestComponent chest, SimulationVector position)

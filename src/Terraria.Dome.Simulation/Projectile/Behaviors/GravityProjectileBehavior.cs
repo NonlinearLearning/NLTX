@@ -14,6 +14,12 @@ public sealed class GravityProjectileBehavior : IProjectileBehavior
     ref ProjectileBehaviorComponent behavior,
     int tick)
   {
+    if (!float.IsFinite(transform.X) || !float.IsFinite(transform.Y) ||
+        !float.IsFinite(velocity.X) || !float.IsFinite(velocity.Y) || tick < 0)
+    {
+      return false;
+    }
+
     velocity.Y += GravityPerTick;
     transform.X += velocity.X;
     transform.Y += velocity.Y;

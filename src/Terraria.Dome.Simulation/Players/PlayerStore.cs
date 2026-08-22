@@ -19,6 +19,11 @@ public sealed class PlayerStore : IReadOnlyDictionary<PlayerHandle, Entity>
 
   public void Add(PlayerHandle player, Entity entity)
   {
+    if (!player.IsValid)
+    {
+      throw new ArgumentOutOfRangeException(nameof(player));
+    }
+
     if (!_entities.TryAdd(player, entity))
     {
       throw new ArgumentException("The player handle is already owned.", nameof(player));

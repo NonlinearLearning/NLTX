@@ -14,6 +14,15 @@ public sealed class ProjectileDefinitionRegistry
     Dictionary<int, ProjectileDefinition> indexed = new();
     foreach (ProjectileDefinition definition in definitions)
     {
+      if (definition.ProjectileType <= 0 || definition.BehaviorId <= 0 ||
+          definition.Damage < 0 || definition.LifetimeTicks <= 0 ||
+          !float.IsFinite(definition.Collider.Width) || definition.Collider.Width <= 0.0f ||
+          !float.IsFinite(definition.Collider.Height) || definition.Collider.Height <= 0.0f ||
+          definition.MaximumPenetration == 0 || definition.MaximumPenetration < -1)
+      {
+        throw new ArgumentOutOfRangeException(nameof(definitions));
+      }
+
       if (!indexed.TryAdd(definition.ProjectileType, definition))
       {
         throw new ArgumentException("Projectile definitions must have unique types.", nameof(definitions));

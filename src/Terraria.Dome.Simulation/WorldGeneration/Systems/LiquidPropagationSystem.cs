@@ -17,9 +17,31 @@ public sealed class LiquidPropagationSystem
     ref WorldGenerationStateComponent state,
     List<PipelineLiquidChangeCommand> commands)
   {
+    return TryAppendCommands(
+      snapshot,
+      definitions,
+      merges,
+      new HashSet<LiquidPropagationVisit>(),
+      workItems,
+      budget,
+      ref state,
+      commands);
+  }
+
+  public LiquidPropagationResult TryAppendCommands(
+    WorldGridSnapshot snapshot,
+    IReadOnlyCollection<LiquidDefinition> definitions,
+    IReadOnlyCollection<LiquidMergeComponent> merges,
+    IReadOnlySet<LiquidPropagationVisit> completedVisits,
+    List<LiquidWorkItemComponent> workItems,
+    int budget,
+    ref WorldGenerationStateComponent state,
+    List<PipelineLiquidChangeCommand> commands)
+  {
     ArgumentNullException.ThrowIfNull(snapshot);
     ArgumentNullException.ThrowIfNull(definitions);
     ArgumentNullException.ThrowIfNull(merges);
+    ArgumentNullException.ThrowIfNull(completedVisits);
     ArgumentNullException.ThrowIfNull(workItems);
     ArgumentNullException.ThrowIfNull(commands);
     if (budget < 0)
@@ -37,7 +59,7 @@ public sealed class LiquidPropagationSystem
       }
     }
 
-    HashSet<(int X, int Y, byte Type)> visited = new();
+    HashSet<LiquidPropagationVisit> visited = new(completedVisits);
     int consumed = 0;
     while (consumed < budget && workItems.Count > 0)
     {
@@ -55,7 +77,10 @@ public sealed class LiquidPropagationSystem
       LiquidWorkItemComponent workItem = workItems[0];
       workItems.RemoveAt(0);
       if (!snapshot.Metadata.IsInside(workItem.X, workItem.Y) || workItem.Amount == 0 ||
-          !visited.Add((workItem.X, workItem.Y, workItem.LiquidType)))
+          !visited.Add(new LiquidPropagationVisit(
+            workItem.X,
+            workItem.Y,
+            workItem.LiquidType)))
       {
         continue;
       }
@@ -99,7 +124,7 @@ public sealed class LiquidPropagationSystem
       foreach ((int x, int y) in GetNeighbors(workItem.X, workItem.Y))
       {
         if (snapshot.Metadata.IsInside(x, y) &&
-            !visited.Contains((x, y, workItem.LiquidType)))
+            !visited.Contains(new LiquidPropagationVisit(x, y, workItem.LiquidType)))
         {
           workItems.Add(new LiquidWorkItemComponent(
             x,

@@ -15,6 +15,7 @@ public enum ItemEquipmentSlot : byte
 public readonly record struct ItemEquipmentDefinition(
   ItemEquipmentSlot Slot = ItemEquipmentSlot.None,
   int Defense = 0,
+  int LifeRegen = 0,
   bool Accessory = false,
   bool Vanity = false,
   bool Social = false);

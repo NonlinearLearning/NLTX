@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Terraria.Dome.Simulation.Commands;
 using Terraria.Dome.Simulation.Liquid.Components;
 using Terraria.Dome.Simulation.Liquid.Definitions;
 using Terraria.Dome.Simulation.WorldModel.Definitions;
@@ -15,14 +16,17 @@ public sealed class LiquidPropagationSystem
     TileDefinitionRegistry.CreateVersion4Base();
   private readonly LiquidRuleRegistry _rules;
   private readonly TileDefinitionRegistry _tileDefinitions;
+  private readonly TileObjectLiquidRuleRegistry _tileObjectRules;
   private readonly LiquidSettleSystem _settleSystem = new();
 
   public LiquidPropagationSystem(
     LiquidRuleRegistry? rules = null,
-    TileDefinitionRegistry? tileDefinitions = null)
+    TileDefinitionRegistry? tileDefinitions = null,
+    TileObjectLiquidRuleRegistry? tileObjectRules = null)
   {
     _rules = rules ?? LiquidRuleRegistry.CreateDefault();
     _tileDefinitions = tileDefinitions ?? DefaultTileDefinitions;
+    _tileObjectRules = tileObjectRules ?? TileObjectLiquidRuleRegistry.Empty;
   }
 
   public LiquidPropagationResult Advance(
@@ -40,8 +44,10 @@ public sealed class LiquidPropagationSystem
     }
 
     List<PipelineLiquidChangeCommand> commands = new();
+    List<TileChangeCommand> tileCommands = new();
     long nextSequence = firstSequence;
-    IReadOnlyList<LiquidUpdateNode> nodes = queue.Drain(state.TickBudget);
+    state.ObserveQueueLength(queue.Count);
+    IReadOnlyList<LiquidUpdateNode> nodes = queue.Drain(state.EffectiveTickBudget);
     for (int index = 0; index < nodes.Count; index++)
     {
       LiquidUpdateNode node = nodes[index];
@@ -55,6 +61,8 @@ public sealed class LiquidPropagationSystem
       {
         continue;
       }
+
+      AppendContactTileCommand(world, source, tileCommands);
 
       LiquidRuleDefinition rule = _rules.Get(source.Type);
       int transfer = Math.Min(source.Amount, rule.TransferAmount);
@@ -82,7 +90,7 @@ public sealed class LiquidPropagationSystem
       _ = queue.TryEnqueue(targetX, targetY, nextSequence);
     }
 
-    return new LiquidPropagationResult(commands, nextSequence, nodes.Count);
+    return new LiquidPropagationResult(commands, tileCommands, nextSequence, nodes.Count);
   }
 
   private static PipelineLiquidSourceComponent ReadSource(WorldGrid world, LiquidUpdateNode node)
@@ -150,13 +158,111 @@ public sealed class LiquidPropagationSystem
     return false;
   }
 
+  private void AppendContactTileCommand(
+    WorldGrid world,
+    PipelineLiquidSourceComponent source,
+    ICollection<TileChangeCommand> commands)
+  {
+    WorldTile tile = world.GetTile(source.X, source.Y);
+    if (!tile.IsActive || !_tileDefinitions.TryGet(tile.Type, out TileDefinition definition))
+    {
+      return;
+    }
+
+    if (_tileObjectRules.HasRules(tile.Type))
+    {
+      AppendObjectRuleCommands(world, source, commands, tile);
+      return;
+    }
+
+    bool destroysTile = source.Type == LiquidType.Lava
+      ? definition.LavaDestroysTile
+      : definition.WaterDestroysTile;
+    if (!destroysTile)
+    {
+      return;
+    }
+
+    commands.Add(new TileChangeCommand(
+      source.Sequence,
+      source.X,
+      source.Y,
+      TileChangeKind.Kill,
+      TileType: 0,
+      PreserveLiquid: true));
+  }
+
+  private void AppendObjectRuleCommands(
+    WorldGrid world,
+    PipelineLiquidSourceComponent source,
+    ICollection<TileChangeCommand> commands,
+    WorldTile hitTile)
+  {
+    for (int width = 1; width <= 8; width++)
+    {
+      for (int height = 1; height <= 8; height++)
+      {
+        int originX = source.X - Modulo(hitTile.FrameX, width * 18) / 18;
+        int originY = source.Y - Modulo(hitTile.FrameY, height * 18) / 18;
+        if (!world.Contains(originX, originY) ||
+            !world.Contains(originX + width - 1, originY + height - 1))
+        {
+          continue;
+        }
+
+        WorldTile origin = world.GetTile(originX, originY);
+        if (!_tileObjectRules.TryGet(hitTile.Type, source.Type, origin.FrameX,
+              out TileObjectLiquidRule rule) || rule.Width != width || rule.Height != height)
+        {
+          continue;
+        }
+
+        if (!rule.DestroysTile)
+        {
+          return;
+        }
+
+        for (int row = 0; row < rule.Height; row++)
+        {
+          for (int column = 0; column < rule.Width; column++)
+          {
+            int x = originX + column;
+            int y = originY + row;
+            WorldTile member = world.GetTile(x, y);
+            if (!member.IsActive || member.Type != rule.TileType)
+            {
+              return;
+            }
+
+            commands.Add(new TileChangeCommand(
+              source.Sequence + commands.Count,
+              x,
+              y,
+              TileChangeKind.Kill,
+              TileType: 0,
+              PreserveLiquid: true));
+          }
+        }
+
+        return;
+      }
+    }
+  }
+
   private static byte GetAmount(WorldGrid world, int x, int y)
   {
     return world.GetTile(x, y).LiquidAmount;
+  }
+
+  private static int Modulo(int value, int divisor)
+  {
+    int remainder = value % divisor;
+    return remainder < 0 ? remainder + divisor : remainder;
   }
 }
 
 public sealed record LiquidPropagationResult(
   IReadOnlyList<PipelineLiquidChangeCommand> Commands,
+  IReadOnlyList<TileChangeCommand> TileCommands,
   long NextSequence,
   int ProcessedCount);

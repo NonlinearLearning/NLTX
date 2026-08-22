@@ -1,30 +1,59 @@
 using System;
 using Terraria.Dome.Simulation.Components;
 using Terraria.Dome.Simulation.WorldModel;
+using Terraria.Dome.Simulation.WorldModel.Definitions;
 
 namespace Terraria.Dome.Simulation.Physics.Systems;
 
 public sealed class TileCollisionSystem
 {
+  private const float CollisionBoundaryTolerance = 0.0001f;
+
+  private static readonly TileDefinitionRegistry DefaultTileDefinitions =
+    TileDefinitionRegistry.CreateVersion4Base();
+
+  private readonly TileDefinitionRegistry _tileDefinitions;
+
+  public TileCollisionSystem()
+    : this(DefaultTileDefinitions)
+  {
+  }
+
+  public TileCollisionSystem(TileDefinitionRegistry tileDefinitions)
+  {
+    _tileDefinitions = tileDefinitions ?? throw new ArgumentNullException(nameof(tileDefinitions));
+  }
+
   public void MoveAndResolve(
     WorldGrid world,
     ref TransformComponent transform,
     ref VelocityComponent velocity,
     ref PhysicsStateComponent physics,
-    ColliderComponent collider)
+    ColliderComponent collider,
+    bool fallThrough = false,
+    bool deferTopSlopeCollision = false)
   {
     ArgumentNullException.ThrowIfNull(world);
 
+    ValidateActiveTileDefinitions(world, transform, velocity, collider);
     physics.IsGrounded = false;
-    MoveHorizontal(world, ref transform, ref velocity, collider);
-    MoveVertical(world, ref transform, ref velocity, ref physics, collider);
+    MoveHorizontal(world, ref transform, ref velocity, collider, deferTopSlopeCollision);
+    MoveVertical(
+      world,
+      ref transform,
+      ref velocity,
+      ref physics,
+      collider,
+      fallThrough,
+      deferTopSlopeCollision);
   }
 
-  private static void MoveHorizontal(
+  private void MoveHorizontal(
     WorldGrid world,
     ref TransformComponent transform,
     ref VelocityComponent velocity,
-    ColliderComponent collider)
+    ColliderComponent collider,
+    bool deferTopSlopeCollision)
   {
     if (velocity.X == 0.0f)
     {
@@ -38,7 +67,12 @@ public sealed class TileCollisionSystem
       int lastTileX = (int)MathF.Floor(targetX + collider.Width - float.Epsilon);
       for (int tileX = firstTileX; tileX <= lastTileX; tileX++)
       {
-        if (!ColumnOverlapsSolidTile(world, tileX, transform.Y, collider))
+        if (!ColumnOverlapsSolidTile(
+              world,
+              tileX,
+              transform.Y,
+              collider,
+              deferTopSlopeCollision))
         {
           continue;
         }
@@ -54,7 +88,12 @@ public sealed class TileCollisionSystem
       int lastTileX = (int)MathF.Floor(targetX);
       for (int tileX = firstTileX; tileX >= lastTileX; tileX--)
       {
-        if (!ColumnOverlapsSolidTile(world, tileX, transform.Y, collider))
+        if (!ColumnOverlapsSolidTile(
+              world,
+              tileX,
+              transform.Y,
+              collider,
+              deferTopSlopeCollision))
         {
           continue;
         }
@@ -68,12 +107,14 @@ public sealed class TileCollisionSystem
     transform.X = targetX;
   }
 
-  private static void MoveVertical(
+  private void MoveVertical(
     WorldGrid world,
     ref TransformComponent transform,
     ref VelocityComponent velocity,
     ref PhysicsStateComponent physics,
-    ColliderComponent collider)
+    ColliderComponent collider,
+    bool fallThrough,
+    bool deferTopSlopeCollision)
   {
     if (velocity.Y == 0.0f)
     {
@@ -87,12 +128,18 @@ public sealed class TileCollisionSystem
       int lastTileY = (int)MathF.Floor(targetY + collider.Height - float.Epsilon);
       for (int tileY = firstTileY; tileY <= lastTileY; tileY++)
       {
-        if (!RowOverlapsSolidTile(world, transform.X, tileY, collider))
+        if (!TryGetSolidTileBottom(
+              world,
+              transform.X,
+              tileY,
+              collider,
+              deferTopSlopeCollision,
+              out float collisionBottom))
         {
           continue;
         }
 
-        transform.Y = tileY - collider.Height;
+        transform.Y = collisionBottom - collider.Height;
         velocity.Y = 0.0f;
         return;
       }
@@ -103,12 +150,20 @@ public sealed class TileCollisionSystem
       int lastTileY = (int)MathF.Floor(targetY);
       for (int tileY = firstTileY; tileY >= lastTileY; tileY--)
       {
-        if (!RowOverlapsSolidTile(world, transform.X, tileY, collider))
+        if (!TryGetLandingTop(
+              world,
+              transform.X,
+              tileY,
+              collider,
+              fallThrough,
+              legacyVelocityY: -velocity.Y,
+              deferTopSlopeCollision,
+              out float landingTop))
         {
           continue;
         }
 
-        transform.Y = tileY + 1.0f;
+        transform.Y = landingTop;
         velocity.Y = 0.0f;
         physics.IsGrounded = true;
         return;
@@ -116,39 +171,60 @@ public sealed class TileCollisionSystem
     }
 
     transform.Y = targetY;
-    if (velocity.Y < 0.0f && IsStandingOnSolidTile(world, transform.X, transform.Y, collider))
+    if (velocity.Y < 0.0f && IsStandingOnSolidTile(
+          world,
+          transform.X,
+          transform.Y,
+           collider,
+           fallThrough,
+           legacyVelocityY: -velocity.Y,
+           deferTopSlopeCollision))
     {
       velocity.Y = 0.0f;
       physics.IsGrounded = true;
     }
   }
 
-  private static bool IsStandingOnSolidTile(
+  private bool IsStandingOnSolidTile(
     WorldGrid world,
     float x,
     float y,
-    ColliderComponent collider)
+    ColliderComponent collider,
+    bool fallThrough,
+    float legacyVelocityY,
+    bool deferTopSlopeCollision)
   {
-    float top = MathF.Round(y);
-    if (MathF.Abs(y - top) > float.Epsilon)
-    {
-      return false;
-    }
-
-    return RowOverlapsSolidTile(world, x, (int)top - 1, collider);
+    int tileY = (int)MathF.Floor(y - CollisionBoundaryTolerance);
+    return TryGetLandingTop(
+      world,
+      x,
+      tileY,
+      collider,
+      fallThrough,
+      legacyVelocityY,
+      deferTopSlopeCollision,
+      out float landingTop) && MathF.Abs(y - landingTop) <= CollisionBoundaryTolerance;
   }
 
-  private static bool ColumnOverlapsSolidTile(
+  private bool ColumnOverlapsSolidTile(
     WorldGrid world,
     int tileX,
     float y,
-    ColliderComponent collider)
+    ColliderComponent collider,
+    bool deferTopSlopeCollision)
   {
     int firstTileY = (int)MathF.Floor(y);
     int lastTileY = (int)MathF.Floor(y + collider.Height - float.Epsilon);
     for (int tileY = firstTileY; tileY <= lastTileY; tileY++)
     {
-      if (IsSolid(world, tileX, tileY))
+      if (TryGetSolidTileBounds(
+            world,
+            tileX,
+            tileY,
+            deferTopSlopeCollision,
+            out float bottom,
+            out float top) &&
+          y + collider.Height > bottom && y < top)
       {
         return true;
       }
@@ -157,32 +233,209 @@ public sealed class TileCollisionSystem
     return false;
   }
 
-  private static bool RowOverlapsSolidTile(
+  private bool TryGetSolidTileBottom(
     WorldGrid world,
     float x,
     int tileY,
-    ColliderComponent collider)
+    ColliderComponent collider,
+    bool deferTopSlopeCollision,
+    out float collisionBottom)
   {
+    collisionBottom = 0.0f;
     int firstTileX = (int)MathF.Floor(x);
     int lastTileX = (int)MathF.Floor(x + collider.Width - float.Epsilon);
     for (int tileX = firstTileX; tileX <= lastTileX; tileX++)
     {
-      if (IsSolid(world, tileX, tileY))
+      if (!TryGetSolidTileBounds(
+            world,
+            tileX,
+            tileY,
+            deferTopSlopeCollision,
+            out float bottom,
+            out float _) ||
+          x + collider.Width <= tileX || x >= tileX + 1.0f)
       {
-        return true;
+        continue;
       }
+
+      collisionBottom = bottom;
+      return true;
     }
 
     return false;
   }
 
-  private static bool IsSolid(WorldGrid world, int x, int y)
+  private bool TryGetLandingTop(
+    WorldGrid world,
+    float x,
+    int tileY,
+    ColliderComponent collider,
+    bool fallThrough,
+    float legacyVelocityY,
+    bool deferTopSlopeCollision,
+    out float landingTop)
   {
+    landingTop = 0.0f;
+    bool found = false;
+    int firstTileX = (int)MathF.Floor(x);
+    int lastTileX = (int)MathF.Floor(x + collider.Width - float.Epsilon);
+    for (int tileX = firstTileX; tileX <= lastTileX; tileX++)
+    {
+      if (!TryGetLandingTileTop(
+            world,
+            tileX,
+            tileY,
+            fallThrough,
+            legacyVelocityY,
+            deferTopSlopeCollision,
+            out float tileTop))
+      {
+        continue;
+      }
+
+      landingTop = found ? MathF.Max(landingTop, tileTop) : tileTop;
+      found = true;
+    }
+
+    return found;
+  }
+
+  private bool TryGetSolidTileBounds(
+    WorldGrid world,
+    int x,
+    int y,
+    bool deferTopSlopeCollision,
+    out float bottom,
+    out float top)
+  {
+    bottom = y;
+    top = y + 1.0f;
     if (x < 0 || x >= world.Width || y < 0 || y >= world.Height)
     {
       return true;
     }
 
-    return world.GetTile(x, y).IsActive;
+    WorldTile tile = world.GetTile(x, y);
+    if (!tile.IsActive || tile.IsInactive)
+    {
+      return false;
+    }
+
+    if (!_tileDefinitions.TryGet(tile.Type, out TileDefinition definition))
+    {
+      throw new InvalidOperationException(
+        $"Tile collision cannot resolve unknown active tile type {tile.Type}.");
+    }
+
+    if (!definition.BlocksLiquid || definition.IsPlatform)
+    {
+      return false;
+    }
+
+    if (deferTopSlopeCollision && tile.Slope is 1 or 2)
+    {
+      return false;
+    }
+
+    if (tile.IsHalfBrick && tile.Slope == 0)
+    {
+      top -= 0.5f;
+    }
+
+    return true;
+  }
+
+  private bool TryGetLandingTileTop(
+    WorldGrid world,
+    int x,
+    int y,
+    bool fallThrough,
+    float legacyVelocityY,
+    bool deferTopSlopeCollision,
+    out float top)
+  {
+    top = y + 1.0f;
+    if (x < 0 || x >= world.Width || y < 0 || y >= world.Height)
+    {
+      return true;
+    }
+
+    WorldTile tile = world.GetTile(x, y);
+    if (!tile.IsActive || tile.IsInactive)
+    {
+      return false;
+    }
+
+    if (!_tileDefinitions.TryGet(tile.Type, out TileDefinition definition))
+    {
+      throw new InvalidOperationException(
+        $"Tile collision cannot resolve unknown active tile type {tile.Type}.");
+    }
+
+    if (!definition.BlocksLiquid)
+    {
+      return false;
+    }
+
+    if (definition.IsPlatform)
+    {
+      return PlatformCollisionRuleSystem.ShouldCollideFromAbove(
+        isPlatform: true,
+        isProperTopFrame: tile.FrameY == 0,
+        fallThrough: fallThrough,
+        fall2: false,
+        legacyVelocityY: legacyVelocityY);
+    }
+
+    if (deferTopSlopeCollision && tile.Slope is 1 or 2)
+    {
+      return false;
+    }
+
+    if (tile.IsHalfBrick && tile.Slope == 0)
+    {
+      top -= 0.5f;
+    }
+
+    return true;
+  }
+
+  private void ValidateActiveTileDefinitions(
+    WorldGrid world,
+    TransformComponent transform,
+    VelocityComponent velocity,
+    ColliderComponent collider)
+  {
+    float targetX = transform.X + velocity.X;
+    float targetY = transform.Y + velocity.Y;
+    int firstTileX = (int)MathF.Floor(MathF.Min(transform.X, targetX));
+    int lastTileX = (int)MathF.Floor(
+      MathF.Max(transform.X + collider.Width, targetX + collider.Width) - float.Epsilon);
+    int firstTileY = (int)MathF.Floor(MathF.Min(transform.Y, targetY));
+    int lastTileY = (int)MathF.Floor(
+      MathF.Max(transform.Y + collider.Height, targetY + collider.Height) - float.Epsilon);
+
+    for (int tileX = firstTileX; tileX <= lastTileX; tileX++)
+    {
+      for (int tileY = firstTileY; tileY <= lastTileY; tileY++)
+      {
+        if (!world.Contains(tileX, tileY))
+        {
+          continue;
+        }
+
+        WorldTile tile = world.GetTile(tileX, tileY);
+        if (!tile.IsActive || tile.IsInactive)
+        {
+          continue;
+        }
+
+        if (!_tileDefinitions.TryGet(tile.Type, out TileDefinition _))
+        {
+          throw new InvalidOperationException(
+            $"Tile collision cannot resolve unknown active tile type {tile.Type}.");
+        }
+      }
+    }
   }
 }

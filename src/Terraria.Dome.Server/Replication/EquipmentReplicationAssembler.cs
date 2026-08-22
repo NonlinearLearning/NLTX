@@ -56,7 +56,7 @@ public sealed class EquipmentReplicationAssembler
         (byte)instance.State.PrefixId,
         instance.Stack.ItemType,
         instance.State.IsFavorited,
-        IsNewAndShiny: false)));
+        instance.State.IsNewAndShiny)));
     }
 
     return frames;

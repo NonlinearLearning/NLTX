@@ -12,7 +12,9 @@ public sealed class WorldItemMotionSystem
     out WorldItemComponent moved)
   {
     if (!current.IsActive || current.ReplicationId != command.ReplicationId ||
-        current.Revision != command.ExpectedRevision)
+        current.Revision != command.ExpectedRevision ||
+        !float.IsFinite(command.Position.X) ||
+        !float.IsFinite(command.Position.Y))
     {
       moved = current;
       return false;

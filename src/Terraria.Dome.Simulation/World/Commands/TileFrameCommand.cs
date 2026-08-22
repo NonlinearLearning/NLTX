@@ -5,4 +5,6 @@ public readonly record struct TileFrameCommand(
   int X,
   int Y,
   short FrameX,
-  short FrameY);
+  short FrameY,
+  bool? IsHalfBrick = null,
+  byte? Slope = null);

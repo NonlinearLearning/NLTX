@@ -8,4 +8,10 @@ public readonly record struct TileChangeCommand(
   int Y,
   TileChangeKind Kind,
   ushort TileType,
-  ushort WallType = 0);
+  ushort WallType = 0,
+  bool PreserveLiquid = false,
+  bool IsInactive = false,
+  short? FrameX = null,
+  short? FrameY = null,
+  bool? IsHalfBrick = null,
+  byte? Slope = null);

@@ -140,6 +140,7 @@ public sealed class WorldGenerationPipeline
           world.CreateSnapshot(request.Metadata),
           structureDefinition,
           structurePlacement,
+          protection,
           ref state,
           commands))
     {

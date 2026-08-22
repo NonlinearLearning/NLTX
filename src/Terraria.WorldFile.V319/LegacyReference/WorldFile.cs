@@ -2737,9 +2737,9 @@ public class WorldFile
 				}
 				int num3 = (byte)((b4 & 0xC0) >> 6) switch
 				{
-					0 => 0,
-					1 => reader.ReadByte(),
-					_ => reader.ReadInt16(),
+					0 => 0, 
+					1 => reader.ReadByte(), 
+					_ => reader.ReadInt16(), 
 				};
 				if (num2 != -1)
 				{
@@ -3187,9 +3187,9 @@ public class WorldFile
 					}
 					num6 += (byte)((b3 & 0xC0) >> 6) switch
 					{
-						0 => 0,
-						1 => fileIO.ReadByte(),
-						_ => fileIO.ReadInt16(),
+						0 => 0, 
+						1 => fileIO.ReadByte(), 
+						_ => fileIO.ReadInt16(), 
 					};
 				}
 			}

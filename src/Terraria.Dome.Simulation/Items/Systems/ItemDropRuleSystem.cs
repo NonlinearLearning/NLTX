@@ -21,7 +21,8 @@ public sealed class ItemDropRuleSystem
     IReadOnlyDictionary<string, int>? conditionValues = null)
   {
     ArgumentNullException.ThrowIfNull(definitions);
-    if (sourceEntityId <= 0 || tick < 0 || spawnSource < 0)
+    if (sourceEntityId <= 0 || tick < 0 || spawnSource < 0 ||
+        !float.IsFinite(position.X) || !float.IsFinite(position.Y))
     {
       throw new ArgumentOutOfRangeException(nameof(sourceEntityId));
     }

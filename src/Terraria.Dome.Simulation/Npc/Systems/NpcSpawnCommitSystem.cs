@@ -49,7 +49,8 @@ public sealed class NpcSpawnCommitSystem
     ArgumentNullException.ThrowIfNull(definitions);
     result = default;
     failureReason = string.Empty;
-    if (replicationId <= 0 || !definitions.TryGet(command.DefinitionId, out NpcDefinition definition))
+    if (replicationId <= 0 || !definitions.TryGet(command.DefinitionId, out NpcDefinition definition) ||
+        !float.IsFinite(command.Position.X) || !float.IsFinite(command.Position.Y))
     {
       failureReason = "NPC definition or replication identity is invalid.";
       return false;
@@ -61,7 +62,9 @@ public sealed class NpcSpawnCommitSystem
       return false;
     }
 
-    if (worldGrid is not null && IsOccupied(worldGrid, command.Position, definition))
+    if (worldGrid is not null &&
+        command.Source != NpcComponents.NpcSpawnSource.TileEntity &&
+        IsOccupied(worldGrid, command.Position, definition))
     {
       failureReason = "NPC spawn space is outside the world or occupied.";
       return false;
@@ -75,6 +78,10 @@ public sealed class NpcSpawnCommitSystem
         definition.NetId,
         definition.Faction,
         definition.Category),
+      new NpcComponents.NpcAuthorityComponent(
+        definition.AiStyle,
+        definition.IsImmortal,
+        definition.AlwaysReplicate),
       new TransformComponent(command.Position.X, command.Position.Y),
       new VelocityComponent(0.0f, 0.0f),
       new FacingComponent(-1),

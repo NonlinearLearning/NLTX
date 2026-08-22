@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Arch.Core;
 using World = Arch.Core.World;
@@ -15,7 +14,7 @@ internal sealed class PlayerGravitySystem
     foreach (Entity entity in players)
     {
       ref VelocityComponent velocity = ref world.Get<VelocityComponent>(entity);
-      velocity.Y = Math.Max(velocity.Y + GravityPerTick, GravityPerTick);
+      velocity.Y += GravityPerTick;
     }
   }
 }

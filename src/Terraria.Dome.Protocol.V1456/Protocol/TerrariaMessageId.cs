@@ -46,6 +46,8 @@ public enum TerrariaMessageId : byte
   CavernMonsterTypes = 136,
   HostStatus = 139,
   ClientSyncedInventory = 138,
+  TileEntitySharing = 86,
+  TileEntityPlacement = 87,
   SyncLoadout = 147,
   Ping = 154,
   SyncChestSize = 155,

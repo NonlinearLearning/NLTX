@@ -14,6 +14,7 @@ namespace Terraria.Dome.Protocol.V1456.Packets;
 
 public static class TerrariaPacketCodec
 {
+  private const byte ControlDownBit = 1 << 1;
   private const byte ControlLeftBit = 1 << 2;
   private const byte ControlRightBit = 1 << 3;
   private const byte ControlJumpBit = 1 << 4;
@@ -1585,6 +1586,11 @@ public static class TerrariaPacketCodec
     float positionY)
   {
     byte controlFlags = 0;
+    if (packet.Down)
+    {
+      controlFlags |= ControlDownBit;
+    }
+
     if (packet.MoveLeft)
     {
       controlFlags |= ControlLeftBit;
@@ -1641,12 +1647,22 @@ public static class TerrariaPacketCodec
     using (BinaryWriter writer = new(payload, Encoding.UTF8, leaveOpen: true))
     {
       writer.Write(snapshot.IsDayTime);
-      writer.Write(snapshot.TimeOfDay);
+      writer.Write(ProjectWorldTimeToLegacy(snapshot.TimeOfDay));
       writer.Write(0.0f);
       writer.Write(0.0f);
     }
 
     return TerrariaFrameCodec.Encode(new TerrariaFrame(TerrariaMessageId.SetTime, payload.ToArray()));
+  }
+
+  private static int ProjectWorldTimeToLegacy(double timeOfDay)
+  {
+    if (!double.IsFinite(timeOfDay) || timeOfDay < int.MinValue || timeOfDay > int.MaxValue)
+    {
+      throw new ArgumentOutOfRangeException(nameof(timeOfDay));
+    }
+
+    return checked((int)Math.Truncate(timeOfDay));
   }
 
   public static byte[] EncodeAnglerQuest(WorldJoinStateSnapshot snapshot)
@@ -2028,6 +2044,61 @@ public static class TerrariaPacketCodec
     return TerrariaV1456Compatibility.EncodeTileSquare(world, x, y, width, height, changeType);
   }
 
+  public static byte[] EncodeTrainingDummyTileEntitySharing(
+    TileEntityPersistentState entity)
+  {
+    ArgumentNullException.ThrowIfNull(entity);
+    if (entity.IsOpaque || entity.Type != 0 || entity.Payload.Count != 2 ||
+        entity.TileX < short.MinValue || entity.TileX > short.MaxValue ||
+        entity.TileY < short.MinValue || entity.TileY > short.MaxValue)
+    {
+      throw new ArgumentException("Tile entity is not a typed TrainingDummy state.", nameof(entity));
+    }
+
+    using MemoryStream payload = new();
+    using BinaryWriter writer = new(payload);
+    writer.Write(entity.Id);
+    writer.Write(true);
+    writer.Write((byte)0);
+    writer.Write(entity.Id);
+    writer.Write((short)entity.TileX);
+    writer.Write((short)entity.TileY);
+    writer.Write(entity.Payload[0]);
+    writer.Write(entity.Payload[1]);
+    return TerrariaFrameCodec.Encode(new TerrariaFrame(
+      TerrariaMessageId.TileEntitySharing,
+      payload.ToArray()));
+  }
+
+  public static byte[] EncodeTrainingDummyTileEntityRemoval(int entityId)
+  {
+    using MemoryStream payload = new();
+    using BinaryWriter writer = new(payload);
+    writer.Write(entityId);
+    writer.Write(false);
+    return TerrariaFrameCodec.Encode(new TerrariaFrame(
+      TerrariaMessageId.TileEntitySharing,
+      payload.ToArray()));
+  }
+
+  public static byte[] EncodeTrainingDummyTileEntityPlacement(int tileX, int tileY)
+  {
+    if (tileX < short.MinValue || tileX > short.MaxValue ||
+        tileY < short.MinValue || tileY > short.MaxValue)
+    {
+      throw new ArgumentOutOfRangeException(nameof(tileX));
+    }
+
+    using MemoryStream payload = new();
+    using BinaryWriter writer = new(payload);
+    writer.Write((short)tileX);
+    writer.Write((short)tileY);
+    writer.Write((byte)0);
+    return TerrariaFrameCodec.Encode(new TerrariaFrame(
+      TerrariaMessageId.TileEntityPlacement,
+      payload.ToArray()));
+  }
+
   public static byte[] EncodeServerTileManipulation(
     byte action,
     int x,
@@ -2098,7 +2169,20 @@ public static class TerrariaPacketCodec
     IReadOnlyList<ChestSnapshot> chests,
     IReadOnlyList<SignReplicationSnapshot> signs)
   {
-    return TerrariaV1456Compatibility.EncodeTileSection(snapshot, chests, signs);
+    return TerrariaV1456Compatibility.EncodeTileSection(snapshot, chests, signs, []);
+  }
+
+  public static byte[] Encode(
+    WorldSectionSnapshot snapshot,
+    IReadOnlyList<ChestSnapshot> chests,
+    IReadOnlyList<SignReplicationSnapshot> signs,
+    IReadOnlyList<LegacyTileEntity> tileEntities)
+  {
+    return TerrariaV1456Compatibility.EncodeTileSection(
+      snapshot,
+      chests,
+      signs,
+      tileEntities);
   }
 
   public static IReadOnlyList<byte[]> CreateInitialWorldStream()

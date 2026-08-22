@@ -74,8 +74,8 @@ public readonly record struct LegacyWorldDataContext(
       WorldId: metadata.WorldId,
       WorldName: metadata.Name,
       GameMode: 0,
-      UniqueId: Guid.Empty,
-      WorldGeneratorVersion: 0,
+      UniqueId: metadata.UniqueId ?? Guid.Empty,
+      WorldGeneratorVersion: metadata.WorldGeneratorVersion ?? 0,
       MoonType: 0,
       Background: default,
       Progression: default,
@@ -86,11 +86,16 @@ public readonly record struct LegacyWorldDataContext(
   public LegacyWorldDataContext WithWorldState(
     int time,
     bool isDayTime,
+    byte moonPhase,
     WorldProgressionState progression,
     WorldRuleState rules)
   {
     ArgumentNullException.ThrowIfNull(progression);
     ArgumentNullException.ThrowIfNull(rules);
+    if (moonPhase > 7)
+    {
+      throw new ArgumentOutOfRangeException(nameof(moonPhase));
+    }
     byte worldFlags = isDayTime ? (byte)1 : (byte)0;
     if (progression.IsBloodMoon)
     {
@@ -112,18 +117,50 @@ public readonly record struct LegacyWorldDataContext(
       EventFlags3 = progression.IsSlimeRaining
         ? (byte)(Progression.EventFlags3 | 4)
         : Progression.EventFlags3,
+      EventFlags8 = progression.DefeatedMartians
+        ? (byte)(Progression.EventFlags8 | (1 << 6))
+        : Progression.EventFlags8,
+      EventFlags10 = SetInvasionClearFlagBits(Progression.EventFlags10, progression),
+      EventFlags11 = progression.IsLanternNight
+        ? (byte)(Progression.EventFlags11 | 2)
+        : Progression.EventFlags11,
       InvasionType = (sbyte)progression.InvasionType
     };
     LegacyWorldBackgroundState background = Background with
     {
+      WindSpeedTarget = rules.WindSpeedTarget,
       MaximumRaining = rules.IsRaining ? rules.RainStrength : 0.0f
     };
     return this with
     {
       Time = time,
       WorldFlags = worldFlags,
+      MoonPhase = moonPhase,
       Background = background,
       Progression = legacyProgression
     };
+  }
+
+  private static byte SetInvasionClearFlagBits(
+    byte existingFlags,
+    WorldProgressionState progression)
+  {
+    byte flags = existingFlags;
+    if (progression.DefeatedPirates)
+    {
+      flags |= 1;
+    }
+
+    if (progression.DefeatedFrost)
+    {
+      flags |= 1 << 1;
+    }
+
+    if (progression.DefeatedGoblins)
+    {
+      flags |= 1 << 2;
+    }
+
+    return flags;
   }
 }

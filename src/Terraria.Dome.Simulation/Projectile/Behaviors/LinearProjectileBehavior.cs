@@ -12,6 +12,12 @@ public sealed class LinearProjectileBehavior : IProjectileBehavior
     ref ProjectileBehaviorComponent behavior,
     int tick)
   {
+    if (!float.IsFinite(transform.X) || !float.IsFinite(transform.Y) ||
+        !float.IsFinite(velocity.X) || !float.IsFinite(velocity.Y) || tick < 0)
+    {
+      return false;
+    }
+
     behavior.State = behavior.State with { Phase = tick };
     transform.X += velocity.X;
     transform.Y += velocity.Y;

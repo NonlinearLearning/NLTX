@@ -8,4 +8,5 @@ public readonly record struct PlayerInput(
   bool Fire,
   int SelectedSlot = 0,
   bool UseItem = false,
-  int Facing = 0);
+  int Facing = 0,
+  bool Down = false);

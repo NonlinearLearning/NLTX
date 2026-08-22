@@ -12,11 +12,17 @@ public sealed class NpcLifecycleSystem
 {
   public NpcLifecycleResult Advance(
     ref NpcLifecycleComponent lifecycle,
-    int currentHealth)
+    int currentHealth,
+    bool isImmortal = false)
   {
     if (!lifecycle.IsActive)
     {
       return new(false, currentHealth <= 0, null);
+    }
+
+    if (isImmortal)
+    {
+      return new(false, false, null);
     }
 
     if (currentHealth <= 0)
@@ -31,7 +37,7 @@ public sealed class NpcLifecycleSystem
       lifecycle.TimeLeft--;
     }
 
-    if (lifecycle.TimeLeft == 0)
+    if (lifecycle.TimeLeft <= 0)
     {
       lifecycle.IsActive = false;
       lifecycle.DespawnReason = NpcDespawnReason.TimedOut;

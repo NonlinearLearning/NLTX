@@ -13,7 +13,9 @@ public readonly record struct ItemUseResult(
   ItemCommandRejection Rejection,
   ItemUsedEvent Event,
   ushort BuffType = 0,
-  int BuffDurationTicks = 0);
+  int BuffDurationTicks = 0,
+  ushort ProjectileType = 0,
+  float ProjectileSpeed = 0);
 
 public sealed class ItemUseSystem
 {
@@ -68,8 +70,16 @@ public sealed class ItemUseSystem
     int manaCost = definition.Use?.ManaCost ?? 0;
     bool consumable = definition.Use?.Consumable ??
       (definition.Recovery?.Consumable ?? healthRestore > 0);
-    bool hasAction = definition.Use is ItemUseDefinition use &&
-      (use.ShootType != 0 || use.UseTime > 0);
+    bool hasUseAction = definition.Use is ItemUseDefinition use && use.UseTime > 0;
+    ushort projectileType = definition.Use is ItemUseDefinition useDefinition &&
+      useDefinition.ShootType != 0
+      ? useDefinition.ShootType
+      : definition.Combat?.ProjectileType ?? 0;
+    float projectileSpeed = definition.Use is ItemUseDefinition speedDefinition &&
+      speedDefinition.ShootSpeed > 0
+      ? speedDefinition.ShootSpeed
+      : definition.Combat?.ProjectileSpeed ?? 0;
+    bool hasAction = hasUseAction || projectileType != 0;
     bool hasRecoveryEffect = healthRestore > 0 || manaRestore > 0 || buffType != 0;
     if (!hasRecoveryEffect && !hasAction)
     {
@@ -113,7 +123,9 @@ public sealed class ItemUseSystem
       default,
       usedEvent,
       buffType,
-      buffDurationTicks);
+      buffDurationTicks,
+      projectileType,
+      projectileSpeed);
   }
 
   private static ItemUseResult Reject(int health, int mana, string reason)

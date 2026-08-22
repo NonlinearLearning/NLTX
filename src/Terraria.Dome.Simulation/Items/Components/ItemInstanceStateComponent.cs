@@ -6,4 +6,5 @@ public readonly record struct ItemInstanceStateComponent(
   byte Dye = 0,
   byte Paint = 0,
   bool IsFavorited = false,
+  bool IsNewAndShiny = false,
   string? NameOverride = null);

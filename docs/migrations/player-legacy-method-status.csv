@@ -1,0 +1,34 @@
+cluster,legacy_symbols,source_lines,target,status,verifier_or_dependency
+IdentityLifecycle,"PlayerConnect;PlayerDisconnect;Spawn;KillMe;dead;respawnTimer",291-430;14200-14780,Player/Components + server session,Migrated,PlayerLifecycle.Verification
+InputControl,"Update;UpdateControlHolds;HorizontalMovement;JumpMovement;controlLeft;controlRight;controlJump",430-980;11100-12500,Player/Systems,Migrated,PlayerSimulation.Verification
+MovementCollision,"Gravity;TileCollision;FloorVisuals;velocity;position",980-1550;18000-21400,Movement + Physics systems,Migrated,PlayerSimulation.Verification
+HealthMana,"Hurt;Heal;HealEffect;ManaEffect;statLife;statMana",2700-3900;9100-10400,Combat components/systems,Migrated,Combat.Protocol.Verification
+DamageDeathRespawn,"KillMe;UpdateDead;Respawn;hurt cooldown;immunity",3900-4700;14200-15100,typed damage and lifecycle commands/events,Migrated,Combat.Loopback.Verification
+InventoryItemUse,"GetItem;ItemSpace;ConsumeItem;ItemCheck;QuickSpawnItem",5700-8200;24000-29500,Inventory + PlayerItemUseSystem,Migrated,Items.Verification
+EquipmentBuffs,"UpdateEquips;UpdateArmorSets;AddBuff;UpdateBuffs",8200-9900;30500-35100,Inventory and StatusEffects,Delegated,Items.Verification
+Persistence,"SavePlayerFile;LoadPlayerFile;profile;loadout",1500-2700;35100-38000,Players/PlayerPersistentState,Migrated,Persistence.Verification
+Replication,"SyncPlayer;NetDefaults;packet-facing player state",38000-41000,Server/Replication + Protocol,Migrated,SessionReplication.Verification
+WorldInteraction,"tile reach;chest;sign;door;pickup;teleport",41000-45500,typed interaction commands,Migrated,TileInteraction.Verification
+Presentation,"Draw;camera;dust;audio;UI;map;social cosmetics",45500-52000,client adapter,ClientOnly,FullClientBootstrap.Verification
+SpecializedMechanics,"golf;fishing visuals;wings;ropes;mounts;emotes;mod hooks",52000-634315,later domain with client adapter,Blocked,Dependency: specialized rule oracle and client adapter
+LegacyNestedCompatibilityTypes,"Player;BuilderAccToggleIDs;PlayerInputSyncCache;RabbitOrderFrameHelper;CompositeArmData;SetMatchRequest;ItemSpaceStatus;ItemCheckContext;Hooks",43-289,protocol compatibility and client adapter,Delegated,ProtocolCompatibility.Verification
+CoreVitalLifecycle,"UpdateImmunity;UpdateLifeRegen",10804-10847,Combat components and vital regeneration system,Migrated,Combat.Verification
+DeferredSpecialMovement,"DashMovement;WallClimbMovement;WallslideMovement;CarpetMovement;DoubleJumpVisuals;WingMovement;GrappleMovement;StickyMovement",12558-13832,specialized movement domain,Blocked,Dependency: specialized movement rule oracle and client adapter
+DeferredInventoryModes,"HasLockedInventory;IsStackingItems;useVoidBag",13993-14026,specialized inventory domain,Blocked,Dependency: inventory mode rule oracle and protocol projection
+DeferredEnvironmentalMovement,"CheckDrowning;SlopeDownMovement;WetCollision",14040-14144,specialized environment movement domain,Blocked,Dependency: liquid and environment movement rule oracle
+ReplicationAndChestHooks,"ResetNetOffsets;ChestChangeEvents",17814-17824,server replication and world object systems,Delegated,SessionReplication.Verification;WorldObjects.Verification
+DeferredLuckAndCounters,"UpdateLuck;UpdateLuckFactors;RecalculateLuck;UpdateMiscCounter",17869-17985,specialized player-stat domain,Blocked,Dependency: luck and player-stat rule oracle
+PresentationAppearanceMatching,"SetMatch",21491-21491,client adapter,ClientOnly,FullClientBootstrap.Verification
+DeferredTeleportAndSpawn,"Teleport;Spawn;Spawn_GetPositionAtWorldSpawn;Spawn_GetPositionAtSpawn;Spawn_DescendFromDefaultSpace;Spawn_ForceClearArea;Spawn_IsAreaValidSpawn",21731-22046,specialized world interaction domain,Blocked,Dependency: authoritative teleport and spawn-placement rule oracle
+CoreImmunity,"SetImmuneTimeForAllTypes",22084-22084,Combat immunity system,Migrated,Combat.Verification
+DeferredDefensiveAbilities,"ShadowDodge;BrainOfConfusionDodge;NinjaDodge",22096-22116,specialized combat domain,Blocked,Dependency: defensive ability rule oracle
+PresentationArmorEffects,"ApplyArmorSoundAndDustChanges",22162-22162,client adapter,ClientOnly,FullClientBootstrap.Verification
+DeferredAllyDefense,"CanDefendWithPaladinsShield",22197-22207,specialized combat domain,Blocked,Dependency: multi-player defense rule oracle
+CoreDamageLifecycle,"Hurt;KillMe",22208-22208;22572-22572,typed damage and lifecycle commands/events,Migrated,Combat.Loopback.Verification
+PresentationDamageEffects,"PlayHurtSound",22388-22388,client adapter,ClientOnly,FullClientBootstrap.Verification
+DeferredDeathDrops,"DropTombstone",22771-22771,specialized death-loot domain,Blocked,Dependency: death-drop rule oracle and persistence projection
+CoreInventoryTransfer,"CanPullItem;ItemSpace;ItemSpaceForCofveve;CanItemSlotAcceptPickup;CanGoIntoAmmoOnPickup;DoCoins;FillAmmo;GetItem",22811-23018,Inventory and pickup systems,Migrated,Items.Verification
+DeferredSpecialItemEffects,"BiomeTorchPlaceStyle;BiomeTorchHoldStyle;ChangeDir;getRect;HorsemansBlade_SpawnPumpkin;SummonItemCheck;SporeSac;VolatileGelatin;CanHit;GetAdjustedItemScale;ApplyMeleeScale;ItemCheck",23107-23435,specialized item and combat domain,Blocked,Dependency: item-effect and combat rule oracle
+PresentationItemAnimation,"AnimatePlayerAndGetItemFrame",23841-23841,client adapter,ClientOnly,FullClientBootstrap.Verification
+DeferredBannerAndMeleeRules,"HasNPCBannerBuff;ResetNPCSlotData;ResetMeleeHitCooldowns;CanHitNPCWithMeleeHit;SetMeleeHitCooldown;TakeDamageFromJellyfish;ApplyAttackCooldown",23908-23974,specialized combat domain,Blocked,Dependency: banner and melee rule oracle
+CoreReachValidation,"GetTileCutIgnorance;LimitPointToPlayerReachableArea",23974-23990,typed interaction validation,Migrated,TileInteraction.Verification

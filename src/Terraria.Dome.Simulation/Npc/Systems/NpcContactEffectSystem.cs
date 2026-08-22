@@ -36,7 +36,7 @@ public sealed class NpcContactEffectSystem
     for (int npcIndex = 0; npcIndex < npcs.Count; npcIndex++)
     {
       NpcContactCandidate npc = npcs[npcIndex];
-      if (!npc.IsActive)
+      if (!npc.IsActive || !npc.Npc.IsValid || !IsValidGeometry(npc.Position, npc.Collider))
       {
         continue;
       }
@@ -44,7 +44,8 @@ public sealed class NpcContactEffectSystem
       for (int playerIndex = 0; playerIndex < players.Count; playerIndex++)
       {
         PlayerContactCandidate player = players[playerIndex];
-        if (!player.IsActive || player.CooldownTicks > 0 ||
+        if (!player.IsActive || !player.Player.IsValid || player.CooldownTicks > 0 ||
+            !IsValidGeometry(player.Position, player.Collider) ||
             !Overlaps(npc.Position, npc.Collider, player.Position, player.Collider))
         {
           continue;
@@ -67,5 +68,12 @@ public sealed class NpcContactEffectSystem
       firstPosition.X + firstCollider.Width > secondPosition.X &&
       firstPosition.Y < secondPosition.Y + secondCollider.Height &&
       firstPosition.Y + firstCollider.Height > secondPosition.Y;
+  }
+
+  private static bool IsValidGeometry(SimulationVector position, ColliderComponent collider)
+  {
+    return float.IsFinite(position.X) && float.IsFinite(position.Y) &&
+      float.IsFinite(collider.Width) && collider.Width > 0.0f &&
+      float.IsFinite(collider.Height) && collider.Height > 0.0f;
   }
 }

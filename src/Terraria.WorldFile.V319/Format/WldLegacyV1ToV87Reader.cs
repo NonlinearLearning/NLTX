@@ -140,36 +140,48 @@ internal static class WldLegacyV1ToV87Reader
     ValidateCoordinates(spawnX, spawnY, width, height, "spawn");
     double worldSurface = reader.ReadDouble();
     double rockLayer = reader.ReadDouble();
-    _ = reader.ReadDouble();
-    _ = reader.ReadBoolean();
-    _ = reader.ReadInt32();
-    _ = reader.ReadBoolean();
+    double timeOfDay = reader.ReadDouble();
+    bool isDayTime = reader.ReadBoolean();
+    byte moonPhase = ReadMoonPhase(reader);
+    bool isBloodMoon = reader.ReadBoolean();
+    bool isEclipse = false;
     if (version >= 70)
     {
-      _ = reader.ReadBoolean();
+      isEclipse = reader.ReadBoolean();
     }
 
     _ = reader.ReadInt32();
     _ = reader.ReadInt32();
+    bool isCrimsonWorld = false;
     if (version >= 56)
     {
-      _ = reader.ReadBoolean();
+      isCrimsonWorld = reader.ReadBoolean();
     }
 
-    ReadBooleanValues(reader, 3);
+    bool defeatedEyeOfCthulhu = reader.ReadBoolean();
+    bool defeatedEaterOrBrain = reader.ReadBoolean();
+    bool defeatedSkeletron = reader.ReadBoolean();
     if (version >= 66)
     {
       _ = reader.ReadBoolean();
     }
 
+    bool defeatedMechanicalBoss = false;
     if (version >= 44)
     {
-      ReadBooleanValues(reader, 4);
+      ReadBooleanValues(reader, 3);
+      defeatedMechanicalBoss = reader.ReadBoolean();
     }
 
+    bool defeatedPlantera = false;
+    bool defeatedGolem = false;
+    bool defeatedGoblins = false;
+    bool defeatedFrost = false;
+    bool defeatedPirates = false;
     if (version >= 64)
     {
-      ReadBooleanValues(reader, 2);
+      defeatedPlantera = reader.ReadBoolean();
+      defeatedGolem = reader.ReadBoolean();
     }
 
     if (version >= 29)
@@ -184,7 +196,7 @@ internal static class WldLegacyV1ToV87Reader
         }
       }
 
-      _ = reader.ReadBoolean();
+      defeatedGoblins = reader.ReadBoolean();
     }
 
     if (version >= 32)
@@ -194,30 +206,36 @@ internal static class WldLegacyV1ToV87Reader
 
     if (version >= 37)
     {
-      _ = reader.ReadBoolean();
+      defeatedFrost = reader.ReadBoolean();
     }
 
     if (version >= 56)
     {
-      _ = reader.ReadBoolean();
+      defeatedPirates = reader.ReadBoolean();
     }
 
     _ = reader.ReadBoolean();
-    _ = reader.ReadBoolean();
+    bool isMeteorScheduled = reader.ReadBoolean();
     _ = reader.ReadByte();
+    bool isHardMode = false;
     if (version >= 23)
     {
       _ = reader.ReadInt32();
-      _ = reader.ReadBoolean();
+      isHardMode = reader.ReadBoolean();
     }
 
-    ReadInt32Values(reader, 3);
-    _ = reader.ReadDouble();
+    _ = reader.ReadInt32();
+    int invasionSize = reader.ReadInt32();
+    int invasionType = reader.ReadInt32();
+    double invasionX = reader.ReadDouble();
+    bool? isRaining = null;
+    int? rainTimeTicks = null;
+    float? maximumRainStrength = null;
     if (version >= 53)
     {
-      _ = reader.ReadBoolean();
-      _ = reader.ReadInt32();
-      _ = reader.ReadSingle();
+      isRaining = reader.ReadBoolean();
+      rainTimeTicks = reader.ReadInt32();
+      maximumRainStrength = reader.ReadSingle();
     }
 
     if (version >= 54)
@@ -236,10 +254,11 @@ internal static class WldLegacyV1ToV87Reader
       _ = reader.ReadInt32();
     }
 
+    float? windSpeedTarget = null;
     if (version >= 62)
     {
       _ = reader.ReadInt16();
-      _ = reader.ReadSingle();
+      windSpeedTarget = reader.ReadSingle();
     }
 
     return new LegacyWorldMetadata(
@@ -254,7 +273,44 @@ internal static class WldLegacyV1ToV87Reader
       topWorld,
       bottomWorld,
       worldSurface,
-      rockLayer);
+      rockLayer,
+      moonPhase,
+      isBloodMoon,
+      isEclipse,
+      isCrimsonWorld,
+      isHardMode,
+      defeatedEyeOfCthulhu,
+      defeatedEaterOrBrain,
+      defeatedSkeletron,
+      defeatedMechanicalBoss,
+      defeatedPlantera,
+      defeatedGolem,
+      InvasionType: invasionType,
+      InvasionSize: invasionSize,
+      InvasionX: invasionX,
+      DefeatedGoblins: defeatedGoblins,
+      DefeatedFrost: defeatedFrost,
+      DefeatedPirates: defeatedPirates,
+      GameMode: 0,
+      IsMeteorScheduled: isMeteorScheduled,
+      WindSpeedTarget: windSpeedTarget,
+      IsRaining: isRaining,
+      RainTimeTicks: rainTimeTicks,
+      MaximumRainStrength: maximumRainStrength,
+      IsRemixWorld: null,
+      TimeOfDay: timeOfDay,
+      IsDayTime: isDayTime);
+  }
+
+  private static byte ReadMoonPhase(WldBinaryReader reader)
+  {
+    int moonPhase = reader.ReadInt32();
+    if (moonPhase is < 0 or > 7)
+    {
+      throw new InvalidDataException("The WLD moon phase is outside the supported range.");
+    }
+
+    return (byte)moonPhase;
   }
 
   private static List<LegacyNpc> ReadNpcs(

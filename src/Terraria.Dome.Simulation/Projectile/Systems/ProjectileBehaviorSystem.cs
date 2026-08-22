@@ -39,6 +39,13 @@ public sealed class ProjectileBehaviorSystem
     int tick,
     out int behaviorId)
   {
+    ArgumentNullException.ThrowIfNull(world);
+    behaviorId = 0;
+    if (!world.IsAlive(entity))
+    {
+      return false;
+    }
+
     ref ProjectileBehaviorComponent behavior = ref world.Get<ProjectileBehaviorComponent>(entity);
     behaviorId = behavior.BehaviorId;
     if (!_behaviors.TryGetValue(behavior.BehaviorId, out IProjectileBehavior? implementation))

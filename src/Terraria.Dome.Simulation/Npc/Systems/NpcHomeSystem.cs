@@ -42,6 +42,11 @@ public sealed class NpcHomeSystem
       throw new ArgumentOutOfRangeException(nameof(speed));
     }
 
+    if (!float.IsFinite(position.X) || !float.IsFinite(position.Y))
+    {
+      throw new ArgumentOutOfRangeException(nameof(position));
+    }
+
     movementIntent.HasNpcIntent = true;
     movementIntent.NpcHorizontalVelocity = 0.0f;
     movementIntent.NpcVerticalVelocity = 0.0f;
