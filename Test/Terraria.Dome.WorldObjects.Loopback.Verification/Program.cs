@@ -118,7 +118,9 @@ if (placed.TileX != trainingDummyX || placed.TileY != trainingDummyY ||
     placed.NpcId != -1 || await HasTrainingDummyFrameAsync(hidden, TimeSpan.FromMilliseconds(500)) ||
     server.World.GetTile(trainingDummyX, trainingDummyY).Type != 378 ||
     !server.World.GetTile(trainingDummyX, trainingDummyY).IsActive ||
-    server.CreatePersistenceSnapshot(server.LatestSnapshot.World.Metadata).TileEntities.Count != 1)
+    server.CreatePersistenceSnapshot(
+      new WorldMetadata("TrainingDummy loopback", new WorldSeed(1456), 4200, 1200))
+      .TileEntities.Count != 1)
 {
   throw new InvalidOperationException(
     "TrainingDummy placement did not preserve server ownership or PVS isolation.");
@@ -139,7 +141,9 @@ TrainingDummySharingFrame removed = await ReadTrainingDummySharingAsync(
   TimeSpan.FromSeconds(3));
 if (removed.EntityId != placed.EntityId ||
     server.World.GetTile(trainingDummyX, trainingDummyY).IsActive ||
-    server.CreatePersistenceSnapshot(server.LatestSnapshot.World.Metadata).TileEntities.Count != 0)
+    server.CreatePersistenceSnapshot(
+      new WorldMetadata("TrainingDummy loopback", new WorldSeed(1456), 4200, 1200))
+      .TileEntities.Count != 0)
 {
   throw new InvalidOperationException(
     "TrainingDummy removal did not publish the tombstone or clear authoritative state.");
@@ -351,13 +355,6 @@ static TrainingDummySharingFrame DecodeTrainingDummySharing(TerrariaFrame frame)
   return new TrainingDummySharingFrame(entityId, true, tileX, tileY, npcId);
 }
 
-readonly record struct TrainingDummySharingFrame(
-  int EntityId,
-  bool Present,
-  short TileX,
-  short TileY,
-  short NpcId);
-
 static async Task<int> CountFramesAsync(NetworkStream stream, TerrariaMessageId messageId, TimeSpan timeout)
 {
   int count = 0;
@@ -394,3 +391,10 @@ static async Task<byte[]> ReadFrameAsync(NetworkStream stream, CancellationToken
   await stream.ReadExactlyAsync(frame.AsMemory(2), cancellationToken);
   return frame;
 }
+
+readonly record struct TrainingDummySharingFrame(
+  int EntityId,
+  bool Present,
+  short TileX,
+  short TileY,
+  short NpcId);
