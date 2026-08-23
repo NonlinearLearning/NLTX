@@ -1,7 +1,11 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Arch.Core;
 using Terraria.Dome.Simulation;
+using Terraria.Dome.Simulation.Combat.Components;
+using Terraria.Dome.Simulation.Combat.Events;
+using Terraria.Dome.Simulation.Combat.Systems;
 using Terraria.Dome.Simulation.Commands;
 using Terraria.Dome.Simulation.Components;
 using Terraria.Dome.Simulation.Items;
@@ -34,6 +38,7 @@ if (deadVitals.Health != 0 || deadVitals.IsActive ||
 Console.WriteLine("PASS: player vitals and damage events are bounded and ordered");
 
 VerifyBoundedVitalRegeneration();
+VerifyManaRegenerationAccumulatorBoundary();
 VerifyStableReplicationAndCombatLifecycle();
 VerifyNpcContactDamage();
 VerifyPlayerDamageDifficultyModes();
@@ -43,7 +48,9 @@ VerifyDeterministicNpcLoot();
 VerifyForgedProjectileOwnerRejected();
 VerifyProjectileVelocityInputsRejected();
 VerifyProjectileLifetimeBoundary();
+VerifyProjectileBehaviorOverflowBoundary();
 VerifyProjectilePenetrationBoundary();
+VerifyForgedProjectilePenetrationRejected();
 VerifyProjectileTargetEligibility();
 ProjectileBehaviorFixtures.VerifyLinear();
 ProjectileBehaviorFixtures.VerifyGravity();
@@ -116,6 +123,20 @@ try
 catch (ArgumentException)
 {
 }
+
+try
+{
+  _ = directSpawn.Spawn(
+    invalidProjectileWorld,
+    new SpawnProjectileCommand(new PlayerHandle(1), 0.0f, 0.0f, 1, 10, 20),
+    directDefinition,
+    identity: int.MaxValue);
+  throw new InvalidOperationException(
+    "Direct projectile spawn accepted a replication identity that cannot advance.");
+}
+catch (ArgumentException)
+{
+}
 Console.WriteLine("PASS: authoritative combat records, contact damage, collision, cooldown and loot");
 
 static void VerifyBoundedVitalRegeneration()
@@ -134,6 +155,25 @@ static void VerifyBoundedVitalRegeneration()
   {
     throw new InvalidOperationException(
       "Player health did not regenerate once after the authoritative delay.");
+  }
+}
+
+static void VerifyManaRegenerationAccumulatorBoundary()
+{
+  using World world = World.Create();
+  Entity player = world.Create(
+    new HealthComponent(100, 100),
+    new HealthRegenerationComponent(),
+    new ManaComponent(0, 20));
+  ref ManaComponent mana = ref world.Get<ManaComponent>(player);
+  mana.RegenerationAccumulator = int.MaxValue;
+
+  new PlayerVitalRegenSystem().Apply(world, [player]);
+  mana = world.Get<ManaComponent>(player);
+  if (mana.Current != 1 || mana.RegenerationAccumulator != 0)
+  {
+    throw new InvalidOperationException(
+      "Mana regeneration did not clamp an exhausted accumulator before incrementing.");
   }
 }
 
@@ -285,6 +325,20 @@ static void VerifyProjectileTargetEligibility()
 
 static void VerifyProjectileLifetimeBoundary()
 {
+  using (World forgedLifetimeWorld = World.Create())
+  {
+    Entity forgedLifetime = forgedLifetimeWorld.Create(new ProjectileLifetimeComponent
+    {
+      RemainingTicks = int.MinValue
+    });
+    if (!new ProjectileLifetimeSystem().Advance(forgedLifetime, forgedLifetimeWorld) ||
+        forgedLifetimeWorld.Get<ProjectileLifetimeComponent>(forgedLifetime).RemainingTicks != 0)
+    {
+      throw new InvalidOperationException(
+        "Projectile lifetime overflow was not clamped to the expired state.");
+    }
+  }
+
   try
   {
     _ = new ProjectileLifetimeComponent(0);
@@ -321,6 +375,31 @@ static void VerifyProjectileLifetimeBoundary()
   {
     throw new InvalidOperationException(
       "A projectile did not expire at its authoritative one-tick lifetime boundary.");
+  }
+}
+
+static void VerifyProjectileBehaviorOverflowBoundary()
+{
+  using World world = World.Create();
+  Entity linearEntity = world.Create(
+    new TransformComponent(float.MaxValue, 0.0f),
+    new VelocityComponent(float.MaxValue, 0.0f),
+    new ProjectileBehaviorComponent(1, default));
+  ProjectileBehaviorSystem linear = ProjectileBehaviorSystem.CreateDefault();
+  if (linear.TryAdvance(linearEntity, world, 1, out _) ||
+      world.Get<TransformComponent>(linearEntity).X != float.MaxValue)
+  {
+    throw new InvalidOperationException("Linear projectile behavior committed a non-finite position.");
+  }
+
+  Entity gravityEntity = world.Create(
+    new TransformComponent(0.0f, float.MaxValue),
+    new VelocityComponent(0.0f, float.MaxValue),
+    new ProjectileBehaviorComponent(2, default));
+  if (linear.TryAdvance(gravityEntity, world, 1, out _) ||
+      world.Get<TransformComponent>(gravityEntity).Y != float.MaxValue)
+  {
+    throw new InvalidOperationException("Gravity projectile behavior committed a non-finite position.");
   }
 }
 
@@ -371,6 +450,25 @@ static void VerifyProjectilePenetrationBoundary()
   {
     throw new InvalidOperationException(
       "A one-penetration projectile did not despawn after its first authoritative hit.");
+  }
+}
+
+static void VerifyForgedProjectilePenetrationRejected()
+{
+  using World world = World.Create();
+  Entity projectile = world.Create(new ProjectilePenetrationComponent(-1)
+  {
+    RemainingPenetration = int.MinValue
+  });
+  Entity target = world.Create();
+  IReadOnlyList<DamageRequestedEvent> accepted = new ProjectileDamageSystem().Resolve(
+    world,
+    [new DamageRequestedEvent(projectile, target, 10, 1, 1)],
+    new HitImmunityComponent());
+  if (accepted.Count != 0)
+  {
+    throw new InvalidOperationException(
+      "Projectile damage accepted a forged penetration value below the infinite sentinel.");
   }
 }
 

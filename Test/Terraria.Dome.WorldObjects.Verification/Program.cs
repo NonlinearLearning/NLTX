@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Terraria.Dome.Protocol.V1456.Packets;
@@ -24,6 +25,7 @@ VerifySimulationTrainingDummyOwnership();
 VerifySimulationTrainingDummyTickLifecycle();
 VerifyTrainingDummyPersistenceProjection();
 VerifyTrainingDummyProtocolProjection();
+VerifyTrainingDummyInboundPlacementDecode();
 VerifyTrainingDummyReplicationCursor();
 VerifyTrainingDummyPlacementRemovalOwner();
 
@@ -105,6 +107,9 @@ if (!staleRevisionSimulation.TryTransferChestItem(
 Console.WriteLine("PASS: chest transfer expected revision is an atomic stale-command guard");
 
 Console.WriteLine("PASS: section-local chest ownership and range are authoritative");
+
+VerifyChestSnapshotIdentityOverflow();
+VerifyChestRevisionOverflowBoundary();
 
 static void VerifyTrainingDummyTileValidity()
 {
@@ -447,6 +452,32 @@ static void VerifySimulationTrainingDummyOwnership()
   }
 
   Console.WriteLine("PASS: Simulation owns Training Dummy link and clear transitions");
+
+  WorldMetadata overflowMetadata = new("tile-entity-id-overflow", new WorldSeed(3), 400, 300);
+  DomeSimulationSnapshot overflowSnapshot = new(
+    new WorldGrid(400, 300).CreateSnapshot(overflowMetadata),
+    [],
+    [],
+    tickNumber: 0,
+    tileEntities: [new TileEntityPersistentState(int.MaxValue, 0, 12, 14, [], false)]);
+  bool rejectedTileEntityIdOverflow = false;
+  try
+  {
+    _ = new DomeSimulation(overflowSnapshot);
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+    rejectedTileEntityIdOverflow = true;
+  }
+
+  if (!rejectedTileEntityIdOverflow)
+  {
+    throw new InvalidOperationException(
+      "Persistence accepted a tile-entity ID that would overflow the next allocator.");
+  }
+
+  Console.WriteLine(
+    "PASS: tile-entity persistence rejects max IDs before allocator overflow");
 }
 
 static void VerifySimulationTrainingDummyTickLifecycle()
@@ -598,6 +629,28 @@ static void VerifyTrainingDummyProtocolProjection()
   }
 
   Console.WriteLine("PASS: Training Dummy V1456 message 86/87 projection preserves wire fields");
+}
+
+static void VerifyTrainingDummyInboundPlacementDecode()
+{
+  byte[] frame = TerrariaPacketCodec.EncodeTrainingDummyTileEntityPlacement(12, 14);
+  TileEntityPlacementIntent placement = TerrariaPacketCodec.DecodeTileEntityPlacement(frame);
+  if (placement.TileX != 12 || placement.TileY != 14 || placement.EntityType != 0)
+  {
+    throw new InvalidOperationException("Training Dummy inbound message 87 decode was invalid.");
+  }
+
+  byte[] malformed = frame[..^1];
+  try
+  {
+    _ = TerrariaPacketCodec.DecodeTileEntityPlacement(malformed);
+    throw new InvalidOperationException("Malformed message 87 was accepted.");
+  }
+  catch (InvalidDataException)
+  {
+  }
+
+  Console.WriteLine("PASS: Training Dummy message 87 typed inbound decode and length rejection");
 }
 
 static void VerifyTrainingDummyReplicationCursor()
@@ -753,9 +806,30 @@ Console.WriteLine("PASS: chest item transfer is server-owned and typed");
 
 int signId = simulation.CreateSign(14, 10, "Initial");
 if (!simulation.TryUpdateSign(signId, new SimulationVector(10.0f, 10.0f), "Updated") ||
-    simulation.TryUpdateSign(signId, new SimulationVector(100.0f, 10.0f), "Forged"))
+    simulation.TryUpdateSign(signId, new SimulationVector(100.0f, 10.0f), "Forged") ||
+    simulation.TryUpdateSign(signId, new SimulationVector(float.NaN, 10.0f), "NonFinite"))
 {
-  throw new InvalidOperationException("Sign range validation was not authoritative.");
+  throw new InvalidOperationException("Sign range validation did not reject forged coordinates.");
+}
+
+int doorId = simulation.CreateDoor(16, 10);
+if (simulation.TryToggleDoor(doorId, new SimulationVector(float.NaN, 10.0f)))
+{
+  throw new InvalidOperationException("Door interaction accepted a non-finite player coordinate.");
+}
+
+using (DomeSimulation chestGeometry = new(new WorldGrid(400, 300)))
+{
+  PlayerHandle chestPlayer = chestGeometry.CreatePlayer(new SimulationVector(10.0f, 10.0f));
+  int geometryChest = chestGeometry.CreateChest(10, 10);
+  if (chestGeometry.TryOpenChest(
+        geometryChest,
+        chestPlayer,
+        new SimulationVector(float.NaN, 10.0f)))
+  {
+    throw new InvalidOperationException(
+      "Chest interaction accepted a non-finite player coordinate.");
+  }
 }
 
 SignSnapshot sign = simulation.CreateSignSnapshots().Single();
@@ -774,6 +848,156 @@ if (TerrariaPacketCodec.DecodeSignUpdate(TerrariaPacketCodec.EncodeSignUpdate(si
 }
 
 Console.WriteLine("PASS: section-local sign state, revision and V1456 projection are authoritative");
+
+VerifySignSnapshotIdentityOverflow();
+
+static void VerifySignSnapshotIdentityOverflow()
+{
+  WorldGrid grid = new(400, 300);
+  WorldMetadata metadata = new("sign-id-restore", new WorldSeed(6), 400, 300);
+  SignPersistentState validSign = new(0, 14, 10, "Persisted", 1);
+  DomeSimulationSnapshot validSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [],
+    [],
+    tickNumber: 0,
+    signs: [validSign]);
+  using DomeSimulation restored = new(validSnapshot);
+  if (restored.CreateSignSnapshots().Count != 1)
+  {
+    throw new InvalidOperationException(
+      "A valid sign persistence snapshot did not restore its sign set.");
+  }
+
+  DomeSimulationSnapshot overflowSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [],
+    [],
+    tickNumber: 0,
+    signs: [validSign with { SignId = int.MaxValue }]);
+  bool rejectedSignIdOverflow = false;
+  try
+  {
+    _ = new DomeSimulation(overflowSnapshot);
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+    rejectedSignIdOverflow = true;
+  }
+
+  if (!rejectedSignIdOverflow)
+  {
+    throw new InvalidOperationException(
+      "Persistence accepted a sign ID that would overflow the next allocator.");
+  }
+
+  Console.WriteLine("PASS: sign persistence rejects max IDs before allocator overflow");
+
+  DomeSimulationSnapshot negativeRevisionSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [],
+    [],
+    tickNumber: 0,
+    signs: [validSign with { Revision = -1 }]);
+  bool rejectedNegativeRevision = false;
+  try
+  {
+    _ = new DomeSimulation(negativeRevisionSnapshot);
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+    rejectedNegativeRevision = true;
+  }
+
+  if (!rejectedNegativeRevision)
+  {
+    throw new InvalidOperationException(
+      "Persistence accepted a sign revision below zero.");
+  }
+
+  Console.WriteLine("PASS: sign persistence rejects negative revisions");
+
+  DomeSimulationSnapshot revisionOverflowSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [],
+    [],
+    tickNumber: 0,
+    signs: [validSign with { Revision = long.MaxValue }]);
+  using DomeSimulation revisionOverflowSimulation = new(revisionOverflowSnapshot);
+  if (revisionOverflowSimulation.TryUpdateSign(
+        0,
+        new SimulationVector(14.0f, 10.0f),
+        "Rejected"))
+  {
+    throw new InvalidOperationException(
+      "Sign update accepted a revision that cannot advance.");
+  }
+
+  Console.WriteLine("PASS: sign update rejects max revision before overflow");
+}
+
+static void VerifyChestRevisionOverflowBoundary()
+{
+  ChestRevisionComponent revision = new(long.MaxValue);
+  if (revision.TryIncrement() || revision.Value != long.MaxValue)
+  {
+    throw new InvalidOperationException(
+      "Chest revision accepted an increment that would overflow the authoritative value.");
+  }
+}
+
+static void VerifyChestSnapshotIdentityOverflow()
+{
+  WorldGrid grid = new(400, 300);
+  WorldMetadata metadata = new("chest-id-restore", new WorldSeed(5), 400, 300);
+  ChestPersistentState validChest = new(
+    chestId: 1,
+    tileX: 100,
+    tileY: 100,
+    slots: new ItemStack[ChestComponent.SlotCount],
+    revision: 1);
+  DomeSimulationSnapshot validSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [],
+    [],
+    tickNumber: 0,
+    chests: [validChest]);
+  using DomeSimulation restored = new(validSnapshot);
+  if (restored.CreateChestSnapshots().Count != 1)
+  {
+    throw new InvalidOperationException(
+      "A valid chest persistence snapshot did not restore its chest set.");
+  }
+
+  DomeSimulationSnapshot overflowSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [],
+    [],
+    tickNumber: 0,
+    chests: [new ChestPersistentState(
+      int.MaxValue,
+      validChest.TileX,
+      validChest.TileY,
+      validChest.Slots,
+      validChest.Revision)]);
+  bool rejectedChestIdOverflow = false;
+  try
+  {
+    _ = new DomeSimulation(overflowSnapshot);
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+    rejectedChestIdOverflow = true;
+  }
+
+  if (!rejectedChestIdOverflow)
+  {
+    throw new InvalidOperationException(
+      "Persistence accepted a chest ID that would overflow the next allocator.");
+  }
+
+  Console.WriteLine("PASS: chest persistence rejects max IDs before allocator overflow");
+}
 
 using DomeSimulation signCapacitySimulation = new(new WorldGrid(400, 300));
 const int maximumV1456SignCount = 32000;

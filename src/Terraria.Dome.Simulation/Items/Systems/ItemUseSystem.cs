@@ -31,7 +31,7 @@ public sealed class ItemUseSystem
     int maximumMana,
     long sequence)
   {
-    if (!state.CanUse || stack.IsEmpty || maximumHealth < 0 || maximumMana < 0 ||
+    if (sequence < 0 || !state.CanUse || stack.IsEmpty || maximumHealth < 0 || maximumMana < 0 ||
         health < 0 || health > maximumHealth || mana < 0 || mana > maximumMana)
     {
       return Reject(health, mana, "Item use state or vitals are invalid.");

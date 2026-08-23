@@ -23,6 +23,7 @@ public sealed class WorldItemPickupSystem
     ArgumentNullException.ThrowIfNull(definitions);
     if (!item.IsActive || item.ReplicationId != command.WorldItemId ||
         item.WorldState.PickupDelayTicks > 0 ||
+        item.WorldState.LastOwnerRevision == long.MaxValue ||
         !item.WorldState.CanBePickedUpBy(command.Player) ||
         !float.IsFinite(pickupRange) ||
         !float.IsFinite(item.Position.X) ||

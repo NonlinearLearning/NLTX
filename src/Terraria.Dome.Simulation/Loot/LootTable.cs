@@ -39,8 +39,8 @@ public sealed class LootTable
     }
 
     uint value = unchecked((uint)(_seed.Value ^ replicationId * 1103515245 ^ lootTableId * 486187739));
-    int range = maximumQuantity - minimumQuantity + 1;
-    int quantity = minimumQuantity + (int)(value % (uint)range);
+    long quantityRange = (long)maximumQuantity - minimumQuantity + 1;
+    int quantity = minimumQuantity + (int)(value % (ulong)quantityRange);
     return new ItemStack(itemType, quantity);
   }
 }

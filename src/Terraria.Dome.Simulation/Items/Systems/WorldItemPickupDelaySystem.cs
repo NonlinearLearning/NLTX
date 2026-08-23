@@ -6,7 +6,9 @@ public sealed class WorldItemPickupDelaySystem
     WorldItemComponent current,
     out WorldItemComponent advanced)
   {
-    if (!current.IsActive || current.WorldState.PickupDelayTicks <= 0)
+    if (!current.IsActive || current.WorldState.PickupDelayTicks <= 0 ||
+        current.Revision == long.MaxValue ||
+        current.WorldState.Revision == long.MaxValue)
     {
       advanced = current;
       return false;

@@ -45,6 +45,10 @@ internal sealed record ApplyTileManipulationCommand(
   byte PlayerSlot,
   TileManipulationIntent Intent) : TerrariaProtocolCommand(PlayerSlot);
 
+internal sealed record PlaceTileEntityCommand(
+  byte PlayerSlot,
+  TileEntityPlacementIntent Intent) : TerrariaProtocolCommand(PlayerSlot);
+
 internal sealed record OpenChestCommand(
   byte PlayerSlot,
   ChestOpenIntent Intent) : TerrariaProtocolCommand(PlayerSlot);

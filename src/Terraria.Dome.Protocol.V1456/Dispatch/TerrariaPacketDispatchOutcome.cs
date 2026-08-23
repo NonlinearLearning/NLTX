@@ -9,6 +9,7 @@ public enum TerrariaPacketDispatchOutcome
   ClientProjectileTerminationAccepted,
   NetModuleAccepted,
   TileManipulationAccepted,
+  TileEntityPlacementAccepted,
   SectionRequested,
   WorldDataRequested,
   TileDataRequested,

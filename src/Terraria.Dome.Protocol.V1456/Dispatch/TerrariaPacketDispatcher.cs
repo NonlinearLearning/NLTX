@@ -60,6 +60,17 @@ public sealed class TerrariaPacketDispatcher
         null,
         null,
         null),
+      TerrariaMessageId.TileEntityPlacement => new TerrariaPacketDispatchResult(
+        TerrariaPacketDispatchOutcome.TileEntityPlacementAccepted,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        TileEntityPlacement: TerrariaPacketCodec.DecodeTileEntityPlacement(frameBytes)),
       TerrariaMessageId.RequestChestOpen => new TerrariaPacketDispatchResult(
         TerrariaPacketDispatchOutcome.ChestOpenAccepted,
         null,

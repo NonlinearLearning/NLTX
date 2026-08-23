@@ -97,8 +97,12 @@ public sealed class ChestComponent
       return true;
     }
 
+    if (!RevisionState.TryIncrement())
+    {
+      return false;
+    }
+
     _name = name;
-    RevisionState.Increment();
     return true;
   }
 
@@ -110,5 +114,10 @@ public sealed class ChestComponent
   public void IncrementRevision()
   {
     RevisionState.Increment();
+  }
+
+  public bool TryIncrementRevision()
+  {
+    return RevisionState.TryIncrement();
   }
 }

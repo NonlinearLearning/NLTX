@@ -13,6 +13,8 @@ public sealed class WorldItemMotionSystem
   {
     if (!current.IsActive || current.ReplicationId != command.ReplicationId ||
         current.Revision != command.ExpectedRevision ||
+        current.Revision == long.MaxValue ||
+        current.WorldState.Revision == long.MaxValue ||
         !float.IsFinite(command.Position.X) ||
         !float.IsFinite(command.Position.Y))
     {

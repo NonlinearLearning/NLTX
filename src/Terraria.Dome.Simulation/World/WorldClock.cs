@@ -69,6 +69,11 @@ public sealed class WorldClock
       return;
     }
 
+    if (ticksToAdvance > long.MaxValue - TickNumber)
+    {
+      throw new ArgumentOutOfRangeException(nameof(ticksToAdvance));
+    }
+
     for (int index = 0; index < ticksToAdvance; index++)
     {
       TickNumber = checked(TickNumber + 1);

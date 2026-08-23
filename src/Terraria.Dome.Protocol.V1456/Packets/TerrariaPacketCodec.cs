@@ -918,6 +918,21 @@ public static class TerrariaPacketCodec
       reader.ReadByte());
   }
 
+  public static TileEntityPlacementIntent DecodeTileEntityPlacement(
+    ReadOnlySpan<byte> frameBytes)
+  {
+    TerrariaFrame frame = TerrariaFrameCodec.Decode(frameBytes);
+    if (frame.MessageId != TerrariaMessageId.TileEntityPlacement ||
+        frame.Payload.Length != 5)
+    {
+      throw new InvalidDataException("Terraria frame is not a valid TileEntityPlacement packet.");
+    }
+
+    short tileX = BinaryPrimitives.ReadInt16LittleEndian(frame.Payload.Span);
+    short tileY = BinaryPrimitives.ReadInt16LittleEndian(frame.Payload.Span[2..]);
+    return new TileEntityPlacementIntent(tileX, tileY, frame.Payload.Span[4]);
+  }
+
   public static ChestOpenIntent DecodeChestOpen(ReadOnlySpan<byte> frameBytes)
   {
     TerrariaFrame frame = TerrariaFrameCodec.Decode(frameBytes);

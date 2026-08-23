@@ -56,6 +56,11 @@ public readonly record struct NpcDefinition
       throw new ArgumentOutOfRangeException(nameof(MaximumHealth));
     }
 
+    if (!Enum.IsDefined(BehaviorId) || !Enum.IsDefined(Faction) || !Enum.IsDefined(Category))
+    {
+      throw new ArgumentOutOfRangeException(nameof(BehaviorId));
+    }
+
     if (ColliderWidth <= 0.0f || ColliderHeight <= 0.0f)
     {
       throw new ArgumentOutOfRangeException(nameof(ColliderWidth));

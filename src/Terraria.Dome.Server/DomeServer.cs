@@ -907,6 +907,25 @@ public sealed class DomeServer : IDisposable
             tileManipulation.Intent.Action));
         }
         return;
+      case PlaceTileEntityCommand placeTileEntity:
+        if (placeTileEntity.Intent.EntityType != 0 ||
+            !_playersBySlot.ContainsKey(placeTileEntity.PlayerSlot) ||
+            !_replicationBySlot.TryGetValue(
+              placeTileEntity.PlayerSlot,
+              out SessionReplicationState? placementState) ||
+            !_world.Contains(placeTileEntity.Intent.TileX, placeTileEntity.Intent.TileY) ||
+            !placementState.VisibleSections.Contains(_world.GetSectionCoordinates(
+              placeTileEntity.Intent.TileX,
+              placeTileEntity.Intent.TileY)))
+        {
+          return;
+        }
+
+        _ = _simulation.TryPlaceTrainingDummy(
+          placeTileEntity.Intent.TileX,
+          placeTileEntity.Intent.TileY,
+          out _);
+        return;
       case OpenChestCommand openChest:
         if (!_playersBySlot.TryGetValue(openChest.PlayerSlot, out PlayerHandle chestPlayer) ||
             !_replicationBySlot.TryGetValue(openChest.PlayerSlot, out SessionReplicationState? chestState))

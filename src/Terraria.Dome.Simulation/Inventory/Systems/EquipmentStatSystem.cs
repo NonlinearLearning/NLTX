@@ -62,6 +62,11 @@ public sealed class EquipmentStatSystem
       return;
     }
 
+    if (loadout.Revision == int.MaxValue)
+    {
+      return;
+    }
+
     loadout.SelectedLoadout = selectedLoadout;
     loadout.AccessoryVisibility = accessoryVisibility;
     loadout.Revision++;

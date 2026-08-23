@@ -11,6 +11,8 @@ using Terraria.Dome.Protocol.V1456.Protocol;
 using Terraria.Dome.Protocol.V1456.Session;
 using Terraria.Dome.Server;
 using Terraria.Dome.Simulation;
+using Terraria.Dome.Simulation.Components;
+using Terraria.Dome.Simulation.Projectile.Systems;
 using Terraria.Dome.Simulation.WorldModel;
 
 byte[] encodedHelloFrame = TerrariaPacketCodec.Encode(new HelloPacket());
@@ -703,6 +705,33 @@ if (hitNpc.Health != 90 || afterHit.Projectiles.Count != 0)
 }
 
 Console.WriteLine("PASS: projectile damage and lifecycle");
+
+WorldGrid projectileCollisionWorld = new(200, 150);
+_ = projectileCollisionWorld.TrySetTile(2, 1, new WorldTile(true, 1));
+ProjectileCollisionSystem projectileCollision = new();
+if (!projectileCollision.HitsSolidTile(
+      projectileCollisionWorld,
+      new TransformComponent(1.0f, 1.0f),
+      new ColliderComponent(1.0f, 1.0f)) ||
+    projectileCollision.HitsSolidTile(
+      projectileCollisionWorld,
+      new TransformComponent(float.NaN, 1.0f),
+      new ColliderComponent(1.0f, 1.0f)) ||
+    projectileCollision.PathHitsSolidTile(
+      projectileCollisionWorld,
+      new TransformComponent(1.0f, 1.0f),
+      new TransformComponent(2.0f, float.PositiveInfinity),
+      new ColliderComponent(1.0f, 1.0f)) ||
+    projectileCollision.HitsSolidTile(
+      projectileCollisionWorld,
+      new TransformComponent(1.0f, 1.0f),
+      new ColliderComponent(0.0f, 1.0f)))
+{
+  throw new InvalidOperationException(
+    "Projectile collision did not fail closed for invalid geometry.");
+}
+
+Console.WriteLine("PASS: projectile collision geometry boundary");
 
 using DomeServer server = new();
 server.Start();

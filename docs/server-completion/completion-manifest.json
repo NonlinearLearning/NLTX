@@ -3,11 +3,22 @@
   "auditNotes": {
     "verifiedOn": "2026-08-22",
     "physicalDeletionLedger": "docs/migrations/version4-physical-deletion-ledger.csv",
-    "physicalDeletionGate": "failed-server-relevant-evidence",
+    "physicalDeletionGate": "failed-server-relevant-deferred",
+    "physicalDeletionServerRelevantDeferred": 44,
+    "physicalDeletionServerRelevantWithoutEvidence": 0,
+    "physicalDeletionUnknown": 0,
+    "wellFedContractEvidence": "Build/diagnostics/server-ecs-convergence/P4-deletion/20260822-wellfed/evidence.json",
     "worldGenDeletionGate": "canRemoveLegacyWorldGen=false",
     "boundedWorldGenerationVerifier": "passed",
     "weightedCoreCapabilityScore": 92,
-    "fullLegacyWorldGenerationParity": "failed"
+    "fullLegacyWorldGenerationParity": "failed",
+    "trainingDummyServerOwnedLoopback": "passed",
+    "trainingDummyInboundPlacement": "bounded-server-owned-route-accepted",
+    "potionOfReturnClientOnlyEvidence": "Build/diagnostics/server-ecs-convergence/P4-deletion/current/potion-of-return-client-only.json",
+    "fishDropRollerClientOnlyEvidence": "Build/diagnostics/server-ecs-convergence/P4-deletion/current/fish-drop-roller-client-only.json",
+    "personalityShopPriceClientOnlyEvidence": "Build/diagnostics/server-ecs-convergence/P4-deletion/current/personality-shop-price-client-only.json",
+    "latestFocusedRegression": "Build/diagnostics/server-ecs-convergence/P-regression/current-focused/results.json",
+    "latestFullVerifierSweep": "Build/diagnostics/server-ecs-convergence/P-regression/current-full/summary-after-wellfed.json"
   },
   "families": [
     {

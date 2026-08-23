@@ -14,9 +14,26 @@ public sealed class WorldGenerationPipeline
 
   public WorldGrid Generate(WorldGenerationRequest request)
   {
+    return GenerateCore(request, traceStages: null);
+  }
+
+  public WorldGenerationTrace GenerateWithTrace(WorldGenerationRequest request)
+  {
+    List<WorldGenerationStageSnapshot> traceStages = new();
+    WorldGrid world = GenerateCore(request, traceStages);
+    return new WorldGenerationTrace(world.CreateSnapshot(request.Metadata), traceStages);
+  }
+
+  private WorldGrid GenerateCore(
+    WorldGenerationRequest request,
+    List<WorldGenerationStageSnapshot>? traceStages)
+  {
     ArgumentNullException.ThrowIfNull(request);
     EnsureSupportedRules(request);
-    WorldGrid world = new(request.Metadata.Width, request.Metadata.Height);
+    WorldGrid world = new(
+      request.Metadata.Width,
+      request.Metadata.Height,
+      initializeLegacyEmptyFrames: true);
     WorldGenerationBootstrap bootstrap = new WorldGenerationStageSystem().Initialize(request);
     WorldGenerationStateComponent state = bootstrap.State;
     List<TileChangeCommand> commands = new();
@@ -26,7 +43,7 @@ public sealed class WorldGenerationPipeline
     }
 
     TerrainProfileComponent terrainProfile = CreateTerrainProfile(request);
-    new TerrainBaseSystem().AppendCommands(
+    new TerrainBaseSystem().AppendLegacyCommands(
       world,
       request,
       terrainProfile,
@@ -41,7 +58,25 @@ public sealed class WorldGenerationPipeline
       throw new InvalidOperationException(commitResult.FailureReason);
     }
 
+    CaptureStage(traceStages, WorldGenerationStage.Terrain, world, request, state);
+
     commands.Clear();
+    if (request.DirtWallSurfaceOffsetChanges is not null)
+    {
+      new DirtWallBackgroundSystem().AppendCommands(
+        world.CreateSnapshot(request.Metadata),
+        request.SurfaceY,
+        request.DirtWallSurfaceOffsetChanges,
+        ref state,
+        commands);
+      if (!new TileChangeCommitSystem().TryCommit(world, commands, out commitResult))
+      {
+        throw new InvalidOperationException(commitResult.FailureReason);
+      }
+
+      commands.Clear();
+    }
+
     WorldGridSnapshot terrainSnapshot = world.CreateSnapshot(request.Metadata);
     new CaveCarvingSystem().AppendCommands(
       terrainSnapshot,
@@ -56,6 +91,8 @@ public sealed class WorldGenerationPipeline
     {
       throw new InvalidOperationException(commitResult.FailureReason);
     }
+
+    CaptureStage(traceStages, WorldGenerationStage.Cave, world, request, state);
 
     commands.Clear();
     WorldGridSnapshot caveSnapshot = world.CreateSnapshot(request.Metadata);
@@ -77,23 +114,9 @@ public sealed class WorldGenerationPipeline
       throw new InvalidOperationException("World generation did not commit its terrain stage.");
     }
 
+    CaptureStage(traceStages, WorldGenerationStage.Biome, world, request, state);
+
     commands.Clear();
-    if (request.DirtWallSurfaceOffsetChanges is not null)
-    {
-      new DirtWallBackgroundSystem().AppendCommands(
-        world.CreateSnapshot(request.Metadata),
-        request.SurfaceY,
-        request.DirtWallSurfaceOffsetChanges,
-        ref state,
-        commands);
-      if (!new TileChangeCommitSystem().TryCommit(world, commands, out commitResult))
-      {
-        throw new InvalidOperationException(commitResult.FailureReason);
-      }
-
-      commands.Clear();
-    }
-
     TileProtectionComponent protection = new(
       request.SpawnX,
       request.SurfaceY,
@@ -118,6 +141,8 @@ public sealed class WorldGenerationPipeline
     {
       throw new InvalidOperationException(commitResult.FailureReason);
     }
+
+    CaptureStage(traceStages, WorldGenerationStage.Ore, world, request, state);
 
     commands.Clear();
     StructureDefinition structureDefinition = new(
@@ -154,6 +179,8 @@ public sealed class WorldGenerationPipeline
       throw new InvalidOperationException(commitResult.FailureReason);
     }
 
+    CaptureStage(traceStages, WorldGenerationStage.Structure, world, request, state);
+
     commands.Clear();
     TreeDefinition treeDefinition = new(
       "ordinary",
@@ -176,8 +203,10 @@ public sealed class WorldGenerationPipeline
           commands) ||
         !new TileChangeCommitSystem().TryCommit(world, commands, out commitResult))
     {
-      throw new InvalidOperationException("World generation tree placement failed.");
+        throw new InvalidOperationException("World generation tree placement failed.");
     }
+
+    CaptureStage(traceStages, WorldGenerationStage.Tree, world, request, state);
 
     commands.Clear();
     LiquidDefinition water = new("water", type: 0, maxAmount: byte.MaxValue);
@@ -216,6 +245,8 @@ public sealed class WorldGenerationPipeline
       throw new InvalidOperationException(liquidCommitResult.FailureReason);
     }
 
+    CaptureStage(traceStages, WorldGenerationStage.Liquid, world, request, state);
+
     List<TileFrameCommand> frameCommands = new();
     if (!new TileFrameSystem().TryAppendCommands(
           world.CreateSnapshot(request.Metadata),
@@ -234,6 +265,8 @@ public sealed class WorldGenerationPipeline
       throw new InvalidOperationException(frameCommitResult.FailureReason);
     }
 
+    CaptureStage(traceStages, WorldGenerationStage.Framing, world, request, state);
+
     if (!state.TryAdvance(WorldGenerationStage.Committed))
     {
       throw new InvalidOperationException("World generation did not enter the commit stage.");
@@ -250,7 +283,22 @@ public sealed class WorldGenerationPipeline
       throw new InvalidOperationException(validationResult.FailureReason);
     }
 
+    CaptureStage(traceStages, WorldGenerationStage.Committed, world, request, state);
+
     return world;
+  }
+
+  private static void CaptureStage(
+    List<WorldGenerationStageSnapshot>? traceStages,
+    WorldGenerationStage stage,
+    WorldGrid world,
+    WorldGenerationRequest request,
+    WorldGenerationStateComponent state)
+  {
+    traceStages?.Add(new WorldGenerationStageSnapshot(
+      stage,
+      world.CreateSnapshot(request.Metadata),
+      state.NextSequence));
   }
 
   private static void EnsureSupportedRules(WorldGenerationRequest request)
@@ -267,8 +315,22 @@ public sealed class WorldGenerationPipeline
 
   private static TerrainProfileComponent CreateTerrainProfile(WorldGenerationRequest request)
   {
-    int underworldY = Math.Max(request.RockLayerY + 1, request.Metadata.Height - 1);
-    return new TerrainProfileComponent(request.SurfaceY, request.RockLayerY, underworldY);
+    int surfaceY = request.SurfaceY;
+    int rockLayerY = request.RockLayerY;
+    if (request.TerrainProfile is not null)
+    {
+      surfaceY = Math.Clamp(
+        (int)Math.Round(request.TerrainProfile.WorldSurface),
+        0,
+        request.Metadata.Height - 2);
+      rockLayerY = Math.Clamp(
+        (int)Math.Round(request.TerrainProfile.RockLayer),
+        surfaceY + 1,
+        request.Metadata.Height - 1);
+    }
+
+    int underworldY = Math.Max(rockLayerY + 1, request.Metadata.Height - 1);
+    return new TerrainProfileComponent(surfaceY, rockLayerY, underworldY);
   }
 
   private static void ClearSpawnArea(

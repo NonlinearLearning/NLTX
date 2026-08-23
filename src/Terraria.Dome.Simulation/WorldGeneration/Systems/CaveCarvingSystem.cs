@@ -50,7 +50,9 @@ public sealed class CaveCarvingSystem
           x,
           y,
           TileChangeKind.Kill,
-          0));
+          0,
+          FrameX: -1,
+          FrameY: -1));
       }
     }
   }

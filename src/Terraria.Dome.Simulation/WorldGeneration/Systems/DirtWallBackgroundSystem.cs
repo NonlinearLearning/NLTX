@@ -35,10 +35,10 @@ public sealed class DirtWallBackgroundSystem
         nameof(surfaceOffsetChanges));
     }
 
-    if (state.Stage < WorldGenerationStage.Biome)
+    if (state.Stage < WorldGenerationStage.Terrain)
     {
       throw new InvalidOperationException(
-        "Dirt wall backgrounds require the biome stage snapshot.");
+        "Dirt wall backgrounds require the terrain stage snapshot.");
     }
 
     int surfaceOffset = 0;

@@ -18,9 +18,9 @@ public readonly record struct WorldEventRandomState(uint Value)
       throw new ArgumentOutOfRangeException(nameof(maximum));
     }
 
-    uint range = checked((uint)(maximum - minimum + 1));
+    ulong range = (ulong)((long)maximum - minimum + 1);
     WorldEventRandomState next = Advance();
-    return (next, minimum + (int)(next.Value % range));
+    return (next, (int)((long)minimum + (long)(next.Value % range)));
   }
 
   private WorldEventRandomState Advance()

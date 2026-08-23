@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Commands;
 using Terraria.Dome.Simulation.Tick;
@@ -83,6 +85,29 @@ Assert(
   "Equal-sequence mechanism commands did not use the documented deterministic key.");
 Console.WriteLine("PASS: equal-sequence mechanism command order is deterministic");
 
+SimulationCommandQueue reversedCommandQueue = new();
+reversedCommandQueue.Enqueue(new MechanismActivationCommand(
+  Sequence: 100,
+  MechanismId: 10,
+  Kind: MechanismActivationKind.Activate,
+  SourceId: 3));
+reversedCommandQueue.Enqueue(new MechanismActivationCommand(
+  Sequence: 100,
+  MechanismId: 20,
+  Kind: MechanismActivationKind.Activate,
+  SourceId: 4));
+reversedCommandQueue.Enqueue(new MechanismActivationCommand(
+  Sequence: 100,
+  MechanismId: 10,
+  Kind: MechanismActivationKind.Activate,
+  SourceId: 9));
+string orderedCommandHash = HashMechanismCommands(ordered);
+string reversedCommandHash = HashMechanismCommands(reversedCommandQueue.MechanismActivationCommands);
+Assert(
+  StringComparer.Ordinal.Equals(orderedCommandHash, reversedCommandHash),
+  "Same-tick competing mechanism commands produced different ordered hashes.");
+Console.WriteLine("PASS: same-tick competing mechanism commands have an ordered replay hash");
+
 using DomeSimulation firstSimulation = new(new WorldGrid(400, 300));
 using DomeSimulation secondSimulation = new(new WorldGrid(400, 300));
 PlayerHandle firstPlayerOne = firstSimulation.CreatePlayer(new SimulationVector(20.0f, 20.0f));
@@ -110,7 +135,13 @@ Assert(
   firstSnapshot.FindPlayer(firstPlayerTwo) == secondSnapshot.FindPlayer(secondPlayerTwo) &&
   firstSnapshot.Tick == secondSnapshot.Tick,
   "Reversing independent input collection changed the authoritative snapshot.");
+string firstSnapshotHash = HashSnapshot(firstSnapshot);
+string secondSnapshotHash = HashSnapshot(secondSnapshot);
+Assert(
+  StringComparer.Ordinal.Equals(firstSnapshotHash, secondSnapshotHash),
+  "Reversing same-tick input collection changed the ordered snapshot hash.");
 Console.WriteLine("PASS: reversed independent inputs keep phase trace and snapshot deterministic");
+Console.WriteLine("PASS: same-tick competing input replay has an ordered snapshot hash");
 
 using DomeSimulation invasionSimulation = new(new WorldGrid(400, 300));
 Assert(
@@ -152,6 +183,18 @@ Assert(
   timeRatePolicy.Resolve(
     new WorldTimeRateInput(targetRate: 3, activePlayerCount: 2, sleepingPlayerCount: 1)).Rate == 3,
   "A partial sleeping set accelerated time.");
+try
+{
+  _ = timeRatePolicy.Resolve(new WorldTimeRateInput(
+    targetRate: int.MaxValue,
+    activePlayerCount: 1,
+    sleepingPlayerCount: 1));
+  throw new InvalidOperationException(
+    "Sleeping time-rate policy accepted a target that overflows its Int32 rate.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
 Assert(
   timeRatePolicy.Resolve(new WorldTimeRateInput(isGameMenu: true, targetRate: 3)).Rate == 1,
   "Game-menu fallback did not override the rate.");
@@ -248,6 +291,52 @@ static void Assert(bool condition, string message)
   {
     throw new InvalidOperationException(message);
   }
+}
+
+static string HashMechanismCommands(IReadOnlyList<MechanismActivationCommand> commands)
+{
+  StringBuilder canonical = new();
+  for (int index = 0; index < commands.Count; index++)
+  {
+    MechanismActivationCommand command = commands[index];
+    canonical.Append(command.Sequence).Append(':')
+      .Append(command.MechanismId).Append(':')
+      .Append((int)command.Kind).Append(':')
+      .Append(command.SourceId).Append(';');
+  }
+
+  return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical.ToString())));
+}
+
+static string HashSnapshot(SimulationSnapshot snapshot)
+{
+  StringBuilder canonical = new();
+  canonical.Append("tick=").Append(snapshot.Tick).Append('|');
+  foreach (PlayerSnapshot player in snapshot.Players.OrderBy(value => value.Player.Value))
+  {
+    canonical.Append("p=").Append(player.Player.Value).Append(':')
+      .Append(player.Position.X).Append(',').Append(player.Position.Y).Append(':')
+      .Append(player.Velocity.X).Append(',').Append(player.Velocity.Y).Append(':')
+      .Append(player.Facing).Append(':').Append(player.Health).Append(':')
+      .Append(player.IsActive).Append(':').Append(player.RespawnTicks).Append(';');
+  }
+
+  foreach (NpcSnapshot npc in snapshot.Npcs.OrderBy(value => value.Npc.Value))
+  {
+    canonical.Append("n=").Append(npc.Npc.Value).Append(':')
+      .Append(npc.Position.X).Append(',').Append(npc.Position.Y).Append(':')
+      .Append(npc.Health).Append(':').Append(npc.HasTarget).Append(';');
+  }
+
+  for (int index = 0; index < snapshot.Projectiles.Count; index++)
+  {
+    ProjectileSnapshot projectile = snapshot.Projectiles[index];
+    canonical.Append("x=").Append(index).Append(':')
+      .Append(projectile.Position.X).Append(',').Append(projectile.Position.Y).Append(':')
+      .Append(projectile.RemainingLifetime).Append(';');
+  }
+
+  return Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(canonical.ToString())));
 }
 
 static void AssertSequence(

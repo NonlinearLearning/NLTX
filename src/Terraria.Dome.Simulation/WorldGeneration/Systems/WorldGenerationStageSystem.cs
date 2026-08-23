@@ -7,15 +7,18 @@ public sealed class WorldGenerationStageSystem
   public WorldGenerationBootstrap Initialize(WorldGenerationRequest request)
   {
     ArgumentNullException.ThrowIfNull(request);
+    WorldGenerationStateComponent state = new(request.GenerationId);
+    GenerationCursorComponent cursor = new(WorldGenerationStage.Created, 0, 0, 0);
     return new WorldGenerationBootstrap(
-      new WorldGenerationStateComponent(request.GenerationId),
+      state,
       new WorldSeedComponent(
         request.Metadata.Seed.Value,
         request.SeedVariant,
         request.RandomStreamVersion),
       new WorldBoundsComponent(request.Metadata.Width, request.Metadata.Height),
       request.Rules,
-      new GenerationCursorComponent(WorldGenerationStage.Created, 0, 0, 0));
+      cursor,
+      WorldGenerationRuntimeState.Create(state, cursor, request.RandomStreamVersion));
   }
 }
 
@@ -24,4 +27,5 @@ public sealed record WorldGenerationBootstrap(
   WorldSeedComponent Seed,
   WorldBoundsComponent Bounds,
   WorldRuleSnapshotComponent Rules,
-  GenerationCursorComponent Cursor);
+  GenerationCursorComponent Cursor,
+  WorldGenerationRuntimeState Runtime);

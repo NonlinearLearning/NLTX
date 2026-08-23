@@ -19,7 +19,10 @@ public sealed class PlayerPersistentState
     IReadOnlyList<PlayerPersistentBuff> buffs,
     byte selectedLoadout,
     ushort accessoryVisibility,
-    IReadOnlyList<PlayerPersistentItem> items)
+    IReadOnlyList<PlayerPersistentItem> items,
+    int wellFedTimeLeftRank1 = 0,
+    int wellFedTimeLeftRank2 = 0,
+    int wellFedTimeLeftRank3 = 0)
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(uuid);
     ArgumentNullException.ThrowIfNull(profile.Name);
@@ -27,7 +30,10 @@ public sealed class PlayerPersistentState
     ArgumentNullException.ThrowIfNull(items);
     if (!Guid.TryParseExact(uuid, "D", out _) || life < 0 || maximumLife < 1 || mana < 0 ||
         maximumMana < 0 || life > maximumLife || selectedLoadout > 2 ||
-        buffs.Count > MaximumBuffCount || items.Count != ItemSlotCount)
+        buffs.Count > MaximumBuffCount || items.Count != ItemSlotCount ||
+        wellFedTimeLeftRank1 < 0 || wellFedTimeLeftRank1 > WellFedStateComponent.MaximumTimePerRank ||
+        wellFedTimeLeftRank2 < 0 || wellFedTimeLeftRank2 > WellFedStateComponent.MaximumTimePerRank ||
+        wellFedTimeLeftRank3 < 0 || wellFedTimeLeftRank3 > WellFedStateComponent.MaximumTimePerRank)
     {
       throw new ArgumentOutOfRangeException(nameof(uuid));
     }
@@ -51,6 +57,9 @@ public sealed class PlayerPersistentState
     SelectedLoadout = selectedLoadout;
     AccessoryVisibility = accessoryVisibility;
     Items = Array.AsReadOnly(items.ToArray());
+    WellFedTimeLeftRank1 = wellFedTimeLeftRank1;
+    WellFedTimeLeftRank2 = wellFedTimeLeftRank2;
+    WellFedTimeLeftRank3 = wellFedTimeLeftRank3;
   }
 
   public ushort AccessoryVisibility { get; }
@@ -72,4 +81,10 @@ public sealed class PlayerPersistentState
   public byte SelectedLoadout { get; }
 
   public string Uuid { get; }
+
+  public int WellFedTimeLeftRank1 { get; }
+
+  public int WellFedTimeLeftRank2 { get; }
+
+  public int WellFedTimeLeftRank3 { get; }
 }

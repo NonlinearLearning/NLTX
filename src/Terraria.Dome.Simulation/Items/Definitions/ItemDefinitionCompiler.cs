@@ -38,7 +38,7 @@ public static class ItemDefinitionCompiler
     {
       if (use.UseTime < 0 || use.UseAnimation < 0 || use.CooldownTicks < 0 ||
           use.HealthRestore < 0 || use.ManaRestore < 0 || use.ManaCost < 0 ||
-          use.ShootSpeed < 0)
+          !float.IsFinite(use.ShootSpeed) || use.ShootSpeed < 0)
       {
         throw new ArgumentException("Item use values cannot be negative.", nameof(definition));
       }
@@ -60,7 +60,8 @@ public static class ItemDefinitionCompiler
     if (definition.Combat is ItemCombatDefinition combat)
     {
       if (combat.Damage < 0 || combat.Knockback < 0 || combat.CriticalChance < 0 ||
-          combat.ArmorPenetration < 0 || combat.ProjectileSpeed < 0)
+          combat.ArmorPenetration < 0 || !float.IsFinite(combat.ProjectileSpeed) ||
+          combat.ProjectileSpeed < 0)
       {
         throw new ArgumentException("Combat values cannot be negative.", nameof(definition));
       }

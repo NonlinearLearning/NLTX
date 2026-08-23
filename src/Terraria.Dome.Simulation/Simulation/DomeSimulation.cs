@@ -83,7 +83,6 @@ public sealed partial class DomeSimulation : IDisposable
   private const int MaximumSignCount = 32000;
   private const int MaximumNpcCount = 200;
   private const int TrainingDummyNpcType = 488;
-  private static readonly ItemDropDefinition[] DefaultNpcItemDrops = [new(1, 1, 2)];
   private readonly WorldClock _worldClock;
   private readonly WorldClockSystem _worldClockSystem = new();
   private readonly WorldInvasionTravelSystem _worldInvasionTravelSystem = new();
@@ -245,7 +244,6 @@ public sealed partial class DomeSimulation : IDisposable
   private readonly WorldItemStackingSystem _worldItemStackingSystem = new();
   private readonly InventoryCommandSystem _inventoryCommandSystem = new();
   private readonly ItemInputValidationSystem _itemInputValidationSystem = new();
-  private readonly ItemDropRuleSystem _itemDropRuleSystem = new();
   private readonly ItemPlacementSystem _itemPlacementSystem = new();
   private readonly ItemUseCooldownSystem _itemUseCooldownSystem = new();
   private readonly ItemUseSystem _itemUseSystem = new();
@@ -296,6 +294,14 @@ public sealed partial class DomeSimulation : IDisposable
       AiStyle: 92,
       IsImmortal: true,
       AlwaysReplicate: true)]);
+  private readonly NpcLootSystem _npcLootSystem = new(
+    new NpcLootDefinitionRegistry([
+      new NpcLootDefinition(
+        LootTableId: 1,
+        ItemType: 1,
+        MinimumQuantity: 1,
+        MaximumQuantity: 2)]),
+    new WorldSeed(1));
   private readonly NpcSystemPipeline _npcSystemPipeline = new();
   private readonly PlayerLifecycleSystem _playerLifecycleSystem = new();
   private readonly NpcSpawnCommitSystem _npcSpawnCommitSystem = new();
@@ -415,6 +421,13 @@ public sealed partial class DomeSimulation : IDisposable
     for (int index = 0; index < snapshot.WorldItems.Count; index++)
     {
       ItemReplicationSnapshot item = snapshot.WorldItems[index];
+      if (item.ReplicationId == int.MaxValue)
+      {
+        throw new ArgumentOutOfRangeException(
+          nameof(snapshot),
+          "Persistence snapshot world-item replication IDs must leave room for the next ID.");
+      }
+
       ItemWorldStateComponent worldState = item.WorldState.Revision == 0 && item.Revision > 0
         ? ItemWorldStateComponent.FromReplicationSnapshot(item.IsActive, item.Revision)
         : item.WorldState;
@@ -454,6 +467,13 @@ public sealed partial class DomeSimulation : IDisposable
     for (int index = 0; index < snapshot.TileEntities.Count; index++)
     {
       TileEntityPersistentState entity = snapshot.TileEntities[index];
+      if (entity.Id == int.MaxValue)
+      {
+        throw new ArgumentOutOfRangeException(
+          nameof(snapshot),
+          "Persistence snapshot tile-entity IDs must leave room for the next ID.");
+      }
+
       if (!_tileEntities.TryAdd(entity.Id, entity))
       {
         throw new ArgumentException(
@@ -769,6 +789,11 @@ public sealed partial class DomeSimulation : IDisposable
   public bool TryQueueLiquidSource(PipelineLiquidSourceComponent source)
   {
     ThrowIfDisposed();
+    if (source.Sequence >= long.MaxValue - 1)
+    {
+      return false;
+    }
+
     bool accepted = _liquidInputSystem.TryAccept(WorldGrid, _liquidQueue, _liquidState, source);
     if (accepted)
     {
@@ -900,7 +925,8 @@ public sealed partial class DomeSimulation : IDisposable
   public bool TryQueueWiringInput(WiringInputCommand command)
   {
     ThrowIfDisposed();
-    if (!_players.TryGetValue(command.Player, out Entity entity) || command.Sequence < 0 ||
+    if (!_players.TryGetValue(command.Player, out Entity entity) ||
+        command.Sequence < 0 || command.Sequence >= long.MaxValue - 1 ||
         !_wiringInputValidationSystem.TryValidate(
           WorldGrid,
           _wireNetwork,
@@ -945,7 +971,7 @@ public sealed partial class DomeSimulation : IDisposable
   {
     ThrowIfDisposed();
     WorldSectionCoordinates section = WorldGrid.GetSectionCoordinates(tileX, tileY);
-    int doorId = _nextDoorId++;
+    int doorId = NextDoorId();
     _doors.Add(doorId, new DoorSnapshot(doorId, tileX, tileY, false, 1, section));
     return doorId;
   }
@@ -970,7 +996,7 @@ public sealed partial class DomeSimulation : IDisposable
     }
 
     WorldSectionCoordinates section = WorldGrid.GetSectionCoordinates(tileX, tileY);
-    int doorId = _nextDoorId++;
+    int doorId = NextDoorId();
     _doors.Add(doorId, new DoorSnapshot(
       doorId,
       tileX,
@@ -998,7 +1024,7 @@ public sealed partial class DomeSimulation : IDisposable
     }
 
     WorldSectionCoordinates section = WorldGrid.GetSectionCoordinates(tileX, tileY);
-    int doorId = _nextDoorId++;
+    int doorId = NextDoorId();
     _doors.Add(doorId, new DoorSnapshot(
       doorId,
       tileX,
@@ -1025,6 +1051,18 @@ public sealed partial class DomeSimulation : IDisposable
     return snapshots;
   }
 
+  private int NextDoorId()
+  {
+    if (_nextDoorId == int.MaxValue)
+    {
+      throw new InvalidOperationException("Door ID allocator was exhausted.");
+    }
+
+    int doorId = _nextDoorId;
+    _nextDoorId++;
+    return doorId;
+  }
+
   public DoorSnapshot? FindDoorAt(int tileX, int tileY)
   {
     ThrowIfDisposed();
@@ -1043,14 +1081,15 @@ public sealed partial class DomeSimulation : IDisposable
   public bool TryToggleDoor(int doorId, SimulationVector playerPosition)
   {
     ThrowIfDisposed();
-    if (!_doors.TryGetValue(doorId, out DoorSnapshot door))
+    if (!_doors.TryGetValue(doorId, out DoorSnapshot door) || door.Revision == long.MaxValue)
     {
       return false;
     }
 
     float deltaX = playerPosition.X - door.TileX;
     float deltaY = playerPosition.Y - door.TileY;
-    if (deltaX * deltaX + deltaY * deltaY > 6.0f * 6.0f)
+    if (!float.IsFinite(playerPosition.X) || !float.IsFinite(playerPosition.Y) ||
+        deltaX * deltaX + deltaY * deltaY > 6.0f * 6.0f)
     {
       return false;
     }
@@ -1062,14 +1101,15 @@ public sealed partial class DomeSimulation : IDisposable
   public bool TrySetDoorOpen(int doorId, bool isOpen, SimulationVector playerPosition)
   {
     ThrowIfDisposed();
-    if (!_doors.TryGetValue(doorId, out DoorSnapshot door))
+    if (!_doors.TryGetValue(doorId, out DoorSnapshot door) || door.Revision == long.MaxValue)
     {
       return false;
     }
 
     float deltaX = playerPosition.X - door.TileX;
     float deltaY = playerPosition.Y - door.TileY;
-    if (deltaX * deltaX + deltaY * deltaY > 6.0f * 6.0f)
+    if (!float.IsFinite(playerPosition.X) || !float.IsFinite(playerPosition.Y) ||
+        deltaX * deltaX + deltaY * deltaY > 6.0f * 6.0f)
     {
       return false;
     }
@@ -1091,7 +1131,7 @@ public sealed partial class DomeSimulation : IDisposable
   {
     ThrowIfDisposed();
     if (!_doors.TryGetValue(doorId, out DoorSnapshot door) ||
-        !IsInDoorRange(door, playerPosition))
+        door.Revision == long.MaxValue || !IsInDoorRange(door, playerPosition))
     {
       return false;
     }
@@ -1167,14 +1207,16 @@ public sealed partial class DomeSimulation : IDisposable
   {
     ThrowIfDisposed();
     ArgumentNullException.ThrowIfNull(text);
-    if (!_signs.TryGetValue(signId, out SignSnapshot sign) || text.Length > 100)
+    if (!_signs.TryGetValue(signId, out SignSnapshot sign) || text.Length > 100 ||
+        sign.Revision == long.MaxValue)
     {
       return false;
     }
 
     float deltaX = playerPosition.X - sign.TileX;
     float deltaY = playerPosition.Y - sign.TileY;
-    if (deltaX * deltaX + deltaY * deltaY > 6.0f * 6.0f)
+    if (!float.IsFinite(playerPosition.X) || !float.IsFinite(playerPosition.Y) ||
+        deltaX * deltaX + deltaY * deltaY > 6.0f * 6.0f)
     {
       return false;
     }
@@ -1189,6 +1231,11 @@ public sealed partial class DomeSimulation : IDisposable
     if (tileX < 0 || tileX >= WorldGrid.Width || tileY < 0 || tileY >= WorldGrid.Height)
     {
       throw new ArgumentOutOfRangeException(nameof(tileX));
+    }
+
+    if (_nextChestId == int.MaxValue)
+    {
+      throw new InvalidOperationException("Chest ID allocator was exhausted.");
     }
 
     int chestId = _nextChestId;
@@ -1246,8 +1293,14 @@ public sealed partial class DomeSimulation : IDisposable
       _ = _itemDefinitions.Get(stack.ItemType);
     }
 
+    _ = chest.GetSlot(chestSlot);
+
+    if (!chest.TryIncrementRevision())
+    {
+      return;
+    }
+
     chest.SetSlot(chestSlot, stack);
-    chest.IncrementRevision();
   }
 
   public IReadOnlyList<ChestSnapshot> CreateChestSnapshots()
@@ -1327,7 +1380,8 @@ public sealed partial class DomeSimulation : IDisposable
     entityId = 0;
     if (!WorldGrid.Contains(tileX, tileY) ||
         !TileEntityTrainingDummyValidityQuery.IsValid(WorldGrid.GetTile(tileX, tileY)) ||
-        _tileEntities.Values.Any(entity => entity.TileX == tileX && entity.TileY == tileY))
+        _tileEntities.Values.Any(entity => entity.TileX == tileX && entity.TileY == tileY) ||
+        _nextTileEntityId == int.MaxValue)
     {
       return false;
     }
@@ -1607,6 +1661,11 @@ public sealed partial class DomeSimulation : IDisposable
       return false;
     }
 
+    if (!chest.TryIncrementRevision())
+    {
+      return false;
+    }
+
     ItemInstanceSnapshot[] inventoryBefore = CaptureInventorySlots(inventory);
     if (withdraw)
     {
@@ -1619,7 +1678,6 @@ public sealed partial class DomeSimulation : IDisposable
       chest.SetSlot(chestSlot, source);
     }
 
-    chest.IncrementRevision();
     PublishInventoryChanges(player, inventory, inventoryBefore);
     return true;
   }
@@ -1628,7 +1686,8 @@ public sealed partial class DomeSimulation : IDisposable
   {
     float deltaX = playerPosition.X - chest.TileX;
     float deltaY = playerPosition.Y - chest.TileY;
-    return deltaX * deltaX + deltaY * deltaY <= 6.0f * 6.0f;
+    return float.IsFinite(playerPosition.X) && float.IsFinite(playerPosition.Y) &&
+      deltaX * deltaX + deltaY * deltaY <= 6.0f * 6.0f;
   }
 
   private long NextChestMutationSequence()
@@ -1643,9 +1702,26 @@ public sealed partial class DomeSimulation : IDisposable
     return sequence;
   }
 
+  private long NextLiquidSequence()
+  {
+    if (_nextLiquidSequence == long.MaxValue)
+    {
+      throw new InvalidOperationException("Liquid sequence was exhausted.");
+    }
+
+    long sequence = _nextLiquidSequence;
+    _nextLiquidSequence++;
+    return sequence;
+  }
+
   public PlayerHandle CreatePlayer(SimulationVector spawn)
   {
     ThrowIfDisposed();
+
+    if (_nextPlayerHandle == int.MaxValue)
+    {
+      throw new InvalidOperationException("Player handle allocator was exhausted.");
+    }
 
     PlayerHandle player = new(_nextPlayerHandle);
     _nextPlayerHandle++;
@@ -1674,6 +1750,7 @@ public sealed partial class DomeSimulation : IDisposable
       inventory,
       new Terraria.Dome.Simulation.Items.Components.ItemUseStateComponent(),
       new BuffCollectionComponent(),
+      new WellFedStateComponent(),
       new PlayerInteractionComponent(),
     new PlayerLifecycleComponent { IsActive = true, Spawn = spawn },
       new EquipmentStateCollectionComponent());
@@ -1730,6 +1807,11 @@ public sealed partial class DomeSimulation : IDisposable
     {
       buffs.Add(serverAccount.Buffs[index].Type, int.MaxValue, player);
     }
+
+    World.Set(entity, new WellFedStateComponent(
+      serverAccount.WellFedTimeLeftRank1,
+      serverAccount.WellFedTimeLeftRank2,
+      serverAccount.WellFedTimeLeftRank3));
 
     InventoryComponent inventory = World.Get<InventoryComponent>(entity);
     for (int slotId = 0; slotId < InventoryComponent.SlotCount; slotId++)
@@ -1789,6 +1871,11 @@ public sealed partial class DomeSimulation : IDisposable
   public NpcHandle CreateNpc(SimulationVector spawn, int definitionId)
   {
     ThrowIfDisposed();
+
+    if (_nextNpcHandle == int.MaxValue)
+    {
+      throw new InvalidOperationException("NPC handle allocator was exhausted.");
+    }
 
     NpcHandle npc = new(_nextNpcHandle);
     _nextNpcHandle++;
@@ -2162,7 +2249,7 @@ public sealed partial class DomeSimulation : IDisposable
       sourceSlot,
       destinationSlot,
       quantity,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueSplitItemStack(
@@ -2178,7 +2265,7 @@ public sealed partial class DomeSimulation : IDisposable
       sourceSlot,
       destinationSlot,
       quantity,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueMergeItemStack(
@@ -2194,7 +2281,7 @@ public sealed partial class DomeSimulation : IDisposable
       sourceSlot,
       destinationSlot,
       quantity,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueDropItem(PlayerHandle player, int sourceSlot, int quantity)
@@ -2205,7 +2292,7 @@ public sealed partial class DomeSimulation : IDisposable
       player,
       sourceSlot,
       quantity,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueuePlaceItem(PlayerHandle player, int sourceSlot, int x, int y)
@@ -2221,7 +2308,7 @@ public sealed partial class DomeSimulation : IDisposable
       sourceSlot,
       x,
       y,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueUseExtractinator(PlayerHandle player, int sourceSlot, int targetX, int targetY)
@@ -2233,7 +2320,7 @@ public sealed partial class DomeSimulation : IDisposable
       sourceSlot,
       targetX,
       targetY,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueTriggerExtractinator(int targetX, int targetY)
@@ -2242,7 +2329,7 @@ public sealed partial class DomeSimulation : IDisposable
     _commands.Enqueue(new TriggerExtractinatorCommand(
       targetX,
       targetY,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueEquipItem(PlayerHandle player, int sourceSlot, bool isVanity)
@@ -2257,7 +2344,7 @@ public sealed partial class DomeSimulation : IDisposable
       player,
       sourceSlot,
       isVanity,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueApplyItemPrefix(PlayerHandle player, int sourceSlot, ushort prefixId)
@@ -2272,7 +2359,7 @@ public sealed partial class DomeSimulation : IDisposable
       player,
       sourceSlot,
       prefixId,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueUnequipItem(PlayerHandle player, ItemEquipmentSlot slot)
@@ -2286,7 +2373,7 @@ public sealed partial class DomeSimulation : IDisposable
     _unequipItemCommands.Add(new UnequipItemCommand(
       player,
       slot,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueApplyItemVariant(
@@ -2304,7 +2391,7 @@ public sealed partial class DomeSimulation : IDisposable
       player,
       sourceSlot,
       variant,
-      _nextWiringSequence++));
+      TakeWiringSequence()));
   }
 
   public void QueueProximityWorldItemPickups()
@@ -2816,7 +2903,7 @@ public sealed partial class DomeSimulation : IDisposable
           change.Y,
           change.Amount,
           (LiquidType)change.Type,
-          _nextLiquidSequence++));
+          NextLiquidSequence()));
       }
     }
 
@@ -2913,7 +3000,7 @@ public sealed partial class DomeSimulation : IDisposable
     foreach (KeyValuePair<(int X, int Y), byte> entry in clearTypes)
     {
       changes.Add(new PipelineLiquidChangeCommand(
-        _nextLiquidSequence++,
+        NextLiquidSequence(),
         entry.Key.X,
         entry.Key.Y,
         0,
@@ -2956,6 +3043,27 @@ public sealed partial class DomeSimulation : IDisposable
     }
   }
 
+  private long TakeWiringSequence()
+  {
+    if (!TryAdvanceWiringSequence(1))
+    {
+      throw new InvalidOperationException("Wiring sequence space is exhausted.");
+    }
+
+    return _nextWiringSequence - 1;
+  }
+
+  private bool TryAdvanceWiringSequence(int count)
+  {
+    if (count < 0 || _nextWiringSequence > long.MaxValue - count)
+    {
+      return false;
+    }
+
+    _nextWiringSequence += count;
+    return true;
+  }
+
   private void EnqueueLiquidMergeTileChanges(IReadOnlyCollection<SimulationLiquidMerge> merges)
   {
     SortedDictionary<(int X, int Y), SimulationLiquidMerge> uniqueMerges = new();
@@ -2971,7 +3079,7 @@ public sealed partial class DomeSimulation : IDisposable
     {
       SimulationLiquidMerge merge = entry.Value;
       WorldGrid.EnqueueTileChange(new TileChangeCommand(
-        _nextWiringSequence++,
+        TakeWiringSequence(),
         merge.X,
         merge.Y,
         TileChangeKind.Place,
@@ -2984,7 +3092,7 @@ public sealed partial class DomeSimulation : IDisposable
     for (int index = 0; index < commands.Count; index++)
     {
       TileChangeCommand command = commands[index];
-      WorldGrid.EnqueueTileChange(command with { Sequence = _nextWiringSequence++ });
+      WorldGrid.EnqueueTileChange(command with { Sequence = TakeWiringSequence() });
     }
   }
 
@@ -3021,7 +3129,10 @@ public sealed partial class DomeSimulation : IDisposable
       _pressurePlates,
       actors,
       _nextWiringSequence);
-    _nextWiringSequence += pressureActivations.Count;
+    if (!TryAdvanceWiringSequence(pressureActivations.Count))
+    {
+      return;
+    }
     for (int index = 0; index < pressureActivations.Count; index++)
     {
       MechanismActivationCommand activation = pressureActivations[index];
@@ -3067,7 +3178,7 @@ public sealed partial class DomeSimulation : IDisposable
         }
 
         candidates.Add(new MechanismActivationCommand(
-          _nextWiringSequence++,
+          TakeWiringSequence(),
           trigger.TargetMechanismId,
           MechanismActivationKind.Activate,
           trigger.TriggerId));
@@ -3102,7 +3213,7 @@ public sealed partial class DomeSimulation : IDisposable
       }
 
       candidates.Add(activation);
-      _nextWiringSequence++;
+      _ = TakeWiringSequence();
     }
 
     IReadOnlyList<MechanismActivationCommand> accepted = _mechanismActivationSystem.Apply(
@@ -3130,7 +3241,10 @@ public sealed partial class DomeSimulation : IDisposable
         CanKillTileForActuator,
         _worldMetadata,
         _worldProgression);
-        _nextWiringSequence += tileChanges.Count;
+        if (!TryAdvanceWiringSequence(tileChanges.Count))
+        {
+          return;
+        }
         for (int commandIndex = 0; commandIndex < tileChanges.Count; commandIndex++)
         {
           WorldGrid.EnqueueTileChange(tileChanges[commandIndex]);
@@ -3151,7 +3265,10 @@ public sealed partial class DomeSimulation : IDisposable
         {
           if (frameChanges.Count != 0)
           {
-            _nextWiringSequence += frameChanges.Count;
+            if (!TryAdvanceWiringSequence(frameChanges.Count))
+            {
+              return;
+            }
             for (int commandIndex = 0; commandIndex < frameChanges.Count; commandIndex++)
             {
               WorldGrid.EnqueueTileFrameChange(frameChanges[commandIndex]);
@@ -3179,7 +3296,10 @@ public sealed partial class DomeSimulation : IDisposable
           lamp,
           activation,
           _nextWiringSequence);
-        _nextWiringSequence += tileChanges.Count;
+        if (!TryAdvanceWiringSequence(tileChanges.Count))
+        {
+          return;
+        }
         for (int commandIndex = 0; commandIndex < tileChanges.Count; commandIndex++)
         {
           WorldGrid.EnqueueTileChange(tileChanges[commandIndex]);
@@ -3191,7 +3311,7 @@ public sealed partial class DomeSimulation : IDisposable
         LiquidTransferCommand? transfer = _pumpCommandSystem.CreateCommand(
           pump,
           activation,
-          _nextWiringSequence++,
+          TakeWiringSequence(),
           LiquidType.Water);
         if (transfer is LiquidTransferCommand command)
         {
@@ -3428,6 +3548,11 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
+      if (_nextProjectileReplicationId == int.MaxValue)
+      {
+        continue;
+      }
+
       int replicationId = _nextProjectileReplicationId;
       _nextProjectileReplicationId++;
       Entity projectile = _projectileSpawnSystem.Spawn(World, command, definition, replicationId);
@@ -3501,12 +3626,16 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
+      if (!TryAdvanceWiringSequence(changes.Count))
+      {
+        _worldMeteorImpactRequests.Clear();
+        return;
+      }
+
       for (int commandIndex = 0; commandIndex < changes.Count; commandIndex++)
       {
         WorldGrid.EnqueueTileChange(changes[commandIndex]);
       }
-
-      _nextWiringSequence += changes.Count;
     }
 
     _worldMeteorImpactRequests.Clear();
@@ -3572,7 +3701,8 @@ public sealed partial class DomeSimulation : IDisposable
       int replicationId = command.RequestedReplicationId > 0
         ? command.RequestedReplicationId
         : _nextNpcHandle;
-      if (replicationId <= 0 || _npcReplications.ContainsKey(new NpcHandle(replicationId)))
+      if (replicationId <= 0 || replicationId == int.MaxValue ||
+          _npcReplications.ContainsKey(new NpcHandle(replicationId)))
       {
         continue;
       }
@@ -3628,7 +3758,7 @@ public sealed partial class DomeSimulation : IDisposable
       DespawnNpcCommand command = _commands.DespawnNpcCommands[index];
       if (!_npcs.TryGetValue(command.Npc, out Entity entity) ||
           !_npcReplications.TryGetValue(command.Npc, out NpcReplicationSnapshot current) ||
-          !current.IsActive)
+          !current.IsActive || current.Revision == long.MaxValue)
       {
         continue;
       }
@@ -4002,8 +4132,12 @@ public sealed partial class DomeSimulation : IDisposable
           continue;
         }
 
+        if (!chest.TryIncrementRevision())
+        {
+          continue;
+        }
+
         chest.SetSlot(slot, input.WithQuantity(input.Quantity - 1));
-        chest.IncrementRevision();
         _ = CommitWorldItemSpawn(new CreateWorldItemCommand(
           result.Output,
           new SimulationVector(originX, originY),
@@ -4738,9 +4872,56 @@ public sealed partial class DomeSimulation : IDisposable
       Entity entity = activePlayers[index];
       BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entity);
       _buffDurationSystem.Tick(buffs);
+      World.Get<WellFedStateComponent>(entity).Update();
       ref ManaComponent mana = ref World.Get<ManaComponent>(entity);
       _buffEffectSystem.Apply(buffs, ref mana);
     }
+  }
+
+  public bool EatWellFed(PlayerHandle player, int foodRank, int foodBuffTime)
+  {
+    return ApplyConsumeWellFedCommand(new ConsumeWellFedCommand(player, foodRank, foodBuffTime));
+  }
+
+  public bool ApplyConsumeWellFedCommand(ConsumeWellFedCommand command)
+  {
+    ThrowIfDisposed();
+    if (!_players.TryGetValue(command.Player, out Entity entity) ||
+        !World.Get<PlayerLifecycleComponent>(entity).IsActive)
+    {
+      return false;
+    }
+
+    World.Get<WellFedStateComponent>(entity).Eat(command.FoodRank, command.FoodBuffTime);
+    SynchronizePlayerAccount(command.Player);
+    return true;
+  }
+
+  public bool ClearWellFed(PlayerHandle player)
+  {
+    ThrowIfDisposed();
+    if (!_players.TryGetValue(player, out Entity entity) ||
+        !World.Get<PlayerLifecycleComponent>(entity).IsActive)
+    {
+      return false;
+    }
+
+    World.Get<WellFedStateComponent>(entity).Clear();
+    SynchronizePlayerAccount(player);
+    return true;
+  }
+
+  public bool TryGetWellFedState(PlayerHandle player, out WellFedStateComponent? state)
+  {
+    ThrowIfDisposed();
+    if (!_players.TryGetValue(player, out Entity entity))
+    {
+      state = null;
+      return false;
+    }
+
+    state = World.Get<WellFedStateComponent>(entity);
+    return true;
   }
 
   private void DetectNpcContactDamage()
@@ -4987,7 +5168,8 @@ public sealed partial class DomeSimulation : IDisposable
   {
     if (!_projectileIdsByEntity.Remove(entity, out int replicationId) ||
         !_projectileReplications.TryGetValue(replicationId, out ProjectileReplicationSnapshot snapshot) ||
-        !snapshot.IsActive)
+        !snapshot.IsActive ||
+        snapshot.Revision == long.MaxValue)
     {
       return;
     }
@@ -5080,6 +5262,11 @@ public sealed partial class DomeSimulation : IDisposable
         return;
       }
 
+      if (current.Revision == long.MaxValue)
+      {
+        return;
+      }
+
       updated = updated with { Revision = current.Revision + 1 };
       _npcReplications[entry.Key] = updated;
       return;
@@ -5098,6 +5285,11 @@ public sealed partial class DomeSimulation : IDisposable
       return;
     }
 
+    if (current.Revision == long.MaxValue)
+    {
+      return;
+    }
+
     SimulationVector position = new(transform.X, transform.Y);
     ProjectileReplicationSnapshot updated = current with
     {
@@ -5110,28 +5302,20 @@ public sealed partial class DomeSimulation : IDisposable
     _projectileReplications[replicationId] = updated;
   }
 
-  private void SpawnNpcLoot(NpcHandle npc, SimulationVector position)
+  private void SpawnNpcLoot(NpcDeathResult death)
   {
-    IReadOnlyList<CreateWorldItemCommand> commands = _itemDropRuleSystem.Evaluate(
-      _worldSeed,
-      npc.Value,
-      TickNumber,
-      DefaultNpcItemDrops,
-      expertMode: false,
-      masterMode: false,
-      position,
-      GetSectionCoordinates(position),
-      spawnSource: npc.Value);
-    for (int index = 0; index < commands.Count; index++)
-    {
-      CreateWorldItemCommand command = commands[index];
-      _ = CommitWorldItemSpawn(command);
-      _itemDroppedEvents.Add(new ItemDroppedEvent(
-        npc.Value,
-        command.Stack.ItemType,
-        command.Stack.Quantity,
-        TickNumber));
-    }
+    ItemStack stack = _npcLootSystem.Roll(death.LootTableId, death.Npc.Value);
+    CreateWorldItemCommand command = new(
+      stack,
+      death.Position,
+      GetSectionCoordinates(death.Position),
+      death.Npc.Value);
+    _ = CommitWorldItemSpawn(command);
+    _itemDroppedEvents.Add(new ItemDroppedEvent(
+      death.Npc.Value,
+      stack.ItemType,
+      stack.Quantity,
+      TickNumber));
   }
 
   private void RestoreNpc(NpcReplicationSnapshot snapshot)
@@ -5142,6 +5326,14 @@ public sealed partial class DomeSimulation : IDisposable
   private void RestoreNpc(NpcStateSnapshot state)
   {
     NpcReplicationSnapshot snapshot = state.Replication;
+    if (snapshot.ReplicationId == int.MaxValue || snapshot.Revision < 0)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(state),
+        "Persistence snapshot NPC identity must use a non-negative revision and leave room " +
+        "for the next ID.");
+    }
+
     NpcHandle npc = new(snapshot.ReplicationId);
     NpcComponents.NpcAuthorityComponent authority = ResolveNpcAuthority(state);
     if (!state.Lifecycle.IsActive &&
@@ -5215,6 +5407,13 @@ public sealed partial class DomeSimulation : IDisposable
 
   private void RestoreChest(ChestPersistentState snapshot)
   {
+    if (snapshot.ChestId == int.MaxValue)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(snapshot),
+        "Persistence snapshot chest IDs must leave room for the next ID.");
+    }
+
     ChestComponent chest = new(
       snapshot.ChestId,
       snapshot.TileX,
@@ -5250,6 +5449,14 @@ public sealed partial class DomeSimulation : IDisposable
 
   private void RestoreSign(SignPersistentState snapshot)
   {
+    if (snapshot.SignId == int.MaxValue || snapshot.Revision < 0)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(snapshot),
+        "Persistence snapshot sign identity must use a non-negative revision and leave room " +
+        "for the next ID.");
+    }
+
     if (snapshot.SignId < 0 || !_signs.TryAdd(
       snapshot.SignId,
       new SignSnapshot(
@@ -5424,11 +5631,19 @@ public sealed partial class DomeSimulation : IDisposable
       account.Buffs,
       account.SelectedLoadout,
       account.AccessoryVisibility,
-      items);
+      items,
+      World.Get<WellFedStateComponent>(playerEntity).TimeLeftRank1,
+      World.Get<WellFedStateComponent>(playerEntity).TimeLeftRank2,
+      World.Get<WellFedStateComponent>(playerEntity).TimeLeftRank3);
   }
 
   private bool ApplyDoorTransition(DoorSnapshot door, DoorTransition transition)
   {
+    if (door.Revision == long.MaxValue)
+    {
+      return false;
+    }
+
     if (transition == DoorTransition.OpenDoor && !door.IsOpen)
     {
       _doors[door.DoorId] = door with { IsOpen = true, Revision = door.Revision + 1 };
@@ -5446,6 +5661,11 @@ public sealed partial class DomeSimulation : IDisposable
 
   private bool ApplyTallGateTransition(DoorSnapshot door, DoorTransition transition)
   {
+    if (door.Revision == long.MaxValue)
+    {
+      return false;
+    }
+
     ushort targetType = transition switch
     {
       DoorTransition.OpenTallGate when !door.IsOpen => OpenTallGateTileType,
@@ -5481,6 +5701,11 @@ public sealed partial class DomeSimulation : IDisposable
     DoorTransition transition,
     bool direction)
   {
+    if (door.Revision == long.MaxValue)
+    {
+      return false;
+    }
+
     if (transition == DoorTransition.OpenTrapdoor && !door.IsOpen)
     {
       return OpenTrapdoor(door);
@@ -5496,6 +5721,11 @@ public sealed partial class DomeSimulation : IDisposable
 
   private bool CloseTrapdoor(DoorSnapshot door, bool playerAbove)
   {
+    if (door.Revision == long.MaxValue)
+    {
+      return false;
+    }
+
     for (int column = 0; column < 2; column++)
     {
       WorldTile tile = WorldGrid.GetTile(door.TileX + column, door.TileY);
@@ -5533,7 +5763,8 @@ public sealed partial class DomeSimulation : IDisposable
   {
     float deltaX = playerPosition.X - door.TileX;
     float deltaY = playerPosition.Y - door.TileY;
-    return deltaX * deltaX + deltaY * deltaY <= 6.0f * 6.0f;
+    return float.IsFinite(playerPosition.X) && float.IsFinite(playerPosition.Y) &&
+      deltaX * deltaX + deltaY * deltaY <= 6.0f * 6.0f;
   }
 
   private static bool IsDoorAt(DoorSnapshot door, int tileX, int tileY)
@@ -5575,6 +5806,11 @@ public sealed partial class DomeSimulation : IDisposable
 
   private bool OpenTrapdoor(DoorSnapshot door)
   {
+    if (door.Revision == long.MaxValue)
+    {
+      return false;
+    }
+
     bool opensDown = WorldGrid.GetTile(door.TileX, door.TileY).FrameX < 36;
     int openY = door.TileY + (opensDown ? 1 : 0);
     for (int row = 0; row < 2; row++)

@@ -218,10 +218,60 @@ if (!input.TryAccept(
       queue,
       state,
       new PipelineLiquidSourceComponent(20, 20, 128, LiquidType.Water, 3)) ||
+    input.TryAccept(
+      world,
+      queue,
+      state,
+      new PipelineLiquidSourceComponent(21, 20, 128, LiquidType.Water, long.MaxValue)) ||
     queue.Count != 1)
 {
   throw new InvalidOperationException("Liquid input did not enforce bounds and deduplication.");
 }
+
+using DomeSimulation liquidSequenceSimulation = new(new WorldGrid(400, 300));
+if (liquidSequenceSimulation.TryQueueLiquidSource(
+      new PipelineLiquidSourceComponent(20, 20, 128, LiquidType.Water, long.MaxValue)))
+{
+  throw new InvalidOperationException(
+    "DomeSimulation accepted a liquid sequence that would overflow the next allocator.");
+}
+
+if (liquidSequenceSimulation.TryQueueLiquidSource(
+      new PipelineLiquidSourceComponent(20, 20, 128, LiquidType.Water, long.MaxValue - 1)))
+{
+  throw new InvalidOperationException(
+    "DomeSimulation accepted the final liquid sequence without a successor.");
+}
+
+Console.WriteLine("PASS: liquid source rejects terminal sequences before allocator overflow");
+
+WorldMetadata liquidBatchMetadata = new("liquid-batch-boundary", new WorldSeed(78), 400, 300);
+WorldTile[,] liquidBatchTiles = new WorldTile[400, 300];
+long[,] liquidBatchVersions = new long[2, 2];
+liquidBatchVersions[0, 0] = long.MaxValue;
+WorldGrid liquidBatchWorld = WorldGrid.FromSnapshot(new WorldGridSnapshot(
+  liquidBatchMetadata,
+  liquidBatchTiles,
+  liquidBatchVersions));
+bool liquidBatchRejected = false;
+try
+{
+  liquidBatchWorld.CommitLiquidChanges([
+    new LiquidChangeCommand(1, 10, 10, 1, 1),
+    new LiquidChangeCommand(2, 11, 10, 1, 1)]);
+}
+catch (InvalidOperationException)
+{
+  liquidBatchRejected = true;
+}
+
+if (!liquidBatchRejected || liquidBatchWorld.GetTile(10, 10).LiquidAmount != 0 ||
+    liquidBatchWorld.GetTile(11, 10).LiquidAmount != 0)
+{
+  throw new InvalidOperationException("Liquid batch overflow was not rejected atomically.");
+}
+
+Console.WriteLine("PASS: liquid batch section-version exhaustion is atomic");
 
 WorldGrid solidTargetWorld = new(400, 300);
 _ = solidTargetWorld.TrySetLiquid(20, 20, 128, (byte)LiquidType.Water);
@@ -468,6 +518,26 @@ for (int index = 0; index < mergeCases.Length; index++)
 
 Console.WriteLine("PASS: bounded liquid input, deterministic propagation, commit and replication are backed");
 
+LiquidUpdateQueueComponent retryQueue = new(maximumLength: 1);
+LiquidUpdateNode retryNode = new(2, 2, 1);
+if (!retryQueue.TryEnqueue(retryNode.X, retryNode.Y, retryNode.Sequence) ||
+    retryQueue.TryRequeue(retryNode, maximumRetries: 3) ||
+    retryQueue.GetRetryCount(retryNode.X, retryNode.Y) != 0)
+{
+  throw new InvalidOperationException(
+    "A failed liquid requeue consumed retry budget before entering the queue.");
+}
+
+_ = retryQueue.Drain(1);
+if (!retryQueue.TryRequeue(retryNode, maximumRetries: 3) ||
+    retryQueue.GetRetryCount(retryNode.X, retryNode.Y) != 1)
+{
+  throw new InvalidOperationException(
+    "A successful liquid requeue did not consume exactly one retry budget unit.");
+}
+
+Console.WriteLine("PASS: liquid retry budget advances only after successful requeue");
+
 using DomeSimulation blockedSimulation = new(new WorldGrid(400, 300));
 _ = blockedSimulation.WorldGrid.TrySetLiquid(0, 0, 128, (byte)LiquidType.Water);
 _ = blockedSimulation.WorldGrid.TrySetLiquid(1, 0, 1, (byte)LiquidType.Lava);
@@ -544,3 +614,50 @@ if (panicState.Mode != LiquidSimulationMode.Normal || panicQueue.Count != queued
 }
 
 Console.WriteLine("PASS: runtime Liquid Panic is consecutive, bounded and non-destructive");
+
+WorldGrid sequenceOverflowWorld = new(400, 300);
+_ = sequenceOverflowWorld.TrySetLiquid(1, 1, 100, (byte)LiquidType.Water);
+_ = sequenceOverflowWorld.TrySetLiquid(2, 1, 0, (byte)LiquidType.Water);
+LiquidTransferCommand overflowTransfer = new(1, 1, 1, 2, 1, 1, (byte)LiquidType.Water);
+try
+{
+  _ = new LiquidTransferSystem().CreateChanges(
+    sequenceOverflowWorld,
+    [overflowTransfer],
+    long.MaxValue);
+  throw new InvalidOperationException(
+    "Liquid transfer sequence allocation wrapped at Int64.MaxValue.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+Console.WriteLine("PASS: liquid transfer sequence exhaustion is rejected");
+
+LiquidUpdateQueueComponent sequenceQueue = new(maximumLength: 4);
+LiquidWorldStateComponent sequenceState = new(
+  maximumQueueLength: 4,
+  tickBudget: 1,
+  new LiquidPanicPolicy(4, 2, 2, 1));
+_ = sequenceOverflowWorld.TrySetLiquid(4, 4, 100, (byte)LiquidType.Water);
+if (!sequenceQueue.TryEnqueue(
+      new PipelineLiquidSourceComponent(4, 4, 100, LiquidType.Water, 1)))
+{
+  throw new InvalidOperationException("Liquid sequence exhaustion fixture could not be seeded.");
+}
+
+try
+{
+  _ = new LiquidPropagationSystem().Advance(
+    sequenceOverflowWorld,
+    sequenceQueue,
+    sequenceState,
+    long.MaxValue);
+  throw new InvalidOperationException(
+    "Liquid propagation sequence allocation wrapped at Int64.MaxValue.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+Console.WriteLine("PASS: liquid propagation sequence exhaustion is rejected");

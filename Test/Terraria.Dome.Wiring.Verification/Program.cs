@@ -42,6 +42,47 @@ if (!ActuatorDeactivationRuleSystem.ShouldDeactivate(
   throw new InvalidOperationException("Actuator source eligibility rule did not preserve its guards.");
 }
 
+IReadOnlyList<PressurePlateComponent> overflowPlates =
+[
+  new PressurePlateComponent(1, 0, 0, 10, requiresPlayer: false),
+  new PressurePlateComponent(2, 0, 0, 10, requiresPlayer: false)
+];
+IReadOnlyList<MechanismActivationCommand> overflowActivations =
+  new PressurePlateDetectionSystem().Detect(
+    overflowPlates,
+    [new WiringActorSnapshot(new SimulationVector(0.0f, 0.0f), IsPlayer: true)],
+    long.MaxValue);
+if (overflowActivations.Count != 0)
+{
+  throw new InvalidOperationException(
+    "Pressure-plate sequence allocation wrapped at Int64.MaxValue.");
+}
+
+Console.WriteLine("PASS: wiring pressure-plate sequence exhaustion is rejected");
+
+WorldGrid lampSequenceWorld = new(400, 300);
+for (int y = 10; y < 13; y++)
+{
+  for (int x = 10; x < 13; x++)
+  {
+    _ = lampSequenceWorld.TrySetTile(x, y, new WorldTile(IsActive: true, Type: 34));
+  }
+}
+
+if (new LampCommandSystem().CreateFrameCommands(
+      lampSequenceWorld,
+      LampDefinitionRegistry.SourceDerived,
+      10,
+      10,
+      MechanismActivationKind.Activate,
+      long.MaxValue).Count != 0)
+{
+  throw new InvalidOperationException(
+    "Lamp frame sequence allocation wrapped at Int64.MaxValue.");
+}
+
+Console.WriteLine("PASS: wiring lamp sequence exhaustion is rejected");
+
 if (ActuatorDeactivationRuleSystem.ShouldDeactivate(
       isActive: true,
       isActuated: true,
@@ -1056,6 +1097,26 @@ if (!new WiringInputValidationSystem().TryValidate(
 }
 
 Console.WriteLine("PASS: bounded wire traversal, pressure plates, mechanisms, actuators and pumps are backed");
+
+using DomeSimulation wiringSequenceSimulation = new(new WorldGrid(400, 300));
+PlayerHandle wiringSequencePlayer = wiringSequenceSimulation.CreatePlayer(
+  new SimulationVector(10.0f, 10.0f));
+wiringSequenceSimulation.SetWireMask(10, 10, 1);
+if (wiringSequenceSimulation.TryQueueWiringInput(
+      new WiringInputCommand(long.MaxValue, wiringSequencePlayer, 10, 10, WireColor.Red)))
+{
+  throw new InvalidOperationException(
+    "DomeSimulation accepted a wiring sequence that would overflow the next allocator.");
+}
+
+if (wiringSequenceSimulation.TryQueueWiringInput(
+      new WiringInputCommand(long.MaxValue - 1, wiringSequencePlayer, 10, 10, WireColor.Red)))
+{
+  throw new InvalidOperationException(
+    "DomeSimulation accepted the final sequence even though no successor sequence remains.");
+}
+
+Console.WriteLine("PASS: wiring input rejects terminal sequences before allocator overflow");
 
 using DomeSimulation extractinatorSimulation = new(new WorldGrid(400, 300));
 const int extractinatorX = 100;

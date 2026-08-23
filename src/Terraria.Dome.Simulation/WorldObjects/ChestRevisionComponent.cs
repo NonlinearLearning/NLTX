@@ -20,4 +20,15 @@ public sealed class ChestRevisionComponent
   {
     Value = checked(Value + 1);
   }
+
+  public bool TryIncrement()
+  {
+    if (Value == long.MaxValue)
+    {
+      return false;
+    }
+
+    Value++;
+    return true;
+  }
 }

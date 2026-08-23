@@ -9,6 +9,7 @@ using Terraria.Dome.Simulation.WorldModel;
 using Arch.Core;
 
 VerifyDeathAndRespawnSystems();
+VerifyWellFedContract();
 
 const string uuid = "2eecdeea-c45e-456f-8244-75ec32da6172";
 PlayerPersistentState account = CreateAccount(uuid);
@@ -33,6 +34,62 @@ if (!simulation.TryGetPlayerPersistentState(uuid, out PlayerPersistentState? res
 }
 
 Console.WriteLine("PASS: player identity, lifecycle and account ownership are separated");
+
+static void VerifyWellFedContract()
+{
+  WellFedStateComponent state = new();
+  state.Eat(foodRank: 3, foodBuffTime: 72010);
+  if (state.TimeLeftRank1 != 0 || state.TimeLeftRank2 != 10 ||
+      state.TimeLeftRank3 != 72000 || state.Rank != 3)
+  {
+    throw new InvalidOperationException("WellFed Eat did not preserve capped rank counters.");
+  }
+
+  state.Update();
+  if (state.TimeLeftRank3 != 71999 || state.TimeLeftRank2 != 10 || state.Rank != 3)
+  {
+    throw new InvalidOperationException("WellFed Update did not decay the highest rank first.");
+  }
+
+  state.Clear();
+  if (state.TimeLeft != 0 || state.Rank != 0)
+  {
+    throw new InvalidOperationException("WellFed Clear did not remove all rank counters.");
+  }
+
+  const string uuid = "2eecdeea-c45e-456f-8244-75ec32da6172";
+  PlayerPersistentState account = CreateAccount(uuid);
+  using DomeSimulation simulation = new(new WorldGrid(400, 300));
+  PlayerHandle player = simulation.CreatePlayer(account, new SimulationVector(2.0f, 2.0f));
+  if (!simulation.ApplyConsumeWellFedCommand(new ConsumeWellFedCommand(
+        player,
+        foodRank: 2,
+        foodBuffTime: 120)) ||
+      !simulation.TryGetWellFedState(player, out WellFedStateComponent? runtime) ||
+      runtime is null || runtime.Rank != 2 || runtime.TimeLeftRank1 != 0 ||
+      runtime.TimeLeftRank2 != 120)
+  {
+    throw new InvalidOperationException("WellFed player command did not update server-owned state.");
+  }
+
+  simulation.DestroyPlayer(player);
+  if (!simulation.TryGetPlayerPersistentState(uuid, out PlayerPersistentState? restored) ||
+      restored is null || restored.WellFedTimeLeftRank1 != 0 ||
+      restored.WellFedTimeLeftRank2 != 120)
+  {
+    throw new InvalidOperationException("WellFed state did not persist with the player account.");
+  }
+
+  PlayerHandle restoredPlayer = simulation.CreatePlayer(restored, new SimulationVector(2.0f, 2.0f));
+  if (!simulation.ClearWellFed(restoredPlayer) ||
+      !simulation.TryGetWellFedState(restoredPlayer, out WellFedStateComponent? cleared) ||
+      cleared is null || cleared.TimeLeft != 0)
+  {
+    throw new InvalidOperationException("WellFed clear command did not update server-owned state.");
+  }
+
+  Console.WriteLine("PASS: WellFed oracle counters, command ownership and persistence");
+}
 
 static void VerifyDeathAndRespawnSystems()
 {
@@ -103,6 +160,34 @@ static void VerifyDeathAndRespawnSystems()
     throw new InvalidOperationException("Player respawn accepted a forged negative timer.");
   }
 
+  lifecycle.RespawnTicks = 0;
+  if (respawnSystem.TryRespawn(
+        ref lifecycle,
+        ref transform,
+        ref velocity,
+        ref health,
+        new SimulationVector(float.NaN, 0.0f)))
+  {
+    throw new InvalidOperationException("Player respawn accepted a non-finite spawn coordinate.");
+  }
+
+  lifecycle.IsActive = false;
+  if (!respawnSystem.TryRespawn(
+        ref lifecycle,
+        ref transform,
+        ref velocity,
+        ref health,
+        lifecycle.Spawn) ||
+      respawnSystem.TryRespawn(
+        ref lifecycle,
+        ref transform,
+        ref velocity,
+        ref health,
+        lifecycle.Spawn))
+  {
+    throw new InvalidOperationException("Player respawn accepted duplicate commands in one state transition.");
+  }
+
   using World lifecycleWorld = World.Create();
   Entity lifecycleEntity = lifecycleWorld.Create(new PlayerLifecycleComponent
   {
@@ -133,7 +218,11 @@ static void VerifyDeathAndRespawnSystems()
     (_, _) => throw new InvalidOperationException("Stale player entity scheduled a respawn."));
 }
 
-static PlayerPersistentState CreateAccount(string uuid)
+static PlayerPersistentState CreateAccount(
+  string uuid,
+  int wellFedTimeLeftRank1 = 0,
+  int wellFedTimeLeftRank2 = 0,
+  int wellFedTimeLeftRank3 = 0)
 {
   PlayerPersistentItem[] items = new PlayerPersistentItem[PlayerPersistentState.ItemSlotCount];
   for (int index = 0; index < items.Length; index++)
@@ -151,5 +240,8 @@ static PlayerPersistentState CreateAccount(string uuid)
     [],
     selectedLoadout: 0,
     accessoryVisibility: 0,
-    items);
+    items,
+    wellFedTimeLeftRank1,
+    wellFedTimeLeftRank2,
+    wellFedTimeLeftRank3);
 }

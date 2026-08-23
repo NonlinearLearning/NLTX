@@ -23,8 +23,7 @@ public sealed class PressurePlateDetectionSystem
       throw new ArgumentOutOfRangeException(nameof(firstSequence));
     }
 
-    List<MechanismActivationCommand> activations = new();
-    long sequence = firstSequence;
+    List<int> mechanismIds = new();
     for (int plateIndex = 0; plateIndex < plates.Count; plateIndex++)
     {
       PressurePlateComponent plate = plates[plateIndex];
@@ -41,14 +40,26 @@ public sealed class PressurePlateDetectionSystem
         float deltaY = actor.Position.Y - plate.Y;
         if (deltaX * deltaX + deltaY * deltaY <= radiusSquared)
         {
-          activations.Add(new MechanismActivationCommand(
-            sequence++,
-            plate.MechanismId,
-            MechanismActivationKind.Activate,
-            plate.MechanismId));
+          mechanismIds.Add(plate.MechanismId);
           break;
         }
       }
+    }
+
+    WiringSequenceAllocator sequenceAllocator = new(firstSequence);
+    if (!sequenceAllocator.TryReserve(mechanismIds.Count, out long sequence))
+    {
+      return [];
+    }
+
+    List<MechanismActivationCommand> activations = new(mechanismIds.Count);
+    for (int index = 0; index < mechanismIds.Count; index++)
+    {
+      activations.Add(new MechanismActivationCommand(
+        sequence + index,
+        mechanismIds[index],
+        MechanismActivationKind.Activate,
+        mechanismIds[index]));
     }
 
     return activations;

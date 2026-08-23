@@ -16,7 +16,7 @@ public sealed class PlayerItemUseSystem
   {
     ArgumentNullException.ThrowIfNull(inventory);
     ArgumentNullException.ThrowIfNull(definitions);
-    if (state.CooldownTicks > 0)
+    if (state.CooldownTicks > 0 || state.UseRevision == int.MaxValue)
     {
       return false;
     }

@@ -11,11 +11,18 @@ public sealed class WorldInvasionSizeSystem
       throw new ArgumentOutOfRangeException(nameof(invasionType));
     }
 
-    return invasionType switch
+    long size = invasionType switch
     {
-      3 => checked(120 + 60 * qualifiedPlayerCount),
-      4 => checked(160 + 40 * qualifiedPlayerCount),
-      _ => checked(80 + 40 * qualifiedPlayerCount)
+      3 => 120L + 60L * qualifiedPlayerCount,
+      4 => 160L + 40L * qualifiedPlayerCount,
+      _ => 80L + 40L * qualifiedPlayerCount
     };
+
+    if (size > int.MaxValue)
+    {
+      throw new ArgumentOutOfRangeException(nameof(qualifiedPlayerCount));
+    }
+
+    return (int)size;
   }
 }

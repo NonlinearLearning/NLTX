@@ -50,6 +50,13 @@ public readonly record struct NpcStateSnapshot(
 
   public static NpcStateSnapshot FromReplication(NpcReplicationSnapshot snapshot)
   {
+    if (snapshot.MaximumHealth <= 0 && snapshot.Health == int.MaxValue)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(snapshot),
+        "NPC health cannot derive a representable maximum health value.");
+    }
+
     int definitionId = snapshot.DefinitionId > 0 ? snapshot.DefinitionId : snapshot.NpcType;
     int maximumHealth = snapshot.MaximumHealth > 0
       ? snapshot.MaximumHealth

@@ -3,6 +3,7 @@ using Arch.Core;
 using Terraria.Dome.Simulation.Components;
 using Terraria.Dome.Simulation.Npc;
 using Terraria.Dome.Simulation.Npc.Components;
+using Terraria.Dome.Simulation.Npc.Definitions;
 using Terraria.Dome.Simulation.Npc.Systems;
 
 namespace Terraria.Dome.Simulation;
@@ -75,12 +76,19 @@ public sealed partial class DomeSimulation
         continue;
       }
 
+      NpcDefinitionComponent definitionComponent = World.Get<NpcDefinitionComponent>(entry.Value);
+      if (!_npcDefinitions.TryGet(definitionComponent.DefinitionId, out NpcDefinition definition) ||
+          !_npcLootSystem.IsRegistered(definition.LootTableId))
+      {
+        continue;
+      }
+
       NpcDeathResult death = _npcDeathSystem.Evaluate(new NpcDeathInput(
         entry.Key,
         health.Current,
         WasActive: true,
         Position: replication.Position,
-        LootTableId: 1));
+        LootTableId: definition.LootTableId));
       if (death.Published)
       {
         _pendingNpcDeaths.Add(death);
@@ -94,7 +102,7 @@ public sealed partial class DomeSimulation
     for (int index = 0; index < _pendingNpcDeaths.Count; index++)
     {
       NpcDeathResult death = _pendingNpcDeaths[index];
-      SpawnNpcLoot(death.Npc, death.Position);
+      SpawnNpcLoot(death);
     }
 
     _pendingNpcDeaths.Clear();

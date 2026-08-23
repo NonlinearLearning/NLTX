@@ -36,9 +36,9 @@ and standalone verifier projects.
 - WorldGen remains intentionally blocked: the complete differential compares
   `5,040,000` tiles and currently mismatches all of them; the deletion gate is
   `canRemoveLegacyWorldGen=false`. The oracle inventory is 684 methods, 233
-  fields, 227 partial methods, and 457 unmapped methods.
+  fields, 125 partial methods, and 559 unmapped methods.
 - The Version3-to-Version4 deletion ledger contains 535 rows. Classification
-  is complete, but 57 `ServerRelevant` rows remain deferred, so physical
+  is complete, but 55 `ServerRelevant` rows remain deferred, so physical
   deletion safety is not accepted.
 
 ### Work already closed before this proposal
@@ -55,10 +55,12 @@ from these contracts and adds only new evidence.
 
 1. WorldGen lacks recovered RNG/options/pass-order/runtime contracts and full
    differential parity.
-2. TileEntity TrainingDummy lacks typed ownership, activation/deactivation,
-   NPC linkage, persistence continuation, V1456 projection, and full loopback
-   evidence.
-3. Fifty-seven server-relevant physical deletions remain deferred.
+2. TileEntity TrainingDummy has a bounded typed ownership, activation,
+   deactivation, NPC linkage, persistence, V1456 projection, and server-owned
+   tile-interaction loopback chain. Complete qualification still lacks a
+   source-backed authorization contract for raw inbound `87` and a client
+   mutation loopback for that separate path.
+3. Fifty-five server-relevant physical deletions remain deferred.
 
 These blockers are release gates, not permission to infer behavior from names,
 bounded tests, or the reduced Version4 tree.
@@ -444,8 +446,8 @@ The V1456 adapter now provides strict TrainingDummy wire projections for
 Server sessions maintain a per-entity cursor and project changed type-0
 entities only inside visible sections, including removal frames. Focused wire
 field and cursor verification plus Protocol/Server builds pass. Placement
-authorization, initial-section ownership marking, observer loopback, and full
-client handling remain deferred.
+authorization and full client handling remain deferred. Initial-section
+ownership marking and the server-owned observer loopback are evidenced.
 
 Initial `TileSection` bootstrap now includes supported type-0 TrainingDummy
 entities by section and marks them sent in the per-session cursor. Subsequent
@@ -617,8 +619,9 @@ Evidence is stored under:
 - TrainingDummy now has a bounded typed authority chain (validity, persistence,
   ownership, activation/deactivation, NPC 488 lifecycle, placement/removal owner,
   and V1456 86/87 projection), but complete qualification remains `Partial`:
-  direct client 87 authorization and a real observer/client mutation loopback are
-  still deferred.
+  direct client 87 authorization and client mutation semantics for that
+  server-owned message remain deferred. The server-owned observer loopback is
+  now evidenced.
 
 Therefore this execution checkpoint proves the bounded server capability gates,
 but does not authorize a full-convergence or legacy-removal claim.
@@ -721,6 +724,28 @@ This checkpoint closes the currently progressable bounded server gates only. It
 does not authorize full convergence, physical deletion, removal of the legacy
 WorldGen oracle, or promotion of TrainingDummy from `Partial` to `Evidenced`.
 
+### Current Full Verifier Sweep: 2026-08-23 01:00
+
+The current worktree was run through all 49 verifier projects in fresh serial
+processes with `UseSharedCompilation=false` and `MSBuildNodeReuse=false`.
+After correcting an invocation that accidentally forwarded `--nologo` as an
+application argument to FullClientBootstrap, the clean rerun passed. The
+authoritative sweep result is **49 passed, 0 failed**:
+`Build/diagnostics/server-ecs-convergence/P-regression/20260823-0100/results.json`.
+
+This does not change the separate WorldGen complete differential or physical
+deletion gates.
+
+### Success-Criteria Audit: 2026-08-23 01:30
+
+The current requirement-by-requirement audit is recorded in
+`Build/diagnostics/server-ecs-convergence/P-final/20260823-0130/success-criteria-audit.json`.
+It confirms the 49-project verifier sweep, Main responsibility classification,
+and WLD round-trip boundaries, while explicitly recording WorldGen stage parity
+as partial and physical deletion safety as blocked by 57 deferred
+`ServerRelevant` rows. The overall proposal status therefore remains
+`incomplete` despite green bounded gates.
+
 Activation eligibility now has a separately evidenced pure query using explicit
 player hitboxes. It matches the oracle's 32x48 pixel entity rectangle inflated
 by 1600 pixels and rejects inactive or out-of-bounds players. The focused
@@ -728,3 +753,79 @@ WorldObjects verifier, WorldObjects loopback verifier, and Simulation build all
 pass. This does not yet implement the authoritative player scan, NPC slot
 capacity, NPC creation, AI assignment, or message 86 projection; those remain
 deferred.
+
+### WorldGen Framing Contract Audit: 2026-08-23 02:00
+
+The focused `Terraria.Dome.WorldGeneration.Verification` run passed with exit
+code `0`. A source-to-target audit is recorded at
+`Build/diagnostics/server-ecs-convergence/P9-worldgen/20260823-0200/verifier.log`.
+It proves only the `SquareTileFrame` 3x3 row-major request topology against the
+complete Version4 oracle (`WorldGen.cs:67181`) and the immutable ECS request
+query. The oracle delegates frame-value semantics to `TileFrame` at line
+`68021`; wall framing, range-frame side effects, mutable tile ownership, and
+runtime notifications remain unmapped. This is partial topology evidence, so
+the WorldGen differential and `canRemoveLegacyWorldGen=false` deletion gate
+are unchanged.
+
+### WorldGen Range and Wall Topology Audit: 2026-08-23 04:00
+
+The next source-backed framing slice is recorded at
+`Build/diagnostics/server-ecs-convergence/P9-worldgen/20260823-0400/verifier.log`.
+The oracle anchors `SquareWallFrame` at `WorldGen.cs:67196` and `RangeFrame` at
+`WorldGen.cs:67211`; the ECS queries provide candidate bounded 3x3 and
+expanded-rectangle coordinate topology, but the current structured inventory
+still leaves both oracle methods `Unmapped`. The focused WorldGeneration
+verifier exits `0`. Frame-value semantics, center reset
+behavior, map-update queues, and mutable runtime side effects remain deferred,
+so the complete differential and `canRemoveLegacyWorldGen=false` gate are
+unchanged.
+
+### TileFrameImportant Branch Audit: 2026-08-23 05:00
+
+The focused WorldGeneration verifier again exited `0`. A source-to-target audit
+is recorded at
+`Build/diagnostics/server-ecs-convergence/P9-worldgen/20260823-0500/verifier.log`.
+The private Version4 dispatcher (`WorldGen.cs:71665`) has candidate typed
+queries for its type `136`, `184`, `324`, and `529` branches, with source
+anchors, bounded random state, and supported/kill verifier cases. The current
+structured inventory still leaves the dispatcher `Unmapped`, so these queries
+remain candidate evidence rather than accepted replacement mappings. Other
+dispatcher branches and mutable `KillTile`/notification behavior remain
+deferred. The complete WorldGen differential and deletion gate are unchanged.
+
+### Current-State Regression Audit: 2026-08-23 03:30
+
+The current dirty worktree was re-run after the later Simulation, item,
+projectile, NPC, and protocol edits. The fresh audit is recorded at
+`Build/diagnostics/server-ecs-convergence/P-final/20260823-0330/success-criteria-audit.json`.
+Simulation and Server Release builds both exited `0` with zero warnings and
+zero errors. The 49 claimed verifier projects passed from clean processes. The
+50th executable test project is `Terraria.Dome.RealClientFixtureHost`, which is
+a required-argument infrastructure host rather than a verifier; its no-argument
+probe was excluded after reporting the expected missing `--port` error.
+
+The physical deletion safety check remains intentionally nonzero with
+`rows=535` and `serverRelevantDeferred=57`. WorldGen remains partial: the new
+SquareTileFrame topology audit is source-backed, while the complete differential
+still mismatches `5,040,000` of `5,040,000` tiles. The overall proposal status
+therefore remains `incomplete`.
+
+### WorldGen Inventory Consistency Correction: 2026-08-23 07:00
+
+The structured inventory was re-counted after the framing audits. The prior
+gate metadata had drifted from the actual JSON method statuses. The authoritative
+counts are `684` methods, `125 Partial`, and `559 Unmapped`, with `233` fields;
+the gate now records these exact values. Evidence is recorded at
+`docs/worldgen/worldgen-deletion-gate.json` (counts are checked directly from the structured inventory).
+This is a bookkeeping correction only and does not improve semantic parity or
+change `canRemoveLegacyWorldGen=false`.
+
+### Fresh Complete WorldGen Differential: 2026-08-23 06:00
+
+The source-derived complete differential was rerun after the framing audits.
+Evidence is recorded at
+`Build/diagnostics/server-ecs-convergence/P9-worldgen/20260823-0600/differential.log`.
+The diagnostic process exited `0`, but the semantic result remains
+`5,040,000 / 5,040,000` tile mismatches with `1,046,843` extended-state
+mismatches. This confirms that the new topology and typed branch mappings do
+not justify a WorldGen deletion claim; `canRemoveLegacyWorldGen=false` remains.

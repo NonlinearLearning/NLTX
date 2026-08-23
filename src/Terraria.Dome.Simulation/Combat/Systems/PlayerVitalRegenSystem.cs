@@ -57,7 +57,9 @@ public sealed class PlayerVitalRegenSystem
         continue;
       }
 
-      mana.RegenerationAccumulator++;
+      mana.RegenerationAccumulator = mana.RegenerationAccumulator >= 2
+        ? 2
+        : mana.RegenerationAccumulator + 1;
       if (mana.RegenerationAccumulator >= 2)
       {
         mana.Current++;

@@ -9,6 +9,11 @@ public sealed class ItemSelectionSystem
   public void Apply(InventoryComponent inventory, ref SelectedItemComponent selection, int slot)
   {
     ArgumentNullException.ThrowIfNull(inventory);
+    if (selection.Revision == int.MaxValue)
+    {
+      return;
+    }
+
     _ = inventory.GetSlot(slot);
     inventory.SetSelectedSlot(slot);
     selection.SelectedSlot = slot;

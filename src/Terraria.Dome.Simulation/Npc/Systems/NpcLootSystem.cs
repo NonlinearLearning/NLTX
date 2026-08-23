@@ -62,4 +62,9 @@ public sealed class NpcLootSystem
       definition.MinimumQuantity, definition.MaximumQuantity);
     return result;
   }
+
+  public bool IsRegistered(int lootTableId)
+  {
+    return _definitions.TryGet(lootTableId, out _);
+  }
 }

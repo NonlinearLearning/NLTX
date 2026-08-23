@@ -12,7 +12,9 @@ public sealed class WorldItemDestroySystem
     out WorldItemDestroyedEvent destroyedEvent)
   {
     if (!current.IsActive || current.ReplicationId != command.ReplicationId ||
-        current.Revision != command.ExpectedRevision)
+        current.Revision != command.ExpectedRevision ||
+        current.Revision == long.MaxValue ||
+        current.WorldState.Revision == long.MaxValue)
     {
       destroyed = current;
       destroyedEvent = default;

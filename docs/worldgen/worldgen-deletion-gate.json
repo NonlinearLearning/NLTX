@@ -1,5 +1,44 @@
 {
   "schemaVersion": 1,
+  "currentBaseline": {
+    "verifiedOn": "2026-08-23",
+    "status": "blocked-differential-failed",
+    "worldGenDifferential": {
+      "artifact": "Build/diagnostics/server-ecs-convergence/P9-worldgen/current-full-differential/legacy-worldgen-differential.json",
+      "trace": "Build/diagnostics/server-ecs-convergence/P9-worldgen/current-full-differential/trace.txt",
+      "comparedTiles": 5040000,
+      "mismatchTiles": 3190404,
+      "extendedStateMismatchTiles": 1046843,
+      "exitCode": 0
+    },
+    "ecsStageTrace": {
+      "artifact": "Build/diagnostics/server-ecs-convergence/P9-worldgen/current-stage-trace/stage-fingerprint-comparison.json",
+      "stages": 9,
+      "profile": "seed=1456,width=4200,height=1200,difficulty=0,hardmode=false",
+      "projection": "world-grid-tile-state-v1",
+      "comparedStages": 9,
+      "projectedMismatchedStages": 9,
+      "uncomparedStages": 0,
+      "oracleParity": "projected-stage-mismatch-not-full-wld"
+    },
+    "fullVerifierSweep": {
+      "artifact": "Build/diagnostics/server-ecs-convergence/P-regression/current-full/summary-after-wellfed.json",
+      "total": 50,
+      "passed": 49,
+      "failed": 0,
+      "skipped": 1,
+      "skippedProjects": ["Terraria.Dome.RealClientFixtureHost"]
+    },
+    "physicalDeletionLedger": {
+      "artifact": "Build/diagnostics/server-ecs-convergence/P4-deletion/current/verify-ledger.log",
+      "serverRelevantDeferred": 44,
+      "serverRelevantWithoutEvidence": 0,
+      "unknown": 0,
+      "acceptedReplacementRows": 4,
+      "acceptedReplacementEvidence": "Build/diagnostics/server-ecs-convergence/P4-deletion/current/ecs-owner-replacement-approval.json"
+    },
+    "historicalVerificationNote": "The nested verification records retain older WorldGen and 33-project regression evidence; they are historical and do not override this current baseline. The 2026-08-23 run applies legacy inactive-tile FrameX/FrameY sentinels, TerrainPass stone/ground layering, and source-aligned cave kill frames, reducing tile mismatches to 3190404, but parity remains failed."
+  },
   "canRemoveLegacyWorldGen": false,
   "source": {
     "path": "D:\\TRbackup\\Version4物理删除了某些文件\\Terraria\\WorldGen.cs",
@@ -10,8 +49,8 @@
   "inventory": {
     "methodCount": 684,
     "fieldCount": 233,
-    "partialMethodCount": 227,
-    "unmappedMethodCount": 457,
+    "partialMethodCount": 125,
+    "unmappedMethodCount": 559,
     "unmappedFieldCount": 233
   },
   "replay": {
@@ -29,26 +68,29 @@
     }
   },
   "blockingReasons": [
-    "A complete source-built baseline oracle replay compared 5040000 tiles and found 5040000 mismatches; it has 2640402 active tiles while the ECS fixture has 3671879 active tiles.",
+    "The current source-built baseline oracle replay compares 5040000 tiles and finds 3190404 mismatches after applying legacy inactive-tile FrameX/FrameY sentinels, TerrainPass stone/ground layering, and source-aligned cave kill frames; it has 2640402 active tiles while the ECS fixture has 3671879 active tiles.",
     "The baseline differential selects spawn X 2099, world surface Y 325, and rock layer Y 397 from WLD metadata. Secret-seed and world-generation option inputs are captured only as explicitly unsupported rules, not legacy-compatible behavior.",
-    "The captured default seed-1456 DirtWallBackgrounds oracle reduces extended-state mismatches to 1046843 and WallType mismatches to 995054, but all 5040000 tiles still differ and full semantic parity is not established.",
-    "Inventory contains 457 unmapped methods and 227 bounded partial mappings including the existing pure tile, framing, plant, tree, liquid, object, and item slices; the latest partial mappings add Housing_CheckIfInRoom alongside RoomNeeds, ScoreRoom_CanBeHomeSpot, Housing_GetTestedRoomBounds, CountTileTypesInArea, GetTileTypeCountByCategory, IsConsideredTheSpawnArea, Cull, RangeFrame, SquareWallFrame, SquareTileFrame, CheckVines, InvalidTileForPilesOrSpeleothems, GetHollowTreeFoliageStyle, SetForestBGSet, coatingColors, coatingColor, paintColor, IsTreeType, and GetTileMergeCulling. The room occupancy mapping preserves explicit coordinate membership while mutable roomTiles ownership, scanning, and scheduling remain deferred. Other deterministic predicates still exclude scans, cryptographic transforms, random overrides, notifications, destruction, and host side effects. The inventory still contains 233 unmapped fields.",
+    "The captured default seed-1456 DirtWallBackgrounds oracle reduces extended-state mismatches to 1046843 and WallType mismatches to 995054; 3190404 tiles still differ and full semantic parity is not established.",
+    "Inventory contains 559 unmapped methods and 125 bounded partial mappings in the current structured source inventory; the existing pure tile, framing, plant, tree, liquid, object, and item slices remain partial where their entries are explicitly mapped. The room occupancy mapping preserves explicit coordinate membership while mutable roomTiles ownership, scanning, and scheduling remain deferred. Other deterministic predicates still exclude scans, cryptographic transforms, random overrides, notifications, destruction, and host side effects. The inventory still contains 233 unmapped fields.",
     "Secret-seed, legacy structure and full liquid behavior parity is not established.",
     "The complete solution verification suite was attempted (33 projects); 25 passed and 8 failed on non-WorldGen combat, load, persistence, player, and world-rules paths. A serial rerun reduced this to 6 stable failures.",
     "The legacy WorldGen entry must remain available until all target-mode entries are mapped and replay fingerprints agree."
   ],
   "verification": {
     "worldGeneration": "full-bounded-verifier-passed-differential-failed",
+    "latestDifferentialRerun": {
+      "status": "mismatch",
+      "verifiedOn": "2026-08-23",
+      "evidence": "Build/diagnostics/server-ecs-convergence/P9-worldgen/current-full-differential/trace.txt",
+      "comparedTiles": 5040000,
+      "mismatchTiles": 3190404,
+      "extendedStateMismatchTiles": 1046843
+    },
     "simulationBuild": {
-      "status": "passed-with-warnings",
-      "command": "dotnet build src/Terraria.Dome.Simulation/Terraria.Dome.Simulation.csproj -p:UseSharedCompilation=false",
-      "warnings": [
-        "DomeSimulation.cs(2742): CaptureInventorySlots may receive null.",
-        "DomeSimulation.cs(2763): CaptureInventorySlots may receive null.",
-        "DomeSimulation.cs(2784): CaptureInventorySlots may receive null.",
-        "DomeSimulation.cs(2835): possible null dereference."
-      ],
-      "verifiedOn": "2026-08-19"
+      "status": "passed-warning-free",
+      "command": "dotnet build src/Terraria.Dome.Simulation/Terraria.Dome.Simulation.csproj -c Release -p:UseSharedCompilation=false -p:MSBuildNodeReuse=false --no-restore",
+      "warnings": [],
+      "verifiedOn": "2026-08-23"
     },
     "worldTileProjection": {
       "status": "passed-full-dependency-graph",

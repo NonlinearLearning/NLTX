@@ -22,6 +22,9 @@ public sealed class WorldItemStackingSystem
         !receiver.IsActive || !donor.IsActive || receiver.Section != donor.Section ||
         receiver.WorldState.PickupDelayTicks > 0 || donor.WorldState.PickupDelayTicks > 0 ||
         receiver.WorldState.LastMergeTick == tick || donor.WorldState.LastMergeTick == tick ||
+        receiver.Revision == long.MaxValue || donor.Revision == long.MaxValue ||
+        receiver.WorldState.Revision == long.MaxValue ||
+        donor.WorldState.Revision == long.MaxValue ||
         receiver.Stack.IsEmpty || donor.Stack.IsEmpty ||
         !definitions.TryGet(receiver.Stack.ItemType, out ItemDefinition definition) ||
         receiver.Stack.ItemType != donor.Stack.ItemType ||

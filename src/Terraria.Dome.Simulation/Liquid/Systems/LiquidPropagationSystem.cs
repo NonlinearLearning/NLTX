@@ -45,9 +45,23 @@ public sealed class LiquidPropagationSystem
 
     List<PipelineLiquidChangeCommand> commands = new();
     List<TileChangeCommand> tileCommands = new();
-    long nextSequence = firstSequence;
+    LiquidSequenceAllocator sequenceAllocator = new(firstSequence);
     state.ObserveQueueLength(queue.Count);
-    IReadOnlyList<LiquidUpdateNode> nodes = queue.Drain(state.EffectiveTickBudget);
+    int maximumNodes = Math.Min(queue.Count, state.EffectiveTickBudget);
+    long availablePairs = (long.MaxValue - firstSequence) / 2;
+    if (maximumNodes > 0 && availablePairs == 0)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(firstSequence),
+        "Liquid change sequence space is exhausted.");
+    }
+
+    if (availablePairs < maximumNodes)
+    {
+      maximumNodes = availablePairs > int.MaxValue ? int.MaxValue : (int)availablePairs;
+    }
+
+    IReadOnlyList<LiquidUpdateNode> nodes = queue.Drain(maximumNodes);
     for (int index = 0; index < nodes.Count; index++)
     {
       LiquidUpdateNode node = nodes[index];
@@ -57,7 +71,7 @@ public sealed class LiquidPropagationSystem
         ? pending
         : ReadSource(world, node);
       queue.RemoveSource(node);
-      if (source.Amount == 0 || !Enum.IsDefined(source.Type))
+      if (source.Amount == 0 || source.Sequence == long.MaxValue || !Enum.IsDefined(source.Type))
       {
         continue;
       }
@@ -75,22 +89,36 @@ public sealed class LiquidPropagationSystem
 
       queue.ResetRetryCount(source.X, source.Y);
       byte remaining = (byte)(source.Amount - (targetAmount - GetAmount(world, targetX, targetY)));
+      if (!sequenceAllocator.TryReserve(2, out long changeSequence))
+      {
+        throw new ArgumentOutOfRangeException(
+          nameof(firstSequence),
+          "Liquid change sequence space is exhausted.");
+      }
+
       commands.Add(new PipelineLiquidChangeCommand(
-        nextSequence++,
+        changeSequence,
         source.X,
         source.Y,
         remaining,
         (byte)source.Type));
       commands.Add(new PipelineLiquidChangeCommand(
-        nextSequence++,
+        changeSequence + 1,
         targetX,
         targetY,
         targetAmount,
         (byte)source.Type));
-      _ = queue.TryEnqueue(targetX, targetY, nextSequence);
+      if (sequenceAllocator.NextSequence != long.MaxValue)
+      {
+        _ = queue.TryEnqueue(targetX, targetY, sequenceAllocator.NextSequence);
+      }
     }
 
-    return new LiquidPropagationResult(commands, tileCommands, nextSequence, nodes.Count);
+    return new LiquidPropagationResult(
+      commands,
+      tileCommands,
+      sequenceAllocator.NextSequence,
+      nodes.Count);
   }
 
   private static PipelineLiquidSourceComponent ReadSource(WorldGrid world, LiquidUpdateNode node)
@@ -230,6 +258,11 @@ public sealed class LiquidPropagationSystem
             int y = originY + row;
             WorldTile member = world.GetTile(x, y);
             if (!member.IsActive || member.Type != rule.TileType)
+            {
+              return;
+            }
+
+            if (source.Sequence > long.MaxValue - commands.Count)
             {
               return;
             }

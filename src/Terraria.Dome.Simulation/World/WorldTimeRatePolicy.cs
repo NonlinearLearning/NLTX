@@ -60,7 +60,13 @@ public sealed class WorldTimeRatePolicy
     if (input.ActivePlayerCount > 0 &&
         input.SleepingPlayerCount == input.ActivePlayerCount)
     {
-      rate = checked(input.TargetRate * SleepingMultiplier);
+      long sleepingRate = (long)input.TargetRate * SleepingMultiplier;
+      if (sleepingRate > int.MaxValue)
+      {
+        throw new ArgumentOutOfRangeException(nameof(input));
+      }
+
+      rate = (int)sleepingRate;
     }
 
     if (input.IsTimeFrozen)

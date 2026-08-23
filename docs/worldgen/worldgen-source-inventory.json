@@ -8209,31 +8209,61 @@
       "Visibility": "Public",
       "Line": 67181,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/SquareTileFrameRequestQuery.cs:10"
+        ],
+        "ImplementedScope": "Emits the source-compatible 3x3 row-major framing request topology with immutable bounds checks.",
+        "ExcludedLegacyResponsibilities": [
+          "TileFrame frame-value semantics, mutable Tile ownership, map updates, and runtime notifications."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification square tile framing topology check."
+      }
     },
     {
       "Name": "SquareWallFrame",
       "Visibility": "Public",
       "Line": 67196,
       "Domain": "WorldRuntime",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/SquareWallFrameRequestQuery.cs:8"
+        ],
+        "ImplementedScope": "Emits the source-compatible bounded 3x3 wall-frame coordinate topology.",
+        "ExcludedLegacyResponsibilities": [
+          "Framing.WallFrame value semantics, center reset behavior, mutable wall ownership, and notifications."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification square wall framing topology check."
+      }
     },
     {
       "Name": "RangeFrame",
       "Visibility": "Public",
       "Line": 67211,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/RangeFrameCoordinateQuery.cs:7"
+        ],
+        "ImplementedScope": "Emits the bounded expanded rectangle in deterministic X-major/Y-minor order.",
+        "ExcludedLegacyResponsibilities": [
+          "TileFrame and Framing.WallFrame values, MapUpdateQueue side effects, mutable ownership, and notifications."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification range framing topology check."
+      }
     },
     {
       "Name": "WaterCheck",
@@ -8726,12 +8756,25 @@
       "Visibility": "Private",
       "Line": 71665,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/TileFrameImportant136Query.cs:8",
+          "src/Terraria.Dome.Simulation/WorldGeneration/TileFrameImportant184Query.cs:6",
+          "src/Terraria.Dome.Simulation/WorldGeneration/TileFrameImportant324Query.cs:8",
+          "src/Terraria.Dome.Simulation/WorldGeneration/TileFrameImportant529Query.cs:8"
+        ],
+        "ImplementedScope": "Covers source branches for tile types 136, 184, 324, and 529 with typed support, frame, random-state, and kill decisions.",
+        "ExcludedLegacyResponsibilities": [
+          "Other TileFrameImportant branches, mutable Tile ownership, KillTile side effects, and notifications."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification typed TileFrameImportant branch checks."
+      }
     },
     {
       "Name": "SpawnFallingBlockProjectile",
@@ -11195,10 +11238,10 @@
     "Seed": 1456,
     "SpawnX": 200,
     "SurfaceY": 80,
-    "SnapshotFingerprint": "E8B55B615AF6A0BC86A0B04AC3137AFED5446539C32CD64982628C4850887B1C",
+    "SnapshotFingerprint": "441BC8F4B058DDEDE3BDBD8290CF41948C012C2098316F45276C5A94FF410E06",
     "SectionVersions": {
-      "0,0": 14111,
-      "1,0": 14110,
+      "0,0": 14123,
+      "1,0": 14116,
       "0,1": 30000,
       "1,1": 30000
     }

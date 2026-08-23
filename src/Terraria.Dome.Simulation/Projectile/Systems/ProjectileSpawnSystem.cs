@@ -14,7 +14,7 @@ public sealed class ProjectileSpawnSystem
   {
     ArgumentNullException.ThrowIfNull(world);
     if (command.ProjectileType != definition.ProjectileType ||
-        !command.Owner.IsValid || identity <= 0 ||
+        !command.Owner.IsValid || identity <= 0 || identity == int.MaxValue ||
         !float.IsFinite(command.X) || !float.IsFinite(command.Y) ||
         !float.IsFinite(command.InitialVelocityY) ||
         !float.IsFinite(command.ProjectileSpeed) ||

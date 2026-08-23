@@ -15,7 +15,7 @@ public sealed class WorldGrid
   private readonly List<TileChangeCommand> _tileChanges = new();
   private readonly List<TileFrameCommand> _tileFrameChanges = new();
 
-  public WorldGrid(int width, int height)
+  public WorldGrid(int width, int height, bool initializeLegacyEmptyFrames = false)
   {
     ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
     ArgumentOutOfRangeException.ThrowIfNegativeOrZero(width);
@@ -30,6 +30,17 @@ public sealed class WorldGrid
     Width = width;
     _tiles = new WorldTile[width, height];
     _sectionVersions = new long[width / SectionWidth, height / SectionHeight];
+    if (initializeLegacyEmptyFrames)
+    {
+      WorldTile emptyTile = new(IsActive: false, Type: 0, FrameX: -1, FrameY: -1);
+      for (int x = 0; x < width; x++)
+      {
+        for (int y = 0; y < height; y++)
+        {
+          _tiles[x, y] = emptyTile;
+        }
+      }
+    }
   }
 
   public int Height { get; }
@@ -92,9 +103,13 @@ public sealed class WorldGrid
       return true;
     }
 
-    _tiles[x, y] = tile;
     WorldSectionCoordinates coordinates = GetSectionCoordinates(x, y);
-    _sectionVersions[coordinates.X, coordinates.Y]++;
+    if (!TryAdvanceSectionVersion(coordinates))
+    {
+      return false;
+    }
+
+    _tiles[x, y] = tile;
     return true;
   }
 
@@ -111,8 +126,23 @@ public sealed class WorldGrid
       return true;
     }
 
-    _tiles[x, y] = current with { LiquidAmount = amount, LiquidType = type };
     WorldSectionCoordinates coordinates = GetSectionCoordinates(x, y);
+    if (!TryAdvanceSectionVersion(coordinates))
+    {
+      return false;
+    }
+
+    _tiles[x, y] = current with { LiquidAmount = amount, LiquidType = type };
+    return true;
+  }
+
+  private bool TryAdvanceSectionVersion(WorldSectionCoordinates coordinates)
+  {
+    if (_sectionVersions[coordinates.X, coordinates.Y] == long.MaxValue)
+    {
+      return false;
+    }
+
     _sectionVersions[coordinates.X, coordinates.Y]++;
     return true;
   }
@@ -122,10 +152,35 @@ public sealed class WorldGrid
     ArgumentNullException.ThrowIfNull(changes);
     List<LiquidChangeCommand> ordered = [.. changes];
     ordered.Sort(LiquidChangeCommandComparer.Instance);
+    Dictionary<WorldSectionCoordinates, int> versionDeltas = new();
     for (int index = 0; index < ordered.Count; index++)
     {
       LiquidChangeCommand change = ordered[index];
-      if (change.Sequence < 0 || !TrySetLiquid(change.X, change.Y, change.Amount, change.Type))
+      if (change.Sequence < 0 || change.Sequence >= long.MaxValue || !Contains(change.X, change.Y))
+      {
+        throw new InvalidOperationException("A queued liquid change was outside the world.");
+      }
+
+      WorldTile current = _tiles[change.X, change.Y];
+      if (current.LiquidAmount == change.Amount && current.LiquidType == change.Type)
+      {
+        continue;
+      }
+
+      WorldSectionCoordinates coordinates = GetSectionCoordinates(change.X, change.Y);
+      int delta = versionDeltas.TryGetValue(coordinates, out int existing) ? existing + 1 : 1;
+      if (_sectionVersions[coordinates.X, coordinates.Y] > long.MaxValue - delta)
+      {
+        throw new InvalidOperationException("A liquid change would exhaust its section version.");
+      }
+
+      versionDeltas[coordinates] = delta;
+    }
+
+    for (int index = 0; index < ordered.Count; index++)
+    {
+      LiquidChangeCommand change = ordered[index];
+      if (!TrySetLiquid(change.X, change.Y, change.Amount, change.Type))
       {
         throw new InvalidOperationException("A queued liquid change was outside the world.");
       }

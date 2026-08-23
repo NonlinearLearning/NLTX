@@ -15,7 +15,8 @@ public sealed record WorldGenerationRequest
     long? generationId = null,
     WorldRuleSnapshotComponent? rules = null,
     int? rockLayerY = null,
-    IReadOnlyList<int>? dirtWallSurfaceOffsetChanges = null)
+    IReadOnlyList<int>? dirtWallSurfaceOffsetChanges = null,
+    LegacyTerrainRuntimeProfile? terrainProfile = null)
   {
     ArgumentNullException.ThrowIfNull(metadata);
     ArgumentException.ThrowIfNullOrWhiteSpace(seedVariant);
@@ -66,6 +67,8 @@ public sealed record WorldGenerationRequest
       frozenDirtWallSurfaceOffsetChanges = Array.AsReadOnly(copiedChanges);
     }
 
+    terrainProfile?.Validate(metadata);
+
     Metadata = metadata;
     SpawnX = spawnX;
     SurfaceY = surfaceY;
@@ -75,6 +78,7 @@ public sealed record WorldGenerationRequest
     GenerationId = generationId ?? metadata.WorldId;
     Rules = rules ?? new WorldRuleSnapshotComponent(0, seedVariant, false);
     DirtWallSurfaceOffsetChanges = frozenDirtWallSurfaceOffsetChanges;
+    TerrainProfile = terrainProfile;
     if (GenerationId < 0)
     {
       throw new ArgumentOutOfRangeException(nameof(generationId));
@@ -90,4 +94,5 @@ public sealed record WorldGenerationRequest
   public long GenerationId { get; }
   public WorldRuleSnapshotComponent Rules { get; }
   public IReadOnlyList<int>? DirtWallSurfaceOffsetChanges { get; }
+  public LegacyTerrainRuntimeProfile? TerrainProfile { get; }
 }

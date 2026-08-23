@@ -35,7 +35,11 @@ public static class TileMutationProjection
   {
     return command.Kind switch
     {
-      TileChangeKind.Kill => CreateKilledTile(current, command.PreserveLiquid),
+      TileChangeKind.Kill => CreateKilledTile(
+        current,
+        command.PreserveLiquid,
+        command.FrameX,
+        command.FrameY),
       TileChangeKind.SetInactive => current with { IsInactive = command.IsInactive },
       TileChangeKind.SetWall => current with { WallType = command.WallType },
       TileChangeKind.UpdateTileType => current with
@@ -59,15 +63,24 @@ public static class TileMutationProjection
     };
   }
 
-  private static WorldTile CreateKilledTile(WorldTile current, bool preserveLiquid)
+  private static WorldTile CreateKilledTile(
+    WorldTile current,
+    bool preserveLiquid,
+    short? frameX,
+    short? frameY)
   {
-    return preserveLiquid
+    WorldTile killed = preserveLiquid
       ? new WorldTile(
         IsActive: false,
         Type: 0,
         LiquidAmount: current.LiquidAmount,
         LiquidType: current.LiquidType)
       : default;
+    return killed with
+    {
+      FrameX = frameX ?? killed.FrameX,
+      FrameY = frameY ?? killed.FrameY
+    };
   }
 
   private sealed class TileChangeCommandComparer : IComparer<TileChangeCommand>

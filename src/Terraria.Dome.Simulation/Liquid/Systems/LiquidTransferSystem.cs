@@ -24,7 +24,7 @@ public sealed class LiquidTransferSystem
     ordered.Sort(LiquidTransferCommandComparer.Instance);
     Dictionary<(int X, int Y), WorldTile> tiles = new();
     List<LiquidChangeCommand> changes = new();
-    long nextSequence = firstSequence;
+    LiquidSequenceAllocator sequenceAllocator = new(firstSequence);
     for (int index = 0; index < ordered.Count; index++)
     {
       LiquidTransferCommand transfer = ordered[index];
@@ -33,23 +33,30 @@ public sealed class LiquidTransferSystem
         continue;
       }
 
+      if (!sequenceAllocator.TryReserve(2, out long changeSequence))
+      {
+        throw new ArgumentOutOfRangeException(
+          nameof(firstSequence),
+          "Liquid change sequence space is exhausted.");
+      }
+
       tiles[(transfer.SourceX, transfer.SourceY)] = source;
       tiles[(transfer.TargetX, transfer.TargetY)] = target;
       changes.Add(new LiquidChangeCommand(
-        nextSequence++,
+        changeSequence,
         transfer.SourceX,
         transfer.SourceY,
         source.LiquidAmount,
         source.LiquidType));
       changes.Add(new LiquidChangeCommand(
-        nextSequence++,
+        changeSequence + 1,
         transfer.TargetX,
         transfer.TargetY,
         target.LiquidAmount,
         target.LiquidType));
     }
 
-    return new LiquidTransferResult(changes, nextSequence);
+    return new LiquidTransferResult(changes, sequenceAllocator.NextSequence);
   }
 
   private static bool TryMove(

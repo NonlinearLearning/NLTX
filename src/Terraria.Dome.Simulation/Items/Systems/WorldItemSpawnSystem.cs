@@ -13,7 +13,7 @@ public sealed class WorldItemSpawnSystem
     out WorldItemComponent item,
     out ItemCommandRejection rejection)
   {
-    if (nextReplicationId <= 0 ||
+    if (nextReplicationId <= 0 || nextReplicationId == int.MaxValue ||
         command.Stack.IsEmpty ||
         command.SpawnSource < 0 ||
         command.PickupDelayTicks < 0 ||

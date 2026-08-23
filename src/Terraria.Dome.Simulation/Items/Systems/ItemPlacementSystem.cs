@@ -14,6 +14,14 @@ public sealed class ItemPlacementSystem
     out TileChangeCommand command,
     out ItemCommandRejection rejection)
   {
+    if (sequence < 0)
+    {
+      command = default;
+      rejection = ItemCommandRejection.Invalid(
+        "Item placement requires a non-negative command sequence.");
+      return false;
+    }
+
     if (definition.Placement is not ItemPlacementDefinition placement)
     {
       command = default;

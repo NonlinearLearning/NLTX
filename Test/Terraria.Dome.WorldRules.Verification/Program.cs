@@ -29,6 +29,24 @@ if (first.CreateWorldRuleSnapshot() != second.CreateWorldRuleSnapshot() ||
 
 Console.WriteLine("PASS: deterministic world time advances only from simulation ticks");
 
+WorldClock overflowClock = new(tickNumber: long.MaxValue - 1, timeOfDay: 0);
+try
+{
+  overflowClock.Advance(2);
+  throw new InvalidOperationException(
+    "World clock accepted an advance that would overflow TickNumber.");
+}
+catch (ArgumentOutOfRangeException)
+{
+  if (overflowClock.TickNumber != long.MaxValue - 1)
+  {
+    throw new InvalidOperationException(
+      "World clock partially mutated before rejecting TickNumber overflow.");
+  }
+}
+
+Console.WriteLine("PASS: world clock rejects TickNumber overflow before mutation");
+
 WorldClock moonPhaseClock = new(
   tickNumber: 0,
   timeOfDay: WorldClock.DefaultNightLengthTicks - 1,
@@ -205,6 +223,15 @@ try
 {
   _ = invasionSize.Resolve(2, 0);
   throw new InvalidOperationException("Invasion size policy accepted zero qualified players.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+try
+{
+  _ = invasionSize.Resolve(3, int.MaxValue);
+  throw new InvalidOperationException(
+    "Invasion size policy accepted a player count that overflows its Int32 size.");
 }
 catch (ArgumentOutOfRangeException)
 {
@@ -797,6 +824,16 @@ static void VerifyRawRainStateModel()
     throw new InvalidOperationException(
       "Raw weather state did not preserve independent WLD rain activity, time and maximum strength.");
   }
+
+  WorldRuleState continuedRain = inactiveSavedRain.WithRain(60, 0.1f);
+  if (!continuedRain.IsRaining || continuedRain.RainStrength != 0.1f ||
+      continuedRain.RainTimeTicks != 60 || continuedRain.MaximumRainStrength != 0.75f)
+  {
+    throw new InvalidOperationException(
+      "Rain continuation overwrote the independent maximum rain strength.");
+  }
+
+  Console.WriteLine("PASS: rain continuation preserves independent maximum strength");
 }
 
 static void VerifyWorldEventRandomState()
@@ -809,6 +846,13 @@ static void VerifyWorldEventRandomState()
   {
     throw new InvalidOperationException(
       "World-event random state did not produce a reproducible advancing sequence.");
+  }
+
+  (_, int fullRangeValue) = first.NextInclusive(int.MinValue, int.MaxValue);
+  if (fullRangeValue < int.MinValue || fullRangeValue > int.MaxValue)
+  {
+    throw new InvalidOperationException(
+      "World-event random state rejected the full Int32 inclusive range.");
   }
 }
 

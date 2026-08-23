@@ -8,6 +8,7 @@ using Terraria.Dome.Simulation.Items.Definitions;
 using Terraria.Dome.Simulation.Items.Events;
 using Terraria.Dome.Simulation.Items.Snapshots;
 using Terraria.Dome.Simulation.Items.Systems;
+using Terraria.Dome.Simulation.Loot;
 using Terraria.Dome.Simulation.Inventory.Components;
 using Terraria.Dome.Simulation.Inventory.Systems;
 using Terraria.Dome.Simulation.Combat.Components;
@@ -65,6 +66,51 @@ catch (ArgumentOutOfRangeException)
 }
 
 Console.WriteLine("PASS: inventory slots, selected slot and stack limits are authoritative");
+
+try
+{
+  ItemDefinitionCompiler.Validate(new ItemDefinition(
+    6,
+    1,
+    Use: new ItemUseDefinition(ShootType: 1, ShootSpeed: float.NaN)));
+  throw new InvalidOperationException("Item compiler accepted a non-finite use projectile speed.");
+}
+catch (ArgumentException)
+{
+}
+
+try
+{
+  ItemDefinitionCompiler.Validate(new ItemDefinition(
+    7,
+    1,
+    Combat: new ItemCombatDefinition(
+      Damage: 1,
+      DamageClass: ItemDamageClass.Melee,
+      ProjectileType: 1,
+      ProjectileSpeed: float.PositiveInfinity)));
+  throw new InvalidOperationException("Item compiler accepted a non-finite combat projectile speed.");
+}
+catch (ArgumentException)
+{
+}
+
+Console.WriteLine("PASS: item definition compiler rejects non-finite projectile speeds");
+
+LootTable lootTable = new(new WorldSeed(1234));
+ItemStack maximumQuantityDrop = lootTable.Roll(
+  lootTableId: 1,
+  replicationId: 1,
+  itemType: 1,
+  minimumQuantity: 1,
+  maximumQuantity: int.MaxValue);
+if (maximumQuantityDrop.Quantity < 1 || maximumQuantityDrop.Quantity > int.MaxValue)
+{
+  throw new InvalidOperationException(
+    "Loot quantity rolling did not preserve the full int quantity range.");
+}
+
+Console.WriteLine("PASS: loot quantity rolling handles int.MaxValue upper bounds");
 
 ItemDefinitionRegistry metadataDefinitions = new([
   new ItemDefinition(1, 99),
@@ -190,6 +236,24 @@ if (worldItem.InstanceState != worldItemInstanceState)
   throw new InvalidOperationException("World item ECS spawn discarded item instance state.");
 }
 
+int maxWorldItemId = int.MaxValue;
+if (worldItemSpawn.TryCreate(
+      ref maxWorldItemId,
+      new CreateWorldItemCommand(
+        new ItemStack(1, 1),
+        new SimulationVector(0.0f, 0.0f),
+        default,
+        SpawnSource: 1),
+      out _,
+      out _) ||
+    maxWorldItemId != int.MaxValue)
+{
+  throw new InvalidOperationException(
+    "World item ECS spawn accepted an allocator value that cannot advance.");
+}
+
+Console.WriteLine("PASS: world item spawn rejects max replication allocator before overflow");
+
 if (worldItemSpawn.TryCreate(
     ref nextWorldItemId,
     new CreateWorldItemCommand(
@@ -223,6 +287,17 @@ if (!worldItemSpawn.TryCreate(
     "World item pickup delay did not spawn and advance as revisioned state.");
 }
 
+WorldItemComponent delayOverflowWorldItem = delayedWorldItem with
+{
+  Revision = long.MaxValue,
+  WorldState = delayedWorldItem.WorldState with { Revision = long.MaxValue }
+};
+if (worldItemPickupDelay.TryAdvance(delayOverflowWorldItem, out _))
+{
+  throw new InvalidOperationException(
+    "World item pickup delay accepted a revision that cannot advance.");
+}
+
 WorldItemComponent movedWorldItem;
 if (!worldItemMotion.TryMove(
     worldItem,
@@ -245,6 +320,24 @@ if (worldItemMotion.TryMove(
   throw new InvalidOperationException("World item motion accepted a non-finite position.");
 }
 
+WorldItemComponent motionOverflowWorldItem = movedWorldItem with
+{
+  Revision = long.MaxValue,
+  WorldState = movedWorldItem.WorldState with { Revision = long.MaxValue }
+};
+if (worldItemMotion.TryMove(
+    motionOverflowWorldItem,
+    new MoveWorldItemCommand(
+      motionOverflowWorldItem.ReplicationId,
+      new SimulationVector(2.0f, 0.0f),
+      long.MaxValue),
+    default,
+    out _))
+{
+  throw new InvalidOperationException(
+    "World item motion accepted a revision that cannot advance.");
+}
+
 if (!worldItemDestroy.TryDestroy(
     movedWorldItem,
     new DestroyWorldItemCommand(movedWorldItem.ReplicationId, movedWorldItem.Revision),
@@ -256,6 +349,21 @@ if (!worldItemDestroy.TryDestroy(
 {
   throw new InvalidOperationException(
     "World item destruction did not produce a revisioned inactive tombstone.");
+}
+
+WorldItemComponent overflowWorldItem = movedWorldItem with
+{
+  Revision = long.MaxValue,
+  WorldState = movedWorldItem.WorldState with { Revision = long.MaxValue }
+};
+if (worldItemDestroy.TryDestroy(
+    overflowWorldItem,
+    new DestroyWorldItemCommand(overflowWorldItem.ReplicationId, long.MaxValue),
+    out _,
+    out _))
+{
+  throw new InvalidOperationException(
+    "World item destruction accepted a revision that cannot advance.");
 }
 
 InventoryComponent pickupInventory = new();
@@ -288,6 +396,38 @@ if (worldItemPickup.TryPickup(
 {
   throw new InvalidOperationException("A second player won an inactive world item pickup.");
 }
+
+WorldItemComponent ownerRevisionOverflowWorldItem = movedWorldItem with
+{
+  IsActive = true,
+  Stack = new ItemStack(1, 1),
+  Revision = 1,
+  WorldState = movedWorldItem.WorldState with
+  {
+    IsActive = true,
+    LastOwnerRevision = long.MaxValue,
+    Revision = 1,
+    ReservedPlayerId = Terraria.Dome.Simulation.Items.Components.ItemWorldStateComponent.UnreservedPlayerId
+  }
+};
+InventoryComponent ownerRevisionOverflowInventory = new();
+if (worldItemPickup.TryPickup(
+      ref ownerRevisionOverflowWorldItem,
+      new PickupWorldItemCommand(new PlayerHandle(1), ownerRevisionOverflowWorldItem.ReplicationId),
+      new SimulationVector(1.0f, 0.0f),
+      ownerRevisionOverflowInventory,
+      definitions,
+      pickupRange: 3.0f,
+      out _,
+      out _) ||
+    ownerRevisionOverflowWorldItem.WorldState.LastOwnerRevision != long.MaxValue ||
+    !ownerRevisionOverflowInventory.GetSlot(0).IsEmpty)
+{
+  throw new InvalidOperationException(
+    "World item pickup accepted an owner revision that cannot advance.");
+}
+
+Console.WriteLine("PASS: world item pickup rejects max owner revision before overflow");
 
 WorldItemComponent reservedWorldItem = new(
   98,
@@ -482,6 +622,32 @@ if (worldItemStacking.TryMerge(
   throw new InvalidOperationException("World item stacking accepted non-finite geometry input.");
 }
 
+WorldItemComponent mergeOverflowReceiver = finiteDonor with
+{
+  Revision = long.MaxValue,
+  WorldState = finiteDonor.WorldState with { Revision = long.MaxValue }
+};
+WorldItemComponent mergeOverflowDonor = new(
+  3,
+  new ItemStack(1, 1),
+  new SimulationVector(0.0f, 0.0f),
+  true,
+  1,
+  default,
+  Terraria.Dome.Simulation.Items.Components.ItemWorldStateComponent.Active(3));
+if (worldItemStacking.TryMerge(
+      mergeOverflowReceiver,
+      mergeOverflowDonor,
+      definitions,
+      tick: 9,
+      maximumDistance: 1.0f,
+      out _,
+      out _))
+{
+  throw new InvalidOperationException(
+    "World item stacking accepted a revision that cannot advance.");
+}
+
 Console.WriteLine("PASS: compatible world items passively merge under stack limits");
 
 using (DomeSimulation worldStackingSimulation = new(new WorldGrid(400, 300)))
@@ -550,6 +716,23 @@ if (!useResult.IsAccepted || useResult.Health != 75 || useResult.ConsumedQuantit
     itemUseTransactionState.CooldownTicks != 10)
 {
   throw new InvalidOperationException("Item use transaction did not apply recovery and cooldown atomically.");
+}
+
+Terraria.Dome.Simulation.Items.Components.ItemUseStateComponent invalidSequenceState = new();
+ItemUseResult invalidSequenceUse = new ItemUseSystem().TryUse(
+  new PlayerHandle(1),
+  0,
+  new ItemStack(1, 1),
+  new ItemDefinition(1, 99, HealthRestore: 25),
+  ref invalidSequenceState,
+  health: 50,
+  maximumHealth: 100,
+  mana: 0,
+  maximumMana: 20,
+  sequence: -1);
+if (invalidSequenceUse.IsAccepted)
+{
+  throw new InvalidOperationException("Item use accepted a negative command sequence.");
 }
 
 ItemUseResult blockedUse = new ItemUseSystem().TryUse(
@@ -763,6 +946,18 @@ if (!new ItemPlacementSystem().TryCreateTileCommand(
   throw new InvalidOperationException("A valid item placement did not emit a tile command.");
 }
 
+if (new ItemPlacementSystem().TryCreateTileCommand(
+    metadataDefinitions.Get(5),
+    3,
+    4,
+    -1,
+    out _,
+    out _))
+{
+  throw new InvalidOperationException(
+    "Item placement emitted a tile command with a negative sequence.");
+}
+
 if (!new ItemPlacementSystem().TryCreateTileCommand(
     new ItemDefinition(
       6,
@@ -807,6 +1002,25 @@ if (firstDrops.Count != 2 || !firstDrops.SequenceEqual(secondDrops))
 {
   throw new InvalidOperationException("Item drops were not deterministic for the same seed and tick.");
 }
+
+IReadOnlyList<CreateWorldItemCommand> maximumRangeDrops = dropRules.Evaluate(
+  new Terraria.Dome.Simulation.WorldModel.WorldSeed(42),
+  sourceEntityId: 7,
+  tick: 12,
+  [new ItemDropDefinition(3, 1, int.MaxValue)],
+  expertMode: false,
+  masterMode: false,
+  new SimulationVector(2.0f, 3.0f),
+  default,
+  spawnSource: 2);
+if (maximumRangeDrops.Count != 1 || maximumRangeDrops[0].Stack.IsEmpty ||
+    maximumRangeDrops[0].Stack.Quantity < 1)
+{
+  throw new InvalidOperationException(
+    "Item drop quantity range overflow rejected a valid bounded definition.");
+}
+
+Console.WriteLine("PASS: item drop quantity range handles Int32 maximum without overflow");
 
 try
 {
@@ -1027,6 +1241,57 @@ if (!itemUseSystem.TryUse(
 }
 
 Console.WriteLine("PASS: selection and item use have separate typed runtime state");
+
+ItemUseStateComponent useRevisionOverflowState = new() { UseRevision = int.MaxValue };
+HealthComponent useRevisionOverflowHealth = new(50, 100);
+ItemStack useRevisionOverflowItem = inventory.GetSlot(0);
+if (itemUseSystem.TryUse(
+      inventory,
+      ref useRevisionOverflowState,
+      ref useRevisionOverflowHealth,
+      0,
+      consumableDefinitions) ||
+    useRevisionOverflowState.UseRevision != int.MaxValue ||
+    useRevisionOverflowHealth.Current != 50 ||
+    inventory.GetSlot(0) != useRevisionOverflowItem)
+{
+  throw new InvalidOperationException(
+    "Item use accepted a revision that cannot advance.");
+}
+
+Console.WriteLine("PASS: item use rejects max revision before overflow");
+
+SelectedItemComponent selectionRevisionOverflow = new() { Revision = int.MaxValue };
+int selectionRevisionOverflowSlot = inventory.SelectedSlot;
+new ItemSelectionSystem().Apply(
+  inventory,
+  ref selectionRevisionOverflow,
+  0);
+if (selectionRevisionOverflow.Revision != int.MaxValue ||
+    inventory.SelectedSlot != selectionRevisionOverflowSlot)
+{
+  throw new InvalidOperationException(
+    "Item selection accepted a revision that cannot advance.");
+}
+
+Console.WriteLine("PASS: item selection rejects max revision before overflow");
+
+EquipmentLoadoutComponent loadoutRevisionOverflow = new()
+{
+  SelectedLoadout = 0,
+  AccessoryVisibility = 0,
+  Revision = int.MaxValue
+};
+new EquipmentStatSystem().Apply(ref loadoutRevisionOverflow, selectedLoadout: 1, accessoryVisibility: 1);
+if (loadoutRevisionOverflow.SelectedLoadout != 0 ||
+    loadoutRevisionOverflow.AccessoryVisibility != 0 ||
+    loadoutRevisionOverflow.Revision != int.MaxValue)
+{
+  throw new InvalidOperationException(
+    "Equipment loadout accepted a revision that cannot advance.");
+}
+
+Console.WriteLine("PASS: equipment loadout rejects max revision before overflow");
 
 using DomeSimulation simulation = new(new WorldGrid(400, 300));
 PlayerHandle firstPlayer = simulation.CreatePlayer(new SimulationVector(10.0f, 0.0f));
@@ -2069,6 +2334,59 @@ if (!rejectedUnrepresentablePrefix)
 }
 
 Console.WriteLine("PASS: runtime inventory projection updates only its persistent hotbar slots");
+
+DomeSimulation restoredPersistenceSimulation = new(persistedSimulation);
+if (restoredPersistenceSimulation.CreateItemReplicationSnapshots().Count !=
+    persistedSimulation.WorldItems.Count)
+{
+  throw new InvalidOperationException(
+    "A valid world-item persistence snapshot did not restore its item set.");
+}
+
+ItemReplicationSnapshot maxReplicationIdItem = persistedSimulation.WorldItems.Count == 0
+  ? new ItemReplicationSnapshot(
+    int.MaxValue,
+    new ItemStack(1, 1),
+    new SimulationVector(0.0f, 0.0f),
+    true,
+    1,
+    new WorldSectionCoordinates(0, 0))
+  : persistedSimulation.WorldItems[0] with { ReplicationId = int.MaxValue };
+List<ItemReplicationSnapshot> invalidReplicationItems = [maxReplicationIdItem];
+DomeSimulationSnapshot invalidReplicationSnapshot = new(
+  persistedSimulation.World,
+  persistedSimulation.Npcs,
+  invalidReplicationItems,
+  persistedSimulation.TickNumber,
+  persistedSimulation.PlayerAccounts,
+  persistedSimulation.Chests,
+  persistedSimulation.Signs,
+  persistedSimulation.TileEntities,
+  persistedSimulation.OpaqueCompatibilityRecords,
+  persistedSimulation.Clock,
+  persistedSimulation.NpcStates,
+  persistedSimulation.WorldRules,
+  persistedSimulation.Progression,
+  persistedSimulation.WorldEventRandomState,
+  persistedSimulation.WorldTimeRate);
+bool rejectedReplicationIdOverflow = false;
+try
+{
+  _ = new DomeSimulation(invalidReplicationSnapshot);
+}
+catch (ArgumentOutOfRangeException)
+{
+  rejectedReplicationIdOverflow = true;
+}
+
+if (!rejectedReplicationIdOverflow)
+{
+  throw new InvalidOperationException(
+    "Persistence accepted a world-item replication ID that would overflow the next allocator.");
+}
+
+Console.WriteLine(
+  "PASS: world-item persistence rejects max replication IDs before allocator overflow");
 
 ItemDefinition legacyDefinition = LegacyItemDefinitionAdapter.ToDefinition(
   new LegacyItemDefinitionRecord(

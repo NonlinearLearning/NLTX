@@ -17,6 +17,7 @@ public sealed class LiquidInputSystem
     ArgumentNullException.ThrowIfNull(queue);
     ArgumentNullException.ThrowIfNull(state);
     if (queue.MaximumLength > state.MaximumQueueLength || source.Sequence < 0 ||
+        source.Sequence == long.MaxValue ||
         source.Amount == 0 || !Enum.IsDefined(source.Type) || !world.Contains(source.X, source.Y))
     {
       return false;

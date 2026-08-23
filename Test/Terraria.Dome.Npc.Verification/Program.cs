@@ -33,6 +33,8 @@ if (!registry.TryGet(ordinaryDefinition.DefinitionId, out NpcDefinition resolved
   throw new InvalidOperationException("NPC definition registry did not preserve the definition contract.");
 }
 
+VerifyNpcSnapshotIdentityOverflow();
+
 try
 {
   _ = registry.GetRequired(99);
@@ -63,6 +65,23 @@ try
     BehaviorId: NpcBehaviorId.OrdinaryChase,
     LootTableId: 1);
   throw new InvalidOperationException("NPC definition accepted non-positive maximum health.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+try
+{
+  _ = new NpcDefinition(
+    DefinitionId: 2,
+    NetId: 2,
+    MaximumHealth: 100,
+    Defense: 0,
+    ColliderWidth: 1.0f,
+    ColliderHeight: 2.0f,
+    BehaviorId: (NpcBehaviorId)99,
+    LootTableId: 1);
+  throw new InvalidOperationException("NPC definition accepted an unknown behavior ID.");
 }
 catch (ArgumentOutOfRangeException)
 {
@@ -429,6 +448,47 @@ else
 {
   throw new InvalidOperationException("Valid NPC spawn command was rejected.");
 }
+
+if (spawnCommit.TryCommit(
+      spawnWorld,
+      registry,
+      validSpawn,
+      replicationId: int.MaxValue,
+      out _,
+      out _))
+{
+  throw new InvalidOperationException(
+    "NPC spawn commit accepted a replication identity that cannot advance.");
+}
+
+Console.WriteLine("PASS: NPC spawn rejects max replication identity before allocator overflow");
+
+NpcReplicationSnapshot unrepresentableHealthNpc = new(
+  ReplicationId: 1,
+  NpcType: 1,
+  Position: default,
+  Velocity: default,
+  Health: int.MaxValue,
+  IsActive: true,
+  Revision: 1,
+  Section: default);
+bool rejectedUnrepresentableHealth = false;
+try
+{
+  _ = NpcStateSnapshot.FromReplication(unrepresentableHealthNpc);
+}
+catch (ArgumentOutOfRangeException)
+{
+  rejectedUnrepresentableHealth = true;
+}
+
+if (!rejectedUnrepresentableHealth)
+{
+  throw new InvalidOperationException(
+    "NPC persistence derived an unrepresentable maximum health value.");
+}
+
+Console.WriteLine("PASS: NPC persistence rejects unrepresentable health fallback");
 
 NpcDefinitionRegistry trainingRegistry = new([trainingDummyDefinition]);
 if (!spawnCommit.TryCommit(
@@ -892,6 +952,100 @@ if (deathReplayRestored.CreateWorldItemSnapshots().Count != droppedBeforeRestore
 }
 
 Console.WriteLine("PASS: committed NPC death does not publish duplicate loot after snapshot restore");
+
+static void VerifyNpcSnapshotIdentityOverflow()
+{
+  WorldGrid grid = new(400, 300);
+  WorldMetadata metadata = new("npc-id-restore", new WorldSeed(4), 400, 300);
+  NpcReplicationSnapshot validNpc = new(
+    ReplicationId: 1,
+    NpcType: 1,
+    Position: new SimulationVector(20.0f, 20.0f),
+    Velocity: default,
+    Health: 100,
+    IsActive: true,
+    Revision: 1,
+    Section: grid.GetSectionCoordinates(20, 20),
+    DefinitionId: 1,
+    MaximumHealth: 100);
+  DomeSimulationSnapshot validSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [validNpc],
+    [],
+    tickNumber: 0);
+  using DomeSimulation restored = new(validSnapshot);
+  if (restored.CreateNpcReplicationSnapshots().Count != 1)
+  {
+    throw new InvalidOperationException(
+      "A valid NPC persistence snapshot did not restore its NPC set.");
+  }
+
+  DomeSimulationSnapshot overflowSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [validNpc with { ReplicationId = int.MaxValue }],
+    [],
+    tickNumber: 0);
+  bool rejectedNpcIdOverflow = false;
+  try
+  {
+    _ = new DomeSimulation(overflowSnapshot);
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+    rejectedNpcIdOverflow = true;
+  }
+
+  if (!rejectedNpcIdOverflow)
+  {
+    throw new InvalidOperationException(
+      "Persistence accepted an NPC ID that would overflow the next allocator.");
+  }
+
+  Console.WriteLine("PASS: NPC persistence rejects max IDs before allocator overflow");
+
+  DomeSimulationSnapshot negativeRevisionSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [validNpc with { Revision = -1 }],
+    [],
+    tickNumber: 0);
+  bool rejectedNegativeRevision = false;
+  try
+  {
+    _ = new DomeSimulation(negativeRevisionSnapshot);
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+    rejectedNegativeRevision = true;
+  }
+
+  if (!rejectedNegativeRevision)
+  {
+    throw new InvalidOperationException(
+      "Persistence accepted an NPC revision below zero.");
+  }
+
+  Console.WriteLine("PASS: NPC persistence rejects negative revisions");
+
+  DomeSimulationSnapshot revisionOverflowSnapshot = new(
+    grid.CreateSnapshot(metadata),
+    [validNpc with { Revision = long.MaxValue }],
+    [],
+    tickNumber: 0);
+  using DomeSimulation revisionOverflowSimulation = new(revisionOverflowSnapshot);
+  revisionOverflowSimulation.QueueNpcDespawn(
+    new DespawnNpcCommand(new NpcHandle(1), NpcDespawnReason.Killed));
+  revisionOverflowSimulation.Tick(new SimulationInputBatch());
+  NpcReplicationSnapshot revisionOverflowNpc = revisionOverflowSimulation
+    .CreateNpcReplicationSnapshots()
+    .Single();
+  if (!revisionOverflowNpc.IsActive || revisionOverflowNpc.Revision != long.MaxValue)
+  {
+    throw new InvalidOperationException(
+      "NPC despawn accepted a revision that cannot advance.");
+  }
+
+  Console.WriteLine("PASS: NPC despawn rejects max revision before overflow");
+}
 
 file sealed class ScriptedDamageVariationRandom : IDamageVariationRandom
 {

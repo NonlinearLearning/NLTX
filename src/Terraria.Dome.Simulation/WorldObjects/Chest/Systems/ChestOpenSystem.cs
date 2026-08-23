@@ -30,6 +30,11 @@ public sealed class ChestOpenSystem
       return false;
     }
 
+    if (chest.Revision == long.MaxValue)
+    {
+      return false;
+    }
+
     if (chest.IsLocked)
     {
       if (chest.LockDefinition.ConsumesKey && !inventory!.TryConsume(chest.LockDefinition.KeyItemType))
@@ -42,8 +47,7 @@ public sealed class ChestOpenSystem
 
     _ = chest.TryOpen(command.Player);
 
-    chest.IncrementRevision();
-    return true;
+    return chest.TryIncrementRevision();
   }
 
   private static bool HasKey(InventoryComponent inventory, ushort itemType)
@@ -64,6 +68,7 @@ public sealed class ChestOpenSystem
   {
     float deltaX = position.X - chest.TileX;
     float deltaY = position.Y - chest.TileY;
-    return deltaX * deltaX + deltaY * deltaY <= 6.0f * 6.0f;
+    return float.IsFinite(position.X) && float.IsFinite(position.Y) &&
+      deltaX * deltaX + deltaY * deltaY <= 6.0f * 6.0f;
   }
 }

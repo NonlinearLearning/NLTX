@@ -1,0 +1,148 @@
+{
+  "schemaVersion": 1,
+  "status": "source-anchored-contract-inventory",
+  "sourceInventory": "docs/worldgen/worldgen-source-inventory.json",
+  "deletionGate": "docs/worldgen/worldgen-deletion-gate.json",
+  "parityClaim": "none",
+  "sourceAnchorStatus": "line-level anchors identify the complete legacy pass entry and currently relevant mutation/random boundaries; source-inventory anchors identify groups whose exact pass slice is still pending; none claim parity",
+  "stages": [
+    {
+      "name": "Terrain",
+      "legacyResponsibility": "base terrain and world bounds",
+      "sourceAnchors": [
+        "Terraria.GameContent.Biomes/TerrainPass.cs:ApplyPass:58-247",
+        "Terraria.GameContent.Biomes/TerrainPass.cs:FillColumn:250-299",
+        "Terraria.GameContent.Biomes/TerrainPass.cs:GenerateWorldSurfaceOffset:301-383",
+        "Terraria/WorldGen.cs:AddPasses:11837"
+      ],
+      "immutableInputs": ["WorldGenerationRequest", "WorldSeedComponent", "WorldBoundsComponent"],
+      "systems": ["TerrainBaseSystem"],
+      "passRandomOwner": "LegacyPassRandomState + LegacyTerrainSurfaceOffsetPolicy + LegacySurfaceHistory (isolated source-derived queries; GenerationRandomState remains separate)",
+      "typedCommands": ["TileChangeCommand"],
+      "atomicCommit": "TileChangeCommitSystem",
+      "fingerprint": "bounded ECS replay only; source consumes pass-reset UnifiedRandom while ECS currently uses GenerationRandomState",
+      "oracleDifferential": "blocked",
+      "randomGapEvidence": "Build/diagnostics/server-ecs-convergence/P9-worldgen/current-stage-trace/terrain-random-algorithm-gap.json"
+    },
+    {
+      "name": "Cave",
+      "legacyResponsibility": "cave carving and protected regions",
+      "sourceAnchors": [
+        "Terraria/WorldGen.cs:AddPasses:12119-12191",
+        "Terraria/WorldGen.cs:AddPasses:12234-12277",
+        "Terraria/WorldGen.cs:TileRunner:source inventory anchor"
+      ],
+      "immutableInputs": ["CaveCarvingComponent", "WorldRuleSnapshotComponent"],
+      "systems": ["CaveCarvingSystem"],
+      "typedCommands": ["TileChangeCommand"],
+      "atomicCommit": "TileChangeCommitSystem",
+      "fingerprint": "cursor restart fingerprint only; legacy TileRunner consumes variable radius/step/direction and mutates walls/liquids",
+      "oracleDifferential": "blocked",
+      "focusedVerifier": "Build/diagnostics/server-ecs-convergence/P9-worldgen/current-stage-trace/worldgen-reduced-surface-history.txt"
+    },
+    {
+      "name": "Biome",
+      "legacyResponsibility": "surface and biome transitions",
+      "sourceAnchors": [
+        "Terraria/WorldGen.cs:AddPasses:11850-12174",
+        "Terraria.GameContent.Biomes.Desert/DesertDescription.cs:source inventory anchor",
+        "Terraria.GameContent.Biomes/CorruptionPitBiome.cs:source inventory anchor"
+      ],
+      "immutableInputs": ["BiomeSurfaceComponent", "WorldRuleSnapshotComponent"],
+      "systems": ["BiomeSurfaceSystem"],
+      "typedCommands": ["TileChangeCommand"],
+      "atomicCommit": "TileChangeCommitSystem",
+      "fingerprint": "not emitted by complete oracle comparator",
+      "oracleDifferential": "blocked"
+    },
+    {
+      "name": "Ore",
+      "legacyResponsibility": "ore patch selection and placement",
+      "sourceAnchors": [
+        "Terraria/WorldGen.cs:AddPasses:12234-12315",
+        "Terraria/WorldGen.cs:TileRunner:source inventory anchor"
+      ],
+      "immutableInputs": ["OreVeinComponent", "WorldSeedComponent"],
+      "systems": ["OrePatchPlacementSystem", "OrePlacementTransactionSystem"],
+      "typedCommands": ["TileChangeCommand"],
+      "atomicCommit": "OrePlacementTransactionSystem",
+      "fingerprint": "bounded transaction verifier only",
+      "oracleDifferential": "blocked"
+    },
+    {
+      "name": "Structure",
+      "legacyResponsibility": "structure footprint scanning and placement",
+      "sourceAnchors": [
+        "Terraria.WorldBuilding/WorldGenerator.cs:RunPass:520-560",
+        "Terraria.WorldBuilding/StructureMap.cs:source inventory anchor",
+        "Terraria.GameContent.Biomes.CaveHouse/HouseBuilder.cs:source inventory anchor"
+      ],
+      "immutableInputs": ["StructureFootprintComponent", "TileProtectionComponent"],
+      "systems": ["StructurePlacementTransactionSystem"],
+      "typedCommands": ["StructurePlacementCommand"],
+      "atomicCommit": "StructurePlacementTransactionSystem",
+      "fingerprint": "bounded transaction verifier only",
+      "oracleDifferential": "blocked"
+    },
+    {
+      "name": "Tree",
+      "legacyResponsibility": "tree eligibility, height and trunk/leaf placement",
+      "sourceAnchors": [
+        "Terraria/WorldGen.cs:AddPasses:20030-20180",
+        "Terraria.WorldBuilding/GenAction.cs:source inventory anchor"
+      ],
+      "immutableInputs": ["TreePlacementComponent", "LegacyTreeProfileRegistry"],
+      "systems": ["TreePlacementSystem", "OrdinaryTreeTrunkCommandSystem"],
+      "typedCommands": ["TileChangeCommand"],
+      "atomicCommit": "TileChangeCommitSystem",
+      "fingerprint": "bounded profile and command verifier only",
+      "oracleDifferential": "blocked"
+    },
+    {
+      "name": "Liquid",
+      "legacyResponsibility": "liquid propagation and merge",
+      "sourceAnchors": [
+        "Terraria/WorldGen.cs:AddPasses:15618-15790",
+        "Terraria/Liquid.cs:199-260",
+        "Terraria.WorldBuilding/WorldGenerator.cs:RunPass:537-552"
+      ],
+      "immutableInputs": ["LiquidPropagationCheckpoint", "WorldRuleSnapshotComponent"],
+      "systems": ["LiquidSourceSystem", "LiquidPropagationSystem"],
+      "typedCommands": ["LiquidChangeCommand"],
+      "atomicCommit": "LiquidChangeCommitSystem",
+      "fingerprint": "bounded propagation verifier only",
+      "oracleDifferential": "blocked"
+    },
+    {
+      "name": "Frame",
+      "legacyResponsibility": "tile frame notification and neighborhood rewrites",
+      "sourceAnchors": [
+        "Terraria/WorldGen.cs:SquareTileFrame:source inventory anchor",
+        "Terraria/WorldGen.cs:RangeFrame:source inventory anchor",
+        "Terraria/Framing.cs:350-432"
+      ],
+      "immutableInputs": ["TileReadSnapshot", "TileFrameRequest"],
+      "systems": ["TileFrameCommandSystem"],
+      "typedCommands": ["TileFrameCommand"],
+      "atomicCommit": "TileChangeCommitSystem",
+      "fingerprint": "bounded request-order verifier only",
+      "oracleDifferential": "blocked"
+    },
+    {
+      "name": "FinalCommit",
+      "legacyResponsibility": "pass scheduling, metadata publication and final state",
+      "sourceAnchors": [
+        "Terraria/WorldGen.cs:AddPasses:11829-11900",
+        "Terraria.WorldBuilding/WorldGenerator.cs:RunPass:520-560",
+        "Terraria.WorldBuilding/WorldGenerator.cs:HashWorld:579-620"
+      ],
+      "immutableInputs": ["WorldGenerationRuntimeState", "WorldGenerationRandomSnapshot"],
+      "systems": ["WorldGenerationStageSystem", "WorldGenerationValidationSystem"],
+      "typedCommands": ["TileChangeCommand", "LiquidChangeCommand", "StructurePlacementCommand"],
+      "atomicCommit": "deterministic staged commit",
+      "fingerprint": "ECS replay fingerprint only; no oracle parity",
+      "oracleDifferential": "blocked"
+    }
+  ],
+  "nextAction": "Rebuild the complete source/runtime oracle stage trace, then implement one source-derived predicate at a time; current ECS fingerprints remain observation-only until each stage is differentially compared."
+}

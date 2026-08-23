@@ -49,7 +49,8 @@ public sealed class NpcSpawnCommitSystem
     ArgumentNullException.ThrowIfNull(definitions);
     result = default;
     failureReason = string.Empty;
-    if (replicationId <= 0 || !definitions.TryGet(command.DefinitionId, out NpcDefinition definition) ||
+    if (replicationId <= 0 || replicationId == int.MaxValue ||
+        !definitions.TryGet(command.DefinitionId, out NpcDefinition definition) ||
         !float.IsFinite(command.Position.X) || !float.IsFinite(command.Position.Y))
     {
       failureReason = "NPC definition or replication identity is invalid.";

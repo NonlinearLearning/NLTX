@@ -20,9 +20,17 @@ public sealed class GravityProjectileBehavior : IProjectileBehavior
       return false;
     }
 
-    velocity.Y += GravityPerTick;
-    transform.X += velocity.X;
-    transform.Y += velocity.Y;
+    float nextVelocityY = velocity.Y + GravityPerTick;
+    float nextX = transform.X + velocity.X;
+    float nextY = transform.Y + nextVelocityY;
+    if (!float.IsFinite(nextVelocityY) || !float.IsFinite(nextX) || !float.IsFinite(nextY))
+    {
+      return false;
+    }
+
+    velocity.Y = nextVelocityY;
+    transform.X = nextX;
+    transform.Y = nextY;
     behavior.State = behavior.State with
     {
       Primary = velocity.Y,

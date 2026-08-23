@@ -16,7 +16,13 @@ public sealed class ProjectileLifetimeSystem
     }
 
     ref ProjectileLifetimeComponent lifetime = ref world.Get<ProjectileLifetimeComponent>(entity);
+    if (lifetime.RemainingTicks <= 1)
+    {
+      lifetime.RemainingTicks = 0;
+      return true;
+    }
+
     lifetime.RemainingTicks--;
-    return lifetime.RemainingTicks <= 0;
+    return false;
   }
 }

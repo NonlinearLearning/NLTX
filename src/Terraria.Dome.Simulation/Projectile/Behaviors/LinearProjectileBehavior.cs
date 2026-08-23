@@ -18,9 +18,16 @@ public sealed class LinearProjectileBehavior : IProjectileBehavior
       return false;
     }
 
+    float nextX = transform.X + velocity.X;
+    float nextY = transform.Y + velocity.Y;
+    if (!float.IsFinite(nextX) || !float.IsFinite(nextY))
+    {
+      return false;
+    }
+
     behavior.State = behavior.State with { Phase = tick };
-    transform.X += velocity.X;
-    transform.Y += velocity.Y;
+    transform.X = nextX;
+    transform.Y = nextY;
     return true;
   }
 }

@@ -39,6 +39,13 @@ public sealed class TileChangeCommitSystem
     }
 
     orderedCommands.Sort(TileFrameCommandComparer.Instance);
+    if (orderedCommands.Count != 0 && orderedCommands[^1].Sequence >= long.MaxValue - 1)
+    {
+      result = TileFrameCommitResult.Failed("Tile frame command sequence has no successor.");
+      return false;
+    }
+
+    orderedCommands.Sort(TileFrameCommandComparer.Instance);
     for (int index = 0; index < orderedCommands.Count; index++)
     {
       TileFrameCommand command = orderedCommands[index];
@@ -99,6 +106,13 @@ public sealed class TileChangeCommitSystem
         result = TileChangeCommitResult.Failed("Tile command kind was invalid.");
         return false;
       }
+    }
+
+    orderedCommands.Sort(TileChangeCommandComparer.Instance);
+    if (orderedCommands.Count != 0 && orderedCommands[^1].Sequence >= long.MaxValue - 1)
+    {
+      result = TileChangeCommitResult.Failed("Tile command sequence has no successor.");
+      return false;
     }
 
     orderedCommands.Sort(TileChangeCommandComparer.Instance);

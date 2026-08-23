@@ -38,6 +38,17 @@ public sealed class WorldGridSnapshot
         nameof(sectionVersions));
     }
 
+    for (int sectionX = 0; sectionX < sectionVersions.GetLength(0); sectionX++)
+    {
+      for (int sectionY = 0; sectionY < sectionVersions.GetLength(1); sectionY++)
+      {
+        if (sectionVersions[sectionX, sectionY] < 0)
+        {
+          throw new ArgumentOutOfRangeException(nameof(sectionVersions));
+        }
+      }
+    }
+
     Metadata = metadata;
     _tiles = (WorldTile[,])tiles.Clone();
     _sectionVersions = (long[,])sectionVersions.Clone();

@@ -113,8 +113,8 @@ public sealed class ItemDropRuleSystem
     int spawnSource)
   {
     uint random = GetRandom(seed, sourceEntityId, tick, definitionIndex);
-    int quantityRange = definition.MaximumQuantity - definition.MinimumQuantity + 1;
-    int quantity = definition.MinimumQuantity + (int)(random % (uint)quantityRange);
+    long quantityRange = (long)definition.MaximumQuantity - definition.MinimumQuantity + 1;
+    int quantity = definition.MinimumQuantity + (int)(random % (ulong)quantityRange);
     return new CreateWorldItemCommand(
       new ItemStack(definition.ItemType, quantity),
       position,

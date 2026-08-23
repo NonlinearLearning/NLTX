@@ -130,7 +130,7 @@ public sealed record WorldRuleState
       WindSpeedCurrent,
       GameMode,
       isRaining: rainTimeTicks > 0,
-      maximumRainStrength: rainStrength);
+      maximumRainStrength: MaximumRainStrength);
   }
 
   public WorldRuleState WithRawRain(bool isRaining, float maximumRainStrength)

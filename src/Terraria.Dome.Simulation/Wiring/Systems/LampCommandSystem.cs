@@ -91,6 +91,12 @@ public sealed class LampCommandSystem
     short deltaX = targetIsLit ? definition.FrameXOffset : (short)-definition.FrameXOffset;
     short deltaY = targetIsLit ? definition.FrameYOffset : (short)-definition.FrameYOffset;
     List<TileFrameCommand> commands = new(definition.Width * definition.Height);
+    WiringSequenceAllocator sequenceAllocator = new(firstSequence);
+    if (!sequenceAllocator.TryReserve(definition.Width * definition.Height, out long sequence))
+    {
+      return [];
+    }
+
     for (int row = 0; row < definition.Height; row++)
     {
       for (int column = 0; column < definition.Width; column++)
@@ -104,7 +110,7 @@ public sealed class LampCommandSystem
         }
 
         commands.Add(new TileFrameCommand(
-          firstSequence + commands.Count,
+          sequence + commands.Count,
           x,
           y,
           checked((short)(tile.FrameX + deltaX)),
@@ -133,10 +139,16 @@ public sealed class LampCommandSystem
       MechanismActivationKind.Toggle => !lamp.IsLit,
       _ => lamp.IsLit
     };
+    WiringSequenceAllocator sequenceAllocator = new(firstSequence);
+    if (!sequenceAllocator.TryReserve(1, out long sequence))
+    {
+      return [];
+    }
+
     lamp.SetLit(isLit);
     WiringTileCoordinate tile = lamp.Tile;
     return [new TileChangeCommand(
-      firstSequence,
+      sequence,
       tile.X,
       tile.Y,
       TileChangeKind.Place,

@@ -635,9 +635,9 @@ Entries remain `Unmapped` unless a source-line mapping records target scope and 
 | 66982 | Public | `Cavinator` | Tile | Unmapped | Main, Tile |
 | 67085 | Public | `CaveOpenater` | Tile | Unmapped | Main, Tile |
 | 67170 | Public | `CanBeClearedDuringGeneration` | Tile | Unmapped | Tile |
-| 67181 | Public | `SquareTileFrame` | Tile | Unmapped | Tile |
-| 67196 | Public | `SquareWallFrame` | WorldRuntime | Unmapped |  |
-| 67211 | Public | `RangeFrame` | Tile | Unmapped | Tile |
+| 67181 | Public | `SquareTileFrame` | Tile | Partial | Tile |
+| 67196 | Public | `SquareWallFrame` | WorldRuntime | Partial |  |
+| 67211 | Public | `RangeFrame` | Tile | Partial | Tile |
 | 67228 | Public | `WaterCheck` | Liquid | Unmapped | Main, Tile, Liquid |
 | 67311 | Public | `ClearPendingLiquid` | Liquid | Unmapped | Main, Liquid |
 | 67332 | Public | `PlantCheck_CanPlaceHook` | Tile | Partial | Main, Tile |
@@ -665,7 +665,7 @@ Entries remain `Unmapped` unless a source-line mapping records target scope and 
 | 68085 | Public | `TileFrameCosmetic` | Tile | Unmapped | Main, Tile |
 | 71537 | Public | `GetTileMergeCulling` | Tile | Unmapped | Main, Tile |
 | 71559 | Private | `CheckVines` | Tile | Unmapped | Main, Tile |
-| 71665 | Private | `TileFrameImportant` | Tile | Unmapped | Main, Tile |
+| 71665 | Private | `TileFrameImportant` | Tile | Partial | Main, Tile |
 | 72738 | Private | `SpawnFallingBlockProjectile` | Tile | Unmapped | Tile |
 | 72741 | Public | `CheckTorch` | Tile | Unmapped | Main, Tile |
 | 72830 | Public | `CheckProjectilePressurePad` | Tile | Unmapped | Main, Tile |

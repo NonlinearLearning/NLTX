@@ -51,6 +51,8 @@ string? legacyDifferentialSpawnArgument = args.FirstOrDefault(
   argument => argument.StartsWith("--legacy-differential-spawn=", StringComparison.Ordinal));
 string? legacyDifferentialSurfaceYArgument = args.FirstOrDefault(
   argument => argument.StartsWith("--legacy-differential-surface-y=", StringComparison.Ordinal));
+string? legacyTerrainProfileArgument = args.FirstOrDefault(
+  argument => argument.StartsWith("--legacy-terrain-profile=", StringComparison.Ordinal));
 string? dirtWallOffsetsArgument = args.FirstOrDefault(
   argument => argument.StartsWith("--dirt-wall-offsets=", StringComparison.Ordinal));
 bool reducedVerification = args.Any(
@@ -105,13 +107,26 @@ if (legacyDifferentialArgument is not null)
     }
   }
 
+  string? terrainProfilePath = null;
+  if (legacyTerrainProfileArgument is not null)
+  {
+    terrainProfilePath = legacyTerrainProfileArgument["--legacy-terrain-profile=".Length..];
+    if (!Path.IsPathFullyQualified(terrainProfilePath) || !File.Exists(terrainProfilePath))
+    {
+      throw new ArgumentException(
+        "The legacy terrain profile artifact path must be an existing absolute file.",
+        nameof(legacyTerrainProfileArgument));
+    }
+  }
+
   RunLegacyDifferential(
     legacyDifferentialPath,
     repositoryRoot,
     useLegacyMetadataSpawn,
     useLegacyMetadataSurfaceY,
     requestedSurfaceY,
-    dirtWallOffsetsPath);
+    dirtWallOffsetsPath,
+    terrainProfilePath);
   Environment.Exit(0);
 }
 
@@ -185,6 +200,51 @@ if (!StringComparer.Ordinal.Equals(firstFingerprint, secondFingerprint))
 {
   throw new InvalidOperationException("Stage 0 replay was not deterministic.");
 }
+
+WorldGenerationTrace tracedGeneration = new WorldGenerationPipeline().GenerateWithTrace(replayRequest);
+WorldGenerationStage[] expectedTraceStages =
+{
+  WorldGenerationStage.Terrain,
+  WorldGenerationStage.Cave,
+  WorldGenerationStage.Biome,
+  WorldGenerationStage.Ore,
+  WorldGenerationStage.Structure,
+  WorldGenerationStage.Tree,
+  WorldGenerationStage.Liquid,
+  WorldGenerationStage.Framing,
+  WorldGenerationStage.Committed
+};
+if (tracedGeneration.Stages.Count != expectedTraceStages.Length ||
+    !tracedGeneration.Stages.Select(stage => stage.Stage).SequenceEqual(expectedTraceStages) ||
+    tracedGeneration.Stages.Any(stage => stage.Snapshot is null))
+{
+  throw new InvalidOperationException(
+    "World-generation trace did not expose every deterministic commit boundary.");
+}
+
+string stageTraceDirectory = Path.Combine(
+  repositoryRoot,
+  "Build",
+  "diagnostics",
+  "server-ecs-convergence",
+  "P9-worldgen",
+  "current-stage-trace");
+Directory.CreateDirectory(stageTraceDirectory);
+var stageTraceEvidence = tracedGeneration.Stages.Select(stage => new
+{
+  stage = stage.Stage.ToString(),
+  fingerprint = CreateSnapshotWorldGridFingerprint(stage.Snapshot),
+  wallTileCount = CountWallTiles(stage.Snapshot),
+  nextSequence = stage.NextSequence,
+  oracleParity = "not-compared"
+});
+File.WriteAllText(
+  Path.Combine(stageTraceDirectory, "stage-fingerprints.json"),
+  JsonSerializer.Serialize(stageTraceEvidence, new JsonSerializerOptions { WriteIndented = true }));
+
+Console.WriteLine(
+  $"PASS stage trace exposes {tracedGeneration.Stages.Count} ECS commit fingerprints " +
+  "without claiming legacy oracle parity");
 
 VerifyTorchDefinitions();
 VerifyTileEntityDefinitions();
@@ -1882,6 +1942,93 @@ if (firstRandomPoint != secondRandomPoint ||
 }
 
 Console.WriteLine("PASS: deterministic rectangle point generation preserves bounded replay state");
+
+LegacyPassRandomState legacyTerrainRandom = new(1456);
+if (legacyTerrainRandom.Next(0, 5) != 1 ||
+    legacyTerrainRandom.Next(0, 5) != 0 ||
+    legacyTerrainRandom.Next(0, 5) != 2)
+{
+  throw new InvalidOperationException(
+    "Pass-scoped legacy UnifiedRandom replay diverged from seed-1456 sequence.");
+}
+
+Console.WriteLine("PASS: pass-scoped legacy UnifiedRandom replay preserves seed sequence");
+
+LegacyPassRandomState terrainOffsetRandom = new(1456);
+double plateauOffset = LegacyTerrainSurfaceOffsetPolicy.Next(
+  terrainOffsetRandom,
+  LegacyTerrainFeatureKind.Plateau,
+  specialWorld: false);
+double mountainOffset = LegacyTerrainSurfaceOffsetPolicy.Next(
+  terrainOffsetRandom,
+  LegacyTerrainFeatureKind.Mountain,
+  specialWorld: false);
+if (Math.Abs(plateauOffset) > 0.0001 || Math.Abs(mountainOffset + 3.0) > 0.0001)
+{
+  throw new InvalidOperationException(
+    $"Legacy terrain surface offsets diverged: plateau={plateauOffset}, mountain={mountainOffset}.");
+}
+
+Console.WriteLine("PASS: default TerrainPass surface offsets preserve source predicates");
+
+LegacyBeachBoundsDefinitionSourceCheck();
+LegacyTerrainPassContractSourceCheck();
+LegacyTerrainSurfaceClampSourceCheck();
+LegacyTerrainColumnContractSourceCheck();
+LegacyCavePassContractSourceCheck();
+LegacyTileRunnerMutationSourceCheck();
+LegacyTileRunnerEnvelopeSourceCheck();
+LegacyTileRunnerDistanceSourceCheck();
+LegacyTileRunnerCandidateSourceCheck();
+LegacyGenerationClearabilitySourceCheck();
+LegacyTileRunnerOverrideSourceCheck();
+LegacyTileRunnerSideEffectSourceCheck();
+LegacyTileRunnerRandomAdjustmentSourceCheck();
+LegacyTileRunnerInitializationSourceCheck();
+LegacyTileRunnerPerturbationSourceCheck();
+LegacyTileRunnerDriftSourceCheck();
+LegacyTileRunnerDriftBatchSourceCheck();
+LegacyTileRunnerDirectionSourceCheck();
+
+LegacySurfaceHistory surfaceHistory = new(3);
+surfaceHistory.Record(10.0);
+surfaceHistory.Record(11.0);
+surfaceHistory.Record(12.0);
+surfaceHistory.Record(13.0);
+if (surfaceHistory.Get(0) != 11.0 || surfaceHistory.Get(2) != 13.0)
+{
+  throw new InvalidOperationException("Terrain surface history ring ordering diverged from oracle.");
+}
+
+List<(int X, double Height)> retargetedColumns = new();
+surfaceHistory.Retarget(20, 11.0, (x, height) => retargetedColumns.Add((x, height)));
+if (retargetedColumns.Count != 3 || retargetedColumns[0] != (20, 12.0))
+{
+    throw new InvalidOperationException(
+      $"Terrain surface history retargeting diverged: count={retargetedColumns.Count}, " +
+      $"first={(retargetedColumns.Count == 0 ? "none" : retargetedColumns[0].ToString())}.");
+}
+
+Console.WriteLine("PASS: TerrainPass surface history preserves ring and retarget semantics");
+
+LegacySurfaceHistory batchedSurfaceHistory = new(4);
+batchedSurfaceHistory.Record(10.0);
+batchedSurfaceHistory.Record(12.0);
+batchedSurfaceHistory.Record(14.0);
+batchedSurfaceHistory.Record(16.0);
+IReadOnlyList<LegacySurfaceRetargetCommand> retargetBatch =
+  batchedSurfaceHistory.PrepareRetargetBatch(30, 11.0);
+if (retargetBatch.Count != 4 ||
+    retargetBatch[0] != new LegacySurfaceRetargetCommand(30, 14.0) ||
+    retargetBatch[1] != new LegacySurfaceRetargetCommand(29, 12.0) ||
+    retargetBatch[2] != new LegacySurfaceRetargetCommand(28, 11.0) ||
+    retargetBatch[3] != new LegacySurfaceRetargetCommand(27, 10.0))
+{
+  throw new InvalidOperationException(
+    "Terrain surface retarget batch diverged from bounded decrement and reverse-order semantics.");
+}
+
+Console.WriteLine("PASS: Terrain surface retarget batch preserves bounded command ordering");
 
 RandomRectanglePointResult randomWorldPoint = RandomWorldPointPolicy.Next(
   new GenerationRandomState(1456),
@@ -5422,6 +5569,35 @@ if (enrichedRequest.GenerationId != 42 ||
   throw new InvalidOperationException("WorldGenerationRequest did not freeze generation inputs.");
 }
 
+LegacyTerrainRuntimeProfile runtimeTerrainProfile = new(
+  WorldSurface: 100.5,
+  RockLayer: 160.25,
+  WorldSurfaceLow: 90,
+  WorldSurfaceHigh: 110,
+  RockLayerLow: 150,
+  RockLayerHigh: 170,
+  LeftBeachEnd: 20,
+  RightBeachStart: replayWidth - 20,
+  WaterLine: 500,
+  LavaLine: 600);
+WorldGenerationRequest profiledRequest = new(
+  replayRequest.Metadata,
+  replayRequest.SpawnX,
+  replayRequest.SurfaceY,
+  terrainProfile: runtimeTerrainProfile);
+if (profiledRequest.TerrainProfile != runtimeTerrainProfile)
+{
+  throw new InvalidOperationException("WorldGenerationRequest did not freeze the terrain runtime profile.");
+}
+
+AssertThrows<ArgumentException>(() =>
+  new WorldGenerationRequest(
+    replayRequest.Metadata,
+    replayRequest.SpawnX,
+    replayRequest.SurfaceY,
+    terrainProfile: runtimeTerrainProfile with { RightBeachStart = 10 }));
+Console.WriteLine("PASS: legacy terrain runtime profile is validated and optional");
+
 WorldGenerationRequest unsupportedRuleRequest = new(
   replayRequest.Metadata,
   replayRequest.SpawnX,
@@ -5445,13 +5621,38 @@ if (bootstrap.State.GenerationId != enrichedRequest.GenerationId ||
     bootstrap.Seed.Seed != enrichedRequest.Metadata.Seed.Value ||
     bootstrap.Bounds.Width != replayWidth ||
     bootstrap.Rules.SecretSeedVariant != "default" ||
-    bootstrap.Cursor.Stage != WorldGenerationStage.Created)
+    bootstrap.Cursor.Stage != WorldGenerationStage.Created ||
+    bootstrap.Runtime.GenerationId != enrichedRequest.GenerationId ||
+    bootstrap.Runtime.Stage != WorldGenerationStage.Created ||
+    bootstrap.Runtime.NextSequence != bootstrap.State.NextSequence ||
+    bootstrap.Runtime.Random.State != bootstrap.Cursor.RandomState ||
+    bootstrap.Runtime.Random.StreamVersion != enrichedRequest.RandomStreamVersion)
 {
   throw new InvalidOperationException(
     "World generation stage bootstrap did not freeze components.");
 }
 
+Console.WriteLine("PASS: world-generation runtime and random snapshots are frozen at bootstrap");
+
 WorldGenerationStateComponent state = new(42);
+WorldGenerationStateComponent exhaustedSequenceState = new(42, long.MaxValue);
+bool rejectedExhaustedSequence = false;
+try
+{
+  _ = exhaustedSequenceState.ReserveSequence();
+}
+catch (InvalidOperationException exception) when (exception.Message.Contains("exhausting"))
+{
+  rejectedExhaustedSequence = true;
+}
+
+if (!rejectedExhaustedSequence || exhaustedSequenceState.NextSequence != long.MaxValue)
+{
+  throw new InvalidOperationException(
+    "World generation sequence exhaustion was not rejected without mutation.");
+}
+
+Console.WriteLine("PASS: world generation sequence exhaustion fails closed");
 if (!state.TryAdvance(WorldGenerationStage.Terrain) ||
     state.TryAdvance(WorldGenerationStage.Created) ||
     state.Stage != WorldGenerationStage.Terrain)
@@ -5482,6 +5683,68 @@ if (!commitSystem.TryCommit(commitWorld, commands, out TileChangeCommitResult co
 {
   throw new InvalidOperationException("Tile changes did not commit in stable sequence order.");
 }
+
+WorldTile terminalTileBefore = commitWorld.GetTile(30, 30);
+if (commitSystem.TryCommit(
+      commitWorld,
+      new[] { new TileChangeCommand(long.MaxValue - 1, 30, 30, TileChangeKind.Place, 7) },
+      out _) ||
+    commitWorld.GetTile(30, 30) != terminalTileBefore)
+{
+  throw new InvalidOperationException(
+    "Tile commit accepted a terminal sequence or mutated before rejecting it.");
+}
+
+WorldTile terminalFrameBefore = commitWorld.GetTile(31, 30);
+if (commitSystem.TryCommit(
+      commitWorld,
+      new[] { new TileFrameCommand(long.MaxValue - 1, 31, 30, 1, 2) },
+      out _) ||
+    commitWorld.GetTile(31, 30) != terminalFrameBefore)
+{
+  throw new InvalidOperationException(
+    "Tile frame commit accepted a terminal sequence or mutated before rejecting it.");
+}
+
+Console.WriteLine("PASS: tile and frame commits reject terminal successor sequences atomically");
+
+WorldMetadata sectionVersionMetadata = new("section-version-boundary", new WorldSeed(77), 400, 300);
+WorldTile[,] sectionVersionTiles = new WorldTile[400, 300];
+long[,] sectionVersions = new long[2, 2];
+sectionVersions[0, 0] = long.MaxValue;
+WorldGrid sectionVersionWorld = WorldGrid.FromSnapshot(new WorldGridSnapshot(
+  sectionVersionMetadata,
+  sectionVersionTiles,
+  sectionVersions));
+if (sectionVersionWorld.TrySetTile(10, 10, new WorldTile(true, 1)) ||
+    sectionVersionWorld.TrySetLiquid(10, 10, 1, 1) ||
+    sectionVersionWorld.GetTile(10, 10).IsActive ||
+    sectionVersionWorld.GetSectionVersion(new WorldSectionCoordinates(0, 0)) != long.MaxValue)
+{
+  throw new InvalidOperationException(
+    "World section version overflow was not rejected atomically.");
+}
+
+Console.WriteLine("PASS: world section version exhaustion rejects tile and liquid mutation");
+
+long[,] negativeSectionVersions = new long[2, 2];
+negativeSectionVersions[0, 0] = -1;
+bool rejectedNegativeSectionVersion = false;
+try
+{
+  _ = new WorldGridSnapshot(sectionVersionMetadata, sectionVersionTiles, negativeSectionVersions);
+}
+catch (ArgumentOutOfRangeException)
+{
+  rejectedNegativeSectionVersion = true;
+}
+
+if (!rejectedNegativeSectionVersion)
+{
+  throw new InvalidOperationException("World snapshot accepted a negative section version.");
+}
+
+Console.WriteLine("PASS: world snapshot rejects negative section versions");
 
 WorldTile wallSourceTile = new(
   IsActive: true,
@@ -5641,6 +5904,23 @@ static int CountWalls(WorldGrid world, ushort wallType)
   return count;
 }
 
+static int CountWallTiles(WorldGridSnapshot snapshot)
+{
+  int count = 0;
+  for (int y = 0; y < snapshot.Metadata.Height; y++)
+  {
+    for (int x = 0; x < snapshot.Metadata.Width; x++)
+    {
+      if (snapshot.GetTile(x, y).WallType != 0)
+      {
+        count++;
+      }
+    }
+  }
+
+  return count;
+}
+
 static IReadOnlyList<int> ParseDirtWallOffsetChanges(
   IReadOnlyList<string> rows,
   int expectedWorldWidth)
@@ -5681,6 +5961,52 @@ static IReadOnlyList<int> ParseDirtWallOffsetChanges(
   return Array.AsReadOnly(changes);
 }
 
+static LegacyTerrainRuntimeProfile ReadLegacyTerrainRuntimeProfile(
+  string path,
+  WorldMetadata metadata)
+{
+  string? firstLine = File.ReadLines(path)
+    .FirstOrDefault(line => !String.IsNullOrWhiteSpace(line));
+  if (firstLine is null)
+  {
+    throw new InvalidDataException("The legacy terrain profile artifact is empty.");
+  }
+
+  using JsonDocument document = JsonDocument.Parse(firstLine);
+  JsonElement root = document.RootElement;
+  LegacyTerrainRuntimeProfile profile = new(
+    root.GetProperty("worldSurface").GetDouble(),
+    root.GetProperty("rockLayer").GetDouble(),
+    root.GetProperty("worldSurfaceLow").GetDouble(),
+    root.GetProperty("worldSurfaceHigh").GetDouble(),
+    root.GetProperty("rockLayerLow").GetDouble(),
+    root.GetProperty("rockLayerHigh").GetDouble(),
+    root.GetProperty("leftBeachEnd").GetInt32(),
+    root.GetProperty("rightBeachStart").GetInt32(),
+    root.GetProperty("waterLine").GetInt32(),
+    root.GetProperty("lavaLine").GetInt32());
+  string checkpointPath = Path.Combine(
+    Path.GetDirectoryName(path) ?? String.Empty,
+    "legacy-terrain-checkpoints.jsonl");
+  if (File.Exists(checkpointPath))
+  {
+    string? initialLine = File.ReadLines(checkpointPath)
+      .FirstOrDefault(line => line.Contains("\"phase\":\"initial\"", StringComparison.Ordinal));
+    if (initialLine is not null)
+    {
+      using JsonDocument checkpoint = JsonDocument.Parse(initialLine);
+      profile = profile with
+      {
+        InitialWorldSurface = checkpoint.RootElement.GetProperty("surface").GetDouble(),
+        InitialRockLayer = checkpoint.RootElement.GetProperty("rockLayer").GetDouble()
+      };
+    }
+  }
+
+  profile.Validate(metadata);
+  return profile;
+}
+
 TerrainProfileComponent terrainProfile = new(
   surfaceY: replaySurfaceY,
   rockLayerY: 150,
@@ -5714,7 +6040,64 @@ GenerationCursorComponent terrainCursor = new GenerationCursorComponent(
   0,
   0,
   0).Advance(WorldGenerationStage.Terrain, 0, 1, terrainRandomState.Value);
-WorldGenerationCheckpoint terrainCheckpoint = new(caveSnapshot, caveState, terrainCursor);
+WorldGenerationCheckpoint terrainCheckpoint = new(
+  caveSnapshot,
+    caveState,
+    terrainCursor,
+    WorldGenerationRuntimeState.Create(
+      caveState,
+      terrainCursor,
+      replayRequest.RandomStreamVersion));
+bool rejectedUndefinedRuntimeStage = false;
+try
+{
+  _ = new WorldGenerationRuntimeState(
+    caveState.GenerationId,
+    (WorldGenerationStage)int.MaxValue,
+    caveState.NextSequence,
+    new WorldGenerationRandomSnapshot(
+      terrainCursor.RandomState,
+      replayRequest.RandomStreamVersion));
+}
+catch (ArgumentOutOfRangeException)
+{
+  rejectedUndefinedRuntimeStage = true;
+}
+
+if (!rejectedUndefinedRuntimeStage)
+{
+  throw new InvalidOperationException(
+    "World generation accepted an undefined runtime stage.");
+}
+
+Console.WriteLine("PASS: generation runtime rejects undefined stages");
+bool rejectedMismatchedRuntime = false;
+try
+{
+  _ = new WorldGenerationCheckpoint(
+    caveSnapshot,
+    caveState,
+    terrainCursor,
+    new WorldGenerationRuntimeState(
+      caveState.GenerationId,
+      caveState.Stage,
+      caveState.NextSequence + 1,
+      new WorldGenerationRandomSnapshot(
+        terrainCursor.RandomState,
+        replayRequest.RandomStreamVersion)));
+}
+catch (ArgumentException)
+{
+  rejectedMismatchedRuntime = true;
+}
+
+if (!rejectedMismatchedRuntime)
+{
+  throw new InvalidOperationException(
+    "A generation checkpoint accepted a runtime state with a mismatched sequence.");
+}
+
+Console.WriteLine("PASS: generation checkpoints reject mismatched runtime state");
 WorldGrid uninterruptedCaveWorld = terrainCheckpoint.RestoreWorld();
 WorldGrid restartedCaveWorld = terrainCheckpoint.RestoreWorld();
 WorldGenerationStateComponent uninterruptedCaveState = terrainCheckpoint.State;
@@ -8378,6 +8761,79 @@ static SourceMapping? CreateMethodMapping(string name, int line)
       "Terraria.Dome.WorldGeneration.Verification deterministic gem-selection checks.");
   }
 
+  if (name == "SquareTileFrame" && line == 67181)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/SquareTileFrameRequestQuery.cs:10"
+      },
+      "Emits the source-compatible 3x3 row-major framing request topology " +
+      "with immutable bounds checks.",
+      new[]
+      {
+        "TileFrame frame-value semantics, mutable Tile ownership, map updates, " +
+        "and runtime notifications."
+      },
+      "Terraria.Dome.WorldGeneration.Verification square tile framing topology check.");
+  }
+
+  if (name == "SquareWallFrame" && line == 67196)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/SquareWallFrameRequestQuery.cs:8"
+      },
+      "Emits the source-compatible bounded 3x3 wall-frame coordinate topology.",
+      new[]
+      {
+        "Framing.WallFrame value semantics, center reset behavior, mutable wall " +
+        "ownership, and notifications."
+      },
+      "Terraria.Dome.WorldGeneration.Verification square wall framing topology check.");
+  }
+
+  if (name == "RangeFrame" && line == 67211)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/RangeFrameCoordinateQuery.cs:7"
+      },
+      "Emits the bounded expanded rectangle in deterministic X-major/Y-minor order.",
+      new[]
+      {
+        "TileFrame and Framing.WallFrame values, MapUpdateQueue side effects, " +
+        "mutable ownership, and notifications."
+      },
+      "Terraria.Dome.WorldGeneration.Verification range framing topology check.");
+  }
+
+  if (name == "TileFrameImportant" && line == 71665)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/TileFrameImportant136Query.cs:8",
+        "src/Terraria.Dome.Simulation/WorldGeneration/TileFrameImportant184Query.cs:6",
+        "src/Terraria.Dome.Simulation/WorldGeneration/TileFrameImportant324Query.cs:8",
+        "src/Terraria.Dome.Simulation/WorldGeneration/TileFrameImportant529Query.cs:8"
+      },
+      "Covers source branches for tile types 136, 184, 324, and 529 with typed " +
+      "support, frame, random-state, and kill decisions.",
+      new[]
+      {
+        "Other TileFrameImportant branches, mutable Tile ownership, KillTile " +
+        "side effects, and notifications."
+      },
+      "Terraria.Dome.WorldGeneration.Verification typed TileFrameImportant branch checks.");
+  }
+
   if (name == "RandomWorldPoint" && line == 22195)
   {
     return new SourceMapping(
@@ -8390,7 +8846,8 @@ static SourceMapping? CreateMethodMapping(string name, int line)
       new[]
       {
         "Legacy genRand global ownership and shared stream ordering outside the explicit state.",
-        "Legacy Main world dimensions, Point type, CallTracker instrumentation, and generator timing."
+        "Legacy Main world dimensions, Point type, CallTracker instrumentation, " +
+        "and generator timing."
       },
       "Terraria.Dome.WorldGeneration.Verification deterministic world-point checks.");
   }
@@ -9289,13 +9746,38 @@ static string CreateLegacyOracleFingerprint(LegacyWorldDocument document)
   return Convert.ToHexString(hash.GetHashAndReset());
 }
 
+static string CreateLegacyProjectedFingerprint(LegacyWorldDocument document)
+{
+  using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+  AppendInt32(hash, document.Metadata.Width);
+  AppendInt32(hash, document.Metadata.Height);
+  Span<byte> tileBuffer = stackalloc byte[9];
+  foreach (LegacyTile tile in document.Tiles)
+  {
+    int offset = 0;
+    tileBuffer[offset++] = tile.IsActive ? (byte)1 : (byte)0;
+    BinaryPrimitives.WriteUInt16LittleEndian(tileBuffer[offset..], tile.TileType);
+    offset += sizeof(ushort);
+    tileBuffer[offset++] = tile.LiquidAmount;
+    tileBuffer[offset++] = tile.LiquidKind;
+    BinaryPrimitives.WriteInt16LittleEndian(tileBuffer[offset..], tile.FrameX);
+    offset += sizeof(short);
+    BinaryPrimitives.WriteInt16LittleEndian(tileBuffer[offset..], tile.FrameY);
+    offset += sizeof(short);
+    hash.AppendData(tileBuffer[..offset]);
+  }
+
+  return Convert.ToHexString(hash.GetHashAndReset());
+}
+
 static void RunLegacyDifferential(
   string legacyPath,
   string repositoryRoot,
   bool useLegacyMetadataSpawn,
   bool useLegacyMetadataSurfaceY,
   int? requestedSurfaceY,
-  string? dirtWallOffsetsPath)
+  string? dirtWallOffsetsPath,
+  string? terrainProfilePath)
 {
   using FileStream oracleStream = new(
     legacyPath,
@@ -9359,13 +9841,20 @@ static void RunLegacyDifferential(
     : ParseDirtWallOffsetChanges(
       File.ReadAllLines(dirtWallOffsetsPath),
       metadata.Width);
+  LegacyTerrainRuntimeProfile? terrainProfile = terrainProfilePath is null
+    ? null
+    : ReadLegacyTerrainRuntimeProfile(terrainProfilePath, metadata);
   WorldGenerationRequest generationRequest = new(
     metadata,
     spawnX,
     surfaceY,
     rockLayerY: legacyRockLayerY,
-    dirtWallSurfaceOffsetChanges: dirtWallSurfaceOffsetChanges);
+    dirtWallSurfaceOffsetChanges: dirtWallSurfaceOffsetChanges,
+    terrainProfile: terrainProfile);
   WorldGrid generated = new WorldGenerationPipeline().Generate(generationRequest);
+  WorldGenerationTrace fullProfileTrace =
+    new WorldGenerationPipeline().GenerateWithTrace(generationRequest);
+  WriteStageTraceArtifact(repositoryRoot, fullProfileTrace);
   int sectionColumns = metadata.Width / WorldGrid.SectionWidth;
   int sectionRows = metadata.Height / WorldGrid.SectionHeight;
   int[,] mismatchesBySection = new int[sectionColumns, sectionRows];
@@ -9481,6 +9970,7 @@ static void RunLegacyDifferential(
     activeLegacyTiles,
     activeGeneratedTiles,
     CreateLegacyOracleFingerprint(legacy),
+    CreateLegacyProjectedFingerprint(legacy),
     CreateWorldGridFingerprint(generated),
     sections,
     regions);
@@ -9492,6 +9982,29 @@ static void RunLegacyDifferential(
   Console.WriteLine(
     $"DIFF: legacy oracle compared {comparedTiles} tiles, mismatches {mismatchTiles}, " +
     $"extended-state mismatches {extendedStateMismatchTiles}");
+}
+
+static void WriteStageTraceArtifact(string repositoryRoot, WorldGenerationTrace trace)
+{
+  string stageTraceDirectory = Path.Combine(
+    repositoryRoot,
+    "Build",
+    "diagnostics",
+    "server-ecs-convergence",
+    "P9-worldgen",
+    "current-stage-trace");
+  Directory.CreateDirectory(stageTraceDirectory);
+  var stages = trace.Stages.Select(stage => new
+  {
+    stage = stage.Stage.ToString(),
+    fingerprint = CreateSnapshotWorldGridFingerprint(stage.Snapshot),
+    wallTileCount = CountWallTiles(stage.Snapshot),
+    nextSequence = stage.NextSequence,
+    oracleParity = "not-compared"
+  });
+  File.WriteAllText(
+    Path.Combine(stageTraceDirectory, "stage-fingerprints-full-profile.json"),
+    JsonSerializer.Serialize(stages, new JsonSerializerOptions { WriteIndented = true }));
 }
 
 static int GetLegacyLayerY(double layer, int worldHeight, string parameterName)
@@ -9681,6 +10194,965 @@ static bool CountExtendedStateMismatches(
   return hasMismatch;
 }
 
+static void LegacyBeachBoundsDefinitionSourceCheck()
+{
+  LegacyBeachBounds normal = LegacyBeachBoundsDefinition.Calculate(
+    new LegacyPassRandomState(1456),
+    4200,
+    LegacyDungeonSide.Right,
+    tenthAnniversaryWorld: false,
+    remixWorld: false);
+  if (normal.BeachSandRandomCenter != 320 ||
+      normal.BeachSandRandomWidthRange != 20 ||
+      normal.BeachSandDungeonExtraWidth != 40 ||
+      normal.BeachSandJungleExtraWidth != 20 ||
+      normal.LeftBeachEnd < 340 || normal.LeftBeachEnd >= 380 ||
+      normal.RightBeachStart <= 3840 || normal.RightBeachStart > 3880)
+  {
+    throw new InvalidOperationException(
+      $"Legacy beach bounds diverged from source constants: " +
+      $"left={normal.LeftBeachEnd}, right={normal.RightBeachStart}.");
+  }
+
+  LegacyBeachBounds anniversary = LegacyBeachBoundsDefinition.Calculate(
+    new LegacyPassRandomState(1456),
+    4200,
+    LegacyDungeonSide.Left,
+    tenthAnniversaryWorld: true,
+    remixWorld: false);
+  if (anniversary.LeftBeachEnd != 360 || anniversary.RightBeachStart != 3820)
+  {
+    throw new InvalidOperationException(
+      $"Legacy anniversary beach bounds diverged: " +
+      $"left={anniversary.LeftBeachEnd}, right={anniversary.RightBeachStart}.");
+  }
+
+  LegacyBeachBounds remix = LegacyBeachBoundsDefinition.Calculate(
+    new LegacyPassRandomState(1456),
+    4200,
+    LegacyDungeonSide.Left,
+    tenthAnniversaryWorld: true,
+    remixWorld: true);
+  if (remix.LeftBeachEnd == 360 || remix.RightBeachStart == 3820)
+  {
+    throw new InvalidOperationException(
+      "Remix worlds incorrectly used anniversary fixed beach widths.");
+  }
+
+  Console.WriteLine("PASS: WorldGen beach bounds preserve source constants and seed branches");
+}
+
+static void LegacyTerrainPassContractSourceCheck()
+{
+  LegacyTerrainPassContract contract =
+    LegacyTerrainPassContractDefinition.CreateDefault();
+  if (contract.PassName != "Terrain" ||
+      Math.Abs(contract.Weight - 449.3721923828125) > 0.0000001 ||
+      contract.ConfigurationSection != "Terrain" ||
+      contract.FlatBeachPadding != 5 ||
+      !contract.ResetsRandomFromWorldSeed)
+  {
+    throw new InvalidOperationException(
+      "Terrain pass contract diverged from WorldGenerator and configuration source facts.");
+  }
+
+  Console.WriteLine(
+    "PASS: Terrain pass scheduling and pass-scoped random reset preserve source contract");
+}
+
+static void LegacyTerrainSurfaceClampSourceCheck()
+{
+  LegacyTerrainSurfaceClampResult beach = LegacyTerrainSurfaceClampPolicy.Apply(
+    surface: 400,
+    columnX: 359,
+    leftBeachEnd: 360,
+    rightBeachStart: 3840,
+    flatBeachPadding: 5,
+    lowerSurface: 228,
+    upperSurface: 312,
+    beachSurfaceCap: 276);
+  if (!beach.IsBeachColumn || beach.Surface != 276 || beach.ResetFeatureRun)
+  {
+    throw new InvalidOperationException("Terrain beach clamp diverged from TerrainPass predicate.");
+  }
+
+  LegacyTerrainSurfaceClampResult lower = LegacyTerrainSurfaceClampPolicy.Apply(
+    surface: 200,
+    columnX: 1000,
+    leftBeachEnd: 360,
+    rightBeachStart: 3840,
+    flatBeachPadding: 5,
+    lowerSurface: 228,
+    upperSurface: 312,
+    beachSurfaceCap: 276);
+  LegacyTerrainSurfaceClampResult upper = LegacyTerrainSurfaceClampPolicy.Apply(
+    surface: 400,
+    columnX: 1000,
+    leftBeachEnd: 360,
+    rightBeachStart: 3840,
+    flatBeachPadding: 5,
+    lowerSurface: 228,
+    upperSurface: 312,
+    beachSurfaceCap: 276);
+  LegacyTerrainSurfaceClampResult unchanged = LegacyTerrainSurfaceClampPolicy.Apply(
+    surface: 260,
+    columnX: 1000,
+    leftBeachEnd: 360,
+    rightBeachStart: 3840,
+    flatBeachPadding: 5,
+    lowerSurface: 228,
+    upperSurface: 312,
+    beachSurfaceCap: 276);
+  if (lower.Surface != 228 || !lower.ResetFeatureRun ||
+      upper.Surface != 312 || !upper.ResetFeatureRun ||
+      unchanged.Surface != 260 || unchanged.ResetFeatureRun || unchanged.IsBeachColumn)
+  {
+    throw new InvalidOperationException(
+      "Terrain interior clamp and feature-run reset diverged from TerrainPass predicate.");
+  }
+
+  Console.WriteLine(
+    "PASS: Terrain surface clamp preserves beach and interior mutation boundaries");
+}
+
+static void LegacyTerrainColumnContractSourceCheck()
+{
+  IReadOnlyList<LegacyTerrainColumnMutation> mutations =
+    LegacyTerrainColumnContract.PrepareFillColumn(
+      worldHeight: 10,
+      worldSurface: 3.5,
+      rockLayer: 7.5);
+  if (mutations.Count != 11 ||
+      mutations[0] != new LegacyTerrainColumnMutation(0, false, null, -1, -1) ||
+      mutations[2] != new LegacyTerrainColumnMutation(2, false, null, -1, -1) ||
+      mutations[3] != new LegacyTerrainColumnMutation(3, false, null, -1, -1) ||
+      mutations[4] != new LegacyTerrainColumnMutation(3, true, 0, -1, -1) ||
+      mutations[8] != new LegacyTerrainColumnMutation(7, true, 0, -1, -1) ||
+      mutations[9] != new LegacyTerrainColumnMutation(8, true, 1, -1, -1) ||
+      mutations[10] != new LegacyTerrainColumnMutation(9, true, 1, -1, -1))
+  {
+    throw new InvalidOperationException(
+      "Terrain FillColumn mutation order or inactive frame sentinels diverged from oracle.");
+  }
+
+  Console.WriteLine(
+    "PASS: Terrain FillColumn preserves layer ordering and frame sentinels");
+
+  IReadOnlyList<LegacyTerrainColumnTile> existingTiles = new[]
+  {
+    new LegacyTerrainColumnTile(true, 1),
+    new LegacyTerrainColumnTile(true, 1),
+    new LegacyTerrainColumnTile(true, 1),
+    new LegacyTerrainColumnTile(false, 1),
+    new LegacyTerrainColumnTile(true, 0),
+    new LegacyTerrainColumnTile(true, 1),
+    new LegacyTerrainColumnTile(false, 0),
+    new LegacyTerrainColumnTile(true, 1)
+  };
+  IReadOnlyList<LegacyTerrainColumnMutation> retargeted =
+    LegacyTerrainColumnContract.PrepareRetargetColumn(8, 2.5, existingTiles);
+  if (retargeted.Count != 6 ||
+      retargeted[0] != new LegacyTerrainColumnMutation(0, false, null, -1, -1) ||
+      retargeted[2] != new LegacyTerrainColumnMutation(2, false, null, -1, -1) ||
+      retargeted[3] != new LegacyTerrainColumnMutation(3, true, 0, -1, -1) ||
+      retargeted[4] != new LegacyTerrainColumnMutation(4, true, 0, -1, -1) ||
+      retargeted[5] != new LegacyTerrainColumnMutation(6, true, 0, -1, -1))
+  {
+    throw new InvalidOperationException(
+      "Terrain RetargetColumn state-dependent mutation filtering diverged from oracle.");
+  }
+
+  Console.WriteLine(
+    "PASS: Terrain RetargetColumn preserves state-dependent dirt conversion");
+}
+
+static void LegacyCavePassContractSourceCheck()
+{
+  IReadOnlyList<LegacyCavePassDefinition> schedule =
+    LegacyCavePassContractDefinition.CreateDefaultSchedule();
+  string[] expectedNames =
+  {
+    "MountainCaves",
+    "DirtLayerCaves",
+    "RockLayerCaves",
+    "SurfaceCaves",
+    "WavyCaves"
+  };
+  if (schedule.Count != expectedNames.Length ||
+      schedule.Select(pass => pass.Name).SequenceEqual(expectedNames) == false ||
+      schedule.Any(pass => !pass.ResetsRandomFromWorldSeed ||
+        !pass.UsesTileRunner || !pass.MutatesTiles))
+  {
+    throw new InvalidOperationException(
+      "Cave pass schedule diverged from source pass order or mutation boundaries.");
+  }
+
+  LegacyCavePassExecutionCoordinator coordinator =
+    new(schedule, worldSeed: 42);
+  for (int index = 0; index < expectedNames.Length; index++)
+  {
+    LegacyCavePassResetCheckpoint checkpoint =
+      coordinator.BeginNextPass(out LegacyPassRandomState random);
+    if (checkpoint.PassName != expectedNames[index] || checkpoint.PassIndex != index ||
+        checkpoint.WorldSeed != 42 || checkpoint.ResetOrdinal != index + 1 ||
+        random.Next(1000) != new LegacyPassRandomState(42).Next(1000))
+    {
+      throw new InvalidOperationException(
+        "Cave pass coordinator did not reset and order passes from the world seed.");
+    }
+  }
+
+  coordinator.Complete();
+
+  LegacyTileRunnerRequest request = new(
+    x: 100,
+    y: 200,
+    strength: 3.0,
+    steps: 25,
+    tileType: -1,
+    addTile: false,
+    speedX: 0.5,
+    speedY: 1.0,
+    noYChange: false,
+    overwrite: true,
+    ignoreTileType: -1);
+  if (request.TileType != -1 || request.AddTile || request.Steps != 25 ||
+      request.Overwrite != true)
+  {
+    throw new InvalidOperationException(
+      "Cave TileRunner request did not preserve source parameter shape.");
+  }
+
+  Console.WriteLine(
+    "PASS: Cave pass schedule and TileRunner request preserve source boundaries");
+}
+
+static void LegacyTileRunnerMutationSourceCheck()
+{
+  LegacyTileRunnerMutationProfile carve =
+    LegacyTileRunnerMutationPolicy.Classify(-1, addTile: false, noYChange: false);
+  LegacyTileRunnerMutationProfile place =
+    LegacyTileRunnerMutationPolicy.Classify(1, addTile: true, noYChange: true);
+  LegacyTileRunnerMutationProfile liquidSensitive =
+    LegacyTileRunnerMutationPolicy.Classify(59, addTile: true, noYChange: true);
+  if (!carve.RemovesTile || carve.WritesTileType || carve.ActivatesTile ||
+      carve.ClearsLiquid || carve.WritesWall ||
+      !place.WritesTileType || !place.ActivatesTile || !place.ClearsLiquid ||
+      !place.WritesWall || !liquidSensitive.WritesTileType ||
+      !liquidSensitive.ActivatesTile || !liquidSensitive.ClearsLiquid ||
+      liquidSensitive.WritesWall)
+  {
+    throw new InvalidOperationException(
+      "TileRunner mutation classification diverged from source type/addTile/noYChange branches.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner mutation classification preserves source type branches");
+}
+
+static void LegacyTileRunnerEnvelopeSourceCheck()
+{
+  LegacyTileRunnerEnvelope envelope = LegacyTileRunnerEnvelopePolicy.Advance(
+    centerX: 0.0,
+    centerY: 5.0,
+    initialStrength: 10.0,
+    totalSteps: 4,
+    remainingSteps: 4.0,
+    speedX: 1.5,
+    speedY: -0.5,
+    worldWidth: 20,
+    worldHeight: 20);
+  if (envelope.Strength != 10.0 || envelope.MinX != 1 || envelope.MaxXExclusive != 5 ||
+      envelope.MinY != 1 || envelope.MaxYExclusive != 10 ||
+      envelope.NextCenterX != 1.5 || envelope.NextCenterY != 4.5 ||
+      envelope.RemainingSteps != 3.0)
+  {
+    throw new InvalidOperationException(
+      "TileRunner envelope diverged from source strength scaling or boundary clipping.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner envelope preserves strength scaling and interior clipping");
+}
+
+static void LegacyTileRunnerDistanceSourceCheck()
+{
+  if (!LegacyTileRunnerDistancePolicy.IsWithinManhattanEnvelope(
+        4, 5, 5.0, 5.0, 10.0, 0) ||
+      LegacyTileRunnerDistancePolicy.IsWithinManhattanEnvelope(
+        10, 5, 5.0, 5.0, 10.0, 0) ||
+      !LegacyTileRunnerDistancePolicy.IsWithinManhattanEnvelope(
+        10, 5, 5.0, 5.0, 10.0, 10) ||
+      LegacyTileRunnerDistancePolicy.IsWithinManhattanEnvelope(
+        10, 5, 5.0, 5.0, 10.0, -10))
+  {
+    throw new InvalidOperationException(
+      "TileRunner Manhattan distance predicate diverged from strict source threshold.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner Manhattan distance predicate preserves strict random threshold");
+}
+
+static void LegacyTileRunnerCandidateSourceCheck()
+{
+  LegacyTileRunnerTileState important = new(true, 100, true, false);
+  LegacyTileRunnerTileState cut = new(true, 100, true, true);
+  LegacyTileRunnerTileState ignored = new(true, 42, false, false);
+  LegacyTileRunnerTileState empty = new(false, 0, false, false);
+  if (LegacyTileRunnerCandidateQuery.ShouldMutate(
+        important, 5, 5, 5.0, 5.0, 10.0, 0, -1) ||
+      !LegacyTileRunnerCandidateQuery.ShouldMutate(
+        cut, 5, 5, 5.0, 5.0, 10.0, 0, -1) ||
+      LegacyTileRunnerCandidateQuery.ShouldMutate(
+        ignored, 5, 5, 5.0, 5.0, 10.0, 0, 42) ||
+      !LegacyTileRunnerCandidateQuery.ShouldMutate(
+        empty, 5, 5, 5.0, 5.0, 10.0, 0, 42))
+  {
+    throw new InvalidOperationException(
+      "TileRunner candidate query diverged from frame-important, cut, ignore, or distance gates.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner candidate query preserves protected and ignore skip gates");
+}
+
+static void LegacyGenerationClearabilitySourceCheck()
+{
+  if (!LegacyGenerationClearabilityPolicy.CanClear(0, false) ||
+      LegacyGenerationClearabilityPolicy.CanClear(41, false) ||
+      LegacyGenerationClearabilityPolicy.CanClear(483, false) ||
+      LegacyGenerationClearabilityPolicy.CanClear(0, true) ||
+      LegacyGenerationClearabilityPolicy.CanClear(-1, false))
+  {
+    throw new InvalidOperationException(
+      "Generation clearability policy diverged from TileID set and dungeon veto semantics.");
+  }
+
+  Console.WriteLine(
+    "PASS: generation clearability preserves static tile exclusions and dynamic veto");
+}
+
+static void LegacyTileRunnerOverrideSourceCheck()
+{
+  LegacyTileRunnerOverrideContext stoneOnDirt = new(
+    0, 1, true, true, false, true, false, 100, 200, 0, true);
+  LegacyTileRunnerOverrideContext oreOnOre = new(
+    396, 1, true, false, true, true, false, 200, 100, 0, true);
+  LegacyTileRunnerOverrideContext oreOnNonOre = new(
+    396, 1, true, false, false, true, false, 200, 100, 0, true);
+  LegacyTileRunnerOverrideContext desertSand = new(
+    53, 59, true, false, false, true, true, 500, 400, 0, true);
+  LegacyTileRunnerOverrideContext surfaceSand = new(
+    53, 1, true, false, false, true, false, 100, 200, 0, true);
+  if (!LegacyTileRunnerOverridePolicy.MustPreserveExistingTile(stoneOnDirt) ||
+      LegacyTileRunnerOverridePolicy.MustPreserveExistingTile(oreOnOre) ||
+      !LegacyTileRunnerOverridePolicy.MustPreserveExistingTile(oreOnNonOre) ||
+      !LegacyTileRunnerOverridePolicy.MustPreserveExistingTile(desertSand) ||
+      !LegacyTileRunnerOverridePolicy.MustPreserveExistingTile(surfaceSand))
+  {
+    throw new InvalidOperationException(
+      "TileRunner override policy diverged from source type-specific preservation branches.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner override policy preserves source type-specific branches");
+}
+
+static void LegacyTileRunnerSideEffectSourceCheck()
+{
+  LegacyTileRunnerSideEffectProfile liquid =
+    LegacyTileRunnerSideEffectPolicy.Classify(-2, false, false, true, 10, 20, 80, 50);
+  LegacyTileRunnerSideEffectProfile positive =
+    LegacyTileRunnerSideEffectPolicy.Classify(1, true, true, false, 40, 20, 80, 50);
+  LegacyTileRunnerSideEffectProfile aboveSurface =
+    LegacyTileRunnerSideEffectPolicy.Classify(1, true, true, false, 60, 20, 80, 50);
+  LegacyTileRunnerSideEffectProfile special =
+    LegacyTileRunnerSideEffectPolicy.Classify(59, true, true, false, 40, 20, 80, 50);
+  LegacyTileRunnerSideEffectProfile remixOcean =
+    LegacyTileRunnerSideEffectPolicy.Classify(
+      -2, false, false, true, 900, 20, 120, 50, 3, true, 200, 1200, true);
+  LegacyTileRunnerSideEffectProfile lavaInjection =
+    LegacyTileRunnerSideEffectPolicy.Classify(
+      -2, false, false, true, 130, 20, 120, 50, 0, false, 200, 1000, false);
+  LegacyTileRunnerCommandBatch emitted = LegacyTileRunnerCommandEmitter.Create(
+    7, 130, 11, 12, -2, false, false, true, 20, 120, 50, 0, false, 200, 1000, false);
+  LegacyTileRunnerCommandBatch placed = LegacyTileRunnerCommandEmitter.Create(
+    8, 40, 21, 22, 1, true, true, false, 20, 120, 50, 0, false, 200, 1000, false);
+  LegacyTileRunnerLiquidProjection waterProjection =
+    LegacyTileRunnerLiquidProjectionPolicy.Resolve(0, false);
+  LegacyTileRunnerLiquidProjection lavaProjection =
+    LegacyTileRunnerLiquidProjectionPolicy.Resolve(0, true);
+  IReadOnlyList<LegacyTileRunnerPassInput> passRecipes =
+    LegacyTileRunnerPassInputDefinition.CreateDefaultRecipes();
+  LegacyTileRunnerPassInputDefinition.Validate(passRecipes);
+  LegacyTileRunnerPassInput surfaceDirtRecipe = passRecipes.Single(recipe =>
+    recipe.RecipeName == "surface-dirt");
+  LegacyTileRunnerPassInput rockRecipe = passRecipes.Single(recipe =>
+    recipe.RecipeName == "rock-layer-stone");
+  if (passRecipes.Count != 5 || surfaceDirtRecipe.TileType != 1 ||
+      surfaceDirtRecipe.MaximumStrengthExclusive != 15 ||
+      surfaceDirtRecipe.MaximumStepsExclusive != 40 ||
+      rockRecipe.VerticalRange != "rockLayerLow..maxTilesY" ||
+      !passRecipes.All(recipe => recipe.ResetsRandomFromWorldSeed))
+  {
+    throw new InvalidOperationException(
+      "TileRunner pass input recipes did not preserve source call ranges.");
+  }
+  LegacyTileRunnerPassInvocation firstInvocation =
+    LegacyTileRunnerPassInvocationFactory.Create(
+      surfaceDirtRecipe,
+      new LegacyPassRandomState(42),
+      0,
+      8400,
+      0,
+      1200);
+  LegacyTileRunnerPassInvocation secondInvocation =
+    LegacyTileRunnerPassInvocationFactory.Create(
+      surfaceDirtRecipe,
+      new LegacyPassRandomState(42),
+      0,
+      8400,
+      0,
+      1200);
+  if (firstInvocation.RandomDrawCount != 4 ||
+      firstInvocation.Request.X != firstInvocation.XDraw ||
+      firstInvocation.Request.Strength != firstInvocation.StrengthDraw ||
+      firstInvocation.Request.Steps != firstInvocation.StepsDraw ||
+      firstInvocation.Request.X != secondInvocation.Request.X ||
+      firstInvocation.Request.Y != secondInvocation.Request.Y ||
+      firstInvocation.Request.Strength != secondInvocation.Request.Strength ||
+      firstInvocation.Request.Steps != secondInvocation.Request.Steps)
+  {
+    throw new InvalidOperationException(
+      "TileRunner invocation did not preserve deterministic pass-scoped draw order.");
+  }
+  LegacyTileRunnerCommandBatch invocationCommands =
+    LegacyTileRunnerCommandEmitter.Create(
+      firstInvocation.Request.X,
+      firstInvocation.Request.Y,
+      31,
+      32,
+      firstInvocation.Request.TileType,
+      firstInvocation.Request.AddTile,
+      firstInvocation.Request.NoYChange,
+      true,
+      20,
+      120,
+      50,
+      0,
+      false,
+      200,
+      1000,
+      false);
+  LegacyTileRunnerInvocationProvenance provenance =
+    LegacyTileRunnerInvocationProvenanceFactory.Create(
+      firstInvocation,
+      invocationCommands,
+      invocationIndex: 0,
+      sourceLine: 12242);
+  if (provenance.PassName != "DirtLayerCaves" ||
+      provenance.RecipeName != "surface-dirt" || provenance.InvocationIndex != 0 ||
+      provenance.SourceLine != 12242 ||
+      provenance.Request.X != firstInvocation.Request.X)
+  {
+    throw new InvalidOperationException(
+      "TileRunner command provenance did not preserve pass and source ownership.");
+  }
+  LegacyTileRunnerCommandBatch secondInvocationCommands =
+    LegacyTileRunnerCommandEmitter.Create(
+      secondInvocation.Request.X,
+      secondInvocation.Request.Y,
+      33,
+      34,
+      secondInvocation.Request.TileType,
+      secondInvocation.Request.AddTile,
+      secondInvocation.Request.NoYChange,
+      true,
+      20,
+      120,
+      50,
+      0,
+      false,
+      200,
+      1000,
+      false);
+  LegacyTileRunnerInvocationProvenance secondProvenance =
+    LegacyTileRunnerInvocationProvenanceFactory.Create(
+      secondInvocation,
+      secondInvocationCommands,
+      invocationIndex: 1,
+      sourceLine: 12242);
+  LegacyTileRunnerPassProvenance passProvenance =
+    LegacyTileRunnerPassProvenanceFactory.Create(
+      "DirtLayerCaves",
+      new[] { secondProvenance, provenance });
+  if (passProvenance.Invocations.Count != 2 ||
+      passProvenance.TileCommandCount != 2 || passProvenance.LiquidCommandCount != 0 ||
+      passProvenance.Invocations[0].InvocationIndex != 0)
+  {
+    throw new InvalidOperationException(
+      "TileRunner pass provenance did not aggregate invocation ownership.");
+  }
+  LegacyTileRunnerPassExecutionLedger executionLedger =
+    new("DirtLayerCaves", "surface-dirt", expectedInvocationCount: 2);
+  executionLedger.Append(provenance);
+  executionLedger.Append(secondProvenance);
+  if (executionLedger.RecordedInvocationCount != 2 ||
+      executionLedger.Complete().Count != 2)
+  {
+    throw new InvalidOperationException(
+      "TileRunner execution ledger did not complete its bounded invocation count.");
+  }
+  LegacyTileRunnerPassInput highDirtRecipe = passRecipes.Single(recipe =>
+    recipe.RecipeName == "surface-high-dirt");
+  LegacyTileRunnerPassInvocation highDirtInvocation =
+    LegacyTileRunnerPassInvocationFactory.Create(
+      highDirtRecipe,
+      new LegacyPassRandomState(42),
+      0,
+      8400,
+      0,
+      1200);
+  LegacyTileRunnerInvocationProvenance highDirtProvenance =
+    LegacyTileRunnerInvocationProvenanceFactory.Create(
+      highDirtInvocation,
+      invocationCommands,
+      invocationIndex: 0,
+      sourceLine: 12260);
+  LegacyTileRunnerPassExecutionLedger highDirtLedger =
+    new("DirtLayerCaves", "surface-high-dirt", expectedInvocationCount: 1);
+  highDirtLedger.Append(highDirtProvenance);
+  LegacyTileRunnerPassExecutionSetResult executionSet =
+    LegacyTileRunnerPassExecutionSetFactory.Complete(
+      "DirtLayerCaves",
+      new[] { executionLedger, highDirtLedger });
+  if (executionSet.Recipes.Count != 2 || executionSet.InvocationCount != 3 ||
+      executionSet.TileCommandCount != 3)
+  {
+    throw new InvalidOperationException(
+      "TileRunner multi-recipe execution set did not complete pass handoff.");
+  }
+  WorldGridSnapshot executionSnapshot =
+    new WorldGrid(8400, 1200, initializeLegacyEmptyFrames: true)
+      .CreateSnapshot(new WorldMetadata("worldgen", new WorldSeed(42), 8400, 1200));
+  LegacyTileRunnerInvocationProvenance snapshotProvenance =
+    LegacyTileRunnerSnapshotExecution.Execute(
+      executionSnapshot,
+      firstInvocation,
+      new LegacyTileRunnerSnapshotExecutionContext(
+        20,
+        120,
+        50,
+        0,
+        false,
+        200,
+        1000,
+        false,
+        12242),
+      41,
+      42,
+      0);
+  if (snapshotProvenance.SourceLine != 12242 ||
+      snapshotProvenance.Request.X != firstInvocation.Request.X ||
+      snapshotProvenance.Commands.TileCommand?.Sequence != 41)
+  {
+    throw new InvalidOperationException(
+      "TileRunner snapshot execution did not preserve request-to-command provenance.");
+  }
+  LegacyTileRunnerSnapshotBatchExecutionResult snapshotBatch =
+    LegacyTileRunnerSnapshotBatchExecution.Execute(
+      executionSnapshot,
+      "DirtLayerCaves",
+      new[] { firstInvocation, secondInvocation },
+      new LegacyTileRunnerSnapshotExecutionContext(
+        20,
+        120,
+        50,
+        0,
+        false,
+        200,
+        1000,
+        false,
+        12242),
+      startingSequence: 51);
+  if (snapshotBatch.Provenance.Count != 2 ||
+      snapshotBatch.Commands.TileCommands.Count != 2 ||
+      snapshotBatch.Commands.NextSequence != 54 ||
+      snapshotBatch.Provenance[1].InvocationIndex != 1)
+  {
+    throw new InvalidOperationException(
+      "TileRunner snapshot batch did not preserve bounded sequence aggregation.");
+  }
+  WorldGrid snapshotCommitWorld = WorldGrid.FromSnapshot(executionSnapshot);
+  if (!LegacyTileRunnerSnapshotCommitHandoff.TryCommit(
+        snapshotCommitWorld,
+        snapshotBatch,
+        new[]
+        {
+          new LiquidDefinition("water", 0, byte.MaxValue),
+          new LiquidDefinition("lava", 1, byte.MaxValue)
+        },
+        out LegacyTileRunnerCommandCommitResult snapshotCommitResult) ||
+      !snapshotCommitResult.Succeeded || snapshotCommitResult.AppliedTileCount != 2 ||
+      !snapshotCommitWorld.GetTile(firstInvocation.Request.X, firstInvocation.Request.Y).IsActive ||
+      !snapshotCommitWorld.GetTile(secondInvocation.Request.X, secondInvocation.Request.Y).IsActive)
+  {
+    throw new InvalidOperationException(
+      "TileRunner snapshot commit handoff did not commit the provenance-matched batch.");
+  }
+  LegacyTileRunnerSnapshotFingerprintResult generatedFingerprint =
+    LegacyTileRunnerSnapshotFingerprint.Create(executionSnapshot);
+  LegacyTileRunnerSnapshotFingerprintResult comparedFingerprint =
+    LegacyTileRunnerSnapshotFingerprint.Create(
+      executionSnapshot,
+      generatedFingerprint.GeneratedFingerprint);
+  LegacyTileRunnerSnapshotFingerprintResult mismatchFingerprint =
+    LegacyTileRunnerSnapshotFingerprint.Create(executionSnapshot, "oracle-not-compared");
+  if (generatedFingerprint.Compared || comparedFingerprint.Matches != true ||
+      mismatchFingerprint.Compared != true || mismatchFingerprint.Matches ||
+      generatedFingerprint.GeneratedFingerprint.Length != 64)
+  {
+    throw new InvalidOperationException(
+      "TileRunner snapshot fingerprint comparison did not preserve explicit parity status.");
+  }
+  Dictionary<string, string> generatedStages = new()
+  {
+    ["Terrain"] = generatedFingerprint.GeneratedFingerprint,
+    ["Cave"] = comparedFingerprint.GeneratedFingerprint
+  };
+  LegacyStageFingerprintComparisonResult missingOracleStages =
+    LegacyStageFingerprintComparison.Compare(generatedStages, oracle: null);
+  LegacyStageFingerprintComparisonResult comparedStages =
+    LegacyStageFingerprintComparison.Compare(
+      generatedStages,
+      new Dictionary<string, string>
+      {
+        ["Terrain"] = generatedFingerprint.GeneratedFingerprint,
+        ["Cave"] = "oracle-mismatch"
+      });
+  if (missingOracleStages.Compared || missingOracleStages.MissingOracleStageCount != 2 ||
+      comparedStages.ComparedStageCount != 2 || comparedStages.MismatchCount != 1 ||
+      comparedStages.Matches)
+  {
+    throw new InvalidOperationException(
+      "Stage fingerprint comparison did not account for missing and mismatched oracle stages.");
+  }
+  LegacyTileRunnerPassExecutionLedger undercountedLedger =
+    new("DirtLayerCaves", "surface-dirt", expectedInvocationCount: 2);
+  undercountedLedger.Append(provenance);
+  try
+  {
+    _ = undercountedLedger.Complete();
+    throw new InvalidOperationException(
+      "TileRunner execution ledger accepted an undercounted pass.");
+  }
+  catch (InvalidOperationException exception) when (exception.Message.Contains("reach"))
+  {
+  }
+  IReadOnlyList<LegacyTileRunnerPassLoopDefinition> loopDefinitions =
+    LegacyTileRunnerPassLoopContractDefinition.CreateDefault();
+  LegacyTileRunnerPassLoopDefinition surfaceLoop = loopDefinitions.Single(definition =>
+    definition.RecipeName == "surface-dirt");
+  LegacyTileRunnerPassLoopDefinition rockLoop = loopDefinitions.Single(definition =>
+    definition.RecipeName == "rock-high-dirt");
+  if (surfaceLoop.CalculateInvocationCount(200, 150, remixWorld: false) != 5 ||
+      rockLoop.CalculateInvocationCount(200, 150, remixWorld: false) != 135 ||
+      loopDefinitions.Count != 3)
+  {
+    throw new InvalidOperationException(
+      "TileRunner pass loop contract did not preserve source density cardinality.");
+  }
+  WorldGrid commitWorld = new(200, 150, initializeLegacyEmptyFrames: true);
+  if (!commitWorld.TrySetTile(
+        7,
+        130,
+        new WorldTile(IsActive: true, Type: 1, FrameX: 0, FrameY: 0)))
+  {
+    throw new InvalidOperationException("TileRunner commit fixture could not seed its tile.");
+  }
+
+  if (!LegacyTileRunnerCommandCommitBoundary.TryCommit(
+        commitWorld,
+        emitted,
+        new[]
+        {
+          new LiquidDefinition("water", 0, byte.MaxValue),
+          new LiquidDefinition("lava", 1, byte.MaxValue)
+        },
+        out LegacyTileRunnerCommandCommitResult commitResult) ||
+      !commitResult.Succeeded || commitResult.AppliedTileCount != 1 ||
+      commitResult.AppliedLiquidCount != 1 ||
+      commitWorld.GetTile(7, 130).IsActive ||
+      commitWorld.GetTile(7, 130).LiquidAmount != byte.MaxValue ||
+      commitWorld.GetTile(7, 130).LiquidType != 1)
+  {
+    throw new InvalidOperationException(
+      "TileRunner command commit boundary did not apply ordered tile and lava commands.");
+  }
+
+  LegacyTileRunnerCommandBatch invalidBatch = new(
+    emitted.TileCommand,
+    new LiquidChangeCommand(12, 7, 130, byte.MaxValue, 9),
+    true);
+  if (LegacyTileRunnerCommandCommitBoundary.TryCommit(
+        commitWorld,
+        invalidBatch,
+        new[] { new LiquidDefinition("water", 0, byte.MaxValue) },
+        out LegacyTileRunnerCommandCommitResult invalidCommit) ||
+      invalidCommit.FailureReason is null || commitWorld.GetTile(7, 130).IsActive)
+  {
+    throw new InvalidOperationException(
+      "TileRunner command commit boundary did not reject invalid liquid before mutation.");
+  }
+
+  LegacyTileRunnerCommandBatch secondBatch = LegacyTileRunnerCommandEmitter.Create(
+    8, 40, 23, 24, 1, true, true, false, 20, 120, 50, 0, false, 200, 1000, false);
+  LegacyTileRunnerPassCommandBatch passBatch =
+    LegacyTileRunnerPassCommandBatchFactory.Create(
+      "SurfaceCaves",
+      new[] { secondBatch, emitted },
+      startingSequence: 11);
+  if (passBatch.PassName != "SurfaceCaves" ||
+      passBatch.TileCommands.Count != 2 || passBatch.LiquidCommands.Count != 2 ||
+      passBatch.TileCommands[0].Sequence != 11 ||
+      passBatch.LiquidCommands[0].Sequence != 12 || passBatch.NextSequence != 25)
+  {
+    throw new InvalidOperationException(
+      "TileRunner pass batch did not preserve global command ordering and ownership.");
+  }
+
+  WorldGrid passCommitWorld = new(200, 150, initializeLegacyEmptyFrames: true);
+  if (!passCommitWorld.TrySetTile(
+        7,
+        130,
+        new WorldTile(IsActive: true, Type: 1, FrameX: 0, FrameY: 0)) ||
+      !passCommitWorld.TrySetTile(
+        8,
+        40,
+        new WorldTile(IsActive: true, Type: 2, FrameX: 0, FrameY: 0)))
+  {
+    throw new InvalidOperationException("TileRunner pass commit fixture could not seed tiles.");
+  }
+
+  if (!LegacyTileRunnerCommandCommitBoundary.TryCommit(
+        passCommitWorld,
+        passBatch,
+        new[]
+        {
+          new LiquidDefinition("water", 0, byte.MaxValue),
+          new LiquidDefinition("lava", 1, byte.MaxValue)
+        },
+        out LegacyTileRunnerCommandCommitResult passCommitResult) ||
+      !passCommitResult.Succeeded || passCommitResult.AppliedTileCount != 2 ||
+      passCommitResult.AppliedLiquidCount != 2 ||
+      passCommitWorld.GetTile(7, 130).IsActive ||
+      !passCommitWorld.GetTile(8, 40).IsActive ||
+      passCommitWorld.GetTile(8, 40).Type != 1 ||
+      passCommitWorld.GetTile(8, 40).LiquidAmount != 0)
+  {
+    throw new InvalidOperationException(
+      "TileRunner pass commit boundary did not commit the flattened command batch.");
+  }
+
+  LegacyTileRunnerCommandBatch duplicateSequence = new(
+    new TileChangeCommand(11, 9, 40, TileChangeKind.Place, 1),
+    null,
+    false);
+  try
+  {
+    _ = LegacyTileRunnerPassCommandBatchFactory.Create(
+      "SurfaceCaves",
+      new[] { emitted, duplicateSequence },
+      startingSequence: 11);
+    throw new InvalidOperationException(
+      "TileRunner pass batch accepted a repeated cross-kind sequence.");
+  }
+  catch (InvalidOperationException exception) when (exception.Message.Contains("repeated"))
+  {
+  }
+  if (!liquid.InjectsLiquidBeforeClear || !liquid.ClearsActiveTile ||
+      liquid.InjectedLiquidType != 0 || liquid.SuppressedByRemixOceanDepth ||
+      liquid.ClearsLiquidOnActivation || !positive.ClearsLiquidOnActivation ||
+      !positive.ClearsLavaOnActivation || !positive.WritesSurfaceWall ||
+      !aboveSurface.ClearsLiquidOnActivation || aboveSurface.WritesSurfaceWall ||
+      special.WritesSurfaceWall || !remixOcean.InjectsLiquidBeforeClear ||
+      remixOcean.SetsLava || !remixOcean.SuppressedByRemixOceanDepth ||
+      !lavaInjection.InjectsLiquidBeforeClear || lavaInjection.InjectedLiquidType != 0 ||
+      !lavaInjection.SetsLava)
+  {
+    throw new InvalidOperationException(
+      "TileRunner liquid/wall side-effect profile diverged from source branches.");
+  }
+
+  if (emitted.TileCommand?.Kind != TileChangeKind.Kill ||
+      emitted.TileCommand?.PreserveLiquid != true ||
+      emitted.LiquidCommand?.Type != 1 || emitted.LiquidCommand?.Amount != byte.MaxValue ||
+      !emitted.SetsLava ||
+      waterProjection.CommandLiquidType != 0 || lavaProjection.CommandLiquidType != 1 ||
+      placed.TileCommand?.Kind != TileChangeKind.Place ||
+      placed.TileCommand?.WallType != 1 || placed.LiquidCommand?.Amount != 0)
+  {
+    throw new InvalidOperationException(
+      "TileRunner command emission did not preserve typed liquid and tile ordering contracts.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner liquid and wall side effects preserve source branches");
+}
+
+static void LegacyTileRunnerRandomAdjustmentSourceCheck()
+{
+  LegacyTileRunnerRandomAdjustment drunk =
+    LegacyTileRunnerRandomAdjustmentPolicy.Apply(
+      10.0, 100, 1, false, true, false, false, 20, -10, 0);
+  LegacyTileRunnerRandomAdjustment remix =
+    LegacyTileRunnerRandomAdjustmentPolicy.Apply(
+      10.0, 100, 1, false, false, true, false, -20, 0, 0);
+  LegacyTileRunnerRandomAdjustment good =
+    LegacyTileRunnerRandomAdjustmentPolicy.Apply(
+      10.0, 100, 1, false, false, false, true, 20, 0, 2);
+  LegacyTileRunnerRandomAdjustment excluded =
+    LegacyTileRunnerRandomAdjustmentPolicy.Apply(
+      10.0, 100, 57, false, false, false, true, 20, 0, 2);
+  if (drunk.Strength != 12.0 || drunk.Steps != 90 ||
+      remix.Strength != 8.0 || remix.Steps != 100 ||
+      good.Strength != 13.0 || good.Steps != 102 ||
+      excluded.Strength != 10.0 || excluded.Steps != 100)
+  {
+    throw new InvalidOperationException(
+      "TileRunner random adjustment policy diverged from world-variant branches.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner random adjustment preserves world-variant consumption branches");
+}
+
+static void LegacyTileRunnerInitializationSourceCheck()
+{
+  LegacyTileRunnerInitialization randomDirection =
+    LegacyTileRunnerInitializationPolicy.Create(
+      0.0, 0.0, -5, 7, 1, 1, false, false, false, false, false, false);
+  LegacyTileRunnerInitialization explicitDirection =
+    LegacyTileRunnerInitializationPolicy.Create(
+      2.0, -1.0, -5, 7, 1, 1, false, false, false, false, false, false);
+  LegacyTileRunnerInitialization bees =
+    LegacyTileRunnerInitializationPolicy.Create(
+      0.0, 0.0, 0, 0, 0, 1, true, true, false, false, false, false);
+  LegacyTileRunnerInitialization good =
+    LegacyTileRunnerInitializationPolicy.Create(
+      0.0, 0.0, 0, 0, 1, 0, false, false, false, false, false, true);
+  LegacyTileRunnerInitialization special =
+    LegacyTileRunnerInitializationPolicy.Create(
+      0.0, 0.0, 0, 0, 1, 0, false, true, true, true, true, false);
+  if (Math.Abs(randomDirection.DirectionX + 0.5) > 0.0001 ||
+      Math.Abs(randomDirection.DirectionY - 0.7) > 0.0001 ||
+      !randomDirection.ConsumedDirectionRandom || randomDirection.LiquidType != 0 ||
+      explicitDirection.DirectionX != 2.0 || explicitDirection.DirectionY != -1.0 ||
+      explicitDirection.ConsumedDirectionRandom || bees.LiquidType != 2 ||
+      !bees.ConsumedLiquidTypeRandom || good.LiquidType != 1 ||
+      special.LiquidType != 3)
+  {
+    throw new InvalidOperationException(
+      $"TileRunner initialization policy diverged: random=({randomDirection.DirectionX}," +
+      $"{randomDirection.DirectionY},{randomDirection.LiquidType}), " +
+      $"explicit=({explicitDirection.DirectionX},{explicitDirection.DirectionY}), " +
+      $"bees={bees.LiquidType}, good={good.LiquidType}, special={special.LiquidType}.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner initialization preserves direction and liquid-type random branches");
+}
+
+static void LegacyTileRunnerPerturbationSourceCheck()
+{
+  LegacyTileRunnerPerturbation jitter =
+    LegacyTileRunnerPerturbationPolicy.ApplyDrunkJitter(10.0, 20.0, true, 0, -20, 40);
+  LegacyTileRunnerPerturbation skipped =
+    LegacyTileRunnerPerturbationPolicy.ApplyDrunkJitter(10.0, 20.0, true, 1, -20, 40);
+  LegacyTileRunnerPerturbation normal =
+    LegacyTileRunnerPerturbationPolicy.ApplyDrunkJitter(10.0, 20.0, false, 0, -20, 40);
+  if (jitter.CenterX != 9.0 || jitter.CenterY != 22.0 || !jitter.AppliedDrunkJitter ||
+      skipped.CenterX != 10.0 || skipped.CenterY != 20.0 || skipped.AppliedDrunkJitter ||
+      normal.CenterX != 10.0 || normal.CenterY != 20.0 || normal.AppliedDrunkJitter)
+  {
+    throw new InvalidOperationException(
+      "TileRunner drunk center perturbation diverged from per-step random gate.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner drunk center perturbation preserves per-step random gate");
+}
+
+static void LegacyTileRunnerDriftSourceCheck()
+{
+  LegacyTileRunnerDrift applied = LegacyTileRunnerDriftPolicy.ApplyExtraDrift(
+    10.0, 20.0, 1.0, -2.0, 60.0, 10.0, false, 0, 4, -6);
+  LegacyTileRunnerDrift skippedByStrength = LegacyTileRunnerDriftPolicy.ApplyExtraDrift(
+    10.0, 20.0, 1.0, -2.0, 50.0, 10.0, false, 0, 4, -6);
+  LegacyTileRunnerDrift skippedByDrunkGate = LegacyTileRunnerDriftPolicy.ApplyExtraDrift(
+    10.0, 20.0, 1.0, -2.0, 60.0, 10.0, true, 0, 4, -6);
+  if (applied.CenterX != 11.0 || applied.CenterY != 18.0 ||
+      applied.DirectionX != 1.2 || applied.DirectionY != -2.3 ||
+      applied.RemainingSteps != 9.0 || !applied.AppliedExtraDrift ||
+      skippedByStrength.AppliedExtraDrift || skippedByDrunkGate.AppliedExtraDrift)
+  {
+    throw new InvalidOperationException(
+      "TileRunner strength-driven drift diverged from threshold and drunk gate semantics.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner strength-driven drift preserves threshold and random gate");
+}
+
+static void LegacyTileRunnerDriftBatchSourceCheck()
+{
+  int[] rolls = new int[12];
+  LegacyTileRunnerDriftBatch batch = LegacyTileRunnerDriftBatchPolicy.Apply(
+    0.0,
+    0.0,
+    1.0,
+    0.0,
+    260.0,
+    20.0,
+    false,
+    0,
+    rolls,
+    rolls);
+  if (batch.AppliedDriftCount != 5 || batch.CenterX != 5.0 || batch.CenterY != 0.0 ||
+      batch.DirectionX != 1.0 || batch.RemainingSteps != 15.0)
+  {
+    throw new InvalidOperationException(
+      "TileRunner repeated strength-band drift diverged from source thresholds.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner repeated strength-band drift preserves source thresholds");
+}
+
+static void LegacyTileRunnerDirectionSourceCheck()
+{
+  LegacyTileRunnerDirection clamped = LegacyTileRunnerDirectionPolicy.Finalize(
+    0.9, 0.4, 1, true, false, 10.0, 500.0, 400.0, 1200, 10, 10, 10);
+  LegacyTileRunnerDirection type59 = LegacyTileRunnerDirectionPolicy.Finalize(
+    0.0, 0.9, 59, false, false, 10.0, 1000.0, 400.0, 1200, 0, 0, 10);
+  LegacyTileRunnerDirection shallowType59 = LegacyTileRunnerDirectionPolicy.Finalize(
+    0.0, -0.9, 59, false, false, 10.0, 450.0, 400.0, 1200, 0, 0, 0);
+  LegacyTileRunnerDirection noYChange = LegacyTileRunnerDirectionPolicy.Finalize(
+    0.0, 2.0, 1, false, true, 2.0, 500.0, 400.0, 1200, 0, 0, 10);
+  if (clamped.X != 1.0 || Math.Abs(clamped.Y - 0.9) > 0.0001 ||
+      type59.Y != -1.0 || !type59.AppliedType59Clamp ||
+      shallowType59.Y != 1.0 || noYChange.Y != 1.0)
+  {
+    throw new InvalidOperationException(
+      $"TileRunner final direction diverged: clamp=({clamped.X},{clamped.Y}), " +
+      $"type59={type59.Y}, shallow={shallowType59.Y}, noY={noYChange.Y}.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner final direction clamp preserves noYChange and type-59 branches");
+}
+
 static Dictionary<string, int> CreateExtendedStateMismatchFieldCounts()
 {
   return new Dictionary<string, int>(StringComparer.Ordinal)
@@ -9729,6 +11201,34 @@ static string CreateWorldGridFingerprint(WorldGrid world)
     for (int y = 0; y < world.Height; y++)
     {
       WorldTile tile = world.GetTile(x, y);
+      int offset = 0;
+      tileBuffer[offset++] = tile.IsActive ? (byte)1 : (byte)0;
+      BinaryPrimitives.WriteUInt16LittleEndian(tileBuffer[offset..], tile.Type);
+      offset += sizeof(ushort);
+      tileBuffer[offset++] = tile.LiquidAmount;
+      tileBuffer[offset++] = tile.LiquidType;
+      BinaryPrimitives.WriteInt16LittleEndian(tileBuffer[offset..], tile.FrameX);
+      offset += sizeof(short);
+      BinaryPrimitives.WriteInt16LittleEndian(tileBuffer[offset..], tile.FrameY);
+      offset += sizeof(short);
+      hash.AppendData(tileBuffer[..offset]);
+    }
+  }
+
+  return Convert.ToHexString(hash.GetHashAndReset());
+}
+
+static string CreateSnapshotWorldGridFingerprint(WorldGridSnapshot snapshot)
+{
+  using IncrementalHash hash = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+  AppendInt32(hash, snapshot.Metadata.Width);
+  AppendInt32(hash, snapshot.Metadata.Height);
+  Span<byte> tileBuffer = stackalloc byte[9];
+  for (int x = 0; x < snapshot.Metadata.Width; x++)
+  {
+    for (int y = 0; y < snapshot.Metadata.Height; y++)
+    {
+      WorldTile tile = snapshot.GetTile(x, y);
       int offset = 0;
       tileBuffer[offset++] = tile.IsActive ? (byte)1 : (byte)0;
       BinaryPrimitives.WriteUInt16LittleEndian(tileBuffer[offset..], tile.Type);
@@ -9917,6 +11417,7 @@ internal sealed record LegacyDifferentialEvidence(
   int ActiveLegacyTiles,
   int ActiveGeneratedTiles,
   string LegacyFingerprint,
+  string LegacyProjectedFingerprint,
   string GeneratedFingerprint,
   IReadOnlyList<LegacySectionDifference> Sections,
   IReadOnlyList<LegacySpatialRegionDifference> Regions);

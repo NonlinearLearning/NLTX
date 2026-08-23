@@ -28,10 +28,12 @@ authority and execution proof chain before they can contribute to the 90-percent
 The physical deletion audit is separate from this weighted score. A fresh G child trace at
 `Build/diagnostics/server-ecs-convergence/P5-worldobjects/20260822-2200/trace.md` now proves an
 atomic expected-revision guard for Simulation chest transfers. G remains `Partial` because the
-existing V1456 transfer wire shape does not carry that revision and complete client-side
-tile-entity mutation authorization is still absent; no score change is claimed. The ledger at
+existing V1456 transfer wire shape does not carry that revision, the inbound Training Dummy
+route is intentionally limited to the source-backed type-0/visible-section path, and complete
+client-side tile-entity mutation authorization across all entity types is still absent; no score
+change is claimed. The ledger at
 `docs/migrations/version4-physical-deletion-ledger.csv` has 535 rows, and its completeness gate
-currently fails with 57 explicitly deferred `ServerRelevant` rows; `ExtractinatorHelper`,
+currently fails with 48 explicitly deferred `ServerRelevant` rows; `ExtractinatorHelper`,
 `ItemTrader`, and the transient `Terraria.Net.Ping` protocol behavior are recorded as replaced
 with evidence. WorldGen remains governed by
 `docs/worldgen/worldgen-deletion-gate.json`.

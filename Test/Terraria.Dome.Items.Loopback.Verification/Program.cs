@@ -232,6 +232,15 @@ static async Task<byte> ActivateAsync(NetworkStream stream, short spawnX, short 
   await stream.WriteAsync(TerrariaPacketCodec.Encode(new HelloPacket()));
   TerrariaFrame userSlot = TerrariaFrameCodec.Decode(
     await ReadFrameAsync(stream, CancellationToken.None));
+  TerrariaFrame initialNetModules = TerrariaFrameCodec.Decode(
+    await ReadFrameAsync(stream, CancellationToken.None));
+  if (initialNetModules.MessageId != TerrariaMessageId.NetModules ||
+      !initialNetModules.Payload.Span.SequenceEqual(new byte[] { 0, 0, 0, 0 }))
+  {
+    throw new InvalidOperationException(
+      "The item loopback session did not consume the initial NetModules frame.");
+  }
+
   TerrariaColor color = new(0, 0, 0);
   await stream.WriteAsync(TerrariaPacketCodec.Encode(new PlayerProfilePacket(
     userSlot.Payload.Span[0], 0, 0, 0.0f, 0, name, 0, 0, 0,

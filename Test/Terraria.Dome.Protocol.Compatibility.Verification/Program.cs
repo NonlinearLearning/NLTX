@@ -4,6 +4,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using Terraria.Dome.Protocol.V1456.Compatibility;
+using Terraria.Dome.Protocol.V1456.Dispatch;
 using Terraria.Dome.Protocol.V1456.Packets;
 using Terraria.Dome.Protocol.V1456.Protocol;
 using Terraria.Dome.Protocol.V1456.Session;
@@ -1796,7 +1797,34 @@ if (liquidDescriptor.Support != TerrariaPacketSupport.Handled)
   throw new InvalidOperationException("NetModules liquid boundary is not cataloged.");
 }
 
+TerrariaMessageDescriptor tileEntitySharingDescriptor = TerrariaMessageCatalog.Get(
+  TerrariaMessageId.TileEntitySharing);
+TerrariaMessageDescriptor tileEntityPlacementDescriptor = TerrariaMessageCatalog.Get(
+  TerrariaMessageId.TileEntityPlacement);
+if (tileEntitySharingDescriptor.Direction != TerrariaPacketDirection.ServerToClient ||
+    tileEntitySharingDescriptor.Support != TerrariaPacketSupport.Handled ||
+    tileEntityPlacementDescriptor.Direction != TerrariaPacketDirection.ServerToClient ||
+    tileEntityPlacementDescriptor.Support != TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "TrainingDummy tile-entity messages are not cataloged as server-owned projections.");
+}
+
+try
+{
+  _ = new TerrariaPacketDispatcher().Dispatch(
+    new TerrariaSession(1),
+    TerrariaPacketCodec.EncodeTrainingDummyTileEntityPlacement(12, 14));
+  throw new InvalidOperationException(
+    "Inbound TrainingDummy placement was accepted outside the tile interaction authority path.");
+}
+catch (InvalidDataException exception) when (
+  exception.Message.Contains("server-only", StringComparison.Ordinal))
+{
+}
+
 Console.WriteLine("PASS: unsupported wiring messages are explicitly isolated and NetModules is typed");
+Console.WriteLine("PASS: TrainingDummy tile-entity messages are server-owned projections");
 
 static TerrariaSession CreateActiveSession(byte assignedPlayerSlot)
 {

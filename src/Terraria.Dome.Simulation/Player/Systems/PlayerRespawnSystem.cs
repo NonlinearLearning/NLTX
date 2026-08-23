@@ -12,7 +12,8 @@ public sealed class PlayerRespawnSystem
     ref HealthComponent health,
     SimulationVector spawn)
   {
-    if (lifecycle.IsActive || lifecycle.RespawnTicks < 0 || lifecycle.RespawnTicks > 0)
+    if (lifecycle.IsActive || lifecycle.RespawnTicks < 0 || lifecycle.RespawnTicks > 0 ||
+        !float.IsFinite(spawn.X) || !float.IsFinite(spawn.Y))
     {
       return false;
     }

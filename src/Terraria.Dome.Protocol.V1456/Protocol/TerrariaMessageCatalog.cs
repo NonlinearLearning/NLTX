@@ -181,6 +181,10 @@ public static class TerrariaMessageCatalog
       TerrariaPacketSupport.Handled);
     Set(descriptors, TerrariaMessageId.SyncChestSize, TerrariaPacketDirection.ServerToClient,
       TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.TileEntitySharing,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.TileEntityPlacement,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
     Set(descriptors, TerrariaMessageId.RequestSection, TerrariaPacketDirection.ClientToServer,
       TerrariaPacketSupport.Handled);
     return descriptors;

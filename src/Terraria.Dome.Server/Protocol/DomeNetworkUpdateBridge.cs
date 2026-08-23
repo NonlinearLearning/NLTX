@@ -27,6 +27,10 @@ internal sealed class DomeNetworkUpdateBridge : IProtocolCommandSink
         return Enqueue(new ApplyTileManipulationCommand(
           envelope.PlayerSlot,
           TerrariaPacketCodec.DecodeTileManipulation(envelope.FrameBytes.Span)));
+      case TerrariaMessageId.TileEntityPlacement:
+        return Enqueue(new PlaceTileEntityCommand(
+          envelope.PlayerSlot,
+          TerrariaPacketCodec.DecodeTileEntityPlacement(envelope.FrameBytes.Span)));
       case TerrariaMessageId.RequestChestOpen:
         return Enqueue(new OpenChestCommand(
           envelope.PlayerSlot,

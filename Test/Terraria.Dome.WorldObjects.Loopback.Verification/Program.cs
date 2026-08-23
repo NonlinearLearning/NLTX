@@ -151,6 +151,93 @@ if (removed.EntityId != placed.EntityId ||
 
 Console.WriteLine("PASS: TrainingDummy removal publishes message 86 tombstone and clears owner");
 
+const short inboundPlacementX = 2010;
+const short inboundPlacementY = 0;
+if (!server.World.TrySetTile(inboundPlacementX, inboundPlacementY,
+    new WorldTile(IsActive: true, Type: 378)))
+{
+  throw new InvalidOperationException("Could not prepare the inbound TrainingDummy tile.");
+}
+
+await first.WriteAsync(TerrariaPacketCodec.EncodeTrainingDummyTileEntityPlacement(
+  inboundPlacementX,
+  inboundPlacementY));
+TrainingDummySharingFrame inboundPlaced = await ReadTrainingDummySharingAsync(
+  first,
+  expectedEntityId: null,
+  expectedPresent: true,
+  TimeSpan.FromSeconds(3));
+if (inboundPlaced.TileX != inboundPlacementX || inboundPlaced.TileY != inboundPlacementY ||
+    inboundPlaced.NpcId != -1)
+{
+  throw new InvalidOperationException("Inbound message 87 did not create the typed TrainingDummy.");
+}
+
+await first.WriteAsync(TerrariaPacketCodec.EncodeTrainingDummyTileEntityPlacement(
+  inboundPlacementX,
+  inboundPlacementY));
+if (await HasTrainingDummyFrameAsync(first, TimeSpan.FromMilliseconds(500)))
+{
+  throw new InvalidOperationException("Duplicate inbound message 87 produced a second entity frame.");
+}
+
+const short foreignPlacementX = 2040;
+const short foreignPlacementY = 0;
+_ = server.World.TrySetTile(foreignPlacementX, foreignPlacementY,
+  new WorldTile(IsActive: true, Type: 378));
+await hidden.WriteAsync(TerrariaPacketCodec.EncodeTrainingDummyTileEntityPlacement(
+  foreignPlacementX,
+  foreignPlacementY));
+if (await HasTrainingDummyFrameAsync(hidden, TimeSpan.FromMilliseconds(500)) ||
+    server.CreatePersistenceSnapshot(
+      new WorldMetadata("TrainingDummy loopback", new WorldSeed(1456), 4200, 1200))
+      .TileEntities.Any(entity => entity.TileX == foreignPlacementX && entity.TileY == foreignPlacementY))
+{
+  throw new InvalidOperationException("Foreign-session message 87 bypassed section visibility.");
+}
+
+const short invalidPlacementX = 2020;
+const short invalidPlacementY = 0;
+_ = server.World.TrySetTile(invalidPlacementX, invalidPlacementY,
+  new WorldTile(IsActive: true, Type: 1));
+await first.WriteAsync(TerrariaPacketCodec.EncodeTrainingDummyTileEntityPlacement(
+  invalidPlacementX,
+  invalidPlacementY));
+if (await HasTrainingDummyFrameAsync(first, TimeSpan.FromMilliseconds(500)) ||
+    server.CreatePersistenceSnapshot(
+      new WorldMetadata("TrainingDummy loopback", new WorldSeed(1456), 4200, 1200))
+      .TileEntities.Any(entity => entity.TileX == invalidPlacementX && entity.TileY == invalidPlacementY))
+{
+  throw new InvalidOperationException("Invalid tile accepted inbound message 87.");
+}
+
+Console.WriteLine("PASS: raw message 87 placement is typed, duplicate-safe and tile-validity guarded");
+
+firstClient.Close();
+await Task.Delay(TimeSpan.FromMilliseconds(100));
+if (!server.CreatePersistenceSnapshot(
+      new WorldMetadata("TrainingDummy loopback", new WorldSeed(1456), 4200, 1200))
+      .TileEntities.Any(entity => entity.TileX == inboundPlacementX &&
+        entity.TileY == inboundPlacementY))
+{
+  throw new InvalidOperationException("TrainingDummy ownership was lost on client disconnect.");
+}
+
+Console.WriteLine("PASS: TrainingDummy state survives client disconnect");
+
+using TcpClient reconnectClient = new();
+await reconnectClient.ConnectAsync("127.0.0.1", server.Port);
+NetworkStream reconnect = reconnectClient.GetStream();
+byte reconnectSlot = await ActivateAsync(reconnect, 2000, 0, "Reconnect");
+await UnlockVisibilityAsync(reconnect, reconnectSlot);
+if (!await HasTrainingDummyFrameAsync(reconnect, TimeSpan.FromSeconds(2)))
+{
+  throw new InvalidOperationException(
+    "Reconnect session did not receive the persisted TrainingDummy projection.");
+}
+
+Console.WriteLine("PASS: TrainingDummy state is reconstructed for a reconnecting session");
+
 static async Task WaitForChestOpenerAsync(DomeServer server, int chestId, byte opener)
 {
   using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(3));

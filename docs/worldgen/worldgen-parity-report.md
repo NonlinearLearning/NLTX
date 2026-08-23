@@ -23,10 +23,13 @@
   test-local frame/footprint fixtures and the production orb-origin calculation. This
   verifies the bounded query, command, stage, and restart contracts only; it does not
   change the complete differential result below.
-- Complete baseline differential replay: the comparator ran against the repeat `4200 x 1200`
-  WLD v319 and compared all `5,040,000` tiles. It found `5,040,000` mismatches, with
-  `2,640,402` active legacy tiles and `3,671,879` active generated tiles. Every one of the
-  `168` sections had `30,000` mismatches. The expanded `WorldTile` projection now carries wall,
+- Complete baseline differential replay: the current comparator ran against the repeat `4200 x 1200`
+  WLD v319 and compared all `5,040,000` tiles. It found `3,190,404` mismatches after applying
+  the legacy inactive-tile `FrameX`/`FrameY` sentinel, source-derived TerrainPass stone/ground
+  layering, and source-aligned cave kill frames, with `2,640,402` active legacy tiles and
+  `3,671,879` active generated tiles. The current trace is authoritative for this baseline;
+  older intermediate and all-tile mismatch records are retained as historical artifacts.
+  The expanded `WorldTile` projection now carries wall,
   liquid, frame, wire, slope, actuator, paint, inactive and visibility state. The complete
   baseline still differs from ECS generation in at least one extended state field on `1,046,843`
   tiles. The overlapping field mismatch counts are `WallType`
@@ -38,14 +41,15 @@
   snapshot and all `5,040,000` tile states compared with `0` mismatches. One opaque non-tile
   record was retained. This proves old-world tile-state preservation only; it does not establish
   generated-world semantic parity.
-- Differential localization: `legacy-worldgen-differential.json` now records all `21` compared
-  tile-state fields globally, for every section, and in three WLD metadata regions. The counts
-  reconcile exactly across all three levels. All tiles still mismatch in every region: above the
-  world surface (`y=0..324`) `1,365,000 / 1,365,000`, surface to rock layer (`y=325..396`)
-  `302,400 / 302,400`, and below rock layer (`y=397..1199`) `3,372,600 / 3,372,600`. The largest
-  base-state differences are `FrameX` `5,025,324`, `FrameY` `5,013,951`, `TileType`
-  `2,939,560`, `IsActive` `1,583,853`, `WallType` `995,054`, `LiquidAmount` `303,611`, and
-  `LiquidKind` `196,096`. This is diagnostic consistency evidence for selecting a bounded
+- Differential localization: `legacy-worldgen-differential.json` records all `21` compared
+  tile-state fields globally, for every section, and in three WLD metadata regions. The current
+  total is `3,190,404 / 5,040,000` mismatching tiles; use the fresh
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/current-full-differential/trace.txt`
+  when section or region-level counts are required. The largest
+  base-state differences are `TileType` `2,897,554`, `IsActive` `1,583,853`, `WallType`
+  `995,054`, `LiquidAmount` `303,611`, `LiquidKind` `196,096`, `FrameX` `94,204`, and
+  `FrameY` `91,258`; the remaining classified fields are recorded in the JSON artifact. This
+  is diagnostic consistency evidence for selecting a bounded
   migration slice, not semantic parity evidence.
 
 ## Implemented coverage
@@ -218,7 +222,7 @@ The baseline differential comparator is recorded in `legacy-worldgen-differentia
 WLD metadata spawn X `2099`, `worldSurface` Y `325`, and `rockLayer` Y `397`, rather than the old
 Dome fixture center and derived terrain defaults. Non-default secret-seed/difficulty/hardmode
 rules are now explicit unsupported inputs, but their legacy behavior is not captured. Even under
-these aligned terrain inputs, all `5,040,000` tiles mismatch and the
+these aligned terrain inputs, `3,190,404` of `5,040,000` tiles mismatch and the
 legacy projection exposes `1,046,843` tiles with at least one extended-state mismatch when the
 captured DirtWallBackgrounds offset artifact is supplied. The artifact only replays one
 default-rule seed-1456/full-size random outcome; without it, the prior no-oracle comparison had

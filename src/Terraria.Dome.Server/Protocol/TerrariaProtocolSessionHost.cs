@@ -275,6 +275,11 @@ internal sealed class TerrariaProtocolSessionHost
             EnqueueInboundFrame(playerSlot, frameBytes);
           }
 
+          if (result.TileEntityPlacement is TileEntityPlacementIntent)
+          {
+            EnqueueInboundFrame(playerSlot, frameBytes);
+          }
+
           if (result.ChestOpen is ChestOpenIntent chestOpen)
           {
             EnqueueInboundFrame(playerSlot, frameBytes);

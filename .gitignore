@@ -15,6 +15,9 @@
 /TRbackupNLTXsrcTerraria.Dome.SimulationItemsInventoryComponent.cs
 /Build/diagnostics/
 
+# Flowstate private process state. Finalized artifacts belong under docs/flowstate/.
+/.agent-workplace/
+
 # Ignore build output nested inside individual test and source projects too.
 **/Build/*
 !Build/Tools/

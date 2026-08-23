@@ -39,7 +39,7 @@ public sealed class ProjectileDamageSystem
 
       ref ProjectilePenetrationComponent penetration =
         ref world.Get<ProjectilePenetrationComponent>(candidate.Projectile);
-      if (penetration.RemainingPenetration == 0)
+      if (penetration.RemainingPenetration < -1 || penetration.RemainingPenetration == 0)
       {
         continue;
       }

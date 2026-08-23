@@ -15,7 +15,8 @@ public sealed class WiringInputValidationSystem
   {
     ArgumentNullException.ThrowIfNull(world);
     ArgumentNullException.ThrowIfNull(network);
-    return command.Sequence >= 0 && maximumRadius >= 0 && world.Contains(command.X, command.Y) &&
+    return command.Sequence >= 0 && command.Sequence != long.MaxValue && maximumRadius >= 0 &&
+      world.Contains(command.X, command.Y) &&
       network.HasWire(command.X, command.Y, command.Color);
   }
 }

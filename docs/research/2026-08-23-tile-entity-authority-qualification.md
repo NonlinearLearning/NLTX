@@ -209,9 +209,9 @@ sections and emits removal frames for previously sent entities that disappear.
 The focused verifier validates all message fields and the Protocol/Server
 Release builds pass, including a cursor fixture for initial, unchanged,
 changed, and removed states. Initial section bootstrap, placement
-authorization, observer loopback, and client-side handling remain outside this
-bounded projection; the complete TrainingDummy qualification is still
-`Partial`.
+authorization and client-side handling remain outside this bounded projection;
+the server-owned observer loopback is covered separately, and the complete
+TrainingDummy qualification is still `Partial`.
 
 ## Incremental Evidence: Initial Section Ownership
 
@@ -259,9 +259,63 @@ The latest bounded chain is implemented and rerun under
 - Simulation and Server Release builds pass with zero warnings and errors.
 - WorldObjects, Persistence, Protocol Compatibility, FullClientBootstrap,
   MainBoundary, Completion, and WorldObjects Loopback verifiers all exit `0`.
-- The typed owner is reached only through the validated server tile interaction
-  path; raw inbound message `87` remains rejected/deferred.
+- The typed owner is reached through the validated server tile interaction path and a bounded
+  inbound message `87` route. The inbound route is limited to active-session, visible-section,
+  type-0, tile-validity and duplicate guards; complete client authorization remains deferred.
 
-The qualification therefore remains `Partial`. A real two-session observer/client
-mutation loopback and source-backed authorization semantics for inbound `87` are
-still required before family G can receive score or be treated as complete.
+The qualification therefore remains `Partial`. The server-owned observer
+loopback is still a bounded path; source-backed authorization semantics and
+client mutation behavior for inbound `87` are still required before family G can
+receive score or be treated as complete.
+
+## Incremental Evidence: Server-Owned TCP Loopback
+
+The focused `WorldObjects.Loopback.Verification` now covers the implemented
+authority path end to end. A visible TCP session sends the validated
+`TileManipulation` placement for tile type `378`; the server commits the tile,
+creates the typed type-0 entity, and publishes one message `86` present frame
+with the expected coordinates and `npc=-1`. A hidden session in another section
+receives no frame. The visible session then sends the validated kill operation;
+the server publishes the matching message `86` removal frame and clears both the
+authoritative tile and persistence snapshot.
+
+The complete oracle does establish the basic wire direction for client message
+`87`: `TETrainingDummy.Hook_AfterPlacement` sends it from a client and the
+server-side `MessageBuffer` decodes it before calling `TileEntity.PlaceEntityNet`.
+That evidence is recorded at
+`Build/diagnostics/server-ecs-convergence/P5-tileentity/20260822-training-dummy-message87-direction.json`.
+The current ECS server now accepts only the bounded route described above. The source supplies
+bounds/duplicate guards but no interaction-distance predicate; complete range semantics,
+explicit rejection feedback, and all tile-entity types remain outside this contract.
+
+The protocol layer now has a typed `TileEntityPlacementIntent` decoder with
+exact five-byte payload validation. The focused verifier covers valid
+coordinates/type `0` and malformed-length rejection; the fresh run is recorded
+at `Build/diagnostics/server-ecs-convergence/P5-tileentity/20260822-training-dummy-inbound-decode/trace.txt`.
+The inbound boundary is now wired through the dispatcher, session host,
+`DomeNetworkUpdateBridge`, and a typed `PlaceTileEntityCommand`. The server
+requires an active player slot, entity type `0`, in-world coordinates, and a
+visible section before invoking the Simulation owner. The direct Release build
+is recorded at
+`Build/diagnostics/server-ecs-convergence/P5-tileentity/20260822-training-dummy-inbound-route/server-build.txt`.
+This closes parsing, bounded enqueue/guard behavior, and the visible-session TCP loopback.
+It does not prove source-backed interaction range, explicit rejection feedback, or complete
+tile-entity-family ownership, so it does not promote the full inbound mutation contract.
+The loopback therefore strengthens the bounded evidence but does not promote
+TrainingDummy or family G from `Partial`.
+
+The raw TCP loopback now exercises the bounded inbound route. A visible session
+places a prepared valid type-378 tile through message 87 and receives one typed
+message-86 state frame; a duplicate message 87 produces no second entity; and
+an active wrong-type tile is rejected. A foreign hidden session cannot place a
+visible-section entity, and the linked state survives disconnect of the placing
+client. Fresh output is recorded at
+`Build/diagnostics/server-ecs-convergence/P5-tileentity/20260822-training-dummy-inbound-route/loopback.txt`.
+The oracle's message-87 receive branch has no interaction-distance predicate;
+range enforcement is therefore not source-backed for this packet. The same
+loopback reconnects a new TCP session after the placing client closes and
+observes the persisted TrainingDummy projection. The complete oracle has no
+explicit rejection frame for message 87: failed bounds/duplicate checks return
+silently. That fact and the current silent-drop route are recorded at
+`Build/diagnostics/server-ecs-convergence/P5-tileentity/20260822-training-dummy-message87-rejection-contract.json`.
+No synthetic rejection frame is required by this contract.

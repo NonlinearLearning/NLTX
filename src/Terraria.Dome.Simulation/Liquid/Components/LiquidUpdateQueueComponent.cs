@@ -68,8 +68,13 @@ public sealed class LiquidUpdateQueueComponent
       return false;
     }
 
+    if (!TryEnqueue(node.X, node.Y, node.Sequence))
+    {
+      return false;
+    }
+
     _retryCounts[(node.X, node.Y)] = GetRetryCount(node.X, node.Y) + 1;
-    return TryEnqueue(node.X, node.Y, node.Sequence);
+    return true;
   }
 
   public void ResetRetryCount(int x, int y)
