@@ -1,6 +1,5 @@
 # Terraria V1456 Protocol Compatibility Completeness Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task.
 
 **Goal:** Make every V1456 packet handled on Dome's active client/server paths conform to the
 complete original wire grammar, so an unimplemented Dome simulation feature cannot cause a

@@ -28,7 +28,8 @@ IReadOnlyList<byte[]> projectedPlayerFrames = PlayerStateProjection.CreateFrames
     "22222222-2222-2222-2222-222222222222",
     1,
     15,
-    20),
+    20,
+    SelectedSlot: 4),
   new PlayerStateSnapshot(
     new PlayerHandle(1),
     true,
@@ -38,7 +39,13 @@ IReadOnlyList<byte[]> projectedPlayerFrames = PlayerStateProjection.CreateFrames
     "22222222-2222-2222-2222-222222222222",
     1,
     15,
-    20));
+    20,
+    MoveLeft: true,
+    Jump: true,
+    UseItem: true,
+    SelectedSlot: 4,
+    Facing: -1,
+    Down: true));
 TerrariaMessageId[] projectedMessageIds = projectedPlayerFrames
   .Select(frame => TerrariaFrameCodec.Decode(frame).MessageId)
   .ToArray();
@@ -52,7 +59,73 @@ if (!projectedMessageIds.SequenceEqual([
     "Player replication projection did not derive the expected typed V1456 frames.");
 }
 
+PlayerControlIntent projectedControls =
+  TerrariaPacketCodec.DecodePlayerControls(projectedPlayerFrames[2]);
+if (projectedControls.SelectedItem != 4 || projectedControls.FacingRight ||
+    !projectedControls.MoveLeft || projectedControls.MoveRight ||
+    !projectedControls.Jump || !projectedControls.UseItem || !projectedControls.Down)
+{
+  throw new InvalidOperationException(
+    "Player replication controls did not preserve authoritative state fields.");
+}
+
 Console.WriteLine("PASS: player replication frames are projected from immutable snapshots");
+
+try
+{
+  _ = PlayerStateProjection.CreateFrames(
+    1,
+    new PlayerSnapshot(
+      new PlayerHandle(1),
+      new SimulationVector(0.0f, 0.0f),
+      new SimulationVector(0.0f, 0.0f),
+      1,
+      true,
+      100,
+      true,
+      0),
+    new PlayerStateSnapshot(
+      new PlayerHandle(1),
+      true,
+      100,
+      100,
+      0,
+      AssignedSlot: 1,
+      SelectedSlot: 10));
+  throw new InvalidOperationException("Player projection accepted a non-hotbar selected slot.");
+}
+catch (ArgumentOutOfRangeException)
+{
+Console.WriteLine("PASS: player replication rejects a non-hotbar selected slot");
+}
+
+try
+{
+  _ = PlayerStateProjection.CreateFrames(
+    1,
+    new PlayerSnapshot(
+      new PlayerHandle(1),
+      new SimulationVector(0.0f, 0.0f),
+      new SimulationVector(0.0f, 0.0f),
+      1,
+      true,
+      100,
+      true,
+      0,
+      AssignedSlot: 1),
+    new PlayerStateSnapshot(
+      new PlayerHandle(1),
+      true,
+      100,
+      100,
+      0,
+      AssignedSlot: 2));
+  throw new InvalidOperationException("Player projection accepted a mismatched state slot.");
+}
+catch (ArgumentException)
+{
+  Console.WriteLine("PASS: player replication rejects a mismatched state slot");
+}
 
 WorldGrid world = new(4200, 1200);
 SectionVisibilitySelector selector = new();

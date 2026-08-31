@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Terraria.Dome.Protocol.V1456.Packets;
 using Terraria.Dome.Protocol.V1456.Protocol;
+using Terraria.Dome.Server.Persistence;
 using Terraria.Dome.Server.Replication;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Items;
@@ -12,6 +13,7 @@ using Terraria.Dome.Simulation.Npc.Components;
 using Terraria.Dome.Simulation.Npc.Definitions;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldObjects;
+using Terraria.Dome.Simulation.WorldObjects.Sign.Commands;
 using Terraria.Dome.Simulation.WorldObjects.Definitions;
 
 VerifyTrainingDummyTileValidity();
@@ -73,6 +75,22 @@ PlayerHandle staleRevisionPlayer = staleRevisionSimulation.CreatePlayer(
   new SimulationVector(20.0f, 20.0f));
 int staleRevisionChestId = staleRevisionSimulation.CreateChest(20, 20);
 staleRevisionSimulation.SetChestItem(staleRevisionChestId, 0, new ItemStack(1, 1));
+bool overLimitChestItemRejected = false;
+try
+{
+  staleRevisionSimulation.SetChestItem(staleRevisionChestId, 1, new ItemStack(1, 100));
+}
+catch (ArgumentOutOfRangeException)
+{
+  overLimitChestItemRejected = true;
+}
+
+if (!overLimitChestItemRejected)
+{
+  throw new InvalidOperationException(
+    "Chest item admission accepted a stack above its authoritative Definition limit.");
+}
+
 if (!staleRevisionSimulation.TryOpenChest(
       staleRevisionChestId,
       staleRevisionPlayer,
@@ -102,6 +120,56 @@ if (!staleRevisionSimulation.TryTransferChestItem(
 {
   throw new InvalidOperationException(
     "Chest transfer did not reject a stale expected revision without mutating state.");
+}
+
+using (SessionReplicationState transferSession = new(
+         static (_, _) => Task.CompletedTask))
+{
+  ChestSnapshot transferSnapshot = staleRevisionSimulation.CreateChestSnapshots().Single();
+  if (transferSession.TryAuthorizeChestTransfer(transferSnapshot.ChestId, out _) ||
+      !transferSession.ShouldSendChest(transferSnapshot))
+  {
+    throw new InvalidOperationException(
+      "Chest transfer authorization accepted a revision before replication.");
+  }
+
+  transferSession.MarkChestSent(transferSnapshot);
+  if (!transferSession.TryAuthorizeChestTransfer(
+        transferSnapshot.ChestId,
+        out long authorizedRevision) ||
+      authorizedRevision != transferSnapshot.Revision)
+  {
+    throw new InvalidOperationException(
+      "Chest transfer authorization did not derive the session cursor revision.");
+  }
+
+  if (transferSession.TryAuthorizeChestTransfer(
+        transferSnapshot.ChestId,
+        transferSnapshot.Revision,
+        out _))
+  {
+    throw new InvalidOperationException(
+      "Unnegotiated chest revision authorization was accepted.");
+  }
+
+  transferSession.SetContractCapabilities(new SessionContractCapabilities(
+    ContractNegotiationState.Negotiated,
+    SignDeletionVersions: 0,
+    ChestTransferRevisionVersions: 1));
+
+  if (!transferSession.TryAuthorizeChestTransfer(
+        transferSnapshot.ChestId,
+        transferSnapshot.Revision,
+        out long explicitRevision) ||
+      explicitRevision != transferSnapshot.Revision ||
+      transferSession.TryAuthorizeChestTransfer(
+        transferSnapshot.ChestId,
+        transferSnapshot.Revision - 1,
+        out _))
+  {
+    throw new InvalidOperationException(
+      "Chest transfer authorization did not enforce the explicit session revision match.");
+  }
 }
 
 Console.WriteLine("PASS: chest transfer expected revision is an atomic stale-command guard");
@@ -369,7 +437,9 @@ static void VerifySimulationTrainingDummyOwnership()
     Section: grid.GetSectionCoordinates(12, 14),
     DefinitionId: 488,
     MaximumHealth: 1000,
-    BehaviorId: NpcBehaviorId.TrainingDummy);
+    BehaviorId: NpcBehaviorId.TrainingDummy,
+    Faction: NpcFaction.Neutral,
+    Category: NpcCategory.Town);
   DomeSimulationSnapshot snapshot = new(
     grid.CreateSnapshot(metadata),
     [npc],
@@ -804,6 +874,56 @@ if (TerrariaPacketCodec.DecodeChestTransfer(TerrariaPacketCodec.EncodeChestTrans
 
 Console.WriteLine("PASS: chest item transfer is server-owned and typed");
 
+ChestTransferIntent explicitRevisionIntent = transferIntent with { ExpectedRevision = 7 };
+if (TerrariaPacketCodec.DecodeChestTransfer(
+      TerrariaPacketCodec.EncodeChestTransfer(explicitRevisionIntent)) != explicitRevisionIntent ||
+    TerrariaPacketCodec.DecodeChestTransfer(
+      TerrariaPacketCodec.EncodeChestTransfer(transferIntent)).ExpectedRevision != -1)
+{
+  throw new InvalidOperationException(
+      "Chest transfer did not preserve optional expected revision compatibility.");
+}
+
+byte[] malformedRevisionPayload = new byte[16];
+BitConverter.GetBytes(-2L).CopyTo(malformedRevisionPayload, 8);
+bool rejectedMalformedRevision = false;
+try
+{
+  _ = TerrariaPacketCodec.DecodeChestTransfer(TerrariaFrameCodec.Encode(new TerrariaFrame(
+    TerrariaMessageId.SyncPlayerChest,
+    malformedRevisionPayload)));
+}
+catch (InvalidDataException)
+{
+  rejectedMalformedRevision = true;
+}
+
+if (!rejectedMalformedRevision)
+{
+  throw new InvalidOperationException("A chest transfer revision below -1 was accepted.");
+}
+
+byte[] unknownRevisionMarkerPayload = new byte[17];
+unknownRevisionMarkerPayload[8] = 0x7F;
+bool rejectedUnknownRevisionMarker = false;
+try
+{
+  _ = TerrariaPacketCodec.DecodeChestTransfer(TerrariaFrameCodec.Encode(new TerrariaFrame(
+    TerrariaMessageId.SyncPlayerChest,
+    unknownRevisionMarkerPayload)));
+}
+catch (InvalidDataException)
+{
+  rejectedUnknownRevisionMarker = true;
+}
+
+if (!rejectedUnknownRevisionMarker)
+{
+  throw new InvalidOperationException("An unknown chest transfer revision marker was accepted.");
+}
+
+Console.WriteLine("PASS: V1456 chest transfer supports legacy and explicit revision shapes");
+
 int signId = simulation.CreateSign(14, 10, "Initial");
 if (!simulation.TryUpdateSign(signId, new SimulationVector(10.0f, 10.0f), "Updated") ||
     simulation.TryUpdateSign(signId, new SimulationVector(100.0f, 10.0f), "Forged") ||
@@ -836,6 +956,52 @@ SignSnapshot sign = simulation.CreateSignSnapshots().Single();
 if (sign.Text != "Updated" || sign.Revision != 2 || sign.Section != new WorldSectionCoordinates(0, 0))
 {
   throw new InvalidOperationException("Sign state did not preserve authoritative revision and section data.");
+}
+
+if (!simulation.TryDeleteSign(new DeleteSignCommand(signId, sign.Revision)) ||
+    simulation.CreateSignSnapshots().Count != 0 ||
+    simulation.CreateSignTombstoneSnapshots().Single().SignId != signId ||
+    simulation.TryDeleteSign(new DeleteSignCommand(signId, sign.Revision)))
+{
+  throw new InvalidOperationException(
+    "Sign deletion did not commit one tombstone and reject duplicate deletion.");
+}
+
+int replacementSignId = simulation.CreateSign(15, 10, "Replacement");
+if (replacementSignId <= signId)
+{
+  throw new InvalidOperationException("Sign deletion allowed ID reuse.");
+}
+
+DomeSimulationSnapshot signRoundTrip = simulation.CreatePersistenceSnapshot(
+  new WorldMetadata("sign-tombstone", new WorldSeed(14), 400, 300));
+using DomeSimulation restoredSigns = new(signRoundTrip);
+if (restoredSigns.CreateSignSnapshots().Count != 1 ||
+    restoredSigns.CreateSignSnapshots().Single().SignId != replacementSignId ||
+    restoredSigns.CreateSignTombstoneSnapshots().Count != 1 ||
+    restoredSigns.CreateSignTombstoneSnapshots().Single().SignId != signId)
+{
+  throw new InvalidOperationException(
+    "Sign persistence did not retain the deleted sign tombstone.");
+}
+
+if (restoredSigns.CreateSign(16, 10, "After restart") <= replacementSignId)
+{
+  throw new InvalidOperationException(
+    "Sign persistence allowed an ID below the deleted sign high-water mark.");
+}
+
+using MemoryStream signPersistenceStream = new();
+DomeStatePersistenceFormat.Write(signPersistenceStream, signRoundTrip);
+signPersistenceStream.Position = 0;
+DomeSimulationSnapshot persistedSignRoundTrip = DomeStatePersistenceFormat.Read(
+  signPersistenceStream);
+using DomeSimulation persistedSignRestart = new(persistedSignRoundTrip);
+if (persistedSignRestart.CreateSignTombstoneSnapshots().Count != 1 ||
+    persistedSignRestart.CreateSign(17, 10, "After file restart") <= replacementSignId)
+{
+  throw new InvalidOperationException(
+    "Sign file persistence did not retain the tombstone allocator watermark.");
 }
 
 SignUpdateIntent signIntent = new(2, signId, 14, 10, "Updated");

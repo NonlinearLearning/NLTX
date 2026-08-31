@@ -7,8 +7,13 @@ namespace Terraria.Dome.Server.Persistence;
 
 public static class WorldPersistenceFormat
 {
-  private const int FormatVersion = 4;
+  private const int FormatVersion = 8;
+  private const int NoTrapsWorldFormatVersion = 6;
+  private const int SkyblockWorldFormatVersion = 7;
+  private const int GoodWorldFormatVersion = 8;
+  private const int RemixWorldFormatVersion = 5;
   private const int WorldSurfaceFormatVersion = 3;
+  private const int RockLayerFormatVersion = 5;
   private const int LegacyFormatVersion = 1;
   private const int PreviousFormatVersion = 2;
   private const int Magic = 0x574D4F44;
@@ -36,14 +41,22 @@ public static class WorldPersistenceFormat
     WorldSeed seed = new(reader.ReadInt32());
     string name = ReadName(reader);
     double? worldSurface = ReadWorldSurface(reader, formatVersion);
+    double? rockLayer = ReadRockLayer(reader, formatVersion);
     bool? isRemixWorld = ReadIsRemixWorld(reader, formatVersion);
+    bool? isNoTrapsWorld = ReadIsNoTrapsWorld(reader, formatVersion);
+    bool? isSkyblockWorld = ReadIsSkyblockWorld(reader, formatVersion);
+    bool? isGoodWorld = ReadIsGoodWorld(reader, formatVersion);
     WorldMetadata metadata = new(
       name,
       seed,
       width,
       height,
       worldSurface: worldSurface,
-      isRemixWorld: isRemixWorld);
+      rockLayer: rockLayer,
+      isRemixWorld: isRemixWorld,
+      isNoTrapsWorld: isNoTrapsWorld,
+      isSkyblockWorld: isSkyblockWorld,
+      isGoodWorld: isGoodWorld);
     WorldTile[,] tiles = new WorldTile[width, height];
     for (int y = 0; y < height; y++)
     {
@@ -99,7 +112,11 @@ public static class WorldPersistenceFormat
     writer.Write(snapshot.Metadata.Seed.Value);
     WriteName(writer, snapshot.Metadata.Name);
     WriteWorldSurface(writer, snapshot.Metadata.WorldSurface);
+    WriteRockLayer(writer, snapshot.Metadata.RockLayer);
     WriteIsRemixWorld(writer, snapshot.Metadata.IsRemixWorld);
+    WriteIsNoTrapsWorld(writer, snapshot.Metadata.IsNoTrapsWorld);
+    WriteIsSkyblockWorld(writer, snapshot.Metadata.IsSkyblockWorld);
+    WriteIsGoodWorld(writer, snapshot.Metadata.IsGoodWorld);
     for (int y = 0; y < snapshot.Metadata.Height; y++)
     {
       for (int x = 0; x < snapshot.Metadata.Width; x++)
@@ -161,12 +178,54 @@ public static class WorldPersistenceFormat
 
   private static bool? ReadIsRemixWorld(BinaryReader reader, int formatVersion)
   {
-    if (formatVersion < FormatVersion || !reader.ReadBoolean())
+    if (formatVersion < RemixWorldFormatVersion || !reader.ReadBoolean())
     {
       return null;
     }
 
     return reader.ReadBoolean();
+  }
+
+  private static bool? ReadIsNoTrapsWorld(BinaryReader reader, int formatVersion)
+  {
+    if (formatVersion < NoTrapsWorldFormatVersion || !reader.ReadBoolean())
+    {
+      return null;
+    }
+
+    return reader.ReadBoolean();
+  }
+
+  private static bool? ReadIsSkyblockWorld(BinaryReader reader, int formatVersion)
+  {
+    if (formatVersion < SkyblockWorldFormatVersion || !reader.ReadBoolean())
+    {
+      return null;
+    }
+
+    return reader.ReadBoolean();
+  }
+
+  private static bool? ReadIsGoodWorld(BinaryReader reader, int formatVersion)
+  {
+    if (formatVersion < GoodWorldFormatVersion || !reader.ReadBoolean())
+    {
+      return null;
+    }
+
+    return reader.ReadBoolean();
+  }
+
+  private static double? ReadRockLayer(BinaryReader reader, int formatVersion)
+  {
+    if (formatVersion < RockLayerFormatVersion || !reader.ReadBoolean())
+    {
+      return null;
+    }
+
+    double rockLayer = reader.ReadDouble();
+    return double.IsFinite(rockLayer) ? rockLayer :
+      throw new InvalidDataException("The world rock layer is not finite.");
   }
 
 
@@ -239,6 +298,42 @@ public static class WorldPersistenceFormat
     if (isRemixWorld.HasValue)
     {
       writer.Write(isRemixWorld.Value);
+    }
+  }
+
+  private static void WriteIsNoTrapsWorld(BinaryWriter writer, bool? isNoTrapsWorld)
+  {
+    writer.Write(isNoTrapsWorld.HasValue);
+    if (isNoTrapsWorld.HasValue)
+    {
+      writer.Write(isNoTrapsWorld.Value);
+    }
+  }
+
+  private static void WriteIsSkyblockWorld(BinaryWriter writer, bool? isSkyblockWorld)
+  {
+    writer.Write(isSkyblockWorld.HasValue);
+    if (isSkyblockWorld.HasValue)
+    {
+      writer.Write(isSkyblockWorld.Value);
+    }
+  }
+
+  private static void WriteIsGoodWorld(BinaryWriter writer, bool? isGoodWorld)
+  {
+    writer.Write(isGoodWorld.HasValue);
+    if (isGoodWorld.HasValue)
+    {
+      writer.Write(isGoodWorld.Value);
+    }
+  }
+
+  private static void WriteRockLayer(BinaryWriter writer, double? rockLayer)
+  {
+    writer.Write(rockLayer.HasValue);
+    if (rockLayer.HasValue)
+    {
+      writer.Write(rockLayer.Value);
     }
   }
 

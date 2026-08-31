@@ -4,6 +4,9 @@ namespace Terraria.Dome.Simulation.WorldModel;
 
 public sealed record WorldMetadata
 {
+  private const double NoFunctionalSurfaceThreshold = 30.0;
+  private const double WorldSurfaceThreshold = 50.0;
+
   public WorldMetadata(
     string name,
     WorldSeed seed,
@@ -15,10 +18,14 @@ public sealed record WorldMetadata
     string seedVariant = "default",
     int randomStreamVersion = 1,
     double? worldSurface = null,
+    double? rockLayer = null,
     bool? isRemixWorld = null,
     ulong? worldGeneratorVersion = null,
     Guid? uniqueId = null,
-    string? seedText = null)
+    string? seedText = null,
+    bool? isNoTrapsWorld = null,
+    bool? isSkyblockWorld = null,
+    bool? isGoodWorld = null)
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(name);
     ArgumentOutOfRangeException.ThrowIfNegativeOrZero(height);
@@ -32,6 +39,12 @@ public sealed record WorldMetadata
         "World dimensions must be whole Terraria section units.");
     }
 
+    if (rockLayer is double selectedRockLayer &&
+        (!double.IsFinite(selectedRockLayer) || selectedRockLayer < 0 || selectedRockLayer >= height))
+    {
+      throw new ArgumentOutOfRangeException(nameof(rockLayer));
+    }
+
     Name = name;
     Seed = seed;
     Width = width;
@@ -42,10 +55,14 @@ public sealed record WorldMetadata
     SeedVariant = seedVariant;
     RandomStreamVersion = randomStreamVersion;
     WorldSurface = worldSurface;
+    RockLayer = rockLayer;
     IsRemixWorld = isRemixWorld;
     WorldGeneratorVersion = worldGeneratorVersion;
     UniqueId = uniqueId;
     SeedText = seedText;
+    IsNoTrapsWorld = isNoTrapsWorld;
+    IsSkyblockWorld = isSkyblockWorld;
+    IsGoodWorld = isGoodWorld;
     if (WorldId < 0)
     {
       throw new ArgumentOutOfRangeException(nameof(worldId));
@@ -63,8 +80,14 @@ public sealed record WorldMetadata
   }
 
   public int Height { get; }
+  public float BottomWorld => Height * 16f;
   public string Name { get; }
   public WorldSeed Seed { get; }
+  public float LeftWorld => 0f;
+  public int MaxSectionsX => Width / WorldGrid.SectionWidth;
+  public int MaxSectionsY => Height / WorldGrid.SectionHeight;
+  public float RightWorld => Width * 16f;
+  public float TopWorld => 0f;
   public int Width { get; }
   public int WorldId { get; }
   public int SpawnX { get; }
@@ -72,10 +95,42 @@ public sealed record WorldMetadata
   public int RandomStreamVersion { get; }
   public string SeedVariant { get; }
   public double? WorldSurface { get; }
+  public double? RockLayer { get; }
   public bool? IsRemixWorld { get; }
+  public bool? IsNoTrapsWorld { get; }
+  public bool? IsSkyblockWorld { get; }
+  public bool? IsGoodWorld { get; }
+  public bool HasNoFunctionalSurface =>
+    WorldSurface is not double worldSurface || worldSurface <= NoFunctionalSurfaceThreshold;
+  public bool HasWorldSurface =>
+    WorldSurface is double worldSurface && double.IsFinite(worldSurface) &&
+    worldSurface > WorldSurfaceThreshold;
   public ulong? WorldGeneratorVersion { get; }
   public Guid? UniqueId { get; }
   public string? SeedText { get; }
+
+  public WorldMetadata WithRockLayer(double rockLayer)
+  {
+    return new WorldMetadata(
+      Name,
+      Seed,
+      Width,
+      Height,
+      WorldId,
+      SpawnX,
+      SpawnY,
+      SeedVariant,
+      RandomStreamVersion,
+      WorldSurface,
+      rockLayer,
+      IsRemixWorld,
+      WorldGeneratorVersion,
+      UniqueId,
+      SeedText,
+      IsNoTrapsWorld,
+      IsSkyblockWorld,
+      IsGoodWorld);
+  }
 
   public bool IsInside(int x, int y)
   {

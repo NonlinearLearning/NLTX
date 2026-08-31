@@ -13,12 +13,17 @@ using Terraria.Dome.Simulation.Components;
 using Terraria.Dome.Simulation.Movement.Systems;
 using Terraria.Dome.Simulation.Movement.Components;
 using Terraria.Dome.Simulation.Physics.Systems;
+using Terraria.Dome.Simulation.Player;
 using Terraria.Dome.Simulation.Player.Components;
+using Terraria.Dome.Simulation.Player.Definitions;
 using Terraria.Dome.Simulation.Player.Commands;
 using Terraria.Dome.Simulation.Player.Events;
 using Terraria.Dome.Simulation.Player.Systems;
 using Terraria.Dome.Simulation.Players;
 using Terraria.Dome.Simulation.StatusEffects.Components;
+using Terraria.Dome.Simulation.StatusEffects.Commands;
+using Terraria.Dome.Simulation.StatusEffects.Definitions;
+using Terraria.Dome.Simulation.StatusEffects.Snapshots;
 using Terraria.Dome.Simulation.StatusEffects.Systems;
 using Terraria.Dome.Simulation.Tick;
 using Terraria.Dome.Simulation.WorldModel;
@@ -37,6 +42,7 @@ using Terraria.Dome.Simulation.Liquid.Components;
 using Terraria.Dome.Simulation.Liquid.Snapshots;
 using Terraria.Dome.Simulation.Liquid.Systems;
 using Terraria.Dome.Simulation.Projectile.Systems;
+using Terraria.Dome.Simulation.Projectile.Commands;
 using Terraria.Dome.Simulation.Projectile.Definitions;
 using Terraria.Dome.Simulation.Projectile;
 using Terraria.Dome.Simulation.Combat.Events;
@@ -44,8 +50,12 @@ using Terraria.Dome.Simulation.WorldObjects;
 using Terraria.Dome.Simulation.WorldObjects.Chest.Commands;
 using Terraria.Dome.Simulation.WorldObjects.Chest.Systems;
 using Terraria.Dome.Simulation.WorldObjects.Definitions;
+using Terraria.Dome.Simulation.WorldObjects.Sign;
+using Terraria.Dome.Simulation.WorldObjects.Sign.Commands;
+using Terraria.Dome.Simulation.WorldObjects.Placement;
 using Terraria.Dome.Simulation.Npc.Commands;
 using Terraria.Dome.Simulation.Npc.Definitions;
+using Terraria.Dome.Simulation.Npc.Events;
 using Terraria.Dome.Simulation.Npc;
 using Terraria.Dome.Simulation.Npc.Snapshots;
 using Terraria.Dome.Simulation.Npc.Systems;
@@ -73,23 +83,47 @@ public sealed partial class DomeSimulation : IDisposable
   private const int ProjectileLifetimeTicks = 30;
   private const int PlayerRespawnDelayTicks = 3;
   private const int NpcContactDamage = 25;
+  private const int NpcLavaContactDamage = 50;
   private const int NpcHitImmunityTicks = 2;
+  private const int NpcLavaImmunityTicks = 30;
   private const float PickupRange = 3.0f;
   private const float WorldItemStackingRange = 1.0f;
   private const float MaximumInteractionRange = 12.0f;
   private const int DomeChaserNpcType = 1;
+  private const int VerificationProjectileType = 43;
+  private const int Style17SignObjectType = 85;
+  private const int Style17SignStyle = 0;
+  private const int Style17SignWidth = 2;
+  private const int Style17SignHeight = 2;
+  private const float Style17GroundDrag = 0.98f;
   public const int FixtureNpcType = 2;
+  public const int FixtureItemNpcSummonType = 13;
+  public const int FixtureItemSentryType = 14;
+  public const int FixtureItemSentryEquipmentType = 15;
+  public const int FixtureItemMeleeUseType = 16;
+  public const int FixtureItemNoMeleeType = 17;
+  public const int FixtureItemFishingPoleType = 18;
+  public const int FixtureItemDd2SummonType = 19;
+  public const int FixtureItemPotionType = 20;
+  public const int FixtureFishingBobberProjectileType = 1001;
+  public const int FixtureDd2SummonProjectileType = 663;
   private const int DomeBoltProjectileType = 1;
   private const int MaximumSignCount = 32000;
-  private const int MaximumNpcCount = 200;
   private const int TrainingDummyNpcType = 488;
+  private const int Type658ChildProjectileType = 657;
+  private const int Type658ChildDamage = 30;
+  private const int Type658ChildExpertDamage = 22;
+  private const float Type658ChildKnockback = 3.0f;
+  private const float Type281ReleaseDifficultyScale = 1.0f;
   private readonly WorldClock _worldClock;
   private readonly WorldClockSystem _worldClockSystem = new();
+  private readonly WorldGameUpdateCountProjection _gameUpdateCountProjection = new();
   private readonly WorldInvasionTravelSystem _worldInvasionTravelSystem = new();
   private readonly WorldProgressionSystem _worldProgressionSystem = new();
   private readonly WorldTimeRateSystem _worldTimeRateSystem = new();
   private readonly WorldInvasionStartEligibilitySystem _worldInvasionStartEligibilitySystem = new();
   private readonly WorldInvasionClearFlagSystem _worldInvasionClearFlagSystem = new();
+  private readonly NpcEventSpawnSystem _npcEventSpawnSystem = new();
   private readonly WorldSlimeRainEligibilitySystem _worldSlimeRainEligibilitySystem = new();
   private readonly WorldWeatherSystem _worldWeatherSystem = new();
   private readonly WorldMeteorImpactSystem _worldMeteorImpactSystem = new();
@@ -111,12 +145,22 @@ public sealed partial class DomeSimulation : IDisposable
   private readonly PlayerStore _players = new();
   private readonly ProjectileStore _projectileIdsByEntity = new();
   private readonly Dictionary<int, ProjectileReplicationSnapshot> _projectileReplications = new();
+  private readonly Dictionary<int, NpcProjectileReplicationSnapshot> _npcProjectileReplications =
+    new();
   private readonly Dictionary<string, PlayerPersistentState> _playerAccounts = new(
     StringComparer.Ordinal);
   private readonly Dictionary<PlayerHandle, string> _playerAccountUuids = new();
   private readonly WorldItemStore _worldItems;
+  private readonly SimulationEntityLimits _entityLimits;
   private readonly Dictionary<int, DoorSnapshot> _doors = new();
   private readonly Dictionary<int, SignSnapshot> _signs = new();
+  private readonly WorldObjectPlacementCommitSystem _worldObjectPlacementCommitSystem = new();
+  private readonly HashSet<long> _committedWorldObjectPlacementSequences = new();
+  private readonly List<WorldObjectPlacementCommittedEvent> _worldObjectPlacementEvents = new();
+  private readonly Dictionary<Entity, ProjectileWorldObjectPlacementCommand>
+    _pendingProjectileWorldObjectPlacements = new();
+  private readonly Dictionary<long, Entity> _verificationPlacementProjectiles = new();
+  private readonly Dictionary<int, SignTombstoneSnapshot> _signTombstones = new();
   private readonly Dictionary<int, ChestComponent> _chests = new();
   private readonly ChestIndexSystem _chestIndexSystem = new();
   private readonly ChestMutationCommitSystem _chestMutationCommitSystem = new();
@@ -155,11 +199,20 @@ public sealed partial class DomeSimulation : IDisposable
   private readonly WiringEventProjectionSystem _wiringEventProjectionSystem = new();
   private IReadOnlyList<PipelineLiquidChangeCommand> _lastLiquidCommands = [];
   private IReadOnlyList<SimulationTickPhase> _lastTickPhases = [];
+  private SimulationTickTrace? _lastTickTrace;
+  private WorldClockTransition? _lastWorldClockTransition;
+  private WorldEnvironmentTransition? _lastWorldEnvironmentTransition;
+  private WorldProgressionTransition? _lastWorldProgressionTransition;
+  private WorldInvasionTransition? _lastWorldInvasionTransition;
+  private WorldMeteorTransition? _lastWorldMeteorTransition;
+  private WorldSlimeRainTransition? _lastWorldSlimeRainTransition;
+  private WorldLanternNightTransition? _lastWorldLanternNightTransition;
   private SimulationSnapshot? _lastPublishedSnapshot;
   private readonly List<PlayerDamagedEvent> _playerDamagedEvents = new();
   private readonly List<PlayerDiedEvent> _playerDiedEvents = new();
   private readonly List<PlayerRespawnedEvent> _playerRespawnedEvents = new();
   private readonly List<ItemUsedEvent> _itemUsedEvents = new();
+  private readonly List<ShopPurchaseReceipt> _shopPurchaseReceipts = new();
   private readonly List<ItemEquippedEvent> _itemEquippedEvents = new();
   private readonly List<ItemPrefixChangedEvent> _itemPrefixChangedEvents = new();
   private readonly List<InventoryChangedEvent> _inventoryChangedEvents = new();
@@ -175,6 +228,8 @@ public sealed partial class DomeSimulation : IDisposable
   private readonly Dictionary<int, TileEntityPersistentState> _tileEntities = new();
   private readonly Dictionary<int, TrainingDummyOwnershipState> _trainingDummyOwnerships = new();
   private readonly List<int> _pendingTrainingDummyActivations = new();
+  private readonly List<SpawnProjectileCommand> _pendingProjectileSpawnCommands = new();
+  private readonly List<SpawnNpcCommand> _pendingNpcSpawnCommands = new();
   private readonly List<PlaceItemCommand> _placeItemCommands = new();
   private readonly List<EquipItemCommand> _equipItemCommands = new();
   private readonly List<UnequipItemCommand> _unequipItemCommands = new();
@@ -218,6 +273,19 @@ public sealed partial class DomeSimulation : IDisposable
       99,
       Placement: new ItemPlacementDefinition(WallType: 7)),
     new ItemDefinition(
+      11,
+      99,
+      Placement: new ItemPlacementDefinition(TileType: 12, TileBoost: 3)),
+    new ItemDefinition(
+      12,
+      99,
+      Placement: new ItemPlacementDefinition(WallType: 7, TileBoost: 3)),
+    new ItemDefinition(
+      FixtureItemNpcSummonType,
+      20,
+      Use: new ItemUseDefinition(UseTime: 1, Consumable: true),
+      Summoning: new ItemSummoningDefinition(NpcType: FixtureNpcType)),
+    new ItemDefinition(
       7,
       99,
       Recovery: new ItemRecoveryDefinition(
@@ -231,6 +299,81 @@ public sealed partial class DomeSimulation : IDisposable
         Damage: 14,
         ProjectileType: 2,
         ProjectileSpeed: 5.0f)),
+    new ItemDefinition(
+      FixtureItemSentryType,
+      20,
+      Use: new ItemUseDefinition(
+        UseTime: 1,
+        Consumable: true,
+        ShootType: 2,
+        ShootSpeed: 5.0f),
+      Combat: new ItemCombatDefinition(Damage: 14),
+      IsSentry: true),
+    new ItemDefinition(
+      FixtureItemSentryEquipmentType,
+      1,
+      Equipment: new ItemEquipmentDefinition(
+        ItemEquipmentSlot.Accessory,
+        Accessory: true,
+        SentryCapacityBonus: 1)),
+    new ItemDefinition(
+      FixtureItemMeleeUseType,
+      1,
+      Use: new ItemUseDefinition(UseTime: 1, UseAnimation: 1),
+      Combat: new ItemCombatDefinition(
+        Damage: 10,
+        DamageClass: ItemDamageClass.Melee)),
+    new ItemDefinition(
+      FixtureItemNoMeleeType,
+      1,
+      Use: new ItemUseDefinition(UseTime: 1, UseAnimation: 1),
+      Combat: new ItemCombatDefinition(
+        Damage: 10,
+        DamageClass: ItemDamageClass.Melee,
+        NoMelee: true)),
+    new ItemDefinition(
+      FixtureItemFishingPoleType,
+      20,
+      Use: new ItemUseDefinition(
+        UseTime: 1,
+        UseAnimation: 1,
+        ShootType: FixtureFishingBobberProjectileType,
+        ShootSpeed: 6.0f),
+      Gathering: new ItemGatheringDefinition(FishingPolePower: 30)),
+    new ItemDefinition(
+      FixtureItemDd2SummonType,
+      20,
+      Use: new ItemUseDefinition(
+        UseTime: 1,
+        Consumable: true,
+        ShootType: FixtureDd2SummonProjectileType,
+        ShootSpeed: 1.0f),
+      Combat: new ItemCombatDefinition(
+        Damage: 17,
+        Knockback: 3.0f,
+        DamageClass: ItemDamageClass.Summon),
+      IsSentry: true,
+      Dd2Summon: true),
+    new ItemDefinition(
+      FixtureItemPotionType,
+      20,
+      Use: new ItemUseDefinition(
+        UseTime: 1,
+        UseAnimation: 1,
+        Potion: true,
+        Consumable: true,
+        HealthRestore: 25)),
+    ..LegacyFlaskDefinitionRegistry.CreateDefinitions(),
+    ..LegacySentryEquipmentRegistry.CreateDefinitions(),
+    ..LegacySentryArmorSetRegistry.SupplementalDefinitions,
+    new ItemDefinition(9, 1),
+    new ItemDefinition(
+      10,
+      99,
+      Use: new ItemUseDefinition(
+        UseTime: 1,
+        AutoReuse: true,
+        CooldownTicks: 3)),
     new ItemDefinition(62, 999),
     new ItemDefinition(194, 999),
     new ItemDefinition(195, 999),
@@ -251,20 +394,39 @@ public sealed partial class DomeSimulation : IDisposable
   private readonly ExtractinatorRuleRegistry _extractinatorRules =
     ExtractinatorRuleRegistry.CreateVersion4();
   private readonly ItemEquipmentSystem _itemEquipmentSystem = new();
-  private readonly ItemPrefixSystem _itemPrefixSystem = new();
-  private readonly ItemVariantSystem _itemVariantSystem = new();
+  private readonly ItemPrefixSystem _itemPrefixSystem;
+  private readonly ItemVariantSystem _itemVariantSystem;
   private readonly WorldItemPickupSystem _worldItemPickupSystem = new();
   private readonly WorldItemPickupDelaySystem _worldItemPickupDelaySystem = new();
-  private readonly WorldItemSpawnSystem _worldItemSpawnSystem = new();
+  private readonly WorldItemSpawnSystem _worldItemSpawnSystem;
   private readonly WorldItemMotionSystem _worldItemMotionSystem = new();
   private readonly WorldItemDestroySystem _worldItemDestroySystem = new();
   private readonly ItemSelectionSystem _itemSelectionSystem = new();
   private readonly EquipmentStatSystem _equipmentStatSystem = new();
+  private readonly PlayerSentryEquipmentSystem _playerSentryEquipmentSystem = new();
+  private readonly PlayerSentryBuffSystem _playerSentryBuffSystem = new();
+  private readonly PlayerSentryArmorSetSystem _playerSentryArmorSetSystem = new();
+  private readonly PlayerSleepAuthoritySystem _playerSleepAuthoritySystem = new();
+  private readonly PlayerSleepSystem _playerSleepSystem = new();
+  private readonly PlayerFishingUseSystem _playerFishingUseSystem = new();
+  private readonly PlayerPotionDelaySystem _playerPotionDelaySystem = new();
+  private readonly PlayerNpcTargetingSystem _playerNpcTargetingSystem = new();
+  private readonly NpcNoAggroCapabilityRegistry _npcNoAggroCapabilities =
+    NpcNoAggroCapabilityRegistry.CreateVersion1456Item3090();
   private readonly DamageCalculationSystem _damageCalculationSystem = new();
   private readonly NpcDefinitionRegistry _npcDefinitions = new([
     new NpcDefinition(
       DefinitionId: 1,
       NetId: 1,
+      MaximumHealth: 100,
+      Defense: 0,
+      ColliderWidth: 1.0f,
+      ColliderHeight: 2.0f,
+      BehaviorId: NpcBehaviorId.OrdinaryChase,
+      LootTableId: 1),
+    new NpcDefinition(
+      DefinitionId: 26,
+      NetId: 26,
       MaximumHealth: 100,
       Defense: 0,
       ColliderWidth: 1.0f,
@@ -279,7 +441,11 @@ public sealed partial class DomeSimulation : IDisposable
       ColliderWidth: 1.0f,
       ColliderHeight: 2.0f,
       BehaviorId: NpcBehaviorId.TownHome,
-      LootTableId: 1),
+      LootTableId: 1,
+      Faction: NpcFaction.Town,
+      Category: NpcCategory.Town,
+      AiStyle: 7,
+      IsLikeTownNpc: true),
     new NpcDefinition(
       DefinitionId: TrainingDummyNpcType,
       NetId: TrainingDummyNpcType,
@@ -293,25 +459,35 @@ public sealed partial class DomeSimulation : IDisposable
       Category: NpcCategory.Town,
       AiStyle: 92,
       IsImmortal: true,
-      AlwaysReplicate: true)]);
-  private readonly NpcLootSystem _npcLootSystem = new(
-    new NpcLootDefinitionRegistry([
-      new NpcLootDefinition(
-        LootTableId: 1,
-        ItemType: 1,
-        MinimumQuantity: 1,
-        MaximumQuantity: 2)]),
-    new WorldSeed(1));
+      AlwaysReplicate: true),
+    new NpcDefinition(
+      DefinitionId: 614,
+      NetId: 614,
+      MaximumHealth: 100,
+      Defense: 0,
+      ColliderWidth: 1.0f,
+      ColliderHeight: 1.0f,
+      BehaviorId: NpcBehaviorId.FloatingEye,
+      LootTableId: 1)],
+    NpcTargetCapabilityRegistry.CreateVersion1456());
+  private readonly NpcLootSystem _npcLootSystem;
+  private readonly NpcTargetSelectionSystem _npcTargetSelectionSystem = new();
   private readonly NpcSystemPipeline _npcSystemPipeline = new();
   private readonly PlayerLifecycleSystem _playerLifecycleSystem = new();
   private readonly NpcSpawnCommitSystem _npcSpawnCommitSystem = new();
+  private readonly NpcSlotAllocator _npcSlotAllocator = new();
+  private readonly NpcSlotAccountingSystem _npcSlotAccountingSystem = new();
   private readonly NpcMovementIntentSystem _npcMovementIntentSystem = new();
+  private readonly NpcHomeTimeoutSystem _npcHomeTimeoutSystem = new();
   private readonly NpcContactEffectSystem _npcContactEffectSystem = new();
+  private readonly NpcLavaContactSystem _npcLavaContactSystem = new();
   private readonly NpcLifecycleSystem _npcLifecycleSystem = new();
   private readonly NpcDeathSystem _npcDeathSystem = new();
+  private readonly NpcLootEmissionLedger _npcLootEmissionLedger = new();
   private readonly List<NpcDeathResult> _pendingNpcDeaths = new();
+  private readonly List<string> _npcSpawnRejectionReasons = new();
   private readonly HashSet<NpcHandle> _publishedNpcDeaths = new();
-  private readonly WorldSeed _worldSeed = new(1);
+  private readonly WorldSeed _worldSeed;
   private readonly GroundCollisionSystem _groundCollisionSystem = new();
   private readonly TileCollisionSystem _tileCollisionSystem = new();
   private readonly TopSlopeContactSystem _topSlopeContactSystem = new();
@@ -321,22 +497,36 @@ public sealed partial class DomeSimulation : IDisposable
   private readonly PlayerGravitySystem _playerGravitySystem = new();
   private readonly PlayerInputApplySystem _playerInputApplySystem = new();
   private readonly PlayerRespawnSystem _playerRespawnSystem = new();
+  private readonly PlayerSentryAuthoritySystem _playerSentryAuthoritySystem = new();
   private readonly DamageResolutionSystem _damageResolutionSystem = new();
   private readonly ImmunitySystem _immunitySystem = new();
   private readonly PlayerVitalRegenSystem _playerVitalRegenSystem = new();
   private readonly BuffDurationSystem _buffDurationSystem = new();
   private readonly BuffEffectSystem _buffEffectSystem = new();
   private readonly ProjectileCollisionSystem _projectileCollisionSystem = new();
-  private readonly ProjectileDefinitionRegistry _projectileDefinitions =
-    ProjectileDefinitionRegistry.CreateDefault();
+  private readonly ProjectileOwnerHitCheckSystem _projectileOwnerHitCheckSystem = new();
+  private readonly ProjectileDefinitionRegistry _projectileDefinitions;
   private readonly ProjectileSpawnSystem _projectileSpawnSystem = new();
+  private readonly ProjectileSentryPlacementSystem _projectileSentryPlacementSystem = new();
+  private readonly ProjectileSentryLimitSystem _projectileSentryLimitSystem = new();
+  private readonly NpcProjectileSpawnSystem _npcProjectileSpawnSystem = new();
   private readonly ProjectileLifetimeSystem _projectileLifetimeSystem = new();
+  private readonly NpcProjectileLifetimeSystem _npcProjectileLifetimeSystem = new();
+  private readonly ProjectileRestrikeDelaySystem _projectileRestrikeDelaySystem = new();
+  private readonly ProjectileNetworkUpdatePolicy _projectileNetworkUpdatePolicy = new();
+  private readonly ProjectileSoundDelayPolicy _projectileSoundDelayPolicy = new();
+  private readonly ProjectileTileCollisionPolicy _projectileTileCollisionPolicy = new();
   private readonly ProjectileBehaviorSystem _projectileBehaviorSystem =
     ProjectileBehaviorSystem.CreateDefault();
+  private readonly ProjectileOwnerAnchoredMeleeSystem _projectileOwnerAnchoredMeleeSystem = new();
+  private readonly ProjectileBehaviorEffectSystem _projectileBehaviorEffectSystem = new();
   private readonly ProjectileReplicationSystem _projectileReplicationSystem = new();
+  private readonly NpcProjectileReplicationSystem _npcProjectileReplicationSystem = new();
   private readonly ProjectileDamageSystem _projectileDamageSystem = new();
+  private readonly ProjectileHostileDamageScalingSystem _projectileHostileDamageScalingSystem = new();
   private readonly ProjectileTargetEligibilitySystem _projectileTargetEligibilitySystem = new();
   private readonly ProjectileHitImmunityComponent _projectileHitImmunity = new();
+  private readonly HitImmunitySystem _projectileHitImmunitySystem = new();
   private readonly QueryDescription _npcMovementQuery = new QueryDescription()
     .WithAll<NpcTagComponent, TransformComponent, VelocityComponent>();
   private readonly QueryDescription _playerMovementQuery = new QueryDescription()
@@ -345,10 +535,22 @@ public sealed partial class DomeSimulation : IDisposable
     .WithAll<ProjectileTagComponent, TransformComponent, VelocityComponent,
       ProjectileDamageComponent, ProjectileLifetimeComponent, ProjectileDefinitionComponent,
       ProjectileBehaviorComponent, ProjectileNetworkIdentityComponent,
-      ProjectilePenetrationComponent>();
+      ProjectilePenetrationComponent, ProjectileBounceComponent, ProjectileUpdateCountComponent,
+      ProjectileRestrikeDelayComponent, ProjectileNetworkUpdateComponent,
+      ProjectileSoundDelayComponent, ProjectileTileCollisionComponent,
+      ProjectileFriendlyStateComponent>();
+  private readonly QueryDescription _npcProjectileQuery = new QueryDescription()
+    .WithAll<ProjectileTagComponent, TransformComponent, VelocityComponent,
+      ProjectileDamageComponent, ProjectileLifetimeComponent, ProjectileDefinitionComponent,
+      ProjectileBehaviorComponent, NpcProjectileNetworkIdentityComponent,
+      NpcProjectileOwnerComponent, ProjectilePenetrationComponent, ProjectileBounceComponent,
+      ProjectileUpdateCountComponent, ProjectileRestrikeDelayComponent,
+      ProjectileNetworkUpdateComponent, ProjectileSoundDelayComponent,
+      ProjectileTileCollisionComponent, ProjectileFriendlyStateComponent>();
   private int _nextPlayerHandle;
   private int _nextNpcHandle;
-  private int _nextProjectileReplicationId = 1;
+  private long _nextNpcDeathSequence;
+  private readonly ProjectileIdentityAllocator _projectileIdentityAllocator = new();
   private int _nextWorldItemReplicationId = 1;
   private int _nextChestId = 1;
   private long _nextChestMutationSequence;
@@ -357,6 +559,7 @@ public sealed partial class DomeSimulation : IDisposable
   private int _nextTileEntityId = 1;
   private long _nextLiquidSequence;
   private long _nextWiringSequence;
+  private long _nextProjectileWorldObjectPlacementSequence;
   private const ushort ClosedTallGateTileType = 388;
   private const ushort ClosedTrapdoorTileType = 386;
   private const ushort OpenTallGateTileType = 389;
@@ -368,21 +571,78 @@ public sealed partial class DomeSimulation : IDisposable
   private WorldEventRandomState _worldEventRandomState;
   private WorldTimeRateInput? _worldTimeRateInput;
   private WorldTimeRateSnapshot _worldTimeRate = WorldTimeRateSnapshot.Unavailable;
+  private bool _sentryEventActive;
   private IReadOnlyList<string> _lastNpcPipelineSystemNames = [];
 
   public DomeSimulation()
-    : this(new WorldGrid(4200, 1200))
+    : this(new WorldGrid(4200, 1200), new WorldSeed(1), new SimulationEntityLimits())
   {
   }
 
   public DomeSimulation(WorldGrid worldGrid)
+    : this(worldGrid, new WorldSeed(1), new SimulationEntityLimits())
+  {
+  }
+
+  public DomeSimulation(WorldGrid worldGrid, WorldSeed worldSeed)
+    : this(worldGrid, worldSeed, new SimulationEntityLimits())
+  {
+  }
+
+  public DomeSimulation(
+    WorldGrid worldGrid,
+    ProjectileDefinitionRegistry projectileDefinitions)
+    : this(
+      worldGrid,
+      new WorldSeed(1),
+      new SimulationEntityLimits(),
+      projectileDefinitions)
+  {
+  }
+
+  public DomeSimulation(
+    WorldGrid worldGrid,
+    WorldSeed worldSeed,
+    SimulationEntityLimits entityLimits)
+    : this(
+      worldGrid,
+      worldSeed,
+      entityLimits,
+      ProjectileDefinitionRegistry.CreateDefault())
+  {
+  }
+
+  private DomeSimulation(
+    WorldGrid worldGrid,
+    WorldSeed worldSeed,
+    SimulationEntityLimits entityLimits,
+    ProjectileDefinitionRegistry projectileDefinitions)
   {
     WorldGrid = worldGrid ?? throw new ArgumentNullException(nameof(worldGrid));
+    _entityLimits = (entityLimits ?? throw new ArgumentNullException(nameof(entityLimits))).Validate();
+    _projectileDefinitions = projectileDefinitions ??
+      throw new ArgumentNullException(nameof(projectileDefinitions));
+    _worldSeed = worldSeed;
+    _shopPurchaseSystem = new(_shopOffers);
+    _shopOfferCatalogSystem = new(_shopOffers);
+    _worldItemSpawnSystem = new(_itemDefinitions);
+    _itemPrefixSystem = new(_itemDefinitions);
+    _itemVariantSystem = new(_itemDefinitions);
+    _npcLootSystem = new(
+      new NpcLootDefinitionRegistry([
+        new NpcLootDefinition(
+          LootTableId: 1,
+          ItemType: 1,
+          MinimumQuantity: 1,
+          MaximumQuantity: 2)],
+        _itemDefinitions),
+      new WorldSeed(1));
+    _worldEventRandomState = new WorldEventRandomState(unchecked((uint)worldSeed.Value));
     _worldClock = new WorldClock();
     _nextNpcHandle = 1;
     _nextPlayerHandle = 1;
     World = Arch.Core.World.Create();
-    _worldItems = new WorldItemStore(World);
+    _worldItems = new WorldItemStore(World, _itemDefinitions);
     _npcSystemPipeline.ValidateRegistration();
   }
 
@@ -394,7 +654,27 @@ public sealed partial class DomeSimulation : IDisposable
   }
 
   public DomeSimulation(WorldGrid worldGrid, DomeSimulationSnapshot snapshot)
-    : this(worldGrid)
+    : this(
+      worldGrid,
+      snapshot?.World.Metadata.Seed ?? throw new ArgumentNullException(nameof(snapshot)),
+      new SimulationEntityLimits())
+  {
+    RestoreSnapshot(snapshot);
+  }
+
+  public DomeSimulation(
+    WorldGrid worldGrid,
+    DomeSimulationSnapshot snapshot,
+    SimulationEntityLimits entityLimits)
+    : this(
+      worldGrid,
+      snapshot?.World.Metadata.Seed ?? throw new ArgumentNullException(nameof(snapshot)),
+      entityLimits)
+  {
+    RestoreSnapshot(snapshot);
+  }
+
+  private void RestoreSnapshot(DomeSimulationSnapshot snapshot)
   {
     ArgumentNullException.ThrowIfNull(snapshot);
     _worldClock.Restore(snapshot.Clock);
@@ -403,6 +683,10 @@ public sealed partial class DomeSimulation : IDisposable
     _worldProgression = snapshot.Progression;
     _worldEventRandomState = snapshot.WorldEventRandomState;
     _worldTimeRate = snapshot.WorldTimeRate;
+    _nextChestMutationSequence = snapshot.NextChestMutationSequence;
+    _nextLiquidSequence = snapshot.NextLiquidSequence;
+    _nextWiringSequence = snapshot.NextWiringSequence;
+    _projectileIdentityAllocator.Restore(snapshot.NextProjectileIdentity);
     if (snapshot.NpcStates.Count > 0)
     {
       for (int index = 0; index < snapshot.NpcStates.Count; index++)
@@ -431,6 +715,7 @@ public sealed partial class DomeSimulation : IDisposable
       ItemWorldStateComponent worldState = item.WorldState.Revision == 0 && item.Revision > 0
         ? ItemWorldStateComponent.FromReplicationSnapshot(item.IsActive, item.Revision)
         : item.WorldState;
+      ValidateRestoredWorldItem(item, worldState, snapshot);
       _worldItems.Add(new WorldItemComponent(
         item.ReplicationId,
         item.Stack,
@@ -464,6 +749,11 @@ public sealed partial class DomeSimulation : IDisposable
       RestoreSign(snapshot.Signs[index]);
     }
 
+    for (int index = 0; index < snapshot.SignTombstones.Count; index++)
+    {
+      RestoreSignTombstone(snapshot.SignTombstones[index]);
+    }
+
     for (int index = 0; index < snapshot.TileEntities.Count; index++)
     {
       TileEntityPersistentState entity = snapshot.TileEntities[index];
@@ -487,16 +777,73 @@ public sealed partial class DomeSimulation : IDisposable
     }
   }
 
+  private void ValidateRestoredWorldItem(
+    ItemReplicationSnapshot item,
+    ItemWorldStateComponent worldState,
+    DomeSimulationSnapshot snapshot)
+  {
+    if (item.ReplicationId <= 0 || item.Revision < 0 ||
+        !float.IsFinite(item.Position.X) || !float.IsFinite(item.Position.Y) ||
+        (item.Stack.IsEmpty && item.Stack != ItemStack.Empty) ||
+        item.IsActive != !item.Stack.IsEmpty ||
+        worldState.IsActive != item.IsActive || worldState.PickupDelayTicks < 0 ||
+        worldState.SpawnSource < 0 || worldState.LastOwnerRevision < 0 ||
+        worldState.Revision < 0 || worldState.ReservedPlayerId < 0 ||
+        worldState.ReservedPlayerId > ItemWorldStateComponent.UnreservedPlayerId ||
+        worldState.ReservationAgeTicks < ItemWorldStateComponent.NoReservationAge)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(snapshot),
+        "Persistence snapshot contains an invalid world-item value domain.");
+    }
+
+    item.InstanceState.Validate();
+    if (item.Stack.IsEmpty)
+    {
+      if (item.InstanceState != default)
+      {
+        throw new ArgumentException(
+          "An inactive world item cannot carry instance state.",
+          nameof(snapshot));
+      }
+
+      return;
+    }
+
+    if (!_itemDefinitions.TryGet(item.Stack.ItemType, out ItemDefinition definition) ||
+        item.Stack.Quantity > definition.StackLimit)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(snapshot),
+        "Persistence snapshot contains an unknown or over-limit world-item stack.");
+    }
+  }
+
   public Arch.Core.World World { get; }
   public WorldGrid WorldGrid { get; }
+  public ItemDefinitionRegistry ItemDefinitions => _itemDefinitions;
   public int NpcCount => _npcReplications.Count;
+  public uint GameUpdateCount => _gameUpdateCountProjection.Value;
   public long TickNumber => _worldClock.TickNumber;
   public double TimeOfDay => _worldClock.TimeOfDay;
   public bool IsDayTime => _worldClock.IsDayTime;
   public byte MoonPhase => _worldClock.MoonPhase;
   public IReadOnlyList<string> LastNpcPipelineSystemNames => _lastNpcPipelineSystemNames;
+  public IReadOnlyList<string> NpcSpawnRejectionReasons => _npcSpawnRejectionReasons;
   public IReadOnlyList<string> NpcPipelineSystemNames => _npcSystemPipeline.SystemNames;
   public IReadOnlyList<SimulationTickPhase> LastTickPhases => _lastTickPhases;
+  public SimulationTickTrace? LastTickTrace => _lastTickTrace;
+  public WorldClockTransition? LastWorldClockTransition => _lastWorldClockTransition;
+  public WorldEnvironmentTransition? LastWorldEnvironmentTransition =>
+    _lastWorldEnvironmentTransition;
+  public WorldProgressionTransition? LastWorldProgressionTransition =>
+    _lastWorldProgressionTransition;
+  public WorldInvasionTransition? LastWorldInvasionTransition => _lastWorldInvasionTransition;
+  public WorldMeteorTransition? LastWorldMeteorTransition => _lastWorldMeteorTransition;
+  public WorldSlimeRainTransition? LastWorldSlimeRainTransition =>
+    _lastWorldSlimeRainTransition;
+  public WorldLanternNightTransition? LastWorldLanternNightTransition =>
+    _lastWorldLanternNightTransition;
   public SimulationSnapshot? LastPublishedSnapshot => _lastPublishedSnapshot;
 
   public WorldProgressionState CreateWorldProgressionSnapshot()
@@ -521,7 +868,8 @@ public sealed partial class DomeSimulation : IDisposable
 
     for (int index = 0; index < _worldEventStartRequests.Count; index++)
     {
-      if (_worldEventStartRequests[index].Kind == command.Kind)
+      if (_worldEventStartRequests[index].Kind == command.Kind ||
+          _worldEventStartRequests[index].Sequence == command.Sequence)
       {
         return false;
       }
@@ -752,10 +1100,18 @@ public sealed partial class DomeSimulation : IDisposable
   {
     return kind switch
     {
-      WorldEventKind.BloodMoon => !_worldClock.IsDayTime && !_worldProgression.IsBloodMoon,
+      WorldEventKind.BloodMoon => !_worldClock.IsDayTime &&
+        !_worldProgression.IsBloodMoon &&
+        !_worldProgression.IsLanternNight &&
+        !_worldProgression.IsMeteorScheduled &&
+        _worldProgression.InvasionType == 0,
       WorldEventKind.Eclipse => _worldClock.IsDayTime && _worldProgression.IsHardMode &&
         _worldProgression.DefeatedMechanicalBoss && !_worldProgression.IsEclipse,
-      WorldEventKind.LanternNight => !_worldClock.IsDayTime && !_worldProgression.IsLanternNight,
+      WorldEventKind.LanternNight => !_worldClock.IsDayTime &&
+        !_worldProgression.IsLanternNight &&
+        !_worldProgression.IsMeteorScheduled &&
+        !_worldProgression.IsBloodMoon &&
+        _worldProgression.InvasionType == 0,
       _ => false
     };
   }
@@ -1171,6 +1527,516 @@ public sealed partial class DomeSimulation : IDisposable
     return signId;
   }
 
+  private bool TryReserveSignSnapshot(
+    int tileX,
+    int tileY,
+    string text,
+    out SignSnapshot sign)
+  {
+    sign = default;
+    if (text is null || text.Length > 100 || !WorldGrid.Contains(tileX, tileY) ||
+        _nextSignId >= MaximumSignCount)
+    {
+      return false;
+    }
+
+    WorldSectionCoordinates section = WorldGrid.GetSectionCoordinates(tileX, tileY);
+    sign = new SignSnapshot(_nextSignId, tileX, tileY, text, 1, section);
+    _nextSignId++;
+    return true;
+  }
+
+  private void ReleaseSignReservation(SignSnapshot sign)
+  {
+    if (!_signs.ContainsKey(sign.SignId) && _nextSignId == sign.SignId + 1)
+    {
+      _nextSignId = sign.SignId;
+    }
+  }
+
+  private void CommitReservedSign(SignSnapshot sign)
+  {
+    _signs[sign.SignId] = sign;
+  }
+
+  private IReadOnlyDictionary<WorldSectionCoordinates, long> CapturePlacementSectionVersions(
+    IReadOnlyList<WorldSectionCoordinates> sections)
+  {
+    Dictionary<WorldSectionCoordinates, long> versions = new();
+    for (int index = 0; index < sections.Count; index++)
+    {
+      WorldSectionCoordinates section = sections[index];
+      versions[section] = WorldGrid.GetSectionVersion(section);
+    }
+
+    return versions;
+  }
+
+  private WorldObjectPlacementCommittedEvent CreatePlacementEvent(
+    WorldObjectPlacementPlan plan,
+    WorldObjectPlacementResult result,
+    SignSnapshot sign,
+    int projectileIdentity,
+    Guid? projectileUuid,
+    ProjectileWorldObjectPlacementCommand command)
+  {
+    WorldSectionCoordinates originSection = WorldGrid.GetSectionCoordinates(
+      command.OriginX,
+      command.OriginY);
+    return new WorldObjectPlacementCommittedEvent(plan, sign, result.Sections)
+    {
+      SectionVersion = WorldGrid.GetSectionVersion(originSection),
+      SectionVersions = CapturePlacementSectionVersions(result.Sections),
+      ProjectileIdentity = projectileIdentity,
+      ProjectileUuid = projectileUuid,
+      ProjectileTombstoneReason = command.TombstoneReason
+    };
+  }
+
+  private bool TryGetPlacementProjectileLink(
+    Entity projectile,
+    out int projectileIdentity,
+    out Guid? projectileUuid)
+  {
+    projectileIdentity = -1;
+    projectileUuid = null;
+    if (!IsAuthoritativeActiveProjectile(projectile) ||
+        !_projectileIdsByEntity.TryGetValue(projectile, out projectileIdentity))
+    {
+      return false;
+    }
+
+    if (World.Has<ProjectileNetworkIdentityComponent>(projectile))
+    {
+      projectileUuid = World.Get<ProjectileNetworkIdentityComponent>(projectile).ProjectileUuid;
+    }
+
+    return true;
+  }
+
+  public WorldObjectPlacementResult TryCommitProjectileWorldObjectPlacement(
+    ProjectileWorldObjectPlacementCommand command,
+    IReadOnlyList<WorldObjectTileMutation> footprint,
+    bool ownerActive,
+    bool projectileActive)
+  {
+    ThrowIfDisposed();
+    ObserveProjectileWorldObjectPlacementSequence(command.Sequence);
+    bool resolvedOwnerActive = ownerActive && IsAuthoritativeActivePlayer(command.Owner);
+    bool resolvedProjectileActive = projectileActive &&
+      IsAuthoritativeActiveProjectile(command.Projectile);
+    if (!resolvedOwnerActive)
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.OwnerInactive);
+    }
+
+    if (!resolvedProjectileActive)
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.ProjectileInactive);
+    }
+
+    WorldObjectPlacementRequest request = command.ToRequest();
+    WorldObjectPlacementFailureCode validation = request.Validate(WorldGrid);
+    if (validation != WorldObjectPlacementFailureCode.None)
+    {
+      return WorldObjectPlacementResult.Rejected(command.Sequence, validation);
+    }
+
+    if (!TryGetPlacementProjectileLink(
+          command.Projectile,
+          out int projectileIdentity,
+          out Guid? projectileUuid))
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.ProjectileInactive);
+    }
+
+    if (_committedWorldObjectPlacementSequences.Contains(command.Sequence))
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.DuplicateSequence);
+    }
+
+    Dictionary<WorldSectionCoordinates, long> sectionVersions = new();
+    for (int index = 0; index < footprint.Count; index++)
+    {
+      WorldObjectTileMutation mutation = footprint[index];
+      if (!WorldGrid.Contains(mutation.X, mutation.Y))
+      {
+        continue;
+      }
+
+      WorldSectionCoordinates section = WorldGrid.GetSectionCoordinates(mutation.X, mutation.Y);
+      sectionVersions.TryAdd(section, WorldGrid.GetSectionVersion(section));
+    }
+
+    WorldObjectPlacementPlan plan = new(request, footprint, sectionVersions);
+    if (!TryReserveSignSnapshot(
+          command.OriginX,
+          command.OriginY,
+          command.SignText,
+          out SignSnapshot sign))
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.InvalidFootprint);
+    }
+
+    WorldObjectPlacementResult result;
+    try
+    {
+      result = _worldObjectPlacementCommitSystem.Commit(
+        WorldGrid,
+        plan,
+        resolvedOwnerActive,
+        resolvedProjectileActive,
+        _committedWorldObjectPlacementSequences);
+    }
+    catch
+    {
+      ReleaseSignReservation(sign);
+      throw;
+    }
+
+    if (!result.Committed)
+    {
+      ReleaseSignReservation(sign);
+      return result;
+    }
+
+    CommitReservedSign(sign);
+    _worldObjectPlacementEvents.Add(CreatePlacementEvent(
+      plan,
+      result,
+      sign,
+      projectileIdentity,
+      projectileUuid,
+      command));
+    _commands.Enqueue(new DespawnEntityCommand(
+      command.Projectile,
+      command.TombstoneReason));
+    return result;
+  }
+
+  public WorldObjectPlacementResult TryCommitProjectileSignPlacement(
+    ProjectileWorldObjectPlacementCommand command)
+  {
+    return TryCommitProjectileSignPlacement(
+      command,
+      IsAuthoritativeActivePlayer(command.Owner),
+      IsAuthoritativeActiveProjectile(command.Projectile));
+  }
+
+  private WorldObjectPlacementResult TryCommitProjectileSignPlacement(
+    ProjectileWorldObjectPlacementCommand command,
+    bool ownerActive,
+    bool projectileActive)
+  {
+    ThrowIfDisposed();
+    ObserveProjectileWorldObjectPlacementSequence(command.Sequence);
+    if (!ownerActive)
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.OwnerInactive);
+    }
+
+    if (!projectileActive)
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.ProjectileInactive);
+    }
+
+    if (_committedWorldObjectPlacementSequences.Contains(command.Sequence))
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.DuplicateSequence);
+    }
+
+    if (!SignObjectPlacementPlanFactory.TryCreate(
+          WorldGrid,
+          command.ToRequest(),
+          out WorldObjectPlacementPlan plan,
+          out WorldObjectPlacementFailureCode failureCode))
+    {
+      return WorldObjectPlacementResult.Rejected(command.Sequence, failureCode);
+    }
+
+    if (!TryGetPlacementProjectileLink(
+          command.Projectile,
+          out int projectileIdentity,
+          out Guid? projectileUuid))
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.ProjectileInactive);
+    }
+
+    if (!TryReserveSignSnapshot(
+          command.OriginX,
+          command.OriginY,
+          command.SignText,
+          out SignSnapshot sign))
+    {
+      return WorldObjectPlacementResult.Rejected(
+        command.Sequence,
+        WorldObjectPlacementFailureCode.InvalidFootprint);
+    }
+
+    WorldObjectPlacementResult result;
+    try
+    {
+      result = _worldObjectPlacementCommitSystem.Commit(
+        WorldGrid,
+        plan,
+        ownerActive,
+        projectileActive,
+        _committedWorldObjectPlacementSequences);
+    }
+    catch
+    {
+      ReleaseSignReservation(sign);
+      throw;
+    }
+
+    if (!result.Committed)
+    {
+      ReleaseSignReservation(sign);
+      return result;
+    }
+
+    CommitReservedSign(sign);
+    _worldObjectPlacementEvents.Add(CreatePlacementEvent(
+      plan,
+      result,
+      sign,
+      projectileIdentity,
+      projectileUuid,
+      command));
+    _commands.Enqueue(new DespawnEntityCommand(
+      command.Projectile,
+      command.TombstoneReason));
+    return result;
+  }
+
+  public bool PrepareProjectileSignPlacementFixture(
+    PlayerHandle owner,
+    long sequence,
+    int originX,
+    int originY,
+    out WorldObjectPlacementFailureCode failureCode)
+  {
+    ThrowIfDisposed();
+    failureCode = WorldObjectPlacementFailureCode.None;
+    if (!_players.TryGetValue(owner, out Entity ownerEntity) ||
+        !World.Get<PlayerLifecycleComponent>(ownerEntity).IsActive)
+    {
+      failureCode = WorldObjectPlacementFailureCode.OwnerInactive;
+      return false;
+    }
+
+    if (sequence < 0)
+    {
+      failureCode = WorldObjectPlacementFailureCode.InvalidSequence;
+      return false;
+    }
+
+    if (_committedWorldObjectPlacementSequences.Contains(sequence))
+    {
+      failureCode = WorldObjectPlacementFailureCode.DuplicateSequence;
+      return false;
+    }
+
+    if (_verificationPlacementProjectiles.ContainsKey(sequence))
+    {
+      failureCode = WorldObjectPlacementFailureCode.InvalidSequence;
+      return false;
+    }
+
+    if (!_projectileDefinitions.TryGet(
+          VerificationProjectileType,
+          out ProjectileDefinition definition) ||
+        _projectileIdentityAllocator.NextIdentity == int.MaxValue)
+    {
+      failureCode = WorldObjectPlacementFailureCode.ProjectileInactive;
+      return false;
+    }
+
+    int identity = _projectileIdentityAllocator.Allocate();
+    SpawnProjectileCommand spawn = new(
+      owner,
+      originX,
+      originY,
+      1,
+      definition.Damage,
+      definition.LifetimeTicks,
+      ProjectileType: definition.ProjectileType,
+      InitialVelocityY: -100.0f);
+    Entity projectile = _projectileSpawnSystem.Spawn(
+      World,
+      spawn,
+      definition,
+      identity,
+      _projectileHitImmunity);
+    ProjectileDefinitionComponent definitionComponent =
+      World.Get<ProjectileDefinitionComponent>(projectile);
+    ProjectileNetworkIdentityComponent networkIdentity =
+      World.Get<ProjectileNetworkIdentityComponent>(projectile);
+    ProjectileBehaviorReplicationState behaviorState =
+      ProjectileBehaviorStateProjection.Project(
+        World.Get<ProjectileBehaviorComponent>(projectile));
+    TransformComponent transform = World.Get<TransformComponent>(projectile);
+    VelocityComponent velocity = World.Get<VelocityComponent>(projectile);
+    _projectileIdsByEntity.Add(projectile, identity);
+    _projectileReplications.Add(identity, new ProjectileReplicationSnapshot(
+      identity,
+      definition.ProjectileType,
+      owner,
+      new SimulationVector(transform.X, transform.Y),
+      new SimulationVector(velocity.X, velocity.Y),
+      definition.Damage,
+      definition.LifetimeTicks,
+      IsActive: true,
+      Revision: 1,
+      GetSectionCoordinates(new SimulationVector(transform.X, transform.Y)),
+      Identity: identity,
+      ProjectileUuid: networkIdentity.ProjectileUuid,
+      Ai0: behaviorState.Ai0,
+      Ai1: behaviorState.Ai1,
+      Ai2: behaviorState.Ai2,
+      Banner: World.Get<ProjectileBannerResponseComponent>(projectile).BannerId,
+      DefinitionKnockback: definition.Knockback,
+      DefinitionOriginalDamage: definition.OriginalDamage == 0
+        ? definition.Damage
+        : definition.OriginalDamage,
+      Reflected: false,
+      LegacyAiStyle: definition.LegacyAiStyle,
+      MaximumPenetration: definition.MaximumPenetration,
+      DecidesManualFallThrough: definitionComponent.DecidesManualFallThrough,
+      ShouldFallThrough: false,
+      Direction: World.Get<ProjectileDirectionComponent>(projectile).Horizontal,
+      ManualDirectionChange: definitionComponent.ManualDirectionChange,
+      UsesOwnerMeleeHitCooldown: definitionComponent.UsesOwnerMeleeHitCooldown,
+      CopiesOwnerAttackCooldownToLocalImmunityOnSpawn:
+        definitionComponent.CopiesOwnerAttackCooldownToLocalImmunityOnSpawn,
+      HostileDamageScaling: definitionComponent.HostileDamageScaling,
+      CollidesWithTiles: definitionComponent.CollidesWithTiles,
+      TileCollisionEnabled: World.Get<ProjectileTileCollisionComponent>(projectile).Enabled,
+      PrimaryUpdatePending: World.Get<ProjectileNetworkUpdateComponent>(projectile)
+        .PrimaryUpdatePending,
+      IgnoreWater: definitionComponent.IgnoreWater,
+      ReflectsFromTiles: definitionComponent.ReflectsFromTiles,
+      CorrectSlopeCollision: definitionComponent.CorrectSlopeCollision,
+      MaximumBounces: definitionComponent.MaximumBounces,
+      BounceVelocityMultiplier: definitionComponent.BounceVelocityMultiplier,
+      MinimumBounceSpeed: definitionComponent.MinimumBounceSpeed,
+      ChildSpawn: definitionComponent.ChildSpawn,
+      OnHitStatusEffect: definitionComponent.OnHitStatusEffect,
+      OnDespawnStatusEffect: definitionComponent.OnDespawnStatusEffect,
+      OnDespawnAreaDamage: definitionComponent.OnDespawnAreaDamage,
+      BehaviorId: definitionComponent.BehaviorId,
+      Friendly: definitionComponent.Friendly,
+      Hostile: definitionComponent.Hostile,
+      PlayerDamagePolicy: definitionComponent.PlayerDamagePolicy));
+    _verificationPlacementProjectiles.Add(sequence, projectile);
+    return true;
+  }
+
+  public WorldObjectPlacementResult TryCommitProjectileSignPlacementFixture(
+    PlayerHandle owner,
+    long sequence,
+    int originX,
+    int originY,
+    int style,
+    int direction,
+    string signText)
+  {
+    ThrowIfDisposed();
+    if (!_players.TryGetValue(owner, out Entity ownerEntity) ||
+        !World.Get<PlayerLifecycleComponent>(ownerEntity).IsActive)
+    {
+      return WorldObjectPlacementResult.Rejected(
+        sequence,
+        WorldObjectPlacementFailureCode.OwnerInactive);
+    }
+
+    if (!_verificationPlacementProjectiles.TryGetValue(sequence, out Entity projectile) &&
+        !PrepareProjectileSignPlacementFixture(
+          owner,
+          sequence,
+          originX,
+          originY,
+          out WorldObjectPlacementFailureCode prepareFailure))
+    {
+      return WorldObjectPlacementResult.Rejected(
+        sequence,
+        prepareFailure);
+    }
+
+    projectile = _verificationPlacementProjectiles[sequence];
+    if (!World.IsAlive(projectile))
+    {
+      _verificationPlacementProjectiles.Remove(sequence);
+      return WorldObjectPlacementResult.Rejected(
+        sequence,
+        WorldObjectPlacementFailureCode.ProjectileInactive);
+    }
+
+    WorldObjectPlacementResult result = TryCommitProjectileSignPlacement(
+      new ProjectileWorldObjectPlacementCommand(
+        sequence,
+        projectile,
+        ownerEntity,
+        originX,
+        originY,
+        ObjectType: 85,
+        style,
+        direction,
+        signText));
+    if (result.Committed)
+    {
+      _verificationPlacementProjectiles.Remove(sequence);
+    }
+
+    return result;
+  }
+
+  private void ObserveProjectileWorldObjectPlacementSequence(long sequence)
+  {
+    if (sequence >= 0 && sequence < long.MaxValue &&
+        _nextProjectileWorldObjectPlacementSequence <= sequence)
+    {
+      _nextProjectileWorldObjectPlacementSequence = sequence + 1;
+    }
+  }
+
+  private bool TryTakeProjectileWorldObjectPlacementSequence(out long sequence)
+  {
+    if (_nextProjectileWorldObjectPlacementSequence == long.MaxValue)
+    {
+      sequence = 0;
+      return false;
+    }
+
+    sequence = _nextProjectileWorldObjectPlacementSequence;
+    _nextProjectileWorldObjectPlacementSequence++;
+    return true;
+  }
+
+  public IReadOnlyList<WorldObjectPlacementCommittedEvent> CreateWorldObjectPlacementEvents()
+  {
+    ThrowIfDisposed();
+    return _worldObjectPlacementEvents.ToArray();
+  }
+
   public IReadOnlyList<SignSnapshot> CreateSignSnapshots()
   {
     ThrowIfDisposed();
@@ -1201,6 +2067,32 @@ public sealed partial class DomeSimulation : IDisposable
     }
 
     return snapshots;
+  }
+
+  public IReadOnlyList<SignTombstoneSnapshot> CreateSignTombstoneSnapshots()
+  {
+    ThrowIfDisposed();
+    return _signTombstones.Values
+      .OrderBy(tombstone => tombstone.SignId)
+      .ToArray();
+  }
+
+  public bool TryDeleteSign(DeleteSignCommand command)
+  {
+    ThrowIfDisposed();
+    if (!_signs.TryGetValue(command.SignId, out SignSnapshot sign) ||
+        sign.Revision != command.ExpectedRevision || sign.Revision == long.MaxValue)
+    {
+      return false;
+    }
+
+    _signs.Remove(command.SignId);
+    _signTombstones[command.SignId] = new SignTombstoneSnapshot(
+      command.SignId,
+      sign.Revision + 1,
+      SignTombstoneReason.Deleted,
+      sign.Section);
+    return true;
   }
 
   public bool TryUpdateSign(int signId, SimulationVector playerPosition, string text)
@@ -1236,6 +2128,11 @@ public sealed partial class DomeSimulation : IDisposable
     if (_nextChestId == int.MaxValue)
     {
       throw new InvalidOperationException("Chest ID allocator was exhausted.");
+    }
+
+    if (_chests.Count >= _entityLimits.MaximumChests)
+    {
+      throw new InvalidOperationException("The configured chest capacity was exhausted.");
     }
 
     int chestId = _nextChestId;
@@ -1288,10 +2185,7 @@ public sealed partial class DomeSimulation : IDisposable
   {
     ThrowIfDisposed();
     ChestComponent chest = GetChest(chestId);
-    if (!stack.IsEmpty)
-    {
-      _ = _itemDefinitions.Get(stack.ItemType);
-    }
+    ValidateChestItemStack(stack);
 
     _ = chest.GetSlot(chestSlot);
 
@@ -1313,7 +2207,9 @@ public sealed partial class DomeSimulation : IDisposable
       ItemStack[] slots = new ItemStack[ChestComponent.SlotCount];
       for (int index = 0; index < slots.Length; index++)
       {
-        slots[index] = chest.GetSlot(index);
+        ItemStack stack = chest.GetSlot(index);
+        ValidateChestItemStack(stack);
+        slots[index] = stack;
       }
 
       snapshots.Add(new ChestSnapshot(
@@ -1545,7 +2441,7 @@ public sealed partial class DomeSimulation : IDisposable
         Height: checked((int)MathF.Ceiling(collider.Height))));
     }
 
-    int activeNpcCount = _npcReplications.Values.Count(npc => npc.IsActive);
+    float activeNpcSlots = CalculateActiveNpcSlots();
     foreach (TileEntityPersistentState persistent in _tileEntities.Values.OrderBy(entity => entity.Id))
     {
       if (!TrainingDummyTileEntityState.TryRead(
@@ -1587,7 +2483,7 @@ public sealed partial class DomeSimulation : IDisposable
         TrainingDummyActivationDecisionQuery.Evaluate(
           entity,
           players,
-          activeNpcCount >= MaximumNpcCount);
+          activeNpcSlots >= _entityLimits.MaximumNpcs);
       if (!decision.ShouldActivate)
       {
         continue;
@@ -1598,8 +2494,23 @@ public sealed partial class DomeSimulation : IDisposable
         DefinitionId: TrainingDummyNpcType,
         Position: new SimulationVector(entity.TileX, entity.TileY),
         Source: NpcComponents.NpcSpawnSource.TileEntity));
-      activeNpcCount++;
+      activeNpcSlots += _npcDefinitions.GetRequired(TrainingDummyNpcType).NpcSlotCost;
     }
+  }
+
+  private float CalculateActiveNpcSlots()
+  {
+    List<NpcSlotAccount> accounts = new(_npcs.Count);
+    foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs.OrderBy(entry => entry.Key.Value))
+    {
+      NpcComponents.NpcLifecycleComponent lifecycle =
+        World.Get<NpcComponents.NpcLifecycleComponent>(entry.Value);
+      NpcComponents.NpcAuthorityComponent authority =
+        World.Get<NpcComponents.NpcAuthorityComponent>(entry.Value);
+      accounts.Add(new NpcSlotAccount(lifecycle.IsActive, authority.NpcSlotCost));
+    }
+
+    return _npcSlotAccountingSystem.CalculateActiveSlots(accounts);
   }
 
   public bool TryOpenChest(int chestId, PlayerHandle player, SimulationVector playerPosition)
@@ -1656,7 +2567,7 @@ public sealed partial class DomeSimulation : IDisposable
     ItemStack chestItem = chest.GetSlot(chestSlot);
     ItemStack source = withdraw ? chestItem : inventoryItem;
     ItemStack destination = withdraw ? inventoryItem : chestItem;
-    if (source.IsEmpty || !destination.IsEmpty)
+    if (source.IsEmpty || !destination.IsEmpty || !IsValidChestItemStack(source))
     {
       return false;
     }
@@ -1690,6 +2601,23 @@ public sealed partial class DomeSimulation : IDisposable
       deltaX * deltaX + deltaY * deltaY <= 6.0f * 6.0f;
   }
 
+  private void ValidateChestItemStack(ItemStack stack)
+  {
+    if (!IsValidChestItemStack(stack))
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(stack),
+        "A chest item must match an authoritative item Definition and StackLimit.");
+    }
+  }
+
+  private bool IsValidChestItemStack(ItemStack stack)
+  {
+    return stack.IsEmpty ||
+      _itemDefinitions.TryGet(stack.ItemType, out ItemDefinition definition) &&
+      stack.Quantity <= definition.StackLimit;
+  }
+
   private long NextChestMutationSequence()
   {
     if (_nextChestMutationSequence == long.MaxValue)
@@ -1717,6 +2645,11 @@ public sealed partial class DomeSimulation : IDisposable
   public PlayerHandle CreatePlayer(SimulationVector spawn)
   {
     ThrowIfDisposed();
+
+    if (_players.Count >= _entityLimits.MaximumPlayers)
+    {
+      throw new InvalidOperationException("The configured player limit has been reached.");
+    }
 
     if (_nextPlayerHandle == int.MaxValue)
     {
@@ -1752,8 +2685,21 @@ public sealed partial class DomeSimulation : IDisposable
       new BuffCollectionComponent(),
       new WellFedStateComponent(),
       new PlayerInteractionComponent(),
-    new PlayerLifecycleComponent { IsActive = true, Spawn = spawn },
-      new EquipmentStateCollectionComponent());
+      new PlayerLifecycleComponent { IsActive = true, Spawn = spawn });
+    EquipmentStateCollectionComponent equipmentState = new();
+    World.Add(entity, in equipmentState);
+    PlayerPotionStateComponent potionState = new();
+    World.Add(entity, in potionState);
+    PlayerTargetingStateComponent targeting = new();
+    World.Add(entity, in targeting);
+    PlayerStealthStateComponent stealth = new() { Stealth = 1.0f };
+    World.Add(entity, in stealth);
+    PlayerMountStateComponent mount = new();
+    World.Add(entity, in mount);
+    PlayerSentryStateComponent sentryState = new();
+    World.Add(entity, in sentryState);
+    PlayerSleepComponent sleep = new();
+    World.Add(entity, in sleep);
     _players.Add(player, entity);
     return player;
   }
@@ -1818,14 +2764,13 @@ public sealed partial class DomeSimulation : IDisposable
     {
       PlayerPersistentItem item = serverAccount.Items[slotId];
       if (item.ItemType > ushort.MaxValue || item.Stack <= 0 ||
-          !_itemDefinitions.TryGet((ushort)item.ItemType, out ItemDefinition definition))
+          !_itemDefinitions.TryGet((ushort)item.ItemType, out ItemDefinition definition) ||
+          item.Stack > definition.StackLimit)
       {
         continue;
       }
 
-      inventory.SetSlot(slotId, new ItemStack(
-        (ushort)item.ItemType,
-        Math.Min(item.Stack, definition.StackLimit)));
+      inventory.SetSlot(slotId, new ItemStack((ushort)item.ItemType, item.Stack));
       inventory.SetInstanceState(
         slotId,
         new Terraria.Dome.Simulation.Items.Components.ItemInstanceStateComponent(
@@ -1841,6 +2786,31 @@ public sealed partial class DomeSimulation : IDisposable
     _itemInventorySanitizationSystem.Sanitize(inventory, _itemDefinitions);
     _playerAccountUuids.Add(player, serverAccount.Uuid);
     return player;
+  }
+
+  public bool TryQueuePlayerPvpBuff(
+    PlayerHandle source,
+    PlayerHandle target,
+    ushort buffType,
+    int durationTicks)
+  {
+    ThrowIfDisposed();
+    if (!source.IsValid || !target.IsValid || source == target ||
+        !LegacyPvpBuffRegistry.IsPvpBuff(buffType) || durationTicks <= 0 ||
+        !_players.TryGetValue(source, out Entity sourceEntity) ||
+        !_players.TryGetValue(target, out Entity targetEntity) ||
+        !World.Get<PlayerLifecycleComponent>(sourceEntity).IsActive ||
+        !World.Get<PlayerLifecycleComponent>(targetEntity).IsActive)
+    {
+      return false;
+    }
+
+    _commands.Enqueue(new ApplyTargetStatusEffectCommand(
+      targetEntity,
+      source,
+      buffType,
+      durationTicks));
+    return true;
   }
 
   public PlayerPersistentState ImportPlayerIfMissing(PlayerPersistentState bootstrap)
@@ -1871,18 +2841,129 @@ public sealed partial class DomeSimulation : IDisposable
   public NpcHandle CreateNpc(SimulationVector spawn, int definitionId)
   {
     ThrowIfDisposed();
-
-    if (_nextNpcHandle == int.MaxValue)
-    {
-      throw new InvalidOperationException("NPC handle allocator was exhausted.");
-    }
-
-    NpcHandle npc = new(_nextNpcHandle);
-    _nextNpcHandle++;
     SpawnNpcCommand command = new(
       DefinitionId: definitionId,
       Position: spawn,
       Source: NpcComponents.NpcSpawnSource.Command);
+    if (!TryResolveNpcSlot(
+          command,
+          out NpcHandle npc,
+          out bool reusesExisting,
+          out Entity replacedEntity,
+          out NpcReplicationSnapshot previousReplication,
+          out string failureReason))
+    {
+      throw new InvalidOperationException(failureReason);
+    }
+
+    if (!TryCommitNpcSpawn(
+          command,
+          npc,
+          reusesExisting,
+          replacedEntity,
+          previousReplication,
+          out failureReason))
+    {
+      throw new InvalidOperationException(failureReason);
+    }
+
+    return npc;
+  }
+
+  private bool TryResolveNpcSlot(
+    SpawnNpcCommand command,
+    out NpcHandle npc,
+    out bool reusesExisting,
+    out Entity replacedEntity,
+    out NpcReplicationSnapshot previousReplication,
+    out string failureReason)
+  {
+    npc = default;
+    reusesExisting = false;
+    replacedEntity = default;
+    previousReplication = default;
+    failureReason = string.Empty;
+    if (command.RequestedReplicationId < 0 || command.RequestedReplicationId == int.MaxValue)
+    {
+      failureReason = "NPC spawn identity is unavailable.";
+      return false;
+    }
+
+    if (command.RequestedReplicationId > 0)
+    {
+      npc = new NpcHandle(command.RequestedReplicationId);
+      if (_npcs.ContainsKey(npc) || _npcReplications.ContainsKey(npc))
+      {
+        failureReason = "NPC spawn identity is unavailable.";
+        return false;
+      }
+
+      if (_npcs.Count >= _entityLimits.MaximumNpcs)
+      {
+        failureReason = "The configured NPC limit has been reached.";
+        return false;
+      }
+
+      return true;
+    }
+
+    List<NpcSlotCandidate> candidates = new(_npcs.Count);
+    foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
+    {
+      if (!World.IsAlive(entry.Value) ||
+          !_npcReplications.TryGetValue(entry.Key, out NpcReplicationSnapshot replication))
+      {
+        failureReason = "NPC slot ownership is stale.";
+        return false;
+      }
+
+      NpcComponents.NpcLifecycleComponent lifecycle =
+        World.Get<NpcComponents.NpcLifecycleComponent>(entry.Value);
+      candidates.Add(new NpcSlotCandidate(
+        entry.Key,
+        lifecycle.IsActive && replication.IsActive,
+        lifecycle.CanBeReplaced,
+        replication.Revision));
+    }
+
+    if (!_npcSlotAllocator.TrySelect(
+          _entityLimits.MaximumNpcs,
+          candidates,
+          out NpcSlotSelection selection))
+    {
+      failureReason = "The configured NPC limit has been reached.";
+      return false;
+    }
+
+    npc = selection.Handle;
+    reusesExisting = selection.ReusesExisting;
+    if (reusesExisting &&
+        (!_npcs.TryGetValue(npc, out replacedEntity) ||
+         !_npcReplications.TryGetValue(npc, out previousReplication)))
+    {
+      failureReason = "NPC slot ownership is stale.";
+      return false;
+    }
+
+    return true;
+  }
+
+  private bool TryCommitNpcSpawn(
+    SpawnNpcCommand command,
+    NpcHandle npc,
+    bool reusesExisting,
+    Entity replacedEntity,
+    NpcReplicationSnapshot previousReplication,
+    out string failureReason)
+  {
+    failureReason = string.Empty;
+    if (reusesExisting &&
+        (!_npcs.TryGetValue(npc, out Entity currentEntity) || currentEntity != replacedEntity))
+    {
+      failureReason = "NPC slot ownership is stale.";
+      return false;
+    }
+
     if (!_npcSpawnCommitSystem.TryCommit(
           World,
           WorldGrid,
@@ -1890,23 +2971,203 @@ public sealed partial class DomeSimulation : IDisposable
           command,
           npc.Value,
           out NpcSpawnCommitResult result,
-          out string failureReason))
+          out failureReason))
     {
-      throw new InvalidOperationException(failureReason);
+      return false;
     }
 
+    NpcDefinition definition = _npcDefinitions.GetRequired(command.DefinitionId);
     Entity entity = result.Entity;
-    _npcs.Add(npc, entity);
-    _npcReplications.Add(npc, new NpcReplicationSnapshot(
+    HealthComponent health = World.Get<HealthComponent>(entity);
+    FacingComponent facing = World.Get<FacingComponent>(entity);
+    NpcComponents.NpcLifecycleComponent lifecycle =
+      World.Get<NpcComponents.NpcLifecycleComponent>(entity);
+    NpcComponents.NpcSpawnStateComponent spawnState =
+      World.Get<NpcComponents.NpcSpawnStateComponent>(entity);
+    BuffCollectionComponent buffs = new();
+    World.Add(entity, in buffs);
+    long revision = reusesExisting ? previousReplication.Revision + 1 : 1;
+    ref NpcComponents.NpcReplicationComponent entityReplication =
+      ref World.Get<NpcComponents.NpcReplicationComponent>(entity);
+    entityReplication.Revision = revision;
+    NpcReplicationSnapshot replication = new(
       npc.Value,
-      definitionId,
-      spawn,
+      definition.NetId,
+      command.Position,
       new SimulationVector(0.0f, 0.0f),
-      100,
+      health.Current,
       IsActive: true,
-      Revision: 1,
-      GetSectionCoordinates(spawn)));
-    return npc;
+      Revision: revision,
+      GetSectionCoordinates(command.Position),
+      DefinitionId: definition.DefinitionId,
+      MaximumHealth: health.Maximum,
+      Facing: facing.Horizontal,
+      BehaviorId: definition.BehaviorId,
+      SpawnSource: command.Source,
+      DifficultyScale: command.DifficultyScale,
+      ReleaseOwner: command.ReleaseOwner,
+      SpawnedFromStatue: spawnState.SpawnedFromStatue,
+      TimeLeft: lifecycle.TimeLeft,
+      DespawnReason: lifecycle.DespawnReason,
+      Faction: definition.Faction,
+      Category: definition.Category);
+
+    if (reusesExisting)
+    {
+      ClearTrainingDummyOwnershipForNpc(npc, previousReplication with { IsActive = false });
+      _publishedNpcDeaths.Remove(npc);
+      if (!_npcs.Remove(npc, out Entity removedEntity))
+      {
+        World.Destroy(entity);
+        failureReason = "NPC slot ownership is stale.";
+        return false;
+      }
+
+      _projectileHitImmunitySystem.ResetNpcSlotData(_projectileHitImmunity, npc.Value);
+
+      if (World.IsAlive(removedEntity))
+      {
+        World.Destroy(removedEntity);
+      }
+    }
+
+    _npcs.Add(npc, entity);
+    _npcReplications[npc] = replication;
+    if (npc.Value >= _nextNpcHandle)
+    {
+      _nextNpcHandle = npc.Value == int.MaxValue - 1
+        ? int.MaxValue
+        : npc.Value + 1;
+    }
+
+    return true;
+  }
+
+  public bool TryGetPlayerMinionAttackTarget(PlayerHandle player, out NpcHandle target)
+  {
+    ThrowIfDisposed();
+    target = default;
+    if (!_players.TryGetValue(player, out Entity playerEntity))
+    {
+      return false;
+    }
+
+    NpcHandle? selected = World.Get<PlayerTargetingStateComponent>(playerEntity)
+      .MinionAttackTarget;
+    if (!selected.HasValue || !_npcs.TryGetValue(selected.Value, out Entity npcEntity) ||
+        !World.Get<NpcComponents.NpcLifecycleComponent>(npcEntity).IsActive)
+    {
+      return false;
+    }
+
+    target = selected.Value;
+    return true;
+  }
+
+  public bool TryGetProjectileOwnerMinionAttackTarget(
+    int projectileReplicationId,
+    out NpcHandle target)
+  {
+    ThrowIfDisposed();
+    target = default;
+    Entity projectile = default;
+    bool hasProjectile = projectileReplicationId > 0 &&
+      _projectileIdsByEntity.TryGetEntity(projectileReplicationId, out projectile);
+    if (!hasProjectile ||
+        !World.IsAlive(projectile) || !World.Has<ProjectileOwnerComponent>(projectile) ||
+        !World.Has<ProjectileMinionComponent>(projectile))
+    {
+      return false;
+    }
+
+    PlayerHandle owner = World.Get<ProjectileOwnerComponent>(projectile).Owner;
+    if (!_players.TryGetValue(owner, out Entity ownerEntity) ||
+        !World.Has<PlayerTargetingStateComponent>(ownerEntity))
+    {
+      return false;
+    }
+
+    NpcHandle? requestedTarget = World.Get<PlayerTargetingStateComponent>(ownerEntity)
+      .MinionAttackTarget;
+    if (!requestedTarget.HasValue || !_npcs.TryGetValue(requestedTarget.Value, out Entity npc) ||
+        !World.IsAlive(npc) || !World.Has<NpcComponents.NpcLifecycleComponent>(npc) ||
+        !World.Has<NpcComponents.NpcBehaviorStateComponent>(npc) ||
+        !World.Has<HealthComponent>(npc))
+    {
+      return false;
+    }
+
+    NpcComponents.NpcLifecycleComponent lifecycle =
+      World.Get<NpcComponents.NpcLifecycleComponent>(npc);
+    NpcComponents.NpcBehaviorStateComponent behavior =
+      World.Get<NpcComponents.NpcBehaviorStateComponent>(npc);
+    HealthComponent health = World.Get<HealthComponent>(npc);
+    if (!ProjectileOwnerMinionTargetPolicy.CanResolve(
+          owner,
+          isMinion: true,
+          requestedTarget,
+          lifecycle.IsActive,
+          behavior.IsChaseable,
+          health.Current))
+    {
+      return false;
+    }
+
+    target = requestedTarget.Value;
+    return true;
+  }
+
+  public bool TrySetPlayerMinionAttackTarget(PlayerHandle player, NpcHandle? target)
+  {
+    ThrowIfDisposed();
+    if (!_players.TryGetValue(player, out Entity playerEntity))
+    {
+      return false;
+    }
+
+    if (target.HasValue &&
+        (!_npcs.TryGetValue(target.Value, out Entity npcEntity) ||
+         !World.Get<NpcComponents.NpcLifecycleComponent>(npcEntity).IsActive))
+    {
+      return false;
+    }
+
+    ref PlayerTargetingStateComponent targeting =
+      ref World.Get<PlayerTargetingStateComponent>(playerEntity);
+    targeting.SetMinionAttackTarget(target);
+    return true;
+  }
+
+  public bool TrySetPlayerMaximumTurrets(PlayerHandle player, int maximumTurrets)
+  {
+    ThrowIfDisposed();
+    return _playerSentryAuthoritySystem.TrySetMaximumTurrets(
+      World,
+      _players,
+      player,
+      maximumTurrets);
+  }
+
+  public bool TryGetPlayerMaximumTurrets(PlayerHandle player, out int maximumTurrets)
+  {
+    ThrowIfDisposed();
+    return _playerSentryAuthoritySystem.TryGetMaximumTurrets(
+      World,
+      _players,
+      player,
+      out maximumTurrets);
+  }
+
+  public void SetSentryEventActive(bool eventActive)
+  {
+    ThrowIfDisposed();
+    if (_sentryEventActive == eventActive)
+    {
+      return;
+    }
+
+    _sentryEventActive = eventActive;
+    RequestProjectileSentryReconciliation();
   }
 
   public void QueueNpcSpawn(SpawnNpcCommand command)
@@ -1920,6 +3181,28 @@ public sealed partial class DomeSimulation : IDisposable
     _commands.Enqueue(command);
   }
 
+  public int QueueNpcEventSpawns(
+    NpcEventSpawnTable table,
+    SimulationVector position)
+  {
+    ThrowIfDisposed();
+    ArgumentNullException.ThrowIfNull(table);
+    IReadOnlyList<SpawnNpcCommand> commands = _npcEventSpawnSystem.EvaluateTable(
+      _worldProgression,
+      table,
+      _npcDefinitions,
+      CreateWorldInvasionPlayerSnapshots(),
+      position,
+      _npcs.Count,
+      _entityLimits.MaximumNpcs);
+    for (int index = 0; index < commands.Count; index++)
+    {
+      _commands.Enqueue(commands[index]);
+    }
+
+    return commands.Count;
+  }
+
   public void QueueNpcDespawn(DespawnNpcCommand command)
   {
     ThrowIfDisposed();
@@ -1929,7 +3212,42 @@ public sealed partial class DomeSimulation : IDisposable
   public void QueueProjectileSpawn(SpawnProjectileCommand command)
   {
     ThrowIfDisposed();
-    _commands.Enqueue(command);
+    _commands.Enqueue(command with
+    {
+      AuthoritativeDamage = 0,
+      AuthoritativeKnockback = 0.0f
+    });
+  }
+
+  public NpcProjectileReplicationSnapshot CreateNpcProjectile(NpcProjectileSpawnRequest request)
+  {
+    ThrowIfDisposed();
+    if (!_npcs.TryGetValue(request.SourceNpc, out Entity owner) ||
+        !_npcReplications.TryGetValue(request.SourceNpc, out NpcReplicationSnapshot ownerState) ||
+        !ownerState.IsActive || !World.Get<NpcComponents.NpcLifecycleComponent>(owner).IsActive)
+    {
+      throw new ArgumentException("NPC projectile owner is not active.", nameof(request));
+    }
+
+    if (_projectileReplications.Count + _npcProjectileReplications.Count >=
+          _entityLimits.MaximumProjectiles ||
+        _projectileIdentityAllocator.NextIdentity == int.MaxValue)
+    {
+      throw new InvalidOperationException(
+        "The configured projectile limit or identity allocator was exhausted.");
+    }
+
+    int replicationId = _projectileIdentityAllocator.Allocate();
+    Entity projectile = _npcProjectileSpawnSystem.Spawn(World, request, replicationId);
+    _projectileIdsByEntity.Add(projectile, replicationId);
+    NpcProjectileReplicationSnapshot snapshot = _npcProjectileReplicationSystem.Project(
+      projectile,
+      World,
+      replicationId,
+      revision: 1,
+      GetSectionCoordinates(request.Position));
+    _npcProjectileReplications.Add(replicationId, snapshot);
+    return snapshot;
   }
 
   public IReadOnlyList<NpcReplicationSnapshot> CreateNpcReplicationSnapshots()
@@ -1974,9 +3292,16 @@ public sealed partial class DomeSimulation : IDisposable
       NpcComponents.NpcHomeComponent home = hasHome
         ? World.Get<NpcComponents.NpcHomeComponent>(entity)
         : default;
+      bool hasHomePublication = hasHome &&
+        World.Has<NpcComponents.NpcHomePublicationComponent>(entity);
+      NpcComponents.NpcHomePublicationComponent homePublication = hasHomePublication
+        ? World.Get<NpcComponents.NpcHomePublicationComponent>(entity)
+        : default;
       NpcComponents.NpcSegmentComponent segment = hasSegment
         ? World.Get<NpcComponents.NpcSegmentComponent>(entity)
         : default;
+      NpcComponents.NpcGivenNameComponent givenName =
+        World.Get<NpcComponents.NpcGivenNameComponent>(entity);
       NpcReplicationSnapshot stateReplication = replication with
       {
         Position = new SimulationVector(transform.X, transform.Y),
@@ -2015,7 +3340,75 @@ public sealed partial class DomeSimulation : IDisposable
         HasSegment: hasSegment,
         Segment: segment,
         Faction: definition.Faction,
-        Category: definition.Category));
+        Category: definition.Category,
+        GivenName: givenName.GivenName,
+        HasHomePublication: hasHomePublication,
+        HomePublication: homePublication));
+    }
+
+    return snapshots;
+  }
+
+  public void ApplyNpcGivenNames(IReadOnlyDictionary<int, string> names)
+  {
+    ThrowIfDisposed();
+    ArgumentNullException.ThrowIfNull(names);
+    foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
+    {
+      if (names.TryGetValue(entry.Key.Value, out string? givenName))
+      {
+        NpcComponents.NpcGivenNameComponent component =
+          World.Get<NpcComponents.NpcGivenNameComponent>(entry.Value);
+        component.SetGivenName(givenName);
+        World.Set(entry.Value, component);
+      }
+    }
+  }
+
+  public IReadOnlyList<StatusEffectSnapshot> CreateStatusEffectSnapshots()
+  {
+    ThrowIfDisposed();
+    List<StatusEffectSnapshot> snapshots = new();
+    foreach (KeyValuePair<PlayerHandle, Entity> entry in _players.OrderBy(pair => pair.Key.Value))
+    {
+      BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entry.Value);
+      AddStatusSnapshots(snapshots, StatusEffectTargetKind.Player, entry.Key.Value, buffs);
+    }
+
+    foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs.OrderBy(pair => pair.Key.Value))
+    {
+      BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entry.Value);
+      AddStatusSnapshots(snapshots, StatusEffectTargetKind.Npc, entry.Key.Value, buffs);
+    }
+
+    return snapshots;
+  }
+
+  public IReadOnlyList<NpcStatusEffectStateSnapshot> CreateNpcStatusEffectStateSnapshots()
+  {
+    ThrowIfDisposed();
+    List<NpcStatusEffectStateSnapshot> snapshots = new(_npcs.Count);
+    foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs.OrderBy(pair => pair.Key.Value))
+    {
+      BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entry.Value);
+      List<StatusEffectSnapshot> effects = new(buffs.Count);
+      AddStatusSnapshots(effects, StatusEffectTargetKind.Npc, entry.Key.Value, buffs);
+      snapshots.Add(new NpcStatusEffectStateSnapshot(entry.Key.Value, buffs.Revision, effects));
+    }
+
+    return snapshots;
+  }
+
+  public IReadOnlyList<PlayerStatusEffectStateSnapshot> CreatePlayerStatusEffectStateSnapshots()
+  {
+    ThrowIfDisposed();
+    List<PlayerStatusEffectStateSnapshot> snapshots = new(_players.Count);
+    foreach (KeyValuePair<PlayerHandle, Entity> entry in _players.OrderBy(pair => pair.Key.Value))
+    {
+      BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entry.Value);
+      List<StatusEffectSnapshot> effects = new(buffs.Count);
+      AddStatusSnapshots(effects, StatusEffectTargetKind.Player, entry.Key.Value, buffs);
+      snapshots.Add(new PlayerStatusEffectStateSnapshot(entry.Key.Value, buffs.Revision, effects));
     }
 
     return snapshots;
@@ -2025,7 +3418,9 @@ public sealed partial class DomeSimulation : IDisposable
   {
     ThrowIfDisposed();
     List<ProjectileReplicationSnapshot> snapshots = new(_projectileReplications.Count);
-    for (int replicationId = 1; replicationId < _nextProjectileReplicationId; replicationId++)
+    for (int replicationId = 1;
+         replicationId < _projectileIdentityAllocator.NextIdentity;
+         replicationId++)
     {
       if (_projectileReplications.TryGetValue(replicationId, out ProjectileReplicationSnapshot snapshot))
       {
@@ -2033,6 +3428,55 @@ public sealed partial class DomeSimulation : IDisposable
       }
     }
 
+    return snapshots;
+  }
+
+  public bool CanWipeProjectileTurret(
+    int replicationId,
+    PlayerHandle localPlayer,
+    bool eventActive)
+  {
+    ThrowIfDisposed();
+    if (replicationId <= 0 || !localPlayer.IsValid ||
+        !_projectileReplications.TryGetValue(replicationId, out ProjectileReplicationSnapshot snapshot) ||
+        !snapshot.IsActive)
+    {
+      return false;
+    }
+
+    if (_projectileIdsByEntity.TryGetEntity(replicationId, out Entity projectile) &&
+        World.IsAlive(projectile) && World.Has<ProjectileOwnerComponent>(projectile) &&
+        World.Has<ProjectileDefinitionComponent>(projectile))
+    {
+      ProjectileOwnerComponent owner = World.Get<ProjectileOwnerComponent>(projectile);
+      ProjectileDefinitionComponent definition = World.Get<ProjectileDefinitionComponent>(projectile);
+      bool isSentry = World.Has<ProjectileSentryComponent>(projectile);
+      return ProjectileTurretPersistencePolicy.CanWipe(
+        definition.ProjectileType,
+        owner.Owner,
+        localPlayer,
+        isSentry,
+        eventActive,
+        isDd2Summon: World.Has<ProjectileDd2SummonComponent>(projectile));
+    }
+
+    return false;
+  }
+
+  public IReadOnlyList<NpcProjectileReplicationSnapshot> CreateNpcProjectileReplicationSnapshots()
+  {
+    ThrowIfDisposed();
+    List<NpcProjectileReplicationSnapshot> snapshots =
+      new(_npcProjectileReplications.Count);
+    foreach (NpcProjectileReplicationSnapshot snapshot in _npcProjectileReplications.Values)
+    {
+      if (snapshot.IsActive || TickNumber < snapshot.TombstoneRetainedUntilTick)
+      {
+        snapshots.Add(snapshot);
+      }
+    }
+
+    snapshots.Sort(static (first, second) => first.ReplicationId.CompareTo(second.ReplicationId));
     return snapshots;
   }
 
@@ -2050,6 +3494,47 @@ public sealed partial class DomeSimulation : IDisposable
     }
 
     _commands.Enqueue(new DamageNpcCommand(npc, amount));
+  }
+
+  public void QueueNpcDamage(DamageNpcCommand command)
+  {
+    ThrowIfDisposed();
+    if (command.Amount <= 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(command));
+    }
+
+    if (!_npcs.ContainsKey(command.Npc))
+    {
+      throw new ArgumentException("NPC does not exist.", nameof(command));
+    }
+
+    _commands.Enqueue(command);
+  }
+
+  public void QueueHostileNpcDamage(NpcHandle sourceNpc, NpcHandle targetNpc, int amount)
+  {
+    ThrowIfDisposed();
+    if (amount <= 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(amount));
+    }
+
+    if (!_npcs.ContainsKey(sourceNpc))
+    {
+      throw new ArgumentException("Source NPC does not exist.", nameof(sourceNpc));
+    }
+
+    if (!_npcs.ContainsKey(targetNpc))
+    {
+      throw new ArgumentException("Target NPC does not exist.", nameof(targetNpc));
+    }
+
+    _commands.Enqueue(new DamageNpcCommand(
+      targetNpc,
+      amount,
+      SourceKind: NpcDamageSourceKind.HostileNpc,
+      SourceNpc: sourceNpc));
   }
 
   public bool DestroyPlayer(PlayerHandle player)
@@ -2076,6 +3561,67 @@ public sealed partial class DomeSimulation : IDisposable
     }
 
     return World.Get<InventoryComponent>(entity);
+  }
+
+  public bool TryGetPlayerInputEdges(PlayerHandle player, out PlayerInputEdges edges)
+  {
+    if (!_players.TryGetValue(player, out Entity entity))
+    {
+      edges = default;
+      return false;
+    }
+
+    PlayerInputComponent input = World.Get<PlayerInputComponent>(entity);
+    edges = new PlayerInputEdges(
+      input.UseItemJustPressed,
+      input.UseItemJustReleased,
+      input.UseTileJustPressed,
+      input.UseTileJustReleased,
+      input.DashJustPressed,
+      input.DashJustReleased);
+    return true;
+  }
+
+  public bool TryGetPlayerInputState(PlayerHandle player, out PlayerInputState state)
+  {
+    if (!_players.TryGetValue(player, out Entity entity))
+    {
+      state = default;
+      return false;
+    }
+
+    PlayerInputComponent input = World.Get<PlayerInputComponent>(entity);
+    InventoryComponent inventory = World.Get<InventoryComponent>(entity);
+    state = new PlayerInputState(
+      input.MoveLeft,
+      input.MoveRight,
+      input.Jump,
+      input.Fire,
+      input.UseItem,
+      input.Up,
+      input.Down,
+      input.UseTile,
+      input.Dash,
+      input.Facing,
+      inventory.SelectedSlot);
+    return true;
+  }
+
+  public void SetPlayerGravityDirection(PlayerHandle player, float direction)
+  {
+    ThrowIfDisposed();
+    if (!_players.TryGetValue(player, out Entity entity))
+    {
+      throw new ArgumentException("Player does not exist.", nameof(player));
+    }
+
+    if (!float.IsFinite(direction) || (direction != -1.0f && direction != 1.0f))
+    {
+      throw new ArgumentOutOfRangeException(nameof(direction));
+    }
+
+    ref PhysicsStateComponent physics = ref World.Get<PhysicsStateComponent>(entity);
+    physics.GravityDirection = direction;
   }
 
   public PlayerInventorySnapshot CreatePlayerInventorySnapshot(PlayerHandle player)
@@ -2131,7 +3677,28 @@ public sealed partial class DomeSimulation : IDisposable
     return new ItemUseSnapshot(
       player,
       World.Get<ItemUseStateComponent>(entity),
-      TickNumber);
+      TickNumber,
+      Math.Max(0, World.Get<PlayerPotionStateComponent>(entity).PotionDelayTicks));
+  }
+
+  public bool TrySetPlayerSleeping(PlayerHandle player, bool isSleeping)
+  {
+    ThrowIfDisposed();
+    return _playerSleepAuthoritySystem.TrySetSleeping(
+      World,
+      _players,
+      player,
+      isSleeping);
+  }
+
+  public bool TryGetPlayerSleepState(PlayerHandle player, out PlayerSleepComponent state)
+  {
+    ThrowIfDisposed();
+    return _playerSleepAuthoritySystem.TryGetState(
+      World,
+      _players,
+      player,
+      out state);
   }
 
   public EquipmentSnapshot CreateEquipmentSnapshot(PlayerHandle player)
@@ -2191,7 +3758,16 @@ public sealed partial class DomeSimulation : IDisposable
 
   private int CommitWorldItemSpawn(CreateWorldItemCommand command)
   {
-    _ = _itemDefinitions.Get(command.Stack.ItemType);
+    if (_worldItems.ActiveCount >= _entityLimits.MaximumWorldItems)
+    {
+      throw new InvalidOperationException("The configured world-item limit has been reached.");
+    }
+
+    ItemDefinition definition = _itemDefinitions.Get(command.Stack.ItemType);
+    if (command.Stack.Quantity > definition.StackLimit)
+    {
+      throw new ArgumentOutOfRangeException(nameof(command), "World item quantity exceeds its stack limit.");
+    }
     if (!_worldItemSpawnSystem.TryCreate(
           ref _nextWorldItemReplicationId,
           command,
@@ -2468,8 +4044,29 @@ public sealed partial class DomeSimulation : IDisposable
 
     HealthComponent health = World.Get<HealthComponent>(entity);
     ManaComponent mana = World.Get<ManaComponent>(entity);
+    HealthRegenerationComponent healthRegeneration =
+      World.Get<HealthRegenerationComponent>(entity);
+    DefenseComponent defense = World.Get<DefenseComponent>(entity);
+    EquipmentLoadoutComponent loadout = World.Get<EquipmentLoadoutComponent>(entity);
+    EquipmentStateCollectionComponent equipmentStates =
+      World.Get<EquipmentStateCollectionComponent>(entity);
+    InventoryComponent inventory = World.Get<InventoryComponent>(entity);
+    WellFedStateComponent wellFed = World.Get<WellFedStateComponent>(entity);
+    BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entity);
+    PlayerControlStateComponent control = World.Get<PlayerControlStateComponent>(entity);
+    ItemUseStateComponent itemUse = World.Get<ItemUseStateComponent>(entity);
+    ImmunityComponent immunity = World.Get<ImmunityComponent>(entity);
+    PlayerTargetingStateComponent targeting = World.Get<PlayerTargetingStateComponent>(entity);
+    PlayerInteractionComponent interaction = World.Get<PlayerInteractionComponent>(entity);
+    PlayerMountStateComponent mount = World.Get<PlayerMountStateComponent>(entity);
     PlayerLifecycleComponent lifecycle = World.Get<PlayerLifecycleComponent>(entity);
+    PlayerPotionStateComponent potionState = World.Get<PlayerPotionStateComponent>(entity);
     PlayerIdentityComponent identity = World.Get<PlayerIdentityComponent>(entity);
+    PlayerSleepComponent sleep = World.Get<PlayerSleepComponent>(entity);
+    PhysicsStateComponent physics = World.Get<PhysicsStateComponent>(entity);
+    FacingComponent facing = World.Get<FacingComponent>(entity);
+    PlayerInputComponent input = World.Get<PlayerInputComponent>(entity);
+    PlayerStealthStateComponent stealth = World.Get<PlayerStealthStateComponent>(entity);
     return new PlayerStateSnapshot(
       player,
       lifecycle.IsActive,
@@ -2479,7 +4076,64 @@ public sealed partial class DomeSimulation : IDisposable
       identity.CanonicalAccountUuid,
       identity.AssignedSlot,
       mana.Current,
-      mana.Maximum);
+      mana.Maximum,
+      physics.GravityDirection == 0.0f
+        ? 1.0f
+        : physics.GravityDirection,
+      HealthRegenerationComponent.DefaultRegenUnitsPerTick +
+      healthRegeneration.EquipmentRegenUnitsPerTick,
+      mana.RegenerationDelayTicks,
+      mana.RegenerationAccumulator,
+      healthRegeneration.DelayTicks,
+      healthRegeneration.RegenerationAccumulator,
+      defense.Value,
+      loadout.SelectedLoadout,
+      loadout.AccessoryVisibility,
+      equipmentStates.States.Count,
+      equipmentStates.Revision,
+      loadout.Revision,
+      wellFed.Rank,
+      wellFed.TimeLeft,
+      buffs.Count,
+      buffs.Revision,
+      control.FireCooldownTicks,
+      control.ItemUseCooldownTicks,
+      inventory.SelectedSlot,
+      itemUse.IsUsing,
+      itemUse.UseRevision,
+      itemUse.AnimationTicks,
+      itemUse.IsChanneling,
+      immunity.RemainingTicks,
+      immunity.IsImmune,
+      facing.Horizontal,
+      physics.IsGrounded,
+      targeting.Aggro,
+      targeting.NoAggroNpcTypes?.Count ?? 0,
+      interaction.HasTarget,
+      interaction.Mode,
+      mount.IsMounted ? checked((ushort)mount.MountType) : null,
+      input.Down,
+      input.Up,
+      input.Fire,
+      input.UseTile,
+      input.Dash,
+      input.MoveLeft,
+      input.MoveRight,
+      input.Jump,
+      input.UseItem,
+      stealth.Stealth,
+      stealth.IsInvisible,
+      stealth.HasShroomiteStealth,
+      stealth.IsVortexStealthActive,
+      stealth.StealthTimer,
+      itemUse.JustStarted,
+      mount.FlightTimeRemaining,
+      mount.FatigueRemaining,
+      targeting.MinionAttackTarget,
+      sleep.IsSleeping,
+      sleep.TimeSleeping,
+      sleep.LastWakeReason,
+      Math.Max(0, potionState.PotionDelayTicks));
   }
 
   public IReadOnlyList<PlayerDamagedEvent> CreatePlayerDamagedEvents()
@@ -2504,6 +4158,12 @@ public sealed partial class DomeSimulation : IDisposable
   {
     ThrowIfDisposed();
     return _itemUsedEvents.ToArray();
+  }
+
+  public IReadOnlyList<ShopPurchaseReceipt> CreateShopPurchaseReceipts()
+  {
+    ThrowIfDisposed();
+    return _shopPurchaseReceipts.ToArray();
   }
 
   public IReadOnlyList<ItemEquippedEvent> CreateItemEquippedEvents()
@@ -2576,6 +4236,17 @@ public sealed partial class DomeSimulation : IDisposable
     _commands.Enqueue(new DamagePlayerCommand(player, amount));
   }
 
+  public void QueuePlayerShadowDodge(PlayerHandle player)
+  {
+    ThrowIfDisposed();
+    if (!_players.ContainsKey(player))
+    {
+      throw new ArgumentException("Player does not exist.", nameof(player));
+    }
+
+    _commands.Enqueue(new ApplyShadowDodgeCommand(player));
+  }
+
   public void QueueRespawnPlayer(PlayerHandle player, SimulationVector spawn)
   {
     ThrowIfDisposed();
@@ -2584,7 +4255,27 @@ public sealed partial class DomeSimulation : IDisposable
       throw new ArgumentException("Player does not exist.", nameof(player));
     }
 
+    if (!float.IsFinite(spawn.X) || !float.IsFinite(spawn.Y))
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(spawn),
+        "Player respawn position must be finite.");
+    }
+
     _commands.Enqueue(new RespawnPlayerCommand(player, spawn));
+  }
+
+  public void ApplyPlayerMountControl(PlayerHandle player, ushort? mountType)
+  {
+    ThrowIfDisposed();
+    if (!_players.TryGetValue(player, out Entity entity) ||
+        !World.Get<PlayerLifecycleComponent>(entity).IsActive)
+    {
+      throw new ArgumentException("Mount control references an inactive player.", nameof(player));
+    }
+
+    ref PlayerMountStateComponent mount = ref World.Get<PlayerMountStateComponent>(entity);
+    _playerNpcTargetingSystem.TryApplyMountControl(ref mount, mountType);
   }
 
   public void QueuePlayerInteraction(
@@ -2597,6 +4288,23 @@ public sealed partial class DomeSimulation : IDisposable
     if (!_players.TryGetValue(player, out Entity entity))
     {
       throw new ArgumentException("Player does not exist.", nameof(player));
+    }
+
+    if (!Enum.IsDefined(mode))
+    {
+      throw new ArgumentOutOfRangeException(nameof(mode));
+    }
+
+    if (targetId < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(targetId));
+    }
+
+    if (!float.IsFinite(targetPosition.X) || !float.IsFinite(targetPosition.Y))
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(targetPosition),
+        "Player interaction target position must be finite.");
     }
 
     PlayerLifecycleComponent lifecycle = World.Get<PlayerLifecycleComponent>(entity);
@@ -2632,9 +4340,34 @@ public sealed partial class DomeSimulation : IDisposable
       FacingComponent facing = World.Get<FacingComponent>(entry.Value);
       PhysicsStateComponent physics = World.Get<PhysicsStateComponent>(entry.Value);
       HealthComponent health = World.Get<HealthComponent>(entry.Value);
+      HealthRegenerationComponent healthRegeneration =
+        World.Get<HealthRegenerationComponent>(entry.Value);
       ManaComponent mana = World.Get<ManaComponent>(entry.Value);
       PlayerLifecycleComponent lifecycle = World.Get<PlayerLifecycleComponent>(entry.Value);
       PlayerIdentityComponent identity = World.Get<PlayerIdentityComponent>(entry.Value);
+      ColliderComponent collider = World.Get<ColliderComponent>(entry.Value);
+      DefenseComponent defense = World.Get<DefenseComponent>(entry.Value);
+      EquipmentLoadoutComponent loadout = World.Get<EquipmentLoadoutComponent>(entry.Value);
+      EquipmentStateCollectionComponent equipmentStates =
+        World.Get<EquipmentStateCollectionComponent>(entry.Value);
+      WellFedStateComponent wellFed = World.Get<WellFedStateComponent>(entry.Value);
+      BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entry.Value);
+      InventoryComponent inventory = World.Get<InventoryComponent>(entry.Value);
+      ItemUseStateComponent itemUse = World.Get<ItemUseStateComponent>(entry.Value);
+      ImmunityComponent immunity = World.Get<ImmunityComponent>(entry.Value);
+      PlayerControlStateComponent control =
+        World.Get<PlayerControlStateComponent>(entry.Value);
+      PlayerTargetingStateComponent targeting =
+        World.Get<PlayerTargetingStateComponent>(entry.Value);
+      PlayerInteractionComponent interaction =
+        World.Get<PlayerInteractionComponent>(entry.Value);
+      PlayerInputComponent input = World.Get<PlayerInputComponent>(entry.Value);
+      PlayerStealthStateComponent stealth =
+        World.Get<PlayerStealthStateComponent>(entry.Value);
+      PlayerMountStateComponent mount = World.Get<PlayerMountStateComponent>(entry.Value);
+      PlayerSleepComponent sleep = World.Get<PlayerSleepComponent>(entry.Value);
+      PlayerPotionStateComponent potionState =
+        World.Get<PlayerPotionStateComponent>(entry.Value);
       players.Add(new PlayerSnapshot(
         entry.Key,
         new SimulationVector(transform.X, transform.Y),
@@ -2647,7 +4380,62 @@ public sealed partial class DomeSimulation : IDisposable
         identity.CanonicalAccountUuid,
         identity.AssignedSlot,
         mana.Current,
-        mana.Maximum));
+        mana.Maximum,
+        physics.GravityDirection == 0.0f ? 1.0f : physics.GravityDirection,
+        collider.Width,
+        collider.Height,
+        health.Maximum,
+        defense.Value,
+        loadout.SelectedLoadout,
+        loadout.AccessoryVisibility,
+        equipmentStates.States.Count,
+        equipmentStates.Revision,
+        loadout.Revision,
+        wellFed.Rank,
+        wellFed.TimeLeft,
+        buffs.Count,
+        buffs.Revision,
+        inventory.SelectedSlot,
+        itemUse.IsUsing,
+        itemUse.UseRevision,
+        itemUse.CooldownTicks,
+        itemUse.AnimationTicks,
+        itemUse.IsChanneling,
+        HealthRegenerationComponent.DefaultRegenUnitsPerTick +
+        healthRegeneration.EquipmentRegenUnitsPerTick,
+        healthRegeneration.DelayTicks,
+        healthRegeneration.RegenerationAccumulator,
+        mana.RegenerationDelayTicks,
+        mana.RegenerationAccumulator,
+        immunity.RemainingTicks,
+        immunity.IsImmune,
+        targeting.Aggro,
+        targeting.NoAggroNpcTypes?.Count ?? 0,
+        control.FireCooldownTicks,
+        interaction.HasTarget,
+        interaction.Mode,
+        mount.IsMounted ? checked((ushort)mount.MountType) : null,
+        input.Down,
+        input.Up,
+        input.Fire,
+        input.UseTile,
+        input.Dash,
+        input.MoveLeft,
+        input.MoveRight,
+        input.Jump,
+        input.UseItem,
+        stealth.Stealth,
+        stealth.IsInvisible,
+        stealth.HasShroomiteStealth,
+        stealth.IsVortexStealthActive,
+        stealth.StealthTimer,
+         itemUse.JustStarted,
+         mount.FlightTimeRemaining,
+         mount.FatigueRemaining,
+         sleep.IsSleeping,
+         sleep.TimeSleeping,
+         sleep.LastWakeReason,
+         Math.Max(0, potionState.PotionDelayTicks)));
     }
 
     List<NpcSnapshot> npcs = new(_npcs.Count);
@@ -2705,7 +4493,12 @@ public sealed partial class DomeSimulation : IDisposable
       worldRules: worldRules ?? _worldRules,
       progression: progression ?? _worldProgression,
       worldEventRandomState: _worldEventRandomState,
-      worldTimeRate: _worldTimeRate);
+      worldTimeRate: _worldTimeRate,
+      signTombstones: CreateSignTombstoneSnapshots(),
+      nextProjectileIdentity: _projectileIdentityAllocator.NextIdentity,
+      nextChestMutationSequence: _nextChestMutationSequence,
+      nextLiquidSequence: _nextLiquidSequence,
+      nextWiringSequence: _nextWiringSequence);
   }
 
   public void Dispose()
@@ -2719,17 +4512,308 @@ public sealed partial class DomeSimulation : IDisposable
     World.Dispose();
   }
 
+  private static WorldProgressionTransition? CreateWorldProgressionTransition(
+    WorldProgressionState previous,
+    WorldProgressionState current,
+    long tickNumber,
+    IReadOnlyList<WorldEventStartCommand> requests)
+  {
+    if (previous.IsBloodMoon != current.IsBloodMoon)
+    {
+      return new WorldProgressionTransition(
+        tickNumber,
+        WorldEventKind.BloodMoon,
+        Started: current.IsBloodMoon,
+        Stopped: !current.IsBloodMoon)
+      {
+        Sequence = current.IsBloodMoon
+          ? FindCommittedEventSequence(requests, WorldEventKind.BloodMoon)
+          : -1
+      };
+    }
+
+    if (previous.IsEclipse != current.IsEclipse)
+    {
+      return new WorldProgressionTransition(
+        tickNumber,
+        WorldEventKind.Eclipse,
+        Started: current.IsEclipse,
+        Stopped: !current.IsEclipse)
+      {
+        Sequence = current.IsEclipse
+          ? FindCommittedEventSequence(requests, WorldEventKind.Eclipse)
+          : -1
+      };
+    }
+
+    return null;
+  }
+
+  private static long FindCommittedEventSequence(
+    IReadOnlyList<WorldEventStartCommand> requests,
+    WorldEventKind eventKind)
+  {
+    for (int index = 0; index < requests.Count; index++)
+    {
+      if (requests[index].IsValid && requests[index].Kind == eventKind)
+      {
+        return requests[index].Sequence;
+      }
+    }
+
+    return -1;
+  }
+
+  private static WorldInvasionTransition? CreateWorldInvasionTransition(
+    WorldProgressionState previous,
+    WorldProgressionState current,
+    long tickNumber,
+    IReadOnlyList<WorldInvasionStartCommand> startRequests,
+    IReadOnlyList<WorldInvasionProgressCommand> progressRequests)
+  {
+    bool started = previous.InvasionType == 0 && current.InvasionType != 0;
+    bool completed = previous.InvasionType != 0 && current.InvasionType == 0;
+    bool progressed = previous.InvasionSize != current.InvasionSize ||
+      previous.InvasionX != current.InvasionX;
+    if (!started && !completed && !progressed)
+    {
+      return null;
+    }
+
+    WorldInvasionClearFlag? clearFlag = completed
+      ? new WorldInvasionClearFlagSystem().Resolve(previous.InvasionType)
+      : null;
+    return new WorldInvasionTransition(
+      tickNumber,
+      previous.InvasionType,
+      current.InvasionType,
+      previous.InvasionSize,
+      current.InvasionSize,
+      previous.InvasionX,
+      current.InvasionX,
+      clearFlag,
+      started,
+      progressed,
+      completed)
+    {
+      Sequence = started
+        ? FindFirstValidInvasionStartSequence(startRequests)
+        : progressed
+          ? FindFirstValidInvasionProgressSequence(progressRequests)
+          : -1
+    };
+  }
+
+  private static WorldMeteorTransition? CreateWorldMeteorTransition(
+    WorldProgressionState previous,
+    WorldProgressionState current,
+    bool impactQueued,
+    long tickNumber,
+    IReadOnlyList<WorldMeteorScheduleCommand> scheduleRequests,
+    IReadOnlyList<WorldMeteorImpactCommand> impactRequests)
+  {
+    bool scheduleStarted = !previous.IsMeteorScheduled && current.IsMeteorScheduled;
+    bool scheduleCleared = previous.IsMeteorScheduled && !current.IsMeteorScheduled;
+    if (!scheduleStarted && !scheduleCleared && !impactQueued)
+    {
+      return null;
+    }
+
+    return new WorldMeteorTransition(
+      tickNumber,
+      previous.IsMeteorScheduled,
+      current.IsMeteorScheduled,
+      scheduleStarted,
+      scheduleCleared,
+      impactQueued)
+    {
+      Sequence = scheduleStarted
+        ? FindFirstValidMeteorScheduleSequence(scheduleRequests)
+        : impactQueued
+          ? FindFirstValidMeteorImpactSequence(impactRequests)
+          : -1
+    };
+  }
+
+  private static WorldSlimeRainTransition? CreateWorldSlimeRainTransition(
+    WorldProgressionState previous,
+    WorldProgressionState current,
+    bool warningPublished,
+    long tickNumber,
+    IReadOnlyList<WorldSlimeRainStartCommand> startRequests,
+    IReadOnlyList<WorldSlimeRainStopCommand> stopRequests)
+  {
+    bool started = !previous.IsSlimeRaining && current.IsSlimeRaining;
+    bool stopped = previous.IsSlimeRaining && !current.IsSlimeRaining;
+    bool cooldownStarted = !previous.IsSlimeRainCoolingDown && current.IsSlimeRainCoolingDown;
+    bool cooldownEnded = previous.IsSlimeRainCoolingDown && !current.IsSlimeRainCoolingDown;
+    bool changed = previous.SlimeRainTimeTicks != current.SlimeRainTimeTicks ||
+      previous.SlimeRainCooldownTicks != current.SlimeRainCooldownTicks ||
+      previous.SlimeRainWarningTicks != current.SlimeRainWarningTicks;
+    if (!changed && !warningPublished)
+    {
+      return null;
+    }
+
+    return new WorldSlimeRainTransition(
+      tickNumber,
+      previous.SlimeRainTimeTicks,
+      current.SlimeRainTimeTicks,
+      previous.SlimeRainCooldownTicks,
+      current.SlimeRainCooldownTicks,
+      previous.SlimeRainWarningTicks,
+      current.SlimeRainWarningTicks,
+      started,
+      stopped,
+      warningPublished,
+      cooldownStarted,
+      cooldownEnded)
+    {
+      Sequence = started
+        ? FindFirstValidSlimeStartSequence(startRequests)
+        : stopped
+          ? FindFirstValidSlimeStopSequence(stopRequests)
+          : -1
+    };
+  }
+
+  private static long FindFirstValidInvasionStartSequence(
+    IReadOnlyList<WorldInvasionStartCommand> requests)
+  {
+    for (int index = 0; index < requests.Count; index++)
+    {
+      if (requests[index].IsValid)
+      {
+        return requests[index].Sequence;
+      }
+    }
+
+    return -1;
+  }
+
+  private static long FindFirstValidInvasionProgressSequence(
+    IReadOnlyList<WorldInvasionProgressCommand> requests)
+  {
+    for (int index = 0; index < requests.Count; index++)
+    {
+      if (requests[index].IsValid)
+      {
+        return requests[index].Sequence;
+      }
+    }
+
+    return -1;
+  }
+
+  private static long FindFirstValidMeteorScheduleSequence(
+    IReadOnlyList<WorldMeteorScheduleCommand> requests)
+  {
+    for (int index = 0; index < requests.Count; index++)
+    {
+      if (requests[index].IsValid)
+      {
+        return requests[index].Sequence;
+      }
+    }
+
+    return -1;
+  }
+
+  private static long FindFirstValidMeteorImpactSequence(
+    IReadOnlyList<WorldMeteorImpactCommand> requests)
+  {
+    for (int index = 0; index < requests.Count; index++)
+    {
+      if (requests[index].IsValid)
+      {
+        return requests[index].Sequence;
+      }
+    }
+
+    return -1;
+  }
+
+  private static long FindFirstValidSlimeStartSequence(
+    IReadOnlyList<WorldSlimeRainStartCommand> requests)
+  {
+    for (int index = 0; index < requests.Count; index++)
+    {
+      if (requests[index].IsValid)
+      {
+        return requests[index].Sequence;
+      }
+    }
+
+    return -1;
+  }
+
+  private static long FindFirstValidSlimeStopSequence(
+    IReadOnlyList<WorldSlimeRainStopCommand> requests)
+  {
+    for (int index = 0; index < requests.Count; index++)
+    {
+      if (requests[index].IsValid)
+      {
+        return requests[index].Sequence;
+      }
+    }
+
+    return -1;
+  }
+
+  private static WorldLanternNightTransition? CreateWorldLanternNightTransition(
+    WorldProgressionState previous,
+    WorldProgressionState current,
+    long tickNumber,
+    IReadOnlyList<WorldEventStartCommand> eventRequests,
+    long scheduleSequence)
+  {
+    bool scheduleConsumed = previous.IsNextNightLanternNight &&
+      !current.IsNextNightLanternNight;
+    bool started = !previous.IsLanternNight && current.IsLanternNight;
+    bool stopped = previous.IsLanternNight && !current.IsLanternNight;
+    if (!scheduleConsumed && !started && !stopped)
+    {
+      return null;
+    }
+
+    return new WorldLanternNightTransition(
+      tickNumber,
+      previous.IsNextNightLanternNight,
+      current.IsNextNightLanternNight,
+      previous.IsLanternNight,
+      current.IsLanternNight,
+      scheduleConsumed,
+      started,
+      stopped)
+    {
+      Sequence = started
+        ? scheduleConsumed
+          ? scheduleSequence
+          : FindCommittedEventSequence(eventRequests, WorldEventKind.LanternNight)
+        : -1
+    };
+  }
+
   public void Tick(SimulationInputBatch inputBatch)
   {
     ThrowIfDisposed();
     ArgumentNullException.ThrowIfNull(inputBatch);
 
     SimulationTickContext tick = SimulationTickSchedule.Begin();
+    _lastWorldClockTransition = null;
+    _lastWorldEnvironmentTransition = null;
+    _lastWorldProgressionTransition = null;
+    _lastWorldInvasionTransition = null;
+    _lastWorldMeteorTransition = null;
+    _lastWorldSlimeRainTransition = null;
+    _lastWorldLanternNightTransition = null;
     tick.Enter(SimulationTickPhase.BeginTick);
     _playerDamagedEvents.Clear();
     _playerDiedEvents.Clear();
     _playerRespawnedEvents.Clear();
     _itemUsedEvents.Clear();
+    _shopPurchaseReceipts.Clear();
     _itemEquippedEvents.Clear();
     _itemPrefixChangedEvents.Clear();
     _inventoryChangedEvents.Clear();
@@ -2746,20 +4830,27 @@ public sealed partial class DomeSimulation : IDisposable
       _worldTimeRate = _worldTimeRateSystem.Resolve(timeRateInput);
     }
 
-    _worldClockSystem.Tick(_worldClock, _worldTimeRate);
+    _lastWorldClockTransition = _worldClockSystem.Tick(_worldClock, _worldTimeRate);
     if (_worldClock.IsPaused)
     {
       tick.CompleteWhilePaused();
       _lastTickPhases = tick.Phases;
+      _lastTickTrace = CreateTickTrace(inputBatch, tick, commandCount: 0);
       return;
     }
 
-    _worldRules = _worldWeatherSystem.Advance(
+    int weatherTicks = _worldTimeRate.IsAvailable
+      ? _worldTimeRate.Rate
+      : _worldClock.TicksPerUpdate;
+    WorldEnvironmentTransitionResult environment = _worldWeatherSystem.AdvanceWithTransition(
       _worldClock.CreateSnapshot(),
+      weatherTicks,
       _worldRules,
       _worldRainStartRequests,
       _worldWindChangeRequests,
       _worldProgression.IsLanternNight || HasPendingLanternNightStart());
+    _worldRules = environment.State;
+    _lastWorldEnvironmentTransition = environment.Transition;
     _worldRainStartRequests.Clear();
     _worldWindChangeRequests.Clear();
 
@@ -2773,6 +4864,11 @@ public sealed partial class DomeSimulation : IDisposable
       _worldInvasionProgressRequests,
       _worldSlimeRainStartRequests,
       _worldSlimeRainStopRequests);
+    _lastWorldProgressionTransition = CreateWorldProgressionTransition(
+      previousProgression,
+      _worldProgression,
+      _worldClock.TickNumber,
+      _worldEventStartRequests);
     AdvanceWorldInvasionTravel();
     if (previousProgression.InvasionType > 0 &&
         previousProgression.InvasionSize > 0 &&
@@ -2787,17 +4883,47 @@ public sealed partial class DomeSimulation : IDisposable
           previousProgression.InvasionType,
           clearFlag));
     }
+    _lastWorldInvasionTransition = CreateWorldInvasionTransition(
+      previousProgression,
+      _worldProgression,
+      _worldClock.TickNumber,
+      _worldInvasionStartRequests,
+      _worldInvasionProgressRequests);
     if (previousProgression.SlimeRainWarningTicks > 0 &&
         _worldProgression.SlimeRainWarningTicks == 0)
     {
       _worldSlimeRainWarningEvents.Add(
         new WorldSlimeRainWarningEvent(_worldProgression.IsSlimeRaining));
     }
+    _lastWorldSlimeRainTransition = CreateWorldSlimeRainTransition(
+      previousProgression,
+      _worldProgression,
+      _worldSlimeRainWarningEvents.Count > 0,
+      _worldClock.TickNumber,
+      _worldSlimeRainStartRequests,
+      _worldSlimeRainStopRequests);
+    _lastWorldLanternNightTransition = CreateWorldLanternNightTransition(
+      previousProgression,
+      _worldProgression,
+      _worldClock.TickNumber,
+      _worldEventStartRequests,
+      previousProgression.LanternNightScheduleSequence);
+    if (_lastWorldLanternNightTransition is { ScheduleConsumed: true })
+    {
+      _worldProgression = _worldProgression.WithLanternNightScheduleSequence(-1);
+    }
     ResolveScheduledWorldMeteorImpacts();
     _worldProgression = _worldMeteorScheduleSystem.Advance(
       _worldClock.CreateSnapshot(),
       _worldProgression,
       _worldMeteorScheduleRequests);
+    _lastWorldMeteorTransition = CreateWorldMeteorTransition(
+      previousProgression,
+      _worldProgression,
+      _worldMeteorImpactRequests.Count > 0,
+      _worldClock.TickNumber,
+      _worldMeteorScheduleRequests,
+      _worldMeteorImpactRequests);
     _worldEventStartRequests.Clear();
     _worldLanternNightScheduleRequests.Clear();
     _worldInvasionStartRequests.Clear();
@@ -2809,6 +4935,7 @@ public sealed partial class DomeSimulation : IDisposable
     tick.Enter(SimulationTickPhase.ApplyPlayerInputs);
     _playerInputApplySystem.Apply(World, _players, FilterActivePlayerInputs(inputBatch));
     tick.Enter(SimulationTickPhase.ApplyPlayerControl);
+    _playerSleepSystem.Advance(World, _players, _itemDefinitions);
     AdvanceItemUseCooldowns();
     QueueItemUses();
     AdvancePlayerLifecycle();
@@ -2817,12 +4944,17 @@ public sealed partial class DomeSimulation : IDisposable
     _playerGravitySystem.Apply(World, activePlayers);
     tick.Enter(SimulationTickPhase.ResolveTileCollision);
     ResolvePlayerTileCollision();
+    AdvancePlayerStealth(activePlayers);
     _playerVitalRegenSystem.Apply(World, activePlayers);
     AdvancePlayerBuffs(activePlayers);
+    AdvanceNpcBuffs();
     AdvancePlayerImmunity();
+    AdvanceNpcImmunity();
     EvaluateTrainingDummyLifecycle(activePlayers);
+    _gameUpdateCountProjection.Advance();
     List<string> npcPipelineStages = new();
     tick.Enter(SimulationTickPhase.SelectNpcTargets);
+    EnqueuePendingNpcSpawns();
     RunNpcSystemPipeline(
       NpcSystemStage.SpawnEligibility,
       NpcSystemStage.MovementAndCollision,
@@ -2833,6 +4965,8 @@ public sealed partial class DomeSimulation : IDisposable
     RequestProjectiles();
     MoveProjectiles();
     DetectProjectileHits();
+    MoveNpcProjectiles();
+    DetectNpcProjectileHits();
     tick.Enter(SimulationTickPhase.ResolveCombat);
     RunNpcSystemPipeline(
       NpcSystemStage.ContactEffect,
@@ -2842,13 +4976,48 @@ public sealed partial class DomeSimulation : IDisposable
     tick.Enter(SimulationTickPhase.CommitDomainCommands);
     AdvanceWiring();
     AdvanceLiquid();
-    new HitImmunitySystem().Tick(_projectileHitImmunity);
+    _projectileHitImmunitySystem.Tick(_projectileHitImmunity);
+    int commandCount = _commands.Count;
     CommitCommands();
     tick.Enter(SimulationTickPhase.PublishSnapshot);
     _lastPublishedSnapshot = CreateSnapshot();
     tick.Enter(SimulationTickPhase.EndTick);
     tick.CompleteNormally();
     _lastTickPhases = tick.Phases;
+    _lastTickTrace = CreateTickTrace(inputBatch, tick, commandCount);
+  }
+
+  private SimulationTickTrace CreateTickTrace(
+    SimulationInputBatch inputBatch,
+    SimulationTickContext tick,
+    int commandCount)
+  {
+    return new SimulationTickTrace(
+      TickNumber,
+      inputBatch.InputSequenceStart,
+      inputBatch.InputSequenceEnd,
+      commandCount,
+      CountPublishedEvents(),
+      tick.Phases);
+  }
+
+  private int CountPublishedEvents()
+  {
+    return _playerDamagedEvents.Count +
+      _playerDiedEvents.Count +
+      _playerRespawnedEvents.Count +
+      _itemUsedEvents.Count +
+      _itemEquippedEvents.Count +
+      _itemPrefixChangedEvents.Count +
+      _inventoryChangedEvents.Count +
+      _worldItemCreatedEvents.Count +
+      _worldItemPickedUpEvents.Count +
+      _worldItemDestroyedEvents.Count +
+      _itemDroppedEvents.Count +
+      _shopPurchaseReceipts.Count +
+      _extractinatorResultEvents.Count +
+      _worldSlimeRainWarningEvents.Count +
+      _worldInvasionCompletedEvents.Count;
   }
 
   private void AdvanceWorldInvasionTravel()
@@ -3436,7 +5605,9 @@ public sealed partial class DomeSimulation : IDisposable
   private void CommitCommands()
   {
     CommitPlayerInteractions();
+    CommitNpcInteractions();
     CommitInventoryCommands();
+    CommitShopPurchases();
     _extractinatorTargetsCommittedThisTick.Clear();
     CommitExtractinatorUses();
     CommitTriggeredExtractinators();
@@ -3453,6 +5624,23 @@ public sealed partial class DomeSimulation : IDisposable
     CommitWorldItemPickups();
     AdvanceWorldItemPickupDelays();
     CommitWorldMeteorImpacts();
+    CommitProjectileWorldObjectPlacements();
+    EmitProjectileOnDespawnAreaDamageCommands();
+    CommitAreaStatusEffectCommands();
+    CommitTargetStatusEffectCommands();
+    for (int index = 0; index < _commands.ShadowDodgeCommands.Count; index++)
+    {
+      ApplyShadowDodgeCommand command = _commands.ShadowDodgeCommands[index];
+      if (!_players.TryGetValue(command.Player, out Entity playerEntity) ||
+          !World.Get<PlayerLifecycleComponent>(playerEntity).IsActive)
+      {
+        continue;
+      }
+
+      ref ImmunityComponent immunity = ref World.Get<ImmunityComponent>(playerEntity);
+      immunity.ApplyShadowDodge();
+    }
+
     for (int index = 0; index < _commands.DamagePlayerCommands.Count; index++)
     {
       DamagePlayerCommand command = _commands.DamagePlayerCommands[index];
@@ -3497,6 +5685,13 @@ public sealed partial class DomeSimulation : IDisposable
             health,
             PlayerRespawnDelayTicks))
       {
+        ref PlayerPotionStateComponent potionState =
+          ref World.Get<PlayerPotionStateComponent>(playerEntity);
+        _playerPotionDelaySystem.Clear(
+          ref potionState,
+          World.Get<BuffCollectionComponent>(playerEntity));
+        ref PlayerMountStateComponent mount = ref World.Get<PlayerMountStateComponent>(playerEntity);
+        mount.Set(-1);
         _playerDiedEvents.Add(new PlayerDiedEvent(command.Player, PlayerRespawnDelayTicks));
       }
     }
@@ -3513,6 +5708,11 @@ public sealed partial class DomeSimulation : IDisposable
       ref TransformComponent transform = ref World.Get<TransformComponent>(playerEntity);
       ref VelocityComponent velocity = ref World.Get<VelocityComponent>(playerEntity);
       ref HealthComponent health = ref World.Get<HealthComponent>(playerEntity);
+      if (!PlayerSpawnAreaPolicy.IsValid(WorldGrid, command.Spawn))
+      {
+        continue;
+      }
+
       if (!_playerRespawnSystem.TryRespawn(
             ref lifecycle,
             ref transform,
@@ -3523,41 +5723,97 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
+      ref PlayerMountStateComponent mount = ref World.Get<PlayerMountStateComponent>(playerEntity);
+      mount.Set(-1);
       _playerRespawnedEvents.Add(new PlayerRespawnedEvent(command.Player, command.Spawn));
     }
 
+    for (int index = 0; index < _pendingProjectileSpawnCommands.Count; index++)
+    {
+      _commands.Enqueue(_pendingProjectileSpawnCommands[index]);
+    }
+
+    _pendingProjectileSpawnCommands.Clear();
+    List<SpawnProjectileCommand> admittedSentryCommands = new();
     for (int index = 0; index < _commands.SpawnProjectileCommands.Count; index++)
     {
-      SpawnProjectileCommand command = _commands.SpawnProjectileCommands[index];
-      if (!_players.TryGetValue(command.Owner, out Entity ownerEntity) ||
-          !World.Get<PlayerLifecycleComponent>(ownerEntity).IsActive ||
-          !float.IsFinite(command.X) ||
-          !float.IsFinite(command.Y) ||
-          !float.IsFinite(command.InitialVelocityY) ||
-          !float.IsFinite(command.ProjectileSpeed) ||
-          command.LifetimeTicks <= 0 ||
-          command.MaximumPenetration == 0 ||
-          command.MaximumPenetration < -1)
+      if (_projectileReplications.Count >= _entityLimits.MaximumProjectiles)
       {
-        continue;
+        break;
       }
 
+      SpawnProjectileCommand command = _commands.SpawnProjectileCommands[index];
       if (!_projectileDefinitions.TryGet(command.ProjectileType,
           out ProjectileDefinition definition))
       {
         continue;
       }
 
-      if (_nextProjectileReplicationId == int.MaxValue)
+      if (!_players.TryGetValue(command.Owner, out Entity ownerEntity) ||
+          !World.Get<PlayerLifecycleComponent>(ownerEntity).IsActive ||
+          !float.IsFinite(command.X) ||
+          !float.IsFinite(command.Y) ||
+          command.MiscText is null ||
+          command.MiscText.Length > 100 ||
+          !float.IsFinite(command.InitialVelocityY) ||
+          !float.IsFinite(command.ProjectileSpeed) || !float.IsFinite(command.Ai0) ||
+          !float.IsFinite(command.Ai1) || !float.IsFinite(command.Ai2))
       {
         continue;
       }
 
-      int replicationId = _nextProjectileReplicationId;
-      _nextProjectileReplicationId++;
-      Entity projectile = _projectileSpawnSystem.Spawn(World, command, definition, replicationId);
+      bool isSentry = command.IsSentry || definition.IsSentry;
+      if (command.IsDd2Summon && !isSentry)
+      {
+        continue;
+      }
+
+      if (isSentry &&
+          !_projectileSentryPlacementSystem.CanPlace(
+            World,
+            command.X,
+            command.Y,
+            definition,
+            _projectileDefinitions,
+            admittedSentryCommands))
+      {
+        continue;
+      }
+
+      if (_projectileIdentityAllocator.NextIdentity == int.MaxValue)
+      {
+        continue;
+      }
+
+      int replicationId = _projectileIdentityAllocator.Allocate();
+      ProjectileDefinition spawnDefinition = definition;
+      if (command.AuthoritativeDamage > 0)
+      {
+        spawnDefinition = spawnDefinition with { Damage = command.AuthoritativeDamage };
+      }
+
+      if (command.AuthoritativeKnockback > 0.0f)
+      {
+        spawnDefinition = spawnDefinition with
+        {
+          Knockback = command.AuthoritativeKnockback
+        };
+      }
+      Entity projectile = _projectileSpawnSystem.Spawn(
+        World,
+        command,
+        spawnDefinition,
+        replicationId,
+        _projectileHitImmunity);
       TransformComponent transform = World.Get<TransformComponent>(projectile);
       VelocityComponent velocityComponent = World.Get<VelocityComponent>(projectile);
+      ProjectileBehaviorComponent behavior = World.Get<ProjectileBehaviorComponent>(projectile);
+      ProjectileNetworkIdentityComponent networkIdentity =
+        World.Get<ProjectileNetworkIdentityComponent>(projectile);
+      ProjectileDefinitionComponent definitionComponent =
+        World.Get<ProjectileDefinitionComponent>(projectile);
+      ProjectileBehaviorReplicationState behaviorState =
+        ProjectileBehaviorStateProjection.Project(behavior);
       SimulationVector position = new(transform.X, transform.Y);
       SimulationVector velocity = new(velocityComponent.X, velocityComponent.Y);
       _projectileIdsByEntity.Add(projectile, replicationId);
@@ -3567,12 +5823,142 @@ public sealed partial class DomeSimulation : IDisposable
         command.Owner,
         position,
         velocity,
-        command.Damage,
-        command.LifetimeTicks,
+        spawnDefinition.Damage,
+        definitionComponent.DefaultLifetimeTicks,
         IsActive: true,
         Revision: 1,
         GetSectionCoordinates(position),
-        Identity: replicationId));
+        Identity: replicationId,
+        ProjectileUuid: networkIdentity.ProjectileUuid,
+        Ai0: behaviorState.Ai0,
+        Ai1: behaviorState.Ai1,
+        Ai2: behaviorState.Ai2,
+        Banner: World.Get<ProjectileBannerResponseComponent>(projectile).BannerId,
+        DefinitionKnockback: spawnDefinition.Knockback,
+        DefinitionOriginalDamage: spawnDefinition.OriginalDamage == 0
+          ? spawnDefinition.Damage
+          : spawnDefinition.OriginalDamage,
+        Reflected: false,
+        LegacyAiStyle: spawnDefinition.LegacyAiStyle,
+        MaximumPenetration: spawnDefinition.MaximumPenetration,
+        DecidesManualFallThrough: definitionComponent.DecidesManualFallThrough,
+        ShouldFallThrough: World.Has<ProjectileFallThroughComponent>(projectile) &&
+          World.Get<ProjectileFallThroughComponent>(projectile).ShouldFallThrough,
+        Direction: World.Get<ProjectileDirectionComponent>(projectile).Horizontal,
+        IsSentry: definitionComponent.IsSentry,
+        IsDd2Summon: World.Has<ProjectileDd2SummonComponent>(projectile),
+        IsBobber: World.Has<ProjectileBobberComponent>(projectile),
+        IsMinion: World.Has<ProjectileMinionComponent>(projectile),
+        MinionSlots: World.Has<ProjectileMinionComponent>(projectile)
+          ? World.Get<ProjectileMinionComponent>(projectile).Slots
+          : 0.0f,
+        MinionPosition: World.Has<ProjectileMinionComponent>(projectile)
+          ? World.Get<ProjectileMinionComponent>(projectile).Position
+          : 0,
+        ManualDirectionChange: definitionComponent.ManualDirectionChange,
+        UsesOwnerMeleeHitCooldown: definitionComponent.UsesOwnerMeleeHitCooldown,
+        CopiesOwnerAttackCooldownToLocalImmunityOnSpawn:
+          definitionComponent.CopiesOwnerAttackCooldownToLocalImmunityOnSpawn,
+        HostileDamageScaling: definitionComponent.HostileDamageScaling,
+        CollidesWithTiles: definitionComponent.CollidesWithTiles,
+        TileCollisionEnabled: World.Get<ProjectileTileCollisionComponent>(projectile).Enabled,
+        PrimaryUpdatePending: World.Get<ProjectileNetworkUpdateComponent>(projectile)
+          .PrimaryUpdatePending,
+        IgnoreWater: definitionComponent.IgnoreWater,
+        ReflectsFromTiles: definitionComponent.ReflectsFromTiles,
+        CorrectSlopeCollision: definitionComponent.CorrectSlopeCollision,
+        MaximumBounces: definitionComponent.MaximumBounces,
+        BounceVelocityMultiplier: definitionComponent.BounceVelocityMultiplier,
+        MinimumBounceSpeed: definitionComponent.MinimumBounceSpeed,
+        ChildSpawn: definitionComponent.ChildSpawn,
+        OnHitStatusEffect: definitionComponent.OnHitStatusEffect,
+        OnDespawnStatusEffect: definitionComponent.OnDespawnStatusEffect,
+        OnDespawnAreaDamage: definitionComponent.OnDespawnAreaDamage,
+        BehaviorId: definitionComponent.BehaviorId,
+        Friendly: definitionComponent.Friendly,
+        Hostile: definitionComponent.Hostile,
+        PlayerDamagePolicy: definitionComponent.PlayerDamagePolicy));
+      RefreshProjectileOwnerMinionTarget(projectile);
+      if (isSentry)
+      {
+        ref PlayerSentryStateComponent sentryState =
+          ref World.Get<PlayerSentryStateComponent>(ownerEntity);
+        sentryState.RequestReconcile();
+        admittedSentryCommands.Add(command);
+      }
+    }
+
+    ApplyProjectileSentryLimits(_sentryEventActive);
+
+    for (int index = 0; index < _commands.BounceProjectileCommands.Count; index++)
+    {
+      BounceProjectileCommand command = _commands.BounceProjectileCommands[index];
+      if (!World.IsAlive(command.Target))
+      {
+        continue;
+      }
+
+      ref ProjectileBounceComponent bounce =
+        ref World.Get<ProjectileBounceComponent>(command.Target);
+      ProjectileDefinitionComponent definition =
+        World.Get<ProjectileDefinitionComponent>(command.Target);
+      ref ProjectilePenetrationComponent penetration =
+        ref World.Get<ProjectilePenetrationComponent>(command.Target);
+      if (bounce.RemainingBounces <= 0 && !definition.ReflectsFromTiles &&
+          definition.ProjectileType is not (357 or 645))
+      {
+        continue;
+      }
+
+      if (definition.ProjectileType == 357)
+      {
+        ref ProjectileDamageComponent damage =
+          ref World.Get<ProjectileDamageComponent>(command.Target);
+        _projectileBehaviorEffectSystem.ApplyTileCollisionDamage(
+          ref damage,
+          ref penetration,
+          definition);
+      }
+
+      ref VelocityComponent velocity = ref World.Get<VelocityComponent>(command.Target);
+      ref TransformComponent transform = ref World.Get<TransformComponent>(command.Target);
+      if (command.ReflectHorizontal)
+      {
+        velocity.X = -velocity.X * definition.BounceVelocityMultiplier;
+      }
+
+      if (command.ReflectVertical)
+      {
+        velocity.Y = -velocity.Y * definition.BounceVelocityMultiplier;
+      }
+
+      _projectileBehaviorEffectSystem.ApplyTileCollisionBehavior(
+        ref World.Get<ProjectileBehaviorComponent>(command.Target),
+        ref velocity,
+        ref World.Get<ProjectileNetworkUpdateComponent>(command.Target),
+        definition);
+
+      ref ProjectileReflectionComponent reflection =
+        ref World.Get<ProjectileReflectionComponent>(command.Target);
+      reflection.HasReflected = true;
+
+      transform.X = command.SafeX;
+      transform.Y = command.SafeY;
+      if (bounce.RemainingBounces > 0)
+      {
+        bounce.RemainingBounces--;
+      }
+
+      ProjectileLifetimeComponent lifetime =
+        World.Get<ProjectileLifetimeComponent>(command.Target);
+      if (World.Has<NpcProjectileOwnerComponent>(command.Target))
+      {
+        UpdateNpcProjectileReplication(command.Target, transform, velocity, lifetime);
+      }
+      else
+      {
+        UpdateProjectileReplication(command.Target, transform, velocity, lifetime);
+      }
     }
 
     for (int index = 0; index < _commands.DamageCommands.Count; index++)
@@ -3584,7 +5970,8 @@ public sealed partial class DomeSimulation : IDisposable
         command.Amount,
         defense.Value,
         DamageTargetKind.Npc,
-        _worldRules);
+        _worldRules,
+        command.ArmorPenetration);
       health.Current = Math.Max(0, health.Current - appliedAmount);
 
       UpdateNpcReplication(command.Target);
@@ -3600,13 +5987,492 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
-      MarkProjectileInactive(command.Target);
+      EmitProjectileChildSpawnCommands(command.Target);
+      EmitProjectileTileConversionCommand(command.Target);
+      EmitType281TerminalRelease(command.Target);
+      _pendingProjectileWorldObjectPlacements.Remove(command.Target);
+      MarkProjectileInactive(command.Target, command.ProjectileReason);
       commandBuffer.Destroy(command.Target);
     }
 
     commandBuffer.Playback(World);
     WorldGrid.CommitTileChanges();
     _commands.Clear();
+  }
+
+  public int ReconcileProjectileSentryLimits(bool eventActive)
+  {
+    ThrowIfDisposed();
+    RequestProjectileSentryReconciliation();
+    return ApplyProjectileSentryLimits(eventActive);
+  }
+
+  private void RequestProjectileSentryReconciliation()
+  {
+    foreach (KeyValuePair<PlayerHandle, Entity> entry in _players)
+    {
+      Entity playerEntity = entry.Value;
+      if (!World.IsAlive(playerEntity) ||
+          !World.Get<PlayerLifecycleComponent>(playerEntity).IsActive ||
+          !World.Has<PlayerSentryStateComponent>(playerEntity))
+      {
+        continue;
+      }
+
+      World.Get<PlayerSentryStateComponent>(playerEntity).RequestReconcile();
+    }
+  }
+
+  private int ApplyProjectileSentryLimits(bool eventActive)
+  {
+    int commandCount = 0;
+    foreach (KeyValuePair<PlayerHandle, Entity> entry in _players.OrderBy(pair => pair.Key.Value))
+    {
+      Entity playerEntity = entry.Value;
+      if (!World.IsAlive(playerEntity) ||
+          !World.Get<PlayerLifecycleComponent>(playerEntity).IsActive ||
+          !World.Has<PlayerSentryStateComponent>(playerEntity))
+      {
+        continue;
+      }
+
+      ref PlayerSentryStateComponent state =
+        ref World.Get<PlayerSentryStateComponent>(playerEntity);
+      if (!state.ShouldReconcile)
+      {
+        continue;
+      }
+
+      IReadOnlyList<DespawnEntityCommand> commands =
+        _projectileSentryLimitSystem.CollectDespawnCommands(
+          World,
+          _projectileIdsByEntity,
+          entry.Key,
+          state.MaximumTurrets,
+          eventActive);
+      for (int index = 0; index < commands.Count; index++)
+      {
+        _commands.Enqueue(commands[index]);
+      }
+
+      commandCount += commands.Count;
+      state.MarkReconciled();
+    }
+
+    return commandCount;
+  }
+
+  private void CommitProjectileWorldObjectPlacements()
+  {
+    for (int index = 0; index < _commands.ProjectileWorldObjectPlacementCommands.Count; index++)
+    {
+      ProjectileWorldObjectPlacementCommand command =
+        _commands.ProjectileWorldObjectPlacementCommands[index];
+      bool ownerActive = World.IsAlive(command.Owner) &&
+        World.Has<PlayerLifecycleComponent>(command.Owner) &&
+        World.Get<PlayerLifecycleComponent>(command.Owner).IsActive;
+      bool projectileActive = World.IsAlive(command.Projectile) &&
+        _projectileIdsByEntity.TryGetValue(command.Projectile, out int replicationId) &&
+        _projectileReplications.TryGetValue(replicationId, out ProjectileReplicationSnapshot snapshot) &&
+        snapshot.IsActive;
+      WorldObjectPlacementResult result;
+      if (!ownerActive)
+      {
+        result = WorldObjectPlacementResult.Rejected(
+          command.Sequence,
+          WorldObjectPlacementFailureCode.OwnerInactive);
+      }
+      else if (!projectileActive)
+      {
+        result = WorldObjectPlacementResult.Rejected(
+          command.Sequence,
+          WorldObjectPlacementFailureCode.ProjectileInactive);
+      }
+      else
+      {
+        result = TryCommitProjectileSignPlacement(command, ownerActive, projectileActive);
+      }
+
+      if (result.Committed)
+      {
+        _pendingProjectileWorldObjectPlacements.Remove(command.Projectile);
+      }
+      else if (result.FailureCode is not (
+                 WorldObjectPlacementFailureCode.OccupiedTile or
+                 WorldObjectPlacementFailureCode.VersionConflict))
+      {
+        _pendingProjectileWorldObjectPlacements.Remove(command.Projectile);
+      }
+    }
+  }
+
+  private void EmitType281TerminalRelease(Entity projectile)
+  {
+    if (!World.IsAlive(projectile) || !World.Has<ProjectileDefinitionComponent>(projectile) ||
+        !World.Has<ProjectileOwnerComponent>(projectile))
+    {
+      return;
+    }
+
+    ProjectileDefinitionComponent definition = World.Get<ProjectileDefinitionComponent>(projectile);
+    if (definition.ProjectileType != 281)
+    {
+      return;
+    }
+
+    TransformComponent transform = World.Get<TransformComponent>(projectile);
+    ColliderComponent collider = World.Get<ColliderComponent>(projectile);
+    ProjectileOwnerComponent owner = World.Get<ProjectileOwnerComponent>(projectile);
+    int releaseVariant = World.Get<VelocityComponent>(projectile).X > 0.0f ? 3 : 4;
+    _pendingNpcSpawnCommands.Add(new SpawnNpcCommand(
+      614,
+      new SimulationVector(
+        transform.X + collider.Width * 0.5f,
+        MathF.Max(0.0f, transform.Y + collider.Height - 4.0f)),
+      NpcComponents.NpcSpawnSource.Command,
+      DifficultyScale: Type281ReleaseDifficultyScale,
+      ReleaseOwner: owner.Owner.Value,
+      ReleaseVariant: releaseVariant));
+  }
+
+  private void EnqueuePendingNpcSpawns()
+  {
+    for (int index = 0; index < _pendingNpcSpawnCommands.Count; index++)
+    {
+      _commands.Enqueue(_pendingNpcSpawnCommands[index]);
+    }
+
+    _pendingNpcSpawnCommands.Clear();
+  }
+
+  private void EmitProjectileOnDespawnAreaDamageCommands()
+  {
+    for (int index = 0; index < _commands.DespawnEntityCommands.Count; index++)
+    {
+      DespawnEntityCommand command = _commands.DespawnEntityCommands[index];
+      if (!World.IsAlive(command.Target) ||
+          !World.Has<ProjectileDefinitionComponent>(command.Target))
+      {
+        continue;
+      }
+
+      ProjectileDefinitionComponent definition =
+        World.Get<ProjectileDefinitionComponent>(command.Target);
+      ProjectileOnDespawnStatusEffect statusEffect = definition.OnDespawnStatusEffect;
+      if (statusEffect.IsEnabled && World.Has<ProjectileOwnerComponent>(command.Target))
+      {
+        TransformComponent transform = World.Get<TransformComponent>(command.Target);
+        ColliderComponent collider = World.Get<ColliderComponent>(command.Target);
+        ProjectileOwnerComponent owner = World.Get<ProjectileOwnerComponent>(command.Target);
+        _commands.Enqueue(new ApplyAreaStatusEffectCommand(
+          owner.Owner,
+          transform.X + collider.Width * 0.5f,
+          transform.Y + collider.Height * 0.5f,
+          statusEffect.Radius,
+          statusEffect.Type,
+          statusEffect.DurationTicks));
+      }
+
+      ProjectileOnDespawnAreaDamage area = definition.OnDespawnAreaDamage;
+      if (!area.IsEnabled)
+      {
+        continue;
+      }
+
+      ProjectileDamageComponent damage = World.Get<ProjectileDamageComponent>(command.Target);
+      TransformComponent projectileTransform = World.Get<TransformComponent>(command.Target);
+      ColliderComponent projectileCollider = World.Get<ColliderComponent>(command.Target);
+      float centerX = projectileTransform.X + projectileCollider.Width * 0.5f;
+      float centerY = projectileTransform.Y + projectileCollider.Height * 0.5f;
+      float left = centerX - area.Width * 0.5f;
+      float top = centerY - area.Height * 0.5f;
+      ProjectileDefinitionComponent projectileDefinition = definition;
+
+      if (projectileDefinition.PlayerDamagePolicy != PlayerDamagePolicy.None)
+      {
+        foreach (KeyValuePair<PlayerHandle, Entity> entry in _players)
+        {
+          if (!World.Get<PlayerLifecycleComponent>(entry.Value).IsActive)
+          {
+            continue;
+          }
+
+          bool canDamagePlayer = World.Has<NpcProjectileOwnerComponent>(command.Target)
+            ? projectileDefinition.Hostile &&
+              projectileDefinition.PlayerDamagePolicy == PlayerDamagePolicy.HostileNonPvp
+            : _projectileTargetEligibilitySystem.CanDamagePlayerTarget(
+              projectileDefinition,
+              World.Get<ProjectileOwnerComponent>(command.Target).Owner,
+              entry.Key,
+              _worldRules.IsPvpEnabled);
+          if (!canDamagePlayer)
+          {
+            continue;
+          }
+
+          TransformComponent targetTransform = World.Get<TransformComponent>(entry.Value);
+          ColliderComponent targetCollider = World.Get<ColliderComponent>(entry.Value);
+          if (OverlapsArea(left, top, area, targetTransform, targetCollider))
+          {
+            _commands.Enqueue(new DamagePlayerCommand(entry.Key, damage.Amount));
+          }
+        }
+      }
+
+      if (projectileDefinition.Friendly)
+      {
+        foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
+        {
+          if (!_npcReplications[entry.Key].IsActive)
+          {
+            continue;
+          }
+
+          TransformComponent targetTransform = World.Get<TransformComponent>(entry.Value);
+          ColliderComponent targetCollider = World.Get<ColliderComponent>(entry.Value);
+          if (OverlapsArea(left, top, area, targetTransform, targetCollider))
+          {
+            _commands.Enqueue(new DamageCommand(command.Target, entry.Value, damage.Amount));
+          }
+        }
+      }
+    }
+  }
+
+  private void CommitAreaStatusEffectCommands()
+  {
+    for (int index = 0; index < _commands.AreaStatusEffectCommands.Count; index++)
+    {
+      ApplyAreaStatusEffectCommand command = _commands.AreaStatusEffectCommands[index];
+      foreach (KeyValuePair<PlayerHandle, Entity> entry in _players)
+      {
+        PlayerLifecycleComponent lifecycle = World.Get<PlayerLifecycleComponent>(entry.Value);
+        HealthComponent health = World.Get<HealthComponent>(entry.Value);
+        if (!lifecycle.IsActive || health.Current <= 0 ||
+            !IsWithinStatusEffectRange(command, entry.Value))
+        {
+          continue;
+        }
+
+        BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entry.Value);
+        if (!buffs.CanAccept(command.Type))
+        {
+          continue;
+        }
+
+        buffs.Add(command.Type, command.DurationTicks, command.Source);
+        if (command.Type == PlayerPotionStateComponent.PotionSicknessBuffType)
+        {
+          ref PlayerPotionStateComponent potionState =
+            ref World.Get<PlayerPotionStateComponent>(entry.Value);
+          _playerPotionDelaySystem.SynchronizeFromBuffs(ref potionState, buffs);
+        }
+      }
+
+      foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
+      {
+        NpcComponents.NpcLifecycleComponent lifecycle =
+          World.Get<NpcComponents.NpcLifecycleComponent>(entry.Value);
+        HealthComponent health = World.Get<HealthComponent>(entry.Value);
+        if (!lifecycle.IsActive || health.Current <= 0 ||
+            !IsWithinStatusEffectRange(command, entry.Value))
+        {
+          continue;
+        }
+
+        BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entry.Value);
+        if (buffs.CanAccept(command.Type))
+        {
+          buffs.Add(command.Type, command.DurationTicks, command.Source);
+        }
+      }
+    }
+  }
+
+  private static void AddStatusSnapshots(
+    ICollection<StatusEffectSnapshot> snapshots,
+    StatusEffectTargetKind targetKind,
+    int targetId,
+    BuffCollectionComponent buffs)
+  {
+    for (int index = 0; index < buffs.Count; index++)
+    {
+      BuffEntry entry = buffs.Entries[index];
+      snapshots.Add(new StatusEffectSnapshot(
+        targetKind,
+        targetId,
+        buffs.Revision,
+        entry.Type,
+        entry.RemainingTicks));
+    }
+  }
+
+  private bool IsWithinStatusEffectRange(
+    ApplyAreaStatusEffectCommand command,
+    Entity target)
+  {
+    TransformComponent transform = World.Get<TransformComponent>(target);
+    ColliderComponent collider = World.Get<ColliderComponent>(target);
+    float deltaX = transform.X + collider.Width * 0.5f - command.CenterX;
+    float deltaY = transform.Y + collider.Height * 0.5f - command.CenterY;
+    return deltaX * deltaX + deltaY * deltaY < command.Radius * command.Radius;
+  }
+
+  private static bool OverlapsArea(
+    float left,
+    float top,
+    ProjectileOnDespawnAreaDamage area,
+    TransformComponent targetTransform,
+    ColliderComponent targetCollider)
+  {
+    return left < targetTransform.X + targetCollider.Width &&
+      left + area.Width > targetTransform.X &&
+      top < targetTransform.Y + targetCollider.Height &&
+      top + area.Height > targetTransform.Y;
+  }
+
+  private void EmitProjectileChildSpawnCommands(Entity parent)
+  {
+    if (!World.IsAlive(parent) || !World.Has<ProjectileOwnerComponent>(parent))
+    {
+      return;
+    }
+
+    ProjectileDefinitionComponent definition = World.Get<ProjectileDefinitionComponent>(parent);
+    ProjectileChildSpawn childSpawn = definition.ChildSpawn;
+    if (!childSpawn.IsEnabled)
+    {
+      return;
+    }
+
+    ProjectileOwnerComponent owner = World.Get<ProjectileOwnerComponent>(parent);
+    ProjectileNetworkIdentityComponent identity =
+      World.Get<ProjectileNetworkIdentityComponent>(parent);
+    ProjectileDamageComponent damage = World.Get<ProjectileDamageComponent>(parent);
+    ProjectileBannerResponseComponent banner =
+      World.Get<ProjectileBannerResponseComponent>(parent);
+    TransformComponent transform = World.Get<TransformComponent>(parent);
+    ColliderComponent collider = World.Get<ColliderComponent>(parent);
+    int count = childSpawn.MinimumCount +
+      (int)(GetChildSpawnRandom(identity.Identity, 0) %
+        (uint)(childSpawn.MaximumCount - childSpawn.MinimumCount + 1));
+    int childDamage = (int)MathF.Floor(damage.Amount * childSpawn.DamageMultiplier);
+    float childKnockback = definition.Knockback * childSpawn.KnockbackMultiplier;
+    float centerX = transform.X + collider.Width * 0.5f;
+    float centerY = transform.Y + collider.Height * 0.5f;
+    for (int index = 0; index < count; index++)
+    {
+      uint xRandom = GetChildSpawnRandom(identity.Identity, index * 3 + 1);
+      uint yRandom = GetChildSpawnRandom(identity.Identity, index * 3 + 2);
+      uint speedRandom = GetChildSpawnRandom(identity.Identity, index * 3 + 3);
+      float directionX = (int)(xRandom % 201) - 100;
+      float directionY = (int)(yRandom % 201) - 100;
+      if (directionX == 0.0f && directionY == 0.0f)
+      {
+        directionX = 1.0f;
+      }
+
+      float directionLength = MathF.Sqrt(directionX * directionX + directionY * directionY);
+      float speed = childSpawn.MinimumSpeed +
+        (childSpawn.MaximumSpeed - childSpawn.MinimumSpeed) * (speedRandom / (float)uint.MaxValue);
+      float velocityX = directionX / directionLength * speed;
+      float velocityY = directionY / directionLength * speed;
+      _pendingProjectileSpawnCommands.Add(new SpawnProjectileCommand(
+        owner.Owner,
+        centerX,
+        centerY,
+        velocityX < 0.0f ? -1 : 1,
+        childDamage,
+        41,
+        InitialVelocityY: velocityY,
+        ProjectileType: childSpawn.ProjectileType,
+        ProjectileSpeed: MathF.Abs(velocityX),
+        AuthoritativeDamage: childDamage,
+        AuthoritativeKnockback: childKnockback,
+        BannerIdToRespondTo: banner.BannerId));
+    }
+  }
+
+  private void EmitType658ChildSpawnCommand(Entity parent)
+  {
+    if (!World.IsAlive(parent) || !World.Has<ProjectileOwnerComponent>(parent) ||
+        !World.Has<ProjectileDefinitionComponent>(parent) ||
+        !World.Has<ProjectileBehaviorComponent>(parent))
+    {
+      return;
+    }
+
+    ProjectileDefinitionComponent definition = World.Get<ProjectileDefinitionComponent>(parent);
+    ProjectileBehaviorComponent behavior = World.Get<ProjectileBehaviorComponent>(parent);
+    if (!_projectileBehaviorEffectSystem.ShouldSpawnType658Child(definition, behavior) ||
+        !_projectileDefinitions.TryGet(
+          Type658ChildProjectileType,
+          out ProjectileDefinition childDefinition))
+    {
+      return;
+    }
+
+    ProjectileOwnerComponent owner = World.Get<ProjectileOwnerComponent>(parent);
+    if (!owner.Owner.IsValid || !World.Has<TransformComponent>(parent) ||
+        !World.Has<ColliderComponent>(parent))
+    {
+      return;
+    }
+
+    TransformComponent transform = World.Get<TransformComponent>(parent);
+    ColliderComponent collider = World.Get<ColliderComponent>(parent);
+    int childDamage = _worldRules.IsExpertMode
+      ? Type658ChildExpertDamage
+      : Type658ChildDamage;
+    _pendingProjectileSpawnCommands.Add(new SpawnProjectileCommand(
+      owner.Owner,
+      transform.X + collider.Width * 0.5f,
+      transform.Y + collider.Height * 0.5f,
+      1,
+      childDamage,
+      childDefinition.LifetimeTicks,
+      ProjectileType: Type658ChildProjectileType,
+      AuthoritativeDamage: childDamage,
+      AuthoritativeKnockback: Type658ChildKnockback,
+      UseZeroVelocity: true));
+  }
+
+  private void EmitProjectileTileConversionCommand(Entity projectile)
+  {
+    if (!World.IsAlive(projectile) || !World.Has<ProjectileDefinitionComponent>(projectile) ||
+        !World.Has<TransformComponent>(projectile))
+    {
+      return;
+    }
+
+    ProjectileDefinitionComponent definition = World.Get<ProjectileDefinitionComponent>(projectile);
+    byte conversionType = definition.ProjectileType switch
+    {
+      69 => 2,
+      70 => 1,
+      621 => 4,
+      _ => 0
+    };
+    if (conversionType == 0)
+    {
+      return;
+    }
+
+    TransformComponent transform = World.Get<TransformComponent>(projectile);
+    int x = Math.Clamp((int)MathF.Floor(transform.X), 0, WorldGrid.Width - 1);
+    int y = Math.Clamp((int)MathF.Floor(transform.Y), 0, WorldGrid.Height - 1);
+    WorldGrid.EnqueueProjectileTileConversion(new ProjectileTileConversionCommand(
+      definition.ProjectileType, x, y, conversionType, NextLiquidSequence()));
+  }
+
+  private static uint GetChildSpawnRandom(int parentIdentity, int sequence)
+  {
+    uint value = unchecked((uint)parentIdentity) ^ unchecked((uint)sequence * 0x9E3779B9u);
+    value ^= value >> 16;
+    value *= 0x7FEB352Du;
+    value ^= value >> 15;
+    value *= 0x846CA68Bu;
+    return value ^ (value >> 16);
   }
 
   private void CommitWorldMeteorImpacts()
@@ -3695,44 +6561,35 @@ public sealed partial class DomeSimulation : IDisposable
 
   private void CommitNpcSpawnCommands()
   {
+    _npcSpawnRejectionReasons.Clear();
     for (int index = 0; index < _commands.SpawnNpcCommands.Count; index++)
     {
       SpawnNpcCommand command = _commands.SpawnNpcCommands[index];
-      int replicationId = command.RequestedReplicationId > 0
-        ? command.RequestedReplicationId
-        : _nextNpcHandle;
-      if (replicationId <= 0 || replicationId == int.MaxValue ||
-          _npcReplications.ContainsKey(new NpcHandle(replicationId)))
-      {
-        continue;
-      }
-
-      if (!_npcSpawnCommitSystem.TryCommit(
-            World,
-            WorldGrid,
-            _npcDefinitions,
+      if (!TryResolveNpcSlot(
             command,
-            replicationId,
-            out NpcSpawnCommitResult result,
-            out _))
+            out NpcHandle npc,
+            out bool reusesExisting,
+            out Entity replacedEntity,
+            out NpcReplicationSnapshot previousReplication,
+            out string failureReason))
       {
+        _npcSpawnRejectionReasons.Add(failureReason);
         continue;
       }
 
-      NpcHandle npc = new(replicationId);
+      if (!TryCommitNpcSpawn(
+            command,
+            npc,
+            reusesExisting,
+            replacedEntity,
+            previousReplication,
+            out failureReason))
+      {
+        _npcSpawnRejectionReasons.Add(failureReason);
+        continue;
+      }
+
       NpcDefinition definition = _npcDefinitions.GetRequired(command.DefinitionId);
-      HealthComponent health = World.Get<HealthComponent>(result.Entity);
-      _npcs.Add(npc, result.Entity);
-      _npcReplications.Add(npc, new NpcReplicationSnapshot(
-        replicationId,
-        definition.NetId,
-        command.Position,
-        new SimulationVector(0.0f, 0.0f),
-        health.Current,
-        IsActive: true,
-        Revision: 1,
-        GetSectionCoordinates(command.Position)));
-      _nextNpcHandle = Math.Max(_nextNpcHandle, replicationId + 1);
 
       if (command.Source == NpcComponents.NpcSpawnSource.TileEntity &&
           _pendingTrainingDummyActivations.Count > 0)
@@ -3827,10 +6684,38 @@ public sealed partial class DomeSimulation : IDisposable
       }
 
       PlayerInputComponent input = World.Get<PlayerInputComponent>(entry.Value);
-      if (input.UseItem)
+      InventoryComponent inventory = World.Get<InventoryComponent>(entry.Value);
+      if (input.UseItemJustPressed)
       {
-        InventoryComponent inventory = World.Get<InventoryComponent>(entry.Value);
-        _commands.Enqueue(new UseItemCommand(entry.Key, inventory.SelectedSlot));
+        _commands.Enqueue(new UseItemCommand(
+          entry.Key,
+          inventory.SelectedSlot,
+          TakeWiringSequence()));
+        continue;
+      }
+
+      if (!input.UseItem)
+      {
+        continue;
+      }
+
+      ItemStack selectedStack = inventory.GetSlot(inventory.SelectedSlot);
+      if (selectedStack.IsEmpty ||
+          !_itemDefinitions.TryGet(selectedStack.ItemType, out ItemDefinition definition) ||
+          selectedStack.Quantity > definition.StackLimit ||
+          definition.Use is not ItemUseDefinition use ||
+          !use.AutoReuse)
+      {
+        continue;
+      }
+
+      ItemUseStateComponent useState = World.Get<ItemUseStateComponent>(entry.Value);
+      if (useState.CanUse)
+      {
+        _commands.Enqueue(new UseItemCommand(
+          entry.Key,
+          inventory.SelectedSlot,
+          TakeWiringSequence()));
       }
     }
   }
@@ -3957,7 +6842,8 @@ public sealed partial class DomeSimulation : IDisposable
 
       ItemStack stack = inventory.GetSlot(command.SourceSlot);
       if (stack.IsEmpty || command.Quantity > stack.Quantity ||
-          !_itemDefinitions.TryGet(stack.ItemType, out _))
+          !_itemDefinitions.TryGet(stack.ItemType, out ItemDefinition definition) ||
+          stack.Quantity > definition.StackLimit)
       {
         continue;
       }
@@ -4013,7 +6899,9 @@ public sealed partial class DomeSimulation : IDisposable
 
       WorldTile target = WorldGrid.GetTile(command.TargetX, command.TargetY);
       ItemStack input = inventory.GetSlot(command.SourceSlot);
-      if (!target.IsActive || input.IsEmpty || !_itemDefinitions.TryGet(input.ItemType, out ItemDefinition definition))
+      if (!target.IsActive || input.IsEmpty ||
+          !_itemDefinitions.TryGet(input.ItemType, out ItemDefinition definition) ||
+          input.Quantity > definition.StackLimit)
       {
         continue;
       }
@@ -4105,7 +6993,8 @@ public sealed partial class DomeSimulation : IDisposable
       for (int slot = ChestComponent.SlotCount - 1; slot >= 0; slot--)
       {
         ItemStack input = chest.GetSlot(slot);
-        if (input.IsEmpty || !_itemDefinitions.TryGet(input.ItemType, out ItemDefinition definition))
+        if (input.IsEmpty || !_itemDefinitions.TryGet(input.ItemType, out ItemDefinition definition) ||
+            input.Quantity > definition.StackLimit)
         {
           continue;
         }
@@ -4206,6 +7095,25 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
+      if (!_playerFishingUseSystem.CanUse(
+            World,
+            _players,
+            _projectileIdsByEntity,
+            command.Player,
+            definition))
+      {
+        continue;
+      }
+
+      TransformComponent transform = World.Get<TransformComponent>(playerEntity);
+      int summonNpcType = definition.Summoning?.NpcType ?? 0;
+      if (summonNpcType > 0 &&
+          (!_npcDefinitions.TryGet(summonNpcType, out _) ||
+           !float.IsFinite(transform.X) || !float.IsFinite(transform.Y)))
+      {
+        continue;
+      }
+
       bool consumesAmmo = TryGetRequiredAmmo(definition, out ushort ammoType);
       if (consumesAmmo &&
           !_itemAmmoConsumptionSystem.HasAmmo(inventory, ammoType, _itemDefinitions))
@@ -4213,9 +7121,29 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
+      if (TryGetItemProjectileType(definition, out ushort sentryProjectileType) &&
+          _projectileDefinitions.TryGet(
+            sentryProjectileType,
+            out ProjectileDefinition sentryDefinition) &&
+          (definition.IsSentry || sentryDefinition.IsSentry) &&
+          !_projectileSentryPlacementSystem.CanPlace(
+            World,
+            transform.X,
+            transform.Y + 0.75f,
+            sentryDefinition,
+            _projectileDefinitions,
+            _commands.SpawnProjectileCommands))
+      {
+        continue;
+      }
+
       ref Terraria.Dome.Simulation.Items.Components.ItemUseStateComponent useState =
-        ref World.Get<Terraria.Dome.Simulation.Items.Components.ItemUseStateComponent>(playerEntity);
+        ref World.Get<Terraria.Dome.Simulation.Items.Components.ItemUseStateComponent>(
+          playerEntity);
       Terraria.Dome.Simulation.Items.Components.ItemUseStateComponent originalUseState = useState;
+      ref PlayerPotionStateComponent potionState =
+        ref World.Get<PlayerPotionStateComponent>(playerEntity);
+      PlayerPotionStateComponent originalPotionState = potionState;
       BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(playerEntity);
       ref HealthComponent health = ref World.Get<HealthComponent>(playerEntity);
       ref ManaComponent mana = ref World.Get<ManaComponent>(playerEntity);
@@ -4229,7 +7157,8 @@ public sealed partial class DomeSimulation : IDisposable
         health.Maximum,
         mana.Current,
         mana.Maximum,
-        command.Sequence);
+        command.Sequence,
+        potionDelayTicks: potionState.PotionDelayTicks);
       if (!result.IsAccepted)
       {
         continue;
@@ -4248,25 +7177,70 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
+      int reservedBuffSlots = result.BuffType != 0 &&
+        result.BuffType != PlayerPotionStateComponent.PotionSicknessBuffType &&
+        !buffs.Entries.Any(entry => entry.Type == result.BuffType)
+        ? 1
+        : 0;
+      if (result.PotionDelayTicks > 0 &&
+          !_playerPotionDelaySystem.CanApplyPotionUse(
+            potionState,
+            buffs,
+            command.Player,
+            reservedBuffSlots))
+      {
+        useState = originalUseState;
+        potionState = originalPotionState;
+        continue;
+      }
+
       ItemInstanceSnapshot[] inventoryBefore = CaptureInventorySlots(inventory);
       if (consumesAmmo &&
           !_itemAmmoConsumptionSystem.TryConsume(inventory, ammoType, _itemDefinitions, out _))
       {
         useState = originalUseState;
+        potionState = originalPotionState;
         continue;
+      }
+
+      if (result.PotionDelayTicks > 0)
+      {
+        if (!_playerPotionDelaySystem.TryApplyPotionUse(
+              ref potionState,
+              buffs,
+              command.Player,
+              reservedBuffSlots))
+        {
+          useState = originalUseState;
+          potionState = originalPotionState;
+          continue;
+        }
+      }
+
+      if (result.NpcType > 0)
+      {
+        _pendingNpcSpawnCommands.Add(new SpawnNpcCommand(
+          DefinitionId: result.NpcType,
+          Position: new SimulationVector(transform.X, transform.Y),
+          Source: NpcComponents.NpcSpawnSource.Command));
       }
 
       health.Current = result.Health;
       mana.Current = result.Mana;
+      ref PlayerMountStateComponent mount = ref World.Get<PlayerMountStateComponent>(playerEntity);
+      _playerNpcTargetingSystem.TryApplyMountSummon(ref mount, definition.Summoning);
       if (result.BuffType != 0)
       {
         buffs.Add(result.BuffType, result.BuffDurationTicks, command.Player);
       }
       if (result.ProjectileType != 0)
       {
-        TransformComponent transform = World.Get<TransformComponent>(playerEntity);
         FacingComponent facing = World.Get<FacingComponent>(playerEntity);
         int projectileDamage = definition.Combat?.Damage ?? ProjectileDamage;
+        float projectileKnockback = definition.Combat?.Knockback ?? 0.0f;
+        bool isMinionProjectile = _projectileDefinitions.TryGet(
+          result.ProjectileType,
+          out ProjectileDefinition projectileDefinition) && projectileDefinition.IsMinion;
         _commands.Enqueue(new SpawnProjectileCommand(
           command.Player,
           transform.X,
@@ -4275,7 +7249,13 @@ public sealed partial class DomeSimulation : IDisposable
           projectileDamage,
           ProjectileLifetimeTicks,
           ProjectileType: result.ProjectileType,
-          ProjectileSpeed: result.ProjectileSpeed));
+          ProjectileSpeed: result.ProjectileSpeed,
+          AuthoritativeDamage: projectileDamage,
+          AuthoritativeKnockback: projectileKnockback,
+          IsSentry: result.IsSentry,
+          IsDd2Summon: result.IsDd2Summon,
+          MinionSpawnItemType: isMinionProjectile ? result.Event.ItemType : (ushort)0,
+          MinionSpawnItemPrefix: isMinionProjectile ? result.Event.ItemPrefix : 0));
       }
       if (result.ConsumedQuantity > 0)
       {
@@ -4306,6 +7286,20 @@ public sealed partial class DomeSimulation : IDisposable
 
     ammoType = 0;
     return false;
+  }
+
+  private static bool TryGetItemProjectileType(
+    ItemDefinition definition,
+    out ushort projectileType)
+  {
+    if (definition.Use is ItemUseDefinition use && use.ShootType != 0)
+    {
+      projectileType = use.ShootType;
+      return true;
+    }
+
+    projectileType = definition.Combat?.ProjectileType ?? 0;
+    return projectileType != 0;
   }
 
   private static ItemInstanceSnapshot[] CaptureInventorySlots(InventoryComponent inventory)
@@ -4364,7 +7358,8 @@ public sealed partial class DomeSimulation : IDisposable
       PlayerLifecycleComponent lifecycle = World.Get<PlayerLifecycleComponent>(playerEntity);
       ItemStack stack = inventory.GetSlot(command.SourceSlot);
       if (!lifecycle.IsActive || stack.IsEmpty ||
-          !_itemDefinitions.TryGet(stack.ItemType, out ItemDefinition definition))
+          !_itemDefinitions.TryGet(stack.ItemType, out ItemDefinition definition) ||
+          stack.Quantity > definition.StackLimit)
       {
         continue;
       }
@@ -4372,7 +7367,8 @@ public sealed partial class DomeSimulation : IDisposable
       TransformComponent transform = World.Get<TransformComponent>(playerEntity);
       float deltaX = transform.X - command.X;
       float deltaY = transform.Y - command.Y;
-      if (deltaX * deltaX + deltaY * deltaY > MaximumInteractionRange * MaximumInteractionRange)
+      float placementRange = MaximumInteractionRange + (definition.Placement?.TileBoost ?? 0);
+      if (deltaX * deltaX + deltaY * deltaY > placementRange * placementRange)
       {
         continue;
       }
@@ -4428,6 +7424,7 @@ public sealed partial class DomeSimulation : IDisposable
 
       ItemStack stack = inventory.GetSlot(command.SourceSlot);
       if (stack.IsEmpty || !_itemDefinitions.TryGet(stack.ItemType, out ItemDefinition definition) ||
+          stack.Quantity > definition.StackLimit ||
           definition.Equipment is not ItemEquipmentDefinition equipmentDefinition ||
           states.Contains(equipmentDefinition.Slot))
       {
@@ -4438,7 +7435,7 @@ public sealed partial class DomeSimulation : IDisposable
             command.Player,
             stack,
             command.SourceSlot,
-            equipmentDefinition,
+            definition,
             existing: null,
             command.IsVanity,
             out ItemEquipmentStateComponent state,
@@ -4476,10 +7473,14 @@ public sealed partial class DomeSimulation : IDisposable
 
   private void RecalculateEquipmentStats()
   {
-    foreach (Entity playerEntity in _players.Values)
+    foreach (KeyValuePair<PlayerHandle, Entity> entry in _players)
     {
+      Entity playerEntity = entry.Value;
       if (!World.Has<InventoryComponent>(playerEntity) ||
-          !World.Has<EquipmentStateCollectionComponent>(playerEntity))
+          !World.Has<EquipmentStateCollectionComponent>(playerEntity) ||
+          !World.Has<PlayerLifecycleComponent>(playerEntity) ||
+          !World.Get<PlayerLifecycleComponent>(playerEntity).IsActive ||
+          !World.Has<PlayerSentryStateComponent>(playerEntity))
       {
         continue;
       }
@@ -4487,15 +7488,61 @@ public sealed partial class DomeSimulation : IDisposable
       ref DefenseComponent defense = ref World.Get<DefenseComponent>(playerEntity);
       ref HealthRegenerationComponent healthRegeneration =
         ref World.Get<HealthRegenerationComponent>(playerEntity);
+      ref ManaComponent mana = ref World.Get<ManaComponent>(playerEntity);
       EquipmentStateCollectionComponent equipmentStates =
         World.Get<EquipmentStateCollectionComponent>(playerEntity);
       InventoryComponent inventory = World.Get<InventoryComponent>(playerEntity);
       _equipmentStatSystem.Apply(
         ref defense,
         ref healthRegeneration,
+        ref mana,
         equipmentStates,
         inventory,
         _itemDefinitions);
+      int sentryCapacityBonus = _playerSentryEquipmentSystem.CalculateCapacityBonus(
+        equipmentStates,
+        inventory,
+        _itemDefinitions);
+      if (!_playerSentryAuthoritySystem.TrySetEquipmentCapacityBonus(
+            World,
+            _players,
+            entry.Key,
+            sentryCapacityBonus))
+      {
+        throw new InvalidOperationException(
+          $"Player sentry equipment authority rejected active player {entry.Key.Value}.");
+      }
+      BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(playerEntity);
+      int sentryBuffCapacityBonus = _playerSentryBuffSystem.CalculateCapacityBonus(buffs);
+      if (!_playerSentryAuthoritySystem.TrySetBuffCapacityBonus(
+            World,
+            _players,
+            entry.Key,
+            sentryBuffCapacityBonus))
+      {
+        throw new InvalidOperationException(
+          $"Player sentry buff authority rejected active player {entry.Key.Value}.");
+      }
+      int sentryArmorSetCapacityBonus = _playerSentryArmorSetSystem.CalculateCapacityBonus(
+        equipmentStates,
+        inventory,
+        _itemDefinitions);
+      if (!_playerSentryAuthoritySystem.TrySetArmorSetCapacityBonus(
+            World,
+            _players,
+            entry.Key,
+            sentryArmorSetCapacityBonus))
+      {
+        throw new InvalidOperationException(
+          $"Player sentry armor-set authority rejected active player {entry.Key.Value}.");
+      }
+      ref PlayerTargetingStateComponent targeting =
+        ref World.Get<PlayerTargetingStateComponent>(playerEntity);
+      _playerNpcTargetingSystem.RefreshFromEquipment(
+        ref targeting,
+        equipmentStates,
+        inventory,
+        _npcNoAggroCapabilities);
     }
   }
 
@@ -4571,7 +7618,9 @@ public sealed partial class DomeSimulation : IDisposable
             ref state,
             command.Variant,
             out ItemStack result,
-            out _) || !_itemDefinitions.TryGet(result.ItemType, out _))
+            out _) ||
+          !_itemDefinitions.TryGet(result.ItemType, out ItemDefinition resultDefinition) ||
+          result.Quantity > resultDefinition.StackLimit)
       {
         continue;
       }
@@ -4732,11 +7781,39 @@ public sealed partial class DomeSimulation : IDisposable
 
   private void CommitNpcDamageCommands()
   {
+    IReadOnlySet<int> activeNpcTypes = CreateActiveNpcTypes();
     for (int index = 0; index < _commands.DamageNpcCommands.Count; index++)
     {
       DamageNpcCommand command = _commands.DamageNpcCommands[index];
       if (!_npcs.TryGetValue(command.Npc, out Entity npcEntity) ||
-          !_npcReplications[command.Npc].IsActive)
+          !_npcReplications[command.Npc].IsActive ||
+          !Enum.IsDefined(command.SourceKind))
+      {
+        continue;
+      }
+
+      bool isHostileNpcSource = false;
+      if (command.SourceKind == NpcDamageSourceKind.HostileNpc)
+      {
+        if (!command.SourceNpc.IsValid || command.SourceNpc == command.Npc ||
+            !_npcs.TryGetValue(command.SourceNpc, out Entity sourceEntity) ||
+            !_npcReplications[command.SourceNpc].IsActive)
+        {
+          continue;
+        }
+
+        NpcComponents.NpcDefinitionComponent sourceDefinition =
+          World.Get<NpcComponents.NpcDefinitionComponent>(sourceEntity);
+        isHostileNpcSource = sourceDefinition.Faction == NpcFaction.Hostile;
+        if (!isHostileNpcSource)
+        {
+          continue;
+        }
+      }
+
+      NpcComponents.NpcBehaviorStateComponent behavior =
+        World.Get<NpcComponents.NpcBehaviorStateComponent>(npcEntity);
+      if (isHostileNpcSource && behavior.DoesNotTakeDamageFromHostiles)
       {
         continue;
       }
@@ -4744,6 +7821,12 @@ public sealed partial class DomeSimulation : IDisposable
       ref HealthComponent health = ref World.Get<HealthComponent>(npcEntity);
       NpcComponents.NpcAuthorityComponent authority =
         World.Get<NpcComponents.NpcAuthorityComponent>(npcEntity);
+      if (command.SourceKind == NpcDamageSourceKind.Lava &&
+          (command.SourceIdentity != 0 || command.SourceNpc.IsValid || authority.IsLavaImmune))
+      {
+        continue;
+      }
+
       ref ImmunityComponent immunity = ref World.Get<ImmunityComponent>(npcEntity);
       DefenseComponent defense = World.Get<DefenseComponent>(npcEntity);
       bool applied = _damageResolutionSystem.TryResolve(
@@ -4753,18 +7836,27 @@ public sealed partial class DomeSimulation : IDisposable
         command.Amount,
         DamageTargetKind.Npc,
         _worldRules,
-        out _);
+        out _,
+        authority.TakenDamageMultiplier);
       if (applied)
       {
-        immunity.RemainingTicks = NpcHitImmunityTicks;
+        immunity.RemainingTicks = command.SourceKind == NpcDamageSourceKind.Lava
+          ? NpcLavaImmunityTicks
+          : NpcHitImmunityTicks;
       }
 
       ref NpcComponents.NpcLifecycleComponent lifecycle =
         ref World.Get<NpcComponents.NpcLifecycleComponent>(npcEntity);
+      NpcComponents.NpcDefinitionComponent definition =
+        World.Get<NpcComponents.NpcDefinitionComponent>(npcEntity);
       _ = _npcLifecycleSystem.Advance(
         ref lifecycle,
         health.Current,
-        authority.IsImmortal);
+        authority.IsImmortal,
+        LegacyNpcInactivityRegistry.DoesNotDespawnToInactivity(
+          definition.NetId,
+          activeNpcTypes),
+        isTownNpc: LegacyNpcTownRegistry.IsTownNpc(definition.NetId));
       UpdateNpcReplication(npcEntity);
     }
   }
@@ -4773,15 +7865,31 @@ public sealed partial class DomeSimulation : IDisposable
   {
     List<DamageRequestedEvent> candidates = new();
     HashSet<Entity> tileDespawned = new();
+    HashSet<Entity> playerTargets = new();
     World.Query(
       in _projectileQuery,
       (Entity projectileEntity, ref TransformComponent projectileTransform,
         ref ColliderComponent projectileCollider, ref ProjectileDamageComponent damage,
         ref VelocityComponent projectileVelocity,
+        ref ProjectileTileCollisionComponent tileCollision,
         ref ProjectileNetworkIdentityComponent identity,
-        ref ProjectileDefinitionComponent definition) =>
+        ref ProjectileDefinitionComponent definition,
+        ref ProjectileFriendlyStateComponent friendlyState,
+        ref ProjectileOwnerComponent owner) =>
       {
-        if (!_projectileTargetEligibilitySystem.CanDamageNpc(definition))
+        if (IsAutomaticStyle17Placement(definition))
+        {
+          QueueStyle17PlacementRequest(
+            projectileEntity,
+            ref projectileTransform,
+            ref projectileVelocity,
+            projectileCollider,
+            owner);
+          return;
+        }
+
+        if (!_projectileTargetEligibilitySystem.CanDamageNpc(definition, friendlyState.IsFriendly) &&
+            !_projectileTargetEligibilitySystem.CanDamagePlayer(definition))
         {
           return;
         }
@@ -4789,63 +7897,447 @@ public sealed partial class DomeSimulation : IDisposable
         TransformComponent previousTransform = new(
           projectileTransform.X - projectileVelocity.X,
           projectileTransform.Y - projectileVelocity.Y);
-        if (_projectileCollisionSystem.PathHitsSolidTile(
-          WorldGrid,
-          previousTransform,
-          projectileTransform,
-          projectileCollider))
+        bool reflectHorizontal = false;
+        bool reflectVertical = false;
+        bool hitsTile = _projectileTileCollisionPolicy.ShouldCollide(tileCollision) &&
+          _projectileCollisionSystem.TryGetSolidTileImpact(
+            WorldGrid,
+            previousTransform,
+            projectileTransform,
+            projectileCollider,
+            out reflectHorizontal,
+            out reflectVertical,
+            definition.CorrectSlopeCollision,
+            World.Has<ProjectileFallThroughComponent>(projectileEntity) &&
+              World.Get<ProjectileFallThroughComponent>(projectileEntity).ShouldFallThrough);
+        if (hitsTile)
         {
-          _commands.Enqueue(new DespawnEntityCommand(projectileEntity));
+          ref ProjectileBounceComponent bounce =
+            ref World.Get<ProjectileBounceComponent>(projectileEntity);
+          float speed = MathF.Abs(projectileVelocity.X) + MathF.Abs(projectileVelocity.Y);
+          if ((bounce.RemainingBounces > 0 || definition.ReflectsFromTiles ||
+               definition.ProjectileType == 357 &&
+                 World.Get<ProjectilePenetrationComponent>(projectileEntity)
+                   .RemainingPenetration > 0) &&
+              speed >= definition.MinimumBounceSpeed)
+          {
+            _commands.Enqueue(new BounceProjectileCommand(
+              projectileEntity,
+              reflectHorizontal,
+              reflectVertical,
+              previousTransform.X,
+              previousTransform.Y));
+          }
+          else
+          {
+            _commands.Enqueue(new DespawnEntityCommand(
+              projectileEntity,
+              ProjectileTombstoneReason.TileHit));
+            tileDespawned.Add(projectileEntity);
+          }
+
+          return;
+        }
+
+        if (!definition.IgnoreWater && definition.LiquidPolicy == ProjectileLiquidPolicy.Destroy &&
+            _projectileCollisionSystem.HitsLiquid(
+              WorldGrid,
+              projectileTransform,
+              projectileCollider))
+        {
+          _commands.Enqueue(new DespawnEntityCommand(
+            projectileEntity,
+            ProjectileTombstoneReason.LiquidHit));
           tileDespawned.Add(projectileEntity);
           return;
         }
 
-        foreach (KeyValuePair<NpcHandle, Entity> npcEntry in _npcs)
+        if (_projectileTargetEligibilitySystem.CanDamageNpc(definition, friendlyState.IsFriendly))
         {
-          Entity npcEntity = npcEntry.Value;
-          HealthComponent npcHealth = World.Get<HealthComponent>(npcEntity);
-          if (npcHealth.Current <= 0)
+          foreach (KeyValuePair<NpcHandle, Entity> npcEntry in _npcs)
           {
-            continue;
-          }
+            Entity npcEntity = npcEntry.Value;
+            HealthComponent npcHealth = World.Get<HealthComponent>(npcEntity);
+            if (npcHealth.Current <= 0)
+            {
+              continue;
+            }
 
-          TransformComponent npcTransform = World.Get<TransformComponent>(npcEntity);
-          ColliderComponent npcCollider = World.Get<ColliderComponent>(npcEntity);
-          if (!PathOverlaps(
-            previousTransform,
-            projectileTransform,
-            projectileCollider,
-            npcTransform,
-            npcCollider))
+            NpcComponents.NpcDefinitionComponent npcDefinition =
+              World.Get<NpcComponents.NpcDefinitionComponent>(npcEntity);
+            NpcComponents.NpcAuthorityComponent npcAuthority =
+              World.Get<NpcComponents.NpcAuthorityComponent>(npcEntity);
+            NpcComponents.NpcBehaviorStateComponent npcBehavior =
+              World.Get<NpcComponents.NpcBehaviorStateComponent>(npcEntity);
+            NpcComponents.NpcLifecycleComponent npcLifecycle =
+              World.Get<NpcComponents.NpcLifecycleComponent>(npcEntity);
+            if (!_projectileTargetEligibilitySystem.CanTargetNpc(
+                  definition,
+                  npcDefinition,
+                  npcAuthority,
+                  npcBehavior,
+                   npcLifecycle,
+                   npcHealth,
+                   ignoreDoesNotTakeDamage: false,
+                   allowImmortalTargetDummy:
+                     npcDefinition.DefinitionId == TrainingDummyNpcType,
+                   runtimeFriendly: friendlyState.IsFriendly))
+            {
+              continue;
+            }
+
+            TransformComponent npcTransform = World.Get<TransformComponent>(npcEntity);
+            ColliderComponent npcCollider = World.Get<ColliderComponent>(npcEntity);
+            if (definition.OwnerHitCheck &&
+                (!_players.TryGetValue(owner.Owner, out Entity ownerEntity) ||
+                 !_projectileOwnerHitCheckSystem.CanHit(
+                   WorldGrid,
+                   World.Get<TransformComponent>(ownerEntity),
+                   World.Get<ColliderComponent>(ownerEntity),
+                   World.Get<FacingComponent>(ownerEntity).Horizontal,
+                   World.Get<PhysicsStateComponent>(ownerEntity).GravityDirection,
+                   npcTransform,
+                   npcCollider,
+                   definition.OwnerHitCheckDistance)))
+            {
+              continue;
+            }
+
+            if (!PathOverlaps(
+              previousTransform,
+              projectileTransform,
+              projectileCollider,
+              npcTransform,
+              npcCollider))
+            {
+              continue;
+            }
+
+            candidates.Add(new DamageRequestedEvent(
+              projectileEntity,
+              npcEntity,
+              damage.Amount,
+              identity.Identity,
+              npcEntry.Key.Value,
+              definition.DamageClass,
+              definition.IsColdDamage,
+              definition.ArmorPenetration,
+              definition.BonusCritChance,
+              definition.BonusTagDamage,
+              definition.TagEffectType));
+            break;
+          }
+        }
+        else
+        {
+          foreach (KeyValuePair<PlayerHandle, Entity> playerEntry in _players)
           {
-            continue;
-          }
+            if (!_projectileTargetEligibilitySystem.CanDamagePlayerTarget(
+                  definition,
+                  owner.Owner,
+                  playerEntry.Key,
+                  _worldRules.IsPvpEnabled) ||
+                !World.Get<PlayerLifecycleComponent>(playerEntry.Value).IsActive)
+            {
+              continue;
+            }
 
-          candidates.Add(new DamageRequestedEvent(
-            projectileEntity,
-            npcEntity,
-            damage.Amount,
-            identity.Identity,
-            npcEntry.Key.Value));
-          break;
+            HealthComponent playerHealth = World.Get<HealthComponent>(playerEntry.Value);
+            if (playerHealth.Current <= 0)
+            {
+              continue;
+            }
+
+            TransformComponent playerTransform = World.Get<TransformComponent>(playerEntry.Value);
+            ColliderComponent playerCollider = World.Get<ColliderComponent>(playerEntry.Value);
+            if (!PathOverlaps(
+              previousTransform,
+              projectileTransform,
+              projectileCollider,
+              playerTransform,
+              playerCollider))
+            {
+              continue;
+            }
+
+            candidates.Add(new DamageRequestedEvent(
+              projectileEntity,
+              playerEntry.Value,
+              damage.Amount,
+              identity.Identity,
+              playerEntry.Key.Value,
+              definition.DamageClass,
+              definition.IsColdDamage,
+              definition.ArmorPenetration,
+              definition.BonusCritChance,
+              definition.BonusTagDamage,
+              definition.TagEffectType));
+            playerTargets.Add(playerEntry.Value);
+            break;
+          }
         }
       });
 
     IReadOnlyList<DamageRequestedEvent> accepted = _projectileDamageSystem.Resolve(
       World,
       candidates,
-      _projectileHitImmunity);
+      _projectileHitImmunity,
+      GetOwnerMeleeHitCooldownTicks);
     for (int index = 0; index < accepted.Count; index++)
     {
       DamageRequestedEvent candidate = accepted[index];
-      _commands.Enqueue(new DamageCommand(candidate.Projectile, candidate.Target, candidate.Amount));
+      if (World.Has<ProjectileBehaviorComponent>(candidate.Projectile) &&
+          World.Has<ProjectileDefinitionComponent>(candidate.Projectile) &&
+          World.Has<ProjectileFriendlyStateComponent>(candidate.Projectile) &&
+          World.Has<ProjectileNetworkUpdateComponent>(candidate.Projectile))
+      {
+        ref ProjectileBehaviorComponent behavior =
+          ref World.Get<ProjectileBehaviorComponent>(candidate.Projectile);
+        ref ProjectileFriendlyStateComponent friendlyState =
+          ref World.Get<ProjectileFriendlyStateComponent>(candidate.Projectile);
+        ref ProjectileNetworkUpdateComponent networkUpdate =
+          ref World.Get<ProjectileNetworkUpdateComponent>(candidate.Projectile);
+        _projectileBehaviorEffectSystem.ApplyAcceptedHit(
+          ref behavior,
+          ref friendlyState,
+          ref networkUpdate,
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile),
+          World.Get<ProjectilePenetrationComponent>(candidate.Projectile).RemainingPenetration + 1);
+        if (World.Has<ProjectileTileCollisionComponent>(candidate.Projectile))
+        {
+          _projectileBehaviorEffectSystem.ApplyAcceptedHitTileCollision(
+            ref behavior,
+            ref World.Get<ProjectileTileCollisionComponent>(candidate.Projectile),
+            ref networkUpdate,
+            World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+        }
+      }
+
+      if (playerTargets.Contains(candidate.Target))
+      {
+        ProjectileDefinitionComponent definition =
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile);
+        _commands.Enqueue(new DamagePlayerCommand(
+          FindPlayerHandle(candidate.Target),
+          _projectileHostileDamageScalingSystem.ScalePlayerDamage(
+            candidate.Amount,
+            definition,
+            _worldRules),
+          candidate.DamageClass,
+          candidate.IsColdDamage));
+      }
+      else
+      {
+        _commands.Enqueue(new DamageCommand(
+          candidate.Projectile,
+          candidate.Target,
+          candidate.Amount,
+          candidate.DamageClass,
+          candidate.IsColdDamage,
+          candidate.ArmorPenetration,
+          candidate.BonusCritChance,
+          candidate.BonusTagDamage,
+          candidate.TagEffectType));
+      }
+
+      if (World.Has<ProjectileDamageComponent>(candidate.Projectile) &&
+          World.Has<ProjectileDefinitionComponent>(candidate.Projectile))
+      {
+        ref ProjectileDamageComponent projectileDamage =
+          ref World.Get<ProjectileDamageComponent>(candidate.Projectile);
+        _projectileBehaviorEffectSystem.ApplyAcceptedHitDamage(
+          ref projectileDamage,
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+        _projectileBehaviorEffectSystem.ApplyAcceptedHitKnockback(
+          ref World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+      }
+
+      if (World.Has<ProjectileDefinitionComponent>(candidate.Projectile) &&
+          World.Has<VelocityComponent>(candidate.Projectile))
+      {
+        _projectileBehaviorEffectSystem.ApplyAcceptedHitVelocity(
+          ref World.Get<VelocityComponent>(candidate.Projectile),
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+      }
+
+      if (World.Has<ProjectileDamageComponent>(candidate.Projectile) &&
+          World.Has<ProjectilePenetrationComponent>(candidate.Projectile) &&
+          World.Has<ProjectileBehaviorComponent>(candidate.Projectile) &&
+          World.Has<ProjectileFriendlyStateComponent>(candidate.Projectile) &&
+          World.Has<ProjectileNetworkUpdateComponent>(candidate.Projectile))
+      {
+        _projectileBehaviorEffectSystem.ApplyAcceptedHitPenetration(
+          ref World.Get<ProjectileBehaviorComponent>(candidate.Projectile),
+          ref World.Get<ProjectileFriendlyStateComponent>(candidate.Projectile),
+          ref World.Get<ProjectileNetworkUpdateComponent>(candidate.Projectile),
+          ref World.Get<ProjectilePenetrationComponent>(candidate.Projectile),
+          ref World.Get<ProjectileDamageComponent>(candidate.Projectile),
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+      }
+
+      if (World.Has<ProjectileDefinitionComponent>(candidate.Projectile) &&
+          World.Has<ProjectileOwnerComponent>(candidate.Projectile))
+      {
+        ProjectileDefinitionComponent definition =
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile);
+        ProjectileOnHitStatusEffect effect = definition.OnHitStatusEffect;
+        if (effect.IsEnabled &&
+            ShouldApplyOnHitStatus(candidate.ProjectileIdentity, effect))
+        {
+          int duration = SelectOnHitStatusDuration(candidate.ProjectileIdentity, effect);
+          _commands.Enqueue(new ApplyTargetStatusEffectCommand(
+            candidate.Target,
+            World.Get<ProjectileOwnerComponent>(candidate.Projectile).Owner,
+            effect.Type,
+            duration));
+        }
+      }
       ref ProjectilePenetrationComponent penetration =
         ref World.Get<ProjectilePenetrationComponent>(candidate.Projectile);
       if (penetration.RemainingPenetration == 0 && tileDespawned.Add(candidate.Projectile))
       {
-        _commands.Enqueue(new DespawnEntityCommand(candidate.Projectile));
+        _commands.Enqueue(new DespawnEntityCommand(
+          candidate.Projectile,
+          ProjectileTombstoneReason.Penetrated));
       }
     }
+  }
+
+  private bool IsAutomaticStyle17Placement(ProjectileDefinitionComponent definition)
+  {
+    return definition.ProjectileType == VerificationProjectileType &&
+      definition.LegacyAiStyle == 17;
+  }
+
+  private void QueueStyle17PlacementRequest(
+    Entity projectile,
+    ref TransformComponent transform,
+    ref VelocityComponent velocity,
+    ColliderComponent collider,
+    ProjectileOwnerComponent owner)
+  {
+    if (_pendingProjectileWorldObjectPlacements.TryGetValue(
+          projectile,
+          out ProjectileWorldObjectPlacementCommand pendingPlacement))
+    {
+      WorldSectionCoordinates originSection = WorldGrid.GetSectionCoordinates(
+        pendingPlacement.OriginX,
+        pendingPlacement.OriginY);
+      long currentSectionVersion = WorldGrid.GetSectionVersion(originSection);
+      if (pendingPlacement.ExpectedSectionVersion != currentSectionVersion)
+      {
+        pendingPlacement = pendingPlacement with
+        {
+          ExpectedSectionVersion = currentSectionVersion
+        };
+        _pendingProjectileWorldObjectPlacements[projectile] = pendingPlacement;
+      }
+
+      _commands.Enqueue(pendingPlacement);
+      return;
+    }
+
+    if (velocity.Y <= 0.0f ||
+        !_projectileCollisionSystem.TryGetSolidTileImpactTile(
+          WorldGrid,
+          new TransformComponent(transform.X - velocity.X, transform.Y - velocity.Y),
+          transform,
+          collider,
+          out _,
+          out int supportTileY))
+    {
+      return;
+    }
+
+    if (!_players.TryGetValue(owner.Owner, out Entity ownerEntity) ||
+        !World.Has<ProjectileMiscTextComponent>(projectile) ||
+        !World.Has<ProjectileDirectionComponent>(projectile) ||
+        !TryTakeProjectileWorldObjectPlacementSequence(out long sequence))
+    {
+      return;
+    }
+
+    int originX = (int)MathF.Floor(transform.X + collider.Width * 0.5f);
+    int originY = supportTileY - Style17SignHeight;
+    if (!WorldGrid.Contains(originX, originY) ||
+        !WorldGrid.Contains(originX + Style17SignWidth - 1, originY + Style17SignHeight - 1))
+    {
+      return;
+    }
+
+    WorldSectionCoordinates section = WorldGrid.GetSectionCoordinates(originX, originY);
+    ProjectileWorldObjectPlacementCommand command = new(
+      sequence,
+      projectile,
+      ownerEntity,
+      originX,
+      originY,
+      (ushort)Style17SignObjectType,
+      Style17SignStyle,
+      World.Get<ProjectileDirectionComponent>(projectile).Horizontal,
+      World.Get<ProjectileMiscTextComponent>(projectile).Value,
+      WorldGrid.GetSectionVersion(section));
+    _pendingProjectileWorldObjectPlacements.Add(projectile, command);
+    transform.Y = supportTileY - collider.Height;
+    velocity.X *= Style17GroundDrag;
+    velocity.Y = 0.0f;
+    UpdateProjectileReplication(
+      projectile,
+      transform,
+      velocity,
+      World.Get<ProjectileLifetimeComponent>(projectile));
+    _commands.Enqueue(command);
+  }
+
+  private void CommitTargetStatusEffectCommands()
+  {
+    for (int index = 0; index < _commands.TargetStatusEffectCommands.Count; index++)
+    {
+      ApplyTargetStatusEffectCommand command = _commands.TargetStatusEffectCommands[index];
+      if (!World.IsAlive(command.Target) || !World.Has<BuffCollectionComponent>(command.Target))
+      {
+        continue;
+      }
+
+      if (World.Has<PlayerLifecycleComponent>(command.Target) &&
+          (!World.Has<HealthComponent>(command.Target) ||
+           !World.Get<PlayerLifecycleComponent>(command.Target).IsActive ||
+           World.Get<HealthComponent>(command.Target).Current <= 0))
+      {
+        continue;
+      }
+
+      BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(command.Target);
+      if (!buffs.CanAccept(command.Type))
+      {
+        continue;
+      }
+
+      buffs.Add(command.Type, command.DurationTicks, command.Source);
+      if (command.Type == PlayerPotionStateComponent.PotionSicknessBuffType &&
+          World.Has<PlayerPotionStateComponent>(command.Target))
+      {
+        ref PlayerPotionStateComponent potionState =
+          ref World.Get<PlayerPotionStateComponent>(command.Target);
+        _playerPotionDelaySystem.SynchronizeFromBuffs(ref potionState, buffs);
+      }
+    }
+  }
+
+  private bool ShouldApplyOnHitStatus(int projectileIdentity, ProjectileOnHitStatusEffect effect)
+  {
+    uint sample = unchecked((uint)projectileIdentity) + 1U;
+    return sample % (uint)effect.ChanceDenominator < (uint)effect.ChanceNumerator;
+  }
+
+  private int SelectOnHitStatusDuration(int projectileIdentity, ProjectileOnHitStatusEffect effect)
+  {
+    int span = effect.MaximumDurationTicks - effect.MinimumDurationTicks + 1;
+    uint sample = unchecked((uint)projectileIdentity) + 1U;
+    uint bucket = sample / (uint)effect.ChanceDenominator % 3U;
+    int selectedSpan = bucket == 0 ? span : Math.Max(1, span / 2);
+    uint offset = sample / ((uint)effect.ChanceDenominator * 3U) % (uint)selectedSpan;
+    return effect.MinimumDurationTicks + (int)offset;
   }
 
   private void AdvancePlayerLifecycle()
@@ -4854,6 +8346,21 @@ public sealed partial class DomeSimulation : IDisposable
       World,
       _players,
       (player, spawn) => _commands.Enqueue(new RespawnPlayerCommand(player, spawn)));
+
+    foreach (Entity entity in _players.Values)
+    {
+      PlayerLifecycleComponent lifecycle = World.Get<PlayerLifecycleComponent>(entity);
+      if (lifecycle.IsActive)
+      {
+        continue;
+      }
+
+      ref PlayerPotionStateComponent potionState =
+        ref World.Get<PlayerPotionStateComponent>(entity);
+      _playerPotionDelaySystem.Clear(
+        ref potionState,
+        World.Get<BuffCollectionComponent>(entity));
+    }
   }
 
   private void AdvancePlayerImmunity()
@@ -4865,6 +8372,46 @@ public sealed partial class DomeSimulation : IDisposable
     }
   }
 
+  private void AdvanceNpcImmunity()
+  {
+    foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
+    {
+      if (!World.IsAlive(entry.Value))
+      {
+        continue;
+      }
+
+      NpcComponents.NpcLifecycleComponent lifecycle =
+        World.Get<NpcComponents.NpcLifecycleComponent>(entry.Value);
+      if (!lifecycle.IsActive)
+      {
+        continue;
+      }
+
+      ref ImmunityComponent immunity = ref World.Get<ImmunityComponent>(entry.Value);
+      _immunitySystem.Tick(ref immunity);
+    }
+  }
+
+  private void AdvancePlayerStealth(IReadOnlyList<Entity> activePlayers)
+  {
+    for (int index = 0; index < activePlayers.Count; index++)
+    {
+      Entity entity = activePlayers[index];
+      ref PlayerStealthStateComponent stealth =
+        ref World.Get<PlayerStealthStateComponent>(entity);
+      VelocityComponent velocity = World.Get<VelocityComponent>(entity);
+      ItemUseStateComponent itemUse = World.Get<ItemUseStateComponent>(entity);
+      PlayerMountStateComponent mount = World.Get<PlayerMountStateComponent>(entity);
+      _playerNpcTargetingSystem.AdvanceStealth(
+        ref stealth,
+        itemUse.IsUsing,
+        velocity.X,
+        velocity.Y,
+        mount.IsMounted);
+    }
+  }
+
   private void AdvancePlayerBuffs(IReadOnlyList<Entity> activePlayers)
   {
     for (int index = 0; index < activePlayers.Count; index++)
@@ -4872,9 +8419,26 @@ public sealed partial class DomeSimulation : IDisposable
       Entity entity = activePlayers[index];
       BuffCollectionComponent buffs = World.Get<BuffCollectionComponent>(entity);
       _buffDurationSystem.Tick(buffs);
+      ref PlayerPotionStateComponent potionState =
+        ref World.Get<PlayerPotionStateComponent>(entity);
+      _playerPotionDelaySystem.SynchronizeFromBuffs(ref potionState, buffs);
       World.Get<WellFedStateComponent>(entity).Update();
       ref ManaComponent mana = ref World.Get<ManaComponent>(entity);
       _buffEffectSystem.Apply(buffs, ref mana);
+    }
+  }
+
+  private void AdvanceNpcBuffs()
+  {
+    foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
+    {
+      NpcComponents.NpcLifecycleComponent lifecycle =
+        World.Get<NpcComponents.NpcLifecycleComponent>(entry.Value);
+      HealthComponent health = World.Get<HealthComponent>(entry.Value);
+      if (lifecycle.IsActive && health.Current > 0)
+      {
+        _buffDurationSystem.Tick(World.Get<BuffCollectionComponent>(entry.Value));
+      }
     }
   }
 
@@ -4927,6 +8491,7 @@ public sealed partial class DomeSimulation : IDisposable
   private void DetectNpcContactDamage()
   {
     List<NpcContactCandidate> npcs = new(_npcs.Count);
+    List<NpcLavaContactCandidate> lavaCandidates = new(_npcs.Count);
     foreach (KeyValuePair<NpcHandle, Entity> npcEntry in _npcs)
     {
       if (!_npcReplications[npcEntry.Key].IsActive)
@@ -4934,20 +8499,33 @@ public sealed partial class DomeSimulation : IDisposable
         continue;
       }
 
-      NpcComponents.NpcBehaviorStateComponent behavior =
-        World.Get<NpcComponents.NpcBehaviorStateComponent>(npcEntry.Value);
-      if (behavior.BehaviorId == NpcBehaviorId.TownHome)
-      {
-        continue;
-      }
-
       TransformComponent npcTransform = World.Get<TransformComponent>(npcEntry.Value);
       ColliderComponent npcCollider = World.Get<ColliderComponent>(npcEntry.Value);
+      NpcComponents.NpcDefinitionComponent definition =
+        World.Get<NpcComponents.NpcDefinitionComponent>(npcEntry.Value);
+      NpcComponents.NpcAuthorityComponent authority =
+        World.Get<NpcComponents.NpcAuthorityComponent>(npcEntry.Value);
+      NpcComponents.NpcBehaviorStateComponent behavior =
+        World.Get<NpcComponents.NpcBehaviorStateComponent>(npcEntry.Value);
+      NpcComponents.NpcLifecycleComponent lifecycle =
+        World.Get<NpcComponents.NpcLifecycleComponent>(npcEntry.Value);
+      HealthComponent health = World.Get<HealthComponent>(npcEntry.Value);
+      ImmunityComponent immunity = World.Get<ImmunityComponent>(npcEntry.Value);
       npcs.Add(new NpcContactCandidate(
         npcEntry.Key,
         new SimulationVector(npcTransform.X, npcTransform.Y),
         npcCollider,
+        definition.Faction,
         IsActive: true));
+      lavaCandidates.Add(new NpcLavaContactCandidate(
+        npcEntry.Key,
+        new SimulationVector(npcTransform.X, npcTransform.Y),
+        npcCollider,
+        authority,
+        lifecycle.IsActive,
+        behavior.DoesNotTakeDamage,
+        health.Current,
+        immunity));
     }
 
     List<PlayerContactCandidate> players = new(_players.Count);
@@ -4972,6 +8550,15 @@ public sealed partial class DomeSimulation : IDisposable
     for (int index = 0; index < commands.Count; index++)
     {
       _commands.Enqueue(commands[index]);
+    }
+
+    IReadOnlyList<DamageNpcCommand> lavaCommands = _npcLavaContactSystem.ProduceDamageCommands(
+      WorldGrid,
+      lavaCandidates,
+      NpcLavaContactDamage);
+    for (int index = 0; index < lavaCommands.Count; index++)
+    {
+      _commands.Enqueue(lavaCommands[index]);
     }
   }
 
@@ -5015,7 +8602,11 @@ public sealed partial class DomeSimulation : IDisposable
     foreach (Entity entity in _players.Values)
     {
       ref VelocityComponent velocity = ref World.Get<VelocityComponent>(entity);
-      velocity.Y += GravityPerTick;
+      PhysicsStateComponent physics = World.Get<PhysicsStateComponent>(entity);
+      float gravityDirection = physics.GravityDirection == 0.0f
+        ? 1.0f
+        : physics.GravityDirection;
+      velocity.Y += GravityPerTick * gravityDirection;
     }
   }
 
@@ -5040,6 +8631,7 @@ public sealed partial class DomeSimulation : IDisposable
 
   private void SelectNpcTargets()
   {
+    List<NpcTargetCandidate> candidates = new();
     foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
     {
       if (!_npcReplications[entry.Key].IsActive)
@@ -5049,50 +8641,67 @@ public sealed partial class DomeSimulation : IDisposable
 
       Entity npcEntity = entry.Value;
       TransformComponent npcTransform = World.Get<TransformComponent>(npcEntity);
-      Entity closestPlayer = default;
-      PlayerHandle closestPlayerHandle = default;
-      float closestDistanceSquared = float.MaxValue;
-      bool hasTarget = false;
+      NpcComponents.NpcDefinitionComponent npcDefinition =
+        World.Get<NpcComponents.NpcDefinitionComponent>(npcEntity);
+      FacingComponent npcFacing = World.Get<FacingComponent>(npcEntity);
+      if (!float.IsFinite(npcTransform.X) || !float.IsFinite(npcTransform.Y))
+      {
+        ref NpcComponents.NpcTargetComponent invalidTarget =
+          ref World.Get<NpcComponents.NpcTargetComponent>(npcEntity);
+        invalidTarget = new NpcComponents.NpcTargetComponent(
+          default,
+          0,
+          NpcComponents.NpcTargetLockReason.NoValidTarget);
+        continue;
+      }
 
+      candidates.Clear();
       foreach (KeyValuePair<PlayerHandle, Entity> playerEntry in _players)
       {
         Entity playerEntity = playerEntry.Value;
+        PlayerLifecycleComponent playerLifecycle =
+          World.Get<PlayerLifecycleComponent>(playerEntity);
         HealthComponent playerHealth = World.Get<HealthComponent>(playerEntity);
-        if (playerHealth.Current <= 0)
+        if (!playerLifecycle.IsActive || playerHealth.Current <= 0)
         {
           continue;
         }
 
         TransformComponent playerTransform = World.Get<TransformComponent>(playerEntity);
-        float horizontalDistance = playerTransform.X - npcTransform.X;
-        float verticalDistance = playerTransform.Y - npcTransform.Y;
-        float distanceSquared = horizontalDistance * horizontalDistance +
-          verticalDistance * verticalDistance;
-        if (!hasTarget || distanceSquared < closestDistanceSquared ||
-            distanceSquared == closestDistanceSquared &&
-            playerEntry.Key.Value < closestPlayerHandle.Value)
+        if (!float.IsFinite(playerTransform.X) || !float.IsFinite(playerTransform.Y))
         {
-          closestDistanceSquared = distanceSquared;
-          closestPlayer = playerEntity;
-          closestPlayerHandle = playerEntry.Key;
-          hasTarget = true;
+          continue;
         }
+        PlayerTargetingStateComponent targeting =
+          World.Get<PlayerTargetingStateComponent>(playerEntity);
+        bool hasPriority = _npcTargetSelectionSystem.TryCalculateTargetPriority(
+          new SimulationVector(npcTransform.X, npcTransform.Y),
+          new SimulationVector(playerTransform.X, playerTransform.Y),
+          targeting.Aggro,
+          targeting.IsNoAggroNpc(npcDefinition.DefinitionId),
+          npcFacing.Horizontal != 0,
+          out float targetPriority);
+        candidates.Add(new NpcTargetCandidate(
+          playerEntity,
+          playerEntry.Key.Value,
+          new SimulationVector(playerTransform.X, playerTransform.Y),
+          true,
+          playerHealth.Current,
+          TargetPriority: hasPriority ? targetPriority : float.NaN));
       }
 
+      NpcComponents.NpcTargetComponent selectedTarget = _npcTargetSelectionSystem.SelectTarget(
+        new SimulationVector(npcTransform.X, npcTransform.Y),
+        candidates);
+      bool hasTarget = selectedTarget.HasTarget;
       ref NpcTargetComponent target = ref World.Get<NpcTargetComponent>(npcEntity);
       target.HasTarget = hasTarget;
-      target.Target = closestPlayer;
+      target.Target = selectedTarget.Target;
+      target.StableTargetId = selectedTarget.StableTargetId;
+      target.LockReason = (NpcTargetLockReason)selectedTarget.LockReason;
       ref NpcComponents.NpcTargetComponent typedTarget =
         ref World.Get<NpcComponents.NpcTargetComponent>(npcEntity);
-      typedTarget = hasTarget
-        ? new NpcComponents.NpcTargetComponent(
-          closestPlayer,
-          closestPlayerHandle.Value,
-          NpcComponents.NpcTargetLockReason.NearestActivePlayer)
-        : new NpcComponents.NpcTargetComponent(
-          default,
-          0,
-          NpcComponents.NpcTargetLockReason.NoValidTarget);
+      typedTarget = selectedTarget;
     }
   }
 
@@ -5122,6 +8731,7 @@ public sealed partial class DomeSimulation : IDisposable
 
   private void AdvanceNpcLifecycles()
   {
+    IReadOnlySet<int> activeNpcTypes = CreateActiveNpcTypes();
     foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
     {
       ref NpcComponents.NpcLifecycleComponent lifecycle =
@@ -5129,6 +8739,16 @@ public sealed partial class DomeSimulation : IDisposable
       HealthComponent health = World.Get<HealthComponent>(entry.Value);
       NpcComponents.NpcAuthorityComponent authority =
         World.Get<NpcComponents.NpcAuthorityComponent>(entry.Value);
+      NpcComponents.NpcDefinitionComponent definition =
+        World.Get<NpcComponents.NpcDefinitionComponent>(entry.Value);
+      if (_npcReplications[entry.Key].IsActive && lifecycle.IsActive && health.Current > 0 &&
+          World.Has<NpcComponents.NpcHomeComponent>(entry.Value))
+      {
+        ref NpcComponents.NpcHomeComponent home =
+          ref World.Get<NpcComponents.NpcHomeComponent>(entry.Value);
+        _npcHomeTimeoutSystem.Tick(ref home);
+      }
+
       if (!_npcReplications[entry.Key].IsActive &&
           (health.Current > 0 ||
             lifecycle.DespawnReason !=
@@ -5140,8 +8760,32 @@ public sealed partial class DomeSimulation : IDisposable
       _ = _npcLifecycleSystem.Advance(
         ref lifecycle,
         health.Current,
-        authority.IsImmortal);
+        authority.IsImmortal,
+        LegacyNpcInactivityRegistry.DoesNotDespawnToInactivity(
+          definition.NetId,
+          activeNpcTypes),
+        isTownNpc: LegacyNpcTownRegistry.IsTownNpc(definition.NetId));
     }
+  }
+
+  private IReadOnlySet<int> CreateActiveNpcTypes()
+  {
+    HashSet<int> activeNpcTypes = new();
+    foreach (KeyValuePair<NpcHandle, Entity> entry in _npcs)
+    {
+      NpcComponents.NpcLifecycleComponent lifecycle =
+        World.Get<NpcComponents.NpcLifecycleComponent>(entry.Value);
+      if (!lifecycle.IsActive)
+      {
+        continue;
+      }
+
+      NpcComponents.NpcDefinitionComponent definition =
+        World.Get<NpcComponents.NpcDefinitionComponent>(entry.Value);
+      activeNpcTypes.Add(definition.NetId);
+    }
+
+    return activeNpcTypes;
   }
 
   private PlayerHandle FindPlayerHandle(Entity entity)
@@ -5157,27 +8801,107 @@ public sealed partial class DomeSimulation : IDisposable
     throw new InvalidOperationException("Projectile owner did not map to a server player.");
   }
 
-  private WorldSectionCoordinates GetSectionCoordinates(SimulationVector position)
+  private bool IsAuthoritativeActivePlayer(Entity entity)
   {
-    int tileX = Math.Clamp((int)MathF.Floor(position.X), 0, WorldGrid.Width - 1);
-    int tileY = Math.Clamp((int)MathF.Floor(position.Y), 0, WorldGrid.Height - 1);
-    return WorldGrid.GetSectionCoordinates(tileX, tileY);
+    if (!World.IsAlive(entity) || !World.Has<PlayerLifecycleComponent>(entity) ||
+        !World.Get<PlayerLifecycleComponent>(entity).IsActive)
+    {
+      return false;
+    }
+
+    foreach (Entity playerEntity in _players.Values)
+    {
+      if (playerEntity == entity)
+      {
+        return true;
+      }
+    }
+
+    return false;
   }
 
-  private void MarkProjectileInactive(Entity entity)
+  private bool IsAuthoritativeActiveProjectile(Entity entity)
   {
-    if (!_projectileIdsByEntity.Remove(entity, out int replicationId) ||
-        !_projectileReplications.TryGetValue(replicationId, out ProjectileReplicationSnapshot snapshot) ||
-        !snapshot.IsActive ||
-        snapshot.Revision == long.MaxValue)
+    return World.IsAlive(entity) &&
+      _projectileIdsByEntity.TryGetValue(entity, out int replicationId) &&
+      _projectileReplications.TryGetValue(
+        replicationId,
+        out ProjectileReplicationSnapshot snapshot) &&
+      snapshot.IsActive;
+  }
+
+  private int GetOwnerMeleeHitCooldownTicks(PlayerHandle owner)
+  {
+    if (!_players.TryGetValue(owner, out Entity entity))
+    {
+      return 0;
+    }
+
+    return Math.Max(0, World.Get<ItemUseStateComponent>(entity).AnimationTicks);
+  }
+
+  private WorldSectionCoordinates GetSectionCoordinates(SimulationVector position)
+  {
+    return ProjectileSectionCoordinatePolicy.Resolve(position, WorldGrid.Width, WorldGrid.Height);
+  }
+
+  private void MarkProjectileInactive(Entity entity, ProjectileTombstoneReason reason)
+  {
+    if (!_projectileIdsByEntity.Remove(entity, out int replicationId))
     {
       return;
     }
 
-    _projectileReplications[replicationId] = snapshot with
+    if (_projectileReplications.TryGetValue(replicationId, out ProjectileReplicationSnapshot snapshot))
+    {
+      if (!snapshot.IsActive || snapshot.Revision == long.MaxValue)
+      {
+        return;
+      }
+
+      _projectileReplications[replicationId] = snapshot with
+      {
+        IsActive = false,
+        HitCount = World.IsAlive(entity) && World.Has<ProjectileDamageComponent>(entity)
+          ? World.Get<ProjectileDamageComponent>(entity).HitCount
+          : snapshot.HitCount,
+        Revision = snapshot.Revision + 1,
+        TombstoneReason = reason == ProjectileTombstoneReason.None
+          ? ProjectileTombstoneReason.Administrative
+          : reason,
+        TombstoneRetainedUntilTick = ProjectileTombstonePolicy.CalculateRetentionUntil(TickNumber),
+        SecondaryUpdatePending = false,
+        NetSpam = 0,
+        PrimaryUpdatePending = false,
+        NetworkUpdateReady = true
+      };
+      return;
+    }
+
+    if (!_npcProjectileReplications.TryGetValue(
+          replicationId,
+          out NpcProjectileReplicationSnapshot npcSnapshot) ||
+        !npcSnapshot.IsActive || npcSnapshot.Revision == long.MaxValue)
+    {
+      return;
+    }
+
+    _npcProjectileReplications[replicationId] = npcSnapshot with
     {
       IsActive = false,
-      Revision = snapshot.Revision + 1
+      HitCount = World.IsAlive(entity) && World.Has<ProjectileDamageComponent>(entity)
+        ? World.Get<ProjectileDamageComponent>(entity).HitCount
+        : npcSnapshot.HitCount,
+      RemainingLifetime = 0,
+      Revision = npcSnapshot.Revision + 1,
+      TombstoneReason = reason == ProjectileTombstoneReason.None
+        ? ProjectileTombstoneReason.Administrative
+        : reason,
+      TombstoneRetainedUntilTick = ProjectileTombstonePolicy.CalculateRetentionUntil(TickNumber),
+      SecondaryUpdatePending = false,
+      NetSpam = 0,
+      PrimaryUpdatePending = false,
+      NetworkUpdateReady = true
     };
   }
 
@@ -5269,6 +8993,9 @@ public sealed partial class DomeSimulation : IDisposable
 
       updated = updated with { Revision = current.Revision + 1 };
       _npcReplications[entry.Key] = updated;
+      ref NpcComponents.NpcReplicationComponent replication =
+        ref World.Get<NpcComponents.NpcReplicationComponent>(entity);
+      replication.MarkDirty();
       return;
     }
   }
@@ -5291,28 +9018,128 @@ public sealed partial class DomeSimulation : IDisposable
     }
 
     SimulationVector position = new(transform.X, transform.Y);
+    ProjectileBehaviorReplicationState behaviorState =
+      ProjectileBehaviorStateProjection.Project(World.Get<ProjectileBehaviorComponent>(entity));
+    ProjectileDamageComponent damage = World.Get<ProjectileDamageComponent>(entity);
+    ProjectileUpdateCountComponent updates = World.Get<ProjectileUpdateCountComponent>(entity);
     ProjectileReplicationSnapshot updated = current with
     {
       Position = position,
       Velocity = new SimulationVector(velocity.X, velocity.Y),
+      Damage = damage.Amount,
       RemainingLifetime = lifetime.RemainingTicks,
       Section = GetSectionCoordinates(position),
+      Ai0 = behaviorState.Ai0,
+      Ai1 = behaviorState.Ai1,
+      Ai2 = behaviorState.Ai2,
+      LocalAi0 = World.Get<ProjectileBehaviorComponent>(entity).State.LocalAi0,
+      LocalAi1 = World.Get<ProjectileBehaviorComponent>(entity).State.LocalAi1,
+      LocalAi2 = World.Get<ProjectileBehaviorComponent>(entity).State.LocalAi2,
+      SecondaryUpdatePending = World.Get<ProjectileNetworkUpdateComponent>(entity)
+        .SecondaryUpdatePending,
+      NetSpam = World.Get<ProjectileNetworkUpdateComponent>(entity).NetSpam,
+      SoundDelay = World.Get<ProjectileSoundDelayComponent>(entity).RemainingTicks,
+      TileCollisionEnabled = World.Get<ProjectileTileCollisionComponent>(entity).Enabled,
+      PrimaryUpdatePending = World.Get<ProjectileNetworkUpdateComponent>(entity)
+        .PrimaryUpdatePending,
+      NetworkUpdateReady = World.Get<ProjectileNetworkUpdateComponent>(entity).SendRequested,
+      Friendly = World.Get<ProjectileFriendlyStateComponent>(entity).IsFriendly,
+      HitCount = damage.HitCount,
+      UpdateCount = updates.Count,
+      Reflected = World.Has<ProjectileReflectionComponent>(entity) &&
+        World.Get<ProjectileReflectionComponent>(entity).HasReflected,
+      LegacyAiStyle = World.Get<ProjectileDefinitionComponent>(entity).LegacyAiStyle,
+      Banner = World.Get<ProjectileBannerResponseComponent>(entity).BannerId,
+      Direction = World.Get<ProjectileDirectionComponent>(entity).Horizontal,
+      ManualDirectionChange = World.Get<ProjectileDefinitionComponent>(entity).ManualDirectionChange,
+      UsesOwnerMeleeHitCooldown =
+        World.Get<ProjectileDefinitionComponent>(entity).UsesOwnerMeleeHitCooldown,
+      CopiesOwnerAttackCooldownToLocalImmunityOnSpawn =
+        World.Get<ProjectileDefinitionComponent>(entity)
+          .CopiesOwnerAttackCooldownToLocalImmunityOnSpawn,
       Revision = current.Revision + 1
     };
     _projectileReplications[replicationId] = updated;
   }
 
+  private void UpdateNpcProjectileReplication(
+    Entity entity,
+    TransformComponent transform,
+    VelocityComponent velocity,
+    ProjectileLifetimeComponent lifetime)
+  {
+    if (!_projectileIdsByEntity.TryGetValue(entity, out int replicationId) ||
+        !_npcProjectileReplications.TryGetValue(
+          replicationId,
+          out NpcProjectileReplicationSnapshot current) ||
+        !current.IsActive || current.Revision == long.MaxValue)
+    {
+      return;
+    }
+
+    ProjectileBehaviorReplicationState behaviorState = ProjectileBehaviorStateProjection.Project(
+      World.Get<ProjectileBehaviorComponent>(entity));
+    ProjectileDamageComponent damage = World.Get<ProjectileDamageComponent>(entity);
+    ProjectileUpdateCountComponent updates = World.Get<ProjectileUpdateCountComponent>(entity);
+    NpcProjectileReplicationSnapshot updated = current with
+    {
+      Position = new SimulationVector(transform.X, transform.Y),
+      Velocity = new SimulationVector(velocity.X, velocity.Y),
+      Damage = damage.Amount,
+      RemainingLifetime = lifetime.RemainingTicks,
+      Section = GetSectionCoordinates(new SimulationVector(transform.X, transform.Y)),
+      Ai0 = behaviorState.Ai0,
+      Ai1 = behaviorState.Ai1,
+      Ai2 = behaviorState.Ai2,
+      LocalAi0 = World.Get<ProjectileBehaviorComponent>(entity).State.LocalAi0,
+      LocalAi1 = World.Get<ProjectileBehaviorComponent>(entity).State.LocalAi1,
+      LocalAi2 = World.Get<ProjectileBehaviorComponent>(entity).State.LocalAi2,
+      SecondaryUpdatePending = World.Get<ProjectileNetworkUpdateComponent>(entity)
+        .SecondaryUpdatePending,
+      NetSpam = World.Get<ProjectileNetworkUpdateComponent>(entity).NetSpam,
+      SoundDelay = World.Get<ProjectileSoundDelayComponent>(entity).RemainingTicks,
+      TileCollisionEnabled = World.Get<ProjectileTileCollisionComponent>(entity).Enabled,
+      PrimaryUpdatePending = World.Get<ProjectileNetworkUpdateComponent>(entity)
+        .PrimaryUpdatePending,
+      NetworkUpdateReady = World.Get<ProjectileNetworkUpdateComponent>(entity).SendRequested,
+      Friendly = World.Get<ProjectileFriendlyStateComponent>(entity).IsFriendly,
+      HitCount = damage.HitCount,
+      UpdateCount = updates.Count,
+      Reflected = World.Has<ProjectileReflectionComponent>(entity) &&
+        World.Get<ProjectileReflectionComponent>(entity).HasReflected,
+      BannerIdToRespondTo = World.Get<ProjectileBannerResponseComponent>(entity).BannerId,
+      Direction = World.Get<ProjectileDirectionComponent>(entity).Horizontal,
+      ManualDirectionChange = World.Get<ProjectileDefinitionComponent>(entity).ManualDirectionChange,
+      UsesOwnerMeleeHitCooldown =
+        World.Get<ProjectileDefinitionComponent>(entity).UsesOwnerMeleeHitCooldown,
+      CopiesOwnerAttackCooldownToLocalImmunityOnSpawn =
+        World.Get<ProjectileDefinitionComponent>(entity)
+          .CopiesOwnerAttackCooldownToLocalImmunityOnSpawn,
+      Revision = current.Revision + 1
+    };
+    _npcProjectileReplications[replicationId] = updated;
+  }
+
   private void SpawnNpcLoot(NpcDeathResult death)
   {
-    ItemStack stack = _npcLootSystem.Roll(death.LootTableId, death.Npc.Value);
-    CreateWorldItemCommand command = new(
-      stack,
+    NpcDeathEvent deathEvent = new(
+      death.Npc,
+      death.LootTableId,
       death.Position,
       GetSectionCoordinates(death.Position),
-      death.Npc.Value);
-    _ = CommitWorldItemSpawn(command);
+      TickNumber);
+    if (!_npcLootEmissionLedger.TryEmit(
+          _npcLootSystem,
+          deathEvent,
+          out NpcLootCommand lootCommand))
+    {
+      return;
+    }
+
+    _ = CommitWorldItemSpawn(lootCommand.WorldItem);
+    ItemStack stack = lootCommand.WorldItem.Stack;
     _itemDroppedEvents.Add(new ItemDroppedEvent(
-      death.Npc.Value,
+      lootCommand.SourceNpc.Value,
       stack.ItemType,
       stack.Quantity,
       TickNumber));
@@ -5326,7 +9153,8 @@ public sealed partial class DomeSimulation : IDisposable
   private void RestoreNpc(NpcStateSnapshot state)
   {
     NpcReplicationSnapshot snapshot = state.Replication;
-    if (snapshot.ReplicationId == int.MaxValue || snapshot.Revision < 0)
+    if (snapshot.ReplicationId <= 0 || snapshot.ReplicationId == int.MaxValue ||
+        snapshot.Revision < 0 || snapshot.Revision == long.MaxValue)
     {
       throw new ArgumentOutOfRangeException(
         nameof(state),
@@ -5334,8 +9162,41 @@ public sealed partial class DomeSimulation : IDisposable
         "for the next ID.");
     }
 
+    if (!float.IsFinite(snapshot.Position.X) || !float.IsFinite(snapshot.Position.Y) ||
+        !float.IsFinite(snapshot.Velocity.X) || !float.IsFinite(snapshot.Velocity.Y) ||
+        snapshot.Health < 0 || state.MaximumHealth <= 0 || snapshot.Health > state.MaximumHealth ||
+        state.Facing is < -1 or > 1)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(state),
+        "Persistence snapshot NPC state contains invalid position, velocity or health.");
+    }
+
+    if (state.HasHomePublication && !state.HasHome)
+    {
+      throw new ArgumentException(
+        "NPC home publication state requires an explicit Home component.",
+        nameof(state));
+    }
+
+    bool hasRegisteredDefinition = _npcDefinitions.TryGet(
+      state.DefinitionId,
+      out NpcDefinition definition);
+    if (hasRegisteredDefinition &&
+        (state.NetId != definition.NetId || state.MaximumHealth != definition.MaximumHealth ||
+         state.Faction != definition.Faction || state.Category != definition.Category ||
+         state.Behavior.BehaviorId != definition.BehaviorId))
+    {
+      throw new ArgumentException(
+        "Persistence snapshot NPC definition fields do not match the registered definition.",
+        nameof(state));
+    }
+
     NpcHandle npc = new(snapshot.ReplicationId);
     NpcComponents.NpcAuthorityComponent authority = ResolveNpcAuthority(state);
+    float colliderWidth = hasRegisteredDefinition ? definition.ColliderWidth : 1.0f;
+    float colliderHeight = hasRegisteredDefinition ? definition.ColliderHeight : 2.0f;
+    int defense = hasRegisteredDefinition ? definition.Defense : 0;
     if (!state.Lifecycle.IsActive &&
         state.Lifecycle.DespawnReason == NpcComponents.NpcDespawnReason.Killed)
     {
@@ -5345,12 +9206,12 @@ public sealed partial class DomeSimulation : IDisposable
       new NpcTagComponent(),
       new TransformComponent(snapshot.Position.X, snapshot.Position.Y),
       new VelocityComponent(snapshot.Velocity.X, snapshot.Velocity.Y),
-      new FacingComponent(-1),
-      new ColliderComponent(1.0f, 2.0f),
+      new FacingComponent(state.Facing),
+      new ColliderComponent(colliderWidth, colliderHeight),
       new PhysicsStateComponent { IsGrounded = snapshot.Position.Y <= 0.0f },
       new HealthComponent(snapshot.Health, state.MaximumHealth),
       new HealthRegenerationComponent(),
-      new DefenseComponent(0),
+      new DefenseComponent(defense),
       new ImmunityComponent(),
       new MovementIntentComponent(),
       new NpcTargetComponent(),
@@ -5370,11 +9231,19 @@ public sealed partial class DomeSimulation : IDisposable
       state.Behavior,
       state.Spawn,
       state.Lifecycle,
+      new NpcComponents.NpcGivenNameComponent(state.GivenName),
+      new BuffCollectionComponent(),
       new NpcComponents.NpcReplicationComponent(snapshot.ReplicationId, snapshot.Revision));
     if (state.HasHome)
     {
       NpcComponents.NpcHomeComponent home = state.Home;
       World.Add(entity, in home);
+    }
+
+    if (state.HasHomePublication)
+    {
+      NpcComponents.NpcHomePublicationComponent homePublication = state.HomePublication;
+      World.Add(entity, in homePublication);
     }
 
     if (state.HasSegment)
@@ -5383,7 +9252,7 @@ public sealed partial class DomeSimulation : IDisposable
       World.Add(entity, in segment);
     }
     _npcs.Add(npc, entity);
-    _npcReplications.Add(npc, snapshot);
+    _npcReplications.Add(npc, state.ToReplicationSnapshot());
     _nextNpcHandle = Math.Max(_nextNpcHandle, snapshot.ReplicationId + 1);
   }
 
@@ -5394,7 +9263,11 @@ public sealed partial class DomeSimulation : IDisposable
       return new NpcComponents.NpcAuthorityComponent(
         definition.AiStyle,
         definition.IsImmortal,
-        definition.AlwaysReplicate);
+        definition.AlwaysReplicate,
+        definition.TakenDamageMultiplier,
+        definition.NpcSlotCost,
+        definition.IsTrapImmune,
+        definition.IsLavaImmune);
     }
 
     bool isTrainingDummy = state.NetId == 488 &&
@@ -5407,6 +9280,11 @@ public sealed partial class DomeSimulation : IDisposable
 
   private void RestoreChest(ChestPersistentState snapshot)
   {
+    if (_chests.Count >= _entityLimits.MaximumChests)
+    {
+      throw new InvalidOperationException("The configured chest capacity was exceeded by persistence.");
+    }
+
     if (snapshot.ChestId == int.MaxValue)
     {
       throw new ArgumentOutOfRangeException(
@@ -5439,7 +9317,15 @@ public sealed partial class DomeSimulation : IDisposable
 
     for (int slot = 0; slot < snapshot.Slots.Count; slot++)
     {
-      chest.SetSlot(slot, snapshot.Slots[slot]);
+      ItemStack stack = snapshot.Slots[slot];
+      if (!IsValidChestItemStack(stack))
+      {
+        throw new ArgumentOutOfRangeException(
+          nameof(snapshot),
+          "Persistence snapshot contains an unknown or over-limit chest item stack.");
+      }
+
+      chest.SetSlot(slot, stack);
     }
 
     chest.SetLocked(snapshot.IsLocked);
@@ -5473,32 +9359,449 @@ public sealed partial class DomeSimulation : IDisposable
     _nextSignId = Math.Max(_nextSignId, snapshot.SignId + 1);
   }
 
+  private void RestoreSignTombstone(SignTombstoneSnapshot snapshot)
+  {
+    if (snapshot.SignId < 0 || snapshot.SignId == int.MaxValue || snapshot.Revision < 0 ||
+        _signs.ContainsKey(snapshot.SignId) ||
+        !_signTombstones.TryAdd(snapshot.SignId, snapshot))
+    {
+      throw new ArgumentException(
+        "Persistence snapshot contains an invalid or duplicate sign tombstone.",
+        nameof(snapshot));
+    }
+
+    _nextSignId = Math.Max(_nextSignId, snapshot.SignId + 1);
+  }
+
   private void MoveProjectiles()
   {
     World.Query(
       in _projectileQuery,
       (Entity projectileEntity, ref TransformComponent transform,
-        ref VelocityComponent velocity, ref ProjectileLifetimeComponent lifetime) =>
+        ref VelocityComponent velocity, ref ProjectileLifetimeComponent lifetime,
+        ref ProjectileRestrikeDelayComponent restrikeDelay,
+        ref ProjectileNetworkUpdateComponent networkUpdate,
+        ref ProjectileSoundDelayComponent soundDelay,
+        ref ProjectileTileCollisionComponent tileCollision) =>
       {
-        if (!_projectileBehaviorSystem.TryAdvance(
-            projectileEntity,
-            World,
-            checked((int)TickNumber),
-            out _))
+        restrikeDelay = _projectileRestrikeDelaySystem.Tick(restrikeDelay);
+        networkUpdate = _projectileNetworkUpdatePolicy.Tick(networkUpdate).State;
+        soundDelay = _projectileSoundDelayPolicy.Tick(soundDelay);
+        if (_pendingProjectileWorldObjectPlacements.TryGetValue(
+              projectileEntity,
+              out _))
         {
-          _commands.Enqueue(new DespawnEntityCommand(projectileEntity));
           return;
         }
 
-        transform = World.Get<TransformComponent>(projectileEntity);
-        velocity = World.Get<VelocityComponent>(projectileEntity);
-        bool expired = _projectileLifetimeSystem.Advance(projectileEntity, World);
+        ref ProjectileDefinitionComponent definition =
+          ref World.Get<ProjectileDefinitionComponent>(projectileEntity);
+        RefreshProjectileOwnerMinionTarget(projectileEntity);
+        bool expired = false;
+        int maxUpdates = ProjectileUpdateBudgetPolicy.GetMaxUpdates(definition.ExtraUpdates);
+        for (int update = 0; update < maxUpdates; update++)
+        {
+          if (!_projectileBehaviorSystem.TryAdvance(
+              projectileEntity, World, checked((int)TickNumber), out _))
+          {
+            _commands.Enqueue(new DespawnEntityCommand(
+              projectileEntity, ProjectileTombstoneReason.BehaviorRejected));
+            return;
+          }
+
+          ProjectileTileCollisionComponent previousTileCollision = tileCollision;
+          tileCollision = _projectileTileCollisionPolicy.ApplyLegacyAiOverride(
+            definition.ProjectileType,
+            World.Get<ProjectileBehaviorComponent>(projectileEntity).State.Secondary,
+            tileCollision);
+          if (tileCollision != previousTileCollision)
+          {
+            networkUpdate = _projectileNetworkUpdatePolicy.RequestPrimaryUpdate(networkUpdate);
+          }
+          transform = World.Get<TransformComponent>(projectileEntity);
+          velocity = World.Get<VelocityComponent>(projectileEntity);
+          ProjectileOwnerComponent owner = World.Get<ProjectileOwnerComponent>(projectileEntity);
+          if (!_players.TryGetValue(owner.Owner, out Entity ownerEntity) ||
+              !_projectileOwnerAnchoredMeleeSystem.TryAdvance(
+                World.Get<ProjectileBehaviorComponent>(projectileEntity),
+                ref transform,
+                velocity,
+                World.Get<TransformComponent>(ownerEntity)))
+          {
+            _commands.Enqueue(new DespawnEntityCommand(
+              projectileEntity,
+              ProjectileTombstoneReason.Expired));
+            return;
+          }
+
+          ref ProjectileDirectionComponent direction =
+            ref World.Get<ProjectileDirectionComponent>(projectileEntity);
+          ProjectileDirectionSystem.Update(
+            ref direction,
+            velocity,
+            definition,
+            World.Get<ProjectileBehaviorComponent>(projectileEntity));
+          World.Get<ProjectileUpdateCountComponent>(projectileEntity).Advance();
+          ref ProjectileDamageComponent damage =
+            ref World.Get<ProjectileDamageComponent>(projectileEntity);
+          ref ProjectileBehaviorComponent behavior =
+            ref World.Get<ProjectileBehaviorComponent>(projectileEntity);
+          _projectileBehaviorEffectSystem.ApplyType658TileCenterSnap(
+            ref transform,
+            ref direction,
+            ref behavior,
+            World.Get<ColliderComponent>(projectileEntity),
+            definition);
+          _projectileBehaviorEffectSystem.Apply(ref damage, ref definition, ref lifetime, behavior);
+          _projectileBehaviorEffectSystem.ApplyType656Tick(
+            ref damage,
+            ref lifetime,
+            ref soundDelay,
+            ref behavior,
+            ref networkUpdate,
+            definition);
+          _projectileBehaviorEffectSystem.ApplyType657Tick(
+            ref lifetime,
+            ref soundDelay,
+            ref behavior,
+            definition);
+          _projectileBehaviorEffectSystem.ApplyType658Tick(
+            ref lifetime,
+            ref soundDelay,
+            ref behavior,
+            ref velocity,
+            definition);
+          EmitType658ChildSpawnCommand(projectileEntity);
+          expired = _projectileLifetimeSystem.Advance(projectileEntity, World);
+          if (expired)
+          {
+            break;
+          }
+        }
         UpdateProjectileReplication(projectileEntity, transform, velocity, lifetime);
         if (expired)
         {
-          _commands.Enqueue(new DespawnEntityCommand(projectileEntity));
+          _commands.Enqueue(new DespawnEntityCommand(
+            projectileEntity,
+            ProjectileTombstoneReason.Expired));
         }
       });
+  }
+
+  private void RefreshProjectileOwnerMinionTarget(Entity projectile)
+  {
+    int targetId = 0;
+    if (_projectileIdsByEntity.TryGetValue(projectile, out int replicationId) &&
+        TryGetProjectileOwnerMinionAttackTarget(replicationId, out NpcHandle target))
+    {
+      targetId = target.Value;
+    }
+
+    ref ProjectileBehaviorComponent behavior = ref World.Get<ProjectileBehaviorComponent>(projectile);
+    if (behavior.State.TargetId != targetId)
+    {
+      behavior.State = behavior.State with { TargetId = targetId };
+    }
+  }
+
+  private void RefreshProjectileOwnerMinionTargets()
+  {
+    foreach (KeyValuePair<int, ProjectileReplicationSnapshot> entry in _projectileReplications)
+    {
+      if (!entry.Value.IsActive ||
+          !_projectileIdsByEntity.TryGetEntity(entry.Key, out Entity projectile) ||
+          !World.IsAlive(projectile) ||
+          !World.Has<ProjectileOwnerComponent>(projectile) ||
+          !World.Has<ProjectileMinionComponent>(projectile))
+      {
+        continue;
+      }
+
+      RefreshProjectileOwnerMinionTarget(projectile);
+    }
+  }
+
+  private void MoveNpcProjectiles()
+  {
+    World.Query(
+      in _npcProjectileQuery,
+      (Entity projectileEntity, ref TransformComponent transform,
+        ref VelocityComponent velocity, ref ProjectileLifetimeComponent lifetime,
+        ref ProjectileRestrikeDelayComponent restrikeDelay,
+        ref ProjectileNetworkUpdateComponent networkUpdate,
+        ref ProjectileSoundDelayComponent soundDelay,
+        ref ProjectileTileCollisionComponent tileCollision) =>
+      {
+        restrikeDelay = _projectileRestrikeDelaySystem.Tick(restrikeDelay);
+        networkUpdate = _projectileNetworkUpdatePolicy.Tick(networkUpdate).State;
+        soundDelay = _projectileSoundDelayPolicy.Tick(soundDelay);
+        ref ProjectileDefinitionComponent definition =
+          ref World.Get<ProjectileDefinitionComponent>(projectileEntity);
+        bool expired = false;
+        int maxUpdates = ProjectileUpdateBudgetPolicy.GetMaxUpdates(definition.ExtraUpdates);
+        for (int update = 0; update < maxUpdates; update++)
+        {
+          if (!_projectileBehaviorSystem.TryAdvance(
+                projectileEntity, World, checked((int)TickNumber), out _))
+          {
+            _commands.Enqueue(new DespawnEntityCommand(
+              projectileEntity, ProjectileTombstoneReason.BehaviorRejected));
+            return;
+          }
+
+          ProjectileTileCollisionComponent previousTileCollision = tileCollision;
+          tileCollision = _projectileTileCollisionPolicy.ApplyLegacyAiOverride(
+            definition.ProjectileType,
+            World.Get<ProjectileBehaviorComponent>(projectileEntity).State.Secondary,
+            tileCollision);
+          if (tileCollision != previousTileCollision)
+          {
+            networkUpdate = _projectileNetworkUpdatePolicy.RequestPrimaryUpdate(networkUpdate);
+          }
+          velocity = World.Get<VelocityComponent>(projectileEntity);
+          ref ProjectileDamageComponent damage =
+            ref World.Get<ProjectileDamageComponent>(projectileEntity);
+          ref ProjectileDirectionComponent direction =
+            ref World.Get<ProjectileDirectionComponent>(projectileEntity);
+          ProjectileDirectionSystem.Update(
+            ref direction,
+            velocity,
+            definition,
+            World.Get<ProjectileBehaviorComponent>(projectileEntity));
+          World.Get<ProjectileUpdateCountComponent>(projectileEntity).Advance();
+          ref ProjectileBehaviorComponent behavior =
+            ref World.Get<ProjectileBehaviorComponent>(projectileEntity);
+          _projectileBehaviorEffectSystem.ApplyType658TileCenterSnap(
+            ref transform,
+            ref direction,
+            ref behavior,
+            World.Get<ColliderComponent>(projectileEntity),
+            definition);
+          _projectileBehaviorEffectSystem.Apply(ref damage, ref definition, ref lifetime, behavior);
+          _projectileBehaviorEffectSystem.ApplyType656Tick(
+            ref damage,
+            ref lifetime,
+            ref soundDelay,
+            ref behavior,
+            ref networkUpdate,
+            definition);
+          _projectileBehaviorEffectSystem.ApplyType657Tick(
+            ref lifetime,
+            ref soundDelay,
+            ref behavior,
+            definition);
+          _projectileBehaviorEffectSystem.ApplyType658Tick(
+            ref lifetime,
+            ref soundDelay,
+            ref behavior,
+            ref velocity,
+            definition);
+          expired = _npcProjectileLifetimeSystem.Advance(projectileEntity, World);
+          if (expired)
+          {
+            break;
+          }
+        }
+        UpdateNpcProjectileReplication(projectileEntity, transform, velocity, lifetime);
+        if (expired)
+        {
+          _commands.Enqueue(new DespawnEntityCommand(
+            projectileEntity,
+            ProjectileTombstoneReason.Expired));
+        }
+      });
+  }
+
+  private void DetectNpcProjectileHits()
+  {
+    HashSet<Entity> despawned = new();
+    List<DamageRequestedEvent> candidates = new();
+    HashSet<Entity> playerTargets = new();
+    World.Query(
+      in _npcProjectileQuery,
+      (Entity projectileEntity, ref TransformComponent transform,
+        ref ColliderComponent collider, ref VelocityComponent velocity,
+        ref ProjectileDamageComponent damage,
+        ref ProjectileTileCollisionComponent tileCollision,
+        ref NpcProjectileNetworkIdentityComponent identity,
+        ref ProjectileDefinitionComponent definition,
+        ref ProjectileFriendlyStateComponent friendlyState) =>
+      {
+        TransformComponent previous = new(transform.X - velocity.X, transform.Y - velocity.Y);
+        if (_projectileTileCollisionPolicy.ShouldCollide(tileCollision) &&
+            _projectileCollisionSystem.TryGetSolidTileImpact(
+              WorldGrid,
+              previous,
+              transform,
+              collider,
+              out bool reflectHorizontal,
+              out bool reflectVertical,
+              definition.CorrectSlopeCollision,
+              World.Has<ProjectileFallThroughComponent>(projectileEntity) &&
+                World.Get<ProjectileFallThroughComponent>(projectileEntity).ShouldFallThrough))
+        {
+          ref ProjectileBounceComponent bounce = ref World.Get<ProjectileBounceComponent>(projectileEntity);
+          float speed = MathF.Abs(velocity.X) + MathF.Abs(velocity.Y);
+          if ((bounce.RemainingBounces > 0 || definition.ReflectsFromTiles ||
+               definition.ProjectileType == 357 &&
+                 World.Get<ProjectilePenetrationComponent>(projectileEntity)
+                   .RemainingPenetration > 0) &&
+              speed >= definition.MinimumBounceSpeed)
+          {
+            _commands.Enqueue(new BounceProjectileCommand(
+              projectileEntity,
+              reflectHorizontal,
+              reflectVertical,
+              previous.X,
+              previous.Y));
+          }
+          else if (despawned.Add(projectileEntity))
+          {
+            _commands.Enqueue(new DespawnEntityCommand(
+              projectileEntity,
+              ProjectileTombstoneReason.TileHit));
+          }
+
+          return;
+        }
+
+        if (!definition.IgnoreWater && definition.LiquidPolicy == ProjectileLiquidPolicy.Destroy &&
+            _projectileCollisionSystem.HitsLiquid(WorldGrid, transform, collider))
+        {
+          if (despawned.Add(projectileEntity))
+          {
+            _commands.Enqueue(new DespawnEntityCommand(
+              projectileEntity,
+              ProjectileTombstoneReason.LiquidHit));
+          }
+
+          return;
+        }
+
+        foreach (KeyValuePair<PlayerHandle, Entity> entry in _players)
+        {
+          if (!World.Get<PlayerLifecycleComponent>(entry.Value).IsActive ||
+              World.Get<HealthComponent>(entry.Value).Current <= 0)
+          {
+            continue;
+          }
+
+          TransformComponent playerTransform = World.Get<TransformComponent>(entry.Value);
+          ColliderComponent playerCollider = World.Get<ColliderComponent>(entry.Value);
+          if (!PathOverlaps(previous, transform, collider, playerTransform, playerCollider))
+          {
+            continue;
+          }
+
+          candidates.Add(new DamageRequestedEvent(
+            projectileEntity,
+            entry.Value,
+            damage.Amount,
+            identity.Identity,
+            entry.Key.Value,
+            definition.DamageClass,
+            definition.IsColdDamage,
+            definition.ArmorPenetration,
+            definition.BonusCritChance,
+            definition.BonusTagDamage,
+            definition.TagEffectType));
+          playerTargets.Add(entry.Value);
+          break;
+        }
+      });
+
+    IReadOnlyList<DamageRequestedEvent> accepted = _projectileDamageSystem.Resolve(
+      World,
+      candidates,
+      _projectileHitImmunity);
+    for (int index = 0; index < accepted.Count; index++)
+    {
+      DamageRequestedEvent candidate = accepted[index];
+      if (World.Has<ProjectileBehaviorComponent>(candidate.Projectile) &&
+          World.Has<ProjectileDefinitionComponent>(candidate.Projectile) &&
+          World.Has<ProjectileFriendlyStateComponent>(candidate.Projectile) &&
+          World.Has<ProjectileNetworkUpdateComponent>(candidate.Projectile))
+      {
+        ref ProjectileBehaviorComponent behavior =
+          ref World.Get<ProjectileBehaviorComponent>(candidate.Projectile);
+        ref ProjectileFriendlyStateComponent friendlyState =
+          ref World.Get<ProjectileFriendlyStateComponent>(candidate.Projectile);
+        ref ProjectileNetworkUpdateComponent networkUpdate =
+          ref World.Get<ProjectileNetworkUpdateComponent>(candidate.Projectile);
+        _projectileBehaviorEffectSystem.ApplyAcceptedHit(
+          ref behavior,
+          ref friendlyState,
+          ref networkUpdate,
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile),
+          World.Get<ProjectilePenetrationComponent>(candidate.Projectile).RemainingPenetration + 1);
+        if (World.Has<ProjectileTileCollisionComponent>(candidate.Projectile))
+        {
+          _projectileBehaviorEffectSystem.ApplyAcceptedHitTileCollision(
+            ref behavior,
+            ref World.Get<ProjectileTileCollisionComponent>(candidate.Projectile),
+            ref networkUpdate,
+            World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+        }
+      }
+
+      if (playerTargets.Contains(candidate.Target))
+      {
+        ProjectileDefinitionComponent definition =
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile);
+        _commands.Enqueue(new DamagePlayerCommand(
+          FindPlayerHandle(candidate.Target),
+          _projectileHostileDamageScalingSystem.ScalePlayerDamage(
+            candidate.Amount,
+            definition,
+            _worldRules),
+          candidate.DamageClass,
+          candidate.IsColdDamage));
+      }
+
+      if (World.Has<ProjectileDamageComponent>(candidate.Projectile) &&
+          World.Has<ProjectileDefinitionComponent>(candidate.Projectile))
+      {
+        ref ProjectileDamageComponent projectileDamage =
+          ref World.Get<ProjectileDamageComponent>(candidate.Projectile);
+        _projectileBehaviorEffectSystem.ApplyAcceptedHitDamage(
+          ref projectileDamage,
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+        _projectileBehaviorEffectSystem.ApplyAcceptedHitKnockback(
+          ref World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+      }
+
+      if (World.Has<ProjectileDefinitionComponent>(candidate.Projectile) &&
+          World.Has<VelocityComponent>(candidate.Projectile))
+      {
+        _projectileBehaviorEffectSystem.ApplyAcceptedHitVelocity(
+          ref World.Get<VelocityComponent>(candidate.Projectile),
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+      }
+
+      if (World.Has<ProjectileDamageComponent>(candidate.Projectile) &&
+          World.Has<ProjectilePenetrationComponent>(candidate.Projectile) &&
+          World.Has<ProjectileBehaviorComponent>(candidate.Projectile) &&
+          World.Has<ProjectileFriendlyStateComponent>(candidate.Projectile) &&
+          World.Has<ProjectileNetworkUpdateComponent>(candidate.Projectile))
+      {
+        _projectileBehaviorEffectSystem.ApplyAcceptedHitPenetration(
+          ref World.Get<ProjectileBehaviorComponent>(candidate.Projectile),
+          ref World.Get<ProjectileFriendlyStateComponent>(candidate.Projectile),
+          ref World.Get<ProjectileNetworkUpdateComponent>(candidate.Projectile),
+          ref World.Get<ProjectilePenetrationComponent>(candidate.Projectile),
+          ref World.Get<ProjectileDamageComponent>(candidate.Projectile),
+          World.Get<ProjectileDefinitionComponent>(candidate.Projectile));
+      }
+
+      ref ProjectilePenetrationComponent penetration =
+        ref World.Get<ProjectilePenetrationComponent>(candidate.Projectile);
+      if (penetration.RemainingPenetration == 0 && despawned.Add(candidate.Projectile))
+      {
+        _commands.Enqueue(new DespawnEntityCommand(
+          candidate.Projectile,
+          ProjectileTombstoneReason.Penetrated));
+      }
+    }
   }
 
   private static bool Overlaps(
@@ -5572,7 +9875,7 @@ public sealed partial class DomeSimulation : IDisposable
         ProjectileDamage,
         ProjectileLifetimeTicks,
         InitialVelocityY: playerVelocity.Y));
-      control.FireCooldownTicks = 10;
+      control.ApplyAttackCooldown(10);
     }
   }
 

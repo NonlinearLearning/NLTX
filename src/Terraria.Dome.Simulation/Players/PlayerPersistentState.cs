@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Terraria.Dome.Simulation.Items.Components;
 
 namespace Terraria.Dome.Simulation.Players;
 
@@ -41,7 +42,11 @@ public sealed class PlayerPersistentState
     for (int slotId = 0; slotId < items.Count; slotId++)
     {
       PlayerPersistentItem item = items[slotId];
-      if (item.SlotId != slotId || item.Stack < 0 || item.ItemType < 0)
+      if (item.SlotId != slotId || item.Stack < 0 || item.ItemType < 0 ||
+          item.ItemType > ushort.MaxValue ||
+          item.ItemType == 0 && item.Stack > 0 ||
+          item.NameOverride is not null &&
+          item.NameOverride.Length > ItemInstanceStateComponent.MaximumNameOverrideLength)
       {
         throw new ArgumentOutOfRangeException(nameof(items));
       }

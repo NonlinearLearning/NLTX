@@ -7,6 +7,17 @@ namespace Terraria.Dome.Simulation.Items.Systems;
 
 public sealed class WorldItemSpawnSystem
 {
+  private readonly ItemDefinitionRegistry? _itemDefinitions;
+
+  public WorldItemSpawnSystem()
+  {
+  }
+
+  public WorldItemSpawnSystem(ItemDefinitionRegistry itemDefinitions)
+  {
+    _itemDefinitions = itemDefinitions ?? throw new ArgumentNullException(nameof(itemDefinitions));
+  }
+
   public bool TryCreate(
     ref int nextReplicationId,
     CreateWorldItemCommand command,
@@ -22,6 +33,27 @@ public sealed class WorldItemSpawnSystem
     {
       item = default;
       rejection = ItemCommandRejection.Invalid("World item creation input is invalid.");
+      return false;
+    }
+
+    if (_itemDefinitions is not null &&
+        (!_itemDefinitions.TryGet(command.Stack.ItemType, out ItemDefinition definition) ||
+         command.Stack.Quantity > definition.StackLimit))
+    {
+      item = default;
+      rejection = ItemCommandRejection.Invalid(
+        "World item stack is unknown or exceeds its definition limit.");
+      return false;
+    }
+
+    try
+    {
+      command.InstanceState.Validate();
+    }
+    catch (ArgumentOutOfRangeException)
+    {
+      item = default;
+      rejection = ItemCommandRejection.Invalid("World item instance state is invalid.");
       return false;
     }
 

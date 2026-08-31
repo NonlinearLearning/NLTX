@@ -13,6 +13,34 @@ public static class TreeTrunkFrameQuery
     WorldGridSnapshot snapshot,
     int x,
     int y,
+    out int offsetToTrunk)
+  {
+    return TryGetBranchOffset(
+      snapshot,
+      x,
+      y,
+      TreeTrunkTileRegistry.RegisterDefaults(),
+      out offsetToTrunk);
+  }
+
+  public static bool TryGetRootOffset(
+    WorldGridSnapshot snapshot,
+    int x,
+    int y,
+    out int offsetToTrunk)
+  {
+    return TryGetRootOffset(
+      snapshot,
+      x,
+      y,
+      TreeTrunkTileRegistry.RegisterDefaults(),
+      out offsetToTrunk);
+  }
+
+  public static bool TryGetBranchOffset(
+    WorldGridSnapshot snapshot,
+    int x,
+    int y,
     IReadOnlySet<ushort> treeTrunkTypes,
     out int offsetToTrunk)
   {

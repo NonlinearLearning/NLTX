@@ -1,6 +1,5 @@
 # NPC ECS Migration Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Migrate the approved first NPC behavior slice from the deleted Version4 `NPC.cs` source
 shape into composable Arch ECS components and deterministic systems.

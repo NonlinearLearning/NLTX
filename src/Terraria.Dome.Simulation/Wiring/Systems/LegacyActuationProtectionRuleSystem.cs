@@ -1,9 +1,22 @@
+using System.Collections.Frozen;
+using System.Collections.Generic;
+
 namespace Terraria.Dome.Simulation.Wiring.Systems;
 
 public static class LegacyActuationProtectionRuleSystem
 {
+  private static readonly IReadOnlySet<ushort> ProtectedTileTypes = new HashSet<ushort>
+  {
+    21, 467, 26, 77, 88, 470, 475, 237, 597, 441, 468
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterDefaults()
+  {
+    return ProtectedTileTypes;
+  }
+
   public static bool PreventsActuationUnder(ushort tileType)
   {
-    return tileType is 21 or 467 or 26 or 77 or 88 or 470 or 475 or 237 or 597 or 441 or 468;
+    return ProtectedTileTypes.Contains(tileType);
   }
 }

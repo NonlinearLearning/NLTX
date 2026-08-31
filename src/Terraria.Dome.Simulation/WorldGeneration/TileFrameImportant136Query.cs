@@ -13,6 +13,21 @@ public static class TileFrameImportant136Query
     WorldGridSnapshot snapshot,
     TileDefinitionRegistry tileDefinitions,
     int x,
+    int y)
+  {
+    return Evaluate(
+      snapshot,
+      tileDefinitions,
+      x,
+      y,
+      BeamTileRegistry.RegisterDefaults(),
+      TreeTrunkTileRegistry.RegisterDefaults());
+  }
+
+  public static TileFrameImportant136Result Evaluate(
+    WorldGridSnapshot snapshot,
+    TileDefinitionRegistry tileDefinitions,
+    int x,
     int y,
     IReadOnlySet<ushort> beamTileTypes,
     IReadOnlySet<ushort> treeTileTypes)

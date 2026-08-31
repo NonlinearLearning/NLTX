@@ -5,9 +5,12 @@ using System.IO;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using Terraria.Dome.Protocol.V1456.Protocol;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldObjects;
+using Terraria.Dome.Simulation.WorldObjects.Sign;
+using Terraria.Dome.Simulation.StatusEffects.Snapshots;
 
 namespace Terraria.Dome.Server.Replication;
 
@@ -33,6 +36,9 @@ public sealed class SessionReplicationState : IDisposable
   private readonly SignReplicationCursor _signCursor = new();
   private readonly TileEntityReplicationCursor _tileEntityCursor = new();
   private readonly HashSet<WorldSectionCoordinates> _visibleSections = new();
+  private readonly Dictionary<int, WorldSectionCoordinates> _sentProjectileSections = new();
+  private readonly Dictionary<int, WorldSectionCoordinates> _sentNpcProjectileSections = new();
+  private readonly Dictionary<int, long> _sentNpcStatusEffectRevisions = new();
   private readonly Task _writerTask;
   private Exception? _writeFailure;
   private int _pendingFrameCount;
@@ -56,6 +62,15 @@ public sealed class SessionReplicationState : IDisposable
   public IReadOnlySet<WorldSectionCoordinates> VisibleSections => _visibleSections;
   public bool IsActive { get; private set; }
   public bool IsInitialVisibilityLocked => _isInitialVisibilityLocked;
+
+  public SessionContractCapabilities ContractCapabilities { get; private set; } =
+    SessionContractCapabilities.NotNegotiated;
+
+  public void SetContractCapabilities(SessionContractCapabilities capabilities)
+  {
+    ThrowIfDisposed();
+    ContractCapabilities = capabilities;
+  }
 
   public SimulationVector? ClientViewPosition
   {
@@ -157,6 +172,7 @@ public sealed class SessionReplicationState : IDisposable
     }
 
     _visibility.RemoveNotIn(_visibleSections);
+    ForgetProjectilesOutsideVisibleSections();
     return _visibility.CollectChangedSections(snapshots);
   }
 
@@ -221,6 +237,69 @@ public sealed class SessionReplicationState : IDisposable
     return _combatCursor.ShouldSend(snapshot);
   }
 
+  public bool SupportsNpcProjectile =>
+    ContractCapabilities.SupportsNpcProjectile;
+
+  public bool SupportsNpcProjectileV2 =>
+    ContractCapabilities.SupportsNpcProjectileV2;
+
+  public bool SupportsNpcProjectileV3 =>
+    ContractCapabilities.SupportsNpcProjectileV3;
+
+  public bool SupportsNpcStatusEffect => ContractCapabilities.SupportsNpcStatusEffect;
+
+  public bool ShouldSendNpcStatusEffect(NpcStatusEffectStateSnapshot snapshot)
+  {
+    ThrowIfDisposed();
+    return !_sentNpcStatusEffectRevisions.TryGetValue(snapshot.ReplicationId, out long revision) ||
+      revision != snapshot.Revision;
+  }
+
+  public bool ShouldSendNpcProjectile(NpcProjectileReplicationSnapshot snapshot)
+  {
+    ThrowIfDisposed();
+    return _combatCursor.ShouldSend(snapshot);
+  }
+
+  public bool WasNpcProjectileSent(int replicationId)
+  {
+    ThrowIfDisposed();
+    return _combatCursor.WasNpcProjectileSent(replicationId);
+  }
+
+  public void MarkNpcProjectileSkipped(NpcProjectileReplicationSnapshot snapshot)
+  {
+    ThrowIfDisposed();
+    _combatCursor.MarkNpcProjectileSkipped(snapshot);
+  }
+
+  public bool WasNpcProjectileSkipped(int replicationId)
+  {
+    ThrowIfDisposed();
+    return _combatCursor.WasNpcProjectileSkipped(replicationId);
+  }
+
+  public IReadOnlyList<NpcProjectileCursorEntry> CreateNpcProjectileCursorSnapshot()
+  {
+    ThrowIfDisposed();
+    return _combatCursor.CreateNpcProjectileSnapshot();
+  }
+
+  public void RestoreNpcProjectileCursor(
+    IReadOnlyList<NpcProjectileCursorEntry> entries)
+  {
+    ThrowIfDisposed();
+    _combatCursor.RestoreNpcProjectileSnapshot(entries);
+  }
+
+  public void PruneNpcProjectileCursor(
+    IReadOnlyList<NpcProjectileReplicationSnapshot> authoritative,
+    long currentTick)
+  {
+    ThrowIfDisposed();
+    _combatCursor.PruneNpcProjectileSnapshot(authoritative, currentTick);
+  }
+
   public bool WasCombatNpcSent(int replicationId)
   {
     ThrowIfDisposed();
@@ -231,6 +310,39 @@ public sealed class SessionReplicationState : IDisposable
   {
     ThrowIfDisposed();
     return _combatCursor.WasProjectileSent(replicationId);
+  }
+
+  public void MarkCombatProjectileSkipped(ProjectileReplicationSnapshot snapshot)
+  {
+    ThrowIfDisposed();
+    _combatCursor.MarkProjectileSkipped(snapshot);
+  }
+
+  public bool WasCombatProjectileSkipped(int replicationId)
+  {
+    ThrowIfDisposed();
+    return _combatCursor.WasProjectileSkipped(replicationId);
+  }
+
+  public void PruneCombatProjectileCursor(
+    IReadOnlyList<ProjectileReplicationSnapshot> authoritative,
+    long currentTick)
+  {
+    ThrowIfDisposed();
+    _combatCursor.PruneProjectileSnapshot(authoritative, currentTick);
+    List<int> staleProjectileIds = new();
+    foreach (KeyValuePair<int, WorldSectionCoordinates> entry in _sentProjectileSections)
+    {
+      if (!_combatCursor.WasProjectileSent(entry.Key))
+      {
+        staleProjectileIds.Add(entry.Key);
+      }
+    }
+
+    for (int index = 0; index < staleProjectileIds.Count; index++)
+    {
+      _sentProjectileSections.Remove(staleProjectileIds[index]);
+    }
   }
 
   public void ConfirmCombatBatch(CombatReplicationBatch batch)
@@ -244,6 +356,70 @@ public sealed class SessionReplicationState : IDisposable
     foreach (ProjectileReplicationSnapshot projectile in batch.Projectiles)
     {
       _combatCursor.MarkProjectileSent(projectile);
+      if (projectile.IsActive)
+      {
+        _sentProjectileSections[projectile.ReplicationId] = projectile.Section;
+      }
+      else
+      {
+        _sentProjectileSections.Remove(projectile.ReplicationId);
+      }
+    }
+
+    if (SupportsNpcProjectile)
+    {
+      foreach (NpcProjectileReplicationSnapshot projectile in batch.NpcProjectiles)
+      {
+        _combatCursor.MarkNpcProjectileSent(projectile);
+        if (projectile.IsActive)
+        {
+          _sentNpcProjectileSections[projectile.ReplicationId] = projectile.Section;
+        }
+        else
+        {
+          _sentNpcProjectileSections.Remove(projectile.ReplicationId);
+        }
+      }
+    }
+
+    foreach (NpcStatusEffectStateSnapshot status in batch.NpcStatusEffects)
+    {
+      _sentNpcStatusEffectRevisions[status.ReplicationId] = status.Revision;
+    }
+  }
+
+  private void ForgetProjectilesOutsideVisibleSections()
+  {
+    List<int> staleProjectileIds = new();
+    foreach (KeyValuePair<int, WorldSectionCoordinates> entry in _sentProjectileSections)
+    {
+      if (!_visibleSections.Contains(entry.Value))
+      {
+        staleProjectileIds.Add(entry.Key);
+      }
+    }
+
+    for (int index = 0; index < staleProjectileIds.Count; index++)
+    {
+      int replicationId = staleProjectileIds[index];
+      _combatCursor.ForgetProjectile(replicationId);
+      _sentProjectileSections.Remove(replicationId);
+    }
+
+    List<int> staleNpcProjectileIds = new();
+    foreach (KeyValuePair<int, WorldSectionCoordinates> entry in _sentNpcProjectileSections)
+    {
+      if (!_visibleSections.Contains(entry.Value))
+      {
+        staleNpcProjectileIds.Add(entry.Key);
+      }
+    }
+
+    for (int index = 0; index < staleNpcProjectileIds.Count; index++)
+    {
+      int replicationId = staleNpcProjectileIds[index];
+      _combatCursor.ForgetNpcProjectile(replicationId);
+      _sentNpcProjectileSections.Remove(replicationId);
     }
   }
 
@@ -269,6 +445,35 @@ public sealed class SessionReplicationState : IDisposable
   {
     ThrowIfDisposed();
     return _chestCursor.TryGetRevision(chestId, out revision);
+  }
+
+  public bool TryAuthorizeChestTransfer(int chestId, out long expectedRevision)
+  {
+    ThrowIfDisposed();
+    return _chestCursor.TryGetRevision(chestId, out expectedRevision);
+  }
+
+  public bool TryAuthorizeChestTransfer(
+    int chestId,
+    long requestedRevision,
+    out long expectedRevision)
+  {
+    ThrowIfDisposed();
+    if (requestedRevision >= 0 && !ContractCapabilities.SupportsChestTransferRevision)
+    {
+      expectedRevision = default;
+      return false;
+    }
+
+    if (!_chestCursor.TryGetRevision(chestId, out long cursorRevision) ||
+        requestedRevision < -1 || requestedRevision >= 0 && requestedRevision != cursorRevision)
+    {
+      expectedRevision = default;
+      return false;
+    }
+
+    expectedRevision = requestedRevision >= 0 ? requestedRevision : cursorRevision;
+    return true;
   }
 
   public bool ShouldSendWorldRules(long tick, int intervalTicks)
@@ -299,6 +504,20 @@ public sealed class SessionReplicationState : IDisposable
   {
     ThrowIfDisposed();
     _signCursor.MarkSent(snapshot);
+  }
+
+  public bool ShouldSendSignTombstone(SignTombstoneSnapshot snapshot)
+  {
+    ThrowIfDisposed();
+    return ContractCapabilities.SupportsSignDeletion &&
+      _visibleSections.Contains(snapshot.Section) &&
+      _signCursor.ShouldSend(snapshot);
+  }
+
+  public void MarkSignTombstoneSent(SignTombstoneSnapshot snapshot)
+  {
+    ThrowIfDisposed();
+    _signCursor.MarkTombstoneSent(snapshot);
   }
 
   public bool ShouldSendTileEntity(TileEntityPersistentState snapshot)

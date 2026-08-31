@@ -38,6 +38,7 @@ public sealed class TerrariaPacketDispatcher
       TerrariaMessageId.PlayerLifeMana => RoutePlayerLifeMana(session, frameBytes),
       TerrariaMessageId.ItemRotationAndAnimation => RoutePlayerMana(session, frameBytes),
       TerrariaMessageId.PlayerBuffs => RoutePlayerBuffs(session, frameBytes),
+      TerrariaMessageId.AddPlayerBuffPvp => RouteAddPlayerBuffPvp(session, frameBytes),
       TerrariaMessageId.PlayerUuid => RouteBootstrap(session, frameBytes),
       TerrariaMessageId.SyncLoadout => RouteBootstrap(session, frameBytes),
       TerrariaMessageId.PlayerControls => RoutePlayerControls(session, frameBytes),
@@ -126,7 +127,7 @@ public sealed class TerrariaPacketDispatcher
     TerrariaSession session,
     ReadOnlySpan<byte> frameBytes)
   {
-    _ = session.AcceptNetModule(frameBytes);
+    NetModulePacket packet = session.AcceptNetModule(frameBytes);
     return new TerrariaPacketDispatchResult(
       TerrariaPacketDispatchOutcome.NetModuleAccepted,
       null,
@@ -136,7 +137,8 @@ public sealed class TerrariaPacketDispatcher
       null,
       null,
       null,
-      null);
+      null,
+      ResponseFrame: packet.ResponseFrame);
   }
 
   private static TerrariaPacketDispatchResult RouteSignOpenRequest(
@@ -152,7 +154,16 @@ public sealed class TerrariaPacketDispatcher
     ReadOnlySpan<byte> frameBytes)
   {
     session.AcceptClientProjectile(frameBytes);
-    return CreateActiveSynchronizationResult();
+    return new TerrariaPacketDispatchResult(
+      TerrariaPacketDispatchOutcome.ClientProjectileSyncIgnored,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null);
   }
 
   private static TerrariaPacketDispatchResult RouteClientProjectileTermination(
@@ -161,7 +172,7 @@ public sealed class TerrariaPacketDispatcher
   {
     _ = session.AcceptClientProjectileTermination(frameBytes);
     return new TerrariaPacketDispatchResult(
-      TerrariaPacketDispatchOutcome.ClientProjectileTerminationAccepted,
+      TerrariaPacketDispatchOutcome.ClientProjectileTerminationIgnored,
       null,
       null,
       null,
@@ -207,6 +218,14 @@ public sealed class TerrariaPacketDispatcher
 
     _ = session.AcceptActivePlayerBuffs(frameBytes);
     return CreateActiveSynchronizationResult();
+  }
+
+  private static TerrariaPacketDispatchResult RouteAddPlayerBuffPvp(
+    TerrariaSession session,
+    ReadOnlySpan<byte> frameBytes)
+  {
+    AddPlayerBuffPvpPacket request = session.AcceptActivePlayerBuffPvp(frameBytes);
+    return CreateActiveSynchronizationResult() with { AddPlayerBuffPvp = request };
   }
 
   private static TerrariaPacketDispatchResult RoutePlayerEquipment(

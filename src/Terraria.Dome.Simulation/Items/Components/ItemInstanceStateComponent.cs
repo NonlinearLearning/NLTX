@@ -1,3 +1,5 @@
+using System;
+
 namespace Terraria.Dome.Simulation.Items.Components;
 
 public readonly record struct ItemInstanceStateComponent(
@@ -7,4 +9,15 @@ public readonly record struct ItemInstanceStateComponent(
   byte Paint = 0,
   bool IsFavorited = false,
   bool IsNewAndShiny = false,
-  string? NameOverride = null);
+  string? NameOverride = null)
+{
+  public const int MaximumNameOverrideLength = 200;
+
+  public void Validate()
+  {
+    if (NameOverride is not null && NameOverride.Length > MaximumNameOverrideLength)
+    {
+      throw new ArgumentOutOfRangeException(nameof(NameOverride));
+    }
+  }
+}

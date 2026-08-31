@@ -7,19 +7,22 @@ namespace Terraria.Dome.Simulation.WorldGeneration.Systems;
 
 public sealed class TerrainBaseSystem
 {
+  private const int SpawnClearPriority = 1;
+
   public void AppendCommands(
-    WorldGrid world,
+    WorldGridSnapshot snapshot,
     WorldGenerationRequest request,
     TerrainProfileComponent profile,
     ref WorldGenerationStateComponent state,
     List<TileChangeCommand> commands)
   {
+    ArgumentNullException.ThrowIfNull(snapshot);
     GenerationRandomState random = new(unchecked((uint)request.Metadata.Seed.Value));
-    AppendCommands(world, request, profile, ref state, ref random, commands);
+    AppendCommands(snapshot, request, profile, ref state, ref random, commands);
   }
 
   public void AppendLegacyCommands(
-    WorldGrid world,
+    WorldGridSnapshot snapshot,
     WorldGenerationRequest request,
     TerrainProfileComponent profile,
     ref WorldGenerationStateComponent state,
@@ -28,22 +31,22 @@ public sealed class TerrainBaseSystem
     LegacyPassRandomState random = new(request.Metadata.Seed.Value);
     if (request.TerrainProfile is not null)
     {
-      AppendProfileTerrainCommands(world, request, profile, ref state, random, commands);
+      AppendProfileTerrainCommands(snapshot, request, profile, ref state, random, commands);
       return;
     }
 
-    AppendLegacyCommands(world, request, profile, ref state, random, commands);
+    AppendLegacyCommands(snapshot, request, profile, ref state, random, commands);
   }
 
   private static void AppendProfileTerrainCommands(
-    WorldGrid world,
+    WorldGridSnapshot snapshot,
     WorldGenerationRequest request,
     TerrainProfileComponent profile,
     ref WorldGenerationStateComponent state,
     LegacyPassRandomState random,
     List<TileChangeCommand> commands)
   {
-    ArgumentNullException.ThrowIfNull(world);
+    ArgumentNullException.ThrowIfNull(snapshot);
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(commands);
     if (state.Stage < WorldGenerationStage.Terrain &&
@@ -54,22 +57,29 @@ public sealed class TerrainBaseSystem
 
     LegacyTerrainRuntimeProfile runtimeProfile = request.TerrainProfile ??
       throw new InvalidOperationException("A terrain runtime profile is required.");
+    const int smallWorldWidth = 4200;
+    const double standardLowerSurfaceFactor = 0.17;
+    const double smallWorldLowerSurfaceFactor = 0.19;
     const int flatBeachPadding = 5;
     int initialSurfaceFactor = random.Next(90, 110);
     int initialRockFactor = random.Next(90, 110);
-    double derivedSurface = world.Height * 0.3 * initialSurfaceFactor * 0.005;
+    double derivedSurface = snapshot.Metadata.Height * 0.3 * initialSurfaceFactor * 0.005;
     double surface = runtimeProfile.InitialWorldSurface ?? derivedSurface;
-    double derivedRockLayer = derivedSurface + world.Height * 0.2 * initialRockFactor * 0.01;
+    double derivedRockLayer =
+      derivedSurface + snapshot.Metadata.Height * 0.2 * initialRockFactor * 0.01;
     double rockLayer = runtimeProfile.InitialRockLayer ?? derivedRockLayer;
     double surfaceLow = surface;
     double surfaceHigh = surface;
     double rockLayerLow = rockLayer;
     double rockLayerHigh = rockLayer;
     LegacyTerrainFeatureKind feature = LegacyTerrainFeatureKind.Plateau;
-    int featureRun = 0;
+    int featureRun = runtimeProfile.LeftBeachEnd + flatBeachPadding;
     LegacySurfaceHistory history = new(500);
+    double lowerSurfaceFactor = snapshot.Metadata.Width <= smallWorldWidth
+      ? smallWorldLowerSurfaceFactor
+      : standardLowerSurfaceFactor;
 
-    for (int x = 0; x < world.Width; x++)
+    for (int x = 0; x < snapshot.Metadata.Width; x++)
     {
       surfaceLow = Math.Min(surfaceLow, surface);
       surfaceHigh = Math.Max(surfaceHigh, surface);
@@ -86,7 +96,15 @@ public sealed class TerrainBaseSystem
       }
 
       featureRun--;
-      if (x > world.Width * 0.48 && x < world.Width * 0.52)
+      if (x > snapshot.Metadata.Width * 0.45 &&
+          x < snapshot.Metadata.Width * 0.55 &&
+          (feature == LegacyTerrainFeatureKind.Mountain ||
+            feature == LegacyTerrainFeatureKind.Valley))
+      {
+        feature = (LegacyTerrainFeatureKind)random.Next(3);
+      }
+
+      if (x > snapshot.Metadata.Width * 0.48 && x < snapshot.Metadata.Width * 0.52)
       {
         feature = LegacyTerrainFeatureKind.Plateau;
       }
@@ -98,9 +116,9 @@ public sealed class TerrainBaseSystem
         runtimeProfile.LeftBeachEnd,
         runtimeProfile.RightBeachStart,
         flatBeachPadding,
-        world.Height * 0.17,
-        world.Height * 0.26,
-        world.Height * 0.23);
+        snapshot.Metadata.Height * lowerSurfaceFactor,
+        snapshot.Metadata.Height * 0.26,
+        snapshot.Metadata.Height * 0.23);
       surface = clamp.Surface;
       if (clamp.ResetFeatureRun)
       {
@@ -112,51 +130,61 @@ public sealed class TerrainBaseSystem
         rockLayer += random.Next(-2, 3);
       }
 
-      if (rockLayer < surface + world.Height * 0.06)
+      if (rockLayer < surface + snapshot.Metadata.Height * 0.06)
       {
         rockLayer += 1.0;
       }
 
-      if (rockLayer > surface + world.Height * 0.35)
+      if (rockLayer > surface + snapshot.Metadata.Height * 0.35)
       {
         rockLayer -= 1.0;
       }
 
       history.Record(surface);
-      AppendColumnCommands(world, ref state, commands, x, surface, rockLayer);
-      if (x == runtimeProfile.RightBeachStart - flatBeachPadding && surface > world.Height * 0.23)
+      AppendColumnCommands(snapshot, ref state, commands, x, surface, rockLayer);
+      if (x == runtimeProfile.RightBeachStart - flatBeachPadding)
       {
-        IReadOnlyList<LegacySurfaceRetargetCommand> retargetCommands =
-          history.PrepareRetargetBatch(x, world.Height * 0.23);
-        foreach (LegacySurfaceRetargetCommand retargetCommand in retargetCommands)
+        if (surface > snapshot.Metadata.Height * 0.23)
         {
-          AppendColumnCommands(
-            world,
-            ref state,
-            commands,
-            retargetCommand.X,
-            retargetCommand.WorldSurface,
-            rockLayer);
+          IReadOnlyList<LegacySurfaceRetargetCommand> retargetCommands =
+            history.PrepareRetargetBatch(x, snapshot.Metadata.Height * 0.23);
+          foreach (LegacySurfaceRetargetCommand retargetCommand in retargetCommands)
+          {
+            if (retargetCommand.X < 0 || retargetCommand.X >= snapshot.Metadata.Width)
+            {
+              continue;
+            }
+
+            AppendColumnCommands(
+              snapshot,
+              ref state,
+              commands,
+              retargetCommand.X,
+              retargetCommand.WorldSurface,
+              rockLayer);
+          }
         }
+
         feature = LegacyTerrainFeatureKind.Plateau;
-        featureRun = world.Width - x;
+        featureRun = snapshot.Metadata.Width - x;
       }
     }
+
+    AppendSpawnClearCommands(snapshot, request, ref state, commands);
   }
 
   private static void AppendColumnCommands(
-    WorldGrid world,
+    WorldGridSnapshot snapshot,
     ref WorldGenerationStateComponent state,
     List<TileChangeCommand> commands,
     int x,
     double surface,
     double rockLayer)
   {
-    int surfaceStart = Math.Clamp((int)surface, 0, world.Height - 1);
-    int rockLayerStart = Math.Clamp((int)rockLayer, surfaceStart + 1, world.Height - 1);
-    for (int y = surfaceStart; y < world.Height; y++)
+    int surfaceStart = Math.Clamp((int)surface, 0, snapshot.Metadata.Height - 1);
+    for (int y = surfaceStart; y < snapshot.Metadata.Height; y++)
     {
-      ushort tileType = y < rockLayerStart ? (ushort)0 : (ushort)1;
+      ushort tileType = (double)y < rockLayer ? (ushort)0 : (ushort)1;
       commands.Add(new TileChangeCommand(
         state.ReserveSequence(),
         x,
@@ -164,19 +192,20 @@ public sealed class TerrainBaseSystem
         TileChangeKind.Place,
         tileType,
         FrameX: -1,
-        FrameY: -1));
+        FrameY: -1,
+        Source: "worldgen.terrain"));
     }
   }
 
   private static void AppendLegacyCommands(
-    WorldGrid world,
+    WorldGridSnapshot snapshot,
     WorldGenerationRequest request,
     TerrainProfileComponent profile,
     ref WorldGenerationStateComponent state,
     LegacyPassRandomState random,
     List<TileChangeCommand> commands)
   {
-    ArgumentNullException.ThrowIfNull(world);
+    ArgumentNullException.ThrowIfNull(snapshot);
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(commands);
     if (state.Stage < WorldGenerationStage.Terrain &&
@@ -186,7 +215,7 @@ public sealed class TerrainBaseSystem
     }
 
     TerrainDefinition definition = TerrainDefinition.Default;
-    for (int x = 0; x < world.Width; x++)
+    for (int x = 0; x < snapshot.Metadata.Width; x++)
     {
       int surfaceVariation = random.Next(
         -definition.SurfaceVariation,
@@ -194,8 +223,8 @@ public sealed class TerrainBaseSystem
       int surfaceY = Math.Clamp(
         profile.SurfaceY + surfaceVariation,
         0,
-        world.Height - 1);
-      for (int y = surfaceY; y < world.Height; y++)
+        snapshot.Metadata.Height - 1);
+      for (int y = surfaceY; y < snapshot.Metadata.Height; y++)
       {
         ushort tileType = y < profile.RockLayerY
           ? definition.StoneTileType
@@ -207,20 +236,23 @@ public sealed class TerrainBaseSystem
           TileChangeKind.Place,
           tileType,
           FrameX: -1,
-          FrameY: -1));
+          FrameY: -1,
+          Source: "worldgen.terrain"));
       }
     }
+
+    AppendSpawnClearCommands(snapshot, request, ref state, commands);
   }
 
   public void AppendCommands(
-    WorldGrid world,
+    WorldGridSnapshot snapshot,
     WorldGenerationRequest request,
     TerrainProfileComponent profile,
     ref WorldGenerationStateComponent state,
     ref GenerationRandomState random,
     List<TileChangeCommand> commands)
   {
-    ArgumentNullException.ThrowIfNull(world);
+    ArgumentNullException.ThrowIfNull(snapshot);
     ArgumentNullException.ThrowIfNull(request);
     ArgumentNullException.ThrowIfNull(commands);
     if (state.Stage < WorldGenerationStage.Terrain &&
@@ -230,7 +262,7 @@ public sealed class TerrainBaseSystem
     }
 
     TerrainDefinition definition = TerrainDefinition.Default;
-    for (int x = 0; x < world.Width; x++)
+    for (int x = 0; x < snapshot.Metadata.Width; x++)
     {
       (random, int surfaceVariation) = random.NextInclusive(
         -definition.SurfaceVariation,
@@ -238,8 +270,8 @@ public sealed class TerrainBaseSystem
       int surfaceY = Math.Clamp(
         profile.SurfaceY + surfaceVariation,
         0,
-        world.Height - 1);
-      for (int y = surfaceY; y < world.Height; y++)
+        snapshot.Metadata.Height - 1);
+      for (int y = surfaceY; y < snapshot.Metadata.Height; y++)
       {
         ushort tileType = y < profile.RockLayerY
           ? definition.StoneTileType
@@ -251,7 +283,39 @@ public sealed class TerrainBaseSystem
           TileChangeKind.Place,
           tileType,
           FrameX: -1,
-          FrameY: -1));
+          FrameY: -1,
+          Source: "worldgen.terrain"));
+      }
+    }
+  }
+
+  private static void AppendSpawnClearCommands(
+    WorldGridSnapshot snapshot,
+    WorldGenerationRequest request,
+    ref WorldGenerationStateComponent state,
+    List<TileChangeCommand> commands)
+  {
+    TerrainDefinition definition = TerrainDefinition.Default;
+    int startX = Math.Max(0, request.SpawnX - definition.SpawnClearHalfWidth);
+    int endX = Math.Min(
+      snapshot.Metadata.Width - 1,
+      request.SpawnX + definition.SpawnClearHalfWidth);
+    int startY = Math.Max(0, request.SurfaceY);
+    int endY = Math.Min(
+      snapshot.Metadata.Height - 1,
+      request.SurfaceY + definition.SpawnClearHeight);
+    for (int y = startY; y <= endY; y++)
+    {
+      for (int x = startX; x <= endX; x++)
+      {
+        commands.Add(new TileChangeCommand(
+          state.ReserveSequence(),
+          x,
+          y,
+          TileChangeKind.Kill,
+          TileType: 0,
+          Priority: SpawnClearPriority,
+          Source: "worldgen.spawn-clear"));
       }
     }
   }

@@ -24,6 +24,23 @@ public static class LegacyItemDropAdapter
       record.MaximumQuantity);
   }
 
+  public static ItemDropDefinition ToDefinition(
+    LegacyItemDropRecord record,
+    ItemDefinitionRegistry itemDefinitions)
+  {
+    ArgumentNullException.ThrowIfNull(itemDefinitions);
+    ItemDropDefinition definition = ToDefinition(record);
+    if (!itemDefinitions.TryGet(definition.ItemType, out ItemDefinition itemDefinition) ||
+        definition.MaximumQuantity > itemDefinition.StackLimit)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(record),
+        "Legacy item drop definition is unknown or exceeds the item stack limit.");
+    }
+
+    return definition;
+  }
+
   public static bool TryCreateCommand(
     LegacyItemDropRecord record,
     int quantity,
@@ -32,12 +49,53 @@ public static class LegacyItemDropAdapter
     int spawnSource,
     out CreateWorldItemCommand command)
   {
+    return TryCreateCommandCore(
+      record,
+      quantity,
+      position,
+      section,
+      spawnSource,
+      itemDefinitions: null,
+      out command);
+  }
+
+  public static bool TryCreateCommand(
+    LegacyItemDropRecord record,
+    int quantity,
+    SimulationVector position,
+    WorldSectionCoordinates section,
+    int spawnSource,
+    ItemDefinitionRegistry itemDefinitions,
+    out CreateWorldItemCommand command)
+  {
+    ArgumentNullException.ThrowIfNull(itemDefinitions);
+    return TryCreateCommandCore(
+      record,
+      quantity,
+      position,
+      section,
+      spawnSource,
+      itemDefinitions,
+      out command);
+  }
+
+  private static bool TryCreateCommandCore(
+    LegacyItemDropRecord record,
+    int quantity,
+    SimulationVector position,
+    WorldSectionCoordinates section,
+    int spawnSource,
+    ItemDefinitionRegistry? itemDefinitions,
+    out CreateWorldItemCommand command)
+  {
     command = default;
     try
     {
-      ItemDropDefinition definition = ToDefinition(record);
+      ItemDropDefinition definition = itemDefinitions is null
+        ? ToDefinition(record)
+        : ToDefinition(record, itemDefinitions);
       if (quantity < definition.MinimumQuantity || quantity > definition.MaximumQuantity ||
-          spawnSource < 0)
+          spawnSource < 0 || !float.IsFinite(position.X) || !float.IsFinite(position.Y))
       {
         return false;
       }

@@ -1,6 +1,5 @@
 # Player ECS Migration Execution Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Replace the legacy `Terraria.Player` runtime responsibilities with a server-authoritative ECS player core, then migrate the remaining player capabilities in independently verifiable slices.
 
@@ -415,3 +414,76 @@ The migration is complete only when the behavior map has no unexplained
 compatibility is verified from snapshots, deterministic replay is stable, and
 client-only responsibilities are explicitly delegated rather than hidden in
 simulation systems.
+
+---
+
+## Flowstate Compact Execution Overlay (2026-08-29)
+
+This overlay is the active process contract for continuing this historical plan.
+It keeps execution context at approximately 10% of the full plan and reserves
+approximately 30% of normal verification capacity for the highest-risk player
+boundaries. The detailed phase text above remains the source of truth for scope;
+this overlay is the source of truth for what is loaded and run in one iteration.
+
+### N4 -> N6 key nodes
+
+| Node | Load only | Output / gate |
+|------|-----------|---------------|
+| N4 | One player field family and its owner chain | One scoped diff plus one task checkpoint |
+| N5 | Authority boundary, snapshot/projection edge, and explicit deferred cases | Stop if ownership or commit ordering is ambiguous |
+| N6 | Focused player verifier, one adjacent boundary verifier, and serial simulation build | Record exit codes and warnings; do not infer full parity |
+
+### Minimal context contract
+
+- Load at most six facts per iteration: current batch, owner component/system,
+  snapshot or protocol edge, source-backed rule, focused verifier, and next stop
+  condition.
+- Read detailed members only by a path or symbol named by the current batch.
+- Reuse `docs/migrations/player-legacy-behavior-map.md`,
+  `docs/migrations/player-legacy-method-status.csv`, and the latest private
+  state as evidence indexes; do not paste their full contents into task notes.
+- Keep `verified`, `partial`, `delegated`, `deferred`, and `blocked` distinct.
+  A passing focused verifier never upgrades a partial or deferred behavior.
+
+### 30% verification contract
+
+Run only this focused gate for an incremental player batch:
+
+```powershell
+dotnet build .\src\Terraria.Dome.Simulation\Terraria.Dome.Simulation.csproj -p:UseSharedCompilation=false --no-restore
+dotnet run --project .\Test\Terraria.Dome.PlayerSimulation.Verification\Terraria.Dome.PlayerSimulation.Verification.csproj -p:UseSharedCompilation=false --no-restore
+dotnet run --project .\Test\Terraria.Dome.PlayerAuthority.Verification\Terraria.Dome.PlayerAuthority.Verification.csproj -p:UseSharedCompilation=false --no-restore
+```
+
+The first command proves the changed simulation contract; the second proves the
+deterministic player path; the third proves server authority and snapshot
+projection. Combat, items, session, full-client, and solution-wide regression
+remain deferred unless the changed write set crosses those boundaries.
+
+### Checkpoint shape
+
+Each batch records only `currentNode`, `activeBatch`, `writeSet`, `verification`,
+`status`, `deferred`, and `next`. The checkpoint must point to fresh evidence
+paths and must be sufficient to resume without loading this entire plan.
+
+### Stop conditions
+
+Stop the batch when a player mutation bypasses a typed command/commit boundary,
+when a projection reads mutable ECS storage after the tick, when a verifier can
+pass by silently ignoring invalid input, or when source evidence is absent.
+Record the issue as `partial`/`deferred` and continue at the next independent
+field family; do not broaden the context or claim completion.
+
+### Current compact slice
+
+The 2026-08-29 slice projects the existing mount component's flight-time and
+fatigue counters into `PlayerSnapshot` and `PlayerStateSnapshot`, then closes
+the shared flight/fatigue consumption rule in `PlayerMountStateComponent`. Its
+focused evidence is `Build/diagnostics/player-ecs-compact-20260829-mount/`; the
+private checkpoint records the exact write set and the remaining deferred mount
+behaviors.
+
+The eleven legacy `Blocked` clusters are formally archived in
+`docs/migrations/player-blocked-core-archive.md` with stable IDs, owning domains,
+missing dependencies, and reopen conditions. Archiving explains the blockers; it
+does not promote them to migrated behavior or satisfy the full parity gate.

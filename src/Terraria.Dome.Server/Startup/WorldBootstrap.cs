@@ -10,7 +10,12 @@ namespace Terraria.Dome.Server.Startup;
 
 public sealed record WorldBootstrapResult(
   DomeSimulationSnapshot Snapshot,
-  bool UsesDefaultWorld);
+  bool UsesDefaultWorld,
+  WorldEntityLimits EntityLimits)
+{
+  public long InitialSnapshotRevision => Snapshot.TickNumber;
+  public long FirstScheduledTick => checked(Snapshot.TickNumber + 1);
+}
 
 public static class WorldBootstrap
 {
@@ -35,20 +40,66 @@ public static class WorldBootstrap
 
   public static WorldBootstrapResult CreateDefault()
   {
-    WorldMetadata metadata = new(
+    WorldBootstrapRequest bootstrapRequest = WorldBootstrapRequest.Create(
       DefaultWorldName,
       new WorldSeed(DefaultWorldSeed),
       DefaultWorldWidth,
       DefaultWorldHeight,
-      spawnX: DefaultSpawnX,
-      spawnY: DefaultSurfaceY);
-    WorldGenerationRequest request = new(metadata, DefaultSpawnX, DefaultSurfaceY);
-    WorldGrid world = new WorldGenerationPipeline().Generate(request);
-    using DomeSimulation simulation = new(world);
+      DefaultSpawnX,
+      DefaultSurfaceY,
+      new WorldRuleState());
+    WorldMetadata metadata = bootstrapRequest.Metadata;
+    WorldGrid world = GenerateWorld(bootstrapRequest);
+    using DomeSimulation simulation = new(world, metadata.Seed);
     CreateDefaultChests(simulation);
     return new WorldBootstrapResult(
       simulation.CreatePersistenceSnapshot(metadata),
-      UsesDefaultWorld: true);
+      UsesDefaultWorld: true,
+      EntityLimits: bootstrapRequest.EntityLimits);
+  }
+
+  public static WorldBootstrapResult Create(WorldBootstrapRequest request)
+  {
+    ArgumentNullException.ThrowIfNull(request);
+    if (request.GenerationStatus != WorldBootstrapGenerationStatus.Generated)
+    {
+      throw new ArgumentException(
+        "A generated request is required for a new world bootstrap.",
+        nameof(request));
+    }
+
+    WorldGrid world = GenerateWorld(request);
+    using DomeSimulation simulation = new(
+      world,
+      request.Metadata.Seed,
+      ToSimulationLimits(request.EntityLimits));
+    return new WorldBootstrapResult(
+      simulation.CreatePersistenceSnapshot(request.Metadata, request.Rules),
+      UsesDefaultWorld: false,
+      EntityLimits: request.EntityLimits);
+  }
+
+  public static WorldBootstrapResult Restore(
+    WorldBootstrapRequest request,
+    DomeSimulationSnapshot snapshot)
+  {
+    ArgumentNullException.ThrowIfNull(request);
+    ArgumentNullException.ThrowIfNull(snapshot);
+    if (snapshot.World.Metadata != request.Metadata || snapshot.WorldRules != request.Rules)
+    {
+      throw new ArgumentException(
+        "The restore snapshot does not match the bootstrap identity or rules.",
+        nameof(snapshot));
+    }
+
+    using DomeSimulation simulation = new(
+      WorldGrid.FromSnapshot(snapshot.World),
+      snapshot,
+      ToSimulationLimits(request.EntityLimits));
+    return new WorldBootstrapResult(
+      snapshot,
+      UsesDefaultWorld: false,
+      EntityLimits: request.EntityLimits);
   }
 
   public static WorldBootstrapResult Load(string worldPath, bool strictImport = true)
@@ -60,7 +111,10 @@ public static class WorldBootstrap
     }
 
     DomeWorldImportResult imported = new DomeWorldImportApplier().Import(worldPath, strictImport);
-    return new WorldBootstrapResult(imported.Snapshot, UsesDefaultWorld: false);
+    return new WorldBootstrapResult(
+      imported.Snapshot,
+      UsesDefaultWorld: false,
+      EntityLimits: new WorldEntityLimits());
   }
 
   private static void CreateDefaultChests(DomeSimulation simulation)
@@ -74,6 +128,25 @@ public static class WorldBootstrap
         chestSlot: 0,
         new ItemStack(DefaultChestItemType, DefaultChestItemQuantity));
     }
+  }
+
+  private static WorldGrid GenerateWorld(WorldBootstrapRequest request)
+  {
+    WorldGenerationRequest generationRequest = new(
+      request.Metadata,
+      request.Metadata.SpawnX,
+      request.Metadata.SpawnY);
+    return new WorldGenerationPipeline().Generate(generationRequest);
+  }
+
+  private static SimulationEntityLimits ToSimulationLimits(WorldEntityLimits limits)
+  {
+    return new SimulationEntityLimits(
+      limits.MaximumPlayers,
+      limits.MaximumNpcs,
+      limits.MaximumProjectiles,
+      limits.MaximumWorldItems,
+      limits.MaximumChests);
   }
 
   private readonly record struct DefaultChestSpawn(int TileX, int TileY);

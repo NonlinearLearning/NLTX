@@ -10,13 +10,38 @@ public sealed class WorldItemStore
 {
   private readonly Dictionary<int, Entity> _entities = new();
   private readonly ArchWorld _world;
+  private readonly ItemDefinitionRegistry? _itemDefinitions;
 
   public WorldItemStore(ArchWorld world)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
   }
 
+  public WorldItemStore(ArchWorld world, ItemDefinitionRegistry itemDefinitions)
+  {
+    _world = world ?? throw new ArgumentNullException(nameof(world));
+    _itemDefinitions = itemDefinitions ??
+      throw new ArgumentNullException(nameof(itemDefinitions));
+  }
+
   public int Count => _entities.Count;
+
+  public int ActiveCount
+  {
+    get
+    {
+      int count = 0;
+      foreach (Entity entity in _entities.Values)
+      {
+        if (_world.Get<WorldItemComponent>(entity).IsActive)
+        {
+          count++;
+        }
+      }
+
+      return count;
+    }
+  }
 
   public IEnumerable<int> Keys => _entities.Keys;
 
@@ -46,11 +71,7 @@ public sealed class WorldItemStore
 
   public void Add(WorldItemComponent item)
   {
-    if (item.ReplicationId <= 0 ||
-        !float.IsFinite(item.Position.X) || !float.IsFinite(item.Position.Y))
-    {
-      throw new ArgumentOutOfRangeException(nameof(item));
-    }
+    ValidateItem(item);
 
     if (_entities.ContainsKey(item.ReplicationId))
     {
@@ -107,6 +128,7 @@ public sealed class WorldItemStore
 
   private void Synchronize(Entity entity, WorldItemComponent item)
   {
+    ValidateItem(item);
     ref WorldItemComponent runtimeItem = ref _world.Get<WorldItemComponent>(entity);
     runtimeItem = item;
     ref ItemStackComponent stack = ref _world.Get<ItemStackComponent>(entity);
@@ -122,5 +144,40 @@ public sealed class WorldItemStore
       SourceEntityId = item.WorldState.SpawnSource,
       OwnershipRevision = item.WorldState.LastOwnerRevision
     };
+  }
+
+  private void ValidateItem(WorldItemComponent item)
+  {
+    if (item.ReplicationId <= 0 || item.Revision < 0 ||
+        !float.IsFinite(item.Position.X) || !float.IsFinite(item.Position.Y) ||
+        (item.Stack.IsEmpty && item.Stack != ItemStack.Empty) ||
+        item.IsActive != !item.Stack.IsEmpty ||
+        item.WorldState.IsActive != item.IsActive ||
+        item.WorldState.PickupDelayTicks < 0 || item.WorldState.SpawnSource < 0 ||
+        item.WorldState.LastOwnerRevision < 0 || item.WorldState.Revision < 0 ||
+        item.WorldState.ReservedPlayerId < 0 ||
+        item.WorldState.ReservedPlayerId > ItemWorldStateComponent.UnreservedPlayerId ||
+        item.WorldState.ReservationAgeTicks < ItemWorldStateComponent.NoReservationAge)
+    {
+      throw new ArgumentOutOfRangeException(nameof(item));
+    }
+
+    if (_itemDefinitions is not null &&
+        !item.Stack.IsEmpty &&
+        (!_itemDefinitions.TryGet(item.Stack.ItemType, out ItemDefinition definition) ||
+         item.Stack.Quantity > definition.StackLimit))
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(item),
+        "World item stack is unknown or exceeds its definition limit.");
+    }
+
+    item.InstanceState.Validate();
+    if (item.Stack.IsEmpty && item.InstanceState != default)
+    {
+      throw new ArgumentException(
+        "An inactive world item cannot carry instance state.",
+        nameof(item));
+    }
   }
 }

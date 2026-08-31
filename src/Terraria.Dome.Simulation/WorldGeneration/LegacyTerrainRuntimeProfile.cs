@@ -17,6 +17,8 @@ public sealed record LegacyTerrainRuntimeProfile(
 {
   public double? InitialWorldSurface { get; init; }
   public double? InitialRockLayer { get; init; }
+  public int? InitialSnowOriginLeft { get; init; }
+  public int? InitialSnowOriginRight { get; init; }
 
   public void Validate(WorldMetadata metadata)
   {
@@ -43,6 +45,26 @@ public sealed record LegacyTerrainRuntimeProfile(
         0,
         metadata.Height,
         nameof(InitialRockLayer));
+    }
+
+    if (InitialSnowOriginLeft.HasValue &&
+        (InitialSnowOriginLeft.Value < 0 || InitialSnowOriginLeft.Value >= metadata.Width))
+    {
+      throw new ArgumentOutOfRangeException(nameof(InitialSnowOriginLeft));
+    }
+
+    if (InitialSnowOriginRight.HasValue &&
+        (InitialSnowOriginRight.Value < 0 || InitialSnowOriginRight.Value > metadata.Width))
+    {
+      throw new ArgumentOutOfRangeException(nameof(InitialSnowOriginRight));
+    }
+
+    if (InitialSnowOriginLeft.HasValue && InitialSnowOriginRight.HasValue &&
+        InitialSnowOriginLeft.Value >= InitialSnowOriginRight.Value)
+    {
+      throw new ArgumentException(
+        "Initial snow origins must define a positive horizontal interval.",
+        nameof(InitialSnowOriginRight));
     }
 
     if (RockLayer <= WorldSurface ||

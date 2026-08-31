@@ -13,8 +13,6 @@ public static class UndergroundTreeGrowthEligibilityQuery
   private const ushort SaplingTileType = 20;
   private const ushort UndergroundTreeGroundTileType = 60;
 
-  private static readonly HashSet<ushort> CommonSaplingTypes = [SaplingTileType];
-
   public static UndergroundTreeGrowthEligibilityResult Evaluate(
     WorldGridSnapshot snapshot,
     int originX,
@@ -70,7 +68,7 @@ public static class UndergroundTreeGrowthEligibilityQuery
           canopyTopY,
           groundY - 1,
           SaplingTileType,
-          CommonSaplingTypes))
+          CommonSaplingTileRegistry.RegisterDefaults()))
     {
       return UndergroundTreeGrowthEligibilityResult.Rejected(
         UndergroundTreeGrowthEligibilityReason.CanopyBlocked);

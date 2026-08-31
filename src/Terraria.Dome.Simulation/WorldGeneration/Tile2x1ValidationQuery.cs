@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Definitions;
@@ -9,6 +10,31 @@ public static class Tile2x1ValidationQuery
 {
   private const int TileFrameWidth = 18;
   private const ushort PileTileType = 185;
+  private static readonly IReadOnlySet<ushort> TableSupportTileTypes = new HashSet<ushort>
+  {
+    29, 103, 462
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterTableSupportDefaults()
+  {
+    return TableSupportTileTypes;
+  }
+
+  public static Tile2x1ValidationResult Evaluate(
+    WorldGridSnapshot snapshot,
+    TileDefinitionRegistry tileDefinitions,
+    int x,
+    int y,
+    ushort tileType)
+  {
+    return Evaluate(
+      snapshot,
+      tileDefinitions,
+      x,
+      y,
+      tileType,
+      RoomNeedsTileRegistry.RegisterTableTileDefaults());
+  }
 
   public static Tile2x1ValidationResult Evaluate(
     WorldGridSnapshot snapshot,
@@ -72,7 +98,7 @@ public static class Tile2x1ValidationQuery
     IReadOnlySet<ushort> tableTileTypes,
     ushort tileType)
   {
-    if (tileType is 29 or 103 or 462)
+    if (TableSupportTileTypes.Contains(tileType))
     {
       return support.IsActive && tableTileTypes.Contains(support.Type) &&
         !support.IsHalfBrick && !IsTopSlope(support.Slope);

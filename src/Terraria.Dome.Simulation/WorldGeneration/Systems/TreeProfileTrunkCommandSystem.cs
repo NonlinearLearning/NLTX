@@ -49,7 +49,8 @@ public sealed class TreeProfileTrunkCommandSystem
         originX,
         groundY - offset,
         TileChangeKind.Place,
-        profile.TreeTileType));
+        profile.TreeTileType,
+        Source: $"worldgen.tree.profile.{profile.Kind}"));
     }
 
     return true;

@@ -1,6 +1,5 @@
 # Blocked ECS Migration Unblock Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task.
 
 **Goal:** Resolve the evidence and ownership gaps that prevent the remaining ECS migration cards
 from advancing without inventing legacy behavior.

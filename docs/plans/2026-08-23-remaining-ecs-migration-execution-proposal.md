@@ -1,6 +1,5 @@
 # Remaining ECS Migration Execution Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Close the remaining source-backed Terraria server ECS migration gates without guessing legacy behavior or deleting legacy ownership before reproducible evidence exists.
 

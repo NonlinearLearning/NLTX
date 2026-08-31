@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Definitions;
 
@@ -8,6 +10,15 @@ public static class Tile3x2ValidationQuery
 {
   private const int TileFrameWidth = 18;
   private const ushort PlatformTileType = 14;
+  private static readonly IReadOnlySet<ushort> DeferredSpecialCaseTileTypes = new HashSet<ushort>
+  {
+    186, 187, 488, 704, 705, 26, 695
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterDeferredSpecialCaseDefaults()
+  {
+    return DeferredSpecialCaseTileTypes;
+  }
 
   public static Tile3x2ValidationResult Evaluate(
     WorldGridSnapshot snapshot,
@@ -62,7 +73,7 @@ public static class Tile3x2ValidationQuery
         originY + footprintHeight);
     }
 
-    bool deferredSpecialCase = tileType is 186 or 187 or 488 or 704 or 705 or 26 or 695;
+    bool deferredSpecialCase = DeferredSpecialCaseTileTypes.Contains(tileType);
     return new Tile3x2ValidationResult(
       valid,
       !valid,

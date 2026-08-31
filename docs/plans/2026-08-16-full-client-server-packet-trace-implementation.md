@@ -1,6 +1,5 @@
 # Full Client Server Packet Trace Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Record every raw Terraria V1456 frame exchanged by the complete source-built
 client and the complete 1.4.5.6 server baseline, then annotate the resulting session with

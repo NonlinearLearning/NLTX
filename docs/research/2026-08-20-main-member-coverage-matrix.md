@@ -2,6 +2,10 @@
 
 **Reference:** `D:\TRbackup\Version4物理删除了某些文件\Terraria\Main.cs`
 
+**Reference SHA-256:** `844A862B4EF863FF848227C1D682E89DAB799EEAD48070ADEA07565EC933254D`
+
+**Refreshed line count:** `14,735` (see `Build/diagnostics/main-tick/task-0-baseline/20260825-230000/main-source-baseline.json`)
+
 **Purpose:** turn the responsibility ledger into an auditable migration backlog. A row is a
 responsibility family or source method group, not a claim that every method in that group has been
 migrated. `accepted` means a separate evidence card already owns the behavior; `planned` means an
@@ -52,5 +56,5 @@ accounting gate, not a gameplay-parity percentage.
 - `excluded` rows must not be copied into Simulation to satisfy coverage.
 - A new accepted behavior requires a source anchor, an authority owner, a focused verifier and a
   scenario card; update this matrix in the same batch.
-- This matrix does not claim that the 13,996 source lines are complete. It records the currently
+- This matrix does not claim that the 14,735 source lines are complete. It records the currently
   known server-relevant responsibility groups and their explicit next states.

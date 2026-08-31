@@ -6,7 +6,7 @@ namespace Terraria.Dome.Simulation.WorldModel;
 
 public sealed class WorldProgressionSystem
 {
-  private const int SlimeRainWarningDelayTicks = 420;
+  public const int DefaultSlimeRainWarningDelayTicks = 420;
 
   public WorldProgressionState Advance(
     WorldClockSnapshot clock,
@@ -72,11 +72,15 @@ public sealed class WorldProgressionSystem
       eventProgression,
       invasionStartRequests,
       invasionProgressRequests);
-    return AdvanceSlimeRain(
+    long lanternNightScheduleSequence = scheduledProgression.LanternNightScheduleSequence;
+    WorldProgressionState result = AdvanceSlimeRain(
       clock,
       invasionProgression,
       slimeRainStartRequests,
       slimeRainStopRequests);
+    return result.LanternNightScheduleSequence == lanternNightScheduleSequence
+      ? result
+      : result.WithLanternNightScheduleSequence(lanternNightScheduleSequence);
   }
 
   private static WorldProgressionState AdvanceInvasionDelay(
@@ -105,7 +109,9 @@ public sealed class WorldProgressionSystem
     {
       if (requests[index].IsValid)
       {
-        return progression.WithNextNightLanternNight(true);
+        return progression
+          .WithNextNightLanternNight(true)
+          .WithLanternNightScheduleSequence(requests[index].Sequence);
       }
     }
 
@@ -116,6 +122,12 @@ public sealed class WorldProgressionSystem
     WorldProgressionState progression,
     IReadOnlyList<WorldEventStartCommand> requests)
   {
+    if (progression.IsLanternNight || progression.IsMeteorScheduled ||
+        progression.InvasionType != 0)
+    {
+      return progression;
+    }
+
     for (int index = 0; index < requests.Count; index++)
     {
       WorldEventStartCommand request = requests[index];
@@ -153,6 +165,12 @@ public sealed class WorldProgressionSystem
     WorldProgressionState progression,
     IReadOnlyList<WorldEventStartCommand> requests)
   {
+    if (progression.IsBloodMoon || progression.IsMeteorScheduled ||
+        progression.InvasionType != 0)
+    {
+      return progression;
+    }
+
     for (int index = 0; index < requests.Count; index++)
     {
       WorldEventStartCommand request = requests[index];
@@ -236,7 +254,7 @@ public sealed class WorldProgressionSystem
             .WithSlimeRainCooldown(request.CooldownTicks);
           if (request.Announce)
           {
-            next = next.WithSlimeRainWarning(SlimeRainWarningDelayTicks);
+            next = next.WithSlimeRainWarning(DefaultSlimeRainWarningDelayTicks);
           }
 
           return AdvanceSlimeRainWarning(next);
@@ -263,7 +281,7 @@ public sealed class WorldProgressionSystem
         next = progression.WithSlimeRain(request.DurationTicks);
         if (request.Announce)
         {
-          next = next.WithSlimeRainWarning(SlimeRainWarningDelayTicks);
+          next = next.WithSlimeRainWarning(DefaultSlimeRainWarningDelayTicks);
         }
 
         return AdvanceSlimeRainWarning(next);

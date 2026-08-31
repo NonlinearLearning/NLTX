@@ -10,6 +10,10 @@ namespace Terraria.Dome.Protocol.V1456.Session;
 public sealed class TerrariaSession
 {
   private const int PlayerItemSlotCount = 990;
+  private const ushort SupportedSignDeletionVersions = 1;
+  private const ushort SupportedChestTransferRevisionVersions = 1;
+  private const ushort SupportedNpcProjectileVersions = 7;
+  private const ushort SupportedNpcStatusEffectVersions = 1;
   private readonly byte _assignedPlayerSlot;
   private readonly List<ushort> _buffTypes = new();
   private readonly PlayerEquipmentPacket[] _equipment = CreateEmptyEquipment();
@@ -26,6 +30,9 @@ public sealed class TerrariaSession
   }
 
   public TerrariaSessionState State { get; private set; }
+
+  public SessionContractCapabilities ContractCapabilities { get; private set; } =
+    SessionContractCapabilities.NotNegotiated;
 
   public LegacyPlayerControlsState? LegacyPlayerControls { get; private set; }
 
@@ -104,6 +111,12 @@ public sealed class TerrariaSession
     PlayerBuffsPacket buffs = TerrariaPacketCodec.DecodePlayerBuffs(frameBytes);
     EnsurePlayerOwnership(buffs.PlayerSlot, "PlayerBuffs");
     return buffs;
+  }
+
+  public AddPlayerBuffPvpPacket AcceptActivePlayerBuffPvp(ReadOnlySpan<byte> frameBytes)
+  {
+    EnsureActiveState("AddPlayerBuffPvP");
+    return TerrariaPacketCodec.DecodeAddPlayerBuffPvp(frameBytes);
   }
 
   public void AcceptClientProjectile(ReadOnlySpan<byte> frameBytes)
@@ -235,6 +248,76 @@ public sealed class TerrariaSession
     }
 
     NetModulePacket packet = TerrariaPacketCodec.DecodeNetModule(frameBytes);
+    if (packet.ModuleId == 15)
+    {
+      if (ContractExtensionCodec.IsNpcProjectileCapabilityOffer(frameBytes))
+      {
+        if (ContractCapabilities.State != ContractNegotiationState.Negotiated)
+        {
+          throw new InvalidDataException(
+            "NPC projectile capability requires base contract negotiation first.");
+        }
+
+        if (ContractCapabilities.NpcProjectileVersions != 0)
+        {
+          throw new InvalidDataException(
+            "NPC projectile capability was negotiated more than once.");
+        }
+
+        ushort versions = (ushort)(ContractExtensionCodec.DecodeNpcProjectileCapabilityOffer(
+            frameBytes) & SupportedNpcProjectileVersions);
+        ContractCapabilities = ContractCapabilities with
+        {
+          NpcProjectileVersions = versions
+        };
+        return packet with
+        {
+          ResponseFrame = ContractExtensionCodec.EncodeNpcProjectileCapabilityAck(versions)
+        };
+      }
+
+      if (ContractExtensionCodec.IsNpcStatusEffectCapabilityOffer(frameBytes))
+      {
+        if (ContractCapabilities.State != ContractNegotiationState.Negotiated ||
+            ContractCapabilities.NpcStatusEffectVersions != 0)
+        {
+          throw new InvalidDataException("NPC status-effect capability negotiation is invalid.");
+        }
+
+        ushort versions = (ushort)(ContractExtensionCodec.DecodeNpcStatusEffectCapabilityOffer(
+            frameBytes) & SupportedNpcStatusEffectVersions);
+        ContractCapabilities = ContractCapabilities with { NpcStatusEffectVersions = versions };
+        return packet with
+        {
+          ResponseFrame = ContractExtensionCodec.EncodeNpcStatusEffectCapabilityAck(versions)
+        };
+      }
+
+      if (ContractCapabilities.State != ContractNegotiationState.NotStarted)
+      {
+        ContractCapabilities = ContractCapabilities with
+        {
+          State = ContractNegotiationState.Rejected
+        };
+        throw new InvalidDataException("Contract capabilities were negotiated more than once.");
+      }
+
+      ContractCapabilityOffer offer = ContractExtensionCodec.DecodeCapabilityOffer(frameBytes);
+      ushort signVersions = (ushort)(offer.SignDeletionVersions &
+        SupportedSignDeletionVersions);
+      ushort chestVersions = (ushort)(offer.ChestTransferRevisionVersions &
+        SupportedChestTransferRevisionVersions);
+      ContractCapabilities = new SessionContractCapabilities(
+        ContractNegotiationState.Negotiated,
+        signVersions,
+        chestVersions);
+      return packet with
+      {
+        ResponseFrame = ContractExtensionCodec.EncodeCapabilityAck(
+          new ContractCapabilityAck(signVersions, chestVersions))
+      };
+    }
+
     if (packet.ModuleId == 0)
     {
       _ = TerrariaPacketCodec.DecodeLiquidNetModule(frameBytes);

@@ -1,8 +1,10 @@
 using System;
 using System.Buffers.Binary;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -12,9 +14,12 @@ using Microsoft.CodeAnalysis.CSharp.Syntax;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Commands;
 using Terraria.Dome.Simulation.Items;
+using Terraria.Dome.Simulation.Npc.Definitions;
 using Terraria.Dome.Simulation.Liquid.Definitions;
+using Terraria.Dome.Simulation.Projectile.Definitions;
 using Terraria.Dome.Simulation.World;
 using Terraria.Dome.Simulation.WorldGeneration;
+using Terraria.Dome.Simulation.WorldGeneration.Commands;
 using Terraria.Dome.Simulation.WorldGeneration.Definitions;
 using Terraria.Dome.Simulation.WorldGeneration.Systems;
 using Terraria.Dome.Simulation.WorldModel;
@@ -25,6 +30,2638 @@ using Terraria.Dome.Simulation.WorldObjects.FoodPlatter.Systems;
 using Terraria.Dome.Simulation.WorldObjects.Definitions;
 using Terraria.WorldFile.V319;
 using Terraria.WorldFile.V319.Model;
+
+bool tileMergeOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--tile-merge-only"));
+bool wallLargeFramesOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--wall-large-frames-only"));
+bool anglerQuestItemsOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--angler-quest-items-only"));
+bool npcFrameCountOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--npc-frame-count-only"));
+bool slimeRainNpcOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--slime-rain-npc-only"));
+bool petProjectileOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--projectile-pets-only"));
+bool dirtLayerCavesOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--dirt-layer-caves-only"));
+bool rocksInDirtOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--rocks-in-dirt-only"));
+bool dirtInRocksOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--dirt-in-rocks-only"));
+bool clayOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--clay-only"));
+bool rockLayerCavesOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--rock-layer-caves-only"));
+bool surfaceCavesOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--surface-caves-only"));
+bool mountainCavesOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--mountain-caves-only"));
+bool wavyCavesOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--wavy-caves-only"));
+bool tunnelsOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--tunnels-only"));
+bool oceanSandOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--ocean-sand-only"));
+bool sandPatchesOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--sand-patches-only"));
+bool underworldEvilOnly = args.Any(
+  argument => StringComparer.Ordinal.Equals(argument, "--underworld-evil-bounds-only"));
+
+if (dirtLayerCavesOnly)
+{
+  RunDirtLayerCavesFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (rocksInDirtOnly)
+{
+  RunRocksInDirtFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (dirtInRocksOnly)
+{
+  RunDirtInRocksFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (clayOnly)
+{
+  RunClayFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (rockLayerCavesOnly)
+{
+  RunRockLayerCavesFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (surfaceCavesOnly)
+{
+  RunSurfaceCavesFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (mountainCavesOnly)
+{
+  RunMountainCavesFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (wavyCavesOnly)
+{
+  RunWavyCavesFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (tunnelsOnly)
+{
+  RunTunnelsFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (oceanSandOnly)
+{
+  RunOceanSandFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (sandPatchesOnly)
+{
+  RunSandPatchesFocusedVerification();
+  Environment.Exit(0);
+}
+
+if (underworldEvilOnly)
+{
+  RunUnderworldEvilBoundsFocusedVerification();
+  Environment.Exit(0);
+}
+
+Dictionary<ushort, byte> expectedLegacyProjectileFrames = new()
+{
+  [34] = 6,
+  [72] = 4,
+  [86] = 4,
+  [87] = 4,
+  [102] = 2,
+  [111] = 8,
+  [112] = 6,
+  [127] = 16,
+  [175] = 2,
+  [181] = 4,
+  [189] = 4,
+  [190] = 4,
+  [191] = 18,
+  [192] = 18,
+  [193] = 18,
+  [194] = 18,
+  [198] = 4,
+  [199] = 8,
+  [200] = 10,
+  [206] = 5,
+  [208] = 5,
+  [209] = 12,
+  [210] = 12,
+  [211] = 10,
+  [221] = 3,
+  [228] = 5,
+  [229] = 4,
+  [236] = 13,
+  [237] = 4,
+  [238] = 6,
+  [243] = 4,
+  [244] = 6,
+  [249] = 5,
+  [252] = 4,
+  [254] = 5,
+  [266] = 12,
+  [268] = 8,
+  [269] = 7,
+  [270] = 3,
+  [275] = 2,
+  [276] = 2,
+  [307] = 2,
+  [308] = 10,
+  [313] = 12,
+  [314] = 13,
+  [316] = 4,
+  [317] = 8,
+  [319] = 11,
+  [321] = 3,
+  [324] = 10,
+  [334] = 11,
+  [335] = 4,
+  [337] = 5,
+  [344] = 3,
+  [346] = 2,
+  [347] = 2,
+  [349] = 5,
+  [351] = 2,
+  [353] = 14,
+  [373] = 3,
+  [375] = 8,
+  [377] = 9,
+  [379] = 4,
+  [380] = 4,
+  [384] = 6,
+  [385] = 3,
+  [386] = 6,
+  [387] = 3,
+  [388] = 3,
+  [390] = 11,
+  [391] = 11,
+  [392] = 11,
+  [393] = 15,
+  [394] = 15,
+  [395] = 15,
+  [398] = 11,
+  [407] = 6,
+  [408] = 2,
+  [409] = 3,
+  [423] = 4,
+  [435] = 4,
+  [436] = 4,
+  [439] = 6,
+  [443] = 4,
+  [447] = 4,
+  [448] = 3,
+  [450] = 5,
+  [454] = 2,
+  [456] = 4,
+  [459] = 3,
+  [462] = 5,
+  [465] = 4,
+  [467] = 4,
+  [468] = 4,
+  [485] = 5,
+  [492] = 8,
+  [499] = 12,
+  [500] = 4,
+  [509] = 2,
+  [518] = 4,
+  [519] = 4,
+  [525] = 5,
+  [533] = 21,
+  [535] = 12,
+  [539] = 4,
+  [565] = 4,
+  [566] = 4,
+  [574] = 2,
+  [575] = 4,
+  [585] = 4,
+  [593] = 4,
+  [595] = 28,
+  [596] = 4,
+  [601] = 2,
+  [602] = 4,
+  [612] = 5,
+  [613] = 4,
+  [614] = 4,
+  [615] = 7,
+  [623] = 19,
+  [633] = 5,
+  [634] = 4,
+  [635] = 4,
+  [643] = 8,
+  [645] = 7,
+  [650] = 4,
+  [652] = 6,
+  [659] = 4,
+  [663] = 7,
+  [665] = 9,
+  [667] = 9,
+  [677] = 6,
+  [678] = 6,
+  [679] = 6,
+  [682] = 4,
+  [688] = 6,
+  [689] = 6,
+  [690] = 8,
+  [691] = 4,
+  [692] = 4,
+  [693] = 4,
+  [694] = 4,
+  [695] = 4,
+  [696] = 5,
+  [700] = 4,
+  [701] = 3,
+  [702] = 4,
+  [703] = 8,
+  [706] = 8,
+  [709] = 3,
+  [712] = 8,
+  [714] = 7,
+  [731] = 4,
+  [732] = 4,
+  [734] = 8,
+  [735] = 28,
+  [736] = 3,
+  [737] = 3,
+  [738] = 3,
+  [755] = 5,
+  [758] = 24,
+  [759] = 5,
+  [765] = 10,
+  [766] = 4,
+  [767] = 4,
+  [768] = 4,
+  [769] = 4,
+  [770] = 4,
+  [773] = 4,
+  [774] = 8,
+  [779] = 4,
+  [783] = 4,
+  [815] = 10,
+  [816] = 17,
+  [817] = 18,
+  [820] = 4,
+  [821] = 23,
+  [824] = 4,
+  [825] = 26,
+  [826] = 3,
+  [828] = 2,
+  [829] = 2,
+  [831] = 6,
+  [833] = 10,
+  [834] = 12,
+  [835] = 12,
+  [836] = 4,
+  [837] = 3,
+  [839] = 4,
+  [840] = 4,
+  [851] = 4,
+  [853] = 4,
+  [854] = 19,
+  [855] = 4,
+  [858] = 14,
+  [859] = 24,
+  [860] = 14,
+  [861] = 4,
+  [862] = 4,
+  [863] = 4,
+  [864] = 2,
+  [866] = 4,
+  [870] = 4,
+  [875] = 11,
+  [880] = 8,
+  [881] = 12,
+  [882] = 20,
+  [883] = 3,
+  [884] = 14,
+  [885] = 10,
+  [886] = 8,
+  [887] = 3,
+  [888] = 36,
+  [889] = 11,
+  [890] = 12,
+  [891] = 15,
+  [892] = 6,
+  [893] = 4,
+  [894] = 8,
+  [895] = 6,
+  [896] = 16,
+  [897] = 11,
+  [898] = 16,
+  [899] = 14,
+  [900] = 14,
+  [901] = 12,
+  [908] = 12,
+  [909] = 6,
+  [916] = 6,
+  [920] = 3,
+  [929] = 8,
+  [934] = 12,
+  [951] = 12,
+  [953] = 5,
+  [956] = 11,
+  [957] = 12,
+  [958] = 17,
+  [959] = 12,
+  [960] = 20,
+  [961] = 1,
+  [962] = 3,
+  [963] = 13,
+  [964] = 1,
+  [965] = 1,
+  [966] = 3,
+  [967] = 8,
+  [968] = 24,
+  [969] = 8,
+  [970] = 6,
+  [978] = 5,
+  [994] = 16,
+  [995] = 20,
+  [998] = 10,
+  [1003] = 16,
+  [1004] = 15,
+  [1014] = 11,
+  [1022] = 16,
+  [1024] = 8,
+  [1025] = 4,
+  [1026] = 4,
+  [1027] = 5,
+  [1036] = 4,
+  [1038] = 8,
+  [1046] = 12,
+  [1050] = 16,
+  [1055] = 10,
+  [1078] = 3,
+  [1088] = 2,
+  [1092] = 54,
+  [1093] = 28,
+  [1095] = 12,
+  [1096] = 12,
+  [1098] = 11,
+  [1105] = 7,
+  [1110] = 4,
+};
+IReadOnlyDictionary<ushort, byte> actualLegacyProjectileFrames =
+  LegacyProjectileFrameRegistry.RegisterDefaults();
+if (LegacyProjectileFrameRegistry.ProjectileTypeCount != 1111 ||
+    LegacyProjectileFrameRegistry.DefaultFrameCount != 1 ||
+    actualLegacyProjectileFrames.Count != expectedLegacyProjectileFrames.Count ||
+    expectedLegacyProjectileFrames.Any(pair =>
+      !actualLegacyProjectileFrames.TryGetValue(pair.Key, out byte value) ||
+      value != pair.Value) ||
+    LegacyProjectileFrameRegistry.GetFrameCount(0) != 1 ||
+    LegacyProjectileFrameRegistry.GetFrameCount(34) != 6 ||
+    LegacyProjectileFrameRegistry.GetFrameCount(221) != 3 ||
+    LegacyProjectileFrameRegistry.GetFrameCount(961) != 1 ||
+    LegacyProjectileFrameRegistry.GetFrameCount(1110) != 4 ||
+    LegacyProjectileFrameRegistry.GetFrameCount(1111) != 1 ||
+    actualLegacyProjectileFrames is not FrozenDictionary<ushort, byte>)
+{
+  throw new InvalidOperationException(
+    "Legacy projectile frame defaults drifted from Version4 or lost default semantics.");
+}
+
+Console.WriteLine(
+  "PASS: legacy projectile frame defaults preserve exact immutable override map");
+
+if (args.Any(argument => StringComparer.Ordinal.Equals(argument, "--projectile-frames-only")))
+{
+  Console.WriteLine(
+    "SUMMARY: projectile frame focused verification completed; remaining WorldGeneration " +
+    "checks were intentionally not run");
+  Environment.Exit(0);
+}
+
+byte[] expectedLegacyNpcFrameCounts =
+[
+  1, 2, 2, 3, 6, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  2, 25, 23, 25, 21, 15, 26, 2, 10, 1, 16, 16, 16, 3, 1, 15,
+  6, 1, 3, 2, 2, 21, 25, 1, 1, 1, 3, 3, 15, 3, 7, 7,
+  6, 5, 6, 5, 3, 3, 23, 6, 3, 6, 6, 2, 5, 6, 5, 7,
+  7, 4, 5, 8, 1, 5, 1, 2, 4, 16, 5, 4, 4, 15, 16, 16,
+  16, 2, 4, 6, 6, 18, 16, 1, 1, 1, 1, 1, 1, 4, 3, 1,
+  1, 1, 1, 1, 1, 5, 6, 7, 16, 1, 1, 25, 23, 12, 20, 21,
+  1, 2, 2, 3, 6, 1, 1, 1, 15, 4, 11, 1, 23, 6, 6, 6,
+  1, 2, 2, 1, 3, 4, 1, 2, 1, 4, 2, 1, 15, 3, 25, 4,
+  5, 7, 3, 2, 12, 12, 4, 4, 4, 8, 8, 13, 5, 6, 4, 15,
+  23, 3, 15, 8, 5, 4, 13, 15, 12, 4, 14, 14, 3, 2, 5, 3,
+  2, 3, 23, 5, 14, 16, 5, 2, 2, 12, 3, 3, 3, 3, 2, 2,
+  2, 2, 2, 7, 14, 15, 16, 8, 3, 15, 15, 16, 2, 3, 20, 25,
+  23, 26, 4, 4, 16, 16, 20, 20, 20, 2, 2, 2, 2, 8, 12, 3,
+  4, 2, 4, 25, 26, 26, 6, 3, 3, 3, 3, 3, 5, 4, 4, 5,
+  4, 6, 7, 15, 4, 7, 6, 1, 1, 2, 4, 3, 5, 3, 3, 3,
+  4, 5, 6, 4, 2, 1, 8, 4, 4, 1, 8, 1, 4, 15, 15, 15,
+  15, 15, 15, 16, 15, 15, 15, 15, 15, 3, 3, 3, 3, 3, 3, 16,
+  3, 6, 12, 21, 21, 20, 16, 15, 15, 5, 5, 6, 6, 5, 2, 7,
+  2, 6, 6, 6, 6, 6, 15, 15, 15, 15, 15, 11, 4, 2, 2, 3,
+  3, 3, 16, 15, 16, 10, 14, 12, 1, 10, 8, 3, 3, 2, 2, 2,
+  2, 7, 15, 15, 15, 6, 3, 10, 10, 6, 9, 8, 9, 8, 20, 10,
+  6, 23, 1, 4, 24, 2, 4, 6, 6, 13, 15, 15, 15, 15, 4, 4,
+  26, 23, 8, 2, 4, 4, 4, 4, 2, 2, 4, 12, 12, 9, 9, 9,
+  1, 9, 11, 2, 2, 9, 5, 6, 4, 18, 8, 11, 1, 4, 5, 8,
+  4, 1, 1, 1, 1, 4, 2, 5, 4, 11, 5, 11, 1, 1, 1, 10,
+  10, 15, 8, 17, 6, 6, 1, 12, 12, 13, 15, 9, 5, 10, 7, 7,
+  7, 7, 7, 7, 7, 4, 4, 16, 16, 25, 5, 7, 3, 13, 2, 6,
+  2, 19, 19, 19, 20, 26, 3, 1, 1, 1, 1, 1, 16, 21, 9, 16,
+  7, 6, 18, 13, 20, 12, 12, 20, 6, 14, 14, 14, 14, 6, 1, 3,
+  25, 19, 20, 22, 2, 4, 4, 4, 11, 9, 8, 1, 9, 1, 8, 8,
+  12, 12, 11, 11, 11, 11, 11, 11, 11, 11, 11, 1, 6, 9, 1, 1,
+  1, 1, 1, 1, 4, 1, 10, 1, 8, 4, 1, 5, 8, 8, 8, 8,
+  9, 9, 5, 4, 8, 16, 8, 2, 3, 3, 6, 6, 7, 13, 4, 4,
+  4, 4, 1, 1, 1, 8, 25, 11, 14, 14, 14, 17, 17, 17, 5, 5,
+  5, 14, 14, 14, 9, 9, 9, 9, 17, 17, 16, 16, 18, 18, 10, 10,
+  10, 10, 4, 1, 6, 9, 6, 4, 4, 4, 14, 4, 25, 13, 3, 7,
+  6, 6, 1, 4, 4, 4, 4, 4, 4, 4, 15, 15, 8, 8, 2, 6,
+  15, 15, 6, 13, 5, 5, 7, 5, 14, 14, 4, 6, 21, 1, 1, 1,
+  11, 12, 6, 6, 17, 6, 16, 21, 16, 23, 5, 16, 2, 28, 28, 6,
+  6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 3, 4, 6,
+  27, 16, 2, 2, 4, 3, 4, 23, 6, 1, 1, 2, 8, 8, 14, 6,
+  6, 6, 6, 6, 2, 4, 14, 14, 14, 14, 14, 14, 14, 1, 1, 13,
+  6, 13, 1, 3, 16, 3, 30, 3, 1,
+];
+IReadOnlyDictionary<int, byte> actualLegacyNpcFrameCounts =
+  LegacyNpcFrameRegistry.RegisterDefaults();
+if (LegacyNpcFrameRegistry.NpcTypeCount != expectedLegacyNpcFrameCounts.Length ||
+    actualLegacyNpcFrameCounts.Count != expectedLegacyNpcFrameCounts.Length ||
+    actualLegacyNpcFrameCounts is not FrozenDictionary<int, byte>)
+{
+  throw new InvalidOperationException(
+    "Legacy NPC frame-count registry shape drifted from Version4.");
+}
+
+for (int npcType = 0; npcType < expectedLegacyNpcFrameCounts.Length; npcType++)
+{
+  if (!actualLegacyNpcFrameCounts.TryGetValue(npcType, out byte actualFrameCount) ||
+      actualFrameCount != expectedLegacyNpcFrameCounts[npcType])
+  {
+    throw new InvalidOperationException(
+      $"Legacy NPC frame-count mismatch at type {npcType}.");
+  }
+}
+
+bool negativeNpcTypeRejected = false;
+try
+{
+  _ = LegacyNpcFrameRegistry.GetFrameCount(-1);
+}
+catch (ArgumentOutOfRangeException)
+{
+  negativeNpcTypeRejected = true;
+}
+
+bool upperNpcTypeRejected = false;
+try
+{
+  _ = LegacyNpcFrameRegistry.GetFrameCount(LegacyNpcFrameRegistry.NpcTypeCount);
+}
+catch (ArgumentOutOfRangeException)
+{
+  upperNpcTypeRejected = true;
+}
+
+if (!negativeNpcTypeRejected ||
+    !upperNpcTypeRejected ||
+    LegacyNpcFrameRegistry.GetFrameCount(0) != 1 ||
+    LegacyNpcFrameRegistry.GetFrameCount(17) != 25 ||
+    LegacyNpcFrameRegistry.GetFrameCount(696) != 1)
+{
+  throw new InvalidOperationException(
+    "Legacy NPC frame-count range or representative values drifted from Version4.");
+}
+
+Console.WriteLine(
+  "PASS: legacy NPC frame-count defaults preserve exact immutable 697-entry map");
+
+if (npcFrameCountOnly)
+{
+  Console.WriteLine(
+    "SUMMARY: NPC frame-count focused verification completed; remaining WorldGeneration " +
+    "checks were intentionally not run");
+  Environment.Exit(0);
+}
+
+const int expectedNpcTypeCount = 697;
+const int expectedBlueSlimeNpcType = 1;
+FrozenSet<int> expectedLegacySlimeRainNpcTypes =
+  new HashSet<int> { expectedBlueSlimeNpcType }.ToFrozenSet();
+IReadOnlySet<int> actualLegacySlimeRainNpcTypes =
+  LegacySlimeRainNpcRegistry.RegisterDefaults();
+if (LegacySlimeRainNpcRegistry.NpcTypeCount != expectedNpcTypeCount ||
+    actualLegacySlimeRainNpcTypes.Count != expectedLegacySlimeRainNpcTypes.Count ||
+    actualLegacySlimeRainNpcTypes is not FrozenSet<int> ||
+    !expectedLegacySlimeRainNpcTypes.SetEquals(actualLegacySlimeRainNpcTypes) ||
+    !LegacySlimeRainNpcRegistry.IsSlimeRainNpc(expectedBlueSlimeNpcType) ||
+    LegacySlimeRainNpcRegistry.IsSlimeRainNpc(0) ||
+    LegacySlimeRainNpcRegistry.IsSlimeRainNpc(expectedNpcTypeCount - 1) ||
+    LegacySlimeRainNpcRegistry.IsSlimeRainNpc(-1) ||
+    LegacySlimeRainNpcRegistry.IsSlimeRainNpc(LegacySlimeRainNpcRegistry.NpcTypeCount))
+{
+  throw new InvalidOperationException(
+    "Legacy Slime Rain NPC defaults drifted from Version4 or lost default semantics.");
+}
+
+Console.WriteLine(
+  "PASS: legacy Slime Rain NPC defaults preserve exact immutable one-entry set");
+
+if (slimeRainNpcOnly)
+{
+  Console.WriteLine(
+    "SUMMARY: Slime Rain NPC focused verification completed; remaining WorldGeneration " +
+    "checks were intentionally not run");
+  Environment.Exit(0);
+}
+
+FrozenSet<int> expectedLegacyPetProjectileTypes = new HashSet<int>
+{
+  111, 112, 127, 175, 191, 192, 193, 194, 197, 198, 199, 200,
+  208, 209, 210, 211, 236, 266, 268, 269, 313, 314, 317, 319,
+  324, 334, 353, 373, 375, 380, 387, 388, 390, 391, 392, 393,
+  394, 395, 398, 407, 423, 492, 499, 533, 613, 623, 625, 626,
+  627, 628, 653, 701, 702, 703, 755, 758, 759, 764, 765, 774,
+  815, 816, 817, 821, 825, 831, 833, 834, 835, 854, 858, 859,
+  860, 864, 875, 881, 882, 883, 884, 885, 886, 887, 888, 889,
+  890, 891, 892, 893, 894, 895, 896, 897, 898, 899, 900, 901,
+  934, 946, 951, 956, 957, 958, 959, 960, 963, 970, 994, 998,
+  1003, 1004, 1018, 1022, 1027, 1046, 1050, 1056, 1090, 1093,
+  1094, 1095, 1096
+}.ToFrozenSet();
+IReadOnlySet<int> actualLegacyPetProjectileTypes =
+  LegacyPetProjectileRegistry.RegisterDefaults();
+if (LegacyPetProjectileRegistry.ProjectileTypeCount != 1111 ||
+    actualLegacyPetProjectileTypes.Count != expectedLegacyPetProjectileTypes.Count ||
+    actualLegacyPetProjectileTypes is not FrozenSet<int> ||
+    !expectedLegacyPetProjectileTypes.SetEquals(actualLegacyPetProjectileTypes) ||
+    !LegacyPetProjectileRegistry.IsPet(111) ||
+    !LegacyPetProjectileRegistry.IsPet(1096) ||
+    LegacyPetProjectileRegistry.IsPet(0) ||
+    LegacyPetProjectileRegistry.IsPet(1109) ||
+    LegacyPetProjectileRegistry.IsPet(-1) ||
+    LegacyPetProjectileRegistry.IsPet(LegacyPetProjectileRegistry.ProjectileTypeCount))
+{
+  throw new InvalidOperationException(
+    "Legacy projectile pet defaults drifted from Version4 or lost default semantics.");
+}
+
+Console.WriteLine(
+  "PASS: legacy projectile pet defaults preserve exact immutable 121-entry set");
+
+if (petProjectileOnly)
+{
+  Console.WriteLine(
+    "SUMMARY: projectile pet focused verification completed; remaining WorldGeneration " +
+    "checks were intentionally not run");
+  Environment.Exit(0);
+}
+
+Dictionary<byte, ushort> expectedLegacyAnglerQuestItems = new()
+{
+  [0] = 2450,
+  [1] = 2451,
+  [2] = 2452,
+  [3] = 2453,
+  [4] = 2454,
+  [5] = 2455,
+  [6] = 2456,
+  [7] = 2457,
+  [8] = 2458,
+  [9] = 2459,
+  [10] = 2460,
+  [11] = 2461,
+  [12] = 2462,
+  [13] = 2463,
+  [14] = 2464,
+  [15] = 2465,
+  [16] = 2466,
+  [17] = 2467,
+  [18] = 2468,
+  [19] = 2469,
+  [20] = 2470,
+  [21] = 2471,
+  [22] = 2472,
+  [23] = 2473,
+  [24] = 2474,
+  [25] = 2475,
+  [26] = 2476,
+  [27] = 2477,
+  [28] = 2478,
+  [29] = 2479,
+  [30] = 2480,
+  [31] = 2481,
+  [32] = 2482,
+  [33] = 2483,
+  [34] = 2484,
+  [35] = 2485,
+  [36] = 2486,
+  [37] = 2487,
+  [38] = 2488,
+  [39] = 4393,
+  [40] = 4394
+};
+IReadOnlyDictionary<byte, ushort> actualLegacyAnglerQuestItems =
+  LegacyAnglerQuestItemRegistry.RegisterDefaults();
+if (LegacyAnglerQuestItemRegistry.QuestCount != 41 ||
+    LegacyAnglerQuestItemRegistry.ItemTypeCount != 6147 ||
+    actualLegacyAnglerQuestItems.Count != expectedLegacyAnglerQuestItems.Count ||
+    expectedLegacyAnglerQuestItems.Any(pair =>
+      !actualLegacyAnglerQuestItems.TryGetValue(pair.Key, out ushort value) ||
+      value != pair.Value) ||
+    LegacyAnglerQuestItemRegistry.TryGetItemType(41, out _) ||
+    !LegacyAnglerQuestItemRegistry.TryGetItemType(0, out ushort firstItemType) ||
+    firstItemType != 2450 ||
+    !LegacyAnglerQuestItemRegistry.TryGetItemType(40, out ushort lastItemType) ||
+    lastItemType != 4394 ||
+    actualLegacyAnglerQuestItems is not FrozenDictionary<byte, ushort>)
+{
+  throw new InvalidOperationException(
+    "Legacy Angler quest item defaults drifted from Version4 or lost immutable ordering.");
+}
+
+Console.WriteLine(
+  "PASS: legacy Angler quest item defaults preserve exact immutable index mapping");
+
+if (anglerQuestItemsOnly)
+{
+  Console.WriteLine(
+    "SUMMARY: Angler quest item focused verification completed; remaining WorldGeneration " +
+    "checks were intentionally not run");
+  Environment.Exit(0);
+}
+
+HashSet<ushort> expectedLegacySolidTop =
+[
+  14, 16, 18, 19, 87, 88, 101, 114, 134, 239, 275, 276, 277, 278, 279, 280, 281,
+  285, 286, 296, 297, 298, 299, 309, 310, 339, 358, 359, 361, 362, 363, 364, 376,
+  380, 391, 392, 393, 394, 405, 413, 414, 427, 469, 532, 533, 538, 542, 544, 550,
+  551, 553, 554, 555, 556, 558, 559, 582, 599, 600, 601, 602, 603, 604, 605, 606,
+  607, 608, 609, 610, 611, 612, 619, 629, 632, 640, 643, 644, 645, 710
+];
+if (!LegacySolidTopTileRegistry.RegisterDefaults().SetEquals(expectedLegacySolidTop) ||
+    LegacySolidTopTileRegistry.IsSolidTop(435))
+{
+  throw new InvalidOperationException("Legacy solid-top defaults drifted from Version4.");
+}
+
+HashSet<ushort> expectedLegacyHammer = [26, 31, 695, 696];
+if (!LegacyHammerTileRegistry.RegisterDefaults().SetEquals(expectedLegacyHammer) ||
+    LegacyHammerTileRegistry.IsHammerTarget(25) ||
+    !LegacyHammerTileRegistry.IsHammerTarget(696))
+{
+  throw new InvalidOperationException("Legacy hammer defaults drifted from Version4.");
+}
+
+if (LegacyHammerTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy hammer definition projection was not frozen.");
+}
+
+Console.WriteLine("PASS: legacy hammer defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyAxe =
+[
+  5, 72, 80, 323, 488, 583, 584, 585, 586, 587, 588, 589, 596, 616, 634, 704
+];
+if (!LegacyAxeTileRegistry.RegisterDefaults().SetEquals(expectedLegacyAxe) ||
+    LegacyAxeTileRegistry.IsAxeTarget(4) ||
+    !LegacyAxeTileRegistry.IsAxeTarget(704))
+{
+  throw new InvalidOperationException("Legacy axe defaults drifted from Version4.");
+}
+
+if (LegacyAxeTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy axe definition projection was not frozen.");
+}
+
+Console.WriteLine("PASS: legacy axe defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyTable =
+[
+  14, 18, 19, 87, 88, 101, 114, 275, 276, 277, 278, 279, 280, 281, 285, 286,
+  296, 297, 298, 299, 309, 310, 339, 358, 359, 361, 362, 363, 364, 376, 380,
+  391, 392, 393, 394, 405, 413, 414, 427, 469, 532, 533, 538, 542, 544, 550,
+  551, 553, 554, 555, 556, 558, 559, 582, 599, 600, 601, 602, 603, 604, 605,
+  606, 607, 608, 609, 610, 611, 612, 619, 629, 632, 640, 643, 644, 645, 710
+];
+if (!LegacyTileTableRegistry.RegisterDefaults().SetEquals(expectedLegacyTable) ||
+    LegacyTileTableRegistry.IsTable(16) || !LegacyTileTableRegistry.IsTable(710) ||
+    LegacyTileTableRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy tile-table defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy tile-table defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyNoFail =
+[
+  3, 4, 24, 32, 50, 51, 52, 61, 62, 69, 73, 74, 81, 82, 83, 84, 110, 113, 115,
+  129, 162, 165, 184, 185, 186, 187, 192, 201, 205, 227, 233, 254, 324, 330, 331,
+  332, 333, 352, 373, 374, 375, 382, 384, 461, 481, 482, 483, 484, 485, 518, 519,
+  528, 529, 530, 549, 624, 636, 637, 638, 654, 655, 656, 666, 697, 700, 701, 705,
+  709
+];
+if (!LegacyNoFailTileRegistry.RegisterDefaults().SetEquals(expectedLegacyNoFail) ||
+    LegacyNoFailTileRegistry.IsNoFail(2) || !LegacyNoFailTileRegistry.IsNoFail(709) ||
+    LegacyNoFailTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy no-fail defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy no-fail defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyBouncy = [371, 446, 447, 448];
+if (!LegacyBouncyTileRegistry.RegisterDefaults().SetEquals(expectedLegacyBouncy) ||
+    LegacyBouncyTileRegistry.IsBouncy(370) || !LegacyBouncyTileRegistry.IsBouncy(448) ||
+    LegacyBouncyTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy bouncy defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy bouncy defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyAlchemical = [82, 83, 84];
+if (!LegacyAlchemicalTileRegistry.RegisterDefaults().SetEquals(expectedLegacyAlchemical) ||
+    LegacyAlchemicalTileRegistry.IsAlchemical(81) ||
+    !LegacyAlchemicalTileRegistry.IsAlchemical(84) ||
+    LegacyAlchemicalTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy alchemical defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy alchemical defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyWallLight =
+[
+  0, 21, 106, 107, 138, 139, 140, 141, 145, 150, 152, 168, 245, 315, 317, 318
+];
+if (!LegacyWallLightRegistry.RegisterDefaults().SetEquals(expectedLegacyWallLight) ||
+    LegacyWallLightRegistry.IsLightWall(1) || !LegacyWallLightRegistry.IsLightWall(318) ||
+    LegacyWallLightRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy wall-light defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy wall-light defaults preserve exact immutable registry");
+
+Dictionary<ushort, byte> expectedLegacyLargeFrames = new()
+{
+  [273] = 1, [274] = 1, [284] = 1, [325] = 1, [357] = 1, [409] = 2,
+  [618] = 1, [669] = 2, [670] = 2, [671] = 2, [672] = 2, [673] = 2,
+  [674] = 2, [675] = 2, [676] = 2, [735] = 2, [736] = 1, [737] = 2,
+  [741] = 2, [742] = 2, [743] = 2, [745] = 2, [746] = 2, [749] = 2
+};
+if (!LegacyLargeFrameTileRegistry.RegisterDefaults().OrderBy(pair => pair.Key)
+      .SequenceEqual(expectedLegacyLargeFrames.OrderBy(pair => pair.Key)) ||
+    LegacyLargeFrameTileRegistry.GetFrameSize(272) != 0 ||
+    LegacyLargeFrameTileRegistry.GetFrameSize(749) != 2 ||
+    LegacyLargeFrameTileRegistry.RegisterDefaults() is not FrozenDictionary<ushort, byte>)
+{
+  throw new InvalidOperationException("Legacy large-frame defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy large-frame defaults preserve exact immutable registry");
+
+Dictionary<ushort, byte> expectedLegacyWallLargeFrames = new()
+{
+  [146] = 1, [147] = 1, [167] = 1, [179] = 1, [185] = 2, [224] = 2,
+  [274] = 2, [323] = 2, [324] = 2, [325] = 2, [326] = 2, [327] = 2,
+  [328] = 2, [329] = 2, [330] = 2, [354] = 1, [355] = 2, [358] = 2,
+  [359] = 2, [362] = 2, [363] = 2, [366] = 2
+};
+IReadOnlyDictionary<ushort, byte> actualLegacyWallLargeFrames =
+  LegacyLargeFrameWallRegistry.RegisterDefaults();
+if (LegacyLargeFrameWallRegistry.WallTypeCount != 367 ||
+    actualLegacyWallLargeFrames.Count != expectedLegacyWallLargeFrames.Count ||
+    expectedLegacyWallLargeFrames.Any(pair =>
+      !actualLegacyWallLargeFrames.TryGetValue(pair.Key, out byte value) || value != pair.Value) ||
+    LegacyLargeFrameWallRegistry.GetFrameSize(0) != 0 ||
+    LegacyLargeFrameWallRegistry.GetFrameSize(146) != 1 ||
+    LegacyLargeFrameWallRegistry.GetFrameSize(367) != 0 ||
+    actualLegacyWallLargeFrames is not FrozenDictionary<ushort, byte>)
+{
+  throw new InvalidOperationException("Legacy wall large-frame defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy wall large-frame defaults preserve exact immutable registry");
+
+if (wallLargeFramesOnly)
+{
+  Console.WriteLine(
+    "SUMMARY: wall large-frame focused verification completed; remaining WorldGeneration " +
+    "checks were intentionally not run");
+  Environment.Exit(0);
+}
+
+HashSet<ushort> expectedLegacyNoSunLight = [11, 197, 386, 389, 630, 631];
+if (!LegacyNoSunLightTileRegistry.RegisterDefaults().SetEquals(expectedLegacyNoSunLight) ||
+    LegacyNoSunLightTileRegistry.IsNoSunLight(10) ||
+    !LegacyNoSunLightTileRegistry.IsNoSunLight(631) ||
+    LegacyNoSunLightTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy no-sun-light defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy no-sun-light defaults preserve exact immutable registry");
+
+HashSet<ushort> expectedLegacySpelunker =
+[
+  6, 7, 8, 9, 12, 21, 28, 37, 63, 64, 65, 66, 67, 68, 83, 84, 105, 107, 108,
+  111, 166, 167, 168, 169, 178, 211, 221, 222, 223, 227, 236, 240, 242, 245,
+  246, 337, 349, 404, 407, 441, 467, 468, 506, 531, 566, 639, 702, 751, 752
+];
+if (!LegacySpelunkerTileRegistry.RegisterDefaults().SetEquals(expectedLegacySpelunker) ||
+    LegacySpelunkerTileRegistry.IsSpelunkerTile(5) ||
+    !LegacySpelunkerTileRegistry.IsSpelunkerTile(752) ||
+    LegacySpelunkerTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy spelunker defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy spelunker defaults preserve exact immutable registry");
+
+HashSet<ushort> expectedLegacyNoAttach =
+[
+  3, 4, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 27, 50, 86, 87, 88, 89, 90, 91,
+  92, 93, 94, 95, 96, 97, 98, 99, 101, 102, 110, 114, 134, 387, 388, 390, 427,
+  435, 436, 437, 438, 439, 441, 467, 468, 469, 486, 487, 488, 489, 490, 497, 564,
+  565, 568, 569, 570, 572, 580, 590, 593, 594, 595, 615, 620, 704, 707
+];
+TileDefinitionRegistry tileDefinitionRegistry = TileDefinitionRegistry.RegisterDefaults();
+HashSet<ushort> actualLegacyNoAttach = tileDefinitionRegistry.Definitions
+  .Where(definition => definition.IsNoAttach)
+  .Select(definition => definition.TileType)
+  .ToHashSet();
+if (!actualLegacyNoAttach.SetEquals(expectedLegacyNoAttach) ||
+    !tileDefinitionRegistry.TryGet(435, out TileDefinition noAttachDefinition) ||
+    !noAttachDefinition.IsNoAttach ||
+    tileDefinitionRegistry.TryGet(434, out TileDefinition attachedDefinition) &&
+      attachedDefinition.IsNoAttach)
+{
+  throw new InvalidOperationException("Legacy no-attach defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy no-attach defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyPile = [330, 331, 332, 333];
+if (!LegacyPileTileRegistry.RegisterDefaults().SetEquals(expectedLegacyPile) ||
+    LegacyPileTileRegistry.IsPileTile(329) || !LegacyPileTileRegistry.IsPileTile(333) ||
+    LegacyPileTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy pile defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy pile defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyFlame =
+[
+  4, 33, 34, 35, 42, 49, 93, 98, 100, 173, 174, 372, 646
+];
+if (!LegacyFlameTileRegistry.RegisterDefaults().SetEquals(expectedLegacyFlame) ||
+    LegacyFlameTileRegistry.IsFlameTile(3) || !LegacyFlameTileRegistry.IsFlameTile(646) ||
+    LegacyFlameTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy flame defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy flame defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyLighted =
+[
+  4, 17, 19, 20, 22, 26, 27, 31, 33, 34, 35, 37, 42, 49, 58, 61, 70, 71, 72, 76,
+  77, 83, 84, 92, 93, 95, 96, 98, 100, 109, 125, 126, 129, 133, 140, 149, 160, 171,
+  173, 174, 184, 190, 204, 209, 215, 237, 238, 262, 263, 264, 265, 266, 267, 268, 270,
+  271, 286, 302, 316, 317, 318, 327, 336, 340, 341, 342, 343, 344, 346, 347, 348, 349,
+  350, 354, 356, 370, 372, 381, 390, 391, 405, 415, 416, 417, 418, 429, 463, 491, 500,
+  501, 502, 503, 517, 519, 528, 534, 535, 536, 537, 539, 540, 548, 564, 568, 569, 570,
+  572, 578, 580, 581, 582, 592, 593, 594, 597, 598, 613, 614, 619, 620, 625, 626, 627,
+  628, 633, 634, 637, 638, 646, 656, 658, 659, 660, 663, 667, 684, 687, 688, 689, 690,
+  691, 692, 695, 696, 699, 701, 703, 708, 711, 717, 718, 719, 739
+];
+if (!LegacyLightedTileRegistry.RegisterDefaults().SetEquals(expectedLegacyLighted) ||
+    LegacyLightedTileRegistry.IsLighted(262) == false ||
+    LegacyLightedTileRegistry.IsLighted(261) ||
+    LegacyLightedTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy lighted defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy lighted defaults preserve exact immutable tile registry");
+
+HashSet<int> expectedLegacyCatchableNpc =
+[
+  46, 55, 74, 148, 149, 297, 298, 299, 300, 355, 356, 357, 358, 359, 360, 361, 362,
+  363, 364, 365, 366, 367, 374, 377, 442, 443, 444, 445, 446, 447, 448, 484, 485,
+  486, 487, 538, 539, 583, 584, 585, 592, 593, 595, 596, 597, 598, 599, 600, 601,
+  602, 603, 604, 605, 606, 607, 608, 609, 610, 611, 612, 613, 614, 616, 617,
+  626, 627, 639, 640, 641, 642, 643, 644, 645, 646, 647, 648, 649, 650, 651, 652,
+  653, 654, 655, 661, 669, 671, 672, 673, 674, 675, 677, 688
+];
+if (!LegacyCatchableNpcRegistry.RegisterDefaults().SetEquals(expectedLegacyCatchableNpc) ||
+    LegacyCatchableNpcRegistry.IsCatchable(45) ||
+    !LegacyCatchableNpcRegistry.IsCatchable(688) ||
+    LegacyCatchableNpcRegistry.RegisterDefaults() is not FrozenSet<int>)
+{
+  throw new InvalidOperationException("Legacy catchable NPC defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy catchable NPC defaults preserve exact immutable registry");
+
+HashSet<ushort> expectedLegacyObsidianKill =
+[
+  3, 5, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 24, 27, 28, 29, 32, 33, 34, 35, 36,
+  42, 49, 50, 51, 52, 55, 61, 62, 69, 71, 72, 73, 74, 77, 78, 79, 80, 81, 82, 83,
+  84, 85, 86, 87, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 100, 101, 102, 103,
+  104, 105, 106, 110, 113, 115, 125, 126, 128, 129, 132, 133, 134, 135, 136, 139,
+  149, 165, 172, 173, 174, 178, 184, 185, 186, 187, 201, 205, 209, 210, 212, 213,
+  215, 216, 217, 218, 219, 220, 227, 228, 231, 233, 236, 238, 240, 241, 242, 243,
+  244, 245, 246, 247, 254, 269, 270, 271, 275, 276, 277, 278, 279, 280, 281, 282,
+  283, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296, 297, 298, 299,
+  300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 314, 316, 317, 318, 319,
+  323, 324, 335, 337, 338, 339, 349, 352, 353, 354, 355, 382, 413, 425, 453, 456,
+  463, 464, 465, 469, 484, 485, 486, 487, 488, 489, 490, 493, 497, 499, 506, 510,
+  511, 528, 529, 530, 532, 533, 538, 544, 546, 547, 548, 550, 551, 552, 553, 554,
+  555, 556, 558, 559, 560, 564, 565, 567, 568, 569, 570, 571, 572, 573, 579, 580,
+  581, 582, 591, 599, 600, 601, 602, 603, 604, 605, 606, 607, 608, 609, 610, 611,
+  612, 619, 620, 621, 622, 623, 624, 629, 630, 631, 632, 636, 640, 642, 643, 644,
+  645, 647, 648, 649, 650, 651, 652, 654, 655, 656, 660, 693, 694, 697, 698, 699,
+  700, 701, 702, 703, 704, 705, 706, 707, 710
+];
+if (!LegacyObsidianKillTileRegistry.RegisterDefaults().SetEquals(expectedLegacyObsidianKill) ||
+    LegacyObsidianKillTileRegistry.IsObsidianKillTile(88) ||
+    !LegacyObsidianKillTileRegistry.IsObsidianKillTile(706) ||
+    LegacyObsidianKillTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy obsidian-kill defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy obsidian-kill defaults preserve exact immutable tile registry");
+
+Dictionary<ushort, short> expectedLegacyOreFinderPriority = new()
+{
+  [6] = 220, [7] = 200, [8] = 260, [9] = 240, [12] = 550, [21] = 500, [22] = 300,
+  [28] = 100, [37] = 400, [107] = 600, [108] = 620, [111] = 640, [129] = 675,
+  [166] = 210, [167] = 230, [168] = 250, [169] = 270, [204] = 310, [211] = 700,
+  [221] = 610, [222] = 630, [223] = 650, [227] = 750, [236] = 810, [404] = 150,
+  [407] = 150, [441] = 500, [467] = 500, [468] = 500, [639] = 550, [656] = 760,
+  [665] = 550, [701] = 760, [702] = 810, [751] = 770, [752] = 770
+};
+IReadOnlyDictionary<ushort, short> actualLegacyOreFinderPriority =
+  LegacyOreFinderPriorityRegistry.RegisterDefaults();
+if (actualLegacyOreFinderPriority.Count != expectedLegacyOreFinderPriority.Count ||
+    expectedLegacyOreFinderPriority.Any(pair =>
+      !actualLegacyOreFinderPriority.TryGetValue(pair.Key, out short value) ||
+      value != pair.Value) ||
+    LegacyOreFinderPriorityRegistry.TryGetPriority(5, out _) ||
+    !LegacyOreFinderPriorityRegistry.TryGetPriority(752, out short priority752) ||
+    priority752 != 770 ||
+    actualLegacyOreFinderPriority is not FrozenDictionary<ushort, short>)
+{
+  throw new InvalidOperationException("Legacy ore-finder priorities drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy ore-finder priorities preserve exact immutable value registry");
+
+HashSet<ushort> expectedLegacyMergeDirt =
+[
+  1, 6, 7, 8, 9, 22, 25, 30, 37, 38, 39, 40, 41, 43, 44, 45, 46, 47, 53, 56,
+  107, 108, 111, 112, 116, 117, 118, 119, 120, 121, 122, 123, 140, 145, 146, 148,
+  150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 166, 167, 168, 169,
+  175, 176, 177, 188, 190, 193, 195, 197, 198, 202, 203, 204, 206, 208, 221,
+  222, 223, 229, 230, 234, 249, 250, 251, 252, 253, 311, 315, 321, 322, 346,
+  347, 348, 350, 367, 368, 369, 370, 371, 408, 472, 473, 474, 478, 479, 481,
+  482, 483, 495, 496, 498, 500, 501, 502, 503, 562, 563, 635, 641, 666, 667,
+  677, 678, 679, 680, 681, 682, 683, 684, 685, 686, 722, 734, 740, 744, 750
+];
+if (!LegacyMergeDirtTileRegistry.RegisterDefaults().SetEquals(expectedLegacyMergeDirt) ||
+    LegacyMergeDirtTileRegistry.IsMergeDirtTile(2) ||
+    !LegacyMergeDirtTileRegistry.IsMergeDirtTile(750) ||
+    LegacyMergeDirtTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy merge-dirt defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy merge-dirt defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyBrick =
+[
+  1, 2, 23, 25, 30, 37, 38, 39, 41, 43, 44, 45, 46, 47, 53, 54, 57, 59, 60,
+  70, 75, 76, 109, 112, 116, 117, 118, 119, 120, 121, 122, 140, 147, 148, 150,
+  151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 175,
+  176, 177, 179, 180, 181, 182, 183, 188, 190, 191, 193, 194, 195, 198, 199,
+  200, 202, 203, 206, 208, 225, 226, 229, 234, 248, 249, 250, 252, 253, 255,
+  256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 273, 274,
+  311, 315, 321, 322, 326, 327, 328, 329, 345, 346, 347, 348, 350, 357, 369,
+  370, 381, 383, 385, 408, 409, 415, 416, 417, 418, 458, 459, 472, 473, 474,
+  477, 478, 479, 481, 482, 483, 492, 495, 496, 498, 500, 501, 502, 503, 507,
+  508, 512, 513, 514, 515, 516, 517, 534, 535, 536, 537, 539, 540, 562, 563,
+  625, 626, 627, 628, 633, 635, 641, 659, 661, 662, 666, 667, 669, 670, 671,
+  672, 673, 674, 675, 676, 677, 678, 679, 680, 681, 682, 683, 684, 685, 686,
+  687, 688, 689, 690, 691, 692, 708, 722, 734, 735, 736, 737, 738, 740, 741,
+  742, 743, 744, 745, 746, 747, 748, 749, 750
+];
+if (!LegacyBrickTileRegistry.RegisterDefaults().SetEquals(expectedLegacyBrick) ||
+    LegacyBrickTileRegistry.IsBrickTile(0) ||
+    LegacyBrickTileRegistry.IsBrickTile(3) ||
+    LegacyBrickTileRegistry.IsBrickTile(24) ||
+    !LegacyBrickTileRegistry.IsBrickTile(750) ||
+    LegacyBrickTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy brick defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy brick defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyHouseWall =
+[
+  1, 4, 5, 6, 10, 11, 12, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 29,
+  30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45, 46, 47, 60, 66,
+  67, 68, 72, 73, 74, 75, 76, 77, 78, 82, 84, 85, 88, 89, 90, 91, 92, 93,
+  100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114,
+  115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129,
+  130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144,
+  145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159,
+  160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 172, 173, 174, 175, 176,
+  177, 179, 181, 182, 183, 184, 186, 224, 225, 226, 227, 228, 229, 230, 231,
+  232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 245, 246, 247,
+  248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262,
+  263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277,
+  278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292,
+  293, 294, 295, 296, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 307,
+  308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322,
+  323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337,
+  338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 351, 352, 353, 354,
+  355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366
+];
+if (!LegacyHouseWallRegistry.RegisterDefaults().SetEquals(expectedLegacyHouseWall) ||
+    LegacyHouseWallRegistry.IsHouseWall(0) ||
+    LegacyHouseWallRegistry.IsHouseWall(2) ||
+    LegacyHouseWallRegistry.IsHouseWall(3) ||
+    !LegacyHouseWallRegistry.IsHouseWall(153) ||
+    !LegacyHouseWallRegistry.IsHouseWall(166) ||
+    !LegacyHouseWallRegistry.IsHouseWall(366) ||
+    LegacyHouseWallRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy house-wall defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy house-wall defaults preserve exact immutable tile registry");
+
+HashSet<ushort> expectedLegacyBlockLight =
+[
+  0, 1, 2, 6, 7, 8, 9, 10, 22, 23, 25, 30, 32, 37, 38, 39,
+  40, 41, 43, 44, 45, 46, 47, 51, 52, 53, 56, 57, 58, 59, 60, 62,
+  63, 64, 65, 66, 67, 68, 70, 75, 76, 107, 108, 109, 111, 112, 115, 116,
+  117, 118, 119, 120, 121, 122, 123, 130, 131, 137, 140, 145, 146, 147, 148, 150,
+  151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 163, 164, 165, 166, 167,
+  168, 169, 170, 175, 176, 177, 179, 180, 181, 182, 183, 188, 190, 191, 192, 193,
+  194, 195, 197, 198, 199, 200, 202, 203, 204, 205, 206, 208, 211, 221, 222, 223,
+  224, 225, 226, 229, 230, 234, 235, 248, 249, 250, 251, 252, 253, 272, 273, 274,
+  284, 311, 312, 313, 315, 321, 322, 325, 326, 327, 329, 345, 346, 347, 348, 350,
+  352, 357, 367, 368, 369, 370, 371, 381, 382, 383, 384, 385, 387, 388, 396, 397,
+  398, 399, 400, 401, 402, 403, 404, 407, 408, 409, 415, 416, 417, 418, 421, 422,
+  426, 430, 431, 432, 433, 434, 458, 472, 473, 474, 477, 478, 479, 481, 482, 483,
+  492, 495, 496, 498, 500, 501, 502, 503, 507, 508, 512, 513, 514, 515, 516, 517,
+  534, 535, 536, 537, 539, 540, 549, 557, 562, 563, 566, 618, 625, 626, 627, 628,
+  633, 635, 641, 659, 661, 662, 666, 667, 668, 669, 670, 671, 672, 673, 674, 675,
+  676, 677, 678, 679, 680, 681, 682, 683, 684, 685, 686, 687, 688, 689, 690, 691,
+  692, 697, 708, 722, 726, 727, 728, 729, 730, 731, 732, 734, 735, 736, 737, 738,
+  739, 740, 741, 742, 743, 744, 745, 746, 747, 749, 750
+];
+if (!LegacyBlockLightTileRegistry.RegisterDefaults().SetEquals(expectedLegacyBlockLight) ||
+    LegacyBlockLightTileRegistry.IsBlockLightTile(162) ||
+    LegacyBlockLightTileRegistry.IsBlockLightTile(541) ||
+    LegacyBlockLightTileRegistry.IsBlockLightTile(634) ||
+    LegacyBlockLightTileRegistry.IsBlockLightTile(718) ||
+    !LegacyBlockLightTileRegistry.IsBlockLightTile(727) ||
+    !LegacyBlockLightTileRegistry.IsBlockLightTile(732) ||
+    !LegacyBlockLightTileRegistry.IsBlockLightTile(750) ||
+    LegacyBlockLightTileRegistry.RegisterDefaults() is not FrozenSet<ushort>)
+{
+  throw new InvalidOperationException("Legacy block-light defaults drifted from Version4.");
+}
+
+Console.WriteLine("PASS: legacy block-light defaults preserve exact immutable tile registry");
+
+HashSet<LegacyTileMergePair> expectedLegacyTileMerge =
+[
+  new(426, 727),
+  new(727, 426),
+  new(430, 728),
+  new(728, 430),
+  new(431, 729),
+  new(729, 431),
+  new(432, 730),
+  new(730, 432),
+  new(433, 731),
+  new(731, 433),
+  new(434, 732),
+  new(732, 434)
+];
+if (LegacyTileMergeRegistry.TileTypeCount != 753 ||
+    !LegacyTileMergeRegistry.RegisterDefaults().SetEquals(expectedLegacyTileMerge) ||
+    LegacyTileMergeRegistry.RegisterDefaults().Count != 12 ||
+    !LegacyTileMergeRegistry.CanMerge(426, 727) ||
+    !LegacyTileMergeRegistry.CanMerge(727, 426) ||
+    !LegacyTileMergeRegistry.CanMerge(434, 732) ||
+    !LegacyTileMergeRegistry.CanMerge(732, 434) ||
+    LegacyTileMergeRegistry.CanMerge(426, 728) ||
+    LegacyTileMergeRegistry.CanMerge(0, 0) ||
+    LegacyTileMergeRegistry.CanMerge(753, 426) ||
+    LegacyTileMergeRegistry.RegisterDefaults() is not FrozenSet<LegacyTileMergePair>)
+{
+  throw new InvalidOperationException("Legacy tile-merge defaults drifted from Version4.");
+}
+
+Console.WriteLine(
+  "PASS: legacy tile-merge defaults preserve the complete immutable sparse matrix projection");
+
+if (tileMergeOnly)
+{
+  Console.WriteLine(
+    "SUMMARY: tile-merge focused verification completed; remaining WorldGeneration checks " +
+    "were intentionally not run");
+  Environment.Exit(0);
+}
+
+HashSet<ushort> expectedLegacySolid =
+[
+  0, 1, 2, 6, 7, 8, 9, 10, 19, 22, 23, 25, 30, 37, 38, 39, 40, 41, 43, 44, 45, 46,
+  47, 48, 53, 54, 56, 57, 58, 59, 60, 63, 64, 65, 66, 67, 68, 70, 75, 76, 107, 108,
+  109, 111, 112, 116, 117, 118, 119, 120, 121, 122, 123, 127, 130, 137, 138, 140,
+  145, 146, 147, 148, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161,
+  162, 163, 164, 166, 167, 168, 169, 170, 175, 176, 177, 179, 180, 181, 182, 183,
+  188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 202, 203, 204,
+  206, 208, 211, 221, 222, 223, 224, 225, 226, 229, 230, 232, 234, 235, 239, 272,
+  273, 274, 284, 311, 312, 313, 315, 321, 322, 325, 326, 327, 328, 329, 345, 346,
+  347, 348, 350, 357, 367, 368, 369, 370, 371, 379, 380, 381, 383, 384, 385, 387,
+  388, 396, 397, 398, 399, 400, 401, 402, 403, 404, 407, 408, 409, 415, 416, 417,
+  418, 421, 422, 426, 427, 430, 431, 432, 433, 434, 446, 447, 448, 458, 459, 460,
+  472, 473, 474, 476, 477, 478, 479, 481, 482, 483, 484, 492, 495, 496, 498, 500,
+  501, 502, 503, 507, 508, 512, 513, 514, 515, 516, 517, 534, 535, 536, 537, 539,
+  540, 541, 546, 557, 562, 563, 566, 618, 625, 626, 627, 628, 633, 635, 641, 659,
+  661, 662, 664, 666, 667, 668, 669, 670, 671, 672, 673, 674, 675, 676, 677, 678,
+  679, 680, 681, 682, 683, 684, 685, 686, 687, 688, 689, 690, 691, 692, 708, 711,
+  712, 713, 714, 715, 716, 717, 718, 719, 722, 726, 734, 735, 736, 737, 738, 739,
+  740, 741, 742, 743, 744, 745, 746, 747, 748, 749, 750
+];
+if (!LegacySolidTileRegistry.RegisterDefaults().SetEquals(expectedLegacySolid) ||
+    LegacySolidTileRegistry.IsSolid(255))
+{
+  throw new InvalidOperationException("Legacy solid defaults drifted from Version4.");
+}
+
+HashSet<string> variationSeeds = new(StringComparer.Ordinal)
+{
+  "paint-everything-gray",
+  "coat-everything-illuminant",
+  "world-is-frozen",
+  "surface-is-desert",
+  "extra-floating-islands"
+};
+SecretSeedVariationSnapshot variations = SecretSeedVariationQuery.Evaluate(
+  variationSeeds,
+  activeSecretSeedCount: 3,
+  skyblockWorld: true);
+if (!variations.PaintEverythingGrayJustTheSurface || variations.PaintEverythingGrayJustTreasure ||
+    !variations.PaintEverythingGrayUseWhite || !variations.ExtraFloatingIslandsNormalAmount ||
+    variations.ExtraFloatingIslandsReducedAmount || !variations.SurfaceIsDesertNormalFunction ||
+    variations.SurfaceIsDesertSwapDesertAndSnowBiomes || variations.ErrorWorldAdjustment(12) != 12)
+{
+  throw new InvalidOperationException("SecretSeed variation formulas did not preserve the legacy boundary.");
+}
+
+variations = SecretSeedVariationQuery.Evaluate(
+  new HashSet<string>(StringComparer.Ordinal) { "no-spider-caves", "actually-no-traps" },
+  activeSecretSeedCount: 4,
+  skyblockWorld: false);
+if (variations.NoSpiderCavesActuallyNoSpiderCaves || !variations.NoSpiderCavesILiedMoreSpiderCaves ||
+    variations.ActuallyNoTrapsForRealIMeanIt || variations.ErrorWorldAdjustment(12) != 12)
+{
+  throw new InvalidOperationException("SecretSeed threshold formulas did not preserve the legacy boundary.");
+}
+
+variations = SecretSeedVariationQuery.Evaluate(
+  new HashSet<string>(StringComparer.Ordinal),
+  activeSecretSeedCount: 0,
+  skyblockWorld: false);
+if (variations.ErrorWorldAdjustment(999) != 4)
+{
+  throw new InvalidOperationException("SecretSeed adjustment did not preserve the inactive default.");
+}
+
+WorldMetadata skyblockMetadata = new(
+  "skyblock-scan",
+  new WorldSeed(1456),
+  width: 200,
+  height: 150);
+WorldGrid skyblockWorld = new(200, 150);
+if (!skyblockWorld.TrySetTile(40, 40, new WorldTile(true, Type: 26, WallType: 87)) ||
+    !skyblockWorld.TrySetTile(41, 40, new WorldTile(true, Type: 58, WallType: 7)) ||
+    !skyblockWorld.TrySetTile(42, 40, new WorldTile(true, Type: 77)))
+{
+  throw new InvalidOperationException("Skyblock verifier fixture could not write its scan input.");
+}
+
+TilePresenceScanResult skyblockScan = TilePresenceScanQuery.Scan(
+  skyblockWorld.CreateSnapshot(skyblockMetadata));
+SkyblockRuleSnapshot skyblockRules = SkyblockRuleQuery.Calculate(
+  skyblockScan,
+  new HashSet<ushort> { 41 },
+  new HashSet<ushort> { 7 },
+  isSkyblockWorld: true);
+if (skyblockScan.ActiveTileCount != 3 || skyblockScan.WorldTileCount != 30000 ||
+    skyblockRules.NoAltars || skyblockRules.NoDungeon || skyblockRules.NoTemple ||
+    skyblockRules.NoHellstone || skyblockRules.NoHellforge || !skyblockRules.NoFossils ||
+    !skyblockRules.NoLifeCrystals || !skyblockRules.LowTiles)
+{
+  throw new InvalidOperationException("Skyblock scan did not preserve the Version4 rule boundary.");
+}
+
+SkyblockPolicySnapshot skyblockPolicy = SkyblockPolicyQuery.Evaluate(
+  isSkyblockWorld: true,
+  new HashSet<string>(StringComparer.Ordinal) { "extra-living-trees" });
+if (!skyblockPolicy.DenyFloatingIslands || !skyblockPolicy.DenyAllGeneration ||
+    skyblockPolicy.DenySomeGeneration ||
+    SkyblockPolicyQuery.Evaluate(false, new HashSet<string>(StringComparer.Ordinal)) != default)
+{
+  throw new InvalidOperationException("Skyblock policy did not preserve explicit rule inputs.");
+}
+
+SkyblockPolicySnapshot anniversarySkyblock = SkyblockPolicyQuery.Evaluate(
+  true,
+  new HashSet<string>(StringComparer.Ordinal),
+  tenthAnniversaryWorld: true,
+  getGoodWorld: true);
+SkyblockPolicySnapshot goodSkyblock = SkyblockPolicyQuery.Evaluate(
+  true,
+  new HashSet<string>(StringComparer.Ordinal),
+  tenthAnniversaryWorld: false,
+  getGoodWorld: true);
+if (!anniversarySkyblock.SpawnSolidifier || !anniversarySkyblock.SpawnShimmerPool ||
+    goodSkyblock.SpawnSolidifier || goodSkyblock.SpawnShimmerPool)
+{
+  throw new InvalidOperationException("Skyblock special spawn properties diverged from legacy.");
+}
+Console.WriteLine("PASS: skyblock special spawn properties preserve rule gates");
+
+if (!WorldDropPolicyQuery.ShouldDropItems(stopDrops: false, effectOnly: false, noItem: false) ||
+    WorldDropPolicyQuery.ShouldDropItems(stopDrops: true, effectOnly: false, noItem: false) ||
+    WorldDropPolicyQuery.ShouldDropItems(stopDrops: false, effectOnly: true, noItem: false) ||
+    WorldDropPolicyQuery.ShouldDropItems(stopDrops: false, effectOnly: false, noItem: true) ||
+    !WorldDropPolicyQuery.ShouldDropEffects(stopDrops: false, noItem: false) ||
+    WorldDropPolicyQuery.ShouldDropEffects(stopDrops: true, noItem: false) ||
+    WorldDropPolicyQuery.ShouldDropEffects(stopDrops: false, noItem: true))
+{
+  throw new InvalidOperationException("World drop policy did not preserve stopDrops/effectOnly gates.");
+}
+Console.WriteLine("PASS: world drop policy preserves stopDrops and effect-only gates");
+
+ObjectDestructionGuardDecision destructionEntry = ObjectDestructionGuardPolicy.Evaluate(
+  destroyObject: false);
+ObjectDestructionGuardDecision nestedDestruction = ObjectDestructionGuardPolicy.Evaluate(
+  destroyObject: true);
+if (!destructionEntry.CanBegin || destructionEntry.SuppressNestedChecks ||
+    nestedDestruction.CanBegin || !nestedDestruction.SuppressNestedChecks)
+{
+  throw new InvalidOperationException("Object destruction guard did not preserve nested-check suppression.");
+}
+Console.WriteLine("PASS: object destruction guard preserves nested reentrancy boundary");
+
+List<ExploitDestroyQueueEntry> exploitDestroyQueue = new();
+if (!ExploitDestroyQueuePolicy.TryEnqueue(exploitDestroyQueue, 10, 20, 4, capacity: 2) ||
+    ExploitDestroyQueuePolicy.TryEnqueue(exploitDestroyQueue, 10, 20, 5, capacity: 2) ||
+    !ExploitDestroyQueuePolicy.TryEnqueue(exploitDestroyQueue, 11, 20, 5, capacity: 2) ||
+    ExploitDestroyQueuePolicy.TryEnqueue(exploitDestroyQueue, 12, 20, 6, capacity: 2) ||
+    exploitDestroyQueue[0] != new ExploitDestroyQueueEntry(4, 10, 20))
+{
+  throw new InvalidOperationException("Exploit destroy queue contract drifted from bounded source semantics.");
+}
+Console.WriteLine("PASS: exploit destroy queue preserves typed capacity and coordinate deduplication");
+
+WorldMetadata exploitDispatchMetadata = new(
+  "exploit-dispatch", new WorldSeed(1456), width: 200, height: 150);
+WorldGrid exploitDispatchWorld = new(
+  exploitDispatchMetadata.Width,
+  exploitDispatchMetadata.Height,
+  initializeLegacyEmptyFrames: true);
+_ = exploitDispatchWorld.TrySetTile(10, 20, new WorldTile(IsActive: true, Type: 1));
+List<ExploitDestroyQueueEntry> exploitDispatchQueue = new()
+{
+  new ExploitDestroyQueueEntry(1, 10, 20),
+  new ExploitDestroyQueueEntry(2, 11, 20),
+  new ExploitDestroyQueueEntry(3, 500, 20)
+};
+ExploitDestroyQueueDispatch exploitDispatch = ExploitDestroyQueueDispatchPolicy.Create(
+  exploitDispatchQueue,
+  exploitDispatchWorld.CreateSnapshot(exploitDispatchMetadata));
+if (exploitDispatch.ActiveEntries.Count != 1 ||
+    exploitDispatch.ActiveEntries[0] != exploitDispatchQueue[0] ||
+    exploitDispatch.FrameRequests.Count != 1 ||
+    exploitDispatch.FrameRequests[0].Source != "worldgen.exploit-destroy" ||
+    exploitDispatch.TileSquareIntents.Count != 1 ||
+    exploitDispatch.TileSquareIntents[0] != new ExploitDestroyTileSquareIntent(10, 20))
+{
+  throw new InvalidOperationException(
+    "Exploit destroy dispatch did not preserve active-tile framing and notification gates.");
+}
+Console.WriteLine(
+  "PASS: exploit destroy dispatch emits frame and tile-square intents only for active tiles");
+
+Queue<ExploitDestroyQueueEntry> drainQueue = new(exploitDispatchQueue);
+ExploitDestroyQueueDispatch suppressedDispatch = ExploitDestroyQueueDispatchPolicy.Drain(
+  drainQueue,
+  exploitDispatchWorld.CreateSnapshot(exploitDispatchMetadata),
+  destroyObject: true);
+if (suppressedDispatch.ActiveEntries.Count != 0 || drainQueue.Count != exploitDispatchQueue.Count)
+{
+  throw new InvalidOperationException(
+    "Exploit destroy dispatch drained the queue while nested object destruction was active.");
+}
+
+ExploitDestroyQueueDispatch drainedDispatch = ExploitDestroyQueueDispatchPolicy.Drain(
+  drainQueue,
+  exploitDispatchWorld.CreateSnapshot(exploitDispatchMetadata),
+  destroyObject: false);
+if (drainQueue.Count != 0 || drainedDispatch.ActiveEntries.Count != 1)
+{
+  throw new InvalidOperationException("Exploit destroy dispatch did not preserve dequeue semantics.");
+}
+Console.WriteLine("PASS: exploit destroy dispatch preserves nested suppression and dequeue lifecycle");
+
+WorldGenerationStateComponent exploitFrameState = new(41);
+List<TileFrameCommand> exploitFrameCommands = new();
+if (!new ExploitDestroyQueueFrameSystem().TryCommitFrames(
+      exploitDispatchWorld,
+      drainedDispatch,
+      ref exploitFrameState,
+      exploitFrameCommands,
+      out TileFrameCommitResult exploitFrameResult) ||
+    !exploitFrameResult.Succeeded ||
+    exploitFrameResult.AppliedCount != 1 ||
+    exploitFrameCommands.Count != 1 ||
+    exploitDispatchWorld.GetTile(10, 20).FrameX != 0)
+{
+  throw new InvalidOperationException(
+    "Exploit destroy dispatch did not commit its typed frame command.");
+}
+Console.WriteLine("PASS: exploit destroy dispatch commits typed frame commands");
+
+SavedOreTierDefaults oreTierDefaults = SavedOreTierDefaults.Version4;
+if (oreTierDefaults != new SavedOreTierDefaults(7, 6, 9, 8, 107, 108, 111))
+{
+  throw new InvalidOperationException("SavedOreTiers did not preserve all Version4 defaults.");
+}
+
+WorldGenerationDistanceDefaults distanceDefaults = WorldGenerationDistanceDefaults.Version4;
+if (distanceDefaults != new WorldGenerationDistanceDefaults(250, 380, 150, 50, 25, 25, 10))
+{
+  throw new InvalidOperationException("World-generation distance defaults changed from Version4.");
+}
+
+WorldMetadata distanceRequestMetadata = new(
+  "DistanceRequest", new WorldSeed(1456), width: 200, height: 150,
+  worldId: 52, seedVariant: "default");
+WorldGenerationRequest distanceRequest = new(
+  distanceRequestMetadata, spawnX: 100, surfaceY: 50);
+if (distanceRequest.DistanceDefaults != distanceDefaults)
+{
+  throw new InvalidOperationException("World-generation requests did not freeze distance defaults.");
+}
+
+WorldGenerationRequest forcedEvilRequest = new(
+  distanceRequestMetadata,
+  spawnX: 100,
+  surfaceY: 50,
+  worldGenParamEvil: 1);
+if (forcedEvilRequest.WorldGenParamEvil != 1)
+{
+  throw new InvalidOperationException("World-generation requests did not preserve evil selection input.");
+}
+
+try
+{
+  _ = new WorldGenerationDistanceDefaults(-1, 380, 150, 50, 25, 25, 10);
+  throw new InvalidOperationException("Negative world-generation distances were accepted.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+WorldBoundsComponent distanceBounds = new(6400, 1800);
+if (!WorldGenerationBoundaryQuery.IsInOceanBand(distanceBounds, 249, distanceDefaults) ||
+    WorldGenerationBoundaryQuery.IsInOceanBand(distanceBounds, 250, distanceDefaults) ||
+    !WorldGenerationBoundaryQuery.IsInOceanBand(distanceBounds, 6151, distanceDefaults) ||
+    WorldGenerationBoundaryQuery.IsInBeachBand(distanceBounds, 380, distanceDefaults) ||
+    !WorldGenerationBoundaryQuery.IsInBeachBand(distanceBounds, 379, distanceDefaults))
+{
+  throw new InvalidOperationException("World-generation distance boundaries changed from source predicates.");
+}
+
+try
+{
+  _ = WorldGenerationBoundaryQuery.IsInBeachBand(distanceBounds, -1, distanceDefaults);
+  throw new InvalidOperationException("Out-of-bounds world-generation coordinates were accepted.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+WorldMetadata cactusSafetyMetadata = new(
+  "CactusWaterSafety", new WorldSeed(1456), width: 200, height: 150,
+  worldId: 51, seedVariant: "default");
+WorldGrid cactusSafetyWorld = new(cactusSafetyMetadata.Width, cactusSafetyMetadata.Height);
+for (int index = 0; index < 26; index++)
+{
+  _ = cactusSafetyWorld.TrySetLiquid(100 + index, 75, byte.MaxValue, 0);
+}
+
+CactusWaterSafetyResult cactusWater = CactusWaterSafetyQuery.Evaluate(
+  cactusSafetyWorld.CreateSnapshot(cactusSafetyMetadata), 100, 75, distanceDefaults);
+if (!cactusWater.ExceedsLimit || cactusWater.LiquidUnits != 26 * byte.MaxValue ||
+    cactusWater.ScannedCellCount != 100 * 50)
+{
+  throw new InvalidOperationException("Cactus water accumulation diverged from source bounds.");
+}
+
+if (!CactusWaterSafetyQuery.ShouldBlockGrowth(cactusWater, false, 75, 100) ||
+    !CactusWaterSafetyQuery.ShouldBlockGrowth(cactusWater, true, 101, 100) ||
+    CactusWaterSafetyQuery.ShouldBlockGrowth(cactusWater, true, 99, 100))
+{
+  throw new InvalidOperationException("Cactus remix water exception diverged from source policy.");
+}
+
+if (!ShimmerSafetyQuery.IsWithinSafetyRadius(0, 149, 0, 0, distanceDefaults) ||
+    ShimmerSafetyQuery.IsWithinSafetyRadius(0, 150, 0, 0, distanceDefaults) ||
+    !ShimmerSafetyQuery.IsWithinSafetyRadius(90, 90, 0, 0, distanceDefaults))
+{
+  throw new InvalidOperationException("Shimmer safety distance diverged from source predicate.");
+}
+
+for (int y = 74; y <= 76; y++)
+{
+  for (int x = 99; x <= 101; x++)
+  {
+    _ = cactusSafetyWorld.TrySetTile(x, y, new WorldTile(true, 1));
+  }
+}
+
+PreviousWorldBoundsSnapshot previousBounds = new(8400, 2400);
+WorldBoundsComponent currentBounds = new(6400, 1800);
+WorldBoundsRestartResult restartResult = WorldBoundsRestartQuery.Evaluate(
+  previousBounds,
+  currentBounds);
+if (!restartResult.RequiresClear ||
+    WorldBoundsRestartQuery.Evaluate(
+      new PreviousWorldBoundsSnapshot(6400, 1800),
+      currentBounds).RequiresClear)
+{
+  throw new InvalidOperationException("Previous world bounds restart policy diverged from source.");
+}
+
+WorldEvilSelection forcedCorruption = WorldEvilSelectionPolicy.Select(
+  0,
+  new LegacyPassRandomState(1456));
+WorldEvilSelection forcedCrimson = WorldEvilSelectionPolicy.Select(
+  1,
+  new LegacyPassRandomState(1456));
+WorldEvilSelection randomEvil = WorldEvilSelectionPolicy.Select(
+  -1,
+  new LegacyPassRandomState(1456));
+if (forcedCorruption.Crimson || forcedCorruption.GeneratingRandomEvil ||
+    !forcedCrimson.Crimson || forcedCrimson.GeneratingRandomEvil ||
+    !randomEvil.GeneratingRandomEvil)
+{
+  throw new InvalidOperationException("World evil selection diverged from source branches.");
+}
+
+int[] alignmentCounts = new int[404];
+alignmentCounts[23] = 5;
+alignmentCounts[199] = 3;
+alignmentCounts[109] = 10;
+WorldInfectionAlignmentSnapshot alignment = WorldInfectionAlignmentQuery.Evaluate(
+  alignmentCounts,
+  totalSolid: 1000);
+if (alignment.TotalEvil != 5 || alignment.TotalBlood != 3 || alignment.TotalGood != 10 ||
+    alignment.EvilPercent != 1 || alignment.BloodPercent != 1 || alignment.GoodPercent != 1)
+{
+  throw new InvalidOperationException("World infection alignment percentages diverged from source rules.");
+}
+
+int[] remixAlignmentCounts = new int[TileDefinitionRegistry.Version4TileCount];
+remixAlignmentCounts[474] = 7;
+remixAlignmentCounts[195] = 11;
+WorldInfectionAlignmentSnapshot remixAlignment = WorldInfectionAlignmentQuery.Evaluate(
+  remixAlignmentCounts,
+  totalSolid: 18,
+  remixWorld: true);
+if (remixAlignment.TotalEvil != 7 || remixAlignment.TotalBlood != 11)
+{
+  throw new InvalidOperationException("Remix world alignment IDs were not counted.");
+}
+
+TileTypeCountSnapshot tileCountSnapshot = TileTypeCountSnapshotQuery.Count(
+  cactusSafetyWorld.CreateSnapshot(cactusSafetyMetadata),
+  startX: 99,
+  endX: 101,
+  startY: 74,
+  endY: 76);
+if (tileCountSnapshot.Counts[1] != 9 || tileCountSnapshot.TotalCount != 9)
+{
+  throw new InvalidOperationException("Tile count snapshot diverged from bounded scan semantics.");
+}
+
+int[] mutableCounts = new int[753];
+mutableCounts[23] = 2;
+TileTypeCountSnapshot copiedTileCounts = new(mutableCounts);
+mutableCounts[23] = 0;
+if (copiedTileCounts.Counts[23] != 2)
+{
+  throw new InvalidOperationException("Tile count snapshot retained mutable source storage.");
+}
+
+TileTypeCountSnapshot emptyTileCounts = default;
+if (emptyTileCounts.TotalCount != 0 || emptyTileCounts.Counts.Count != 0)
+{
+  throw new InvalidOperationException("Default tile count snapshot was not an empty immutable value.");
+}
+
+ShadowOrbBreakProgression secondOrb = ShadowOrbBreakProgressionPolicy.Apply(
+  1,
+  dontStarveWorld: false,
+  getGoodWorld: false,
+  remixWorld: false);
+ShadowOrbBreakProgression specialWorldOrb = ShadowOrbBreakProgressionPolicy.Apply(
+  0,
+  dontStarveWorld: true,
+  getGoodWorld: true,
+  remixWorld: false);
+if (!secondOrb.ShadowOrbSmashed || secondOrb.NextShadowOrbCount != 2 ||
+    secondOrb.ShouldAttemptBossSpawn || !specialWorldOrb.ShouldAttemptBossSpawn)
+{
+  throw new InvalidOperationException("Shadow orb progression diverged from source threshold rules.");
+}
+
+AltarBreakProgression altarBreak = AltarBreakProgressionPolicy.Apply(4);
+if (altarBreak.PreviousCount != 4 || altarBreak.NextCount != 5 ||
+    altarBreak.CycleIndex != 1 || altarBreak.CycleNumber != 2)
+{
+  throw new InvalidOperationException("Altar progression diverged from source cycle arithmetic.");
+}
+
+HardmodeOreTierSelection cobaltSelection = HardmodeOreTierSelectionPolicy.Apply(
+  AltarBreakProgressionPolicy.Apply(0),
+  HardmodeOreTierState.Uninitialized,
+  isDrunkWorld: false,
+  new LegacyPassRandomState(1456));
+if (!cobaltSelection.WasInitialized ||
+    (cobaltSelection.SelectedTileType != 107 && cobaltSelection.SelectedTileType != 221) ||
+    cobaltSelection.State.CobaltTileType != cobaltSelection.SelectedTileType)
+{
+  throw new InvalidOperationException("Cobalt altar selection diverged from source initialization.");
+}
+
+HardmodeOreTierSelection mythrilSelection = HardmodeOreTierSelectionPolicy.Apply(
+  AltarBreakProgressionPolicy.Apply(1),
+  cobaltSelection.State,
+  isDrunkWorld: false,
+  new LegacyPassRandomState(1456));
+if (!mythrilSelection.WasInitialized ||
+    (mythrilSelection.SelectedTileType != 108 && mythrilSelection.SelectedTileType != 222))
+{
+  throw new InvalidOperationException("Mythril altar selection diverged from source initialization.");
+}
+
+HardmodeOreTierSelection adamantiteSelection = HardmodeOreTierSelectionPolicy.Apply(
+  AltarBreakProgressionPolicy.Apply(2),
+  mythrilSelection.State,
+  isDrunkWorld: true,
+  new LegacyPassRandomState(1456));
+if (!adamantiteSelection.WasInitialized || !adamantiteSelection.WasToggled ||
+    (adamantiteSelection.SelectedTileType != 111 &&
+     adamantiteSelection.SelectedTileType != 223))
+{
+  throw new InvalidOperationException("Drunk-world hardmode ore selection diverged from source toggles.");
+}
+
+HardmodeOreTierSelection repeatedAdamantiteSelection = HardmodeOreTierSelectionPolicy.Apply(
+  AltarBreakProgressionPolicy.Apply(5),
+  adamantiteSelection.State,
+  isDrunkWorld: true,
+  new LegacyPassRandomState(1456));
+if (repeatedAdamantiteSelection.WasInitialized ||
+    repeatedAdamantiteSelection.SelectedTileType == adamantiteSelection.SelectedTileType)
+{
+  throw new InvalidOperationException("Drunk-world hardmode ore repeat did not toggle Adamantite.");
+}
+Console.WriteLine("PASS: hardmode ore altar policy preserves saved tier initialization and toggles");
+
+WorldUpdatePolicySnapshot normalWorldUpdate = WorldUpdatePolicyQuery.Evaluate(
+  hardMode: false,
+  remixWorld: false,
+  getGoodWorld: false,
+  tenthAnniversaryWorld: false,
+  stopBiomeSpreadPowerEnabled: false,
+  notTheBeesWorld: true,
+  phase: WorldUpdatePhase.Overground);
+WorldUpdatePolicySnapshot remixWorldUpdate = WorldUpdatePolicyQuery.Evaluate(
+  hardMode: false,
+  remixWorld: true,
+  getGoodWorld: true,
+  tenthAnniversaryWorld: false,
+  stopBiomeSpreadPowerEnabled: true,
+  notTheBeesWorld: false,
+  phase: WorldUpdatePhase.Underground);
+WorldUpdatePolicySnapshot anniversaryWorldUpdate = WorldUpdatePolicyQuery.Evaluate(
+  hardMode: false,
+  remixWorld: true,
+  getGoodWorld: true,
+  tenthAnniversaryWorld: true,
+  stopBiomeSpreadPowerEnabled: false,
+  notTheBeesWorld: false,
+  phase: WorldUpdatePhase.Underground);
+if (normalWorldUpdate.HardModeWorldUpdates || normalWorldUpdate.GrowGrassUnderground ||
+    !normalWorldUpdate.AllowedToSpreadInfections ||
+    !remixWorldUpdate.HardModeWorldUpdates || !remixWorldUpdate.GrowGrassUnderground ||
+    remixWorldUpdate.AllowedToSpreadInfections || anniversaryWorldUpdate.HardModeWorldUpdates)
+{
+  throw new InvalidOperationException("World update policy diverged from source phase rules.");
+}
+Console.WriteLine("PASS: world update policy preserves hardmode, infection, and grass phase rules");
+
+FossilBreakDecision fossilBreakStart = FossilBreakPolicy.Evaluate(
+  FossilBreakPolicy.FossilTileType,
+  fossilBreak: false,
+  belowTileIsSolid: true,
+  isTopNeighbor: true,
+  fail: false);
+FossilBreakDecision fossilBreakBlocked = FossilBreakPolicy.Evaluate(
+  FossilBreakPolicy.FossilTileType,
+  fossilBreak: true,
+  belowTileIsSolid: true,
+  isTopNeighbor: false,
+  fail: true);
+FossilBreakDecision fossilBreakOpen = FossilBreakPolicy.Evaluate(
+  tileType: 1,
+  fossilBreak: false,
+  belowTileIsSolid: false,
+  isTopNeighbor: false,
+  fail: false);
+if (!fossilBreakStart.CanBegin || fossilBreakStart.RollExclusiveUpperBound != 4 ||
+    fossilBreakBlocked.CanBegin || fossilBreakOpen.CanBegin ||
+    fossilBreakOpen.RollExclusiveUpperBound != 4)
+{
+  throw new InvalidOperationException("Fossil break policy diverged from source guards.");
+}
+Console.WriteLine("PASS: fossil break policy preserves reentrancy and neighborhood roll guards");
+
+RainingBoulderStateTransition rainingBoulders = RainingBoulderStatePolicy.Evaluate(
+  previousIsRainingBoulders: false,
+  drunkWorld: true,
+  getGoodWorld: true,
+  remixWorld: false,
+  isStorming: true);
+RainingBoulderStateTransition endedBoulders = RainingBoulderStatePolicy.Evaluate(
+  previousIsRainingBoulders: true,
+  drunkWorld: true,
+  getGoodWorld: true,
+  remixWorld: false,
+  isStorming: false);
+RainingBoulderStateTransition remixBoulders = RainingBoulderStatePolicy.Evaluate(
+  previousIsRainingBoulders: true,
+  drunkWorld: true,
+  getGoodWorld: true,
+  remixWorld: true,
+  isStorming: true);
+if (!rainingBoulders.IsRainingBoulders || rainingBoulders.HasEnded ||
+    endedBoulders.IsRainingBoulders || !endedBoulders.HasEnded ||
+    remixBoulders.IsRainingBoulders || !remixBoulders.HasEnded)
+{
+  throw new InvalidOperationException("Raining boulder state diverged from source eligibility.");
+}
+Console.WriteLine("PASS: raining boulder policy preserves world-rule eligibility and end transition");
+
+TrapGenerationGate normalTrapGate = TrapGenerationGatePolicy.Evaluate(
+  denySomeGeneration: false,
+  actuallyNoTrapsForReal: false,
+  notTheBees: false,
+  noTrapsWorldGen: false,
+  remixWorldGen: false);
+TrapGenerationGate beesTrapGate = TrapGenerationGatePolicy.Evaluate(
+  denySomeGeneration: false,
+  actuallyNoTrapsForReal: false,
+  notTheBees: true,
+  noTrapsWorldGen: false,
+  remixWorldGen: false);
+TrapGenerationGate remixBeesTrapGate = TrapGenerationGatePolicy.Evaluate(
+  denySomeGeneration: false,
+  actuallyNoTrapsForReal: false,
+  notTheBees: true,
+  noTrapsWorldGen: false,
+  remixWorldGen: true);
+TrapGenerationGate deniedTrapGate = TrapGenerationGatePolicy.Evaluate(
+  denySomeGeneration: true,
+  actuallyNoTrapsForReal: false,
+  notTheBees: false,
+  noTrapsWorldGen: true,
+  remixWorldGen: true);
+if (!normalTrapGate.ShouldRun || !normalTrapGate.PlacingTraps ||
+    beesTrapGate.ShouldRun || !remixBeesTrapGate.ShouldRun || deniedTrapGate.ShouldRun)
+{
+  throw new InvalidOperationException("Trap generation gate diverged from source conditions.");
+}
+Console.WriteLine("PASS: trap generation gate preserves skyblock and secret-seed exclusions");
+
+TileCountSchedulingState tileCountState = TileCountSchedulingState.Initial;
+for (int update = 0; update < TileCountSchedulingPolicy.UpdatesPerColumnScan - 1; update++)
+{
+  TileCountSchedulingResult pendingScan = TileCountSchedulingPolicy.Advance(tileCountState, 3);
+  if (pendingScan.ShouldScanColumn || pendingScan.State.UpdateCounter != update + 1)
+  {
+    throw new InvalidOperationException("Tile count cadence advanced before the source threshold.");
+  }
+
+  tileCountState = pendingScan.State;
+}
+
+TileCountSchedulingResult firstColumnScan = TileCountSchedulingPolicy.Advance(tileCountState, 3);
+tileCountState = firstColumnScan.State;
+for (int update = 0; update < TileCountSchedulingPolicy.UpdatesPerColumnScan - 1; update++)
+{
+  tileCountState = TileCountSchedulingPolicy.Advance(tileCountState, 3).State;
+}
+
+TileCountSchedulingResult secondColumnScan = TileCountSchedulingPolicy.Advance(tileCountState, 3);
+if (!firstColumnScan.ShouldScanColumn || firstColumnScan.ColumnX != 0 ||
+    !secondColumnScan.ShouldScanColumn || secondColumnScan.ColumnX != 1 ||
+    secondColumnScan.State.ColumnX != 2)
+{
+  throw new InvalidOperationException("Tile count scheduling diverged from source cadence or wrap.");
+}
+Console.WriteLine("PASS: tile count scheduling preserves 30-update cadence and column wrap");
+
+(TileCountColumnRange aboveSurface, TileCountColumnRange belowSurface) =
+  TileCountColumnRangePolicy.Create(worldHeight: 240, worldSurfaceY: 100);
+if (aboveSurface.StartY != 40 || aboveSurface.EndExclusiveY != 101 || aboveSurface.Weight != 5 ||
+    belowSurface.StartY != 101 || belowSurface.EndExclusiveY != 200 || belowSurface.Weight != 1)
+{
+  throw new InvalidOperationException("Tile count column ranges diverged from source bounds.");
+}
+Console.WriteLine("PASS: tile count column ranges preserve source surface and border bounds");
+
+WorldInfectionAlignmentSnapshot alignmentColumn = new(2, 1, 3, 100);
+WorldInfectionAlignmentAccumulatorResult accumulatedAlignment =
+  WorldInfectionAlignmentAccumulatorPolicy.AddColumn(
+    WorldInfectionAlignmentAccumulator.Empty,
+    alignmentColumn,
+    publishBeforeColumn: false);
+WorldInfectionAlignmentAccumulatorResult publishedAlignment =
+  WorldInfectionAlignmentAccumulatorPolicy.AddColumn(
+    accumulatedAlignment.State,
+    alignmentColumn,
+    publishBeforeColumn: true);
+if (!publishedAlignment.HasPublished || publishedAlignment.Published.TotalEvil != 2 ||
+    publishedAlignment.Published.TotalBlood != 1 || publishedAlignment.Published.TotalGood != 3 ||
+    publishedAlignment.Published.TotalSolid != 100 ||
+    publishedAlignment.State.TotalEvil != 2 || publishedAlignment.State.TotalSolid != 100)
+{
+  throw new InvalidOperationException("World infection alignment accumulation diverged from source reset.");
+}
+Console.WriteLine("PASS: world infection alignment accumulator preserves column publish and reset");
+
+WorldMetadata alignmentScanMetadata = new(
+  "alignment-scan", new WorldSeed(1456), width: 200, height: 150);
+WorldGrid alignmentScanWorld = new(
+  alignmentScanMetadata.Width,
+  alignmentScanMetadata.Height,
+  initializeLegacyEmptyFrames: true);
+_ = alignmentScanWorld.TrySetTile(10, 40, new WorldTile(IsActive: true, Type: 109));
+_ = alignmentScanWorld.TrySetTile(10, 81, new WorldTile(IsActive: true, Type: 1));
+WorldInfectionAlignmentSnapshot scannedAlignment = WorldInfectionAlignmentScanQuery.ScanColumn(
+  alignmentScanWorld.CreateSnapshot(alignmentScanMetadata),
+  columnX: 10,
+  surfaceY: 80);
+if (scannedAlignment.TotalGood != 5 ||
+    scannedAlignment.TotalSolid != 6 ||
+    scannedAlignment.GoodPercent != 83)
+{
+  throw new InvalidOperationException(
+    "World infection alignment scan did not preserve surface/cavern weighting.");
+}
+Console.WriteLine(
+  "PASS: world infection alignment scan preserves weighted ranges and source denominator");
+
+WorldMetadata remixAlignmentMetadata = new(
+  "alignment-remix-scan",
+  new WorldSeed(1456),
+  width: 200,
+  height: 150,
+  isRemixWorld: true);
+WorldGrid remixAlignmentWorld = new(
+  remixAlignmentMetadata.Width,
+  remixAlignmentMetadata.Height,
+  initializeLegacyEmptyFrames: true);
+_ = remixAlignmentWorld.TrySetTile(10, 40, new WorldTile(IsActive: true, Type: 474));
+_ = remixAlignmentWorld.TrySetTile(10, 81, new WorldTile(IsActive: true, Type: 195));
+WorldInfectionAlignmentSnapshot scannedRemixAlignment =
+  WorldInfectionAlignmentScanQuery.ScanColumn(
+    remixAlignmentWorld.CreateSnapshot(remixAlignmentMetadata),
+    columnX: 10,
+    surfaceY: 80);
+if (scannedRemixAlignment.TotalEvil != 5 ||
+    scannedRemixAlignment.TotalBlood != 1 ||
+    scannedRemixAlignment.TotalSolid != 6)
+{
+  throw new InvalidOperationException(
+    "Remix world infection alignment scan did not preserve special tile IDs.");
+}
+Console.WriteLine("PASS: remix world infection alignment scan preserves 474/195 branches");
+
+WorldGrid alignmentPipelineWorld = new(
+  alignmentScanMetadata.Width,
+  alignmentScanMetadata.Height,
+  initializeLegacyEmptyFrames: true);
+_ = alignmentPipelineWorld.TrySetTile(0, 40, new WorldTile(IsActive: true, Type: 109));
+_ = alignmentPipelineWorld.TrySetTile(0, 81, new WorldTile(IsActive: true, Type: 1));
+_ = alignmentPipelineWorld.TrySetTile(1, 40, new WorldTile(IsActive: true, Type: 23));
+_ = alignmentPipelineWorld.TrySetTile(1, 81, new WorldTile(IsActive: true, Type: 1));
+WorldGridSnapshot alignmentPipelineSnapshot = alignmentPipelineWorld.CreateSnapshot(
+  alignmentScanMetadata);
+WorldInfectionAlignmentScanState alignmentPipelineState =
+  new(new TileCountSchedulingState(29, 0), WorldInfectionAlignmentAccumulator.Empty);
+WorldInfectionAlignmentScanResult firstAlignmentColumn =
+  WorldInfectionAlignmentScanPolicy.Advance(
+    alignmentPipelineState,
+    alignmentPipelineSnapshot,
+    surfaceY: 80);
+if (!firstAlignmentColumn.Scanned || firstAlignmentColumn.ColumnX != 0 ||
+    !firstAlignmentColumn.HasPublished || firstAlignmentColumn.Published.TotalSolid != 0 ||
+    firstAlignmentColumn.Column.TotalGood != 5 ||
+    firstAlignmentColumn.State.Accumulator.TotalSolid != 6)
+{
+  throw new InvalidOperationException(
+    "World infection alignment scan policy did not preserve the first-column boundary.");
+}
+
+WorldInfectionAlignmentScanResult pendingAlignmentColumn =
+  WorldInfectionAlignmentScanPolicy.Advance(
+    firstAlignmentColumn.State,
+    alignmentPipelineSnapshot,
+    surfaceY: 80);
+if (pendingAlignmentColumn.Scanned || pendingAlignmentColumn.State.Scheduling.UpdateCounter != 1)
+{
+  throw new InvalidOperationException(
+    "World infection alignment scan policy did not preserve the 30-update cadence.");
+}
+
+WorldInfectionAlignmentScanState secondColumnState = new(
+  new TileCountSchedulingState(29, 1),
+  firstAlignmentColumn.State.Accumulator);
+WorldInfectionAlignmentScanResult secondAlignmentColumn =
+  WorldInfectionAlignmentScanPolicy.Advance(
+    secondColumnState,
+    alignmentPipelineSnapshot,
+    surfaceY: 80);
+WorldInfectionAlignmentScanState publishColumnState = new(
+  new TileCountSchedulingState(29, 0),
+  secondAlignmentColumn.State.Accumulator);
+WorldInfectionAlignmentScanResult publishedAlignmentCycle =
+  WorldInfectionAlignmentScanPolicy.Advance(
+    publishColumnState,
+    alignmentPipelineSnapshot,
+    surfaceY: 80);
+if (!secondAlignmentColumn.Scanned || secondAlignmentColumn.ColumnX != 1 ||
+    secondAlignmentColumn.HasPublished ||
+    !publishedAlignmentCycle.HasPublished ||
+    publishedAlignmentCycle.Published.TotalEvil != 5 ||
+    publishedAlignmentCycle.Published.TotalGood != 5 ||
+    publishedAlignmentCycle.Published.TotalSolid != 12 ||
+    publishedAlignmentCycle.State.Accumulator.TotalGood != 5)
+{
+  throw new InvalidOperationException(
+    "World infection alignment scan policy did not preserve cross-column publication.");
+}
+Console.WriteLine(
+  "PASS: world infection alignment scan policy preserves cadence, accumulation, and publish reset");
+
+WorldLoadRecoveryDecision initialLoadSuccess = WorldLoadRecoveryPolicy.Evaluate(
+  initialLoadFailed: false,
+  retryLoadFailed: false,
+  backupExists: false,
+  backupLoadFailed: false);
+WorldLoadRecoveryDecision primaryRetrySuccess = WorldLoadRecoveryPolicy.Evaluate(
+  initialLoadFailed: true,
+  retryLoadFailed: false,
+  backupExists: false,
+  backupLoadFailed: false);
+WorldLoadRecoveryDecision noBackupFailure = WorldLoadRecoveryPolicy.Evaluate(
+  initialLoadFailed: true,
+  retryLoadFailed: true,
+  backupExists: false,
+  backupLoadFailed: false);
+WorldLoadRecoveryDecision backupSuccess = WorldLoadRecoveryPolicy.Evaluate(
+  initialLoadFailed: true,
+  retryLoadFailed: true,
+  backupExists: true,
+  backupLoadFailed: false);
+WorldLoadRecoveryDecision backupFailure = WorldLoadRecoveryPolicy.Evaluate(
+  initialLoadFailed: true,
+  retryLoadFailed: true,
+  backupExists: true,
+  backupLoadFailed: true);
+if (!initialLoadSuccess.LoadSucceeded || primaryRetrySuccess.RestoreBackup ||
+    !primaryRetrySuccess.RetryPrimary || noBackupFailure.LoadSucceeded ||
+    !backupSuccess.RestoreBackup || !backupSuccess.RetryBackup ||
+    !backupSuccess.LoadSucceeded || backupFailure.LoadSucceeded)
+{
+  throw new InvalidOperationException("World load recovery policy diverged from source retries.");
+}
+Console.WriteLine("PASS: world load recovery policy preserves retry and backup boundaries");
+
+GrassSpreadRecursionState grassSpreadState = GrassSpreadRecursionState.Initial;
+if (!GrassSpreadRecursionPolicy.ShouldRecurse(grassSpreadState, repeat: true))
+{
+  throw new InvalidOperationException("Grass spread recursion did not open at depth zero.");
+}
+
+grassSpreadState = GrassSpreadRecursionPolicy.Enter(grassSpreadState);
+grassSpreadState = GrassSpreadRecursionPolicy.Exit(grassSpreadState);
+GrassSpreadRecursionState maximumGrassSpreadState =
+  new(GrassSpreadRecursionPolicy.MaximumDepth);
+if (GrassSpreadRecursionPolicy.ShouldRecurse(maximumGrassSpreadState, repeat: true))
+{
+  throw new InvalidOperationException("Grass spread recursion exceeded the source depth cap.");
+}
+Console.WriteLine("PASS: grass spread recursion policy preserves repeat depth cap and unwind");
+
+TileCountVisitDecision countVisitAllowed = TileCountVisitPolicy.Evaluate(
+  x: 10,
+  y: 10,
+  worldWidth: 100,
+  worldHeight: 100,
+  wallType: 0,
+  hasShimmer: false,
+  hasLiquid: false,
+  jungle: false,
+  lavaAllowed: false,
+  hasLava: false);
+TileCountVisitDecision countVisitWall = TileCountVisitPolicy.Evaluate(
+  10, 10, 100, 100, 1, false, false, false, false, false);
+TileCountVisitDecision countVisitLava = TileCountVisitPolicy.Evaluate(
+  10, 10, 100, 100, 0, false, true, false, false, true);
+TileCountVisitDecision countVisitEdge = TileCountVisitPolicy.Evaluate(
+  1, 10, 100, 100, 0, false, false, false, false, false);
+if (countVisitAllowed.RejectionReason != TileCountVisitRejectionReason.None ||
+    countVisitWall.RejectionReason != TileCountVisitRejectionReason.Wall ||
+    countVisitLava.RejectionReason != TileCountVisitRejectionReason.LavaLiquid ||
+    countVisitEdge.RejectionReason != TileCountVisitRejectionReason.OutsideInterior)
+{
+  throw new InvalidOperationException("Tile count visit gates diverged from nextCount source guards.");
+}
+Console.WriteLine("PASS: tile count visit policy preserves edge, wall, shimmer, and lava gates");
+
+TileCountVisitedSnapshot visitedTiles = new(
+  new HashSet<(int X, int Y)> { (12, 18) });
+TileCountVisitedResult existingVisitedTile = TileCountVisitedPolicy.Visit(visitedTiles, 12, 18);
+TileCountVisitedResult newVisitedTile = TileCountVisitedPolicy.Visit(existingVisitedTile.State, 13, 18);
+if (!existingVisitedTile.WasAlreadyVisited || newVisitedTile.WasAlreadyVisited ||
+    !newVisitedTile.State.Contains(13, 18) || newVisitedTile.State.Coordinates.Count != 2)
+{
+  throw new InvalidOperationException("Tile count visited snapshot diverged from CountedTiles semantics.");
+}
+Console.WriteLine("PASS: tile count visited policy preserves immutable deduplication");
+
+TileCountCapacityDecision openTileCountCapacity = TileCountCapacityPolicy.Evaluate(2, 3);
+TileCountCapacityDecision incrementedTileCountCapacity = TileCountCapacityPolicy.Increment(
+  openTileCountCapacity);
+TileCountCapacityDecision saturatedTileCountCapacity = TileCountCapacityPolicy.Increment(
+  incrementedTileCountCapacity);
+if (!openTileCountCapacity.CanVisit || incrementedTileCountCapacity.Count != 3 ||
+    !saturatedTileCountCapacity.IsSaturated || saturatedTileCountCapacity.CanVisit ||
+    saturatedTileCountCapacity.Count != 3 ||
+    !TileCountCapacityPolicy.Evaluate(3, 3).IsSaturated)
+{
+  throw new InvalidOperationException("Tile count capacity diverged from nextCount saturation semantics.");
+}
+Console.WriteLine("PASS: tile count capacity policy preserves maximum saturation");
+
+TileCountEnvironmentCounters environmentCounters =
+  TileCountEnvironmentCounterPolicy.AddActiveTile(
+    TileCountEnvironmentCounters.Empty,
+    tileType: 70);
+environmentCounters = TileCountEnvironmentCounterPolicy.AddActiveTile(environmentCounters, 1);
+environmentCounters = TileCountEnvironmentCounterPolicy.AddActiveTile(environmentCounters, 147);
+environmentCounters = TileCountEnvironmentCounterPolicy.AddActiveTile(environmentCounters, 53);
+environmentCounters = TileCountEnvironmentCounterPolicy.AddLavaLiquid(environmentCounters);
+if (environmentCounters.ShroomCount != 1 || environmentCounters.RockCount != 1 ||
+    environmentCounters.IceCount != 1 || environmentCounters.SandCount != 1 ||
+    environmentCounters.LavaCount != 1)
+{
+  throw new InvalidOperationException("Tile count environment counters diverged from source types.");
+}
+Console.WriteLine("PASS: tile count environment counters preserve source classification");
+
+WallSpreadBudgetDecision wallSpreadBudget = WallSpreadBudgetPolicy.Create(maximumCount: 2);
+wallSpreadBudget = WallSpreadBudgetPolicy.Apply(wallSpreadBudget);
+WallSpreadBudgetDecision exhaustedWallSpreadBudget = WallSpreadBudgetPolicy.Apply(wallSpreadBudget);
+if (wallSpreadBudget.AppliedCount != 1 || !wallSpreadBudget.CanSpread ||
+    !exhaustedWallSpreadBudget.IsExhausted || exhaustedWallSpreadBudget.CanSpread ||
+    exhaustedWallSpreadBudget.AppliedCount != 2 ||
+    WallSpreadBudgetPolicy.Create().MaximumCount != WallSpreadBudgetPolicy.Version4MaximumCount)
+{
+  throw new InvalidOperationException("Wall spread budget diverged from Wall2 limit semantics.");
+}
+Console.WriteLine("PASS: wall spread budget preserves maxWallOut2 saturation");
+
+DirtCountVisitDecision dirtCountAllowed = DirtCountVisitPolicy.Evaluate(
+  10, 10, 100, 100, false, 0, 2, false);
+DirtCountVisitDecision dirtCountIce = DirtCountVisitPolicy.Evaluate(
+  10, 10, 100, 100, true, 147, 2, false);
+DirtCountVisitDecision dirtCountProtected = DirtCountVisitPolicy.Evaluate(
+  10, 10, 100, 100, false, 0, 244, false);
+DirtCountVisitDecision dirtCountSolid = DirtCountVisitPolicy.Evaluate(
+  10, 10, 100, 100, false, 0, 2, true);
+DirtCountVisitDecision dirtCountEdge = DirtCountVisitPolicy.Evaluate(
+  1, 10, 100, 100, false, 0, 2, false);
+if (!dirtCountAllowed.CanCount || dirtCountAllowed.RejectionReason != DirtCountRejectionReason.None ||
+    dirtCountIce.RejectionReason != DirtCountRejectionReason.IceTile ||
+    dirtCountProtected.RejectionReason != DirtCountRejectionReason.ProtectedWall ||
+    dirtCountSolid.RejectionReason != DirtCountRejectionReason.SolidTile ||
+    dirtCountEdge.RejectionReason != DirtCountRejectionReason.OutsideInterior)
+{
+  throw new InvalidOperationException("Dirt count visit gates diverged from nextDirtCount.");
+}
+Console.WriteLine("PASS: dirt count visit policy preserves ice, wall, solid, and edge gates");
+
+HousingRoomStartDecision validRoomStart = HousingRoomStartPolicy.Evaluate(
+  20, 20, 100, 100, isActiveSolid: false);
+HousingRoomStartDecision edgeRoomStart = HousingRoomStartPolicy.Evaluate(
+  9, 20, 100, 100, isActiveSolid: false);
+HousingRoomStartDecision solidRoomStart = HousingRoomStartPolicy.Evaluate(
+  20, 20, 100, 100, isActiveSolid: true);
+if (!validRoomStart.CanStart || edgeRoomStart.RejectionReason !=
+    HousingRoomStartRejectionReason.TooCloseToWorldEdge ||
+    solidRoomStart.RejectionReason != HousingRoomStartRejectionReason.StartedInSolidTile)
+{
+  throw new InvalidOperationException("Housing room start gates diverged from CheckRoom.");
+}
+Console.WriteLine("PASS: housing room start policy preserves edge and solid-start gates");
+
+HousingWallSafetyDecision safeHousingWall = HousingWallSafetyPolicy.Evaluate(
+  hasHorizontalHousingBoundary: true,
+  hasVerticalHousingBoundary: true,
+  currentTileHasWall: false);
+HousingWallSafetyDecision unsafeHousingWall = HousingWallSafetyPolicy.Evaluate(
+  hasHorizontalHousingBoundary: false,
+  hasVerticalHousingBoundary: true,
+  currentTileHasWall: true);
+HousingWallSafetyDecision missingHousingWall = HousingWallSafetyPolicy.Evaluate(
+  hasHorizontalHousingBoundary: true,
+  hasVerticalHousingBoundary: false,
+  currentTileHasWall: false);
+if (!safeHousingWall.IsSafe || unsafeHousingWall.RejectionReason !=
+    HousingWallSafetyRejectionReason.TooManyUnsafeWalls ||
+    missingHousingWall.RejectionReason != HousingWallSafetyRejectionReason.HoleInWallIsTooBig)
+{
+  throw new InvalidOperationException("Housing wall safety diverged from CheckRoom boundary rules.");
+}
+Console.WriteLine("PASS: housing wall safety policy preserves unsafe-wall and missing-wall reasons");
+
+HousingRoomMinimumSizeDecision smallRoom = HousingRoomMinimumSizePolicy.Evaluate(59);
+HousingRoomMinimumSizeDecision validRoom = HousingRoomMinimumSizePolicy.Evaluate(60);
+if (!smallRoom.IsTooSmall || smallRoom.CanSpawn || validRoom.IsTooSmall ||
+    !validRoom.CanSpawn || validRoom.MinimumRoomTileCount != 60)
+{
+  throw new InvalidOperationException("Housing room minimum size diverged from CheckRoom.");
+}
+Console.WriteLine("PASS: housing room minimum-size policy preserves 60-tile spawn threshold");
+
+HousingBlockingTileDecision blockingSolid = HousingBlockingTilePolicy.Evaluate(1, true, 0, 0);
+HousingBlockingTileDecision openGate = HousingBlockingTilePolicy.Evaluate(11, false, 54, 0);
+HousingBlockingTileDecision closedGate = HousingBlockingTilePolicy.Evaluate(11, false, 36, 0);
+HousingBlockingTileDecision specialGate = HousingBlockingTilePolicy.Evaluate(386, false, 36, 0);
+if (blockingSolid.Reason != HousingBlockingTileReason.BlockingWall ||
+    openGate.Reason != HousingBlockingTileReason.BlockingOpenGate ||
+    closedGate.ShouldStop || specialGate.Reason != HousingBlockingTileReason.BlockingOpenGate)
+{
+  throw new InvalidOperationException("Housing blocking tile policy diverged from CheckRoom gates.");
+}
+Console.WriteLine("PASS: housing blocking tile policy preserves solid and open-gate stops");
+
+HousingStinkbugSpawnDecision stinkbugBlocked = HousingStinkbugSpawnPolicy.Evaluate(
+  hasStinkbug: true,
+  hasEchoStinkbug: false,
+  hasTownPetRoom: false);
+HousingStinkbugSpawnDecision petRoomAllowed = HousingStinkbugSpawnPolicy.Evaluate(
+  hasStinkbug: true,
+  hasEchoStinkbug: true,
+  hasTownPetRoom: true);
+HousingStinkbugSpawnDecision cleanRoom = HousingStinkbugSpawnPolicy.Evaluate(
+  hasStinkbug: false,
+  hasEchoStinkbug: false,
+  hasTownPetRoom: false);
+if (!stinkbugBlocked.IsBlocked || !stinkbugBlocked.HasStinkbug ||
+    petRoomAllowed.IsBlocked || !petRoomAllowed.HasEchoStinkbug || cleanRoom.IsBlocked)
+{
+  throw new InvalidOperationException("Housing stinkbug spawn gate diverged from source.");
+}
+Console.WriteLine("PASS: housing stinkbug spawn policy preserves town-pet exception");
+
+HousingScoreEligibilityDecision positiveHousingScore = HousingScoreEligibilityPolicy.Evaluate(1);
+HousingScoreEligibilityDecision zeroHousingScore = HousingScoreEligibilityPolicy.Evaluate(0);
+HousingScoreEligibilityDecision negativeHousingScore = HousingScoreEligibilityPolicy.Evaluate(-1);
+if (!positiveHousingScore.CanSpawn || positiveHousingScore.IsRejected ||
+    zeroHousingScore.CanSpawn || !zeroHousingScore.IsRejected ||
+    negativeHousingScore.CanSpawn || !negativeHousingScore.IsRejected)
+{
+  throw new InvalidOperationException("Housing score gate diverged from SpawnTownNPC.");
+}
+Console.WriteLine("PASS: housing score eligibility preserves positive-score spawn gate");
+
+HousingAlternateSpotDecision alternateSpot = HousingAlternateSpotPolicy.Evaluate(true, false);
+HousingAlternateSpotDecision guardedAlternateSpot = HousingAlternateSpotPolicy.Evaluate(true, true);
+HousingAlternateSpotDecision missingAlternateSpot = HousingAlternateSpotPolicy.Evaluate(false, false);
+if (!alternateSpot.CanTryAlternateSpot || !alternateSpot.HasAlternateSpot || alternateSpot.IsAlreadyTrying ||
+    guardedAlternateSpot.CanTryAlternateSpot || !guardedAlternateSpot.IsAlreadyTrying ||
+    missingAlternateSpot.CanTryAlternateSpot)
+{
+  throw new InvalidOperationException("Housing alternate spot gate diverged from SpawnTownNPC.");
+}
+Console.WriteLine("PASS: housing alternate spot policy preserves recursion guard");
+
+SmallConsecutiveClumpMetrics clumpMetrics = new(0, 0);
+clumpMetrics = SmallConsecutiveClumpMetricsPolicy.Record(clumpMetrics, 3, 4, 20);
+clumpMetrics = SmallConsecutiveClumpMetricsPolicy.Record(clumpMetrics, 20, 4, 20);
+clumpMetrics = SmallConsecutiveClumpMetricsPolicy.Record(clumpMetrics, 2, 20, 20);
+if (clumpMetrics.FoundCount != 2 || clumpMetrics.EliminatedCount != 1)
+{
+  throw new InvalidOperationException("Small consecutive clump metrics diverged from ScanTileColumnAndRemoveClumps.");
+}
+Console.WriteLine("PASS: small consecutive clump metrics preserve bounded scan accounting");
+
+HousingRoomQualityDecision occupiedRoom = HousingRoomQualityPolicy.Evaluate(-1, true, true, false);
+HousingRoomQualityDecision evilRoom = HousingRoomQualityPolicy.Evaluate(-1, false, true, true);
+HousingRoomQualityDecision standingRoom = HousingRoomQualityPolicy.Evaluate(-1, false, false, false);
+HousingRoomQualityDecision validRoomQuality = HousingRoomQualityPolicy.Evaluate(1, true, true, false);
+if (occupiedRoom.IsEligible || occupiedRoom.FailureReason != HousingRoomQualityFailureReason.Occupied ||
+    evilRoom.FailureReason != HousingRoomQualityFailureReason.Evil ||
+    standingRoom.FailureReason != HousingRoomQualityFailureReason.NoStandingSpace ||
+    !validRoomQuality.IsEligible || validRoomQuality.FailureReason != HousingRoomQualityFailureReason.None)
+{
+  throw new InvalidOperationException("Housing room quality failure precedence diverged from ScoreRoom.");
+}
+Console.WriteLine("PASS: housing room quality preserves failure precedence");
+
+TileReframeDecision shallowReframe = TileReframePolicy.Evaluate(23);
+TileReframeDecision saturatedReframe = TileReframePolicy.Evaluate(24);
+TileReframeDecision deepReframe = TileReframePolicy.Evaluate(25);
+if (!shallowReframe.ShouldReframeNeighbors || saturatedReframe.ShouldReframeNeighbors ||
+    deepReframe.ShouldReframeNeighbors || shallowReframe.MaximumDepth != 25)
+{
+  throw new InvalidOperationException("Tile reframe recursion budget diverged from framing source.");
+}
+Console.WriteLine("PASS: tile reframe policy preserves bounded neighbor recursion");
+
+CrimsonHeartPositionSnapshot emptyHeartPositions = new(Array.Empty<(int X, int Y)>());
+if (!CrimsonHeartPositionPolicy.TryAppend(emptyHeartPositions, 12, 34, out CrimsonHeartPositionSnapshot firstHeartPositions) ||
+    firstHeartPositions.Positions.Count != 1 || firstHeartPositions.Positions[0] != (12, 34) ||
+    firstHeartPositions.Positions == emptyHeartPositions.Positions)
+{
+  throw new InvalidOperationException("Crimson heart position snapshot did not append immutably.");
+}
+
+var fullHeartPositions = new List<(int X, int Y)>();
+for (int index = 0; index < CrimsonHeartPositionSnapshot.MaximumCount; index++)
+{
+  fullHeartPositions.Add((index, index));
+}
+
+CrimsonHeartPositionSnapshot fullHeartSnapshot = new(fullHeartPositions);
+if (CrimsonHeartPositionPolicy.TryAppend(fullHeartSnapshot, 101, 101, out CrimsonHeartPositionSnapshot overflowHeartSnapshot) ||
+    overflowHeartSnapshot.Positions.Count != CrimsonHeartPositionSnapshot.MaximumCount)
+{
+  throw new InvalidOperationException("Crimson heart position capacity diverged from legacy storage.");
+}
+Console.WriteLine("PASS: crimson heart positions preserve bounded immutable storage");
+
+CatTailDistanceDecision validCatTailDistance = CatTailDistancePolicy.Evaluate(7);
+CatTailDistanceDecision shortCatTailDistance = CatTailDistancePolicy.Evaluate(1);
+CatTailDistanceDecision longCatTailDistance = CatTailDistancePolicy.Evaluate(9);
+if (!validCatTailDistance.IsValidPlacementDistance || validCatTailDistance.ExceedsCleanupDistance ||
+    shortCatTailDistance.IsValidPlacementDistance || longCatTailDistance.IsValidPlacementDistance ||
+    !longCatTailDistance.ExceedsCleanupDistance || CatTailDistancePolicy.DefaultDistance != 8)
+{
+  throw new InvalidOperationException("Cat tail distance policy diverged from legacy bounds.");
+}
+Console.WriteLine("PASS: cat tail distance preserves placement and cleanup bounds");
+
+TreeShakeWorklistSnapshot emptyTreeShakes = new(Array.Empty<TreeShakeWorkItem>());
+TreeShakeWorkItem firstTreeShake = new(40, 80);
+if (!TreeShakeWorklistPolicy.TryEnqueue(emptyTreeShakes, firstTreeShake, out TreeShakeWorklistSnapshot queuedTreeShakes) ||
+    !queuedTreeShakes.Items.Contains(firstTreeShake) ||
+    TreeShakeWorklistPolicy.TryEnqueue(queuedTreeShakes, firstTreeShake, out _))
+{
+  throw new InvalidOperationException("Tree shake worklist did not preserve coordinate deduplication.");
+}
+
+var fullTreeShakeItems = new List<TreeShakeWorkItem>();
+for (int index = 0; index < TreeShakeWorklistSnapshot.MaximumCount; index++)
+{
+  fullTreeShakeItems.Add(new TreeShakeWorkItem(index, index + 1));
+}
+
+TreeShakeWorklistSnapshot fullTreeShakes = new(fullTreeShakeItems);
+if (TreeShakeWorklistPolicy.TryEnqueue(fullTreeShakes, new TreeShakeWorkItem(999, 999), out _) ||
+    fullTreeShakes.Items.Count != TreeShakeWorklistSnapshot.MaximumCount)
+{
+  throw new InvalidOperationException("Tree shake worklist capacity diverged from legacy storage.");
+}
+Console.WriteLine("PASS: tree shake worklist preserves bounded deduplicated storage");
+
+var treeTopStyles = new List<int>();
+for (int areaId = 0; areaId < TreeTopStyleSnapshot.AreaCount; areaId++)
+{
+  treeTopStyles.Add(areaId + 10);
+}
+
+TreeTopStyleSnapshot treeTopSnapshot = new(treeTopStyles);
+if (TreeTopStyleQuery.GetStyle(treeTopSnapshot, 0) != 10 ||
+    TreeTopStyleQuery.GetStyle(treeTopSnapshot, 12) != 22)
+{
+  throw new InvalidOperationException("Tree top style snapshot did not preserve area ordering.");
+}
+
+bool rejectedTreeTopShape = false;
+try
+{
+  _ = new TreeTopStyleSnapshot(new[] { 1, 2 });
+}
+catch (ArgumentException)
+{
+  rejectedTreeTopShape = true;
+}
+
+if (!rejectedTreeTopShape)
+{
+  throw new InvalidOperationException("Tree top style snapshot accepted an invalid area count.");
+}
+Console.WriteLine("PASS: tree top styles preserve fixed 13-area snapshot shape");
+
+HalloweenPumpkinGenerationDecision halloweenPumpkins =
+  HalloweenPumpkinGenerationPolicy.Evaluate(true, false);
+HalloweenPumpkinGenerationDecision endlessPumpkins =
+  HalloweenPumpkinGenerationPolicy.Evaluate(false, true);
+HalloweenPumpkinGenerationDecision ordinarySurface =
+  HalloweenPumpkinGenerationPolicy.Evaluate(false, false);
+if (!halloweenPumpkins.ShouldGeneratePumpkins || !endlessPumpkins.ShouldGeneratePumpkins ||
+    ordinarySurface.ShouldGeneratePumpkins)
+{
+  throw new InvalidOperationException("Halloween pumpkin generation gate diverged from legacy.");
+}
+Console.WriteLine("PASS: Halloween pumpkin generation preserves seed gate");
+
+if (TownNpcSpawnCadencePolicy.CalculatePeriod(3) != 60)
+{
+  throw new InvalidOperationException("Town NPC spawn period diverged from world update rate.");
+}
+
+TownNpcSpawnCadenceDecision waitingSpawn = TownNpcSpawnCadencePolicy.Advance(58, 60, false, false);
+TownNpcSpawnCadenceDecision readySpawn = TownNpcSpawnCadencePolicy.Advance(59, 60, false, false);
+TownNpcSpawnCadenceDecision blockedSpawn = TownNpcSpawnCadencePolicy.Advance(59, 60, true, false);
+if (waitingSpawn.NextDelay != 59 || waitingSpawn.ShouldAttemptSpawn ||
+    readySpawn.NextDelay != 0 || !readySpawn.ShouldAttemptSpawn ||
+    blockedSpawn.NextDelay != 59 || blockedSpawn.ShouldAttemptSpawn || !blockedSpawn.IsBlockedByEvent)
+{
+  throw new InvalidOperationException("Town NPC spawn cadence diverged from TrySpawningTownNPC.");
+}
+Console.WriteLine("PASS: town NPC spawn cadence preserves event blocking and period reset");
+
+MeteorShowerProgression initializedMeteorShower = MeteorShowerInitializationPolicy.Initialize(
+  new LegacyPassRandomState(1456));
+if (initializedMeteorShower.RemainingCount < 2600 || initializedMeteorShower.RemainingCount > 3000)
+{
+  throw new InvalidOperationException("Meteor shower initialization diverged from source range.");
+}
+
+MeteorShowerProgression failedImpact = MeteorShowerAdvancePolicy.Advance(
+  initializedMeteorShower,
+  reset: false,
+  fastForward: false,
+  impactCommitted: false);
+MeteorShowerProgression committedImpact = MeteorShowerAdvancePolicy.Advance(
+  initializedMeteorShower,
+  reset: false,
+  fastForward: false,
+  impactCommitted: true);
+MeteorShowerProgression fastForwarded = MeteorShowerAdvancePolicy.Advance(
+  initializedMeteorShower,
+  reset: false,
+  fastForward: true,
+  impactCommitted: false);
+MeteorShowerProgression resetMeteorShower = MeteorShowerAdvancePolicy.Advance(
+  initializedMeteorShower,
+  reset: true,
+  fastForward: false,
+  impactCommitted: false);
+if (failedImpact.RemainingCount != initializedMeteorShower.RemainingCount ||
+    committedImpact.RemainingCount != initializedMeteorShower.RemainingCount - 1 ||
+    fastForwarded.RemainingCount != 0 ||
+    resetMeteorShower.RemainingCount != 0)
+{
+  throw new InvalidOperationException("Meteor shower counter transition diverged from source rules.");
+}
+
+WorldGenerationLifecycleSnapshot lifecycle = WorldGenerationLifecycleQuery.FromLegacyFlags(
+  generatingWorld: true,
+  isGeneratingOrLoadingWorld: true);
+if (!lifecycle.IsGenerating || !lifecycle.IsGeneratingOrLoading ||
+    WorldGenerationLifecycleQuery.FromLegacyFlags(false, false) != default)
+{
+  throw new InvalidOperationException("World-generation lifecycle flags lost their explicit state.");
+}
+
+try
+{
+  _ = WorldGenerationLifecycleQuery.FromLegacyFlags(true, false);
+  throw new InvalidOperationException("Inconsistent world-generation lifecycle flags were accepted.");
+}
+catch (ArgumentException)
+{
+}
+
+Dictionary<ushort, TreeGroundTileDefinition> checkSettingsGroundDefinitions = new()
+{
+  [2] = new TreeGroundTileDefinition(2, IsStone: true, IsMoss: false, IsGrass: false),
+  [23] = new TreeGroundTileDefinition(23, IsStone: false, IsMoss: false, IsGrass: true),
+  [633] = new TreeGroundTileDefinition(633, IsStone: false, IsMoss: false, IsGrass: false)
+};
+Dictionary<ushort, TreeWallDefinition> checkSettingsWallDefinitions = new()
+{
+  [2] = new TreeWallDefinition(2, AllowsPlantsToGrow: false),
+  [700] = new TreeWallDefinition(700, AllowsPlantsToGrow: true)
+};
+if (!TreeCheckSettingsQuery.IsGroundValid(
+      LegacyTreeProfileKind.GemTreeTopaz, 2, checkSettingsGroundDefinitions) ||
+    TreeCheckSettingsQuery.IsGroundValid(
+      LegacyTreeProfileKind.VanityTreeSakura, 23, checkSettingsGroundDefinitions) ||
+    !TreeCheckSettingsQuery.IsGroundValid(
+      LegacyTreeProfileKind.TreeAsh, 633, checkSettingsGroundDefinitions) ||
+    !TreeCheckSettingsQuery.IsWallValid(
+      LegacyTreeProfileKind.GemTreeTopaz, 2, checkSettingsWallDefinitions) ||
+    !TreeCheckSettingsQuery.IsWallValid(
+      LegacyTreeProfileKind.VanityTreeSakura, 700, checkSettingsWallDefinitions) ||
+    TreeCheckSettingsQuery.IsGroundValid(
+      LegacyTreeProfileKind.TreeAsh, -1, checkSettingsGroundDefinitions))
+{
+  throw new InvalidOperationException("Tree check-settings predicates did not preserve source boundaries.");
+}
+
+if (WorldTransformationStateQuery.FromActiveCount(0).IsTransforming ||
+    !WorldTransformationStateQuery.FromActiveCount(2).IsTransforming ||
+    WorldTransformationStateQuery.FromActiveCount(2).ActiveTransformations != 2)
+{
+  throw new InvalidOperationException("World transformation snapshot did not preserve active-count semantics.");
+}
+
+if (OceanLevelQuery.Evaluate(80.0, 150.0) != 155.0 ||
+    OceanLevelQuery.Evaluate(new TerrainProfileComponent(80, 150, 270)) != 155.0)
+{
+  throw new InvalidOperationException("Ocean level query did not preserve the legacy midpoint formula.");
+}
+
+try
+{
+  _ = OceanLevelQuery.Evaluate(double.NaN, 150.0);
+  throw new InvalidOperationException("Non-finite ocean level input was accepted.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+try
+{
+  _ = WorldTransformationStateQuery.FromActiveCount(-1);
+  throw new InvalidOperationException("Negative world transformation count was accepted.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+TileHousingRuleSnapshot housingRules = TileHousingRuleQuery.Create(
+  preventInfiniteRopeFraming: true);
+if (!housingRules.PreventInfiniteRopeFraming || !TileHousingRuleSnapshot.BubblesAreSolidForHousing ||
+    TileHousingRuleQuery.Create(false).PreventInfiniteRopeFraming)
+{
+  throw new InvalidOperationException("Tile housing rule snapshot did not preserve source constants.");
+}
+
+if (ItemSpawnProtectionPolicy.Version4DurationTicks != 18000 ||
+    ItemSpawnProtectionPolicy.ValidateDuration(18000) != 18000)
+{
+  throw new InvalidOperationException("Item spawn protection did not preserve the Version4 duration.");
+}
+
+SecretSeedRuleSnapshotSet secretSeedRuleSet = SecretSeedRuleSnapshotQuery.Create(
+  new HashSet<string>(StringComparer.Ordinal) { "error-world", "no-surface" });
+if (secretSeedRuleSet.Rules.Count != 35 || secretSeedRuleSet.ActiveSecretSeedCount != 2 ||
+    !secretSeedRuleSet.Rules.Any(rule => rule.Definition.Variant == "error-world" && rule.Enabled) ||
+    secretSeedRuleSet.Rules.Any(rule =>
+      rule.Definition.Variant == "rainbow-stuff" && rule.Enabled))
+{
+  throw new InvalidOperationException("SecretSeed rule snapshot did not preserve ordered enabled state.");
+}
+
+TileFrameBudget frameBudget = new(requestedCount: 4, committedCount: 3, maximumCount: 8);
+if (frameBudget.RequestedCount != 4 || frameBudget.CommittedCount != 3 || frameBudget.MaximumCount != 8)
+{
+  throw new InvalidOperationException("Tile frame budget did not preserve diagnostic counts.");
+}
+
+try
+{
+  _ = new TileFrameBudget(requestedCount: 2, committedCount: 3, maximumCount: 4);
+  throw new InvalidOperationException("Invalid tile frame budget was accepted.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+try
+{
+  _ = ItemSpawnProtectionPolicy.ValidateDuration(-1);
+  throw new InvalidOperationException("Negative item spawn protection duration was accepted.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+HashSet<string> generationPolicySeeds = new(StringComparer.Ordinal) { "bigger-abandoned-houses" };
+if (!SecretSeedGenerationPolicyQuery.ShouldGenerateBiggerAbandonedHouses(
+      generationPolicySeeds,
+      new LegacyPassRandomState(1456)) ||
+    SecretSeedGenerationPolicyQuery.ShouldGenerateRainbowGlowsticks(
+      new HashSet<string>(StringComparer.Ordinal),
+      isTenthAnniversaryWorld: false) ||
+    !SecretSeedGenerationPolicyQuery.ShouldGenerateRainbowGlowsticks(
+      new HashSet<string>(StringComparer.Ordinal),
+      isTenthAnniversaryWorld: true) ||
+    !SecretSeedGenerationPolicyQuery.ShouldGenerateRainbowGlowsticks(
+      new HashSet<string>(StringComparer.Ordinal) { "rainbow-stuff" },
+      isTenthAnniversaryWorld: false))
+{
+  throw new InvalidOperationException("SecretSeed generation policies did not preserve source branches.");
+}
+
+IReadOnlySet<ushort> ropeDefaults = TileRopeQuery.RegisterDefaults();
+if (ropeDefaults.Count != 9 || !ropeDefaults.Contains(213) || !ropeDefaults.Contains(504) ||
+    !ropeDefaults.SetEquals(TileRopeQuery.RegisterDefaults()))
+{
+  throw new InvalidOperationException("Rope Tile defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> ordinaryTreeGroundDefaults = OrdinaryTreeGroundQuery.RegisterDefaults();
+if (ordinaryTreeGroundDefaults.Count != 12 || !ordinaryTreeGroundDefaults.Contains(2) ||
+    !ordinaryTreeGroundDefaults.Contains(662) ||
+    !ordinaryTreeGroundDefaults.SetEquals(OrdinaryTreeGroundQuery.RegisterDefaults()))
+{
+  throw new InvalidOperationException("Ordinary tree ground defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> nonSlopingDefaults = TileSlopingQuery.RegisterDefaults();
+if (nonSlopingDefaults.Count != 13 || !nonSlopingDefaults.Contains(21) ||
+    !nonSlopingDefaults.Contains(597) ||
+    !nonSlopingDefaults.SetEquals(TileSlopingQuery.RegisterDefaults()))
+{
+  throw new InvalidOperationException("Non-sloping Tile defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> platformSupportDefaults =
+  Tile1x2TopValidationQuery.RegisterPlatformSupportDefaults();
+if (platformSupportDefaults.Count != 7 || !platformSupportDefaults.Contains(42) ||
+    !platformSupportDefaults.Contains(698) ||
+    !platformSupportDefaults.SetEquals(Tile1x2TopValidationQuery.RegisterPlatformSupportDefaults()))
+{
+  throw new InvalidOperationException("Platform-support Tile defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> twoByXTopSupportDefaults = Tile2xXValidationQuery.RegisterTopSupportDefaults();
+if (twoByXTopSupportDefaults.Count != 4 || !twoByXTopSupportDefaults.Contains(465) ||
+    !twoByXTopSupportDefaults.Contains(592) ||
+    !twoByXTopSupportDefaults.SetEquals(Tile2xXValidationQuery.RegisterTopSupportDefaults()))
+{
+  throw new InvalidOperationException("2xX top-support defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> poundingBlockedDefaults = TilePoundingEligibilityQuery.RegisterBlockedDefaults();
+IReadOnlySet<ushort> poundingGenerationBlockedDefaults =
+  TilePoundingEligibilityQuery.RegisterGenerationBlockedDefaults();
+if (poundingBlockedDefaults.Count != 9 || poundingGenerationBlockedDefaults.Count != 2 ||
+    !poundingBlockedDefaults.Contains(10) || !poundingBlockedDefaults.Contains(484) ||
+    !poundingGenerationBlockedDefaults.Contains(190) ||
+    !poundingGenerationBlockedDefaults.Contains(30) ||
+    !poundingBlockedDefaults.SetEquals(TilePoundingEligibilityQuery.RegisterBlockedDefaults()) ||
+    !poundingGenerationBlockedDefaults.SetEquals(
+      TilePoundingEligibilityQuery.RegisterGenerationBlockedDefaults()))
+{
+  throw new InvalidOperationException("Tile pounding defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> twoByOneTableSupportDefaults =
+  Tile2x1ValidationQuery.RegisterTableSupportDefaults();
+if (twoByOneTableSupportDefaults.Count != 3 || !twoByOneTableSupportDefaults.Contains(29) ||
+    !twoByOneTableSupportDefaults.Contains(462) ||
+    !twoByOneTableSupportDefaults.SetEquals(Tile2x1ValidationQuery.RegisterTableSupportDefaults()))
+{
+  throw new InvalidOperationException("2x1 table-support defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> threeByThreeBottomSupportDefaults =
+  Tile3x3ValidationQuery.RegisterBottomSupportDefaults();
+if (threeByThreeBottomSupportDefaults.Count != 27 ||
+    !threeByThreeBottomSupportDefaults.Contains(106) ||
+    !threeByThreeBottomSupportDefaults.Contains(733) ||
+    !threeByThreeBottomSupportDefaults.SetEquals(
+      Tile3x3ValidationQuery.RegisterBottomSupportDefaults()))
+{
+  throw new InvalidOperationException("3x3 bottom-support defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> threeByTwoDeferredDefaults =
+  Tile3x2ValidationQuery.RegisterDeferredSpecialCaseDefaults();
+if (threeByTwoDeferredDefaults.Count != 7 || !threeByTwoDeferredDefaults.Contains(186) ||
+    !threeByTwoDeferredDefaults.Contains(695) ||
+    !threeByTwoDeferredDefaults.SetEquals(
+      Tile3x2ValidationQuery.RegisterDeferredSpecialCaseDefaults()))
+{
+  throw new InvalidOperationException("3x2 deferred special-case defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> treeFrameGroundDefaults =
+  TreeFrameValidationQuery.RegisterGroundNormalizationDefaults();
+if (treeFrameGroundDefaults.Count != 11 || !treeFrameGroundDefaults.Contains(234) ||
+    !treeFrameGroundDefaults.Contains(662) ||
+    !treeFrameGroundDefaults.SetEquals(TreeFrameValidationQuery.RegisterGroundNormalizationDefaults()))
+{
+  throw new InvalidOperationException("Tree-frame ground defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> twoByTwoDeferredDefaults =
+  Tile2x2ValidationQuery.RegisterDeferredSpecialCaseDefaults();
+if (twoByTwoDeferredDefaults.Count != 4 || !twoByTwoDeferredDefaults.Contains(132) ||
+    !twoByTwoDeferredDefaults.Contains(652) ||
+    !twoByTwoDeferredDefaults.SetEquals(
+      Tile2x2ValidationQuery.RegisterDeferredSpecialCaseDefaults()))
+{
+  throw new InvalidOperationException("2x2 deferred special-case defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> vineDefaults = VineFrameQuery.RegisterDefaults();
+if (vineDefaults.Count != 8 || !vineDefaults.Contains(52) || !vineDefaults.Contains(638) ||
+    !vineDefaults.SetEquals(VineFrameQuery.RegisterDefaults()))
+{
+  throw new InvalidOperationException("Vine Tile defaults were mutable or unstable.");
+}
+
+IReadOnlyDictionary<ushort, int> profilePassStyles =
+  TreeLeafPassStyleQuery.RegisterProfilePassStyles();
+if (profilePassStyles.Count != 10 || profilePassStyles[583] != 1249 ||
+    profilePassStyles[633] != 1278 || profilePassStyles[596] != 1248 ||
+    !profilePassStyles.ContainsKey(589))
+{
+  throw new InvalidOperationException("Tree leaf profile pass styles were unstable.");
+}
+
+IReadOnlySet<ushort> cactusGroundDefaults = CactusFrameQuery.RegisterSupportedGroundDefaults();
+if (cactusGroundDefaults.Count != 4 || !cactusGroundDefaults.Contains(53) ||
+    !cactusGroundDefaults.Contains(234) ||
+    !cactusGroundDefaults.SetEquals(CactusFrameQuery.RegisterSupportedGroundDefaults()))
+{
+  throw new InvalidOperationException("Cactus supported-ground defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> pumpkinSupportDefaults =
+  Tile2x2StyleValidationQuery.RegisterPumpkinSupportDefaults();
+if (pumpkinSupportDefaults.Count != 4 || !pumpkinSupportDefaults.Contains(2) ||
+    !pumpkinSupportDefaults.Contains(492) ||
+    !pumpkinSupportDefaults.SetEquals(Tile2x2StyleValidationQuery.RegisterPumpkinSupportDefaults()))
+{
+  throw new InvalidOperationException("Pumpkin support defaults were mutable or unstable.");
+}
 
 const int replayWidth = 400;
 const int replayHeight = 300;
@@ -216,11 +2853,65 @@ WorldGenerationStage[] expectedTraceStages =
 };
 if (tracedGeneration.Stages.Count != expectedTraceStages.Length ||
     !tracedGeneration.Stages.Select(stage => stage.Stage).SequenceEqual(expectedTraceStages) ||
-    tracedGeneration.Stages.Any(stage => stage.Snapshot is null))
+    tracedGeneration.Stages.Any(stage => stage.Snapshot is null) ||
+    !tracedGeneration.InitialLifecycle.IsGenerating ||
+    !tracedGeneration.InitialLifecycle.IsGeneratingOrLoading ||
+    tracedGeneration.Lifecycle.IsGenerating || tracedGeneration.Lifecycle.IsGeneratingOrLoading ||
+    tracedGeneration.DistanceDefaults != replayRequest.DistanceDefaults ||
+    tracedGeneration.TerrainProfile !=
+      new TerrainProfileComponent(replayRequest.SurfaceY, replayRequest.RockLayerY,
+        replayRequest.Metadata.Height - 1))
 {
   throw new InvalidOperationException(
     "World-generation trace did not expose every deterministic commit boundary.");
 }
+
+WorldGenerationStageSnapshot framingStage = tracedGeneration.Stages.Single(
+  stage => stage.Stage == WorldGenerationStage.Framing);
+if (framingStage.FrameBudget is null ||
+    framingStage.FrameBudget.Value.CommittedCount > framingStage.FrameBudget.Value.RequestedCount ||
+    tracedGeneration.Stages.Any(
+      stage => stage.Stage != WorldGenerationStage.Framing && stage.FrameBudget is not null))
+{
+  throw new InvalidOperationException("World-generation trace did not preserve framing budget provenance.");
+}
+
+WorldGrid expectedTerrainWorld = new(replayWidth, replayHeight, initializeLegacyEmptyFrames: true);
+WorldGenerationBootstrap expectedTerrainBootstrap =
+  new WorldGenerationStageSystem().Initialize(replayRequest);
+WorldGenerationStateComponent expectedTerrainState = expectedTerrainBootstrap.State;
+List<TileChangeCommand> expectedTerrainCommands = new();
+new TerrainBaseSystem().AppendLegacyCommands(
+  expectedTerrainWorld.CreateSnapshot(replayRequest.Metadata),
+  replayRequest,
+  new TerrainProfileComponent(
+    replayRequest.SurfaceY,
+    replayRequest.RockLayerY,
+    replayRequest.Metadata.Height - 1),
+  ref expectedTerrainState,
+  expectedTerrainCommands);
+if (!new TileChangeCommitSystem().TryCommit(
+      expectedTerrainWorld,
+      expectedTerrainCommands,
+      out TileChangeCommitResult expectedTerrainCommit) ||
+    expectedTerrainCommit.AppliedCount != expectedTerrainCommands.Count)
+{
+  throw new InvalidOperationException("The standalone legacy Terrain stage could not be committed.");
+}
+
+WorldGridSnapshot expectedTerrainSnapshot =
+  expectedTerrainWorld.CreateSnapshot(replayRequest.Metadata);
+WorldGridSnapshot actualTerrainSnapshot = tracedGeneration.Stages.Single(
+  stage => stage.Stage == WorldGenerationStage.Terrain).Snapshot;
+if (!StringComparer.Ordinal.Equals(
+      CreateSnapshotWorldGridFingerprint(actualTerrainSnapshot),
+      CreateSnapshotWorldGridFingerprint(expectedTerrainSnapshot)))
+{
+  throw new InvalidOperationException(
+    "The ECS Terrain stage included mutations outside the legacy Terrain pass boundary.");
+}
+
+Console.WriteLine("PASS: Terrain stage snapshot contains only legacy Terrain pass mutations");
 
 string stageTraceDirectory = Path.Combine(
   repositoryRoot,
@@ -236,6 +2927,22 @@ var stageTraceEvidence = tracedGeneration.Stages.Select(stage => new
   fingerprint = CreateSnapshotWorldGridFingerprint(stage.Snapshot),
   wallTileCount = CountWallTiles(stage.Snapshot),
   nextSequence = stage.NextSequence,
+  initialLifecycle = new
+  {
+    isGenerating = tracedGeneration.InitialLifecycle.IsGenerating,
+    isGeneratingOrLoading = tracedGeneration.InitialLifecycle.IsGeneratingOrLoading
+  },
+  finalLifecycle = new
+  {
+    isGenerating = tracedGeneration.Lifecycle.IsGenerating,
+    isGeneratingOrLoading = tracedGeneration.Lifecycle.IsGeneratingOrLoading
+  },
+  terrainProfile = new
+  {
+    surfaceY = tracedGeneration.TerrainProfile.SurfaceY,
+    rockLayerY = tracedGeneration.TerrainProfile.RockLayerY,
+    underworldY = tracedGeneration.TerrainProfile.UnderworldY
+  },
   oracleParity = "not-compared"
 });
 File.WriteAllText(
@@ -247,6 +2954,7 @@ Console.WriteLine(
   "without claiming legacy oracle parity");
 
 VerifyTorchDefinitions();
+VerifyTileFrameImportantRegistry();
 VerifyTileEntityDefinitions();
 
 MethodInventory? generateWorldMethod = methods.SingleOrDefault(method =>
@@ -391,8 +3099,12 @@ MethodInventory? getTreeLeafMethod = methods.SingleOrDefault(method =>
   method.Name == "GetTreeLeaf" && method.Line == 24008);
 MethodInventory? treeGrowFxCheckMethod = methods.SingleOrDefault(method =>
   method.Name == "TreeGrowFXCheck" && method.Line == 23974);
+MethodInventory? oreHelperMethod = methods.SingleOrDefault(method =>
+  method.Name == "OreHelper" && method.Line == 9263);
 MethodInventory? orePatchMethod = methods.SingleOrDefault(method =>
   method.Name == "OrePatch" && method.Line == 9624);
+MethodInventory? oreRunnerMethod = methods.SingleOrDefault(method =>
+  method.Name == "OreRunner" && method.Line == 41739);
 MethodInventory? isItATrapMethod = methods.SingleOrDefault(method =>
   method.Name == "IsItATrap" && method.Line == 22015);
 MethodInventory? isItATriggerMethod = methods.SingleOrDefault(method =>
@@ -403,6 +3115,34 @@ MethodInventory? atmosphericSurfaceMethod = methods.SingleOrDefault(method =>
   method.Name == "IsSurfaceForAtmospherics" && method.Line == 10033);
 MethodInventory? pressurePlateMethod = methods.SingleOrDefault(method =>
   method.Name == "CanGeneratePressurePlateAt" && method.Line == 10072);
+MethodInventory? initializeSecretSeedsMethod = methods.SingleOrDefault(method =>
+  method.Name == "InitializeSecretSeeds" && method.Line == 556);
+MethodInventory? finalizeSecretSeedsMethod = methods.SingleOrDefault(method =>
+  method.Name == "FinalizeSecretSeeds" && method.Line == 586);
+MethodInventory? setupDungeonGenVarsMethod = methods.SingleOrDefault(method =>
+  method.Name == "GenerateWorld_SetupDungeonGenVars" && method.Line == 10096);
+MethodInventory? disablePassesForSpecialSeedsMethod = methods.SingleOrDefault(method =>
+  method.Name == "DisablePassesForSpecialSeeds" && method.Line == 21674);
+MethodInventory? errorWorldRandomBlockMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoErrorWorldGetRandomBlock" && method.Line == 980);
+MethodInventory? errorWorldShuffleBlocksMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoErrorWorldShuffleBlocks" && method.Line == 992);
+MethodInventory? errorWorldFinishMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoErrorWorldFinish" && method.Line == 1201);
+MethodInventory? errorWorldChestItemMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoErrorWorldFindChestItem" && method.Line == 1463);
+MethodInventory? extraLiquidAddLiquidMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoExtraLiquidAddLiquid" && method.Line == 1508);
+MethodInventory? extraLiquidFinishMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoExtraLiquidFinish" && method.Line == 1744);
+MethodInventory? rainsForAYearMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoRainsForAYear" && method.Line == 1788);
+MethodInventory? randomSpawnMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoRandomSpawn" && method.Line == 1798);
+MethodInventory? addTeleportersMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoAddTeleporters" && method.Line == 1809);
+MethodInventory? startInHardmodeMethod = methods.SingleOrDefault(method =>
+  method.Name == "DoStartInHardmode" && method.Line == 1997);
 MethodInventory? statueStyleItemMethod = methods.SingleOrDefault(method =>
   method.Name == "StatueStyleToItem" && method.Line == 31437);
 MethodInventory? nonHammeredPlatformMethod = methods.SingleOrDefault(method =>
@@ -752,6 +3492,12 @@ if (emptyLiquidMethod?.Status != "Partial" || emptyLiquidMethod.Mapping is null 
       "src/Terraria.Dome.Simulation/WorldGeneration/" +
       "TreeLeafScanQuery.cs:Scan"
     }) ||
+    oreHelperMethod?.Status != "Partial" || oreHelperMethod.Mapping is null ||
+    !oreHelperMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyOreHelper.cs:AppendCommands"
+    }) ||
     orePatchMethod?.Status != "Partial" || orePatchMethod.Mapping is null ||
     !orePatchMethod.Mapping.TargetMembers.SequenceEqual(new[]
     {
@@ -760,7 +3506,25 @@ if (emptyLiquidMethod?.Status != "Partial" || emptyLiquidMethod.Mapping is null 
       "src/Terraria.Dome.Simulation/WorldGeneration/Systems/" +
       "OrePatchPlacementSystem.cs:TryPrepare",
       "src/Terraria.Dome.Simulation/WorldGeneration/Systems/" +
-      "OrePatchPlacementSystem.cs:TryAppendCommands"
+      "OrePatchPlacementSystem.cs:TryAppendCommands",
+      "src/Terraria.Dome.Simulation/WorldGeneration/Systems/" +
+      "OrePatchPlacementSystem.cs:TryAppendLegacyTrailAndBlobCommands",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyOrePatchTypePolicy.cs:SelectTileType",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyOreTierSelectionPolicy.cs:Select",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyOrePatchTrail.cs:TryAppendCommands",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyOrePatchBlob.cs:TryAppendCommands"
+    }) ||
+    oreRunnerMethod?.Status != "Partial" || oreRunnerMethod.Mapping is null ||
+    !oreRunnerMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyOreRunner.cs:AppendCommands",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "MossTileTypeRegistry.cs:TileTypes"
     }) ||
     isItATrapMethod?.Status != "Partial" || isItATrapMethod.Mapping is null ||
     !isItATrapMethod.Mapping.TargetMembers.SequenceEqual(new[]
@@ -788,6 +3552,120 @@ if (emptyLiquidMethod?.Status != "Partial" || emptyLiquidMethod.Mapping is null 
     {
       "src/Terraria.Dome.Simulation/WorldGeneration/PressurePlatePlacementQuery.cs:" +
       "CanGenerateAt"
+    }) ||
+    initializeSecretSeedsMethod?.Status != "Partial" ||
+    initializeSecretSeedsMethod.Mapping is null ||
+    !initializeSecretSeedsMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "SecretSeedRuntimeProjection.cs:Create"
+    }) ||
+    finalizeSecretSeedsMethod?.Status != "Partial" ||
+    finalizeSecretSeedsMethod.Mapping is null ||
+    !finalizeSecretSeedsMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacySecretSeedFinalizePolicy.cs:CreateActions"
+    }) ||
+    setupDungeonGenVarsMethod?.Status != "Partial" ||
+    setupDungeonGenVarsMethod.Mapping is null ||
+    !setupDungeonGenVarsMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/DungeonGenerationState.cs:SetUp"
+    }) ||
+    disablePassesForSpecialSeedsMethod?.Status != "Partial" ||
+    disablePassesForSpecialSeedsMethod.Mapping is null ||
+    !disablePassesForSpecialSeedsMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyDualDungeonPassPolicy.cs:ShouldDisable"
+    }) ||
+    errorWorldRandomBlockMethod?.Status != "Partial" ||
+    errorWorldRandomBlockMethod.Mapping is null ||
+    !errorWorldRandomBlockMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldRandomBlock.cs:TrySelect"
+    }) ||
+    errorWorldShuffleBlocksMethod?.Status != "Partial" ||
+    errorWorldShuffleBlocksMethod.Mapping is null ||
+    !errorWorldShuffleBlocksMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldTileSwap.cs:AppendCommands",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldTileRectangleSwap.cs:AppendCommands",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldCandidateQuery.cs:IsSwapEligible",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldCandidateSelector.cs:TrySelect",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldSpawnExclusionPolicy.cs:IsSingleTileExcluded",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldSpawnExclusionPolicy.cs:IsRectangleExcluded",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldSwapOperation.cs:TryAppendSingleTileSwap",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldSwapOperation.cs:TryAppendRectangleSwap",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldAxisTrail.cs:AppendCommands",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldAxisTrailPolicy.cs:Create",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldPassCountPolicy.cs:Create",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldRandomBlockRewrite.cs:TryAppendCommand",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldShufflePass.cs:AppendCommands"
+    }) ||
+    errorWorldFinishMethod?.Status != "Partial" || errorWorldFinishMethod.Mapping is null ||
+    !errorWorldFinishMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldFinishCleanup.cs:AppendCommands"
+    }) ||
+    errorWorldChestItemMethod?.Status != "Partial" || errorWorldChestItemMethod.Mapping is null ||
+    !errorWorldChestItemMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyErrorWorldChestItemPolicy.cs:SelectItemType"
+    }) ||
+    extraLiquidAddLiquidMethod?.Status != "Partial" || extraLiquidAddLiquidMethod.Mapping is null ||
+    !extraLiquidAddLiquidMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyExtraLiquidAddLiquid.cs:AppendCommands"
+    }) ||
+    extraLiquidFinishMethod?.Status != "Partial" || extraLiquidFinishMethod.Mapping is null ||
+    !extraLiquidFinishMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyExtraLiquidFinish.cs:AppendCommands"
+    }) ||
+    rainsForAYearMethod?.Status != "Partial" || rainsForAYearMethod.Mapping is null ||
+    !rainsForAYearMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/World/LegacyRainsForAYearPolicy.cs:Apply"
+    }) ||
+    randomSpawnMethod?.Status != "Partial" || randomSpawnMethod.Mapping is null ||
+    !randomSpawnMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyRandomSpawnPolicy.cs:Create"
+    }) ||
+    addTeleportersMethod?.Status != "Partial" || addTeleportersMethod.Mapping is null ||
+    !addTeleportersMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyTeleporterPlacementQuery.cs:CanPlace",
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyTeleporterClearArea.cs:TryAppendCommands"
+    }) ||
+    startInHardmodeMethod?.Status != "Partial" || startInHardmodeMethod.Mapping is null ||
+    !startInHardmodeMethod.Mapping.TargetMembers.SequenceEqual(new[]
+    {
+      "src/Terraria.Dome.Simulation/WorldGeneration/" +
+      "LegacyStartInHardmodePolicy.cs:Apply"
     }) ||
     statueStyleItemMethod?.Status != "Partial" || statueStyleItemMethod.Mapping is null ||
     !statueStyleItemMethod.Mapping.TargetMembers.SequenceEqual(new[]
@@ -1973,15 +4851,26 @@ Console.WriteLine("PASS: default TerrainPass surface offsets preserve source pre
 
 LegacyBeachBoundsDefinitionSourceCheck();
 LegacyTerrainPassContractSourceCheck();
+LegacyTerrainFeatureRunSourceCheck();
+LegacyTerrainCentralFeatureGuardSourceCheck();
+LegacyTerrainWorldSizeClampSourceCheck();
+LegacyTerrainRightBeachFeatureResetSourceCheck();
 LegacyTerrainSurfaceClampSourceCheck();
 LegacyTerrainColumnContractSourceCheck();
 LegacyCavePassContractSourceCheck();
+LegacyCavePassVerticalRangeSourceCheck();
 LegacyTileRunnerMutationSourceCheck();
 LegacyTileRunnerEnvelopeSourceCheck();
 LegacyTileRunnerDistanceSourceCheck();
 LegacyTileRunnerCandidateSourceCheck();
 LegacyGenerationClearabilitySourceCheck();
 LegacyTileRunnerOverrideSourceCheck();
+LegacyTileRunnerTargetRegistrySourceCheck();
+LegacyTileRunnerCandidateRegistrySourceCheck();
+LegacyTileRunnerNoYChangeWallSourceCheck();
+LegacySmallHolesPassSourceCheck();
+LegacySmallHolesBatchSourceCheck();
+LegacyTileRunnerLiquidTraversalSourceCheck();
 LegacyTileRunnerSideEffectSourceCheck();
 LegacyTileRunnerRandomAdjustmentSourceCheck();
 LegacyTileRunnerInitializationSourceCheck();
@@ -1989,6 +4878,69 @@ LegacyTileRunnerPerturbationSourceCheck();
 LegacyTileRunnerDriftSourceCheck();
 LegacyTileRunnerDriftBatchSourceCheck();
 LegacyTileRunnerDirectionSourceCheck();
+LegacyCavePassPipelineSourceCheck();
+LegacyWavyCavererSourceCheck();
+LegacyCaveTunnelSourceCheck();
+LegacyCavererSourceCheck();
+LegacySurfaceCavesCavererPassSourceCheck();
+LegacyMountinaterSourceCheck();
+LegacyMountainCavesPassSourceCheck();
+LegacySurfaceCavesVerticalPassSourceCheck();
+LegacySurfaceCavesVerticalTraversalSourceCheck();
+LegacyEvilReplacementQuerySourceCheck();
+LegacyChasmRunnerSidewaysSourceCheck();
+LegacyShadowOrbPlacementSourceCheck();
+LegacyChasmRunnerSourceCheck();
+LegacyPlace3x2SourceCheck();
+LegacyNoSurfaceTopFillSourceCheck();
+LegacySurfaceIsInSpaceSourceCheck();
+LegacySurfaceIsMushroomsSourceCheck();
+LegacyWorldIsFrozenSourceCheck();
+LegacyHallowOnSurfaceSourceCheck();
+LegacyWorldInfectionPolicySourceCheck();
+LegacyWorldInfectionConversionCommandSourceCheck();
+LegacyWorldInfectionConversionRegistryAndCommitSourceCheck();
+LegacyNoInfectionPolicySourceCheck();
+LegacyWorldIsFrozenFinishPolicySourceCheck();
+LegacyBiomeCleanupSourceCheck();
+LegacyActuallyNoTrapsSourceCheck();
+LegacyRainbowStaticRewriteSourceCheck();
+LegacyPaintEverythingGraySourceCheck();
+LegacyPaintEverythingNegativeSourceCheck();
+LegacyCoatEverythingEchoSourceCheck();
+LegacyCoatEverythingIlluminantSourceCheck();
+LegacyNoSurfacePolicySourceCheck();
+LegacyErrorWorldRandomBlockSourceCheck();
+LegacyErrorWorldSingleTileSwapSourceCheck();
+LegacyErrorWorldRectangleSwapSourceCheck();
+LegacyErrorWorldCandidateSourceCheck();
+LegacyErrorWorldCandidateSelectionSourceCheck();
+LegacyErrorWorldSwapOperationSourceCheck();
+LegacyErrorWorldAxisTrailSourceCheck();
+LegacyErrorWorldAxisTrailPolicySourceCheck();
+LegacyErrorWorldPassCountSourceCheck();
+LegacyErrorWorldRandomBlockRewriteSourceCheck();
+LegacyErrorWorldShufflePassSourceCheck();
+LegacyErrorWorldFinishCleanupSourceCheck();
+LegacyErrorWorldChestItemPolicySourceCheck();
+LegacyExtraLiquidAddLiquidSourceCheck();
+LegacyExtraLiquidAddBubbleBlocksSourceCheck();
+LegacyExtraLiquidBubbleExecutionSourceCheck();
+LegacyExtraLiquidFinishSourceCheck();
+LegacyRainsForAYearSourceCheck();
+LegacyRandomSpawnPolicySourceCheck();
+LegacyTeleporterPlacementQuerySourceCheck();
+LegacyTeleporterClearAreaSourceCheck();
+LegacyStartInHardmodePolicySourceCheck();
+LegacyDigExtraHolesSourceCheck();
+LegacyRoundLandmassSeedDefinitionsSourceCheck();
+LegacyPortalGunAndPooPolicySourceCheck();
+LegacyOreRunnerSourceCheck();
+LegacyOreHelperSourceCheck();
+LegacyOrePatchTypePolicySourceCheck();
+LegacyOreTierSelectionPolicySourceCheck();
+LegacyOrePatchTrailSourceCheck();
+LegacyOrePatchBlobSourceCheck();
 
 LegacySurfaceHistory surfaceHistory = new(3);
 surfaceHistory.Record(10.0);
@@ -2088,6 +5040,20 @@ Type treeProfileRegistryType = typeof(WorldGenerationRequest).Assembly.GetType(
 Type treeProfileType = typeof(WorldGenerationRequest).Assembly.GetType(
   "Terraria.Dome.Simulation.WorldGeneration.LegacyTreeProfileDefinition") ??
   throw new InvalidOperationException("The immutable legacy tree profile definition was not found.");
+IReadOnlyList<LegacyTreeProfileDefinition> defaultTreeProfiles =
+  LegacyTreeProfileRegistry.RegisterDefaults();
+if (defaultTreeProfiles.Count != 10 ||
+    defaultTreeProfiles[0].TreeTileType != 583 ||
+    defaultTreeProfiles[^1].TreeTileType != 634 ||
+    !defaultTreeProfiles.SequenceEqual(LegacyTreeProfileRegistry.RegisterDefaults()))
+{
+  throw new InvalidOperationException("Legacy tree profile defaults were not stable or ordered.");
+}
+
+if (!((IList<LegacyTreeProfileDefinition>)defaultTreeProfiles).IsReadOnly)
+{
+  throw new InvalidOperationException("Legacy tree profile projection was mutable.");
+}
 System.Reflection.MethodInfo tryGetTreeProfile = treeProfileRegistryType.GetMethod(
   "TryGet",
   new[] { typeof(ushort), treeProfileType.MakeByRefType() }) ??
@@ -2126,6 +5092,16 @@ foreach ((ushort treeTileType, ushort saplingTileType, string kind) in expectedT
     throw new InvalidOperationException("Legacy tree profile lookup diverged from the source profiles.");
   }
 }
+
+IReadOnlySet<ushort> commonSaplingProfileDefaults = CommonSaplingTileRegistry.RegisterDefaults();
+if (defaultTreeProfiles.Any(
+      profile => !commonSaplingProfileDefaults.Contains(profile.SaplingTileType)))
+{
+  throw new InvalidOperationException(
+    "Legacy tree profile saplings diverged from the shared common-sapling registry.");
+}
+
+Console.WriteLine("PASS: legacy tree profiles use shared common-sapling registry values");
 
 object?[] unknownTreeProfileArguments = [ushort.MaxValue, null];
 if ((bool)(tryGetTreeProfile.Invoke(null, unknownTreeProfileArguments) ?? true) ||
@@ -2367,6 +5343,12 @@ Console.WriteLine("PASS: profile tree eligibility preserves bounded legacy root 
 Type treeCanopyQueryType = typeof(WorldGenerationRequest).Assembly.GetType(
   "Terraria.Dome.Simulation.WorldGeneration.TreeCanopyClearanceQuery") ??
   throw new InvalidOperationException("The tree canopy clearance query was not found.");
+IReadOnlySet<ushort> plantExceptions = TreeCanopyClearanceQuery.RegisterPlantExceptionDefaults();
+if (plantExceptions.Count != 23 || !plantExceptions.Contains(3) || plantExceptions.Contains(0) ||
+    !plantExceptions.SetEquals(TreeCanopyClearanceQuery.RegisterPlantExceptionDefaults()))
+{
+  throw new InvalidOperationException("Tree canopy plant exceptions were not stable or bounded.");
+}
 System.Reflection.MethodInfo isTreeCanopyClear = treeCanopyQueryType.GetMethod(
   "IsClear",
   new[]
@@ -2431,6 +5413,16 @@ if (InvokeTreeCanopyClear(clearCanopySnapshot, -1, 12, 10, 12, 20) ||
 }
 
 Console.WriteLine("PASS: tree canopy clearance preserves bounded legacy empty-tile rules");
+
+IReadOnlySet<ushort> commonSaplingDefaults = CommonSaplingTileRegistry.RegisterDefaults();
+if (commonSaplingDefaults.Count != 4 || !commonSaplingDefaults.Contains(20) ||
+    !commonSaplingDefaults.Contains(590) || !commonSaplingDefaults.Contains(595) ||
+    !commonSaplingDefaults.Contains(615))
+{
+  throw new InvalidOperationException("Common-sapling registry diverged from legacy TileID sets.");
+}
+
+Console.WriteLine("PASS: common-sapling registry preserves legacy TileID sets");
 
 WorldGrid profileTrunkWorld = new(replayWidth, replayHeight);
 WorldGenerationStateComponent profileTrunkState = new(44);
@@ -2664,7 +5656,6 @@ if (!TreeTrunkFrameQuery.TryGetBranchOffset(
       treeFrameWorld.CreateSnapshot(replayRequest.Metadata),
       180,
       180,
-      treeTrunkTypes,
       out int branchOffset) ||
     branchOffset != 1)
 {
@@ -2676,7 +5667,6 @@ if (!TreeTrunkFrameQuery.TryGetRootOffset(
       treeFrameWorld.CreateSnapshot(replayRequest.Metadata),
       181,
       180,
-      treeTrunkTypes,
       out int rootOffset) ||
     rootOffset != -1 ||
     TreeTrunkFrameQuery.TryGetBranchOffset(
@@ -2748,6 +5738,7 @@ if (reducedVerification)
 
 HashSet<int> classifiedTreeTrunkTypes = [5, 323, 583];
 if (!TreeTypeClassificationQuery.IsTreeType(5, classifiedTreeTrunkTypes) ||
+    !TreeTypeClassificationQuery.IsTreeType(5) ||
     TreeTypeClassificationQuery.IsTreeType(-1, classifiedTreeTrunkTypes) ||
     TreeTypeClassificationQuery.IsTreeType(6, classifiedTreeTrunkTypes))
 {
@@ -2767,6 +5758,19 @@ if (redPaint != new PaintColorValue(byte.MaxValue, 0, 0, byte.MaxValue) ||
   throw new InvalidOperationException("Paint color mapping diverged from legacy RGBA values.");
 }
 
+IReadOnlyDictionary<int, PaintColorValue> paintDefaults = PaintColorQuery.RegisterDefaults();
+if (paintDefaults.Count != 30 ||
+    !paintDefaults.SequenceEqual(PaintColorQuery.RegisterDefaults()) ||
+    !((IReadOnlyDictionary<int, PaintColorValue>)paintDefaults).Keys.Any())
+{
+  throw new InvalidOperationException("Paint color defaults were not stable and complete.");
+}
+
+if (paintDefaults is not System.Collections.Frozen.FrozenDictionary<int, PaintColorValue>)
+{
+  throw new InvalidOperationException("Paint color defaults were not frozen.");
+}
+
 Console.WriteLine("CHECK: paint color mapping preserves bounded legacy RGBA values");
 
 CoatingColorValue illuminantCoating = CoatingColorQuery.GetColor(1);
@@ -2777,6 +5781,14 @@ if (illuminantCoating != new CoatingColorValue(235, 170, byte.MaxValue, byte.Max
     clearCoating != default)
 {
   throw new InvalidOperationException("Coating color mapping diverged from legacy RGBA values.");
+}
+
+IReadOnlyDictionary<int, CoatingColorValue> coatingDefaults = CoatingColorQuery.RegisterDefaults();
+if (coatingDefaults.Count != 2 ||
+    !coatingDefaults.SequenceEqual(CoatingColorQuery.RegisterDefaults()) ||
+    coatingDefaults is not System.Collections.Frozen.FrozenDictionary<int, CoatingColorValue>)
+{
+  throw new InvalidOperationException("Coating color defaults were not stable and frozen.");
 }
 
 Console.WriteLine("CHECK: coating color mapping preserves bounded legacy RGBA values");
@@ -2817,6 +5829,14 @@ if (HollowTreeFoliageStyleQuery.GetStyle(4) != 19 ||
     HollowTreeFoliageStyleQuery.GetStyle(0) != 3)
 {
   throw new InvalidOperationException("Hollow-tree foliage style diverged from legacy mapping.");
+}
+
+IReadOnlyDictionary<int, int> hollowTreeStyles = HollowTreeFoliageStyleQuery.RegisterDefaults();
+if (hollowTreeStyles.Count != 3 ||
+    !hollowTreeStyles.SequenceEqual(HollowTreeFoliageStyleQuery.RegisterDefaults()) ||
+    hollowTreeStyles is not System.Collections.Frozen.FrozenDictionary<int, int>)
+{
+  throw new InvalidOperationException("Hollow-tree foliage defaults were not stable and frozen.");
 }
 
 Console.WriteLine("CHECK: hollow-tree foliage style preserves bounded background mapping");
@@ -2961,6 +5981,17 @@ if (TileTypeCategoryCountQuery.Evaluate(tileTypeCounts, TileScanGroupKind.Corrup
   throw new InvalidOperationException("Tile category count mapping diverged from legacy formulas.");
 }
 
+IReadOnlyDictionary<TileScanGroupKind, IReadOnlyList<int>> categoryDefaults =
+  TileTypeCategoryCountQuery.RegisterDefaults();
+if (categoryDefaults.Count != 3 ||
+    !categoryDefaults.SequenceEqual(TileTypeCategoryCountQuery.RegisterDefaults()) ||
+    categoryDefaults is not System.Collections.Frozen.FrozenDictionary<
+      TileScanGroupKind, IReadOnlyList<int>> ||
+    categoryDefaults.Values.Any(value => value is int[]))
+{
+  throw new InvalidOperationException("Tile category defaults were not stable and frozen.");
+}
+
 Console.WriteLine("CHECK: tile category counts preserve bounded legacy formulas");
 
 WorldGrid countWorld = new(replayWidth, replayHeight);
@@ -3012,17 +6043,9 @@ if (!HousingHomeSpotQuery.IsEligible(new WorldTile(IsActive: false, Type: 379)) 
 Console.WriteLine("CHECK: housing home-spot eligibility preserves bounded tile rule");
 
 RoomNeedsResult roomNeeds = RoomNeedsQuery.Evaluate(
-  new HashSet<int> { 15, 18, 19, 33 },
-  new HashSet<int> { 15 },
-  new HashSet<int> { 18 },
-  new HashSet<int> { 19 },
-  new HashSet<int> { 33 });
+  new HashSet<int> { 15, 18, 19, 33 });
 RoomNeedsResult missingRoomNeed = RoomNeedsQuery.Evaluate(
-  new HashSet<int> { 15, 18, 19 },
-  new HashSet<int> { 15 },
-  new HashSet<int> { 18 },
-  new HashSet<int> { 19 },
-  new HashSet<int> { 33 });
+  new HashSet<int> { 15, 18, 19 });
 if (!roomNeeds.CanSpawn || !roomNeeds.HasChair || !roomNeeds.HasTable ||
     !roomNeeds.HasDoor || !roomNeeds.HasTorch || missingRoomNeed.CanSpawn)
 {
@@ -3030,6 +6053,16 @@ if (!roomNeeds.CanSpawn || !roomNeeds.HasChair || !roomNeeds.HasTable ||
 }
 
 Console.WriteLine("CHECK: room-needs classification preserves bounded registry semantics");
+
+if (RoomNeedsTileRegistry.RegisterChairDefaults().Count != 6 ||
+    RoomNeedsTileRegistry.RegisterTableDefaults().Count != 12 ||
+    RoomNeedsTileRegistry.RegisterDoorDefaults().Count != 13 ||
+    RoomNeedsTileRegistry.RegisterTorchDefaults().Count != 26)
+{
+  throw new InvalidOperationException("Room-needs registries diverged from legacy TileID sets.");
+}
+
+Console.WriteLine("PASS: room-needs registries preserve legacy TileID sets");
 
 HashSet<(int X, int Y)> roomTileCoordinates = [(101, 81), (102, 81)];
 if (!HousingRoomOccupancyQuery.Contains(roomTileCoordinates, 101, 81) ||
@@ -3467,6 +6500,18 @@ if (!incompleteAchievements.RealEstateComplete || incompleteAchievements.TownSli
 
 Console.WriteLine("CHECK: town achievement eligibility predicate remains deterministic");
 
+IReadOnlyList<int> realEstateDefaults = TownAchievementEligibilityQuery.RegisterRealEstateDefaults();
+IReadOnlyList<int> townSlimeDefaults = TownAchievementEligibilityQuery.RegisterTownSlimeDefaults();
+if (realEstateDefaults.Count != 25 || townSlimeDefaults.Count != 8 ||
+    realEstateDefaults[0] != 38 || townSlimeDefaults[^1] != 684 ||
+    !realEstateDefaults.SequenceEqual(TownAchievementEligibilityQuery.RegisterRealEstateDefaults()) ||
+    !townSlimeDefaults.SequenceEqual(TownAchievementEligibilityQuery.RegisterTownSlimeDefaults()) ||
+    !((IList<int>)realEstateDefaults).IsReadOnly ||
+    !((IList<int>)townSlimeDefaults).IsReadOnly)
+{
+  throw new InvalidOperationException("Town achievement defaults were not stable or immutable.");
+}
+
 WorldGrid undergroundWorld = new(replayWidth, replayHeight);
 for (int offsetX = 0; offsetX < 120; offsetX++)
 {
@@ -3575,6 +6620,20 @@ if (invalidSecretSeed.HasNormalizedInput || invalidSecretSeed.IsMatch)
 
 Console.WriteLine("CHECK: secret-seed input normalization contract remains deterministic");
 
+IReadOnlyList<SecretSeedDefinition> secretSeedDefinitions = SecretSeedDefinitionRegistry.RegisterDefaults();
+if (secretSeedDefinitions.Count != 35 ||
+    secretSeedDefinitions.Any(definition =>
+      definition.Status != SecretSeedBehaviorStatus.UnsupportedWithEvidence ||
+      string.IsNullOrWhiteSpace(definition.SourceAnchor)) ||
+    !secretSeedDefinitions.Any(definition => definition.Variant == "no-surface") ||
+    !secretSeedDefinitions.Any(definition => definition.Variant == "world-is-infected"))
+{
+  throw new InvalidOperationException(
+    "Version4 secret-seed registry did not preserve explicit unsupported definitions.");
+}
+
+Console.WriteLine("PASS: secret-seed registry preserves explicit unsupported Version4 variants");
+
 if (!BackgroundEquivalenceQuery.AreEquivalent(3, 31) ||
     !BackgroundEquivalenceQuery.AreEquivalent(7, 73) ||
     BackgroundEquivalenceQuery.AreEquivalent(3, 5) ||
@@ -3608,12 +6667,23 @@ TileSolidityOverrideProjection solidityOverrides = TileSolidityOverrideQuery.Eva
 if (!solidityOverrides.Solid || solidityOverrides.BoulderTileTypes.Count != 9 ||
     solidityOverrides.CrackedBrickTileTypes.Count != 3 ||
     !solidityOverrides.BoulderTileTypes.Contains((ushort)138) ||
+    solidityOverrides.BoulderTileTypes.Contains((ushort)665) ||
     !solidityOverrides.CrackedBrickTileTypes.Contains((ushort)483))
 {
   throw new InvalidOperationException("Tile solidity override contract diverged.");
 }
 
 Console.WriteLine("CHECK: tile solidity override projection remains deterministic");
+
+if (!TileSolidityOverrideQuery.RegisterBoulderDefaults().SequenceEqual(
+      TileSolidityOverrideQuery.RegisterBoulderDefaults()) ||
+    !TileSolidityOverrideQuery.RegisterCrackedBrickDefaults().SequenceEqual(
+      TileSolidityOverrideQuery.RegisterCrackedBrickDefaults()) ||
+    !((IList<ushort>)TileSolidityOverrideQuery.RegisterBoulderDefaults()).IsReadOnly ||
+    !((IList<ushort>)TileSolidityOverrideQuery.RegisterCrackedBrickDefaults()).IsReadOnly)
+{
+  throw new InvalidOperationException("Tile solidity override defaults were mutable or unstable.");
+}
 
 if (!AlchemyPlantHarvestabilityQuery.IsHarvestable(
       style: 0,
@@ -3734,14 +6804,12 @@ if (hollowLeafPassStyle.TreeFrame != 4 || hollowLeafPassStyle.PassStyle != 1115 
 Console.WriteLine("PASS: tree leaf pass styles preserve bounded legacy mapping");
 
 WorldGrid treeLeafScanWorld = new(replayWidth, replayHeight);
-HashSet<ushort> leafScanTypes = [5];
 _ = treeLeafScanWorld.TrySetTile(200, 199, new WorldTile(true, 5, FrameX: 22, FrameY: 220));
 _ = treeLeafScanWorld.TrySetTile(200, 201, new WorldTile(true, 2));
 TreeLeafScanResult treeLeafScan = TreeLeafScanQuery.Scan(
   treeLeafScanWorld.CreateSnapshot(replayRequest.Metadata),
   200,
   200,
-  leafScanTypes,
   hollowTreeFoliageStyle: 20);
 if (!treeLeafScan.FoundTopTile || treeLeafScan.TreeHeight != 2 ||
     treeLeafScan.PassStyle != 910 || treeLeafScan.TreeFrame != 1)
@@ -3750,6 +6818,18 @@ if (!treeLeafScan.FoundTopTile || treeLeafScan.TreeHeight != 2 ||
 }
 
 Console.WriteLine("PASS: tree leaf snapshot scan preserves bounded legacy traversal");
+
+IReadOnlySet<ushort> treeLeafCheckedDefaults = TreeLeafCheckedTypeRegistry.RegisterDefaults();
+if (treeLeafCheckedDefaults.Count != 13 ||
+    !treeLeafCheckedDefaults.Contains(5) ||
+    !treeLeafCheckedDefaults.Contains(323) ||
+    !treeLeafCheckedDefaults.Contains(634) ||
+    !TreeLeafFrameQuery.IsLeafyTreeTop(new WorldTile(true, 5, FrameX: 22, FrameY: 220)))
+{
+  throw new InvalidOperationException("Tree-leaf checked-type registry diverged from legacy TileID sets.");
+}
+
+Console.WriteLine("PASS: tree-leaf checked-type registry preserves shared legacy TileID sets");
 
 Dictionary<ushort, TileWiringClassificationDefinition> wiringDefinitions = new()
 {
@@ -5205,7 +8285,6 @@ if (!TilePoundingEligibilityQuery.CanPound(
       poundableSnapshot,
       50,
       50,
-      boulderTileTypes,
       isGeneratingOrLoadingWorld: false,
       canKillTile: static (_, _) => true) ||
     TilePoundingEligibilityQuery.CanPound(
@@ -5446,6 +8525,14 @@ if (MossColorQuery.GetColor(179) != 0 || MossColorQuery.GetColor(512) != 0 ||
   throw new InvalidOperationException("Moss color mapping diverged from legacy tile IDs.");
 }
 
+IReadOnlyDictionary<int, int> mossDefaults = MossColorQuery.RegisterDefaults();
+if (mossDefaults.Count != 22 ||
+    !mossDefaults.SequenceEqual(MossColorQuery.RegisterDefaults()) ||
+    mossDefaults is not System.Collections.Frozen.FrozenDictionary<int, int>)
+{
+  throw new InvalidOperationException("Moss color defaults were not stable and frozen.");
+}
+
 Console.WriteLine("PASS: moss color query preserves bounded legacy tile mappings");
 
 Dictionary<ushort, OrePatchTileDefinition> orePatchDefinitions = new()
@@ -5578,8 +8665,14 @@ LegacyTerrainRuntimeProfile runtimeTerrainProfile = new(
   RockLayerHigh: 170,
   LeftBeachEnd: 20,
   RightBeachStart: replayWidth - 20,
-  WaterLine: 500,
-  LavaLine: 600);
+  WaterLine: 200,
+  LavaLine: 250);
+if (LegacyMainWorldSurfacePolicy.Resolve(runtimeTerrainProfile, replayRequest.Metadata) != 135)
+{
+  throw new InvalidOperationException(
+    "Legacy Main.worldSurface did not project from the terrain high surface plus padding.");
+}
+Console.WriteLine("PASS: legacy Main.worldSurface projection preserves TerrainPass padding");
 WorldGenerationRequest profiledRequest = new(
   replayRequest.Metadata,
   replayRequest.SpawnX,
@@ -5590,6 +8683,28 @@ if (profiledRequest.TerrainProfile != runtimeTerrainProfile)
   throw new InvalidOperationException("WorldGenerationRequest did not freeze the terrain runtime profile.");
 }
 
+WorldGenerationRequest skyblockRequest = new(
+  replayRequest.Metadata,
+  replayRequest.SpawnX,
+  replayRequest.SurfaceY,
+  rockLayerY: replayRequest.RockLayerY,
+  terrainProfile: runtimeTerrainProfile,
+  isSkyblockWorld: true);
+if (!skyblockRequest.IsSkyblockWorld)
+{
+  throw new InvalidOperationException("WorldGenerationRequest did not freeze the Skyblock guard.");
+}
+
+WorldGenerationTrace profiledTrace = new WorldGenerationPipeline().GenerateWithTrace(profiledRequest);
+if (!profiledTrace.Stages.Any(stage => stage.Stage == WorldGenerationStage.Cave) ||
+    !ContainsMaximumLiquid(profiledTrace.FinalSnapshot))
+{
+  throw new InvalidOperationException(
+    "Profile-enabled world generation did not commit the SmallHoles liquid pass.");
+}
+
+Console.WriteLine("PASS: profile-enabled Cave stage commits SmallHoles tile and liquid commands");
+
 AssertThrows<ArgumentException>(() =>
   new WorldGenerationRequest(
     replayRequest.Metadata,
@@ -5599,7 +8714,16 @@ AssertThrows<ArgumentException>(() =>
 Console.WriteLine("PASS: legacy terrain runtime profile is validated and optional");
 
 WorldGenerationRequest unsupportedRuleRequest = new(
-  replayRequest.Metadata,
+  new WorldMetadata(
+    replayRequest.Metadata.Name,
+    replayRequest.Metadata.Seed,
+    replayRequest.Metadata.Width,
+    replayRequest.Metadata.Height,
+    worldId: replayRequest.Metadata.WorldId,
+    spawnX: replayRequest.Metadata.SpawnX,
+    spawnY: replayRequest.Metadata.SpawnY,
+    seedVariant: "for-the-worthy",
+    randomStreamVersion: replayRequest.Metadata.RandomStreamVersion),
   replayRequest.SpawnX,
   replayRequest.SurfaceY,
   seedVariant: "for-the-worthy",
@@ -5610,8 +8734,15 @@ try
   throw new InvalidOperationException(
     "Unsupported secret-seed generation did not fail before world generation.");
 }
-catch (NotSupportedException)
+catch (UnsupportedWorldGenerationRulesException unsupportedRules)
 {
+  if (unsupportedRules.SeedVariant != "for-the-worthy" ||
+      unsupportedRules.Reasons.Count != 1 ||
+      !unsupportedRules.Reasons[0].Contains("secret-seed", StringComparison.Ordinal))
+  {
+    throw new InvalidOperationException(
+      "Unsupported secret-seed rejection did not preserve structured deferred reasons.");
+  }
 }
 
 Console.WriteLine("PASS: unsupported legacy world rules fail before generation");
@@ -5773,6 +8904,34 @@ if (wallUpdatedTile != wallSourceTile with { WallType = 9 })
     "Wall-only tile commands did not preserve the existing tile state.");
 }
 
+WorldTile paintSourceTile = wallSourceTile with
+{
+  TileColor = 4,
+  WallColor = 9
+};
+if (!commitWorld.TrySetTile(21, 20, paintSourceTile) ||
+    !commitSystem.TryCommit(
+      commitWorld,
+      new[]
+      {
+        new TileChangeCommand(
+          4,
+          21,
+          20,
+          TileChangeKind.SetPaint,
+          0,
+          TileColor: 27)
+      },
+      out TileChangeCommitResult paintCommitResult) ||
+    paintCommitResult.AppliedCount != 1 ||
+    commitWorld.GetTile(21, 20) != paintSourceTile with { TileColor = 27 })
+{
+  throw new InvalidOperationException(
+    "Paint tile commands did not preserve unmodified tile state and wall color.");
+}
+
+Console.WriteLine("PASS: paint commands update an explicit color channel through tile commit");
+
 WorldTile killedTile = TileMutationProjection.Apply(
   wallSourceTile,
   new TileChangeCommand(4, 20, 20, TileChangeKind.Kill, 0));
@@ -5885,6 +9044,22 @@ if (!parsedDirtWallOffsets.SequenceEqual(new[] { -1, 0, 1 }))
 {
   throw new InvalidOperationException(
     "Dirt wall offset artifacts were not parsed in their recorded column order.");
+}
+
+static bool ContainsMaximumLiquid(WorldGridSnapshot snapshot)
+{
+  for (int x = 0; x < snapshot.Metadata.Width; x++)
+  {
+    for (int y = 0; y < snapshot.Metadata.Height; y++)
+    {
+      if (snapshot.GetTile(x, y).LiquidAmount == byte.MaxValue)
+      {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 static int CountWalls(WorldGrid world, ushort wallType)
@@ -6023,7 +9198,7 @@ WorldGenerationStateComponent caveState = new(42);
 List<TileChangeCommand> terrainCommands = new();
 GenerationRandomState terrainRandomState = new(unchecked((uint)replayRequest.Metadata.Seed.Value));
 new TerrainBaseSystem().AppendCommands(
-  caveWorld,
+  caveWorld.CreateSnapshot(replayRequest.Metadata),
   replayRequest,
   terrainProfile,
   ref caveState,
@@ -6114,7 +9289,7 @@ new CaveCarvingSystem().AppendCommands(
 WorldGenerationStateComponent secondCaveState = new(42);
 List<TileChangeCommand> ignoredTerrainCommands = new();
 new TerrainBaseSystem().AppendCommands(
-  caveWorld,
+  caveWorld.CreateSnapshot(replayRequest.Metadata),
   replayRequest,
   terrainProfile,
   ref secondCaveState,
@@ -6213,10 +9388,21 @@ if (!WorldGenerationSystemOrder.Systems.SequenceEqual(new[]
       WorldGenerationSystemId.LiquidPropagation,
       WorldGenerationSystemId.TileFrame,
       WorldGenerationSystemId.TileChangeCommit,
-      WorldGenerationSystemId.Validation
-    }))
+    WorldGenerationSystemId.Validation
+  }) ||
+  !WorldGenerationSystemOrder.Systems.SequenceEqual(WorldGenerationSystemOrder.RegisterDefaults()))
 {
   throw new InvalidOperationException("World generation system order was not explicit and stable.");
+}
+
+try
+{
+  ((IList<WorldGenerationSystemId>)WorldGenerationSystemOrder.Systems)[0] =
+    WorldGenerationSystemOrder.Systems[0];
+  throw new InvalidOperationException("World generation system order projection was mutable.");
+}
+catch (NotSupportedException)
+{
 }
 
 Console.WriteLine(
@@ -6346,7 +9532,37 @@ if (orePatchPreparation.GroundY != 210 ||
     "Ore patch placement did not compose eligibility and a prepared transaction.");
 }
 
-Console.WriteLine("PASS: ore placement prepare and command phases reject conflicts atomically");
+LegacyPassRandomState legacyOrePatchRandom = new(1456);
+OrePatchPlacementPreparation legacyOrePatchPreparation = orePatchPlacementSystem.TryPrepare(
+  orePatchWorld.CreateSnapshot(replayRequest.Metadata),
+  originX: 220,
+  originY: 205,
+  worldSurfaceY: 220,
+  orePatchDefinitions,
+  orePatchDefinition,
+  copperTileType: 7,
+  ironTileType: 6,
+  legacyOrePatchRandom,
+  protection,
+  out OrePatchPlacementPreparation legacyOrePatchPreparationResult)
+  ? legacyOrePatchPreparationResult
+  : throw new InvalidOperationException("Legacy ore patch did not prepare a transaction.");
+WorldGenerationStateComponent legacyOrePatchState = new(44);
+List<TileChangeCommand> legacyOrePatchCommands = new();
+if (!orePatchPlacementSystem.TryAppendLegacyTrailAndBlobCommands(
+      orePatchWorld.CreateSnapshot(replayRequest.Metadata),
+      legacyOrePatchPreparation,
+      legacyOrePatchRandom,
+      ref legacyOrePatchState,
+      legacyOrePatchCommands) ||
+    !legacyOrePatchCommands.Any(command => command.Source == "worldgen.ore.OrePatch.trail") ||
+    !legacyOrePatchCommands.Any(command => command.Source == "worldgen.ore.OrePatch.blob"))
+{
+  throw new InvalidOperationException("Ore patch did not compose source-backed trail and blob commands.");
+}
+
+Console.WriteLine(
+  "PASS: ore placement prepares atomically and composes source-backed trail/blob commands");
 
 TreeDefinition ordinaryTree = new(
   "ordinary",
@@ -6417,10 +9633,15 @@ if (!structureSystem.AppendCommands(
       protection,
     ref structureState,
     structureCommands) ||
-    structureCommands.Count != house.Width * house.Height ||
+    structureCommands.Count != house.Width * house.Height * 2 ||
     !new TileChangeCommitSystem().TryCommit(objectWorld, structureCommands, out _))
 {
-  throw new InvalidOperationException("Starter structure did not commit transactionally.");
+  throw new InvalidOperationException("Starter structure did not commit Tile and Wall transactionally.");
+}
+
+if (objectWorld.GetTile(20, 20).WallType != house.WallType)
+{
+  throw new InvalidOperationException("Starter structure did not commit its wall footprint.");
 }
 
 WorldGridSnapshot occupiedSnapshot = objectWorld.CreateSnapshot(replayRequest.Metadata);
@@ -6530,6 +9751,57 @@ if (!structureTransactionSystem.TryAppendCommands(
 
 Console.WriteLine(
   "PASS: independent structure transaction commits tile and wall commands atomically");
+
+SimpleStructurePattern pattern = SimpleStructurePattern.Parse(new[] { "0x", "10" });
+SimpleStructurePattern mirroredPattern = pattern.Mirror(horizontalMirror: true, verticalMirror: false);
+IReadOnlyList<StructureDefinition> simpleActions = new[]
+{
+  new StructureDefinition("pattern-tile", 1, 1, 5, 2, allowReplaceExisting: false),
+  new StructureDefinition("pattern-wall", 1, 1, 6, 0, allowReplaceExisting: false)
+};
+WorldGrid simpleStructureWorld = new(replayWidth, replayHeight);
+WorldGenerationStateComponent simpleStructureState = new(50);
+List<TileChangeCommand> simpleStructureCommands = new();
+if (!new SimpleStructurePlacementSystem().TryAppendCommands(
+      simpleStructureWorld.CreateSnapshot(replayRequest.Metadata),
+      mirroredPattern,
+      simpleActions,
+      originX: 50,
+      originY: 50,
+      protection,
+      ref simpleStructureState,
+      simpleStructureCommands) ||
+    simpleStructureCommands.Count != 5 ||
+    simpleStructureCommands.Any(command => command.X is not (49 or 50)) ||
+    simpleStructureCommands.Any(command => command.Y is not (50 or 51)) ||
+    simpleStructureState.Stage < WorldGenerationStage.Structure)
+{
+  throw new InvalidOperationException(
+    "SimpleStructure pattern did not produce deterministic mirrored tile commands.");
+}
+
+if (SimpleStructurePattern.Parse(new[] { "0" }).GetActionIndex(0, 0) != 0 ||
+    SimpleStructurePattern.Parse(new[] { "x" }).GetActionIndex(0, 0) != -1)
+{
+  throw new InvalidOperationException("SimpleStructure pattern digit and hole parsing is incorrect.");
+}
+
+if (new SimpleStructurePlacementSystem().TryAppendCommands(
+      simpleStructureWorld.CreateSnapshot(replayRequest.Metadata),
+      SimpleStructurePattern.Parse(new[] { "0" }),
+      new[] { new StructureDefinition("wide", 2, 1, 5, 0, allowReplaceExisting: false) },
+      originX: 60,
+      originY: 60,
+      protection,
+      ref simpleStructureState,
+      new List<TileChangeCommand>()))
+{
+  throw new InvalidOperationException(
+    "SimpleStructure accepted a non-1x1 action that has no typed cell contract.");
+}
+
+Console.WriteLine(
+  "PASS: SimpleStructure pattern parsing, mirroring, fail-closed actions, and commands");
 
 WorldGrid liquidWorld = new(replayWidth, replayHeight);
 WorldMetadata liquidMetadata = replayRequest.Metadata;
@@ -6770,6 +10042,11 @@ IReadOnlyList<TileFrameRequest> frameRequests = TileFrameEvaluationQuery.CreateR
   frameSnapshot,
   pendingFrameChanges,
   TileFrameMutationKind.TileChange);
+if (frameRequests.Count == 0 || frameRequests[0].Source != "worldgen.frame")
+{
+  throw new InvalidOperationException(
+    "Frame requests did not use the stable fallback provenance source.");
+}
 TileFrameEvaluationResult frameEvaluation = TileFrameEvaluationQuery.Evaluate(
   frameRequests.Single(request => request.X == 10 && request.Y == 10));
 TileFrameEvaluationResult reverseOrderFrameEvaluation = TileFrameEvaluationQuery.Evaluate(
@@ -6953,9 +10230,7 @@ TileFrameImportant136Result frameImportantDown = TileFrameImportant136Query.Eval
   frameImportantWorld.CreateSnapshot(replayRequest.Metadata),
   tileDefinitions,
   90,
-  90,
-  new HashSet<ushort>(),
-  new HashSet<ushort>());
+  90);
 if (!frameImportantDown.IsSupported || frameImportantDown.FrameX != 0 ||
     frameImportantDown.ShouldKill)
 {
@@ -6968,9 +10243,7 @@ TileFrameImportant136Result frameImportantLeft = TileFrameImportant136Query.Eval
   frameImportantWorld.CreateSnapshot(replayRequest.Metadata),
   tileDefinitions,
   90,
-  90,
-  new HashSet<ushort>(),
-  new HashSet<ushort>());
+  90);
 if (!frameImportantLeft.IsSupported || frameImportantLeft.FrameX != 18)
 {
   throw new InvalidOperationException("Tile 136 left-support framing diverged from legacy rules.");
@@ -6981,13 +10254,22 @@ TileFrameImportant136Result frameImportantKilled = TileFrameImportant136Query.Ev
   frameImportantWorld.CreateSnapshot(replayRequest.Metadata),
   tileDefinitions,
   90,
-  90,
-  new HashSet<ushort>(),
-  new HashSet<ushort>());
+  90);
 if (!frameImportantKilled.ShouldKill || frameImportantKilled.IsSupported)
 {
   throw new InvalidOperationException("Tile 136 unsupported framing did not preserve kill intent.");
 }
+
+IReadOnlySet<ushort> beamDefaults = BeamTileRegistry.RegisterDefaults();
+IReadOnlySet<ushort> treeTrunkDefaults = TreeTrunkTileRegistry.RegisterDefaults();
+if (beamDefaults.Count != 7 || !beamDefaults.Contains(124) || !beamDefaults.Contains(578) ||
+    treeTrunkDefaults.Count != 12 || !treeTrunkDefaults.Contains(5) ||
+    !treeTrunkDefaults.Contains(634))
+{
+  throw new InvalidOperationException("Tile 136 support registries diverged from legacy TileID sets.");
+}
+
+Console.WriteLine("PASS: beam and tree-trunk support registries preserve shared legacy TileID sets");
 
 WorldGrid mossFrameWorld = new(replayWidth, replayHeight);
 _ = mossFrameWorld.TrySetTile(100, 100, new WorldTile(IsActive: true, Type: 184));
@@ -7037,8 +10319,7 @@ TileFrameImportant529Result sandFrameSupported = TileFrameImportant529Query.Eval
   sandFrameWorld.CreateSnapshot(replayRequest.Metadata),
   tileDefinitions,
   110,
-  110,
-  new HashSet<ushort> { 53 });
+  110);
 if (!sandFrameSupported.IsSupported || sandFrameSupported.ShouldKill)
 {
   throw new InvalidOperationException("Tile 529 conversion-sand support diverged from legacy rules.");
@@ -7049,12 +10330,23 @@ TileFrameImportant529Result sandFrameKilled = TileFrameImportant529Query.Evaluat
   sandFrameWorld.CreateSnapshot(replayRequest.Metadata),
   tileDefinitions,
   110,
-  110,
-  new HashSet<ushort> { 53 });
+  110);
 if (!sandFrameKilled.ShouldKill || sandFrameKilled.IsSupported)
 {
   throw new InvalidOperationException("Tile 529 non-sand support did not preserve kill intent.");
 }
+
+IReadOnlySet<ushort> conversionSandDefaults = ConversionSandTileRegistry.RegisterDefaults();
+if (conversionSandDefaults.Count != 4 ||
+    !conversionSandDefaults.Contains(53) ||
+    !conversionSandDefaults.Contains(112) ||
+    !conversionSandDefaults.Contains(116) ||
+    !conversionSandDefaults.Contains(234))
+{
+  throw new InvalidOperationException("Conversion-sand registry defaults diverged from legacy TileID sets.");
+}
+
+Console.WriteLine("PASS: conversion-sand registry preserves shared legacy TileID sets");
 
 WorldGrid pileFrameWorld = new(replayWidth, replayHeight);
 _ = pileFrameWorld.TrySetTile(120, 120, new WorldTile(IsActive: true, Type: 324));
@@ -7063,20 +10355,18 @@ TileFrameImportant324Result pileFrameSupported = TileFrameImportant324Query.Eval
   pileFrameWorld.CreateSnapshot(replayRequest.Metadata),
   tileDefinitions,
   120,
-  120,
-  new HashSet<ushort> { 666 });
+  120);
 if (!pileFrameSupported.IsSupported || pileFrameSupported.ShouldKill)
 {
   throw new InvalidOperationException("Tile 324 support framing diverged from legacy rules.");
 }
 
-_ = pileFrameWorld.TrySetTile(120, 121, new WorldTile(IsActive: true, Type: 666));
+_ = pileFrameWorld.TrySetTile(120, 121, new WorldTile(IsActive: true, Type: 665));
 TileFrameImportant324Result pileFrameKilled = TileFrameImportant324Query.Evaluate(
   pileFrameWorld.CreateSnapshot(replayRequest.Metadata),
   tileDefinitions,
   120,
-  120,
-  new HashSet<ushort> { 666 });
+  120);
 if (!pileFrameKilled.ShouldKill || pileFrameKilled.IsSupported)
 {
   throw new InvalidOperationException("Tile 324 boulder support did not preserve kill intent.");
@@ -7295,8 +10585,7 @@ Tile2x1ValidationResult twoByOnePile = Tile2x1ValidationQuery.Evaluate(
   tileDefinitions,
   191,
   190,
-  185,
-  new HashSet<ushort>());
+  185);
 if (twoByOnePile.IsValid || twoByOnePile.ShouldKill ||
     !twoByOnePile.RequiresPileValidation)
 {
@@ -7535,6 +10824,22 @@ if (invalidValidation.Succeeded || invalidValidation.FailureReason is null)
   throw new InvalidOperationException("Invalid world generation work was not rejected.");
 }
 
+WorldGenerationStateComponent unsettledValidationState = new(42);
+_ = unsettledValidationState.TryAdvance(WorldGenerationStage.Committed);
+WorldGenerationValidationResult unsettledValidation =
+  new WorldGenerationValidationSystem().Validate(
+    frameSnapshot,
+    ref unsettledValidationState,
+    new[] { new LiquidWorkItemComponent(20, 20, 0, 1, 1, "worldgen.liquid") },
+    Array.Empty<StructurePlacementComponent>());
+if (unsettledValidation.Succeeded ||
+    unsettledValidation.FailureReason is null ||
+    !unsettledValidation.FailureReason.Contains("pending work", StringComparison.Ordinal))
+{
+  throw new InvalidOperationException(
+    "World generation validation accepted unsettled liquid work.");
+}
+
 Console.WriteLine(
   "PASS: frame commands, immutable snapshots, and generation validation boundaries");
 
@@ -7557,11 +10862,73 @@ if (runtimeChanges.Count == 0 || runtimeWorld.GetTile(100, 400).LiquidAmount == 
 
 Console.WriteLine("PASS: runtime environment tick consumes rule snapshot and bounded changes");
 
+LegacyErrorWorldTileDefinitionRegistry errorWorldRegistry =
+  LegacyErrorWorldTileDefinitionRegistry.RegisterDefaults();
+if (errorWorldRegistry.Definitions.Count != TileDefinitionRegistry.Version4TileCount ||
+    errorWorldRegistry.ByType.Count != TileDefinitionRegistry.Version4TileCount ||
+    errorWorldRegistry.ByType[3].IsFrameImportant !=
+      TileFrameImportantRegistry.Contains(3) ||
+    errorWorldRegistry.ByType[41].IsDungeon != true ||
+    errorWorldRegistry.ByType[1].IsSolid != true)
+{
+  throw new InvalidOperationException(
+    "ErrorWorld TileID projection did not preserve the Version4 registry boundary.");
+}
+
+Console.WriteLine(
+  "PASS: ErrorWorld TileID projection preserves the complete Version4 registry boundary");
+
+WorldRuleState runtimeRules = new();
+WorldRuntimeSnapshot incompleteRuntime = new(
+  new WorldClockSnapshot(0, 0, true, false, 1),
+  runtimeRules,
+  generationCompleted: false,
+  generationCompletionTick: -1);
+WorldRuntimeTickSystem runtimeTickSystem = new();
+if (runtimeTickSystem.Advance(incompleteRuntime, 4) != incompleteRuntime)
+{
+  throw new InvalidOperationException(
+    "World runtime advanced before one-time generation completion.");
+}
+
+WorldRuntimeSnapshot completedRuntime = incompleteRuntime.CompleteGeneration();
+WorldRuntimeSnapshot advancedRuntime = runtimeTickSystem.Advance(completedRuntime, 4);
+if (!advancedRuntime.GenerationCompleted || advancedRuntime.Clock.TickNumber != 4 ||
+    advancedRuntime.GenerationCompletionTick != 0)
+{
+  throw new InvalidOperationException(
+    "World runtime did not advance deterministically after generation completion.");
+}
+
+WorldRuntimeSnapshot replayedRuntime = runtimeTickSystem.Advance(completedRuntime, 4);
+if (advancedRuntime != replayedRuntime)
+{
+  throw new InvalidOperationException(
+    "World runtime snapshot replay did not produce the same tick state.");
+}
+
+Console.WriteLine(
+  "PASS: world runtime snapshot separates generation completion from Main Tick advancement");
+
 static void VerifyTorchDefinitions()
 {
-  if (TorchDefinitionRegistry.Definitions.Count != 24)
+  IReadOnlyList<TorchDefinition> first = TorchDefinitionRegistry.RegisterDefaults();
+  IReadOnlyList<TorchDefinition> second = TorchDefinitionRegistry.RegisterDefaults();
+  if (first.Count != 24 ||
+      second.Count != first.Count ||
+      !first[0].Equals(second[0]) ||
+      !first[^1].Equals(second[^1]))
   {
     throw new InvalidOperationException("Torch definition count does not match the source registry.");
+  }
+
+  try
+  {
+    ((IList<TorchDefinition>)first)[0] = first[0];
+    throw new InvalidOperationException("Torch definition projection was mutable.");
+  }
+  catch (NotSupportedException)
+  {
   }
 
   if (!TorchDefinitionRegistry.TryGet(0, out TorchDefinition ordinary) ||
@@ -7585,6 +10952,29 @@ static void VerifyTorchDefinitions()
   Console.WriteLine("PASS: fixed TorchID definitions preserve source dust and biome facts");
 }
 
+static void VerifyTileFrameImportantRegistry()
+{
+  IReadOnlyList<ushort> first = TileFrameImportantRegistry.RegisterDefaults();
+  IReadOnlyList<ushort> second = TileFrameImportantRegistry.RegisterDefaults();
+  if (first.Count < 300 || !first.SequenceEqual(second) ||
+      !TileFrameImportantRegistry.Contains(3) ||
+      TileFrameImportantRegistry.Contains(1))
+  {
+    throw new InvalidOperationException("Tile framing defaults were not stable or bounded.");
+  }
+
+  try
+  {
+    ((IList<ushort>)first)[0] = first[0];
+    throw new InvalidOperationException("Tile framing definition projection was mutable.");
+  }
+  catch (NotSupportedException)
+  {
+  }
+
+  Console.WriteLine("PASS: tile framing defaults preserve ordered immutable registry semantics");
+}
+
 static void VerifyTileEntityDefinitions()
 {
   string[] expectedNames =
@@ -7604,6 +10994,15 @@ static void VerifyTileEntityDefinitions()
   if (TileEntityDefinitionRegistry.Definitions.Count != expectedNames.Length)
   {
     throw new InvalidOperationException("Tile-entity definition count does not match the source.");
+  }
+
+  try
+  {
+    ((IList<TileEntityDefinition>)TileEntityDefinitionRegistry.Definitions).Clear();
+    throw new InvalidOperationException("Tile-entity definitions projection was mutable.");
+  }
+  catch (NotSupportedException)
+  {
   }
 
   for (byte type = 0; type < expectedNames.Length; type++)
@@ -7689,6 +11088,536 @@ static SourceMapping? CreateMethodMapping(string name, int line)
         "Legacy Tile reference ownership is represented by WorldTile value input."
       },
       "Terraria.Dome.WorldGeneration.Verification dungeon platform frame checks.");
+  }
+
+  if (name == "GenerateWorld_SetupDungeonGenVars" && line == 10096)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/DungeonGenerationState.cs:SetUp"
+      },
+      "Preserves explicit current-dungeon replacement and immutable context append/reset semantics.",
+      new[]
+      {
+        "Dungeon pass scheduling and per-context generation fields remain deferred."
+      },
+      "Terraria.Dome.DungeonBounds.Verification immutable dungeon setup checks.");
+  }
+
+  if (name == "InitializeSecretSeeds" && line == 556)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "SecretSeedRuntimeProjection.cs:Create"
+      },
+      "Projects the six source-side secret-seed runtime flags from explicit enabled variants.",
+      new[]
+      {
+        "WorldGenerationPipeline does not yet execute non-default secret-seed variants."
+      },
+      "Terraria.Dome.DungeonBounds.Verification secret-seed runtime projection checks.");
+  }
+
+  if (name == "FinalizeSecretSeeds" && line == 586)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacySecretSeedFinalizePolicy.cs:CreateActions"
+      },
+      "Builds source-ordered secret-seed finalization actions from explicit enabled variants.",
+      new[]
+      {
+        "Action execution remains split across world-generation, liquid, and world-object owners."
+      },
+      "Terraria.Dome.DungeonBounds.Verification secret-seed finalization policy checks.");
+  }
+
+  if (name == "DoPaintEverythingGray" && line == 693)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyPaintEverythingGray.cs:AppendCommands"
+      },
+      "Emits source-ordered paint commands from immutable tiles, explicit treasure sets, " +
+      "and pass-scoped random state.",
+      new[]
+      {
+        "Secret-seed action scheduling and the legacy TileID ore/gem registry remain explicit " +
+        "caller inputs."
+      },
+      "Terraria.Dome.WorldGeneration.Verification gray paint command checks.");
+  }
+
+  if (name == "DoPaintEverythingNegative" && line == 729)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyPaintEverythingNegative.cs:AppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyPaintEverythingNegativeProfile.cs:LegacyPaintEverythingNegativeProfile"
+      },
+      "Emits bounded selective or full negative-paint commands from immutable tiles, explicit " +
+      "classification sets, and pass-scoped random state.",
+      new[]
+      {
+        "Secret-seed action scheduling and legacy TileID registry ownership remain explicit " +
+        "caller inputs."
+      },
+      "Terraria.Dome.WorldGeneration.Verification negative paint command checks.");
+  }
+
+  if (name == "DoCoatEverythingEcho" && line == 803)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyCoatEverythingEcho.cs:AppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyCoatEverythingEchoProfile.cs:LegacyCoatEverythingEchoProfile"
+      },
+      "Emits immutable-snapshot Echo coating and error-world cleanup commands through the " +
+      "typed tile commit boundary.",
+      new[]
+      {
+        "Legacy chest inventory injection remains a world-object responsibility and secret-seed " +
+        "action scheduling remains deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification Echo coating command checks.");
+  }
+
+  if (name == "DoCoatEverythingIlluminant" && line == 893)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyCoatEverythingIlluminant.cs:AppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyCoatEverythingIlluminantProfile.cs:LegacyCoatEverythingIlluminantProfile"
+      },
+      "Emits source-ordered selective, random, or full Illuminant coating commands from " +
+      "immutable snapshots and a pass-scoped random state.",
+      new[]
+      {
+        "Secret-seed action scheduling and legacy TileID registry ownership remain explicit " +
+        "caller inputs."
+      },
+      "Terraria.Dome.WorldGeneration.Verification Illuminant coating command checks.");
+  }
+
+  if (name == "DoNoSurface" && line == 929)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/LegacyNoSurfacePolicy.cs:Create"
+      },
+      "Builds source-ordered underground meteor and spawn-randomization actions from explicit " +
+      "world-rule inputs.",
+      new[]
+      {
+        "Meteor, spawn, and torch action execution remain owned by their authoritative systems."
+      },
+      "Terraria.Dome.WorldGeneration.Verification no-surface action policy checks.");
+  }
+
+  if (name == "DoErrorWorldGetRandomBlock" && line == 980)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldRandomBlock.cs:TrySelect"
+      },
+      "Selects an eligible ErrorWorld tile from explicit immutable tile definitions using " +
+      "pass-scoped rejection sampling.",
+      new[]
+      {
+        "The full TileID registry and the consuming ErrorWorld block-shuffle pass remain " +
+        "deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification ErrorWorld random-block source checks.");
+  }
+
+  if (name == "DoErrorWorldShuffleBlocks" && line == 992)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldTileSwap.cs:AppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldTileRectangleSwap.cs:AppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldCandidateQuery.cs:IsSwapEligible",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldCandidateSelector.cs:TrySelect",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldSpawnExclusionPolicy.cs:IsSingleTileExcluded",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldSpawnExclusionPolicy.cs:IsRectangleExcluded",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldSwapOperation.cs:TryAppendSingleTileSwap",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldSwapOperation.cs:TryAppendRectangleSwap",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldAxisTrail.cs:AppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldAxisTrailPolicy.cs:Create",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldPassCountPolicy.cs:Create",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldRandomBlockRewrite.cs:TryAppendCommand",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldShufflePass.cs:AppendCommands"
+      },
+      "Selects source-eligible candidates, applies spawn exclusions and pass counts, and emits " +
+      "bounded rewrite, single-tile, non-overlapping rectangle, and axial trail commands.",
+      new[]
+      {
+        "Full TileID registry projection, overlapping rectangle ordering, and pipeline scheduling " +
+        "remain deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification ErrorWorld single-tile swap source checks.");
+  }
+
+  if (name == "DoErrorWorldFinish" && line == 1201)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldFinishCleanup.cs:AppendCommands"
+      },
+      "Emits bounded immutable-snapshot cleanup commands for cracked bricks, moss, walls, " +
+      "crystal blocks, and unwired statue frames.",
+      new[]
+      {
+        "Chest swaps, wire routing, liquid pool placement, killability rules, NPC replacement, " +
+        "and full random-consumption parity remain deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification ErrorWorld finish cleanup checks.");
+  }
+
+  if (name == "DoErrorWorldFindChestItem" && line == 1463)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyErrorWorldChestItemPolicy.cs:SelectItemType"
+      },
+      "Selects the source-defined ErrorWorld chest item with a single pass-scoped random draw.",
+      new[]
+      {
+        "Chest placement and the complete ErrorWorld chest-swap transaction remain deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification ErrorWorld chest-item policy checks.");
+  }
+
+  if (name == "DoExtraLiquidAddLiquid" && line == 1508)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyExtraLiquidAddLiquid.cs:AppendCommands"
+      },
+      "Emits source-ordered bounded liquid commands from an immutable world snapshot.",
+      new[]
+      {
+        "Bubble-block placement, QuickWater scheduling, and the full ExtraLiquid finish pass " +
+        "remain deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification ExtraLiquid command checks.");
+  }
+
+  if (name == "DoExtraLiquidAddBubbleBlocks" && line == 1558)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyExtraLiquidAddBubbleBlocks.cs:AppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyExtraLiquidPassExecution.cs:TryExecuteBubbleBlocks"
+      },
+      "Emits and commits deterministic bounded bubble-square, liquid-clear, and fullbright commands.",
+      new[]
+      {
+        "QuickWater scheduling, landmass persistence, and complete source random-consumption parity " +
+        "remain deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification ExtraLiquid bubble-block checks.");
+  }
+
+  if (name == "DoExtraLiquidFinish" && line == 1744)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyExtraLiquidFinish.cs:AppendCommands"
+      },
+      "Emits bounded fullbright cleanup, underworld lava, and tile-removal commands.",
+      new[]
+      {
+        "QuickWater scheduling and tile 518 frame refresh remain deferred to liquid and frame " +
+        "systems."
+      },
+      "Terraria.Dome.WorldGeneration.Verification ExtraLiquid finish command checks.");
+  }
+
+  if (name == "DoRainsForAYear" && line == 1788)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/World/LegacyRainsForAYearPolicy.cs:Apply"
+      },
+      "Projects the source rain duration, raining state, and cloud target into a runtime result.",
+      new[]
+      {
+        "Runtime command scheduling and cloud-system ownership remain deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification rains-for-a-year runtime policy checks.");
+  }
+
+  if (name == "DoRandomSpawn" && line == 1798)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/LegacyRandomSpawnPolicy.cs:Create"
+      },
+      "Builds the source one-time random-spawn and torch action plan.",
+      new[]
+      {
+        "Spawn randomization and torch placement command execution remain deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification random-spawn policy checks.");
+  }
+
+  if (name == "DoAddTeleporters" && line == 1809)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyTeleporterPlacementQuery.cs:CanPlace",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyTeleporterClearArea.cs:TryAppendCommands"
+      },
+      "Evaluates source candidate gates and emits bounded clear-area tile commands.",
+      new[]
+      {
+        "Pair selection, tile placement, wiring, and source retry scheduling remain deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification teleporter candidate checks.");
+  }
+
+  if (name == "DoStartInHardmode" && line == 1997)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyStartInHardmodePolicy.cs:Apply"
+      },
+      "Projects source hardmode enablement and initialization intent into frozen generation rules.",
+      new[]
+      {
+        "WorldProgression hardmode initialization and its gameplay side effects remain deferred."
+      },
+      "Terraria.Dome.WorldGeneration.Verification start-in-hardmode policy checks.");
+  }
+
+  if (name == "DoNoInfection" && line == 2005)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyNoInfectionPolicy.cs:GetConversion" },
+      "Classifies source tile and wall conversion exclusions from immutable tile state.",
+      new[] { "World conversion command execution remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification no-infection policy checks.");
+  }
+
+  if (name == "DoHallowOnSurface" && line == 2052)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyHallowOnSurface.cs:AppendCommands" },
+      "Emits bounded surface hallow tile and wall conversion commands.",
+      new[] { "Pipeline scheduling and full conversion parity remain deferred." },
+      "Terraria.Dome.WorldGeneration.Verification hallow-on-surface checks.");
+  }
+
+  if (name == "DoWorldIsInfected" && line == 2121)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyWorldInfectionPolicy.cs:CreateColumn" },
+      "Builds deterministic source-style infection-column inputs and conversion exclusions.",
+      new[] { "World conversion command execution remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification infection policy checks.");
+  }
+
+  if (name == "DoSurfaceIsInSpace" && line == 2177)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacySurfaceIsInSpace.cs:AppendCommands" },
+      "Emits bounded surface cloud-wall cleanup commands.",
+      new[] { "Pipeline scheduling remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification surface-in-space checks.");
+  }
+
+  if (name == "DoSurfaceIsMushrooms" && line == 2197)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacySurfaceIsMushrooms.cs:AppendNormalModeCommands" },
+      "Emits bounded normal-mode surface mushroom conversion commands.",
+      new[] { "Secret-seed mode variants and pipeline scheduling remain deferred." },
+      "Terraria.Dome.WorldGeneration.Verification surface-mushroom checks.");
+  }
+
+  if (name == "DoWorldIsFrozenFinish" && line == 2287)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyWorldIsFrozenFinishPolicy.cs:CreateNpcReplacementIntents" },
+      "Creates bounded frozen-world chest and NPC replacement intents.",
+      new[] { "Chest and NPC command execution remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification frozen-finish intent checks.");
+  }
+
+  if (name == "DoWorldIsFrozen" && line == 2330)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyWorldIsFrozen.cs:AppendCommands" },
+      "Emits bounded frozen-world tile and wall conversion commands.",
+      new[] { "Pipeline scheduling and complete secret-seed interaction parity remain deferred." },
+      "Terraria.Dome.WorldGeneration.Verification world-is-frozen checks.");
+  }
+
+  if (name == "DoSurfaceIsDesertNoSurfaceCleanup" && line == 2709)
+  {
+    return new SourceMapping("Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacySurfaceIsDesertNoSurfaceCleanup.cs:AppendCommands" },
+      "Emits bounded surface-desert no-surface cleanup commands.",
+      new[] { "Pipeline scheduling remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification desert cleanup checks.");
+  }
+
+  if (name == "DoNoSpiderCavesILiedMoreSpiderCaves" && line == 2736)
+  {
+    return new SourceMapping("Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyNoSpiderCavesCleanup.cs:AppendCommands" },
+      "Emits bounded spider-wall cleanup commands.",
+      new[] { "Pipeline scheduling remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification spider cleanup checks.");
+  }
+
+  if (name == "DoActuallyNoTraps" && line == 2752)
+  {
+    return new SourceMapping("Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyActuallyNoTraps.cs:AppendHardModeCommands" },
+      "Emits bounded hardmode trap-removal commands.",
+      new[] { "Pipeline scheduling remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification actually-no-traps checks.");
+  }
+
+  if (name == "DoRainbowStuff" && line == 2817)
+  {
+    return new SourceMapping("Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyRainbowStaticRewrite.cs:AppendCommands" },
+      "Emits bounded static rainbow tile and wall rewrite commands.",
+      new[] { "Dynamic rainbow and pipeline scheduling remain deferred." },
+      "Terraria.Dome.WorldGeneration.Verification rainbow static rewrite checks.");
+  }
+
+  if (name == "DoDigExtraHoles" && line == 2957)
+  {
+    return new SourceMapping("Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyDigExtraHoles.cs:CreateInvocations" },
+      "Builds deterministic source TileRunner invocation inputs.",
+      new[] { "Pipeline scheduling remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification dig-extra-holes checks.");
+  }
+
+  if (name == "DoRoundLandMasses" && line == 2976)
+  {
+    return new SourceMapping("Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyRoundLandmassSeedDefinitions.cs:Create" },
+      "Builds deterministic source landmass seed definitions.",
+      new[] { "Landmass command execution remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification round-landmass checks.");
+  }
+
+  if (name == "DoPooEverywhere" && line == 3083)
+  {
+    return new SourceMapping("Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyPooEverywherePolicy.cs:GetAttemptCount" },
+      "Calculates the bounded source placement attempt count.",
+      new[] { "Placement execution remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification poo policy checks.");
+  }
+
+  if (name == "DoPortalGunInChests" && line == 3114)
+  {
+    return new SourceMapping("Partial",
+      new[] { "src/Terraria.Dome.Simulation/WorldGeneration/LegacyPortalGunChestPolicy.cs:TryCreateIntent" },
+      "Creates bounded portal-gun chest item intents.",
+      new[] { "Chest command execution remains deferred." },
+      "Terraria.Dome.WorldGeneration.Verification portal-gun chest checks.");
+  }
+
+  if (name == "DisablePassesForSpecialSeeds" && line == 21674)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyDualDungeonPassPolicy.cs:ShouldDisable"
+      },
+      "Classifies the source-defined pass names disabled by the explicit dual-dungeons rule.",
+      new[]
+      {
+        "WorldGenerationPipeline does not yet schedule non-default secret-seed pass definitions."
+      },
+      "Terraria.Dome.DungeonBounds.Verification dual-dungeon pass policy checks.");
   }
 
   if (name == "IsSurfaceForAtmospherics" && line == 10033)
@@ -8425,6 +12354,23 @@ static SourceMapping? CreateMethodMapping(string name, int line)
       "Terraria.Dome.WorldGeneration.Verification statue style mapping checks.");
   }
 
+  if (name == "OreHelper" && line == 9263)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/LegacyOreHelper.cs:AppendCommands"
+      },
+      "Converts the bounded legacy three-by-three type 1 and 40 cleanup into " +
+      "snapshot-derived tile commands.",
+      new[]
+      {
+        "Legacy caller scheduling, immediate mutable tile writes, and frame side effects."
+      },
+      "Terraria.Dome.WorldGeneration.Verification OreHelper source checks.");
+  }
+
   if (name == "OrePatch" && line == 9624)
   {
     return new SourceMapping(
@@ -8436,16 +12382,44 @@ static SourceMapping? CreateMethodMapping(string name, int line)
         "src/Terraria.Dome.Simulation/WorldGeneration/Systems/" +
         "OrePatchPlacementSystem.cs:TryPrepare",
         "src/Terraria.Dome.Simulation/WorldGeneration/Systems/" +
-        "OrePatchPlacementSystem.cs:TryAppendCommands"
+        "OrePatchPlacementSystem.cs:TryAppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/Systems/" +
+        "OrePatchPlacementSystem.cs:TryAppendLegacyTrailAndBlobCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyOrePatchTypePolicy.cs:SelectTileType",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyOreTierSelectionPolicy.cs:Select",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyOrePatchTrail.cs:TryAppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/" +
+        "LegacyOrePatchBlob.cs:TryAppendCommands"
       },
-      "Composes bounded OrePatch eligibility with an explicit ore definition and a " +
+      "Composes bounded OrePatch eligibility, tier selection, trail/blob traversal, and a " +
       "conflict-safe prepare/command transaction from immutable snapshots.",
       new[]
       {
-        "SavedOreTiers selection and legacy genRand stream parity.",
-        "OreHelper, random ore-walk mutation, SquareTileFrame, and mutable Tile ownership."
+        "World-rule tier selection projection into generation scheduling.",
+        "SquareTileFrame and mutable Tile ownership."
       },
-      "Terraria.Dome.WorldGeneration.Verification ore patch preparation and command checks.");
+      "Terraria.Dome.WorldGeneration.Verification ore patch, tier, trail/blob, and command checks.");
+  }
+
+  if (name == "OreRunner" && line == 41739)
+  {
+    return new SourceMapping(
+      "Partial",
+      new[]
+      {
+        "src/Terraria.Dome.Simulation/WorldGeneration/LegacyOreRunner.cs:AppendCommands",
+        "src/Terraria.Dome.Simulation/WorldGeneration/MossTileTypeRegistry.cs:TileTypes"
+      },
+      "Renders bounded deterministic ore tile and wall commands from immutable snapshots, " +
+      "including source-backed moss and special replacement filters.",
+      new[]
+      {
+        "Paint, framing, network side effects, and legacy caller scheduling."
+      },
+      "Terraria.Dome.WorldGeneration.Verification OreRunner source checks.");
   }
 
   if (name == "TreeGrowFXCheck" && line == 23974)
@@ -10260,6 +14234,214 @@ static void LegacyTerrainPassContractSourceCheck()
     "PASS: Terrain pass scheduling and pass-scoped random reset preserve source contract");
 }
 
+static void LegacyTerrainFeatureRunSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "terrain-feature-run",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150);
+  LegacyTerrainRuntimeProfile runtimeProfile = new(
+    WorldSurface: 45,
+    RockLayer: 80,
+    WorldSurfaceLow: 30,
+    WorldSurfaceHigh: 60,
+    RockLayerLow: 70,
+    RockLayerHigh: 90,
+    LeftBeachEnd: 0,
+    RightBeachStart: 100,
+    WaterLine: 100,
+    LavaLine: 120)
+  {
+    InitialWorldSurface = 45,
+    InitialRockLayer = 80
+  };
+  WorldGenerationRequest request = new(
+    metadata,
+    spawnX: 100,
+    surfaceY: 45,
+    rockLayerY: 80,
+    terrainProfile: runtimeProfile);
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  WorldGenerationStateComponent state = new(metadata.WorldId);
+  List<TileChangeCommand> commands = new();
+  new TerrainBaseSystem().AppendLegacyCommands(
+    world.CreateSnapshot(metadata),
+    request,
+    new TerrainProfileComponent(45, 80, metadata.Height - 1),
+    ref state,
+    commands);
+  TileChangeCommand columnTwo = commands.First(command => command.X == 2);
+  if (columnTwo.Y != 33 || columnTwo.TileType != 0 || columnTwo.FrameX != -1 ||
+      columnTwo.FrameY != -1)
+  {
+    throw new InvalidOperationException(
+      $"Terrain feature-run padding diverged at x=2: y={columnTwo.Y}, " +
+      $"type={columnTwo.TileType}, frameX={columnTwo.FrameX}, frameY={columnTwo.FrameY}.");
+  }
+
+  Console.WriteLine(
+    "PASS: Terrain feature-run initialization preserves the source beach-padding boundary");
+}
+
+static void LegacyTerrainCentralFeatureGuardSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "terrain-central-feature-guard",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150);
+  LegacyTerrainRuntimeProfile runtimeProfile = new(
+    WorldSurface: 45,
+    RockLayer: 80,
+    WorldSurfaceLow: 30,
+    WorldSurfaceHigh: 60,
+    RockLayerLow: 70,
+    RockLayerHigh: 90,
+    LeftBeachEnd: 0,
+    RightBeachStart: 100,
+    WaterLine: 100,
+    LavaLine: 120)
+  {
+    InitialWorldSurface = 45,
+    InitialRockLayer = 80
+  };
+  WorldGenerationRequest request = new(
+    metadata,
+    spawnX: 100,
+    surfaceY: 45,
+    rockLayerY: 80,
+    terrainProfile: runtimeProfile);
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  WorldGenerationStateComponent state = new(metadata.WorldId);
+  List<TileChangeCommand> commands = new();
+  new TerrainBaseSystem().AppendLegacyCommands(
+    world.CreateSnapshot(metadata),
+    request,
+    new TerrainProfileComponent(45, 80, metadata.Height - 1),
+    ref state,
+    commands);
+  TileChangeCommand columnOneHundredFour = commands.First(command => command.X == 104);
+  if (columnOneHundredFour.Y != 31 || columnOneHundredFour.TileType != 0 ||
+      columnOneHundredFour.FrameX != -1 || columnOneHundredFour.FrameY != -1)
+  {
+    throw new InvalidOperationException(
+      $"Terrain central feature guard diverged at x=104: y={columnOneHundredFour.Y}, " +
+      $"type={columnOneHundredFour.TileType}, frameX={columnOneHundredFour.FrameX}, " +
+      $"frameY={columnOneHundredFour.FrameY}.");
+  }
+
+  Console.WriteLine(
+    "PASS: Terrain central feature guard preserves source random re-selection");
+}
+
+static void LegacyTerrainWorldSizeClampSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "terrain-world-size-clamp",
+    new WorldSeed(1456),
+    width: 4200,
+    height: 1200);
+  LegacyTerrainRuntimeProfile runtimeProfile = new(
+    WorldSurface: 229,
+    RockLayer: 396.14,
+    WorldSurfaceLow: 174.6,
+    WorldSurfaceHigh: 300,
+    RockLayerLow: 320.14,
+    RockLayerHigh: 397.14,
+    LeftBeachEnd: 0,
+    RightBeachStart: 4199,
+    WaterLine: 765,
+    LavaLine: 835)
+  {
+    InitialWorldSurface = 174.6,
+    InitialRockLayer = 373.14
+  };
+  WorldGenerationRequest request = new(
+    metadata,
+    spawnX: 2100,
+    surfaceY: 229,
+    rockLayerY: 397,
+    terrainProfile: runtimeProfile);
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  WorldGenerationStateComponent state = new(metadata.WorldId);
+  List<TileChangeCommand> commands = new();
+  new TerrainBaseSystem().AppendLegacyCommands(
+    world.CreateSnapshot(metadata),
+    request,
+    new TerrainProfileComponent(229, 397, metadata.Height - 1),
+    ref state,
+    commands);
+  TileChangeCommand firstColumn = commands.First(command => command.X == 0);
+  TileChangeCommand firstGround = commands.First(
+    command => command.X == 0 && command.TileType == 1);
+  if (firstColumn.Y != 228 || firstColumn.TileType != 0 ||
+      firstColumn.FrameX != -1 || firstColumn.FrameY != -1 ||
+      firstGround.Y != 374)
+  {
+    throw new InvalidOperationException(
+      $"Terrain small-world lower clamp diverged at x=0: y={firstColumn.Y}, " +
+      $"type={firstColumn.TileType}, firstGroundY={firstGround.Y}, " +
+      $"frameX={firstColumn.FrameX}, frameY={firstColumn.FrameY}.");
+  }
+
+  Console.WriteLine(
+    $"PASS: Terrain small-world lower clamp preserves GetWorldSize source branch " +
+    $"(firstGroundY={firstGround.Y})");
+}
+
+static void LegacyTerrainRightBeachFeatureResetSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "terrain-right-beach-feature-reset",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150);
+  LegacyTerrainRuntimeProfile runtimeProfile = new(
+    WorldSurface: 30,
+    RockLayer: 80,
+    WorldSurfaceLow: 20,
+    WorldSurfaceHigh: 40,
+    RockLayerLow: 70,
+    RockLayerHigh: 90,
+    LeftBeachEnd: 0,
+    RightBeachStart: 100,
+    WaterLine: 100,
+    LavaLine: 120)
+  {
+    InitialWorldSurface = 30,
+    InitialRockLayer = 80
+  };
+  WorldGenerationRequest request = new(
+    metadata,
+    spawnX: 100,
+    surfaceY: 30,
+    rockLayerY: 80,
+    terrainProfile: runtimeProfile);
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  WorldGenerationStateComponent state = new(metadata.WorldId);
+  List<TileChangeCommand> commands = new();
+  new TerrainBaseSystem().AppendLegacyCommands(
+    world.CreateSnapshot(metadata),
+    request,
+    new TerrainProfileComponent(30, 80, metadata.Height - 1),
+    ref state,
+    commands);
+  TileChangeCommand postBoundaryColumn = commands.First(command =>
+    command.X == 104);
+  if (postBoundaryColumn.Y != 28 || postBoundaryColumn.TileType != 0 ||
+      postBoundaryColumn.FrameX != -1 || postBoundaryColumn.FrameY != -1)
+  {
+    throw new InvalidOperationException(
+      $"Terrain right-beach feature reset diverged at x=104: y={postBoundaryColumn.Y}, " +
+      $"type={postBoundaryColumn.TileType}, frameX={postBoundaryColumn.FrameX}, " +
+      $"frameY={postBoundaryColumn.FrameY}.");
+  }
+
+  Console.WriteLine(
+    "PASS: Terrain right-beach boundary unconditionally resets the source feature run");
+}
+
 static void LegacyTerrainSurfaceClampSourceCheck()
 {
   LegacyTerrainSurfaceClampResult beach = LegacyTerrainSurfaceClampPolicy.Apply(
@@ -10370,6 +14552,20 @@ static void LegacyCavePassContractSourceCheck()
 {
   IReadOnlyList<LegacyCavePassDefinition> schedule =
     LegacyCavePassContractDefinition.CreateDefaultSchedule();
+  if (!schedule.SequenceEqual(LegacyCavePassContractDefinition.CreateDefaultSchedule()))
+  {
+    throw new InvalidOperationException("Cave pass defaults were not stable across registration.");
+  }
+
+  try
+  {
+    ((IList<LegacyCavePassDefinition>)schedule)[0] = schedule[0];
+    throw new InvalidOperationException("Cave pass schedule projection was mutable.");
+  }
+  catch (NotSupportedException)
+  {
+  }
+
   string[] expectedNames =
   {
     "MountainCaves",
@@ -10425,6 +14621,68 @@ static void LegacyCavePassContractSourceCheck()
 
   Console.WriteLine(
     "PASS: Cave pass schedule and TileRunner request preserve source boundaries");
+}
+
+static void LegacyCavePassVerticalRangeSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "cave-vertical-range",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150);
+  LegacyTerrainRuntimeProfile runtimeProfile = new(
+    WorldSurface: 30,
+    RockLayer: 80,
+    WorldSurfaceLow: 20,
+    WorldSurfaceHigh: 40,
+    RockLayerLow: 70,
+    RockLayerHigh: 90,
+    LeftBeachEnd: 0,
+    RightBeachStart: 100,
+    WaterLine: 100,
+    LavaLine: 120)
+  {
+    InitialWorldSurface = 30,
+    InitialRockLayer = 80
+  };
+  WorldGenerationRequest request = new(
+    metadata,
+    spawnX: 100,
+    surfaceY: 30,
+    rockLayerY: 80,
+    terrainProfile: runtimeProfile);
+  System.Reflection.MethodInfo resolver = typeof(LegacyCavePassSystem).GetMethod(
+    "ResolveVerticalRange",
+    System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static) ??
+    throw new InvalidOperationException("Legacy cave vertical-range resolver was not found.");
+  IReadOnlyList<LegacyTileRunnerPassInput> recipes =
+    LegacyTileRunnerPassInputDefinition.CreateDefaultRecipes();
+  (string RecipeName, int MinimumY, int MaximumY)[] expectedRanges =
+  [
+    ("surface-dirt", 0, 21),
+    ("surface-high-dirt", 20, 41),
+    ("rock-high-dirt", 40, 91),
+    ("rock-layer-stone", 70, 150)
+  ];
+  foreach ((string recipeName, int minimumY, int maximumY) in expectedRanges)
+  {
+    LegacyTileRunnerPassInput recipe = recipes.First(input =>
+      input.RecipeName == recipeName);
+    ValueTuple<int, int> actual = (ValueTuple<int, int>)(resolver.Invoke(
+      null,
+      [recipe, request, metadata.Height]) ??
+      throw new InvalidOperationException(
+        $"Legacy cave vertical range resolver returned no value for {recipeName}."));
+    if (actual != (minimumY, maximumY))
+    {
+      throw new InvalidOperationException(
+        $"Legacy cave vertical range diverged for {recipeName}: " +
+        $"actual=({actual.Item1},{actual.Item2}), expected=({minimumY},{maximumY}).");
+    }
+  }
+
+  Console.WriteLine(
+    "PASS: cave TileRunner ranges preserve runtime world-surface and rock-layer bounds");
 }
 
 static void LegacyTileRunnerMutationSourceCheck()
@@ -10494,6 +14752,260 @@ static void LegacyTileRunnerDistanceSourceCheck()
     "PASS: TileRunner Manhattan distance predicate preserves strict random threshold");
 }
 
+static void LegacyTileRunnerTargetRegistrySourceCheck()
+{
+  if (LegacyTileRunnerTargetRegistry.IsStone(1) ||
+      !LegacyTileRunnerTargetRegistry.IsStone(63) ||
+      !LegacyTileRunnerTargetRegistry.IsStone(566) ||
+      LegacyTileRunnerTargetRegistry.OreCount != 19 ||
+      !LegacyTileRunnerTargetRegistry.IsOre(7) ||
+      !LegacyTileRunnerTargetRegistry.IsOre(223) ||
+      LegacyTileRunnerTargetRegistry.IsOre(1) ||
+      LegacyTileRunnerTargetRegistry.IsOre(397))
+  {
+    throw new InvalidOperationException(
+      "TileRunner target registries diverged from legacy Main.tileStone or TileID.Sets.Ore.");
+  }
+
+  Console.WriteLine(
+    "PASS: TileRunner target registries preserve legacy Main.tileStone and TileID.Sets.Ore facts");
+}
+
+static void LegacyTileRunnerCandidateRegistrySourceCheck()
+{
+  if (LegacyTileRunnerCandidateRegistry.FrameImportantCount != 397 ||
+      LegacyTileRunnerCandidateRegistry.TileCutCount != 41 ||
+      !LegacyTileRunnerCandidateRegistry.IsFrameImportant(3) ||
+      LegacyTileRunnerCandidateRegistry.IsTileCut(4) ||
+      !LegacyTileRunnerCandidateRegistry.IsTileCut(3))
+  {
+    throw new InvalidOperationException(
+      "TileRunner candidate registries diverged from legacy Main tile arrays.");
+  }
+
+  Console.WriteLine("PASS: TileRunner candidate registries preserve legacy Main tile array facts");
+}
+
+static void LegacyTileRunnerNoYChangeWallSourceCheck()
+{
+  WorldMetadata metadata = new("TileRunnerNoYChange", new WorldSeed(42), 200, 150);
+  LegacyTileRunnerPassInput recipe = new(
+    "TileRunner", "no-y-change", 1, false, 10, 11, 1, 2, "test", false, false, true);
+  LegacyTileRunnerRequest preserveRequest = new(20, 10, 10.0, 1, 1, false, 0.0, 0.0, true,
+    true, -1);
+  LegacyTileRunnerPassInvocation preserveInvocation = new(
+    recipe, preserveRequest, 20, 10, 10, 1, 0);
+  WorldGrid preserveWorld = new(200, 150);
+  for (int x = 0; x < preserveWorld.Width; x++)
+  {
+    for (int y = 0; y < preserveWorld.Height; y++)
+    {
+      _ = preserveWorld.TrySetTile(x, y, new WorldTile(IsActive: true, Type: 396));
+    }
+  }
+
+  WorldGenerationStateComponent preserveState = new(1);
+  List<TileChangeCommand> preserveCommands = new();
+  LegacyTileRunnerTraversal.AppendCommands(
+    preserveWorld.CreateSnapshot(metadata),
+    preserveInvocation,
+    new LegacyPassRandomState(42),
+    worldSurfaceY: 20,
+    rockLayerY: 30,
+    ref preserveState,
+    preserveCommands);
+  TileChangeCommand wallCommand = preserveCommands.First(command =>
+    command.Kind == TileChangeKind.SetWall);
+  if (preserveCommands.Any(command => command.Kind == TileChangeKind.UpdateTileType) ||
+      !new TileChangeCommitSystem().TryCommit(preserveWorld, preserveCommands, out _) ||
+      preserveWorld.GetTile(wallCommand.X, wallCommand.Y).Type != 396 ||
+      preserveWorld.GetTile(wallCommand.X, wallCommand.Y).WallType != 2)
+  {
+    throw new InvalidOperationException(
+      "TileRunner noYChange did not write a dirt wall independently of tile preservation.");
+  }
+
+  LegacyTileRunnerRequest type59Request = new(20, 10, 10.0, 1, 59, false, 0.0, 0.0, true,
+    true, -1);
+  LegacyTileRunnerPassInvocation type59Invocation = new(
+    recipe with { TileType = 59 }, type59Request, 20, 10, 10, 1, 0);
+  WorldGenerationStateComponent type59State = new(2);
+  List<TileChangeCommand> type59Commands = new();
+  LegacyTileRunnerTraversal.AppendCommands(
+    new WorldGrid(200, 150).CreateSnapshot(metadata),
+    type59Invocation,
+    new LegacyPassRandomState(42),
+    worldSurfaceY: 20,
+    rockLayerY: 30,
+    ref type59State,
+    type59Commands);
+  if (type59Commands.Any(command => command.Kind == TileChangeKind.SetWall))
+  {
+    throw new InvalidOperationException(
+      "TileRunner noYChange wrote a dirt wall for the type-59 exclusion.");
+  }
+
+  Console.WriteLine("PASS: TileRunner noYChange preserves independent dirt-wall semantics");
+}
+
+static void LegacySmallHolesPassSourceCheck()
+{
+  LegacySmallHolesPassDefinition definition = LegacySmallHolesPassDefinitionFactory.CreateDefault();
+  if (definition.CalculateIterationCount(200, 150) != 45 ||
+      definition.LiquidChanceDenominator != 5)
+  {
+    throw new InvalidOperationException("SmallHoles pass density or liquid chance diverged from source.");
+  }
+
+  LegacySmallHolesInvocationPair first = LegacySmallHolesInvocationFactory.Create(
+    definition, new LegacyPassRandomState(42), 200, 150, 40);
+  LegacySmallHolesInvocationPair second = LegacySmallHolesInvocationFactory.Create(
+    definition, new LegacyPassRandomState(42), 200, 150, 40);
+  if (first != second || (first.TileType != -1 && first.TileType != -2) ||
+      first.First.TileType != first.TileType || first.Second.TileType != first.TileType ||
+      first.First.Strength < 2 || first.First.Strength >= 5 ||
+      first.First.Steps < 2 || first.First.Steps >= 20 ||
+      first.Second.Strength < 8 || first.Second.Strength >= 15 ||
+      first.Second.Steps < 7 || first.Second.Steps >= 30)
+  {
+    throw new InvalidOperationException(
+      "SmallHoles invocation pair did not preserve source type and random ranges.");
+  }
+
+  Console.WriteLine("PASS: SmallHoles preserves deterministic type and TileRunner range inputs");
+}
+
+static void LegacySmallHolesBatchSourceCheck()
+{
+  WorldMetadata metadata = new("SmallHoles", new WorldSeed(42), 200, 150);
+  WorldGrid world = new(200, 150);
+  for (int x = 0; x < world.Width; x++)
+  {
+    for (int y = 0; y < world.Height; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(IsActive: true, Type: 1));
+    }
+  }
+
+  LegacyTileRunnerSnapshotExecutionContext context = new(
+    WaterLine: 20,
+    LavaLine: 100,
+    WorldSurface: 40,
+    LiquidType: 0,
+    RemixWorld: false,
+    RockLayer: 80,
+    MaxTilesY: 150,
+    IsOceanDepth: false,
+    SourceLine: 11080);
+  LegacySmallHolesPassDefinition definition = LegacySmallHolesPassDefinitionFactory.CreateDefault();
+  LegacyTileRunnerSnapshotBatchExecutionResult first = LegacySmallHolesPassExecution.Execute(
+    world.CreateSnapshot(metadata), definition, new LegacyPassRandomState(42), context, 10, 1);
+  LegacyTileRunnerSnapshotBatchExecutionResult second = LegacySmallHolesPassExecution.Execute(
+    world.CreateSnapshot(metadata), definition, new LegacyPassRandomState(42), context, 10, 1);
+  bool matchingTileCommands = first.Commands.TileCommands.SequenceEqual(second.Commands.TileCommands);
+  bool matchingLiquidCommands = first.Commands.LiquidCommands.SequenceEqual(
+    second.Commands.LiquidCommands);
+  if (first.Commands.PassName != "SmallHoles" || first.Provenance.Count != 2 ||
+      first.Commands.NextSequence != 13 || !matchingTileCommands || !matchingLiquidCommands)
+  {
+    throw new InvalidOperationException(
+      $"SmallHoles batch: pass={first.Commands.PassName}, provenance={first.Provenance.Count}, " +
+      $"next={first.Commands.NextSequence}, tileMatch={matchingTileCommands}, " +
+      $"liquidMatch={matchingLiquidCommands}.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(42);
+  LegacyPassRandomState skyblockRandom = new(42);
+  List<TileChangeCommand> skyblockTileCommands = new();
+  List<LiquidChangeCommand> skyblockLiquidCommands = new();
+  LegacySmallHolesPassExecution.AppendEnvelopeCommands(
+    world.CreateSnapshot(metadata),
+    definition,
+    skyblockRandom,
+    new LegacyTileRunnerLiquidContext(
+      WaterLine: 20,
+      LavaLine: 100,
+      LiquidType: 0,
+      RemixWorld: false,
+      RockLayerY: 80,
+      WorldHeight: 150,
+      IsOceanDepth: false),
+    worldSurfaceY: 40,
+    rockLayerY: 80,
+    iterationCount: 1,
+    isSkyblockWorld: true,
+    ref skyblockState,
+    skyblockTileCommands,
+    skyblockLiquidCommands);
+  if (skyblockState.Stage != WorldGenerationStage.Created || skyblockState.NextSequence != 0 ||
+      skyblockRandom.SampleCount != 0 || skyblockTileCommands.Count != 0 ||
+      skyblockLiquidCommands.Count != 0)
+  {
+    throw new InvalidOperationException(
+      "SmallHoles did not honor the Skyblock deny-generation guard.");
+  }
+
+  Console.WriteLine("PASS: SmallHoles emits deterministic typed command batches");
+}
+
+static void LegacyTileRunnerLiquidTraversalSourceCheck()
+{
+  WorldMetadata metadata = new("TileRunnerLiquid", new WorldSeed(42), 200, 150);
+  WorldGrid world = new(200, 150);
+  for (int x = 0; x < world.Width; x++)
+  {
+    for (int y = 0; y < world.Height; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(IsActive: true, Type: 1));
+    }
+  }
+
+  LegacyTileRunnerPassInput recipe = new(
+    "SmallHoles", "liquid-envelope", -2, false, 10, 11, 1, 2, "test", false, false, true);
+  LegacyTileRunnerPassInvocation invocation = new(
+    recipe,
+    new LegacyTileRunnerRequest(100, 120, 10.0, 1, -2, false, 0.0, 0.0, false, true, -1),
+    100,
+    120,
+    10,
+    1,
+    0);
+  WorldGenerationStateComponent state = new(1);
+  List<TileChangeCommand> tileCommands = new();
+  List<LiquidChangeCommand> liquidCommands = new();
+  LegacyTileRunnerTraversal.AppendCommands(
+    world.CreateSnapshot(metadata),
+    invocation,
+    new LegacyPassRandomState(42),
+    worldSurfaceY: 40,
+    rockLayerY: 80,
+    ref state,
+    tileCommands,
+    new LegacyTileRunnerLiquidContext(20, 100, 0, false, 80, 150, false),
+    liquidCommands);
+  if (liquidCommands.Count == 0 || tileCommands.Count < liquidCommands.Count ||
+      !tileCommands.All(command => command.Kind == TileChangeKind.Kill && command.PreserveLiquid))
+  {
+    throw new InvalidOperationException("TileRunner -2 did not emit paired liquid-preserving kills.");
+  }
+
+  LegacyTileRunnerPassCommandBatch batch = new(
+    "SmallHoles", tileCommands.AsReadOnly(), liquidCommands.AsReadOnly(), state.NextSequence);
+  if (!LegacyTileRunnerCommandCommitBoundary.TryCommit(
+        world,
+        batch,
+        new[] { new LiquidDefinition("water", 0, byte.MaxValue), new LiquidDefinition("lava", 1, byte.MaxValue) },
+        out _) ||
+      !liquidCommands.All(command =>
+        !world.GetTile(command.X, command.Y).IsActive &&
+        world.GetTile(command.X, command.Y).LiquidAmount == byte.MaxValue))
+  {
+    throw new InvalidOperationException("TileRunner -2 batch did not commit inactive liquid cells.");
+  }
+
+  Console.WriteLine("PASS: TileRunner -2 envelope emits and commits typed liquid commands");
+}
+
 static void LegacyTileRunnerCandidateSourceCheck()
 {
   LegacyTileRunnerTileState important = new(true, 100, true, false);
@@ -10519,6 +15031,14 @@ static void LegacyTileRunnerCandidateSourceCheck()
 
 static void LegacyGenerationClearabilitySourceCheck()
 {
+  IReadOnlySet<int> excludedTileTypes = LegacyGenerationClearabilityPolicy.RegisterDefaults();
+  if (excludedTileTypes.Count != 17 || !excludedTileTypes.Contains(41) ||
+      excludedTileTypes.Contains(0) ||
+      !excludedTileTypes.SetEquals(LegacyGenerationClearabilityPolicy.RegisterDefaults()))
+  {
+    throw new InvalidOperationException("Generation clearability defaults were not stable or bounded.");
+  }
+
   if (!LegacyGenerationClearabilityPolicy.CanClear(0, false) ||
       LegacyGenerationClearabilityPolicy.CanClear(41, false) ||
       LegacyGenerationClearabilityPolicy.CanClear(483, false) ||
@@ -10569,6 +15089,10 @@ static void LegacyTileRunnerSideEffectSourceCheck()
     LegacyTileRunnerSideEffectPolicy.Classify(1, true, true, false, 60, 20, 80, 50);
   LegacyTileRunnerSideEffectProfile special =
     LegacyTileRunnerSideEffectPolicy.Classify(59, true, true, false, 40, 20, 80, 50);
+  LegacyTileRunnerSideEffectProfile type59LiquidCleanup =
+    LegacyTileRunnerSideEffectPolicy.Classify(
+      59, false, false, true, 90, 20, 80, 50, 0, false, 200, 1000, false,
+      currentLiquidAmount: 1);
   LegacyTileRunnerSideEffectProfile remixOcean =
     LegacyTileRunnerSideEffectPolicy.Classify(
       -2, false, false, true, 900, 20, 120, 50, 3, true, 200, 1200, true);
@@ -10579,12 +15103,29 @@ static void LegacyTileRunnerSideEffectSourceCheck()
     7, 130, 11, 12, -2, false, false, true, 20, 120, 50, 0, false, 200, 1000, false);
   LegacyTileRunnerCommandBatch placed = LegacyTileRunnerCommandEmitter.Create(
     8, 40, 21, 22, 1, true, true, false, 20, 120, 50, 0, false, 200, 1000, false);
+  LegacyTileRunnerCommandBatch type59Cleanup = LegacyTileRunnerCommandEmitter.Create(
+    8, 90, 25, 26, 59, false, false, true, 20, 80, 50, 0, false, 200, 1000, false,
+    currentLiquidAmount: 1);
   LegacyTileRunnerLiquidProjection waterProjection =
     LegacyTileRunnerLiquidProjectionPolicy.Resolve(0, false);
   LegacyTileRunnerLiquidProjection lavaProjection =
     LegacyTileRunnerLiquidProjectionPolicy.Resolve(0, true);
   IReadOnlyList<LegacyTileRunnerPassInput> passRecipes =
     LegacyTileRunnerPassInputDefinition.CreateDefaultRecipes();
+  if (!passRecipes.SequenceEqual(LegacyTileRunnerPassInputDefinition.CreateDefaultRecipes()))
+  {
+    throw new InvalidOperationException("TileRunner pass defaults were not stable across registration.");
+  }
+
+  try
+  {
+    ((IList<LegacyTileRunnerPassInput>)passRecipes)[0] = passRecipes[0];
+    throw new InvalidOperationException("TileRunner pass projection was mutable.");
+  }
+  catch (NotSupportedException)
+  {
+  }
+
   LegacyTileRunnerPassInputDefinition.Validate(passRecipes);
   LegacyTileRunnerPassInput surfaceDirtRecipe = passRecipes.Single(recipe =>
     recipe.RecipeName == "surface-dirt");
@@ -10852,13 +15393,33 @@ static void LegacyTileRunnerSideEffectSourceCheck()
   }
   IReadOnlyList<LegacyTileRunnerPassLoopDefinition> loopDefinitions =
     LegacyTileRunnerPassLoopContractDefinition.CreateDefault();
+  if (!loopDefinitions.SequenceEqual(LegacyTileRunnerPassLoopContractDefinition.CreateDefault()))
+  {
+    throw new InvalidOperationException("TileRunner loop defaults were not stable across registration.");
+  }
+
+  try
+  {
+    ((IList<LegacyTileRunnerPassLoopDefinition>)loopDefinitions)[0] = loopDefinitions[0];
+    throw new InvalidOperationException("TileRunner loop projection was mutable.");
+  }
+  catch (NotSupportedException)
+  {
+  }
+
   LegacyTileRunnerPassLoopDefinition surfaceLoop = loopDefinitions.Single(definition =>
     definition.RecipeName == "surface-dirt");
   LegacyTileRunnerPassLoopDefinition rockLoop = loopDefinitions.Single(definition =>
     definition.RecipeName == "rock-high-dirt");
+  LegacyTileRunnerPassLoopDefinition rockLayerLoop = loopDefinitions.Single(definition =>
+    definition.RecipeName == "rock-layer-stone");
+  LegacyTileRunnerPassLoopDefinition surfaceCaveLoop = loopDefinitions.Single(definition =>
+    definition.RecipeName == "surface-desert");
   if (surfaceLoop.CalculateInvocationCount(200, 150, remixWorld: false) != 5 ||
       rockLoop.CalculateInvocationCount(200, 150, remixWorld: false) != 135 ||
-      loopDefinitions.Count != 3)
+      rockLayerLoop.CalculateInvocationCount(200, 150, remixWorld: false) != 150 ||
+      surfaceCaveLoop.CalculateInvocationCount(200, 150, remixWorld: false) != 1 ||
+      loopDefinitions.Count != 5)
   {
     throw new InvalidOperationException(
       "TileRunner pass loop contract did not preserve source density cardinality.");
@@ -10976,7 +15537,8 @@ static void LegacyTileRunnerSideEffectSourceCheck()
       liquid.ClearsLiquidOnActivation || !positive.ClearsLiquidOnActivation ||
       !positive.ClearsLavaOnActivation || !positive.WritesSurfaceWall ||
       !aboveSurface.ClearsLiquidOnActivation || aboveSurface.WritesSurfaceWall ||
-      special.WritesSurfaceWall || !remixOcean.InjectsLiquidBeforeClear ||
+      special.WritesSurfaceWall || !type59LiquidCleanup.ClearsLiquidForType59 ||
+      !remixOcean.InjectsLiquidBeforeClear ||
       remixOcean.SetsLava || !remixOcean.SuppressedByRemixOceanDepth ||
       !lavaInjection.InjectsLiquidBeforeClear || lavaInjection.InjectedLiquidType != 0 ||
       !lavaInjection.SetsLava)
@@ -10991,7 +15553,9 @@ static void LegacyTileRunnerSideEffectSourceCheck()
       !emitted.SetsLava ||
       waterProjection.CommandLiquidType != 0 || lavaProjection.CommandLiquidType != 1 ||
       placed.TileCommand?.Kind != TileChangeKind.Place ||
-      placed.TileCommand?.WallType != 1 || placed.LiquidCommand?.Amount != 0)
+      placed.TileCommand?.WallType != 1 || placed.LiquidCommand?.Amount != 0 ||
+      type59Cleanup.TileCommand?.Kind != TileChangeKind.Place ||
+      type59Cleanup.LiquidCommand?.Amount != 0)
   {
     throw new InvalidOperationException(
       "TileRunner command emission did not preserve typed liquid and tile ordering contracts.");
@@ -11107,6 +15671,22 @@ static void LegacyTileRunnerDriftSourceCheck()
 
 static void LegacyTileRunnerDriftBatchSourceCheck()
 {
+  IReadOnlyList<int> thresholds = LegacyTileRunnerDriftBatchPolicy.RegisterDefaults();
+  if (thresholds.Count != 12 || thresholds[0] != 50 || thresholds[^1] != 900 ||
+      !thresholds.SequenceEqual(LegacyTileRunnerDriftBatchPolicy.RegisterDefaults()))
+  {
+    throw new InvalidOperationException("TileRunner drift thresholds were not stable or ordered.");
+  }
+
+  try
+  {
+    ((IList<int>)thresholds)[0] = thresholds[0];
+    throw new InvalidOperationException("TileRunner drift threshold projection was mutable.");
+  }
+  catch (NotSupportedException)
+  {
+  }
+
   int[] rolls = new int[12];
   LegacyTileRunnerDriftBatch batch = LegacyTileRunnerDriftBatchPolicy.Apply(
     0.0,
@@ -11151,6 +15731,3758 @@ static void LegacyTileRunnerDirectionSourceCheck()
 
   Console.WriteLine(
     "PASS: TileRunner final direction clamp preserves noYChange and type-59 branches");
+}
+
+static void LegacyCavePassPipelineSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyCavePassPipeline",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 17,
+    seedVariant: "default");
+  WorldGenerationRequest request = new(metadata, spawnX: 100, surfaceY: 40, rockLayerY: 80);
+  WorldGrid firstWorld = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  WorldGenerationStateComponent firstState = new(request.GenerationId);
+  List<TileChangeCommand> terrainCommands = new();
+  TerrainProfileComponent terrainProfile = new(request.SurfaceY, request.RockLayerY, metadata.Height - 1);
+  new TerrainBaseSystem().AppendCommands(
+    firstWorld.CreateSnapshot(metadata), request, terrainProfile, ref firstState, terrainCommands);
+  if (!new TileChangeCommitSystem().TryCommit(firstWorld, terrainCommands, out _))
+  {
+    throw new InvalidOperationException("Legacy cave pass fixture terrain could not be committed.");
+  }
+  List<TileChangeCommand> firstCommands = new();
+  new LegacyCavePassSystem().AppendCommands(
+    firstWorld.CreateSnapshot(metadata), request, ref firstState, firstCommands);
+  const int ExpectedInvocationCount = 297;
+  if (firstCommands.Count <= ExpectedInvocationCount || firstCommands.Any(command =>
+      !command.Source.StartsWith("worldgen.cave.", StringComparison.Ordinal)) ||
+      !firstCommands.Any(command => command.Source.StartsWith(
+        "worldgen.cave.DirtLayerCaves.", StringComparison.Ordinal)) ||
+      !firstCommands.Any(command => command.Source.StartsWith(
+        "worldgen.cave.RockLayerCaves.", StringComparison.Ordinal)) ||
+      !firstCommands.Any(command => command.Source.StartsWith(
+        "worldgen.cave.SurfaceCaves.", StringComparison.Ordinal)))
+  {
+    throw new InvalidOperationException("Legacy cave pass pipeline did not emit attributed commands.");
+  }
+
+  WorldGrid secondWorld = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  WorldGenerationStateComponent secondState = new(request.GenerationId);
+  List<TileChangeCommand> secondTerrainCommands = new();
+  new TerrainBaseSystem().AppendCommands(
+    secondWorld.CreateSnapshot(metadata), request, terrainProfile, ref secondState, secondTerrainCommands);
+  if (!new TileChangeCommitSystem().TryCommit(secondWorld, secondTerrainCommands, out _))
+  {
+    throw new InvalidOperationException("Legacy cave pass replay terrain could not be committed.");
+  }
+  List<TileChangeCommand> secondCommands = new();
+  new LegacyCavePassSystem().AppendCommands(
+    secondWorld.CreateSnapshot(metadata), request, ref secondState, secondCommands);
+  if (!firstCommands.SequenceEqual(secondCommands) || firstState.NextSequence != secondState.NextSequence)
+  {
+    throw new InvalidOperationException("Legacy cave pass pipeline was not deterministic.");
+  }
+
+  Console.WriteLine("PASS: legacy Dirt/Rock/Surface cave pass pipeline is deterministic and attributed");
+}
+
+static void LegacyWavyCavererSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyWavyCaverer",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 18,
+    seedVariant: "default");
+  LegacyWavyCavererInvocation carve = new(30, 50, 14.0, 0.5, 60, -1);
+  LegacyWavyCavererInvocation place = carve with { TileType = 1 };
+  WorldGenerationStateComponent firstState = new(18);
+  WorldGenerationStateComponent secondState = new(18);
+  List<TileChangeCommand> firstCommands = new();
+  List<TileChangeCommand> secondCommands = new();
+  WorldGridSnapshot snapshot = new WorldGrid(
+    metadata.Width,
+    metadata.Height,
+    initializeLegacyEmptyFrames: true).CreateSnapshot(metadata);
+
+  LegacyWavyCaverer.AppendCommands(
+    snapshot,
+    carve,
+    new LegacyPassRandomState(1456),
+    ref firstState,
+    firstCommands);
+  LegacyWavyCaverer.AppendCommands(
+    snapshot,
+    carve,
+    new LegacyPassRandomState(1456),
+    ref secondState,
+    secondCommands);
+  if (firstCommands.Count == 0 || !firstCommands.SequenceEqual(secondCommands) ||
+      firstCommands.Any(command =>
+        command.Kind != TileChangeKind.Kill || command.X < 20 ||
+        command.X >= metadata.Width - 20 || command.Y < 20 ||
+        command.Y >= metadata.Height - 20) ||
+      firstCommands.Any(command => command.Source != "worldgen.cave.WavyCaverer"))
+  {
+    throw new InvalidOperationException(
+      "WavyCaverer did not preserve deterministic kill commands and the source fluff boundary.");
+  }
+
+  WorldGenerationStateComponent placementState = new(18);
+  List<TileChangeCommand> placementCommands = new();
+  LegacyWavyCaverer.AppendCommands(
+    snapshot,
+    place,
+    new LegacyPassRandomState(1456),
+    ref placementState,
+    placementCommands);
+  if (placementCommands.Count == 0 || placementCommands.Any(command =>
+        command.Kind != TileChangeKind.Place || command.TileType != 1))
+  {
+    throw new InvalidOperationException("WavyCaverer did not preserve positive-type placement.");
+  }
+
+  Console.WriteLine("PASS: WavyCaverer preserves deterministic typed commands and fluff bounds");
+}
+
+static void LegacyCaveTunnelSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyCaveTunnel",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 19,
+    seedVariant: "default");
+  WorldGridSnapshot snapshot = new WorldGrid(
+    metadata.Width,
+    metadata.Height,
+    initializeLegacyEmptyFrames: true).CreateSnapshot(metadata);
+  LegacyCaveTunnelInvocation dry = new(50.0, 70.0, 0.6, 0.8, 12, 4, false);
+  WorldGenerationStateComponent firstState = new(19);
+  WorldGenerationStateComponent secondState = new(19);
+  List<TileChangeCommand> firstTiles = new();
+  List<TileChangeCommand> secondTiles = new();
+  List<LiquidChangeCommand> firstLiquids = new();
+  List<LiquidChangeCommand> secondLiquids = new();
+
+  LegacyCaveTunnelResult first = LegacyCaveTunnel.AppendCommands(
+    snapshot,
+    dry,
+    new LegacyPassRandomState(1456),
+    ref firstState,
+    firstTiles,
+    firstLiquids);
+  LegacyCaveTunnelResult second = LegacyCaveTunnel.AppendCommands(
+    snapshot,
+    dry,
+    new LegacyPassRandomState(1456),
+    ref secondState,
+    secondTiles,
+    secondLiquids);
+  if (first != second || firstTiles.Count == 0 || firstLiquids.Count != 0 ||
+      !firstTiles.SequenceEqual(secondTiles) || !secondLiquids.SequenceEqual(firstLiquids) ||
+      firstTiles.Any(command => command.Kind != TileChangeKind.Kill ||
+        command.Source != "worldgen.cave.digTunnel" ||
+        command.X < 0 || command.X >= metadata.Width ||
+        command.Y < 0 || command.Y >= metadata.Height))
+  {
+    throw new InvalidOperationException(
+      "digTunnel did not preserve deterministic, bounded dry carve commands.");
+  }
+
+  WorldGenerationStateComponent wetState = new(19);
+  List<TileChangeCommand> wetTiles = new();
+  List<LiquidChangeCommand> wetLiquids = new();
+  LegacyCaveTunnel.AppendCommands(
+    snapshot,
+    dry with { IsWet = true },
+    new LegacyPassRandomState(1456),
+    ref wetState,
+    wetTiles,
+    wetLiquids);
+  if (wetTiles.Count == 0 || wetLiquids.Count != wetTiles.Count ||
+      wetLiquids.Any(command => command.Amount != byte.MaxValue || command.Type != 0 ||
+        command.Source != "worldgen.cave.digTunnel") ||
+      wetTiles.Select(command => (command.X, command.Y)).SequenceEqual(
+        wetLiquids.Select(command => (command.X, command.Y))) == false)
+  {
+    throw new InvalidOperationException(
+      "digTunnel did not pair each wet carve with a typed water command.");
+  }
+
+  Console.WriteLine("PASS: digTunnel preserves deterministic dry and wet typed command output");
+}
+
+static void LegacyCavererSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyCaverer",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 20,
+    seedVariant: "default");
+  WorldGridSnapshot snapshot = new WorldGrid(
+    metadata.Width,
+    metadata.Height,
+    initializeLegacyEmptyFrames: true).CreateSnapshot(metadata);
+  WorldGenerationStateComponent firstState = new(20);
+  WorldGenerationStateComponent secondState = new(20);
+  List<TileChangeCommand> firstTiles = new();
+  List<TileChangeCommand> secondTiles = new();
+  List<LiquidChangeCommand> firstLiquids = new();
+  List<LiquidChangeCommand> secondLiquids = new();
+
+  LegacyCaverer.AppendCommands(
+    snapshot,
+    startX: 80,
+    startY: 100,
+    new LegacyPassRandomState(1456),
+    worldSurfaceY: 40,
+    rockLayerY: 80,
+    ref firstState,
+    firstTiles,
+    firstLiquids);
+  LegacyCaverer.AppendCommands(
+    snapshot,
+    startX: 80,
+    startY: 100,
+    new LegacyPassRandomState(1456),
+    worldSurfaceY: 40,
+    rockLayerY: 80,
+    ref secondState,
+    secondTiles,
+    secondLiquids);
+  if (firstTiles.Count == 0 || !firstTiles.SequenceEqual(secondTiles) ||
+      !firstLiquids.SequenceEqual(secondLiquids) ||
+      firstTiles.Any(command => !command.Source.StartsWith(
+        "worldgen.cave.", StringComparison.Ordinal)) ||
+      !firstTiles.Any(command => command.Source == "worldgen.cave.digTunnel") ||
+      firstLiquids.Any(command => command.Amount != byte.MaxValue || command.Type != 0 ||
+        command.Source != "worldgen.cave.digTunnel"))
+  {
+    throw new InvalidOperationException(
+      "Caverer did not preserve deterministic tunnel and TileRunner command output.");
+  }
+
+  Console.WriteLine("PASS: Caverer preserves deterministic typed tunnel output");
+}
+
+static void LegacySurfaceCavesCavererPassSourceCheck()
+{
+  if (LegacySurfaceCavesCavererPass.SurfaceCavesBeachAvoidance != 340 ||
+      LegacySurfaceCavesCavererPass.CalculateInvocationCount(4199) != 4 ||
+      LegacySurfaceCavesCavererPass.CalculateInvocationCount(4200) != 5)
+  {
+    throw new InvalidOperationException(
+      "SurfaceCaves Caverer density or beach avoidance diverged from source.");
+  }
+
+  WorldMetadata metadata = new(
+    "LegacySurfaceCavesCavererPass",
+    new WorldSeed(1456),
+    width: 200,
+    height: 600,
+    worldId: 21,
+    seedVariant: "default");
+  WorldGridSnapshot snapshot = new WorldGrid(
+    metadata.Width,
+    metadata.Height,
+    initializeLegacyEmptyFrames: true).CreateSnapshot(metadata);
+  WorldGenerationStateComponent state = new(21);
+  List<TileChangeCommand> tileCommands = new();
+  List<LiquidChangeCommand> liquidCommands = new();
+  LegacySurfaceCavesCavererPass.AppendCommands(
+    snapshot,
+    new LegacyTerrainRuntimeProfile(
+      WorldSurface: 150,
+      RockLayer: 250,
+      WorldSurfaceLow: 140,
+      WorldSurfaceHigh: 160,
+      RockLayerLow: 240,
+      RockLayerHigh: 260,
+      LeftBeachEnd: 20,
+      RightBeachStart: 180,
+      WaterLine: 300,
+      LavaLine: 500),
+    new LegacyPassRandomState(1456),
+    worldSurfaceY: 150,
+    rockLayerY: 250,
+    ref state,
+    tileCommands,
+    liquidCommands);
+  if (tileCommands.Count != 0 || liquidCommands.Count != 0)
+  {
+    throw new InvalidOperationException(
+      "SurfaceCaves Caverer pass did not skip an invalid legacy random range.");
+  }
+
+  Console.WriteLine("PASS: SurfaceCaves Caverer pass preserves density and invalid-range skip");
+}
+
+static void LegacyMountinaterSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyMountinater",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 22,
+    seedVariant: "default");
+  WorldGridSnapshot snapshot = new WorldGrid(
+    metadata.Width,
+    metadata.Height,
+    initializeLegacyEmptyFrames: true).CreateSnapshot(metadata);
+  WorldGenerationStateComponent firstState = new(22);
+  WorldGenerationStateComponent secondState = new(22);
+  List<TileChangeCommand> firstCommands = new();
+  List<TileChangeCommand> secondCommands = new();
+
+  LegacyMountinater.AppendCommands(
+    snapshot,
+    startX: 100,
+    startY: 70,
+    new LegacyPassRandomState(1456),
+    ref firstState,
+    firstCommands);
+  LegacyMountinater.AppendCommands(
+    snapshot,
+    startX: 100,
+    startY: 70,
+    new LegacyPassRandomState(1456),
+    ref secondState,
+    secondCommands);
+  if (firstCommands.Count == 0 || !firstCommands.SequenceEqual(secondCommands) ||
+      firstCommands.Any(command => command.Kind != TileChangeKind.Place ||
+        command.TileType != 0 || command.Source != "worldgen.cave.Mountinater" ||
+        command.X < 0 || command.X >= metadata.Width ||
+        command.Y < 0 || command.Y >= metadata.Height))
+  {
+    throw new InvalidOperationException(
+      "Mountinater did not preserve deterministic, bounded empty-tile placement commands.");
+  }
+
+  Console.WriteLine("PASS: Mountinater preserves deterministic bounded placement output");
+}
+
+static void LegacyMountainCavesPassSourceCheck()
+{
+  if (LegacyMountainCavesPass.CalculateInvocationCount(4999) != 4 ||
+      LegacyMountainCavesPass.CalculateInvocationCount(5000) != 5 ||
+      LegacyMountainCavesPass.IsCandidateXAccepted(2100, 4200, Array.Empty<int>()) ||
+      LegacyMountainCavesPass.IsCandidateXAccepted(1200, 4200, new[] { 1299 }) ||
+      !LegacyMountainCavesPass.IsCandidateXAccepted(1200, 4200, new[] { 1300 }))
+  {
+    throw new InvalidOperationException(
+      "MountainCaves density, spawn-center exclusion, or history spacing diverged from source.");
+  }
+
+  Console.WriteLine("PASS: MountainCaves preserves source density and candidate X vetoes");
+}
+
+static void LegacySurfaceCavesVerticalPassSourceCheck()
+{
+  IReadOnlyList<LegacySurfaceCavesVerticalRecipe> recipes =
+    LegacySurfaceCavesVerticalPass.CreateDefaultRecipes();
+  if (recipes.Count != 4 ||
+      LegacySurfaceCavesVerticalPass.CalculateInvocationCount(
+        LegacySurfaceCavesVerticalFamily.Narrow, 4200) != 8 ||
+      LegacySurfaceCavesVerticalPass.CalculateInvocationCount(
+        LegacySurfaceCavesVerticalFamily.Medium, 4200) != 2 ||
+      LegacySurfaceCavesVerticalPass.CalculateInvocationCount(
+        LegacySurfaceCavesVerticalFamily.Deep, 4200) != 1 ||
+      LegacySurfaceCavesVerticalPass.CalculateInvocationCount(
+        LegacySurfaceCavesVerticalFamily.Horizontal, 4200) != 1 ||
+      recipes.Any(recipe => recipe.TileType != -1 || recipe.AddTile))
+  {
+    throw new InvalidOperationException(
+      "SurfaceCaves vertical recipe densities or TileRunner mutation mode diverged from source.");
+  }
+
+  LegacySurfaceCavesVerticalRecipe horizontalRecipe = recipes.Single(recipe =>
+    recipe.Family == LegacySurfaceCavesVerticalFamily.Horizontal);
+  LegacyPassRandomState horizontalRandom = new(1456);
+  double horizontalSpeedX = LegacySurfaceCavesVerticalPass.DrawSpeedX(
+    horizontalRecipe,
+    horizontalRandom);
+  if (horizontalSpeedX != 0.0 || horizontalRandom.SampleCount != 0)
+  {
+    throw new InvalidOperationException(
+      "SurfaceCaves horizontal runner consumed a random speed-X sample.");
+  }
+
+  Console.WriteLine("PASS: SurfaceCaves vertical recipes preserve source densities and carve mode");
+}
+
+static void LegacySurfaceCavesVerticalTraversalSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacySurfaceCavesVertical",
+    new WorldSeed(1456),
+    width: 1000,
+    height: 150,
+    worldId: 23,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int x = 0; x < metadata.Width; x++)
+  {
+    _ = world.TrySetTile(x, 40, new WorldTile(IsActive: true, Type: 1));
+  }
+
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 50,
+    RockLayer: 90,
+    WorldSurfaceLow: 40,
+    WorldSurfaceHigh: 60,
+    RockLayerLow: 80,
+    RockLayerHigh: 100,
+    LeftBeachEnd: 10,
+    RightBeachStart: 990,
+    WaterLine: 100,
+    LavaLine: 125);
+  WorldGenerationStateComponent firstState = new(23);
+  WorldGenerationStateComponent secondState = new(23);
+  List<TileChangeCommand> firstCommands = new();
+  List<TileChangeCommand> secondCommands = new();
+  LegacySurfaceCavesVerticalPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(1456),
+    ref firstState,
+    firstCommands);
+  LegacySurfaceCavesVerticalPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(1456),
+    ref secondState,
+    secondCommands);
+  if (firstCommands.Count == 0 || !firstCommands.SequenceEqual(secondCommands) ||
+      firstCommands.Any(command => command.Kind != TileChangeKind.Kill ||
+        !command.Source.StartsWith("worldgen.cave.SurfaceCaves.vertical", StringComparison.Ordinal)))
+  {
+    throw new InvalidOperationException(
+      "SurfaceCaves vertical traversal did not preserve deterministic typed carve commands.");
+  }
+
+  Console.WriteLine("PASS: SurfaceCaves vertical traversal preserves deterministic typed carve output");
+}
+
+static void LegacyEvilReplacementQuerySourceCheck()
+{
+  LegacyEvilReplacementDefinitions defaults = LegacyEvilReplacementDefinitions.CreateDefault();
+  if (!defaults.DungeonTileTypes.SetEquals(new ushort[] { 41, 43, 44, 677, 678, 679 }) ||
+      !defaults.CrackedBrickTileTypes.SetEquals(new ushort[] { 481, 482, 483 }) ||
+      !defaults.DungeonWallTypes.SetEquals(new ushort[] { 7, 8, 9, 94, 95, 96, 97, 98, 99 }))
+  {
+    throw new InvalidOperationException(
+      "CanEvilReplace definitions did not preserve legacy dungeon and cracked-brick sets.");
+  }
+
+  LegacyEvilReplacementDefinitions definitions = new(
+    new HashSet<ushort> { 41 },
+    new HashSet<ushort> { 43 },
+    new HashSet<ushort> { 44 });
+  if (LegacyEvilReplacementQuery.CanReplace(new WorldTile(IsActive: true, Type: 41), definitions) ||
+      LegacyEvilReplacementQuery.CanReplace(new WorldTile(IsActive: true, Type: 43), definitions) ||
+      !LegacyEvilReplacementQuery.CanReplace(new WorldTile(IsActive: false, Type: 41), definitions) ||
+      LegacyEvilReplacementQuery.CanReplace(new WorldTile(IsActive: true, Type: 1, WallType: 44), definitions) ||
+      !LegacyEvilReplacementQuery.CanReplace(new WorldTile(IsActive: true, Type: 1, WallType: 2), definitions))
+  {
+    throw new InvalidOperationException(
+      "CanEvilReplace did not preserve active tile and wall exclusion semantics.");
+  }
+
+  Console.WriteLine("PASS: CanEvilReplace preserves frozen dungeon and cracked-brick exclusions");
+}
+
+static void LegacyChasmRunnerSidewaysSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyChasmRunnerSideways",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 24,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int x = 0; x < metadata.Width; x++)
+  {
+    for (int y = 60; y < metadata.Height; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(IsActive: true, Type: 1, WallType: 2));
+    }
+  }
+
+  _ = world.TrySetTile(110, 60, new WorldTile(IsActive: true, Type: 41, WallType: 2));
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  WorldGenerationStateComponent firstState = new(24);
+  WorldGenerationStateComponent secondState = new(24);
+  List<TileChangeCommand> firstCommands = new();
+  List<TileChangeCommand> secondCommands = new();
+  LegacyChasmRunnerSideways.AppendCommands(
+    snapshot,
+    new LegacyChasmRunnerSidewaysInvocation(100, 60, 1, 20, 0, 0, 1, false),
+    LegacyEvilReplacementDefinitions.CreateDefault(),
+    new LegacyPassRandomState(1456),
+    ref firstState,
+    firstCommands);
+  LegacyChasmRunnerSideways.AppendCommands(
+    snapshot,
+    new LegacyChasmRunnerSidewaysInvocation(100, 60, 1, 20, 0, 0, 1, false),
+    LegacyEvilReplacementDefinitions.CreateDefault(),
+    new LegacyPassRandomState(1456),
+    ref secondState,
+    secondCommands);
+  bool commandsMatch = firstCommands.SequenceEqual(secondCommands);
+  bool sourcesMatch = firstCommands.All(
+    command => command.Source == "worldgen.cave.ChasmRunnerSideways");
+  bool protectsDungeon = !firstCommands.Any(command => command.X == 110 && command.Y == 60);
+  bool writesEvilTile = firstCommands.Any(command =>
+    command.Kind == TileChangeKind.UpdateTileType && command.TileType == 0);
+  bool writesEvilWall = firstCommands.Any(command =>
+    command.Kind == TileChangeKind.SetWall && command.WallType == 1);
+  if (firstCommands.Count == 0 || !commandsMatch || !sourcesMatch || !protectsDungeon ||
+      !writesEvilTile || !writesEvilWall)
+  {
+    throw new InvalidOperationException(
+      $"ChasmRunnerSideways diverged: count={firstCommands.Count}, " +
+      $"same={commandsMatch}, source={sourcesMatch}, protected={protectsDungeon}, " +
+      $"tile={writesEvilTile}, wall={writesEvilWall}.");
+  }
+
+  Console.WriteLine("PASS: ChasmRunnerSideways preserves deterministic protected command output");
+}
+
+static void LegacyShadowOrbPlacementSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyShadowOrb",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 25,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  WorldGenerationStateComponent state = new(25);
+  List<StructurePlacementCommand> commands = new();
+  if (!LegacyShadowOrbPlacement.TryAppendIntent(
+        snapshot,
+        40,
+        30,
+        crimsonHeart: true,
+        ref state,
+        commands) ||
+      commands.Count != 1 ||
+      commands[0] != new StructurePlacementCommand(
+        0,
+        "worldgen.structure.ShadowOrb.CrimsonHeart",
+        39,
+        29))
+  {
+    throw new InvalidOperationException(
+      "AddShadowOrb did not emit the source-backed Crimson Heart placement intent.");
+  }
+
+  _ = world.TrySetTile(39, 29, new WorldTile(IsActive: true, Type: 31));
+  WorldGenerationStateComponent rejectedState = new(25);
+  List<StructurePlacementCommand> rejectedCommands = new();
+  if (LegacyShadowOrbPlacement.TryAppendIntent(
+        world.CreateSnapshot(metadata),
+        40,
+        30,
+        crimsonHeart: false,
+        ref rejectedState,
+        rejectedCommands) ||
+      rejectedCommands.Count != 0)
+  {
+    throw new InvalidOperationException(
+      "AddShadowOrb did not reject an existing active shadow orb footprint.");
+  }
+
+  Console.WriteLine("PASS: AddShadowOrb emits typed 2x2 structure intent with source guards");
+}
+
+static void LegacyChasmRunnerSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyChasmRunner",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 26,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int x = 0; x < metadata.Width; x++)
+  {
+    for (int y = 40; y < metadata.Height; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(IsActive: true, Type: 1, WallType: 2));
+    }
+  }
+
+  for (int x = 60; x <= 140; x++)
+  {
+    for (int y = 5; y <= 100; y++)
+    {
+      WorldTile tile = y % 3 == 0
+        ? new WorldTile(IsActive: true, Type: 1, WallType: 2)
+        : default;
+      _ = world.TrySetTile(x, y, tile);
+    }
+  }
+
+  WorldGenerationStateComponent state = new(26);
+  List<TileChangeCommand> commands = new();
+  List<StructurePlacementCommand> structures = new();
+  LegacyChasmRunner.AppendCommands(
+    world.CreateSnapshot(metadata),
+    new LegacyChasmRunnerInvocation(
+      100,
+      80,
+      1,
+      MakeOrb: true,
+      WorldSurface: 10,
+      RockLayer: 20,
+      EvilTileType: 25,
+      EvilWallType: 3),
+    LegacyEvilReplacementDefinitions.CreateDefault(),
+    TileDefinitionRegistry.CreateVersion4Base(),
+    new LegacyPassRandomState(1456),
+    ref state,
+    commands,
+    structures);
+  if (commands.Count == 0 || structures.Count != 1 ||
+      structures[0].DefinitionId != "worldgen.structure.ShadowOrb" ||
+      !commands.Any(command => command.TileType == 26 &&
+        command.Source == "worldgen.structure.Place3x2") ||
+      !commands.Any(command => command.Kind == TileChangeKind.UpdateTileType &&
+        command.TileType == 25 && command.IsActive == true) ||
+      !commands.Any(command => command.Kind == TileChangeKind.SetWall && command.WallType == 3) ||
+      !commands.All(command => command.Source.StartsWith("worldgen.cave.ChasmRunner", StringComparison.Ordinal) ||
+        command.Source == "worldgen.structure.Place3x2"))
+  {
+    throw new InvalidOperationException(
+      "ChasmRunner did not preserve carve, conversion, orb, and 3x2 pot output.");
+  }
+
+  Console.WriteLine("PASS: ChasmRunner emits bounded carve, conversion, orb, and 3x2 pot output");
+}
+
+static void LegacyPlace3x2SourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyPlace3x2",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 27,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int x = 59; x <= 61; x++)
+  {
+    _ = world.TrySetTile(x, 71, new WorldTile(IsActive: true, Type: 1));
+  }
+
+  WorldGenerationStateComponent state = new(27);
+  List<TileChangeCommand> commands = new();
+  if (!LegacyPlace3x2.TryAppendCommands(
+        world.CreateSnapshot(metadata),
+        TileDefinitionRegistry.CreateVersion4Base(),
+        60,
+        70,
+        26,
+        2,
+        ref state,
+        commands) ||
+      commands.Count != 6 ||
+      commands[0] != new TileChangeCommand(
+        0, 59, 69, TileChangeKind.Place, 26, FrameX: 108, FrameY: 0,
+        Source: "worldgen.structure.Place3x2") ||
+      commands[5] != new TileChangeCommand(
+        5, 61, 70, TileChangeKind.Place, 26, FrameX: 144, FrameY: 18,
+        Source: "worldgen.structure.Place3x2"))
+  {
+    throw new InvalidOperationException(
+      "Place3x2 did not emit the source-backed 3x2 style frame commands.");
+  }
+
+  _ = world.TrySetTile(60, 69, new WorldTile(IsActive: true, Type: 1));
+  WorldGenerationStateComponent rejectedState = new(27);
+  List<TileChangeCommand> rejectedCommands = new();
+  if (LegacyPlace3x2.TryAppendCommands(
+        world.CreateSnapshot(metadata),
+        TileDefinitionRegistry.CreateVersion4Base(),
+        60,
+        70,
+        26,
+        0,
+        ref rejectedState,
+        rejectedCommands) ||
+      rejectedCommands.Count != 0)
+  {
+    throw new InvalidOperationException("Place3x2 did not reject an active footprint tile.");
+  }
+
+  Console.WriteLine("PASS: Place3x2 emits framed 3x2 commands and rejects invalid footprint");
+}
+
+static void LegacyNoSurfaceTopFillSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyNoSurfaceTopFill",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 28,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 10, new WorldTile(IsActive: false, Type: 1));
+  _ = world.TrySetTile(11, 10, new WorldTile(IsActive: false, Type: 60));
+  _ = world.TrySetTile(12, 10, new WorldTile(IsActive: false, Type: 1, WallType: 7));
+  _ = world.TrySetTile(13, 10, new WorldTile(IsActive: false, Type: 41));
+  WorldGenerationStateComponent state = new(28);
+  List<TileChangeCommand> commands = new();
+  LegacyNoSurfaceTopFill.AppendCommands(
+    world.CreateSnapshot(metadata),
+    skyblockWorld: false,
+    LegacyEvilReplacementDefinitions.CreateDefault(),
+    new LegacyPassRandomState(1456),
+    ref state,
+    commands);
+  TileChangeCommand? ordinary = commands.SingleOrDefault(command => command.X == 10 && command.Y == 10);
+  TileChangeCommand? converted = commands.SingleOrDefault(command => command.X == 11 && command.Y == 10);
+  if (ordinary is not { TileType: 1, IsActive: true } ||
+      converted is not { TileType: 59, IsActive: true } ||
+      commands.Any(command => command.X is 12 or 13 && command.Y == 10))
+  {
+    throw new InvalidOperationException(
+      "DoNoSurfaceFillTheTop did not preserve dungeon and type conversion guards.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(28);
+  List<TileChangeCommand> skyblockCommands = new();
+  LegacyNoSurfaceTopFill.AppendCommands(
+    world.CreateSnapshot(metadata),
+    skyblockWorld: true,
+    LegacyEvilReplacementDefinitions.CreateDefault(),
+    new LegacyPassRandomState(1456),
+    ref skyblockState,
+    skyblockCommands);
+  if (skyblockCommands.Count != 0)
+  {
+    throw new InvalidOperationException("DoNoSurfaceFillTheTop did not skip skyblock worlds.");
+  }
+
+  Console.WriteLine("PASS: DoNoSurfaceFillTheTop preserves bounded dungeon and conversion guards");
+}
+
+static void LegacySurfaceIsInSpaceSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacySurfaceIsInSpace",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 29,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 10, new WorldTile(IsActive: false, Type: 1, WallType: 73));
+  _ = world.TrySetTile(11, 10, new WorldTile(IsActive: true, Type: 53, WallType: 73));
+  _ = world.TrySetTile(12, 10, new WorldTile(IsActive: true, Type: 1, WallType: 73));
+  _ = world.TrySetTile(13, 30, new WorldTile(IsActive: false, Type: 1, WallType: 73));
+  WorldGenerationStateComponent state = new(29);
+  List<TileChangeCommand> commands = new();
+  LegacySurfaceIsInSpace.AppendCommands(
+    world.CreateSnapshot(metadata),
+    worldSurfaceY: 30,
+    skyblockWorld: false,
+    ref state,
+    commands);
+  if (commands.Count != 2 ||
+      !commands.Any(command => command.X == 10 && command.Y == 10 && command.WallType == 0) ||
+      !commands.Any(command => command.X == 11 && command.Y == 10 && command.WallType == 0) ||
+      commands.Any(command => command.X is 12 or 13))
+  {
+    throw new InvalidOperationException(
+      "DoSurfaceIsInSpace did not preserve wall, tile, or world-surface guards.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(29);
+  List<TileChangeCommand> skyblockCommands = new();
+  LegacySurfaceIsInSpace.AppendCommands(
+    world.CreateSnapshot(metadata),
+    worldSurfaceY: 30,
+    skyblockWorld: true,
+    ref skyblockState,
+    skyblockCommands);
+  if (skyblockCommands.Count != 0)
+  {
+    throw new InvalidOperationException("DoSurfaceIsInSpace did not skip skyblock worlds.");
+  }
+
+  Console.WriteLine("PASS: DoSurfaceIsInSpace preserves bounded wall-clear guards");
+}
+
+static void LegacySurfaceIsMushroomsSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacySurfaceIsMushrooms",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 30,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 10, new WorldTile(IsActive: true, Type: 60, WallType: 15));
+  _ = world.TrySetTile(11, 10, new WorldTile(IsActive: true, Type: 0, WallType: 63));
+  _ = world.TrySetTile(12, 10, new WorldTile(IsActive: true, Type: 2, WallType: 205));
+  _ = world.TrySetTile(13, 10, new WorldTile(IsActive: true, Type: 1, WallType: 64));
+  _ = world.TrySetTile(14, 10, new WorldTile(IsActive: true, Type: 1, WallType: 1));
+  _ = world.TrySetTile(15, 35, new WorldTile(IsActive: true, Type: 60, WallType: 15));
+  WorldGenerationStateComponent state = new(30);
+  List<TileChangeCommand> commands = new();
+  LegacySurfaceIsMushrooms.AppendNormalModeCommands(
+    world.CreateSnapshot(metadata),
+    worldSurfaceY: 30,
+    skyblockWorld: false,
+    new LegacyPassRandomState(1456),
+    ref state,
+    commands);
+  if (!commands.Any(command => command.X == 10 && command.Y == 10 &&
+                               command.TileType == 70 &&
+                               command.Kind == TileChangeKind.UpdateTileType) ||
+      !commands.Any(command => command.X == 10 && command.Y == 10 &&
+                               command.WallType == 80 &&
+                               command.Kind == TileChangeKind.SetWall) ||
+      !commands.Any(command => command.X == 11 && command.Y == 10 &&
+                               command.TileType == 59) ||
+      !commands.Any(command => command.X == 11 && command.Y == 10 &&
+                               command.WallType == 80) ||
+      !commands.Any(command => command.X == 12 && command.Y == 10 &&
+                               command.TileType == 60) ||
+      !commands.Any(command => command.X == 12 && command.Y == 10 &&
+                               command.WallType == 80) ||
+      !commands.Any(command => command.X == 13 && command.Y == 10 &&
+                               command.WallType == 80) ||
+      commands.Any(command => command.X == 14 && command.Y == 10) ||
+      commands.Any(command => command.X == 15 && command.Y == 35))
+  {
+    throw new InvalidOperationException(
+      "DoSurfaceIsMushrooms did not preserve normal-mode conversion and bounds guards.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(30);
+  List<TileChangeCommand> skyblockCommands = new();
+  LegacySurfaceIsMushrooms.AppendNormalModeCommands(
+    world.CreateSnapshot(metadata),
+    worldSurfaceY: 30,
+    skyblockWorld: true,
+    new LegacyPassRandomState(1456),
+    ref skyblockState,
+    skyblockCommands);
+  if (skyblockCommands.Count != 0)
+  {
+    throw new InvalidOperationException("DoSurfaceIsMushrooms did not skip skyblock worlds.");
+  }
+
+  Console.WriteLine("PASS: DoSurfaceIsMushrooms preserves bounded normal-mode conversions");
+}
+
+static void LegacyWorldIsFrozenSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyWorldIsFrozen",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 31,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 10, new WorldTile(IsActive: true, Type: 1, WallType: 2));
+  _ = world.TrySetTile(11, 10, new WorldTile(IsActive: true, Type: 25));
+  _ = world.TrySetTile(12, 10, new WorldTile(IsActive: true, Type: 203));
+  _ = world.TrySetTile(13, 10, new WorldTile(IsActive: true, Type: 117));
+  _ = world.TrySetTile(14, 10, new WorldTile(IsActive: true, Type: 0));
+  _ = world.TrySetTile(15, 10, new WorldTile(IsActive: true, Type: 2));
+  _ = world.TrySetTile(16, 10, new WorldTile(IsActive: true, Type: 23));
+  _ = world.TrySetTile(17, 10, new WorldTile(IsActive: true, Type: 199));
+  _ = world.TrySetTile(18, 10, new WorldTile(IsActive: true, Type: 109));
+  _ = world.TrySetTile(19, 10, new WorldTile(IsActive: true, Type: 123));
+  _ = world.TrySetTile(20, 10, new WorldTile(IsActive: true, Type: 196, WallType: 59));
+  _ = world.TrySetTile(21, 10, new WorldTile(IsActive: true, Type: 999, WallType: 1));
+  _ = world.TrySetTile(22, 70, new WorldTile(IsActive: true, Type: 1, WallType: 2));
+  WorldGenerationStateComponent state = new(31);
+  List<TileChangeCommand> commands = new();
+  LegacyWorldIsFrozen.AppendCommands(
+    world.CreateSnapshot(metadata),
+    underworldLayerY: 80,
+    rockLayerY: 30,
+    activeSecretSeedCount: 0,
+    skyblockWorld: false,
+    new LegacyPassRandomState(1456),
+    ref state,
+    commands);
+  ushort[] expectedTileTypes = [161, 163, 200, 164, 147, 147, 147, 147, 147, 224, 460];
+  for (int index = 0; index < expectedTileTypes.Length; index++)
+  {
+    int x = 10 + index;
+    if (!commands.Any(command => command.X == x && command.Y == 10 &&
+                                 command.Kind == TileChangeKind.UpdateTileType &&
+                                 command.TileType == expectedTileTypes[index]))
+    {
+      throw new InvalidOperationException("DoWorldIsFrozen tile conversion mapping diverged.");
+    }
+  }
+
+  if (!commands.Any(command => command.X == 10 && command.Y == 10 && command.WallType == 40) ||
+      !commands.Any(command => command.X == 20 && command.Y == 10 && command.WallType == 40) ||
+      commands.Any(command => command.X == 21 && command.Y == 10) ||
+      commands.Any(command => command.X == 22 && command.Y == 70))
+  {
+    throw new InvalidOperationException(
+      "DoWorldIsFrozen did not preserve wall or upper-bound conversion guards.");
+  }
+
+  WorldGenerationStateComponent retargetedState = new(31);
+  List<TileChangeCommand> retargetedCommands = new();
+  LegacyWorldIsFrozen.AppendCommands(
+    world.CreateSnapshot(metadata),
+    underworldLayerY: 80,
+    rockLayerY: 30,
+    activeSecretSeedCount: 6,
+    skyblockWorld: false,
+    new LegacyPassRandomState(1456),
+    ref retargetedState,
+    retargetedCommands);
+  if (retargetedCommands.Any(command => command.X == 22 && command.Y == 70))
+  {
+    throw new InvalidOperationException("DoWorldIsFrozen did not retarget to the rock layer.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(31);
+  List<TileChangeCommand> skyblockCommands = new();
+  LegacyWorldIsFrozen.AppendCommands(
+    world.CreateSnapshot(metadata),
+    underworldLayerY: 80,
+    rockLayerY: 30,
+    activeSecretSeedCount: 0,
+    skyblockWorld: true,
+    new LegacyPassRandomState(1456),
+    ref skyblockState,
+    skyblockCommands);
+  if (skyblockCommands.Count != 0)
+  {
+    throw new InvalidOperationException("DoWorldIsFrozen did not skip skyblock worlds.");
+  }
+
+  Console.WriteLine("PASS: DoWorldIsFrozen preserves bounded layer and conversion rules");
+}
+
+static void LegacyHallowOnSurfaceSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyHallowOnSurface", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 32, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  ushort[] sourceTypes = [2, 161, 53, 396, 397];
+  ushort[] targetTypes = [109, 164, 116, 403, 402];
+  for (int index = 0; index < sourceTypes.Length; index++)
+  {
+    _ = world.TrySetTile(10 + index, 10, new WorldTile(true, sourceTypes[index]));
+  }
+
+  _ = world.TrySetTile(20, 10, new WorldTile(true, 1, WallType: 63));
+  _ = world.TrySetTile(21, 10, new WorldTile(true, 1, WallType: 187));
+  _ = world.TrySetTile(22, 10, new WorldTile(true, 1, WallType: 216));
+  _ = world.TrySetTile(23, 50, new WorldTile(true, 2));
+  WorldGenerationStateComponent state = new(32);
+  List<TileChangeCommand> commands = new();
+  LegacyHallowOnSurface.AppendCommands(
+    world.CreateSnapshot(metadata), 30, 80, false, false, false, false,
+    new LegacyPassRandomState(1456), ref state, commands);
+  for (int index = 0; index < targetTypes.Length; index++)
+  {
+    if (!commands.Any(command => command.X == 10 + index && command.Y == 10 &&
+                                 command.TileType == targetTypes[index]))
+    {
+      throw new InvalidOperationException("DoHallowOnSurface tile mapping diverged.");
+    }
+  }
+
+  if (!commands.Any(command => command.X == 20 && command.WallType == 70) ||
+      !commands.Any(command => command.X == 21 && command.WallType == 222) ||
+      !commands.Any(command => command.X == 22 && command.WallType == 219) ||
+      commands.Any(command => command.X == 23 && command.Y == 50))
+  {
+    throw new InvalidOperationException("DoHallowOnSurface wall or bound rules diverged.");
+  }
+
+  WorldGenerationStateComponent noSurfaceState = new(32);
+  List<TileChangeCommand> noSurfaceCommands = new();
+  LegacyHallowOnSurface.AppendCommands(
+    world.CreateSnapshot(metadata), 30, 80, true, true, true, false,
+    new LegacyPassRandomState(1456), ref noSurfaceState, noSurfaceCommands);
+  if (!noSurfaceCommands.Any(command => command.X == 20 && command.TileType == 117))
+  {
+    throw new InvalidOperationException("DoHallowOnSurface no-surface mapping diverged.");
+  }
+
+  Console.WriteLine("PASS: DoHallowOnSurface preserves bounded hallow conversions");
+}
+
+static void LegacyWorldInfectionPolicySourceCheck()
+{
+  LegacyWorldInfectionColumn normal = LegacyWorldInfectionPolicy.CreateColumn(
+    10, 200, 30, 80, 130, false, false, false, false, false, false,
+    new LegacyPassRandomState(1456));
+  LegacyWorldInfectionColumn noInfection = LegacyWorldInfectionPolicy.CreateColumn(
+    10, 200, 30, 80, 130, true, false, false, false, false, false,
+    new LegacyPassRandomState(1456));
+  LegacyWorldInfectionColumn combinedRules = LegacyWorldInfectionPolicy.CreateColumn(
+    10, 200, 30, 80, 130, true, true, false, false, false, false,
+    new LegacyPassRandomState(1456));
+  LegacyWorldInfectionColumn drunkCrimson = LegacyWorldInfectionPolicy.CreateColumn(
+    10, 200, 30, 80, 130, false, false, false, true, false, true,
+    new LegacyPassRandomState(1456));
+  if (normal.StartY is < 0 or > 2 || normal.ConversionType != 1 ||
+      noInfection.StartY is < 40 or > 42 ||
+      combinedRules.StartY is < 105 or > 107 ||
+      drunkCrimson.ConversionType != 4 ||
+      !LegacyWorldInfectionPolicy.ShouldConvertTiles(new WorldTile(true, 1)) ||
+      LegacyWorldInfectionPolicy.ShouldConvertTiles(new WorldTile(true, 60)) ||
+      !LegacyWorldInfectionPolicy.ShouldConvertWalls(new WorldTile(true, 1, WallType: 1)) ||
+      LegacyWorldInfectionPolicy.ShouldConvertWalls(new WorldTile(true, 1, WallType: 70)))
+  {
+    throw new InvalidOperationException("DoWorldIsInfected policy diverged from source rules.");
+  }
+
+  Console.WriteLine("PASS: DoWorldIsInfected preserves column and conversion exclusion rules");
+}
+
+static void LegacyWorldInfectionConversionCommandSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyWorldInfectionConversion",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 37,
+    seedVariant: "default");
+  LegacyWorldInfectionConversionInput input = new(
+    WorldSurfaceY: 30,
+    RockLayerY: 80,
+    UnderworldLayerY: 130,
+    NoInfection: false,
+    NoSurface: false,
+    HallowOnSurface: false,
+    DrunkWorld: false,
+    Crimson: false,
+    CrimsonLeft: false,
+    SkyblockWorld: false);
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  LegacyWorldInfectionColumn[] columns = new LegacyWorldInfectionColumn[3];
+  LegacyPassRandomState expectedRandom = new(1456);
+  for (int x = 0; x < columns.Length; x++)
+  {
+    columns[x] = LegacyWorldInfectionPolicy.CreateColumn(
+      x,
+      metadata.Width,
+      input.WorldSurfaceY,
+      input.RockLayerY,
+      input.UnderworldLayerY,
+      input.NoInfection,
+      input.NoSurface,
+      input.HallowOnSurface,
+      input.DrunkWorld,
+      input.Crimson,
+      input.CrimsonLeft,
+      expectedRandom);
+  }
+
+  _ = world.TrySetTile(
+    0,
+    columns[0].StartY,
+    new WorldTile(IsActive: true, Type: 60, WallType: 70));
+  _ = world.TrySetTile(
+    1,
+    columns[1].StartY,
+    new WorldTile(IsActive: true, Type: 60, WallType: 1));
+  _ = world.TrySetTile(
+    2,
+    columns[2].StartY,
+    new WorldTile(IsActive: true, Type: 1));
+
+  WorldGenerationStateComponent state = new(37, nextSequence: 100);
+  List<LegacyWorldInfectionConversionCommand> commands = new();
+  LegacyWorldInfectionConversionCommandEmitter.AppendCommands(
+    world.CreateSnapshot(metadata),
+    input,
+    new LegacyPassRandomState(1456),
+    ref state,
+    commands);
+  if (commands.Count != 2 ||
+      !commands.Any(command =>
+        command.X == 1 && command.Y == columns[1].StartY &&
+        command.ConversionType == 1 && !command.ConvertTiles && command.ConvertWalls) ||
+      !commands.Any(command =>
+        command.X == 2 && command.Y == columns[2].StartY &&
+        command.ConversionType == 1 && command.ConvertTiles && !command.ConvertWalls) ||
+      commands.Any(command => command.X == 0) ||
+      commands[0].Sequence != 100 || commands[1].Sequence != 101 ||
+      commands.Any(command => !command.IsValid(world.CreateSnapshot(metadata))))
+  {
+    throw new InvalidOperationException(
+      "DoWorldIsInfected did not emit bounded typed conversion commands.");
+  }
+
+  WorldGrid drunkWorld = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  LegacyPassRandomState drunkExpectedRandom = new(1456);
+  LegacyWorldInfectionColumn firstDrunkColumn = default;
+  LegacyWorldInfectionColumn lastDrunkColumn = default;
+  for (int x = 0; x < metadata.Width; x++)
+  {
+    LegacyWorldInfectionColumn column = LegacyWorldInfectionPolicy.CreateColumn(
+      x,
+      metadata.Width,
+      input.WorldSurfaceY,
+      input.RockLayerY,
+      input.UnderworldLayerY,
+      input.NoInfection,
+      input.NoSurface,
+      input.HallowOnSurface,
+      drunkWorld: true,
+      crimson: false,
+      crimsonLeft: true,
+      drunkExpectedRandom);
+    if (x == 0)
+    {
+      firstDrunkColumn = column;
+    }
+
+    if (x == metadata.Width - 1)
+    {
+      lastDrunkColumn = column;
+    }
+  }
+
+  _ = drunkWorld.TrySetTile(0, firstDrunkColumn.StartY, new WorldTile(true, 1));
+  _ = drunkWorld.TrySetTile(
+    metadata.Width - 1,
+    lastDrunkColumn.StartY,
+    new WorldTile(true, 1));
+  LegacyWorldInfectionConversionInput drunkInput = input with
+  {
+    DrunkWorld = true,
+    CrimsonLeft = true
+  };
+  List<LegacyWorldInfectionConversionCommand> drunkCommands = new();
+  WorldGenerationStateComponent drunkState = new(37);
+  LegacyWorldInfectionConversionCommandEmitter.AppendCommands(
+    drunkWorld.CreateSnapshot(metadata),
+    drunkInput,
+    new LegacyPassRandomState(1456),
+    ref drunkState,
+    drunkCommands);
+  if (!drunkCommands.Any(command =>
+        command.X == 0 && command.ConversionType == 4) ||
+      !drunkCommands.Any(command =>
+        command.X == metadata.Width - 1 && command.ConversionType == 1))
+  {
+    throw new InvalidOperationException(
+      "DoWorldIsInfected did not preserve drunk-world conversion-side selection.");
+  }
+
+  WorldGrid noInfectionWorld = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  LegacyWorldInfectionConversionInput noInfectionInput = input with
+  {
+    NoInfection = true,
+    NoSurface = true
+  };
+  LegacyWorldInfectionColumn noInfectionColumn = LegacyWorldInfectionPolicy.CreateColumn(
+    0,
+    metadata.Width,
+    noInfectionInput.WorldSurfaceY,
+    noInfectionInput.RockLayerY,
+    noInfectionInput.UnderworldLayerY,
+    noInfectionInput.NoInfection,
+    noInfectionInput.NoSurface,
+    noInfectionInput.HallowOnSurface,
+    noInfectionInput.DrunkWorld,
+    noInfectionInput.Crimson,
+    noInfectionInput.CrimsonLeft,
+    new LegacyPassRandomState(1456));
+  _ = noInfectionWorld.TrySetTile(
+    0,
+    noInfectionColumn.StartY - 1,
+    new WorldTile(true, 1));
+  _ = noInfectionWorld.TrySetTile(
+    0,
+    noInfectionColumn.StartY,
+    new WorldTile(true, 1));
+  List<LegacyWorldInfectionConversionCommand> noInfectionCommands = new();
+  WorldGenerationStateComponent noInfectionState = new(37);
+  LegacyWorldInfectionConversionCommandEmitter.AppendCommands(
+    noInfectionWorld.CreateSnapshot(metadata),
+    noInfectionInput,
+    new LegacyPassRandomState(1456),
+    ref noInfectionState,
+    noInfectionCommands);
+  if (!noInfectionCommands.Any(command =>
+        command.X == 0 && command.Y == noInfectionColumn.StartY) ||
+      noInfectionCommands.Any(command =>
+        command.X == 0 && command.Y == noInfectionColumn.StartY - 1))
+  {
+    throw new InvalidOperationException(
+      "DoWorldIsInfected did not preserve no-infection/no-surface start bounds.");
+  }
+
+  LegacyWorldInfectionConversionInput skyblockInput = input with { SkyblockWorld = true };
+  List<LegacyWorldInfectionConversionCommand> skyblockCommands = new();
+  WorldGenerationStateComponent skyblockState = new(37);
+  LegacyWorldInfectionConversionCommandEmitter.AppendCommands(
+    world.CreateSnapshot(metadata),
+    skyblockInput,
+    new LegacyPassRandomState(1456),
+    ref skyblockState,
+    skyblockCommands);
+  if (skyblockCommands.Count != 0)
+  {
+    throw new InvalidOperationException(
+      "DoWorldIsInfected did not skip skyblock worlds before emitting commands.");
+  }
+
+  Console.WriteLine(
+    "PASS: DoWorldIsInfected emits bounded typed conversion commands with source gates");
+}
+
+static void LegacyWorldInfectionConversionRegistryAndCommitSourceCheck()
+{
+  IReadOnlyList<LegacyWorldInfectionConversionRule> rules =
+    LegacyWorldInfectionConversionRegistry.RegisterDefaults();
+  if (rules.Count != 82 || rules.Any(rule => rule.SourceTypes is not FrozenSet<ushort>))
+  {
+    throw new InvalidOperationException(
+      "World infection conversion definitions were not frozen or complete.");
+  }
+
+  LegacyWorldInfectionConversionRule[] type1Tiles = rules
+    .Where(rule => rule.ConversionType == 1 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Tile)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type4Tiles = rules
+    .Where(rule => rule.ConversionType == 4 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Tile)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type1Walls = rules
+    .Where(rule => rule.ConversionType == 1 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Wall)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type4Walls = rules
+    .Where(rule => rule.ConversionType == 4 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Wall)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type2Tiles = rules
+    .Where(rule => rule.ConversionType == 2 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Tile)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type2Walls = rules
+    .Where(rule => rule.ConversionType == 2 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Wall)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type3Tiles = rules
+    .Where(rule => rule.ConversionType == 3 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Tile)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type3Walls = rules
+    .Where(rule => rule.ConversionType == 3 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Wall)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type8Tiles = rules
+    .Where(rule => rule.ConversionType == 8 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Tile)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type9Tiles = rules
+    .Where(rule => rule.ConversionType == 9 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Tile)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type10Tiles = rules
+    .Where(rule => rule.ConversionType == 10 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Tile)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type5Tiles = rules
+    .Where(rule => rule.ConversionType == 5 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Tile)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type5Walls = rules
+    .Where(rule => rule.ConversionType == 5 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Wall)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type6Tiles = rules
+    .Where(rule => rule.ConversionType == 6 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Tile)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  LegacyWorldInfectionConversionRule[] type6Walls = rules
+    .Where(rule => rule.ConversionType == 6 &&
+                   rule.Channel == LegacyWorldInfectionConversionChannel.Wall)
+    .OrderBy(rule => rule.Priority)
+    .ToArray();
+  if (rules.Count != 82 ||
+      !LegacyWorldInfectionConversionRegistry.TryGetTileRule(5, 2, out _) ||
+      !LegacyWorldInfectionConversionRegistry.TryGetWallRule(6, 1, out _) ||
+      !type5Tiles.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 0, 53, 397, 396, 69 }) ||
+      !type5Walls.Select(rule => rule.TargetType).SequenceEqual(new ushort[] { 187, 216 }) ||
+      !type6Tiles.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 0, 147, 161, 69 }) ||
+      !type6Walls.Select(rule => rule.TargetType).SequenceEqual(new ushort[] { 71, 40 }) ||
+      type5Tiles.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 5)) == false ||
+      type5Walls.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 2)) == false ||
+      type6Tiles.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 4)) == false ||
+      type6Walls.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 2)) == false)
+  {
+    throw new InvalidOperationException(
+      "Type-5/6 conversion rules were not admitted to the immutable registry.");
+  }
+  if (!type1Tiles.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 0, 25, 661, 23, 163, 112, 398, 400, 32 }) ||
+      !type4Tiles.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 0, 203, 662, 199, 200, 234, 399, 401, 352 }) ||
+      !type1Walls.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 69, 3, 217, 220, 188, 189, 190, 191 }) ||
+      !type4Walls.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 81, 83, 218, 221, 192, 193, 194, 195 }) ||
+      !type2Tiles.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 0, 117, 492, 109, 164, 116, 402, 403, 0 }) ||
+      !type2Walls.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 70, 28, 219, 222, 200, 201, 202, 203 }) ||
+      !type3Tiles.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 0, 70, 0 }) ||
+      !type3Walls.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 80 }) ||
+      !type8Tiles.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 211 }) ||
+      !type9Tiles.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 60, 59, 1, 53, 397, 396, 0 }) ||
+      !type10Tiles.Select(rule => rule.TargetType).SequenceEqual(
+        new ushort[] { 60, 1, 53, 397, 396, 0 }) ||
+      type1Tiles.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 9)) == false ||
+      type4Tiles.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 9)) == false ||
+      type1Walls.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 8)) == false ||
+      type4Walls.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 8)) == false ||
+      type2Tiles.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 9)) == false ||
+      type2Walls.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 8)) == false ||
+      type3Tiles.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 3)) == false ||
+      type3Walls.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 1)) == false ||
+      type8Tiles.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 1)) == false ||
+      type9Tiles.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 7)) == false ||
+      type10Tiles.Select(rule => rule.Priority).SequenceEqual(Enumerable.Range(0, 6)) == false)
+  {
+    throw new InvalidOperationException(
+      "World infection conversion target tables or priority order diverged from Version4.");
+  }
+
+  static void AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel channel,
+    LegacyWorldInfectionConversionCategory category,
+    params ushort[] expected)
+  {
+    IReadOnlySet<ushort> actual = LegacyWorldInfectionConversionRegistry.GetSourceTypes(
+      channel,
+      category);
+    if (!actual.SetEquals(expected) || actual is not FrozenSet<ushort>)
+    {
+      throw new InvalidOperationException(
+        $"World infection source set drifted for {channel}/{category}.");
+    }
+  }
+
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.Moss,
+    179, 180, 181, 182, 183, 381, 534, 536, 539, 625, 627);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.Stone,
+    1, 25, 117, 203);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.MossOrStone,
+    1, 25, 117, 179, 180, 181, 182, 183, 203, 381, 534, 536, 539, 625, 627);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.JungleGrass,
+    60, 661, 662);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.GolfGrass,
+    477, 492);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.Grass,
+    2, 23, 109, 199, 477, 492);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.Ice,
+    161, 163, 164, 200);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.Sand,
+    53, 112, 116, 234);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.HardenedSand,
+    397, 398, 399, 402);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.Sandstone,
+    396, 400, 401, 403);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.Thorn,
+    32, 69, 352, 655);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.Dirt,
+    0);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.Snow,
+    147);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.MushroomGrass,
+    60);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.ChlorophyteMushroomSurface,
+    59, 60);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.ChlorophyteGrass,
+    2, 23, 109, 199, 477, 492, 661, 662);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.ChlorophyteSecondaryGrass,
+    23, 199, 661, 662);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.ChlorophyteStone,
+    25, 203);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.ChlorophyteSand,
+    112, 234);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.ChlorophyteHardenedSand,
+    398, 399);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.ChlorophyteSandstone,
+    400, 401);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.ChlorophyteKill,
+    24, 32, 201, 205, 352, 636);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.Grass,
+    63, 64, 65, 66, 67, 68, 69, 70, 81, 264, 265, 268);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.Stone,
+    1, 3, 28, 61, 83, 185, 246, 248, 262, 269, 274, 349);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.Dirt,
+    2, 16);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.Snow,
+    40, 249);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.GlowingMushroomWall,
+    15, 64, 67, 247);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.Ice,
+    71, 266);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.HardenedSand,
+    216, 217, 218, 219, 304, 305, 306, 307);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.Sandstone,
+    187, 220, 221, 222, 275, 308, 309, 310);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.NewWall1,
+    188, 192, 200, 204, 212, 276, 280, 288, 292, 300);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.NewWall2,
+    189, 193, 201, 205, 213, 277, 281, 289, 293, 301);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.NewWall3,
+    190, 194, 202, 206, 214, 278, 282, 290, 294, 302);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.NewWall4,
+    191, 195, 203, 207, 215, 279, 283, 291, 295, 303);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.StoneFamilyWall,
+    1, 3, 28, 61, 71, 83, 185, 187, 188, 189, 190, 191, 192, 193, 194, 195, 200, 201,
+    202, 203, 204, 205, 206, 207, 212, 213, 214, 215, 220, 221, 222, 246, 248, 262,
+    266, 269, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 288, 289, 290, 291,
+    292, 293, 294, 295, 300, 301, 302, 303, 308, 309, 310, 349);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Wall,
+    LegacyWorldInfectionConversionCategory.HardenedSandDirtSnowWall,
+    2, 16, 40, 216, 217, 218, 219, 249, 304, 305, 306, 307);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.GrassSandSnowDirt,
+    0, 2, 23, 53, 109, 112, 116, 147, 199, 234, 477, 492);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.GrassSandHardenedSandSnowDirt,
+    0, 2, 23, 53, 109, 112, 116, 147, 199, 234, 397, 398, 399, 402, 477, 492);
+  AssertSourceTypes(
+    LegacyWorldInfectionConversionChannel.Tile,
+    LegacyWorldInfectionConversionCategory.MossStoneIceSandstone,
+    1, 25, 117, 161, 163, 164, 179, 180, 181, 182, 183, 200, 203, 381, 396, 400, 401,
+    403, 534, 536, 539, 625, 627);
+
+  if (LegacyWorldInfectionConversionRegistry.TryGetTileRule(3, 1, out _) ||
+      LegacyWorldInfectionConversionRegistry.TryGetWallRule(3, 63, out _) ||
+      !LegacyWorldInfectionConversionRegistry.TryGetTileRule(2, 477, out
+        LegacyWorldInfectionConversionRule golfRule) ||
+      golfRule.Category != LegacyWorldInfectionConversionCategory.GolfGrass ||
+      golfRule.TargetType != 492 ||
+      !LegacyWorldInfectionConversionRegistry.IsTileTarget(3, 70) ||
+      !LegacyWorldInfectionConversionRegistry.IsWallTarget(3, 80) ||
+      !LegacyWorldInfectionConversionRegistry.TryGetTileRule(
+        8,
+        59,
+        out LegacyWorldInfectionConversionRule type8Rule) ||
+      type8Rule.TargetType != 211 ||
+      !LegacyWorldInfectionConversionRegistry.TryGetTileRule(
+        9,
+        2,
+        out LegacyWorldInfectionConversionRule type9GrassRule) ||
+      type9GrassRule.TargetType != 60 ||
+      !LegacyWorldInfectionConversionRegistry.TryGetTileRule(
+        10,
+        23,
+        out LegacyWorldInfectionConversionRule type10GrassRule) ||
+      type10GrassRule.TargetType != 60 ||
+      LegacyWorldInfectionConversionRegistry.TryGetTileRule(10, 2, out _) ||
+      !LegacyWorldInfectionConversionRegistry.TryGetTileRule(
+        9,
+        24,
+        out LegacyWorldInfectionConversionRule type9KillRule) ||
+      !type9KillRule.IsDeferred ||
+      !LegacyWorldInfectionConversionRegistry.TryGetTileRule(
+        10,
+        636,
+        out LegacyWorldInfectionConversionRule type10KillRule) ||
+      !type10KillRule.IsDeferred ||
+      LegacyWorldInfectionConversionRegistry.IsTileTarget(9, 0) ||
+      LegacyWorldInfectionConversionRegistry.IsTileTarget(10, 0))
+  {
+    throw new InvalidOperationException(
+      "Conversion registry resolved an unsupported type or lost type-2 GolfGrass priority.");
+  }
+
+  WorldMetadata metadata = new(
+    "LegacyWorldInfectionConversionRegistry",
+    new WorldSeed(1456),
+    width: 200,
+    height: 150,
+    worldId: 137,
+    seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  List<LegacyWorldInfectionConversionCommand> intents = new();
+  Dictionary<(int X, int Y), WorldTile> expectedTiles = new();
+  int coordinateIndex = 0;
+  long intentSequence = 1000;
+  LegacyWorldInfectionConversionRule[] regularRules = rules
+    .Where(rule => !rule.IsDeferred && (rule.ConversionType is 1 or 4))
+    .OrderBy(rule => rule.ConversionType)
+    .ThenBy(rule => rule.Channel)
+    .ThenBy(rule => rule.Priority)
+    .ToArray();
+  foreach (LegacyWorldInfectionConversionRule rule in regularRules)
+  {
+    ushort sourceType = rule.SourceTypes
+      .Where(source => source != rule.TargetType)
+      .Order()
+      .First();
+    int x = 10 + coordinateIndex++;
+    int y = rule.Channel == LegacyWorldInfectionConversionChannel.Tile ? 10 : 20;
+    WorldTile original = rule.Channel == LegacyWorldInfectionConversionChannel.Tile
+      ? new WorldTile(
+        true,
+        sourceType,
+        LiquidAmount: 123,
+        LiquidType: 2,
+        FrameX: 44,
+        FrameY: 66,
+        HasWire: true,
+        HasWire2: true,
+        HasWire3: true,
+        HasWire4: true,
+        IsHalfBrick: true,
+        Slope: 2,
+        IsActuated: true,
+        TileColor: 7,
+        WallColor: 8,
+        IsInvisibleBlock: true,
+        IsInvisibleWall: true,
+        IsFullbrightBlock: true,
+        IsFullbrightWall: true)
+      : new WorldTile(
+        true,
+        1,
+        LiquidAmount: 124,
+        LiquidType: 1,
+        FrameX: 45,
+        FrameY: 67,
+        WallType: sourceType,
+        HasWire: true,
+        IsHalfBrick: true,
+        Slope: 1,
+        IsActuated: true,
+        TileColor: 9,
+        WallColor: 10,
+        IsInvisibleBlock: true,
+        IsInvisibleWall: true,
+        IsFullbrightBlock: true,
+        IsFullbrightWall: true);
+    _ = world.TrySetTile(x, y, original);
+    expectedTiles[(x, y)] = rule.Channel == LegacyWorldInfectionConversionChannel.Tile
+      ? original with { Type = rule.TargetType }
+      : original with { WallType = rule.TargetType };
+    intents.Add(new LegacyWorldInfectionConversionCommand(
+      intentSequence++,
+      x,
+      y,
+      rule.ConversionType,
+      ConvertTiles: rule.Channel == LegacyWorldInfectionConversionChannel.Tile,
+      ConvertWalls: rule.Channel == LegacyWorldInfectionConversionChannel.Wall));
+  }
+
+  int noOpTileX = 60;
+  int noOpWallX = 61;
+  _ = world.TrySetTile(noOpTileX, 30, new WorldTile(true, 203, FrameX: 11, FrameY: 12));
+  _ = world.TrySetTile(noOpWallX, 30, new WorldTile(true, 1, WallType: 81, FrameX: 13, FrameY: 14));
+  intents.Add(new LegacyWorldInfectionConversionCommand(
+    intentSequence++, noOpTileX, 30, 4, ConvertTiles: true, ConvertWalls: false));
+  intents.Add(new LegacyWorldInfectionConversionCommand(
+    intentSequence++, noOpWallX, 30, 4, ConvertTiles: false, ConvertWalls: true));
+
+  int torchX = 62;
+  int thornX = 63;
+  int unknownTileX = 64;
+  int inactiveTileX = 65;
+  int unknownWallX = 66;
+  int emptyWallX = 67;
+  _ = world.TrySetTile(torchX, 30, new WorldTile(true, 4, FrameY: 44));
+  _ = world.TrySetTile(thornX, 30, new WorldTile(true, 69));
+  _ = world.TrySetTile(unknownTileX, 30, new WorldTile(true, 999));
+  _ = world.TrySetTile(inactiveTileX, 30, new WorldTile(false, 1));
+  _ = world.TrySetTile(unknownWallX, 30, new WorldTile(true, 1, WallType: 999));
+  _ = world.TrySetTile(emptyWallX, 30, new WorldTile(true, 1));
+  intents.Add(new LegacyWorldInfectionConversionCommand(
+    intentSequence++, torchX, 30, 1, ConvertTiles: true, ConvertWalls: false));
+  intents.Add(new LegacyWorldInfectionConversionCommand(
+    intentSequence++, thornX, 30, 1, ConvertTiles: true, ConvertWalls: false));
+  intents.Add(new LegacyWorldInfectionConversionCommand(
+    intentSequence++, unknownTileX, 30, 1, ConvertTiles: true, ConvertWalls: false));
+  intents.Add(new LegacyWorldInfectionConversionCommand(
+    intentSequence++, inactiveTileX, 30, 1, ConvertTiles: true, ConvertWalls: false));
+  intents.Add(new LegacyWorldInfectionConversionCommand(
+    intentSequence++, unknownWallX, 30, 1, ConvertTiles: false, ConvertWalls: true));
+  intents.Add(new LegacyWorldInfectionConversionCommand(
+    intentSequence++, emptyWallX, 30, 1, ConvertTiles: false, ConvertWalls: true));
+
+  WorldGridSnapshot sourceSnapshot = world.CreateSnapshot(metadata);
+  WorldGrid replayWorld = WorldGrid.FromSnapshot(sourceSnapshot);
+  WorldGenerationStateComponent state = new(137, nextSequence: 5000);
+  WorldGenerationStateComponent replayState = new(137, nextSequence: 5000);
+  LegacyWorldInfectionConversionCommitResult reverseResult;
+  bool reverseCommitted = LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+    world,
+    sourceSnapshot,
+    intents.OrderByDescending(command => command.Sequence).ToArray(),
+    ref state,
+    out reverseResult);
+  LegacyWorldInfectionConversionCommitResult forwardResult;
+  bool forwardCommitted = LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+    replayWorld,
+    sourceSnapshot,
+    intents,
+    ref replayState,
+    out forwardResult);
+  if (!reverseCommitted || !forwardCommitted ||
+      reverseResult.AppliedTileCount != 14 ||
+      reverseResult.AppliedWallCount != 16 ||
+      reverseResult.NoOpCount != 2 ||
+      reverseResult.DeferredCount != 6 ||
+      state.NextSequence != 5030 ||
+      replayState.NextSequence != 5030 ||
+      !reverseResult.Deferred.SequenceEqual(forwardResult.Deferred))
+  {
+    throw new InvalidOperationException(
+      "World infection conversion commit was not deterministic or fully reported.");
+  }
+
+  foreach (KeyValuePair<(int X, int Y), WorldTile> expected in expectedTiles)
+  {
+    if (world.GetTile(expected.Key.X, expected.Key.Y) != expected.Value ||
+        replayWorld.GetTile(expected.Key.X, expected.Key.Y) != expected.Value)
+    {
+      throw new InvalidOperationException(
+        "World infection conversion did not preserve supported channel state.");
+    }
+  }
+
+  if (world.GetTile(torchX, 30).Type != 4 ||
+      world.GetTile(thornX, 30).Type != 69 ||
+      world.GetTile(unknownTileX, 30).Type != 999 ||
+      world.GetTile(inactiveTileX, 30).Type != 1 ||
+      world.GetTile(unknownWallX, 30).WallType != 999 ||
+      world.GetTile(emptyWallX, 30).WallType != 0 ||
+      world.GetTile(noOpTileX, 30).Type != 203 ||
+      world.GetTile(noOpWallX, 30).WallType != 81)
+  {
+    throw new InvalidOperationException(
+      "Deferred or already-targeted conversion channels were mutated unexpectedly.");
+  }
+
+  if (reverseResult.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.TorchFrameMutation) != 1 ||
+      reverseResult.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.ThornKillMutation) != 1 ||
+      reverseResult.Deferred.Count(deferred =>
+        deferred.Reason ==
+          LegacyWorldInfectionConversionDeferredReason.TileCategoryNotRegistered) != 1 ||
+      reverseResult.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.InactiveTile) != 1 ||
+      reverseResult.Deferred.Count(deferred =>
+        deferred.Reason ==
+          LegacyWorldInfectionConversionDeferredReason.WallCategoryNotRegistered) != 1 ||
+      reverseResult.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.EmptyWall) != 1)
+  {
+    throw new InvalidOperationException(
+      "Unsupported conversion channels did not retain structured Deferred reasons.");
+  }
+
+  WorldGrid staleWorld = WorldGrid.FromSnapshot(sourceSnapshot);
+  _ = staleWorld.TrySetTile(10, 10, staleWorld.GetTile(10, 10) with { TileColor = 99 });
+  WorldGenerationStateComponent staleState = new(137, nextSequence: 6000);
+  LegacyWorldInfectionConversionCommitResult staleResult;
+  if (LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+        staleWorld,
+        sourceSnapshot,
+        new[] { intents[0] },
+        ref staleState,
+        out staleResult) ||
+      staleResult.Succeeded ||
+      staleState.NextSequence != 6000)
+  {
+    throw new InvalidOperationException(
+      "Stale world infection conversion snapshots were not rejected atomically.");
+  }
+
+  LegacyWorldInfectionConversionCommitResult invalidResult;
+  WorldGenerationStateComponent invalidState = new(137, nextSequence: 6100);
+  if (LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+        replayWorld,
+        sourceSnapshot,
+        [new LegacyWorldInfectionConversionCommand(1, 1, 1, 7, true, false)],
+        ref invalidState,
+        out invalidResult) ||
+      invalidState.NextSequence != 6100)
+  {
+    throw new InvalidOperationException(
+      "Unsupported conversion type was not rejected before projection.");
+  }
+
+  WorldGrid type2World = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  LegacyWorldInfectionConversionRule[] type2RegularRules = rules
+    .Where(rule => rule.ConversionType == 2 && !rule.IsDeferred)
+    .OrderBy(rule => rule.Channel)
+    .ThenBy(rule => rule.Priority)
+    .ToArray();
+  List<LegacyWorldInfectionConversionCommand> type2Intents = new();
+  Dictionary<(int X, int Y), WorldTile> type2ExpectedTiles = new();
+  int type2Index = 0;
+  long type2IntentSequence = 700;
+  foreach (LegacyWorldInfectionConversionRule rule in type2RegularRules)
+  {
+    ushort sourceType = rule.SourceTypes
+      .Where(source => source != rule.TargetType)
+      .Order()
+      .First();
+    int x = 10 + type2Index++;
+    int y = rule.Channel == LegacyWorldInfectionConversionChannel.Tile ? 10 : 20;
+    WorldTile original = rule.Channel == LegacyWorldInfectionConversionChannel.Tile
+      ? new WorldTile(
+        true,
+        sourceType,
+        LiquidAmount: 91,
+        LiquidType: 2,
+        FrameX: 31,
+        FrameY: 41,
+        HasWire: true,
+        IsHalfBrick: true,
+        Slope: 3,
+        IsActuated: true,
+        TileColor: 12,
+        WallColor: 13,
+        IsInvisibleBlock: true,
+        IsInvisibleWall: true,
+        IsFullbrightBlock: true,
+        IsFullbrightWall: true)
+      : new WorldTile(
+        true,
+        1,
+        LiquidAmount: 92,
+        LiquidType: 1,
+        FrameX: 32,
+        FrameY: 42,
+        WallType: sourceType,
+        HasWire: true,
+        IsHalfBrick: true,
+        Slope: 2,
+        IsActuated: true,
+        TileColor: 14,
+        WallColor: 15,
+        IsInvisibleBlock: true,
+        IsInvisibleWall: true,
+        IsFullbrightBlock: true,
+        IsFullbrightWall: true);
+    _ = type2World.TrySetTile(x, y, original);
+    type2ExpectedTiles[(x, y)] = rule.Channel == LegacyWorldInfectionConversionChannel.Tile
+      ? original with { Type = rule.TargetType }
+      : original with { WallType = rule.TargetType };
+    type2Intents.Add(new LegacyWorldInfectionConversionCommand(
+      type2IntentSequence++,
+      x,
+      y,
+      2,
+      ConvertTiles: rule.Channel == LegacyWorldInfectionConversionChannel.Tile,
+      ConvertWalls: rule.Channel == LegacyWorldInfectionConversionChannel.Wall));
+  }
+
+  const int type2SelfTileX = 50;
+  const int type2SelfWallX = 51;
+  _ = type2World.TrySetTile(type2SelfTileX, 30, new WorldTile(true, 492));
+  _ = type2World.TrySetTile(
+    type2SelfWallX,
+    30,
+    new WorldTile(true, 1, WallType: 70));
+  type2Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type2IntentSequence++, type2SelfTileX, 30, 2, true, false));
+  type2Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type2IntentSequence++, type2SelfWallX, 30, 2, false, true));
+
+  const int type2TorchX = 52;
+  const int type2ThornX = 53;
+  const int type2ContextualX = 54;
+  const int type2NoContextX = 57;
+  _ = type2World.TrySetTile(type2TorchX, 30, new WorldTile(true, 4, FrameY: 66));
+  _ = type2World.TrySetTile(type2ThornX, 30, new WorldTile(true, 69));
+  _ = type2World.TrySetTile(type2ContextualX, 30, new WorldTile(true, 59));
+  _ = type2World.TrySetTile(type2ContextualX + 1, 30, new WorldTile(true, 109));
+  _ = type2World.TrySetTile(type2NoContextX, 30, new WorldTile(true, 59));
+  type2Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type2IntentSequence++, type2TorchX, 30, 2, true, false));
+  type2Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type2IntentSequence++, type2ThornX, 30, 2, true, false));
+  type2Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type2IntentSequence++, type2ContextualX, 30, 2, true, false));
+  type2Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type2IntentSequence++, type2NoContextX, 30, 2, true, false));
+
+  WorldGridSnapshot type2Snapshot = type2World.CreateSnapshot(metadata);
+  WorldGenerationStateComponent type2State = new(137, nextSequence: 8000);
+  LegacyWorldInfectionConversionCommitResult type2Result;
+  if (!LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+        type2World,
+        type2Snapshot,
+        type2Intents,
+        ref type2State,
+        out type2Result) ||
+      type2Result.AppliedTileCount != 7 ||
+      type2Result.AppliedWallCount != 8 ||
+      type2Result.NoOpCount != 3 ||
+      type2Result.DeferredCount != 3 ||
+      type2State.NextSequence != 8015 ||
+      type2Result.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.TorchFrameMutation) != 1 ||
+      type2Result.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.ThornKillMutation) != 1 ||
+      type2Result.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.AdjacentGrassCleanup) != 1)
+  {
+    throw new InvalidOperationException(
+      "Type-2 conversion did not preserve regular mappings or Deferred side effects.");
+  }
+
+  foreach (KeyValuePair<(int X, int Y), WorldTile> expected in type2ExpectedTiles)
+  {
+    if (type2World.GetTile(expected.Key.X, expected.Key.Y) != expected.Value)
+    {
+      throw new InvalidOperationException(
+        "Type-2 conversion did not preserve unrelated tile state.");
+    }
+  }
+
+  if (type2World.GetTile(type2SelfTileX, 30).Type != 492 ||
+      type2World.GetTile(type2SelfWallX, 30).WallType != 70 ||
+      type2World.GetTile(type2TorchX, 30).FrameY != 66 ||
+      type2World.GetTile(type2ThornX, 30).Type != 69 ||
+      type2World.GetTile(type2ContextualX, 30).Type != 59 ||
+      type2World.GetTile(type2NoContextX, 30).Type != 59)
+  {
+    throw new InvalidOperationException(
+      "Type-2 no-op or Deferred conversion paths mutated the world unexpectedly.");
+  }
+
+  WorldGrid type3World = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  ushort[] type3WallSources = [15, 64, 67, 247];
+  for (int index = 0; index < type3WallSources.Length; index++)
+  {
+    _ = type3World.TrySetTile(
+      10 + index,
+      20,
+      new WorldTile(
+        true,
+        1,
+        LiquidAmount: 75,
+        LiquidType: 1,
+        FrameX: 17,
+        FrameY: 27,
+        WallType: type3WallSources[index],
+        HasWire: true,
+        IsHalfBrick: true,
+        Slope: 1,
+        IsActuated: true,
+        TileColor: 16,
+        WallColor: 17,
+        IsInvisibleBlock: true,
+        IsInvisibleWall: true,
+        IsFullbrightBlock: true,
+        IsFullbrightWall: true));
+  }
+
+  _ = type3World.TrySetTile(
+    20,
+    20,
+    new WorldTile(
+      true,
+      60,
+      LiquidAmount: 76,
+      LiquidType: 2,
+      FrameX: 18,
+      FrameY: 28,
+      HasWire: true,
+      IsHalfBrick: true,
+      Slope: 2,
+      IsActuated: true,
+      TileColor: 18,
+      WallColor: 19,
+      IsInvisibleBlock: true,
+      IsInvisibleWall: true,
+      IsFullbrightBlock: true,
+      IsFullbrightWall: true));
+  const int type3SelfTileX = 21;
+  const int type3SelfWallX = 22;
+  const int type3TorchX = 23;
+  const int type3ThornX = 24;
+  _ = type3World.TrySetTile(type3SelfTileX, 20, new WorldTile(true, 70));
+  _ = type3World.TrySetTile(type3SelfWallX, 20, new WorldTile(true, 1, WallType: 80));
+  _ = type3World.TrySetTile(type3TorchX, 20, new WorldTile(true, 4, FrameY: 88));
+  _ = type3World.TrySetTile(type3ThornX, 20, new WorldTile(true, 69));
+
+  List<LegacyWorldInfectionConversionCommand> type3Intents = new();
+  long type3Sequence = 100;
+  for (int index = 0; index < type3WallSources.Length; index++)
+  {
+    type3Intents.Add(new LegacyWorldInfectionConversionCommand(
+      type3Sequence++,
+      10 + index,
+      20,
+      3,
+      ConvertTiles: false,
+      ConvertWalls: true));
+  }
+
+  type3Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type3Sequence++, 20, 20, 3, ConvertTiles: true, ConvertWalls: false));
+  type3Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type3Sequence++, type3SelfTileX, 20, 3, ConvertTiles: true, ConvertWalls: false));
+  type3Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type3Sequence++, type3SelfWallX, 20, 3, ConvertTiles: false, ConvertWalls: true));
+  type3Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type3Sequence++, type3TorchX, 20, 3, ConvertTiles: true, ConvertWalls: false));
+  type3Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type3Sequence++, type3ThornX, 20, 3, ConvertTiles: true, ConvertWalls: false));
+  WorldGridSnapshot type3Snapshot = type3World.CreateSnapshot(metadata);
+  WorldGenerationStateComponent type3State = new(137, nextSequence: 9000);
+  LegacyWorldInfectionConversionCommitResult type3Result;
+  if (!LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+        type3World,
+        type3Snapshot,
+        type3Intents,
+        ref type3State,
+        out type3Result) ||
+      type3Result.AppliedTileCount != 1 ||
+      type3Result.AppliedWallCount != 4 ||
+      type3Result.NoOpCount != 2 ||
+      type3Result.DeferredCount != 2 ||
+      type3State.NextSequence != 9005 ||
+      type3Result.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.TorchFrameMutation) != 1 ||
+      type3Result.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.ThornKillMutation) != 1)
+  {
+    throw new InvalidOperationException(
+      "Type-3 conversion did not preserve regular mappings or Deferred side effects.");
+  }
+
+  for (int index = 0; index < type3WallSources.Length; index++)
+  {
+    if (type3World.GetTile(10 + index, 20).WallType != 80 ||
+        type3World.GetTile(10 + index, 20).LiquidAmount != 75 ||
+        type3World.GetTile(10 + index, 20).IsActuated != true)
+    {
+      throw new InvalidOperationException(
+        "Type-3 wall conversion did not preserve unrelated tile state.");
+    }
+  }
+
+  if (type3World.GetTile(20, 20).Type != 70 ||
+      type3World.GetTile(type3SelfTileX, 20).Type != 70 ||
+      type3World.GetTile(type3SelfWallX, 20).WallType != 80 ||
+      type3World.GetTile(type3TorchX, 20).FrameY != 88 ||
+      type3World.GetTile(type3ThornX, 20).Type != 69)
+  {
+    throw new InvalidOperationException(
+      "Type-3 no-op or Deferred conversion paths mutated the world unexpectedly.");
+  }
+
+  LegacyWorldInfectionConversionRule[] type8To10RegularRules = rules
+    .Where(rule => rule.ConversionType is 8 or 9 or 10 && !rule.IsDeferred)
+    .OrderBy(rule => rule.ConversionType)
+    .ThenBy(rule => rule.Priority)
+    .ToArray();
+  if (type8To10RegularRules.Length != 12)
+  {
+    throw new InvalidOperationException(
+      "Type-8/9/10 regular conversion rule count diverged from Version4.");
+  }
+
+  WorldGrid type8To10World = new(
+    metadata.Width,
+    metadata.Height,
+    initializeLegacyEmptyFrames: true);
+  List<LegacyWorldInfectionConversionCommand> type8To10Intents = new();
+  Dictionary<(int X, int Y), WorldTile> type8To10ExpectedTiles = new();
+  int type8To10Index = 0;
+  long type8To10Sequence = 1200;
+  foreach (LegacyWorldInfectionConversionRule rule in type8To10RegularRules)
+  {
+    ushort sourceType = rule.SourceTypes
+      .Where(source => source != rule.TargetType)
+      .Order()
+      .First();
+    int x = 10 + type8To10Index++;
+    const int y = 50;
+    WorldTile original = new(
+      true,
+      sourceType,
+      LiquidAmount: 91,
+      LiquidType: 2,
+      FrameX: 31,
+      FrameY: 41,
+      WallType: (ushort)(100 + type8To10Index),
+      HasWire: true,
+      HasWire2: true,
+      IsHalfBrick: true,
+      Slope: 3,
+      IsActuated: true,
+      TileColor: 12,
+      WallColor: 13,
+      IsInvisibleBlock: true,
+      IsInvisibleWall: true,
+      IsFullbrightBlock: true,
+      IsFullbrightWall: true);
+    _ = type8To10World.TrySetTile(x, y, original);
+    type8To10ExpectedTiles[(x, y)] = original with { Type = rule.TargetType };
+    type8To10Intents.Add(new LegacyWorldInfectionConversionCommand(
+      type8To10Sequence++,
+      x,
+      y,
+      rule.ConversionType,
+      ConvertTiles: true,
+      ConvertWalls: false));
+  }
+
+  const int type8To10Self8X = 40;
+  const int type8To10Self9X = 41;
+  const int type8To10Self10X = 42;
+  const int type8To10Kill9X = 43;
+  const int type8To10Kill10X = 44;
+  const int type8To10WallOnlyX = 45;
+  _ = type8To10World.TrySetTile(type8To10Self8X, 50, new WorldTile(true, 211));
+  _ = type8To10World.TrySetTile(type8To10Self9X, 50, new WorldTile(true, 60));
+  _ = type8To10World.TrySetTile(type8To10Self10X, 50, new WorldTile(true, 1));
+  _ = type8To10World.TrySetTile(type8To10Kill9X, 50, new WorldTile(true, 24));
+  _ = type8To10World.TrySetTile(type8To10Kill10X, 50, new WorldTile(true, 636));
+  _ = type8To10World.TrySetTile(
+    type8To10WallOnlyX,
+    50,
+    new WorldTile(true, 1, WallType: 77, FrameX: 51, FrameY: 61));
+  type8To10Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type8To10Sequence++, type8To10Self8X, 50, 8, true, false));
+  type8To10Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type8To10Sequence++, type8To10Self9X, 50, 9, true, false));
+  type8To10Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type8To10Sequence++, type8To10Self10X, 50, 10, true, false));
+  type8To10Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type8To10Sequence++, type8To10Kill9X, 50, 9, true, false));
+  type8To10Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type8To10Sequence++, type8To10Kill10X, 50, 10, true, false));
+  type8To10Intents.Add(new LegacyWorldInfectionConversionCommand(
+    type8To10Sequence++, type8To10WallOnlyX, 50, 9, false, true));
+
+  WorldGridSnapshot type8To10Snapshot = type8To10World.CreateSnapshot(metadata);
+  WorldGrid type8To10ReplayWorld = WorldGrid.FromSnapshot(type8To10Snapshot);
+  WorldGenerationStateComponent type8To10State = new(137, nextSequence: 12000);
+  WorldGenerationStateComponent type8To10ReplayState =
+    new(137, nextSequence: 12000);
+  LegacyWorldInfectionConversionCommitResult type8To10ReverseResult;
+  bool type8To10ReverseCommitted = LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+    type8To10World,
+    type8To10Snapshot,
+    type8To10Intents.OrderByDescending(command => command.Sequence).ToArray(),
+    ref type8To10State,
+    out type8To10ReverseResult);
+  LegacyWorldInfectionConversionCommitResult type8To10ForwardResult;
+  bool type8To10ForwardCommitted = LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+    type8To10ReplayWorld,
+    type8To10Snapshot,
+    type8To10Intents,
+    ref type8To10ReplayState,
+    out type8To10ForwardResult);
+  if (!type8To10ReverseCommitted || !type8To10ForwardCommitted ||
+      type8To10ReverseResult.AppliedTileCount != 12 ||
+      type8To10ReverseResult.AppliedWallCount != 0 ||
+      type8To10ReverseResult.NoOpCount != 3 ||
+      type8To10ReverseResult.DeferredCount != 3 ||
+      type8To10State.NextSequence != 12012 ||
+      type8To10ReplayState.NextSequence != 12012 ||
+      !type8To10ReverseResult.Deferred.SequenceEqual(type8To10ForwardResult.Deferred) ||
+      type8To10ReverseResult.Deferred.Count(deferred =>
+        deferred.Reason ==
+          LegacyWorldInfectionConversionDeferredReason.ChlorophyteKillMutation) != 2 ||
+      type8To10ReverseResult.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.UnsupportedChannel) != 1)
+  {
+    throw new InvalidOperationException(
+      "Type-8/9/10 conversion did not preserve deterministic regular and Deferred paths.");
+  }
+
+  foreach (KeyValuePair<(int X, int Y), WorldTile> expected in type8To10ExpectedTiles)
+  {
+    if (type8To10World.GetTile(expected.Key.X, expected.Key.Y) != expected.Value ||
+        type8To10ReplayWorld.GetTile(expected.Key.X, expected.Key.Y) != expected.Value)
+    {
+      throw new InvalidOperationException(
+        "Type-8/9/10 conversion did not preserve unrelated tile state.");
+    }
+  }
+
+  if (type8To10World.GetTile(type8To10Self8X, 50).Type != 211 ||
+      type8To10World.GetTile(type8To10Self9X, 50).Type != 60 ||
+      type8To10World.GetTile(type8To10Self10X, 50).Type != 1 ||
+      type8To10World.GetTile(type8To10Kill9X, 50).Type != 24 ||
+      type8To10World.GetTile(type8To10Kill10X, 50).Type != 636 ||
+      type8To10World.GetTile(type8To10WallOnlyX, 50).Type != 1 ||
+      type8To10World.GetTile(type8To10WallOnlyX, 50).WallType != 77)
+  {
+    throw new InvalidOperationException(
+        "Type-8/9/10 no-op, KillTile, or wall-channel paths mutated unexpectedly.");
+  }
+
+  const int type5OpenX = 10;
+  const int type5SolidX = 11;
+  const int type5WallX = 12;
+  const int type5SelfX = 13;
+  const int type6GrassX = 14;
+  const int type6StoneX = 15;
+  const int type6WallX = 16;
+  const int type6WallSecondX = 17;
+  const int type5TorchX = 18;
+  const int type5ThornX = 19;
+  const int type6TorchX = 20;
+  const int type6ThornX = 21;
+  WorldGrid type5And6World = new(
+    metadata.Width,
+    metadata.Height,
+    initializeLegacyEmptyFrames: true);
+  WorldTile preservedState = new(
+    true,
+    2,
+    LiquidAmount: 73,
+    LiquidType: 2,
+    FrameX: 31,
+    FrameY: 41,
+    WallType: 91,
+    HasWire: true,
+    IsHalfBrick: true,
+    Slope: 3,
+    IsActuated: true,
+    TileColor: 12,
+    WallColor: 13,
+    IsInvisibleBlock: true,
+    IsInvisibleWall: true,
+    IsFullbrightBlock: true,
+    IsFullbrightWall: true);
+  _ = type5And6World.TrySetTile(type5OpenX, 50, preservedState);
+  _ = type5And6World.TrySetTile(type5SolidX, 50, preservedState with { WallType = 0 });
+  _ = type5And6World.TrySetTile(type5SolidX, 51, new WorldTile(true, 1));
+  _ = type5And6World.TrySetTile(type5WallX, 50, preservedState with { WallType = 1 });
+  _ = type5And6World.TrySetTile(type5SelfX, 50, preservedState with { Type = 53 });
+  _ = type5And6World.TrySetTile(type6GrassX, 50, preservedState with { WallType = 0 });
+  _ = type5And6World.TrySetTile(type6StoneX, 50, preservedState with { Type = 1, WallType = 0 });
+  _ = type5And6World.TrySetTile(type6WallX, 50, preservedState with { WallType = 1 });
+  _ = type5And6World.TrySetTile(type6WallSecondX, 50, preservedState with { WallType = 216 });
+  _ = type5And6World.TrySetTile(type5TorchX, 50, preservedState with { Type = 4 });
+  _ = type5And6World.TrySetTile(type5ThornX, 50, preservedState with { Type = 32 });
+  _ = type5And6World.TrySetTile(type6TorchX, 50, preservedState with { Type = 4 });
+  _ = type5And6World.TrySetTile(type6ThornX, 50, preservedState with { Type = 32 });
+  WorldGridSnapshot type5And6Snapshot = type5And6World.CreateSnapshot(metadata);
+  TileDefinitionRegistry type5And6Definitions = TileDefinitionRegistry.RegisterDefaults();
+  if (!SandFallEligibilityQuery.BlockBelowMakesSandConvertIntoHardenedSand(
+        type5And6Snapshot,
+        type5And6Definitions,
+        type5OpenX,
+        50) ||
+      SandFallEligibilityQuery.BlockBelowMakesSandConvertIntoHardenedSand(
+        type5And6Snapshot,
+        type5And6Definitions,
+        type5SolidX,
+        50))
+  {
+    throw new InvalidOperationException(
+      "Type-5 sand conversion did not preserve the below-tile support query.");
+  }
+
+  List<LegacyWorldInfectionConversionCommand> type5And6Intents =
+  [
+    new(2000, type5OpenX, 50, 5, ConvertTiles: true, ConvertWalls: false),
+    new(2001, type5SolidX, 50, 5, ConvertTiles: true, ConvertWalls: false),
+    new(2002, type5WallX, 50, 5, ConvertTiles: false, ConvertWalls: true),
+    new(2003, type5SelfX, 50, 5, ConvertTiles: true, ConvertWalls: false),
+    new(2004, type6GrassX, 50, 6, ConvertTiles: true, ConvertWalls: false),
+    new(2005, type6StoneX, 50, 6, ConvertTiles: true, ConvertWalls: false),
+    new(2006, type6WallX, 50, 6, ConvertTiles: false, ConvertWalls: true),
+    new(2007, type6WallSecondX, 50, 6, ConvertTiles: false, ConvertWalls: true),
+    new(2008, type5TorchX, 50, 5, ConvertTiles: true, ConvertWalls: false),
+    new(2009, type5ThornX, 50, 5, ConvertTiles: true, ConvertWalls: false),
+    new(2010, type6TorchX, 50, 6, ConvertTiles: true, ConvertWalls: false),
+    new(2011, type6ThornX, 50, 6, ConvertTiles: true, ConvertWalls: false)
+  ];
+  WorldGrid type5And6ReplayWorld = WorldGrid.FromSnapshot(type5And6Snapshot);
+  WorldGenerationStateComponent type5And6State = new(137, nextSequence: 12000);
+  WorldGenerationStateComponent type5And6ReplayState =
+    new(137, nextSequence: 12000);
+  LegacyWorldInfectionConversionCommitResult type5And6ReverseResult;
+  bool type5And6ReverseCommitted = LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+    type5And6World,
+    type5And6Snapshot,
+    type5And6Intents.OrderByDescending(command => command.Sequence).ToArray(),
+    ref type5And6State,
+    out type5And6ReverseResult);
+  LegacyWorldInfectionConversionCommitResult type5And6ForwardResult;
+  bool type5And6ForwardCommitted = LegacyWorldInfectionConversionCommitBoundary.TryCommit(
+    type5And6ReplayWorld,
+    type5And6Snapshot,
+    type5And6Intents,
+    ref type5And6ReplayState,
+    out type5And6ForwardResult);
+  if (!type5And6ReverseCommitted || !type5And6ForwardCommitted ||
+      type5And6ReverseResult.AppliedTileCount != 4 ||
+      type5And6ReverseResult.AppliedWallCount != 3 ||
+      type5And6ReverseResult.NoOpCount != 1 ||
+      type5And6ReverseResult.DeferredCount != 4 ||
+      type5And6State.NextSequence != 12007 ||
+      type5And6ReplayState.NextSequence != 12007 ||
+      !type5And6ReverseResult.Deferred.SequenceEqual(type5And6ForwardResult.Deferred) ||
+      type5And6ReverseResult.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.TorchFrameMutation) != 2 ||
+      type5And6ReverseResult.Deferred.Count(deferred =>
+        deferred.Reason == LegacyWorldInfectionConversionDeferredReason.ThornKillMutation) != 2)
+  {
+    throw new InvalidOperationException(
+      "Type-5/6 conversion did not preserve deterministic regular and Deferred paths.");
+  }
+
+  if (type5And6World.GetTile(type5OpenX, 50).Type != 397 ||
+      type5And6World.GetTile(type5SolidX, 50).Type != 53 ||
+      type5And6World.GetTile(type5WallX, 50).WallType != 187 ||
+      type5And6World.GetTile(type5SelfX, 50).Type != 53 ||
+      type5And6World.GetTile(type6GrassX, 50).Type != 147 ||
+      type5And6World.GetTile(type6StoneX, 50).Type != 161 ||
+      type5And6World.GetTile(type6WallX, 50).WallType != 71 ||
+      type5And6World.GetTile(type6WallSecondX, 50).WallType != 40 ||
+      type5And6World.GetTile(type5TorchX, 50).Type != 4 ||
+      type5And6World.GetTile(type5ThornX, 50).Type != 32 ||
+      type5And6World.GetTile(type6TorchX, 50).Type != 4 ||
+      type5And6World.GetTile(type6ThornX, 50).Type != 32)
+  {
+    throw new InvalidOperationException(
+      "Type-5/6 no-op or Deferred paths mutated the world unexpectedly.");
+  }
+
+  if (type5And6World.GetTile(type5OpenX, 50).LiquidAmount != preservedState.LiquidAmount ||
+      type5And6World.GetTile(type5OpenX, 50).FrameY != preservedState.FrameY ||
+      type5And6World.GetTile(type5OpenX, 50).HasWire != preservedState.HasWire ||
+      type5And6World.GetTile(type5WallX, 50).TileColor != preservedState.TileColor ||
+      type5And6World.GetTile(type6WallX, 50).IsFullbrightWall != preservedState.IsFullbrightWall)
+  {
+    throw new InvalidOperationException(
+      "Type-5/6 conversion did not preserve unrelated tile state.");
+  }
+
+  Console.WriteLine(
+    "PASS: World infection conversion registry and deterministic commit preserve type-5/6 " +
+    "mappings and Deferred paths");
+}
+
+static void LegacyNoInfectionPolicySourceCheck()
+{
+  if (LegacyNoInfectionPolicy.GetConversion(new WorldTile(true, 70, WallType: 80), false).HasWork ||
+      LegacyNoInfectionPolicy.GetConversion(new WorldTile(true, 203, WallType: 83), true).HasWork ||
+      LegacyNoInfectionPolicy.GetConversion(new WorldTile(true, 25, WallType: 3), true).HasWork ||
+      LegacyNoInfectionPolicy.GetConversion(new WorldTile(true, 1, WallType: 1), true) !=
+        new LegacyNoInfectionConversion(true, true))
+  {
+    throw new InvalidOperationException("DoNoInfection conversion flags diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoNoInfection preserves source conversion exclusion flags");
+}
+
+static void LegacyWorldIsFrozenFinishPolicySourceCheck()
+{
+  LegacyFrozenChestItemIntent chestIntent = default;
+  bool createdChestIntent = false;
+  for (int seed = 1; seed <= 32 && !createdChestIntent; seed++)
+  {
+    createdChestIntent = LegacyWorldIsFrozenFinishPolicy.TryCreateChestItemIntent(
+      [4, 2, 0, 0], new LegacyPassRandomState(seed), out chestIntent);
+  }
+
+  IReadOnlyList<LegacyFrozenNpcReplacementIntent> replacements =
+    LegacyWorldIsFrozenFinishPolicy.CreateNpcReplacementIntents(
+      [1, 22, 44, 22], 123, 456, false, true);
+  if (!createdChestIntent || chestIntent != new LegacyFrozenChestItemIntent(2, 1869) ||
+      !replacements.SequenceEqual(
+        [new LegacyFrozenNpcReplacementIntent(1, 142, 123, 456),
+         new LegacyFrozenNpcReplacementIntent(3, 142, 123, 456)]) ||
+      LegacyWorldIsFrozenFinishPolicy.CreateNpcReplacementIntents(
+        [22], 1, 2, true, true).Count != 0 ||
+      LegacyWorldIsFrozenFinishPolicy.CreateNpcReplacementIntents(
+        [22], 1, 2, false, false).Count != 0)
+  {
+    throw new InvalidOperationException("DoWorldIsFrozenFinish intents diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoWorldIsFrozenFinish preserves chest and NPC replacement intents");
+}
+
+static void LegacyBiomeCleanupSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyBiomeCleanup", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 33, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 10, new WorldTile(true, 147, WallType: 187));
+  _ = world.TrySetTile(11, 10, new WorldTile(true, 161, WallType: 216));
+  _ = world.TrySetTile(12, 10, new WorldTile(true, 1, WallType: 204));
+  _ = world.TrySetTile(4, 10, new WorldTile(true, 147, WallType: 187));
+  WorldGenerationStateComponent state = new(33);
+  List<TileChangeCommand> desertCommands = new();
+  LegacySurfaceIsDesertNoSurfaceCleanup.AppendCommands(
+    world.CreateSnapshot(metadata), false, ref state, desertCommands);
+  List<TileChangeCommand> spiderCommands = new();
+  LegacyNoSpiderCavesCleanup.AppendCommands(world.CreateSnapshot(metadata), ref state, spiderCommands);
+  if (!desertCommands.Any(command => command.X == 10 && command.TileType == 397) ||
+      !desertCommands.Any(command => command.X == 11 && command.TileType == 396) ||
+      desertCommands.Any(command => command.X == 4) ||
+      spiderCommands.Count != 1 || spiderCommands[0].X != 12 || spiderCommands[0].WallType != 62)
+  {
+    throw new InvalidOperationException("Biome cleanup command boundaries diverged from source.");
+  }
+
+  Console.WriteLine("PASS: desert and spider cleanup preserve bounded commands");
+}
+
+static void LegacyActuallyNoTrapsSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyActuallyNoTraps", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 34, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 10, new WorldTile(true, 48));
+  _ = world.TrySetTile(11, 10, new WorldTile(true, 232));
+  _ = world.TrySetTile(12, 10, new WorldTile(true, 1));
+  WorldGenerationStateComponent state = new(34);
+  List<TileChangeCommand> commands = new();
+  LegacyActuallyNoTraps.AppendHardModeCommands(
+    world.CreateSnapshot(metadata), true, ref state, commands);
+  if (commands.Count != 2 || commands.Any(command => command.Kind != TileChangeKind.Kill) ||
+      !commands.Select(command => command.X).Order().SequenceEqual([10, 11]))
+  {
+    throw new InvalidOperationException("DoActuallyNoTraps hard mode diverged from source.");
+  }
+
+  WorldGenerationStateComponent disabledState = new(34);
+  List<TileChangeCommand> disabledCommands = new();
+  LegacyActuallyNoTraps.AppendHardModeCommands(
+    world.CreateSnapshot(metadata), false, ref disabledState, disabledCommands);
+  if (disabledCommands.Count != 0)
+  {
+    throw new InvalidOperationException("DoActuallyNoTraps did not preserve hard-mode gate.");
+  }
+
+  Console.WriteLine("PASS: DoActuallyNoTraps preserves bounded hard-mode removals");
+}
+
+static void LegacyRainbowStaticRewriteSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyRainbowStaticRewrite", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 35, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 10, new WorldTile(true, 189));
+  _ = world.TrySetTile(11, 10, new WorldTile(true, 202));
+  _ = world.TrySetTile(12, 10, new WorldTile(true, 1, WallType: 82));
+  _ = world.TrySetTile(13, 10, new WorldTile(true, 1, WallType: 1));
+  WorldGenerationStateComponent state = new(35);
+  List<TileChangeCommand> commands = new();
+  LegacyRainbowStaticRewrite.AppendCommands(world.CreateSnapshot(metadata), ref state, commands);
+  if (!commands.Any(command => command.X == 10 && command.TileType == 719) ||
+      !commands.Any(command => command.X == 11 && command.TileType == 692) ||
+      !commands.Any(command => command.X == 12 && command.WallType == 346) ||
+      commands.Any(command => command.X == 13))
+  {
+    throw new InvalidOperationException("DoRainbowStuff static rewrite diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoRainbowStuff preserves static tile and wall rewrites");
+}
+
+static void LegacyPaintEverythingGraySourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyPaintEverythingGray", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 36, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(0, 0, new WorldTile(true, 7, TileColor: 1, WallColor: 2));
+  _ = world.TrySetTile(1, 0, new WorldTile(true, 63, TileColor: 3, WallColor: 4));
+  _ = world.TrySetTile(2, 0, new WorldTile(true, 178, TileColor: 5, WallColor: 6));
+  _ = world.TrySetTile(3, 0, new WorldTile(true, 1, TileColor: 7, WallColor: 8));
+  _ = world.TrySetTile(0, 6, new WorldTile(true, 7, TileColor: 9, WallColor: 10));
+  WorldGenerationStateComponent treasureState = new(36);
+  List<TileChangeCommand> treasureCommands = new();
+  LegacyPaintEverythingGray.AppendCommands(
+    world.CreateSnapshot(metadata),
+    worldSurfaceY: 3,
+    useWhitePaint: false,
+    justTheSurface: true,
+    justTreasure: true,
+    oreTileTypes: new HashSet<ushort> { 7 },
+    gemTileTypes: new HashSet<ushort> { 63 },
+    new LegacyPassRandomState(1456),
+    ref treasureState,
+    treasureCommands);
+  if (treasureCommands.Count != 3 ||
+      treasureCommands.Any(command => command.Kind != TileChangeKind.SetPaint ||
+                                      command.TileColor != 27 ||
+                                      command.WallColor is not null) ||
+      !treasureCommands.Select(command => command.X).Order().SequenceEqual([0, 1, 2]) ||
+      !new TileChangeCommitSystem().TryCommit(world, treasureCommands, out _) ||
+      world.GetTile(0, 0).TileColor != 27 || world.GetTile(0, 0).WallColor != 2 ||
+      world.GetTile(1, 0).TileColor != 27 || world.GetTile(1, 0).WallColor != 4 ||
+      world.GetTile(2, 0).TileColor != 27 || world.GetTile(2, 0).WallColor != 6 ||
+      world.GetTile(3, 0).TileColor != 7 || world.GetTile(0, 6).TileColor != 9)
+  {
+    throw new InvalidOperationException(
+      "DoPaintEverythingGray treasure and surface boundaries diverged from source.");
+  }
+
+  WorldGenerationStateComponent fullState = new(37);
+  List<TileChangeCommand> fullCommands = new();
+  LegacyPaintEverythingGray.AppendCommands(
+    world.CreateSnapshot(metadata),
+    worldSurfaceY: 3,
+    useWhitePaint: true,
+    justTheSurface: false,
+    justTreasure: false,
+    oreTileTypes: new HashSet<ushort>(),
+    gemTileTypes: new HashSet<ushort>(),
+    new LegacyPassRandomState(1456),
+    ref fullState,
+    fullCommands);
+  if (fullCommands.Count != metadata.Width * metadata.Height ||
+      fullCommands.Any(command => command.TileColor != 26 || command.WallColor != 26))
+  {
+    throw new InvalidOperationException(
+      "DoPaintEverythingGray full white paint commands diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoPaintEverythingGray preserves bounded paint command semantics");
+}
+
+static void LegacyPaintEverythingNegativeSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyPaintEverythingNegative", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 38, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 50, new WorldTile(true, 100, TileColor: 1));
+  _ = world.TrySetTile(10, 51, new WorldTile(true, 200, TileColor: 2));
+  _ = world.TrySetTile(10, 52, new WorldTile(true, 19, WallType: 300, TileColor: 3));
+  _ = world.TrySetTile(10, 53, new WorldTile(true, 400, TileColor: 4));
+  _ = world.TrySetTile(10, 54, new WorldTile(true, 1, WallType: 73, WallColor: 5));
+  _ = world.TrySetTile(10, 55, new WorldTile(true, 192, TileColor: 6));
+  _ = world.TrySetTile(10, 56, new WorldTile(true, 52, TileColor: 7));
+  _ = world.TrySetTile(10, 57, new WorldTile(true, 382, TileColor: 8));
+  _ = world.TrySetTile(10, 58, new WorldTile(false, 187, TileColor: 9));
+  _ = world.TrySetTile(10, 59, new WorldTile(true, 186, TileColor: 10));
+  _ = world.TrySetTile(10, 60, new WorldTile(true, 384, TileColor: 11));
+  _ = world.TrySetTile(10, 61, new WorldTile(true, 1, WallType: 60, WallColor: 12));
+  _ = world.TrySetTile(10, 70, new WorldTile(true, 1, TileColor: 13, WallColor: 14));
+  LegacyPaintEverythingNegativeProfile profile = new(
+    new HashSet<ushort> { 100 },
+    new HashSet<ushort> { 200 },
+    new HashSet<ushort> { 300 },
+    new HashSet<ushort> { 400 },
+    new HashSet<ushort> { 52, 382, 62 },
+    new HashSet<ushort> { 186, 187 });
+  WorldGenerationStateComponent selectedState = new(38);
+  List<TileChangeCommand> selectedCommands = new();
+  LegacyPaintEverythingNegative.AppendCommands(
+    world.CreateSnapshot(metadata),
+    worldSurfaceY: 40,
+    justUnderground: false,
+    justSomeThings: true,
+    profile,
+    new LegacyPassRandomState(1456),
+    ref selectedState,
+    selectedCommands);
+  if (!new TileChangeCommitSystem().TryCommit(world, selectedCommands, out _) ||
+      world.GetTile(10, 50).TileColor != 30 ||
+      world.GetTile(10, 51).TileColor != 30 ||
+      world.GetTile(10, 52).TileColor != 30 ||
+      world.GetTile(10, 52).WallColor != 30 ||
+      world.GetTile(10, 53).TileColor != 30 ||
+      world.GetTile(10, 54).WallColor != 30 ||
+      world.GetTile(10, 55).TileColor != 30 ||
+      world.GetTile(10, 56).TileColor != 30 ||
+      world.GetTile(10, 57).TileColor != 30 ||
+      world.GetTile(10, 58).TileColor != 30 ||
+      world.GetTile(10, 59).TileColor != 30 ||
+      world.GetTile(10, 60).TileColor != 30 ||
+      world.GetTile(10, 61).WallColor != 30 ||
+      world.GetTile(10, 70).TileColor != 13 ||
+      world.GetTile(10, 70).WallColor != 14)
+  {
+    throw new InvalidOperationException(
+      "DoPaintEverythingNegative selective type and neighbor paint behavior diverged.");
+  }
+
+  int expectedFirstY = 40 - new LegacyPassRandomState(1456).Next(3);
+  WorldGenerationStateComponent fullState = new(39);
+  List<TileChangeCommand> fullCommands = new();
+  LegacyPaintEverythingNegative.AppendCommands(
+    world.CreateSnapshot(metadata),
+    worldSurfaceY: 40,
+    justUnderground: true,
+    justSomeThings: false,
+    profile,
+    new LegacyPassRandomState(1456),
+    ref fullState,
+    fullCommands);
+  if (fullCommands.Count == 0 || fullCommands[0].X != 0 ||
+      fullCommands[0].Y != expectedFirstY ||
+      fullCommands.Any(command => command.TileColor != 30 || command.WallColor != 30))
+  {
+    throw new InvalidOperationException(
+      "DoPaintEverythingNegative full underground paint behavior diverged.");
+  }
+
+  Console.WriteLine("PASS: DoPaintEverythingNegative preserves bounded paint command semantics");
+}
+
+static void LegacyCoatEverythingEchoSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyCoatEverythingEcho", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 40, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 10, new WorldTile(true, 48));
+  _ = world.TrySetTile(11, 10, new WorldTile(true, 1, WallType: 2));
+  _ = world.TrySetTile(12, 10, new WorldTile(true, 1, WallType: 2));
+  IReadOnlySet<ushort> solidTypes = new HashSet<ushort> { 1 };
+  LegacyCoatEverythingEchoProfile profile = new(
+    new HashSet<ushort> { 48 },
+    new HashSet<ushort>(),
+    solidTypes);
+  WorldGenerationStateComponent state = new(40);
+  List<TileChangeCommand> commands = new();
+  LegacyCoatEverythingEcho.AppendCommands(
+    world.CreateSnapshot(metadata), false, false, false, profile, ref state, commands);
+  if (!commands.Any(command => command.X == 10 && command.IsInvisibleBlock == true) ||
+      !commands.Any(command => command.X == 11 && command.IsInvisibleWall == true) ||
+      !new TileChangeCommitSystem().TryCommit(world, commands, out _) ||
+      !world.GetTile(10, 10).IsInvisibleBlock || !world.GetTile(11, 10).IsInvisibleWall)
+  {
+    throw new InvalidOperationException("DoCoatEverythingEcho selective coating diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoCoatEverythingEcho preserves bounded coating command semantics");
+}
+
+static void LegacyCoatEverythingIlluminantSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyCoatEverythingIlluminant", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 41, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 10, new WorldTile(true, 12));
+  _ = world.TrySetTile(11, 10, new WorldTile(true, 1, IsInvisibleBlock: true, IsInvisibleWall: true));
+  LegacyCoatEverythingIlluminantProfile profile = new(new HashSet<ushort> { 12 });
+  WorldGenerationStateComponent state = new(41);
+  List<TileChangeCommand> commands = new();
+  LegacyCoatEverythingIlluminant.AppendCommands(
+    world.CreateSnapshot(metadata), true, false, profile, new LegacyPassRandomState(1456),
+    ref state, commands);
+  if (!new TileChangeCommitSystem().TryCommit(world, commands, out _) ||
+      !world.GetTile(10, 10).IsFullbrightBlock || world.GetTile(10, 10).IsFullbrightWall)
+  {
+    throw new InvalidOperationException(
+      "DoCoatEverythingIlluminant selective coating diverged from source.");
+  }
+
+  LegacyPassRandomState expectedRandom = new(1456);
+  bool expectedRandomSpot = false;
+  for (int x = 0; x < metadata.Width; x++)
+  {
+    for (int y = 0; y < metadata.Height; y++)
+    {
+      bool selected = expectedRandom.Next(2) == 0;
+      if (x == 11 && y == 10)
+      {
+        expectedRandomSpot = selected;
+      }
+    }
+  }
+
+  WorldGenerationStateComponent randomState = new(42);
+  List<TileChangeCommand> randomCommands = new();
+  LegacyCoatEverythingIlluminant.AppendCommands(
+    world.CreateSnapshot(metadata), false, true, profile, new LegacyPassRandomState(1456),
+    ref randomState, randomCommands);
+  if (!new TileChangeCommitSystem().TryCommit(world, randomCommands, out _) ||
+      world.GetTile(11, 10).IsFullbrightBlock != expectedRandomSpot ||
+      world.GetTile(11, 10).IsFullbrightWall != expectedRandomSpot ||
+      world.GetTile(11, 10).IsInvisibleBlock == expectedRandomSpot ||
+      world.GetTile(11, 10).IsInvisibleWall == expectedRandomSpot)
+  {
+    throw new InvalidOperationException(
+      "DoCoatEverythingIlluminant random coating diverged from source RNG replay.");
+  }
+
+  Console.WriteLine("PASS: DoCoatEverythingIlluminant preserves bounded coating command semantics");
+}
+
+static void LegacyNoSurfacePolicySourceCheck()
+{
+  LegacyNoSurfaceActionPlan noAction = LegacyNoSurfacePolicy.Create(false, true, false, 8400);
+  LegacyNoSurfaceActionPlan spawnAction = LegacyNoSurfacePolicy.Create(false, false, false, 8400);
+  LegacyNoSurfaceActionPlan alreadyRandomized = LegacyNoSurfacePolicy.Create(false, false, true, 8400);
+  LegacyNoSurfaceActionPlan skyblock = LegacyNoSurfacePolicy.Create(true, false, false, 8400);
+  if (noAction.UndergroundMeteorAttempts != 8 || noAction.RandomizeSpawn ||
+      noAction.PlaceTorchesAroundSpawn || spawnAction.UndergroundMeteorAttempts != 8 ||
+      !spawnAction.RandomizeSpawn || !spawnAction.PlaceTorchesAroundSpawn ||
+      alreadyRandomized.RandomizeSpawn || alreadyRandomized.PlaceTorchesAroundSpawn ||
+      skyblock.UndergroundMeteorAttempts != 0 || skyblock.RandomizeSpawn)
+  {
+    throw new InvalidOperationException("DoNoSurface action policy diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoNoSurface preserves bounded meteor and spawn action policy");
+}
+
+static void LegacyErrorWorldRandomBlockSourceCheck()
+{
+  IReadOnlyList<LegacyErrorWorldTileDefinition> definitions = new[]
+  {
+    new LegacyErrorWorldTileDefinition(0, true, false, false, false),
+    new LegacyErrorWorldTileDefinition(58, true, false, false, false),
+    new LegacyErrorWorldTileDefinition(1, false, false, false, false)
+  };
+  if (!LegacyErrorWorldRandomBlock.TrySelect(
+        definitions,
+        new LegacyPassRandomState(1456),
+        out ushort selectedTileType) ||
+      selectedTileType != 0 ||
+      LegacyErrorWorldRandomBlock.TrySelect(
+        new[] { new LegacyErrorWorldTileDefinition(58, true, false, false, false) },
+        new LegacyPassRandomState(1456),
+        out _))
+  {
+    throw new InvalidOperationException("DoErrorWorldGetRandomBlock selection diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldGetRandomBlock preserves explicit candidate selection");
+}
+
+static void LegacyErrorWorldSingleTileSwapSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "ErrorWorldSwap", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 61, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  WorldTile first = new(
+    true, 1, LiquidAmount: 15, LiquidType: 1, FrameX: 18, FrameY: 36, WallType: 4,
+    Slope: 2, TileColor: 5, IsFullbrightBlock: true);
+  WorldTile second = new(
+    false, 2, LiquidAmount: 20, LiquidType: 2, FrameX: 72, FrameY: 54, WallType: 5,
+    Slope: 3, TileColor: 8, IsInvisibleBlock: true);
+  _ = world.TrySetTile(10, 10, first);
+  _ = world.TrySetTile(20, 20, second);
+  WorldGenerationStateComponent state = new(61);
+  List<TileChangeCommand> commands = new();
+  LegacyErrorWorldTileSwap.AppendCommands(10, 10, 20, 20, first, second, ref state, commands);
+  if (commands.Count != 6 || commands[0].Kind != TileChangeKind.UpdateTileType ||
+      commands[1].Kind != TileChangeKind.SetPaint || commands[2].Kind != TileChangeKind.SetCoating ||
+      commands[3].Kind != TileChangeKind.UpdateTileType ||
+      !new TileChangeCommitSystem().TryCommit(world, commands, out _))
+  {
+    throw new InvalidOperationException("ErrorWorld single-tile swap command shape diverged.");
+  }
+
+  WorldTile firstAfter = world.GetTile(10, 10);
+  WorldTile secondAfter = world.GetTile(20, 20);
+  if (firstAfter.IsActive != second.IsActive || firstAfter.Type != second.Type ||
+      firstAfter.TileColor != second.TileColor ||
+      firstAfter.IsFullbrightBlock != second.IsFullbrightBlock ||
+      firstAfter.IsInvisibleBlock != second.IsInvisibleBlock || firstAfter.LiquidAmount != 15 ||
+      firstAfter.FrameX != 18 || firstAfter.WallType != 4 || firstAfter.Slope != 2 ||
+      secondAfter.IsActive != first.IsActive || secondAfter.Type != first.Type ||
+      secondAfter.TileColor != first.TileColor ||
+      secondAfter.IsFullbrightBlock != first.IsFullbrightBlock ||
+      secondAfter.IsInvisibleBlock != first.IsInvisibleBlock || secondAfter.LiquidAmount != 20 ||
+      secondAfter.FrameX != 72 || secondAfter.WallType != 5 || secondAfter.Slope != 3)
+  {
+    throw new InvalidOperationException("ErrorWorld single-tile swap fields diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves bounded single-tile swaps");
+}
+
+static void LegacyErrorWorldRectangleSwapSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "ErrorWorldRectangleSwap", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 62, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int offsetX = 0; offsetX < 2; offsetX++)
+  {
+    for (int offsetY = 0; offsetY < 3; offsetY++)
+    {
+      _ = world.TrySetTile(
+        10 + offsetX,
+        10 + offsetY,
+        new WorldTile(true, (ushort)(10 + offsetX + offsetY), TileColor: 1));
+      _ = world.TrySetTile(
+        30 + offsetX,
+        30 + offsetY,
+        new WorldTile(false, (ushort)(30 + offsetX + offsetY), TileColor: 2));
+    }
+  }
+
+  WorldGenerationStateComponent state = new(62);
+  List<TileChangeCommand> commands = new();
+  LegacyErrorWorldTileRectangleSwap.AppendCommands(
+    world.CreateSnapshot(metadata), 10, 10, 30, 30, 2, 3, ref state, commands);
+  if (commands.Count != 36 || !new TileChangeCommitSystem().TryCommit(world, commands, out _) ||
+      world.GetTile(10, 10).Type != 30 || world.GetTile(10, 10).TileColor != 2 ||
+      world.GetTile(31, 32).Type != 13 || world.GetTile(31, 32).TileColor != 1)
+  {
+    throw new InvalidOperationException("ErrorWorld rectangle swap commands diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves bounded rectangle swaps");
+}
+
+static void LegacyErrorWorldCandidateSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "ErrorWorldCandidate", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 63, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(10, 9, new WorldTile(true, 1));
+  _ = world.TrySetTile(10, 10, new WorldTile(true, 1));
+  _ = world.TrySetTile(10, 11, new WorldTile(true, 1));
+  Dictionary<ushort, LegacyErrorWorldTileDefinition> definitions = new()
+  {
+    [1] = new LegacyErrorWorldTileDefinition(1, true, false, false, false),
+    [2] = new LegacyErrorWorldTileDefinition(2, true, false, true, false)
+  };
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  if (!LegacyErrorWorldCandidateQuery.IsSwapEligible(snapshot, definitions, 10, 10))
+  {
+    throw new InvalidOperationException("ErrorWorld solid candidate was rejected.");
+  }
+
+  _ = world.TrySetTile(10, 10, new WorldTile(true, 1, LiquidAmount: 1, LiquidType: 3));
+  _ = world.TrySetTile(10, 11, new WorldTile(true, 2));
+  snapshot = world.CreateSnapshot(metadata);
+  if (LegacyErrorWorldCandidateQuery.IsSwapEligible(snapshot, definitions, 10, 10))
+  {
+    throw new InvalidOperationException("ErrorWorld shimmer or neighboring frame rejection diverged.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves bounded candidate eligibility");
+}
+
+static void LegacyErrorWorldCandidateSelectionSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "ErrorWorldSelection", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 64, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int x = 30; x < 40; x++)
+  {
+    for (int y = 30; y < 40; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(true, 1));
+    }
+  }
+
+  Dictionary<ushort, LegacyErrorWorldTileDefinition> definitions = new()
+  {
+    [0] = new LegacyErrorWorldTileDefinition(0, false, false, false, false),
+    [1] = new LegacyErrorWorldTileDefinition(1, true, false, false, false)
+  };
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  bool firstSelected = LegacyErrorWorldCandidateSelector.TrySelect(
+    snapshot, definitions, 30, 40, 30, 40, 2, 2, new LegacyPassRandomState(1456),
+    out LegacyErrorWorldCandidate first);
+  bool secondSelected = LegacyErrorWorldCandidateSelector.TrySelect(
+    snapshot, definitions, 30, 40, 30, 40, 2, 2, new LegacyPassRandomState(1456),
+    out LegacyErrorWorldCandidate second);
+  if (!firstSelected || !secondSelected || first != second ||
+      !LegacyErrorWorldCandidateQuery.IsSwapEligible(snapshot, definitions, first.X, first.Y) ||
+      LegacyErrorWorldCandidateSelector.TrySelect(
+        snapshot, definitions, 0, 20, 20, 30, 1, 1, new LegacyPassRandomState(1456), out _))
+  {
+    throw new InvalidOperationException("ErrorWorld candidate selection diverged from source bounds.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves bounded candidate selection");
+}
+
+static void LegacyErrorWorldSwapOperationSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "ErrorWorldOperation", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 65, seedVariant: "default");
+  Dictionary<ushort, LegacyErrorWorldTileDefinition> definitions = new()
+  {
+    [0] = new LegacyErrorWorldTileDefinition(0, false, false, false, false),
+    [1] = new LegacyErrorWorldTileDefinition(1, true, false, false, false),
+    [2] = new LegacyErrorWorldTileDefinition(2, true, false, false, false)
+  };
+  LegacyErrorWorldSpawnExclusionProfile normalProfile = new(200, 20.0, 130, false);
+  bool appended = false;
+  for (int seed = 1; seed <= 128 && !appended; seed++)
+  {
+    WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+    for (int x = 30; x < 34; x++)
+    {
+      for (int y = 30; y < 34; y++)
+      {
+        _ = world.TrySetTile(x, y, new WorldTile(true, 1));
+        _ = world.TrySetTile(x + 40, y, new WorldTile(true, 2));
+      }
+    }
+
+    WorldGenerationStateComponent state = new(65);
+    List<TileChangeCommand> commands = new();
+    appended = LegacyErrorWorldSwapOperation.TryAppendSingleTileSwap(
+      world.CreateSnapshot(metadata), definitions, normalProfile, 30, 74, 30, 34,
+      new LegacyPassRandomState(seed), ref state, commands);
+    if (appended && (!new TileChangeCommitSystem().TryCommit(world, commands, out _) ||
+                     commands.Count != 6 || !commands.Any(command => command.TileType == 1) ||
+                     !commands.Any(command => command.TileType == 2)))
+    {
+      throw new InvalidOperationException("ErrorWorld single-tile swap operation diverged.");
+    }
+  }
+
+  if (!appended || !LegacyErrorWorldSpawnExclusionPolicy.IsSingleTileExcluded(
+        normalProfile, 100, 19))
+  {
+    throw new InvalidOperationException("ErrorWorld swap operation or spawn exclusion diverged.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves bounded swap operations");
+}
+
+static void LegacyErrorWorldAxisTrailSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "ErrorWorldAxisTrail", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 66, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  WorldTile source = new(true, 7, FrameX: 12, FrameY: 18, WallType: 4, IsHalfBrick: true,
+    Slope: 2, TileColor: 9, IsInvisibleBlock: true, IsFullbrightBlock: true);
+  _ = world.TrySetTile(100, 75, source);
+  _ = world.TrySetTile(101, 75, new WorldTile(false, 0));
+  _ = world.TrySetTile(102, 75, new WorldTile(true, 8));
+  WorldGenerationStateComponent state = new(66);
+  List<TileChangeCommand> commands = new();
+  int copied = LegacyErrorWorldAxisTrail.AppendCommands(
+    world.CreateSnapshot(metadata), 100, 75, new LegacyErrorWorldAxisDirection(1, 0), 10,
+    ref state, commands);
+  if (copied != 1 || commands.Count != 4 || !new TileChangeCommitSystem().TryCommit(world, commands, out _) ||
+      world.GetTile(101, 75).Type != 7 || !world.GetTile(101, 75).IsInvisibleBlock ||
+      world.GetTile(100, 75).IsHalfBrick || world.GetTile(100, 75).Slope != 0 ||
+      world.GetTile(102, 75).Type != 8)
+  {
+    throw new InvalidOperationException("ErrorWorld axis trail diverged from source traversal.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves bounded axis trail");
+}
+
+static void LegacyErrorWorldAxisTrailPolicySourceCheck()
+{
+  bool sawHorizontal = false;
+  bool sawVertical = false;
+  for (int seed = 1; seed <= 64; seed++)
+  {
+    LegacyErrorWorldAxisTrailPlan first = LegacyErrorWorldAxisTrailPolicy.Create(
+      new LegacyPassRandomState(seed));
+    LegacyErrorWorldAxisTrailPlan second = LegacyErrorWorldAxisTrailPolicy.Create(
+      new LegacyPassRandomState(seed));
+    if (first != second || !first.Direction.IsValid || first.Length is < 5 or > 20)
+    {
+      throw new InvalidOperationException("ErrorWorld axis trail random policy diverged.");
+    }
+
+    sawHorizontal |= first.Direction.X != 0;
+    sawVertical |= first.Direction.Y != 0;
+  }
+
+  if (!sawHorizontal || !sawVertical)
+  {
+    throw new InvalidOperationException("ErrorWorld axis trail random policy did not cover both axes.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves axis trail random policy");
+}
+
+static void LegacyErrorWorldPassCountSourceCheck()
+{
+  LegacyErrorWorldPassCounts normal = LegacyErrorWorldPassCountPolicy.Create(4200, 1, false);
+  LegacyErrorWorldPassCounts skyblock = LegacyErrorWorldPassCountPolicy.Create(4200, 1, true);
+  LegacyErrorWorldPassCounts adjusted = LegacyErrorWorldPassCountPolicy.Create(4200, 4, false);
+  if (normal != new LegacyErrorWorldPassCounts(42000, 2100, 2100, 42000) ||
+      skyblock != new LegacyErrorWorldPassCounts(21000, 2100, 2100, 42000) ||
+      adjusted != new LegacyErrorWorldPassCounts(10500, 525, 525, 10500))
+  {
+    throw new InvalidOperationException("ErrorWorld pass counts diverged from source arithmetic.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves source pass counts");
+}
+
+static void LegacyErrorWorldRandomBlockRewriteSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "ErrorWorldRewrite", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 67, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(40, 40, new WorldTile(false, 1));
+  Dictionary<ushort, LegacyErrorWorldTileDefinition> definitions = new()
+  {
+    [0] = new LegacyErrorWorldTileDefinition(0, false, false, false, false),
+    [1] = new LegacyErrorWorldTileDefinition(1, true, false, false, false),
+    [2] = new LegacyErrorWorldTileDefinition(2, true, false, false, false)
+  };
+  WorldGenerationStateComponent state = new(67);
+  List<TileChangeCommand> commands = new();
+  if (!LegacyErrorWorldRandomBlockRewrite.TryAppendCommand(
+        world.CreateSnapshot(metadata), definitions, new[] { definitions[2] }, 40, 41, 40, 41,
+        isSkyblockWorld: true, new LegacyPassRandomState(1456), ref state, commands) ||
+      commands.Count != 1 || commands[0].TileType != 2 || commands[0].IsActive != true ||
+      !new TileChangeCommitSystem().TryCommit(world, commands, out _) ||
+      world.GetTile(40, 40).Type != 2 || !world.GetTile(40, 40).IsActive)
+  {
+    throw new InvalidOperationException("ErrorWorld random block rewrite diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves bounded random block rewrites");
+}
+
+static void LegacyErrorWorldShufflePassSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "ErrorWorldPass", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 68, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int x = 40; x < 80; x++)
+  {
+    for (int y = 80; y < 120; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(true, 1));
+    }
+  }
+
+  LegacyErrorWorldTileDefinitionRegistry registry =
+    LegacyErrorWorldTileDefinitionRegistry.RegisterDefaults();
+  LegacyErrorWorldPassCounts counts = new(1, 0, 0, 0);
+  WorldGenerationStateComponent state = new(68);
+  List<TileChangeCommand> commands = new();
+  LegacyErrorWorldShuffleResult result = LegacyErrorWorldShufflePass.AppendCommands(
+    world.CreateSnapshot(metadata),
+    registry,
+    new LegacyErrorWorldSpawnExclusionProfile(200, 20.0, 130, false),
+    counts,
+    isSkyblockWorld: false,
+    new LegacyPassRandomState(1456),
+    ref state,
+    commands);
+  if (result.RandomBlockRewrites != 1 || !result.CompletedWithoutRejection || commands.Count != 1 ||
+      !new TileChangeCommitSystem().TryCommit(world, commands, out _) ||
+      !registry.ByType.TryGetValue(world.GetTile(commands[0].X, commands[0].Y).Type,
+        out LegacyErrorWorldTileDefinition rewrittenDefinition) ||
+      !rewrittenDefinition.IsSolid || rewrittenDefinition.IsSolidTop ||
+      rewrittenDefinition.IsFrameImportant || rewrittenDefinition.IsDungeon)
+  {
+    throw new InvalidOperationException("ErrorWorld pass orchestration diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldShuffleBlocks preserves bounded pass orchestration");
+}
+
+static void LegacyErrorWorldFinishCleanupSourceCheck()
+{
+  WorldMetadata metadata = new("error-world-finish", new WorldSeed(8), 200, 150);
+  WorldGrid world = new(200, 150);
+  _ = world.TrySetTile(25, 25, new WorldTile(true, 481));
+  _ = world.TrySetTile(26, 25, new WorldTile(true, 501));
+  _ = world.TrySetTile(27, 25, new WorldTile(true, 137));
+  _ = world.TrySetTile(28, 25, new WorldTile(true, 1, WallType: 238));
+  _ = world.TrySetTile(29, 35, new WorldTile(true, 1, WallType: 73));
+  WorldGenerationStateComponent state = new(88);
+  List<TileChangeCommand> commands = new();
+  LegacyErrorWorldFinishCleanup.AppendCommands(
+    world.CreateSnapshot(metadata),
+    worldSurfaceY: 30,
+    randomAdjustment: 1,
+    new HashSet<ushort>(),
+    new LegacyPassRandomState(9),
+    ref state,
+    commands);
+  if (!new TileChangeCommitSystem().TryCommit(world, commands, out _) ||
+      !world.GetTile(25, 25).IsInvisibleBlock || !world.GetTile(26, 25).IsInvisibleBlock ||
+      world.GetTile(28, 25).WallType != 0 || world.GetTile(29, 35).WallType != 0 ||
+      world.GetTile(27, 25).FrameX is < 0 or > 90 || world.GetTile(27, 25).FrameX % 18 != 0)
+  {
+    throw new InvalidOperationException("ErrorWorld finish cleanup diverged from bounded source rules.");
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldFinish preserves bounded tile cleanup commands");
+}
+
+static void LegacyErrorWorldChestItemPolicySourceCheck()
+{
+  LegacyPassRandomState baseline = new(264);
+  LegacyPassRandomState balanced = new(264);
+  if (LegacyErrorWorldChestItemPolicy.SelectItemType(true, balanced) != -1 ||
+      baseline.Next(32) != balanced.Next(32))
+  {
+    throw new InvalidOperationException(
+      "Balanced ErrorWorld chest selection did not preserve the random stream.");
+  }
+
+  HashSet<int> allowedItems =
+  [
+    4008, 238, 2275, 3352, 3262, 3334, 4818, 1325, 4144, 3350, 4347, 1309, 1863,
+    485, 748, 1825, 1321, 5451, 3385, 3386, 3387, 3388, 4951, 3043, 2341, 2342,
+    2800, 3623, 4980, 4273, 4711, 4420
+  ];
+  LegacyPassRandomState first = new(264);
+  LegacyPassRandomState second = new(264);
+  for (int index = 0; index < 64; index++)
+  {
+    int firstItemType = LegacyErrorWorldChestItemPolicy.SelectItemType(false, first);
+    int secondItemType = LegacyErrorWorldChestItemPolicy.SelectItemType(false, second);
+    if (firstItemType != secondItemType || !allowedItems.Contains(firstItemType))
+    {
+      throw new InvalidOperationException("ErrorWorld chest item selection was not deterministic.");
+    }
+  }
+
+  Console.WriteLine("PASS: DoErrorWorldFindChestItem preserves balanced and random item policy");
+}
+
+static void LegacyExtraLiquidAddLiquidSourceCheck()
+{
+  WorldMetadata metadata = new("extra-liquid", new WorldSeed(12), 200, 150);
+  WorldGrid world = new(200, 150);
+  _ = world.TrySetTile(50, 70, new WorldTile(false, 0, WallType: 86));
+  _ = world.TrySetTile(51, 70, new WorldTile(false, 0, WallType: 187));
+  _ = world.TrySetTile(52, 120, new WorldTile(false, 0));
+  WorldGenerationStateComponent firstState = new(90);
+  WorldGenerationStateComponent secondState = new(90);
+  List<LiquidChangeCommand> first = new();
+  List<LiquidChangeCommand> second = new();
+  LegacyExtraLiquidAddLiquid.AppendCommands(
+    world.CreateSnapshot(metadata), 80, 110, isRemixWorld: false, isSkyblockWorld: false,
+    new LegacyPassRandomState(64), ref firstState, first);
+  LegacyExtraLiquidAddLiquid.AppendCommands(
+    world.CreateSnapshot(metadata), 80, 110, isRemixWorld: false, isSkyblockWorld: false,
+    new LegacyPassRandomState(64), ref secondState, second);
+  if (!first.SequenceEqual(second) ||
+      !new LiquidChangeCommitSystem().TryCommit(
+        world,
+        first,
+        new[]
+        {
+          new LiquidDefinition("water", 0, byte.MaxValue),
+          new LiquidDefinition("honey", 2, byte.MaxValue)
+        },
+        out _) ||
+      first.Any(command => command.X is < 40 or >= 160 || command.Y is < 40 or >= 110))
+  {
+    throw new InvalidOperationException("ExtraLiquid command emission was not bounded and deterministic.");
+  }
+
+  LegacyPassRandomState baseline = new(64);
+  LegacyPassRandomState skyblock = new(64);
+  List<LiquidChangeCommand> skyblockCommands = new();
+  WorldGenerationStateComponent skyblockState = new(90);
+  LegacyExtraLiquidAddLiquid.AppendCommands(
+    world.CreateSnapshot(metadata), 80, 110, isRemixWorld: false, isSkyblockWorld: true,
+    skyblock, ref skyblockState, skyblockCommands);
+  if (skyblockCommands.Count != 0 || baseline.Next(100) != skyblock.Next(100))
+  {
+    throw new InvalidOperationException("Skyblock ExtraLiquid branch did not remain inert.");
+  }
+
+  Console.WriteLine("PASS: DoExtraLiquidAddLiquid preserves bounded liquid commands");
+}
+
+static void LegacyExtraLiquidAddBubbleBlocksSourceCheck()
+{
+  WorldMetadata metadata = new("extra-liquid-bubbles", new WorldSeed(64), 200, 300);
+  WorldGrid world = new(200, 300);
+  for (int x = 40; x < 160; x++)
+  {
+    for (int y = 40; y < 260; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(
+        IsActive: false,
+        Type: 0,
+        LiquidAmount: byte.MaxValue,
+        WallType: 1));
+    }
+  }
+
+  List<TileChangeCommand> firstTiles = new();
+  List<LiquidChangeCommand> firstLiquids = new();
+  List<TileChangeCommand> secondTiles = new();
+  List<LiquidChangeCommand> secondLiquids = new();
+  WorldGenerationStateComponent firstState = new(100);
+  WorldGenerationStateComponent secondState = new(100);
+  IReadOnlyList<LegacyExtraLiquidBubbleSquare> first =
+    LegacyExtraLiquidAddBubbleBlocks.AppendCommands(
+      world.CreateSnapshot(metadata), 60, 120, isRemixWorld: false, isSkyblockWorld: false,
+      new LegacyPassRandomState(64), ref firstState, firstTiles, firstLiquids);
+  IReadOnlyList<LegacyExtraLiquidBubbleSquare> second =
+    LegacyExtraLiquidAddBubbleBlocks.AppendCommands(
+      world.CreateSnapshot(metadata), 60, 120, isRemixWorld: false, isSkyblockWorld: false,
+      new LegacyPassRandomState(64), ref secondState, secondTiles, secondLiquids);
+  if (!first.SequenceEqual(second) ||
+      firstTiles.Count != secondTiles.Count ||
+      firstLiquids.Count != secondLiquids.Count ||
+      firstTiles.Count == 0 ||
+      firstTiles.Any(command => !command.IsFullbrightBlock.GetValueOrDefault()) ||
+      firstLiquids.Any(command => command.Amount != 0) ||
+      LegacyExtraLiquidAddBubbleBlocks.AppendCommands(
+        world.CreateSnapshot(metadata), 60, 120, isRemixWorld: false, isSkyblockWorld: true,
+        new LegacyPassRandomState(64), ref secondState, secondTiles, secondLiquids).Count != 0)
+  {
+    throw new InvalidOperationException(
+      "ExtraLiquid bubble-block placement was not deterministic or bounded.");
+  }
+
+  Console.WriteLine("PASS: DoExtraLiquidAddBubbleBlocks preserves bounded bubble placement");
+}
+
+static void LegacyExtraLiquidBubbleExecutionSourceCheck()
+{
+  WorldMetadata metadata = new("extra-liquid-bubble-execution", new WorldSeed(64), 200, 300);
+  WorldGrid world = new(200, 300);
+  for (int x = 40; x < 160; x++)
+  {
+    for (int y = 40; y < 260; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(
+        IsActive: false,
+        Type: 0,
+        LiquidAmount: byte.MaxValue,
+        WallType: 1));
+    }
+  }
+
+  WorldGenerationStateComponent state = new(120);
+  LegacyExtraLiquidExecutionResult result = LegacyExtraLiquidPassExecution.TryExecuteBubbleBlocks(
+    world, metadata, worldSurfaceY: 60, underworldLayerY: 120, isRemixWorld: false,
+    isSkyblockWorld: false, new LegacyPassRandomState(64), ref state);
+  if (!result.Succeeded || result.BubbleCount == 0 || result.AppliedTileCount == 0 ||
+      result.AppliedLiquidCount == 0 || state.NextSequence != result.NextSequence ||
+      !world.GetTile(result.Bubbles[0].X - result.Bubbles[0].Radius, result.Bubbles[0].Y).IsActive ||
+      world.GetTile(result.Bubbles[0].X, result.Bubbles[0].Y).LiquidAmount != 0)
+  {
+    throw new InvalidOperationException(
+      "ExtraLiquid bubble execution did not atomically commit its typed commands.");
+  }
+
+  Console.WriteLine("PASS: DoExtraLiquidAddBubbleBlocks commits typed bubble commands");
+}
+
+static void LegacyExtraLiquidFinishSourceCheck()
+{
+  WorldMetadata metadata = new("extra-liquid-finish", new WorldSeed(12), 200, 150);
+  WorldGrid world = new(200, 150);
+  _ = world.TrySetTile(50, 100, new WorldTile(
+    true, 375, LiquidAmount: byte.MaxValue, LiquidType: 0, IsFullbrightBlock: true));
+  _ = world.TrySetTile(51, 110, new WorldTile(true, 1, LiquidAmount: byte.MaxValue));
+  _ = world.TrySetTile(52, 110, new WorldTile(true, 56));
+  WorldGenerationStateComponent state = new(94);
+  List<TileChangeCommand> tileCommands = new();
+  List<LiquidChangeCommand> liquidCommands = new();
+  LegacyExtraLiquidFinish.AppendCommands(
+    world.CreateSnapshot(metadata), 100, isSkyblockWorld: false, ref state, tileCommands,
+    liquidCommands);
+  IReadOnlyCollection<LiquidDefinition> definitions =
+  [new LiquidDefinition("water", 0, byte.MaxValue), new LiquidDefinition("lava", 1, byte.MaxValue)];
+  if (!new TileChangeCommitSystem().TryCommit(world, tileCommands, out _) ||
+      !new LiquidChangeCommitSystem().TryCommit(world, liquidCommands, definitions, out _) ||
+      world.GetTile(50, 100).IsActive || world.GetTile(51, 110).LiquidType != 1 ||
+      world.GetTile(52, 110).IsActive)
+  {
+    throw new InvalidOperationException("ExtraLiquid finish did not commit source-backed cleanup.");
+  }
+
+  List<TileChangeCommand> skyblockTiles = new();
+  List<LiquidChangeCommand> skyblockLiquids = new();
+  WorldGenerationStateComponent skyblockState = new(94);
+  LegacyExtraLiquidFinish.AppendCommands(
+    world.CreateSnapshot(metadata), 100, isSkyblockWorld: true, ref skyblockState, skyblockTiles,
+    skyblockLiquids);
+  if (skyblockTiles.Count != 0 || skyblockLiquids.Count != 0)
+  {
+    throw new InvalidOperationException("Skyblock ExtraLiquid finish branch did not remain inert.");
+  }
+
+  Console.WriteLine("PASS: DoExtraLiquidFinish preserves bounded tile and liquid commands");
+}
+
+static void LegacyRainsForAYearSourceCheck()
+{
+  LegacyRainsForAYearResult result = LegacyRainsForAYearPolicy.Apply(new WorldRuleState());
+  if (!result.Rules.IsRaining || result.Rules.RainTimeTicks != 1892160000 ||
+      result.Rules.RainStrength != 1.0f || result.Rules.MaximumRainStrength != 1.0f ||
+      result.CloudCount != 200)
+  {
+    throw new InvalidOperationException("Rains-for-a-year runtime policy diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoRainsForAYear preserves bounded runtime weather policy");
+}
+
+static void LegacyRandomSpawnPolicySourceCheck()
+{
+  LegacyNoSurfaceActionPlan pending = LegacyRandomSpawnPolicy.Create(false);
+  LegacyNoSurfaceActionPlan completed = LegacyRandomSpawnPolicy.Create(true);
+  if (!pending.RandomizeSpawn || !pending.PlaceTorchesAroundSpawn ||
+      pending.UndergroundMeteorAttempts != 0 || completed != default)
+  {
+    throw new InvalidOperationException("Random-spawn policy diverged from source guard.");
+  }
+
+  Console.WriteLine("PASS: DoRandomSpawn preserves one-time spawn action policy");
+}
+
+static void LegacyTeleporterPlacementQuerySourceCheck()
+{
+  WorldMetadata metadata = new("teleporter", new WorldSeed(12), 200, 150);
+  WorldGrid world = new(200, 150);
+  for (int x = 99; x <= 101; x++)
+  {
+    _ = world.TrySetTile(x, 100, new WorldTile(true, 1));
+  }
+
+  TileDefinitionRegistry definitions = TileDefinitionRegistry.RegisterDefaults();
+  if (!LegacyTeleporterPlacementQuery.CanPlace(
+        world.CreateSnapshot(metadata), definitions, new HashSet<ushort>(), new HashSet<ushort>(),
+        100, 100, 20, 20, moreForcefulPlacement: false))
+  {
+    throw new InvalidOperationException("Teleporter placement rejected a valid source footprint.");
+  }
+
+  _ = world.TrySetTile(120, 99, new WorldTile(true, 235));
+  if (LegacyTeleporterPlacementQuery.CanPlace(
+        world.CreateSnapshot(metadata), definitions, new HashSet<ushort>(), new HashSet<ushort>(),
+        100, 100, 20, 20, moreForcefulPlacement: false))
+  {
+    throw new InvalidOperationException("Teleporter placement ignored the source proximity guard.");
+  }
+
+  Console.WriteLine("PASS: DoAddTeleporters preserves bounded candidate eligibility");
+}
+
+static void LegacyTeleporterClearAreaSourceCheck()
+{
+  WorldMetadata metadata = new("teleporter-clear", new WorldSeed(12), 200, 150);
+  WorldGrid world = new(200, 150);
+  _ = world.TrySetTile(99, 100, new WorldTile(true, 1));
+  _ = world.TrySetTile(100, 100, new WorldTile(true, 2));
+  _ = world.TrySetTile(101, 100, new WorldTile(true, 3));
+  _ = world.TrySetTile(99, 101, new WorldTile(false, 0));
+  _ = world.TrySetTile(100, 101, new WorldTile(true, 4, IsHalfBrick: true, Slope: 1));
+  _ = world.TrySetTile(101, 101, new WorldTile(true, 4));
+  WorldGenerationStateComponent state = new(96);
+  List<TileChangeCommand> commands = new();
+  if (!LegacyTeleporterClearArea.TryAppendCommands(
+        world.CreateSnapshot(metadata), 100, 100, new HashSet<ushort> { 1, 2 }, ref state,
+        commands) ||
+      !new TileChangeCommitSystem().TryCommit(world, commands, out _) ||
+      world.GetTile(99, 100).IsActive || world.GetTile(100, 100).IsActive ||
+      !world.GetTile(101, 100).IsActive || !world.GetTile(99, 101).IsActive ||
+      world.GetTile(99, 101).Type != 4 || world.GetTile(100, 101).Slope != 0 ||
+      world.GetTile(100, 101).IsHalfBrick)
+  {
+    throw new InvalidOperationException("Teleporter clear-area commands diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoAddTeleporters preserves bounded clear-area commands");
+}
+
+static void LegacyStartInHardmodePolicySourceCheck()
+{
+  LegacyStartInHardmodeResult result = LegacyStartInHardmodePolicy.Apply(
+    new WorldRuleSnapshotComponent(0, "start-in-hardmode", false));
+  if (!result.Rules.IsHardmode || result.Rules.Difficulty != 0 ||
+      result.Rules.SecretSeedVariant != "start-in-hardmode" || !result.InitializeHardmode)
+  {
+    throw new InvalidOperationException("Start-in-hardmode policy diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoStartInHardmode preserves bounded bootstrap policy");
+}
+
+static void LegacyDigExtraHolesSourceCheck()
+{
+  IReadOnlyList<LegacyTileRunnerPassInvocation> first = LegacyDigExtraHoles.CreateInvocations(
+    200, 150, new LegacyPassRandomState(1456));
+  IReadOnlyList<LegacyTileRunnerPassInvocation> second = LegacyDigExtraHoles.CreateInvocations(
+    200, 150, new LegacyPassRandomState(1456));
+  if (first.Count != 20 || !first.SequenceEqual(second) ||
+      first.Any(invocation => invocation.Request.TileType != -1 ||
+        invocation.Request.AddTile || !invocation.Request.NoYChange ||
+        invocation.Request.X is < 50 or >= 150 || invocation.Request.Y is < 50 or >= 100 ||
+        invocation.Request.Strength is < 5 or >= 30 ||
+        invocation.Request.Steps is < 30 or >= 201 ||
+        invocation.RandomDrawCount is < 7 or > 8))
+  {
+    throw new InvalidOperationException("DoDigExtraHoles invocation batch diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoDigExtraHoles preserves deterministic TileRunner invocations");
+}
+
+static void LegacyRoundLandmassSeedDefinitionsSourceCheck()
+{
+  IReadOnlyList<LegacyRoundLandmassSeedDefinition> first =
+    LegacyRoundLandmassSeedDefinitions.Create(800, 300, new LegacyPassRandomState(1456));
+  IReadOnlyList<LegacyRoundLandmassSeedDefinition> second =
+    LegacyRoundLandmassSeedDefinitions.Create(800, 300, new LegacyPassRandomState(1456));
+  if (first.Count != 3 || !first.SequenceEqual(second) ||
+      first[0].X is < 115 or >= 135 || first[1].X is < 665 or >= 685 ||
+      first[2].X is < 350 or > 450 || first[2].Radius is < 100 or >= 201 ||
+      first.Take(2).Any(definition => definition.Radius is < 235 or >= 266))
+  {
+    throw new InvalidOperationException("DoRoundLandMasses seed definitions diverged from source.");
+  }
+
+  Console.WriteLine("PASS: DoRoundLandMasses preserves deterministic seed definitions");
+}
+
+static void LegacyPortalGunAndPooPolicySourceCheck()
+{
+  LegacyFrozenChestItemIntent intent = default;
+  bool created = false;
+  for (int seed = 1; seed <= 64 && !created; seed++)
+  {
+    created = LegacyPortalGunChestPolicy.TryCreateIntent(
+      [4, 2, 0, 0], new LegacyPassRandomState(seed), out intent);
+  }
+
+  if (!created || intent != new LegacyFrozenChestItemIntent(2, 3384) ||
+      LegacyPooEverywherePolicy.GetAttemptCount(1000, 500, 0) != 100 ||
+      LegacyPooEverywherePolicy.GetAttemptCount(1000, 500, 4) != 50 ||
+      LegacyPooEverywherePolicy.GetAttemptCount(1000, 500, 7) != 33)
+  {
+    throw new InvalidOperationException("Portal-gun chest or poo attempt policy diverged from source.");
+  }
+
+  Console.WriteLine("PASS: portal-gun chest and poo attempt policies preserve source rules");
+}
+
+static void LegacyOreRunnerSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyOreRunner", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 36, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int x = 90; x < 110; x++)
+  {
+    for (int y = 65; y < 85; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(true, 1, WallType: 2));
+    }
+  }
+
+  _ = world.TrySetTile(100, 75, new WorldTile(true, 225, WallType: 108));
+  _ = world.TrySetTile(101, 75, new WorldTile(true, 179, WallType: 2));
+  _ = world.TrySetTile(102, 75, new WorldTile(true, 184, WallType: 2));
+  LegacyOreRunnerRequest request = new(
+    100, 75, 8, 3, TileType: 666, WallType: 3,
+    StayInArea: new LegacyOreRunnerArea(90, 65, 20, 20), OnlyReplaceTileType: 1,
+    OnlyReplaceWallType: 2);
+  WorldGenerationStateComponent firstState = new(36);
+  List<TileChangeCommand> first = new();
+  LegacyOreRunner.AppendCommands(
+    world.CreateSnapshot(metadata), request, new LegacyPassRandomState(1456), ref firstState, first);
+  WorldGenerationStateComponent secondState = new(36);
+  List<TileChangeCommand> second = new();
+  LegacyOreRunner.AppendCommands(
+    world.CreateSnapshot(metadata), request, new LegacyPassRandomState(1456), ref secondState, second);
+  if (first.Count == 0 || !first.SequenceEqual(second) ||
+      first.Any(command => command.X is < 90 or >= 110 || command.Y is < 65 or >= 85) ||
+      first.Any(command => command.X == 100 && command.Y == 75) ||
+      !first.Any(command => command.Kind == TileChangeKind.UpdateTileType && command.TileType == 666) ||
+      !first.Any(command => command.Kind == TileChangeKind.SetWall && command.WallType == 3))
+  {
+    throw new InvalidOperationException("OreRunner command rendering diverged from source bounds.");
+  }
+
+  WorldGenerationStateComponent mossState = new(36);
+  List<TileChangeCommand> mossCommands = new();
+  LegacyOreRunner.AppendCommands(
+    world.CreateSnapshot(metadata),
+    new LegacyOreRunnerRequest(101, 75, 8, 1, TileType: 666),
+    new LegacyPassRandomState(1456),
+    ref mossState,
+    mossCommands);
+  if (!mossCommands.Any(command => command.X == 101 && command.Y == 75 &&
+        command.Kind == TileChangeKind.UpdateTileType && command.TileType == 666) ||
+      mossCommands.Any(command => command.X == 102 && command.Y == 75 &&
+        command.Kind == TileChangeKind.UpdateTileType))
+  {
+    throw new InvalidOperationException("OreRunner moss registry diverged from source entries.");
+  }
+
+  WorldGridSnapshot topSnapshot = world.CreateSnapshot(metadata);
+  LegacyOreRunnerRequest surfaceRequest = new(
+    100, 0, 8, 3, TileType: 59, WallType: -1);
+  WorldGenerationStateComponent surfaceState = new(36);
+  List<TileChangeCommand> surfaceCommands = new();
+  LegacyOreRunner.AppendCommands(
+    topSnapshot, surfaceRequest, new LegacyPassRandomState(1456), ref surfaceState, surfaceCommands);
+  if (surfaceCommands.Count != 0)
+  {
+    throw new InvalidOperationException("OreRunner did not preserve the type-59 top early-stop.");
+  }
+
+  Console.WriteLine("PASS: OreRunner preserves deterministic bounded ore commands");
+}
+
+static void LegacyOreHelperSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyOreHelper", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 37, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(4, 4, new WorldTile(true, 1));
+  _ = world.TrySetTile(3, 5, new WorldTile(true, 40));
+  _ = world.TrySetTile(5, 3, new WorldTile(true, 2));
+  WorldGenerationStateComponent state = new(37);
+  List<TileChangeCommand> commands = new();
+  LegacyOreHelper.AppendCommands(
+    world.CreateSnapshot(metadata), 4, 4, ref state, commands);
+
+  if (commands.Count != 2 ||
+      !commands.Any(command => command.X == 4 && command.Y == 4 &&
+        command.Kind == TileChangeKind.UpdateTileType && command.TileType == 0 &&
+        command.Source == "worldgen.ore.OreHelper") ||
+      !commands.Any(command => command.X == 3 && command.Y == 5 &&
+        command.Kind == TileChangeKind.UpdateTileType && command.TileType == 0) ||
+      commands.Any(command => command.X == 5 && command.Y == 3) ||
+      !commands.Select(command => command.Sequence).SequenceEqual(new long[] { 0, 1 }))
+  {
+    throw new InvalidOperationException("OreHelper command rendering diverged from source.");
+  }
+
+  AssertThrows<ArgumentOutOfRangeException>(() =>
+  {
+    WorldGenerationStateComponent edgeState = new(37);
+    LegacyOreHelper.AppendCommands(
+      world.CreateSnapshot(metadata), 0, 4, ref edgeState, new List<TileChangeCommand>());
+  });
+
+  Console.WriteLine("PASS: OreHelper preserves bounded three-by-three ore cleanup");
+}
+
+static void LegacyOrePatchTypePolicySourceCheck()
+{
+  bool selectedIron = false;
+  bool selectedCopper = false;
+  for (int seed = 1; seed <= 32; seed++)
+  {
+    ushort selected = LegacyOrePatchTypePolicy.SelectTileType(
+      copperTileType: 7,
+      ironTileType: 6,
+      new LegacyPassRandomState(seed));
+    selectedIron |= selected == 6;
+    selectedCopper |= selected == 7;
+  }
+
+  if (!selectedIron || !selectedCopper)
+  {
+    throw new InvalidOperationException("OrePatch SavedOreTiers selection did not preserve source branches.");
+  }
+
+  AssertThrows<ArgumentNullException>(() =>
+    LegacyOrePatchTypePolicy.SelectTileType(7, 6, null!));
+
+  WorldMetadata metadata = new(
+    "LegacyOrePatchPolicy", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 38, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  OrePatchPlacementSystem system = new();
+  OreDefinition definition = new("surface-ore", 999, 10, 40, 0, 3);
+  IReadOnlyDictionary<ushort, OrePatchTileDefinition> definitions =
+    new Dictionary<ushort, OrePatchTileDefinition>
+    {
+      [1] = new OrePatchTileDefinition(1, true, true, false, false, false)
+    };
+  OrePatchPlacementPreparation preparation;
+  bool prepared = system.TryPrepare(
+    world.CreateSnapshot(metadata), 100, 20, 80, definitions, definition,
+    copperTileType: 7, ironTileType: 6, new LegacyPassRandomState(1),
+    new TileProtectionComponent(0, 0, -1, -1), out preparation);
+  if (prepared && preparation.Transaction.TileType is not 6 and not 7)
+  {
+    throw new InvalidOperationException("OrePatch policy integration selected an invalid tile type.");
+  }
+
+  Console.WriteLine("PASS: OrePatch preserves SavedOreTiers copper and iron selection");
+}
+
+static void LegacyOreTierSelectionPolicySourceCheck()
+{
+  bool foundAlternativeCopper = false;
+  bool foundAlternativeIron = false;
+  bool foundAlternativeSilver = false;
+  bool foundAlternativeGold = false;
+  for (int seed = 1; seed <= 128; seed++)
+  {
+    LegacyOreTierSelection first = LegacyOreTierSelectionPolicy.Select(
+      false, false, new LegacyPassRandomState(seed));
+    LegacyOreTierSelection second = LegacyOreTierSelectionPolicy.Select(
+      false, false, new LegacyPassRandomState(seed));
+    LegacyOreTierSelection dontStarve = LegacyOreTierSelectionPolicy.Select(
+      true, false, new LegacyPassRandomState(seed));
+    if (first != second || dontStarve.IronTileType != 6 || dontStarve.GoldTileType != 8)
+    {
+      throw new InvalidOperationException("SavedOreTiers random gating diverged from source.");
+    }
+
+    foundAlternativeCopper |= first.CopperTileType == 166;
+    foundAlternativeIron |= first.IronTileType == 167;
+    foundAlternativeSilver |= first.SilverTileType == 168;
+    foundAlternativeGold |= first.GoldTileType == 169;
+  }
+
+  LegacyOreTierSelection drunkDontStarve = LegacyOreTierSelectionPolicy.Select(
+    true, true, new LegacyPassRandomState(4));
+  if (!foundAlternativeCopper || !foundAlternativeIron || !foundAlternativeSilver ||
+      !foundAlternativeGold ||
+      drunkDontStarve.IronTileType is not 6 and not 167 ||
+      drunkDontStarve.GoldTileType is not 8 and not 169)
+  {
+    throw new InvalidOperationException("SavedOreTiers did not preserve tier selection values.");
+  }
+
+  AssertThrows<ArgumentNullException>(() =>
+    LegacyOreTierSelectionPolicy.Select(false, false, null!));
+  Console.WriteLine("PASS: SavedOreTiers preserves deterministic world-rule tier selection");
+}
+
+static void LegacyOrePatchTrailSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyOrePatchTrail", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 39, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int x = 80; x < 120; x++)
+  {
+    for (int y = 60; y < 120; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(true, 1));
+    }
+  }
+
+  WorldGenerationStateComponent firstState = new(39);
+  List<TileChangeCommand> first = new();
+  bool firstAppended = LegacyOrePatchTrail.TryAppendCommands(
+    world.CreateSnapshot(metadata), 100, 75, 7, new LegacyPassRandomState(1456),
+    ref firstState, first);
+  WorldGenerationStateComponent secondState = new(39);
+  List<TileChangeCommand> second = new();
+  bool secondAppended = LegacyOrePatchTrail.TryAppendCommands(
+    world.CreateSnapshot(metadata), 100, 75, 7, new LegacyPassRandomState(1456),
+    ref secondState, second);
+  if (!firstAppended || !secondAppended || !first.SequenceEqual(second) ||
+      first.Count == 0 || !first.Any(command => command.Source == "worldgen.ore.OrePatch.trail" &&
+        command.TileType == 7) ||
+      first.Where(command => command.Source == "worldgen.ore.OrePatch.trail").Any(command =>
+        command.X is < 80 or >= 120 || command.Y is < 60 or >= 120))
+  {
+    throw new InvalidOperationException("OrePatch initial trail diverged from source traversal.");
+  }
+
+  if (!new TileChangeCommitSystem().TryCommit(world, first, out _) ||
+      first.Where(command => command.Source == "worldgen.ore.OrePatch.trail").Any(command =>
+        world.GetTile(command.X, command.Y).Type != 7))
+  {
+    throw new InvalidOperationException("OrePatch trail cleanup overwrote a placed ore tile.");
+  }
+
+  WorldGenerationStateComponent edgeState = new(39);
+  List<TileChangeCommand> edgeCommands = new();
+  if (LegacyOrePatchTrail.TryAppendCommands(
+        world.CreateSnapshot(metadata), 0, 0, 7, new LegacyPassRandomState(1456),
+        ref edgeState, edgeCommands) || edgeCommands.Count != 0)
+  {
+    throw new InvalidOperationException("OrePatch trail did not reject an out-of-bounds batch.");
+  }
+
+  Console.WriteLine("PASS: OrePatch preserves deterministic initial ore trail commands");
+}
+
+static void LegacyOrePatchBlobSourceCheck()
+{
+  WorldMetadata metadata = new(
+    "LegacyOrePatchBlob", new WorldSeed(1456), width: 200, height: 150,
+    worldId: 40, seedVariant: "default");
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  for (int x = 40; x < 160; x++)
+  {
+    for (int y = 30; y < 130; y++)
+    {
+      _ = world.TrySetTile(x, y, new WorldTile(true, 1));
+    }
+  }
+
+  WorldGenerationStateComponent firstState = new(40);
+  List<TileChangeCommand> first = new();
+  bool firstAppended = LegacyOrePatchBlob.TryAppendCommands(
+    world.CreateSnapshot(metadata), 100, 75, 7, new LegacyPassRandomState(1456),
+    ref firstState, first);
+  WorldGenerationStateComponent secondState = new(40);
+  List<TileChangeCommand> second = new();
+  bool secondAppended = LegacyOrePatchBlob.TryAppendCommands(
+    world.CreateSnapshot(metadata), 100, 75, 7, new LegacyPassRandomState(1456),
+    ref secondState, second);
+  if (!firstAppended || !secondAppended || first.Count == 0 || !first.SequenceEqual(second) ||
+      first.Any(command => command.Source != "worldgen.ore.OrePatch.blob") ||
+      !first.Any(command => command.TileType == 7) ||
+      !first.Any(command => command.IsActive == false))
+  {
+    throw new InvalidOperationException("OrePatch blob commands diverged from source traversal.");
+  }
+
+  if (!new TileChangeCommitSystem().TryCommit(world, first, out _) ||
+      !first.Where(command => command.TileType == 7).Any(command =>
+        world.GetTile(command.X, command.Y).Type == 7))
+  {
+    throw new InvalidOperationException("OrePatch blob commands did not commit ore mutations.");
+  }
+
+  WorldGenerationStateComponent edgeState = new(40);
+  List<TileChangeCommand> edgeCommands = new();
+  if (LegacyOrePatchBlob.TryAppendCommands(
+        world.CreateSnapshot(metadata), 1, 1, 7, new LegacyPassRandomState(1456),
+        ref edgeState, edgeCommands) || edgeCommands.Count != 0)
+  {
+    throw new InvalidOperationException("OrePatch blob did not reject an out-of-bounds batch.");
+  }
+
+  Console.WriteLine("PASS: OrePatch preserves deterministic blob and inactive carve commands");
 }
 
 static Dictionary<string, int> CreateExtendedStateMismatchFieldCounts()
@@ -11311,6 +19643,2545 @@ static void AssertThrows<TException>(Action action)
 
   throw new InvalidOperationException(
     $"Expected {typeof(TException).Name} was not thrown.");
+}
+
+static void RunRocksInDirtFocusedVerification()
+{
+  const int width = 200;
+  const int height = 150;
+  const int seed = 1456;
+  IReadOnlyList<LegacyTileRunnerPassInput> recipes =
+    LegacyRocksInDirtPassDefinition.CreateDefaultRecipes();
+  IReadOnlyList<LegacyTileRunnerPassLoopDefinition> loops =
+    LegacyRocksInDirtPassDefinition.CreateDefaultLoops();
+  if (recipes.Count != 3 || loops.Count != 3 ||
+      recipes[0] != new LegacyTileRunnerPassInput(
+        "RocksInDirt", "surface-dirt", 1, false, 4, 15, 5, 40,
+        "0..worldSurfaceLow", true, true, true) ||
+      recipes[1] != new LegacyTileRunnerPassInput(
+        "RocksInDirt", "surface-high-dirt", 1, false, 4, 10, 5, 30,
+        "worldSurfaceLow..worldSurfaceHigh", true, true, true) ||
+      recipes[2] != new LegacyTileRunnerPassInput(
+        "RocksInDirt", "rock-high-dirt", 1, false, 2, 7, 2, 23,
+        "worldSurfaceHigh..rockLayerHigh", true, true, true) ||
+      loops[0].TileDensity != 0.00015 || loops[1].TileDensity != 0.0002 ||
+      loops[2].TileDensity != 0.0045 ||
+      loops[0].CalculateInvocationCount(width, height, remixWorld: false) != 5 ||
+      loops[1].CalculateInvocationCount(width, height, remixWorld: false) != 6 ||
+      loops[2].CalculateInvocationCount(width, height, remixWorld: false) != 135 ||
+      LegacyRocksInDirtPassDefinition.CalculateInvocationCount(4200, 1200, 0.00015) != 756)
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt recipes or density cardinality drifted from the source pass.");
+  }
+
+  try
+  {
+    ((IList<LegacyTileRunnerPassInput>)recipes)[0] = recipes[0];
+    throw new InvalidOperationException("RocksInDirt recipes projection was mutable.");
+  }
+  catch (NotSupportedException)
+  {
+  }
+
+  WorldMetadata metadata = new(
+    "rocks-in-dirt-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    isRemixWorld: false);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  string inputFingerprint = CreateSnapshotWorldGridFingerprint(snapshot);
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 40.0,
+    RockLayer: 80.0,
+    WorldSurfaceLow: 20.0,
+    WorldSurfaceHigh: 40.0,
+    RockLayerLow: 70.0,
+    RockLayerHigh: 90.0,
+    LeftBeachEnd: 20,
+    RightBeachStart: 180,
+    WaterLine: 100,
+    LavaLine: 120);
+
+  LegacyTileRunnerPassInput secondRecipe = recipes[1];
+  MethodInfo createInvocation = typeof(LegacyRocksInDirtPass).GetMethod(
+    "CreateInvocation",
+    BindingFlags.NonPublic | BindingFlags.Static) ??
+    throw new InvalidOperationException("RocksInDirt invocation owner was not found.");
+  LegacyPassRandomState invocationRandom = new(seed);
+  LegacyTileRunnerPassInvocation invocation =
+    (LegacyTileRunnerPassInvocation)(createInvocation.Invoke(
+      null,
+      [snapshot, secondRecipe, invocationRandom, 20, 41, true,
+        new Dictionary<(int X, int Y), WorldTile>()]) ??
+      throw new InvalidOperationException("RocksInDirt invocation was not created."));
+  LegacyPassRandomState expectedRandom = new(seed);
+  int expectedX = expectedRandom.Next(0, width);
+  int initialY = expectedRandom.Next(20, 41);
+  int expectedY = initialY;
+  if (!snapshot.GetTile(expectedX, initialY - 10).IsActive)
+  {
+    expectedY = expectedRandom.Next(20, 41);
+  }
+
+  int expectedStrength = expectedRandom.Next(4, 10);
+  int expectedSteps = expectedRandom.Next(5, 30);
+  if (invocation.XDraw != expectedX || invocation.YDraw != expectedY ||
+      invocation.StrengthDraw != expectedStrength || invocation.StepsDraw != expectedSteps ||
+      invocation.RandomDrawCount != 5)
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt second-family inactive-offset reroll did not preserve draw order.");
+  }
+
+  LegacyTileRunnerPassInvocation activeOffsetInvocation =
+    (LegacyTileRunnerPassInvocation)(createInvocation.Invoke(
+      null,
+      [CreateActiveOffsetSnapshot(metadata, expectedX, initialY - 10), secondRecipe,
+        new LegacyPassRandomState(seed), 20, 41, true,
+        new Dictionary<(int X, int Y), WorldTile>()]) ??
+      throw new InvalidOperationException("RocksInDirt active-offset invocation was not created."));
+  if (activeOffsetInvocation.YDraw != initialY || activeOffsetInvocation.RandomDrawCount != 4)
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt second-family active-offset branch consumed an unexpected reroll.");
+  }
+
+  LegacyTileRunnerPassInvocation firstInvocation =
+    (LegacyTileRunnerPassInvocation)(createInvocation.Invoke(
+      null,
+      [snapshot, recipes[0], new LegacyPassRandomState(seed), 0, 21, false,
+        new Dictionary<(int X, int Y), WorldTile>()]) ??
+      throw new InvalidOperationException("RocksInDirt first-family invocation was not created."));
+  if (firstInvocation.RandomDrawCount != 4 || firstInvocation.YDraw is < 0 or >= 21)
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt first-family range or draw count drifted from source.");
+  }
+
+  LegacyTileRunnerPassInvocation thirdInvocation =
+    (LegacyTileRunnerPassInvocation)(createInvocation.Invoke(
+      null,
+      [snapshot, recipes[2], new LegacyPassRandomState(seed), 40, 91, false,
+        new Dictionary<(int X, int Y), WorldTile>()]) ??
+      throw new InvalidOperationException("RocksInDirt third-family invocation was not created."));
+  if (thirdInvocation.RandomDrawCount != 4 || thirdInvocation.YDraw is < 40 or >= 91)
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt third-family range or draw count drifted from source.");
+  }
+
+  WorldGenerationStateComponent firstState = new(7);
+  List<TileChangeCommand> firstCommands = new();
+  LegacyRocksInDirtPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isSkyblockWorld: false,
+    ref firstState,
+    firstCommands);
+  if (firstCommands.Count == 0 || firstState.Stage != WorldGenerationStage.Cave ||
+      !StringComparer.Ordinal.Equals(
+        inputFingerprint,
+        CreateSnapshotWorldGridFingerprint(snapshot)) ||
+      firstCommands.Any(command =>
+        !metadata.IsInside(command.X, command.Y) || command.Sequence < 0 ||
+        command.Source is not (
+          "worldgen.cave.RocksInDirt.surface-dirt" or
+          "worldgen.cave.RocksInDirt.surface-high-dirt" or
+          "worldgen.cave.RocksInDirt.rock-high-dirt")))
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt did not emit bounded source-attributed commands from its snapshot.");
+  }
+
+  WorldGenerationStateComponent secondState = new(7);
+  List<TileChangeCommand> secondCommands = new();
+  LegacyRocksInDirtPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isSkyblockWorld: false,
+    ref secondState,
+    secondCommands);
+  if (!firstCommands.SequenceEqual(secondCommands) ||
+      firstState.Stage != secondState.Stage || firstState.NextSequence != secondState.NextSequence)
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt command emission was not deterministic from an immutable snapshot.");
+  }
+
+  WorldGrid commitWorld = WorldGrid.FromSnapshot(snapshot);
+  if (!new TileChangeCommitSystem().TryCommit(
+        commitWorld,
+        firstCommands,
+        out TileChangeCommitResult commitResult) ||
+      commitResult.AppliedCount != firstCommands.Count ||
+      StringComparer.Ordinal.Equals(
+        inputFingerprint,
+        CreateSnapshotWorldGridFingerprint(commitWorld.CreateSnapshot(metadata))))
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt commands did not remain isolated until deterministic commit.");
+  }
+
+  LegacyTileRunnerPassCommandBatch batch = new(
+    "RocksInDirt",
+    firstCommands,
+    Array.Empty<LiquidChangeCommand>(),
+    firstState.NextSequence);
+  if (!LegacyTileRunnerCommandCommitBoundary.TryCommit(
+        WorldGrid.FromSnapshot(snapshot),
+        batch,
+        Array.Empty<LiquidDefinition>(),
+        out LegacyTileRunnerCommandCommitResult batchResult) ||
+      !batchResult.Succeeded || batchResult.AppliedTileCount != firstCommands.Count)
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt typed command batch did not commit atomically.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(7);
+  List<TileChangeCommand> skyblockCommands = new();
+  LegacyRocksInDirtPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isSkyblockWorld: true,
+    ref skyblockState,
+    skyblockCommands);
+  if (skyblockCommands.Count != 0 || skyblockState.Stage != WorldGenerationStage.Created ||
+      skyblockState.NextSequence != 0)
+  {
+    throw new InvalidOperationException(
+      "RocksInDirt did not honor the Skyblock deny-generation guard.");
+  }
+
+  Console.WriteLine(
+    $"PASS: RocksInDirt source recipes, reroll, deterministic commands, and atomic commit " +
+    $"({firstCommands.Count} commands; source line {LegacyRocksInDirtPass.SourceLine})");
+  Console.WriteLine(
+    "SUMMARY: RocksInDirt focused verification completed; TileRunner traversal, aggregate cave " +
+    "ordering, full WLD differential, and legacy deletion remain deferred");
+}
+
+static void RunClayFocusedVerification()
+{
+  const int seed = 1456;
+  const int width = 200;
+  const int height = 300;
+  LegacyClayPassDefinition.Validate();
+  IReadOnlyList<LegacyTileRunnerPassInput> recipes =
+    LegacyClayPassDefinition.CreateDefaultRecipes();
+  IReadOnlyList<LegacyTileRunnerPassLoopDefinition> loops =
+    LegacyClayPassDefinition.CreateDefaultLoops();
+  if (recipes.Count != 4 || loops.Count != 4 ||
+      recipes[0] != new LegacyTileRunnerPassInput(
+        "Clay", "surface-low-clay", 40, false, 4, 14, 10, 50,
+        "0..worldSurfaceLow", true, true, true) ||
+      recipes[1] != new LegacyTileRunnerPassInput(
+        "Clay", "remix-clay", 40, false, 8, 15, 5, 50,
+        "rockLayer-25..maxTilesY-350", true, true, true) ||
+      recipes[2] != new LegacyTileRunnerPassInput(
+        "Clay", "surface-high-clay", 40, false, 8, 14, 15, 45,
+        "worldSurfaceLow..worldSurfaceHigh+1", true, true, true) ||
+      recipes[3] != new LegacyTileRunnerPassInput(
+        "Clay", "rock-high-clay", 40, false, 8, 15, 5, 50,
+        "worldSurfaceHigh..rockLayerHigh+1", true, true, true) ||
+      loops[0] != new LegacyTileRunnerPassLoopDefinition(
+        "Clay", "surface-low-clay", 2E-05, 1.0) ||
+      loops[1] != new LegacyTileRunnerPassLoopDefinition(
+        "Clay", "remix-clay", 7E-05, 1.0) ||
+      loops[2] != new LegacyTileRunnerPassLoopDefinition(
+        "Clay", "surface-high-clay", 5E-05, 1.0) ||
+      loops[3] != new LegacyTileRunnerPassLoopDefinition(
+        "Clay", "rock-high-clay", 2E-05, 1.0) ||
+      LegacyClayPassDefinition.CalculateInvocationCount(4200, 1200, 2E-05) != 100 ||
+      LegacyClayPassDefinition.CalculateInvocationCount(4200, 1200, 7E-05) != 352 ||
+      LegacyClayPassDefinition.CalculateInvocationCount(4200, 1200, 5E-05) != 252 ||
+      LegacyClayPassDefinition.CalculateInvocationCount(4200, 1200, 2E-05) != 100 ||
+      LegacyClayPassDefinition.CalculateInvocationCount(200, 150, 2E-05) != 0)
+  {
+    throw new InvalidOperationException(
+      "Clay recipes, loop densities, or floor-based cardinality drifted from the source.");
+  }
+
+  WorldMetadata metadata = new(
+    "clay-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    worldId: seed,
+    spawnX: width / 2,
+    spawnY: 20,
+    worldSurface: 65,
+    rockLayer: 120,
+    isRemixWorld: false);
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 65.5,
+    RockLayer: 120.5,
+    WorldSurfaceLow: 30.75,
+    WorldSurfaceHigh: 80.25,
+    RockLayerLow: 100.5,
+    RockLayerHigh: 140.75,
+    LeftBeachEnd: 20,
+    RightBeachStart: 180,
+    WaterLine: 200,
+    LavaLine: 240);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  if (!world.TrySetTile(100, 20, new WorldTile(true, 1)) ||
+      !world.TrySetTile(100, 21, new WorldTile(true, 40)) ||
+      !world.TrySetTile(100, 22, new WorldTile(true, 40)) ||
+      !world.TrySetTile(100, 23, new WorldTile(true, 40)) ||
+      !world.TrySetTile(100, 24, new WorldTile(true, 40)) ||
+      !world.TrySetTile(100, 25, new WorldTile(true, 40)) ||
+      !world.TrySetTile(101, 10, new WorldTile(true, 1)))
+  {
+    throw new InvalidOperationException("Clay cleanup fixture could not seed active tiles.");
+  }
+
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  string inputFingerprint = CreateSnapshotWorldGridFingerprint(snapshot);
+  WorldGenerationStateComponent firstState = new(seed);
+  List<TileChangeCommand> firstCommands = new();
+  LegacyPassRandomState firstRandom = new(seed);
+  LegacyClayPass.AppendCommands(
+    snapshot,
+    profile,
+    firstRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref firstState,
+    firstCommands);
+  if (firstState.Stage != WorldGenerationStage.Cave || firstCommands.Count == 0 ||
+      !StringComparer.Ordinal.Equals(
+        inputFingerprint,
+        CreateSnapshotWorldGridFingerprint(snapshot)) ||
+      firstCommands.Any(command =>
+        !metadata.IsInside(command.X, command.Y) || command.Sequence < 0 ||
+        (command.Source != "worldgen.cave.Clay.cleanup" && command.TileType != 40) ||
+        (command.Source == "worldgen.cave.Clay.cleanup" &&
+          (command.TileType != 0 || command.Priority <= 0))))
+  {
+    throw new InvalidOperationException(
+      "Clay did not emit bounded source-attributed commands from its immutable snapshot.");
+  }
+
+  string[] expectedFamilies =
+  [
+    "worldgen.cave.Clay.surface-low-clay",
+    "worldgen.cave.Clay.surface-high-clay",
+    "worldgen.cave.Clay.rock-high-clay"
+  ];
+  foreach (string familySource in expectedFamilies)
+  {
+    if (!firstCommands.Any(command => command.Source == familySource))
+    {
+      throw new InvalidOperationException(
+        $"Clay source family did not emit a command: {familySource}.");
+    }
+  }
+
+  List<TileChangeCommand> cleanupCommands = firstCommands
+    .Where(command => command.Source == "worldgen.cave.Clay.cleanup")
+    .ToList();
+  if (!cleanupCommands.Any(command => command.X == 100 && command.Y is >= 21 and <= 25) ||
+      cleanupCommands.Any(command => command.X is < 5 or >= width - 5) ||
+      cleanupCommands.Any(command => command.Y < 20 || command.Y > 24 + 1) ||
+      cleanupCommands.Max(command => command.Sequence) <= firstCommands
+        .Where(command => command.Source != "worldgen.cave.Clay.cleanup")
+        .Max(command => command.Sequence))
+  {
+    throw new InvalidOperationException(
+      "Clay cleanup did not preserve first-active and five-row source ordering.");
+  }
+
+  LegacyPassRandomState expectedRandom = new(seed);
+  for (int recipeIndex = 0; recipeIndex < recipes.Count; recipeIndex++)
+  {
+    LegacyTileRunnerPassInput recipe = recipes[recipeIndex];
+    (int minimumY, int maximumYExclusive) = recipeIndex switch
+    {
+      0 => (0, (int)profile.WorldSurfaceLow),
+      1 => ((int)profile.RockLayer - 25, height - 350),
+      2 => ((int)profile.WorldSurfaceLow, (int)profile.WorldSurfaceHigh + 1),
+      3 => ((int)profile.WorldSurfaceHigh, (int)profile.RockLayerHigh + 1),
+      _ => throw new InvalidOperationException("Clay recipe index was invalid.")
+    };
+    if (recipeIndex == 1)
+    {
+      continue;
+    }
+
+    LegacyTileRunnerPassInvocation invocation =
+      LegacyTileRunnerPassInvocationFactory.Create(
+        recipe,
+        expectedRandom,
+        minimumXInclusive: 0,
+        maximumXExclusive: width,
+        minimumYInclusive: minimumY,
+        maximumYExclusive: maximumYExclusive);
+    if (invocation.XDraw is < 0 or >= width ||
+        invocation.YDraw < minimumY || invocation.YDraw >= maximumYExclusive ||
+        invocation.StrengthDraw < recipe.MinimumStrength ||
+        invocation.StrengthDraw >= recipe.MaximumStrengthExclusive ||
+        invocation.StepsDraw < recipe.MinimumSteps ||
+        invocation.StepsDraw >= recipe.MaximumStepsExclusive ||
+        invocation.RandomDrawCount != 4)
+    {
+      throw new InvalidOperationException(
+        $"Clay invocation range or draw order drifted for {recipe.RecipeName}.");
+    }
+  }
+
+  WorldGenerationStateComponent secondState = new(seed);
+  List<TileChangeCommand> secondCommands = new();
+  LegacyPassRandomState secondRandom = new(seed);
+  LegacyClayPass.AppendCommands(
+    snapshot,
+    profile,
+    secondRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref secondState,
+    secondCommands);
+  if (!firstCommands.SequenceEqual(secondCommands) ||
+      firstState.NextSequence != secondState.NextSequence ||
+      firstRandom.SampleCount != secondRandom.SampleCount)
+  {
+    throw new InvalidOperationException(
+      "Clay command emission was not deterministic from an immutable snapshot.");
+  }
+
+  WorldGrid commitWorld = WorldGrid.FromSnapshot(snapshot);
+  LegacyTileRunnerPassCommandBatch batch = new(
+    "Clay",
+    firstCommands.AsReadOnly(),
+    Array.Empty<LiquidChangeCommand>(),
+    firstState.NextSequence);
+  if (!LegacyTileRunnerCommandCommitBoundary.TryCommit(
+        commitWorld,
+        batch,
+        Array.Empty<LiquidDefinition>(),
+        out LegacyTileRunnerCommandCommitResult commitResult) ||
+      !commitResult.Succeeded ||
+      commitResult.AppliedTileCount != firstCommands.Count ||
+      StringComparer.Ordinal.Equals(
+        inputFingerprint,
+        CreateSnapshotWorldGridFingerprint(commitWorld.CreateSnapshot(metadata))) ||
+      commitWorld.GetTile(100, 21).Type != 0)
+  {
+    throw new InvalidOperationException("Clay typed command batch did not commit atomically.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(seed);
+  List<TileChangeCommand> skyblockCommands = new();
+  LegacyPassRandomState skyblockRandom = new(seed);
+  LegacyClayPass.AppendCommands(
+    snapshot,
+    profile,
+    skyblockRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: true,
+    ref skyblockState,
+    skyblockCommands);
+  LegacyPassRandomState skyblockExpectedRandom = new(seed);
+  if (skyblockCommands.Count != 0 || skyblockState.Stage != WorldGenerationStage.Created ||
+      skyblockState.NextSequence != 0 || skyblockRandom.SampleCount != 0 ||
+      skyblockExpectedRandom.Next(100) != skyblockRandom.Next(100))
+  {
+    throw new InvalidOperationException("Clay did not honor the Skyblock deny-generation guard.");
+  }
+
+  const int remixHeight = 600;
+  WorldMetadata remixMetadata = new(
+    "clay-remix-focused",
+    new WorldSeed(seed),
+    width,
+    remixHeight,
+    worldId: seed,
+    spawnX: width / 2,
+    spawnY: 20,
+    worldSurface: 65,
+    rockLayer: 220,
+    isRemixWorld: true);
+  LegacyTerrainRuntimeProfile remixProfile = profile with
+  {
+    RockLayer = 220.5,
+    RockLayerLow = 190.5,
+    RockLayerHigh = 240.75
+  };
+  WorldGrid remixWorld = new(width, remixHeight, initializeLegacyEmptyFrames: true);
+  if (!remixWorld.TrySetTile(100, 20, new WorldTile(true, 1)))
+  {
+    throw new InvalidOperationException("Clay Remix fixture could not seed an active tile.");
+  }
+
+  WorldGenerationStateComponent remixState = new(seed);
+  List<TileChangeCommand> remixCommands = new();
+  LegacyPassRandomState remixRandom = new(seed);
+  LegacyClayPass.AppendCommands(
+    remixWorld.CreateSnapshot(remixMetadata),
+    remixProfile,
+    remixRandom,
+    isRemixWorld: true,
+    isSkyblockWorld: false,
+    ref remixState,
+    remixCommands);
+  if (!remixCommands.Any(command => command.Source == "worldgen.cave.Clay.remix-clay") ||
+      remixCommands.Any(command => command.Source is
+        "worldgen.cave.Clay.surface-high-clay" or
+        "worldgen.cave.Clay.rock-high-clay") ||
+      remixRandom.SampleCount <= firstRandom.SampleCount)
+  {
+    throw new InvalidOperationException(
+      "Clay Remix branch did not preserve its separate source loop contract.");
+  }
+
+  Console.WriteLine(
+    $"PASS: Clay source recipes, floor counts, deterministic commands, cleanup, Remix guard, " +
+    $"and atomic commit ({firstCommands.Count} commands; source line {LegacyClayPass.SourceLine})");
+  Console.WriteLine(
+    "SUMMARY: Clay focused verification completed; complete TileRunner traversal, Remix oracle " +
+    "parity, aggregate cave ordering, full WLD differential, and legacy deletion remain deferred");
+}
+
+static void RunDirtInRocksFocusedVerification()
+{
+  const int width = 200;
+  const int height = 150;
+  const int seed = 1456;
+  LegacyDirtInRocksPassDefinition.Validate();
+  LegacyTileRunnerPassInput recipe =
+    LegacyDirtInRocksPassDefinition.CreateDefaultRecipe();
+  if (recipe != new LegacyTileRunnerPassInput(
+        "DirtInRocks",
+        "rock-layer-dirt",
+        0,
+        false,
+        2,
+        6,
+        2,
+        40,
+        "rockLayerLow..maxTilesY",
+        true,
+        true,
+        true) ||
+      LegacyDirtInRocksPassDefinition.CalculateInvocationCount(width, height) != 150 ||
+      LegacyDirtInRocksPassDefinition.CalculateInvocationCount(4200, 1200) != 25200)
+  {
+    throw new InvalidOperationException(
+      "DirtInRocks definition drifted from the source loop contract.");
+  }
+
+  WorldMetadata metadata = new(
+    "dirt-in-rocks-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    worldId: seed,
+    spawnX: width / 2,
+    spawnY: 40,
+    worldSurface: 40,
+    rockLayer: 80,
+    isRemixWorld: false);
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 40.0,
+    RockLayer: 80.0,
+    WorldSurfaceLow: 20.0,
+    WorldSurfaceHigh: 40.0,
+    RockLayerLow: 50.0,
+    RockLayerHigh: 90.0,
+    LeftBeachEnd: 20,
+    RightBeachStart: 180,
+    WaterLine: 100,
+    LavaLine: 120);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  for (int x = 0; x < width; x++)
+  {
+    for (int y = 50; y < 65; y++)
+    {
+      if (!world.TrySetTile(x, y, new WorldTile(true, 53)))
+      {
+        throw new InvalidOperationException(
+          "DirtInRocks type-53 preservation fixture could not seed a tile.");
+      }
+    }
+
+    for (int y = 70; y < height; y++)
+    {
+      if ((x + y) % 3 == 0 && !world.TrySetTile(x, y, new WorldTile(true, 1)))
+      {
+        throw new InvalidOperationException(
+          "DirtInRocks input fixture could not seed an active rock tile.");
+      }
+    }
+  }
+
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  string inputFingerprint = CreateSnapshotWorldGridFingerprint(snapshot);
+  WorldGenerationStateComponent firstState = new(seed);
+  List<TileChangeCommand> firstCommands = new();
+  LegacyPassRandomState firstRandom = new(seed);
+  LegacyDirtInRocksPass.AppendCommands(
+    snapshot,
+    profile,
+    firstRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref firstState,
+    firstCommands);
+  if (firstState.Stage != WorldGenerationStage.Cave || firstCommands.Count == 0 ||
+      !StringComparer.Ordinal.Equals(
+        inputFingerprint,
+        CreateSnapshotWorldGridFingerprint(snapshot)) ||
+      firstCommands.Any(command =>
+        !metadata.IsInside(command.X, command.Y) ||
+        command.TileType != 0 ||
+        !command.Source.StartsWith("worldgen.cave.DirtInRocks.", StringComparison.Ordinal)))
+  {
+    throw new InvalidOperationException(
+      "DirtInRocks did not emit bounded source-attributed commands from its immutable snapshot.");
+  }
+
+  LegacyPassRandomState expectedRandom = new(seed);
+  LegacyTileRunnerPassInvocation expectedInvocation =
+    LegacyTileRunnerPassInvocationFactory.Create(
+      recipe,
+      expectedRandom,
+      minimumXInclusive: 0,
+      maximumXExclusive: width,
+      minimumYInclusive: 50,
+      maximumYExclusive: height);
+  if (expectedInvocation.XDraw is < 0 or >= width ||
+      expectedInvocation.YDraw is < 50 or >= height ||
+      expectedInvocation.StrengthDraw is < 2 or >= 6 ||
+      expectedInvocation.StepsDraw is < 2 or >= 40 ||
+      expectedInvocation.RandomDrawCount != 4)
+  {
+    throw new InvalidOperationException(
+      $"DirtInRocks invocation ranges or draw ordering drifted from the source: " +
+      $"x={expectedInvocation.XDraw}, y={expectedInvocation.YDraw}, " +
+      $"strength={expectedInvocation.StrengthDraw}, steps={expectedInvocation.StepsDraw}, " +
+      $"draws={expectedInvocation.RandomDrawCount}.");
+  }
+
+  WorldGenerationStateComponent secondState = new(seed);
+  List<TileChangeCommand> secondCommands = new();
+  LegacyPassRandomState secondRandom = new(seed);
+  LegacyDirtInRocksPass.AppendCommands(
+    snapshot,
+    profile,
+    secondRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref secondState,
+    secondCommands);
+  if (!firstCommands.SequenceEqual(secondCommands) ||
+      firstState.NextSequence != secondState.NextSequence ||
+      firstRandom.SampleCount != secondRandom.SampleCount)
+  {
+    throw new InvalidOperationException(
+      "DirtInRocks command emission was not deterministic from an immutable snapshot.");
+  }
+
+  if (LegacyMainWorldSurfacePolicy.Resolve(profile, metadata) != 65 ||
+      firstCommands.Any(command =>
+        command.Kind == TileChangeKind.UpdateTileType &&
+        command.TileType == 0 &&
+        command.Y >= 50 &&
+        command.Y < 65 &&
+        snapshot.GetTile(command.X, command.Y).Type == 53))
+  {
+    throw new InvalidOperationException(
+      "DirtInRocks incorrectly overwrote type-53 tiles below Main.worldSurface.");
+  }
+
+  WorldGrid commitWorld = WorldGrid.FromSnapshot(snapshot);
+  LegacyTileRunnerPassCommandBatch batch = new(
+    "DirtInRocks",
+    firstCommands.AsReadOnly(),
+    Array.Empty<LiquidChangeCommand>(),
+    firstState.NextSequence);
+  if (!LegacyTileRunnerCommandCommitBoundary.TryCommit(
+        commitWorld,
+        batch,
+        Array.Empty<LiquidDefinition>(),
+        out LegacyTileRunnerCommandCommitResult commitResult) ||
+      !commitResult.Succeeded ||
+      commitResult.AppliedTileCount != firstCommands.Count ||
+      StringComparer.Ordinal.Equals(
+        inputFingerprint,
+        CreateSnapshotWorldGridFingerprint(commitWorld.CreateSnapshot(metadata))))
+  {
+    throw new InvalidOperationException(
+      "DirtInRocks typed command batch did not commit atomically.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(seed);
+  List<TileChangeCommand> skyblockCommands = new();
+  LegacyDirtInRocksPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isRemixWorld: false,
+    isSkyblockWorld: true,
+    ref skyblockState,
+    skyblockCommands);
+  if (skyblockCommands.Count != 0 || skyblockState.Stage != WorldGenerationStage.Created ||
+      skyblockState.NextSequence != 0)
+  {
+    throw new InvalidOperationException(
+      "DirtInRocks did not honor the Skyblock deny-generation guard.");
+  }
+
+  WorldMetadata remixMetadata = new(
+    "dirt-in-rocks-remix-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    worldId: seed,
+    spawnX: width / 2,
+    spawnY: 40,
+    worldSurface: 40,
+    rockLayer: 80,
+    isRemixWorld: true);
+  LegacyTerrainRuntimeProfile remixProfile = profile with
+  {
+    RockLayer = 130.0,
+    RockLayerLow = 120.0,
+    RockLayerHigh = 140.0
+  };
+  WorldGrid remixWorld = new(width, height, initializeLegacyEmptyFrames: true);
+  if (!remixWorld.TrySetTile(0, 70, new WorldTile(true, 0)) ||
+      !remixWorld.TrySetTile(1, 70, new WorldTile(true, 1)))
+  {
+    throw new InvalidOperationException(
+      "DirtInRocks Remix fixture could not seed toggle tiles.");
+  }
+
+  WorldGridSnapshot remixSnapshot = remixWorld.CreateSnapshot(remixMetadata);
+  WorldGenerationStateComponent remixBaseState = new(seed);
+  List<TileChangeCommand> remixBaseCommands = new();
+  LegacyPassRandomState remixBaseRandom = new(seed);
+  LegacyDirtInRocksPass.AppendCommands(
+    remixSnapshot,
+    remixProfile,
+    remixBaseRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref remixBaseState,
+    remixBaseCommands);
+  WorldGenerationStateComponent remixState = new(seed);
+  List<TileChangeCommand> remixCommands = new();
+  LegacyPassRandomState remixRandom = new(seed);
+  LegacyDirtInRocksPass.AppendCommands(
+    remixSnapshot,
+    remixProfile,
+    remixRandom,
+    isRemixWorld: true,
+    isSkyblockWorld: false,
+    ref remixState,
+    remixCommands);
+  if (remixCommands.Count != 2 ||
+      remixCommands.Any(command =>
+        command.Source != "worldgen.cave.DirtInRocks.remix" ||
+        command.IsActive != true ||
+        command.TileType is not (0 or 1)) ||
+      remixRandom.SampleCount != remixBaseRandom.SampleCount + width)
+  {
+    throw new InvalidOperationException(
+      "DirtInRocks Remix did not preserve the post-loop column toggle contract.");
+  }
+
+  WorldGrid remixCommitted = WorldGrid.FromSnapshot(remixSnapshot);
+  if (!new TileChangeCommitSystem().TryCommit(
+        remixCommitted,
+        remixCommands,
+        out TileChangeCommitResult remixCommitResult) ||
+      remixCommitResult.AppliedCount != remixCommands.Count ||
+      remixCommitted.GetTile(0, 70).Type != 1 ||
+      remixCommitted.GetTile(1, 70).Type != 0)
+  {
+    throw new InvalidOperationException(
+      "DirtInRocks Remix toggle commands did not commit atomically.");
+  }
+
+  Console.WriteLine(
+    $"PASS: DirtInRocks source recipe, ranges, deterministic commands, Remix toggle, and " +
+    $"atomic commit ({firstCommands.Count} base commands; source line " +
+    $"{LegacyDirtInRocksPass.SourceLine})");
+  Console.WriteLine(
+    "SUMMARY: DirtInRocks focused verification completed; complete TileRunner traversal, " +
+    "aggregate cave ordering, full WLD differential, and legacy deletion remain deferred");
+}
+
+static WorldGridSnapshot CreateActiveOffsetSnapshot(WorldMetadata metadata, int x, int y)
+{
+  WorldGrid world = new(metadata.Width, metadata.Height, initializeLegacyEmptyFrames: true);
+  if (!world.TrySetTile(x, y, new WorldTile(IsActive: true, Type: 1)))
+  {
+    throw new InvalidOperationException("RocksInDirt active-offset fixture could not seed a tile.");
+  }
+
+  return world.CreateSnapshot(metadata);
+}
+
+static void RunDirtLayerCavesFocusedVerification()
+{
+  const int width = 800;
+  const int height = 300;
+  const int seed = 1456;
+  LegacyDirtLayerCavesPassDefinition definition =
+    LegacyDirtLayerCavesPassDefinitionFactory.CreateDefault();
+  definition.Validate();
+  if (definition.Density != 3E-05 ||
+      definition.LiquidPreservingChanceDenominator != 6 ||
+      definition.MinimumStrength != 5 ||
+      definition.MaximumStrengthExclusive != 15 ||
+      definition.MinimumSteps != 30 ||
+      definition.MaximumStepsExclusive != 200 ||
+      definition.SmallHolesBeachAvoidance != 340 ||
+      definition.CalculateInvocationCount(4200, 1200, false) != 151 ||
+      definition.CalculateInvocationCount(4200, 1200, true) != 302)
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves definition drifted from the source loop contract.");
+  }
+
+  FieldInfo? recipeField = typeof(LegacyDirtLayerCavesPass).GetField(
+    "_recipe",
+    BindingFlags.NonPublic | BindingFlags.Static);
+  if (recipeField is null || recipeField.FieldType != typeof(LegacyTileRunnerPassInput))
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves owner did not expose the private typed recipe field.");
+  }
+
+  if (LegacyDirtLayerCavesPass.IsSupportedWorldWidth(680) ||
+      !LegacyDirtLayerCavesPass.IsSupportedWorldWidth(681))
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves width support did not preserve the two-margin boundary.");
+  }
+
+  if (LegacyDirtLayerCavesPass.IsCandidateAccepted(
+        100,
+        99,
+        width,
+        100.0,
+        80.0,
+        definition.SmallHolesBeachAvoidance) ||
+      !LegacyDirtLayerCavesPass.IsCandidateAccepted(
+        100,
+        100,
+        width,
+        100.0,
+        80.0,
+        definition.SmallHolesBeachAvoidance) ||
+      LegacyDirtLayerCavesPass.IsCandidateAccepted(
+        461,
+        99,
+        width,
+        100.0,
+        80.0,
+        definition.SmallHolesBeachAvoidance) ||
+      !LegacyDirtLayerCavesPass.IsCandidateAccepted(
+        460,
+        99,
+        width,
+        100.0,
+        80.0,
+        definition.SmallHolesBeachAvoidance) ||
+      LegacyDirtLayerCavesPass.IsCandidateAccepted(
+        360,
+        79,
+        width,
+        100.0,
+        80.0,
+        definition.SmallHolesBeachAvoidance) ||
+      !LegacyDirtLayerCavesPass.IsCandidateAccepted(
+        360,
+        80,
+        width,
+        100.0,
+        80.0,
+        definition.SmallHolesBeachAvoidance) ||
+      LegacyDirtLayerCavesPass.IsCandidateAccepted(
+        440,
+        79,
+        width,
+        100.0,
+        80.0,
+        definition.SmallHolesBeachAvoidance) ||
+      !LegacyDirtLayerCavesPass.IsCandidateAccepted(
+        440,
+        80,
+        width,
+        100.0,
+        80.0,
+        definition.SmallHolesBeachAvoidance))
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves candidate retry predicate did not preserve source boundaries.");
+  }
+
+  bool sawStandardTileType = false;
+  bool sawLiquidPreservingTileType = false;
+  for (int randomSeed = 0; randomSeed < 10000; randomSeed++)
+  {
+    int tileType = definition.SelectTileType(new LegacyPassRandomState(randomSeed));
+    sawStandardTileType |= tileType == -1;
+    sawLiquidPreservingTileType |= tileType == -2;
+  }
+
+  if (!sawStandardTileType || !sawLiquidPreservingTileType ||
+      definition.ScaleStrength(10, false) != 10 ||
+      definition.ScaleStrength(10, true) != 11 ||
+      definition.ScaleSteps(100, false) != 100 ||
+      definition.ScaleSteps(100, true) != 190)
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves type selection or remix scaling was not source-backed.");
+  }
+
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 80.0,
+    RockLayer: 150.0,
+    WorldSurfaceLow: 60.0,
+    WorldSurfaceHigh: 100.0,
+    RockLayerLow: 120.0,
+    RockLayerHigh: 160.0,
+    LeftBeachEnd: 100,
+    RightBeachStart: 700,
+    WaterLine: 200,
+    LavaLine: 240);
+  WorldMetadata metadata = new(
+    "dirt-layer-caves-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    isRemixWorld: false);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  string inputFingerprint = CreateSnapshotWorldGridFingerprint(snapshot);
+  MethodInfo createInvocation = typeof(LegacyDirtLayerCavesPass).GetMethod(
+    "CreateInvocation",
+    BindingFlags.NonPublic | BindingFlags.Static) ??
+    throw new InvalidOperationException("DirtLayerCaves invocation owner was not found.");
+  LegacyPassRandomState invocationRandom = new(seed);
+  LegacyTileRunnerPassInvocation invocation =
+    (LegacyTileRunnerPassInvocation)(createInvocation.Invoke(
+      null,
+      [snapshot, profile, definition, invocationRandom, false]) ??
+      throw new InvalidOperationException("DirtLayerCaves invocation was not created."));
+  LegacyPassRandomState expectedRandom = new(seed);
+  int expectedTileType = definition.SelectTileType(expectedRandom);
+  int expectedX = expectedRandom.Next(0, width);
+  int expectedY = expectedRandom.Next((int)profile.WorldSurfaceLow, (int)profile.RockLayerHigh + 1);
+  int retryCount = 0;
+  while (!LegacyDirtLayerCavesPass.IsCandidateAccepted(
+           expectedX,
+           expectedY,
+           width,
+           profile.WorldSurfaceHigh,
+           profile.WorldSurface,
+           definition.SmallHolesBeachAvoidance))
+  {
+    expectedX = expectedRandom.Next(0, width);
+    expectedY = expectedRandom.Next(
+      (int)profile.WorldSurfaceLow,
+      (int)profile.RockLayerHigh + 1);
+    retryCount++;
+  }
+
+  int expectedStrength = expectedRandom.Next(
+    definition.MinimumStrength,
+    definition.MaximumStrengthExclusive);
+  int expectedSteps = expectedRandom.Next(
+    definition.MinimumSteps,
+    definition.MaximumStepsExclusive);
+  if (invocation.Request.TileType != expectedTileType ||
+      invocation.Request.X != expectedX ||
+      invocation.Request.Y != expectedY ||
+      invocation.Request.Strength != expectedStrength ||
+      invocation.Request.Steps != expectedSteps ||
+      invocation.RandomDrawCount != 5 + retryCount * 2)
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves invocation did not preserve source random draw order.");
+  }
+
+  WorldGenerationStateComponent firstState = new(7);
+  List<TileChangeCommand> firstCommands = new();
+  LegacyDirtLayerCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref firstState,
+    firstCommands);
+  if (firstCommands.Count == 0 ||
+      firstState.Stage != WorldGenerationStage.Cave ||
+      !StringComparer.Ordinal.Equals(
+        inputFingerprint,
+        CreateSnapshotWorldGridFingerprint(snapshot)) ||
+      firstCommands.Any(command =>
+        !metadata.IsInside(command.X, command.Y) ||
+        command.Sequence < 0 ||
+        command.Kind != TileChangeKind.Kill ||
+        command.TileType != 0 ||
+        !StringComparer.Ordinal.Equals(
+          command.Source,
+          "worldgen.cave.DirtLayerCaves.dirt-layer")))
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves did not emit bounded source-attributed kill commands from its snapshot.");
+  }
+
+  WorldGenerationStateComponent secondState = new(7);
+  List<TileChangeCommand> secondCommands = new();
+  LegacyDirtLayerCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref secondState,
+    secondCommands);
+  if (!firstCommands.SequenceEqual(secondCommands) ||
+      firstState.Stage != secondState.Stage ||
+      firstState.NextSequence != secondState.NextSequence)
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves command emission was not deterministic from an immutable snapshot.");
+  }
+
+  WorldGrid commitWorld = WorldGrid.FromSnapshot(snapshot);
+  TileChangeCommand firstCommand = firstCommands[0];
+  if (!commitWorld.TrySetTile(firstCommand.X, firstCommand.Y, new WorldTile(true, 1)))
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves commit fixture could not seed an active tile.");
+  }
+
+  WorldGridSnapshot commitInput = commitWorld.CreateSnapshot(metadata);
+  string commitInputFingerprint = CreateSnapshotWorldGridFingerprint(commitInput);
+  if (!new TileChangeCommitSystem().TryCommit(
+        commitWorld,
+        firstCommands,
+        out TileChangeCommitResult commitResult) ||
+      commitResult.AppliedCount != firstCommands.Count ||
+      StringComparer.Ordinal.Equals(
+        commitInputFingerprint,
+        CreateSnapshotWorldGridFingerprint(commitWorld.CreateSnapshot(metadata))))
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves commands did not remain isolated until deterministic commit.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(7);
+  List<TileChangeCommand> skyblockCommands = new();
+  LegacyDirtLayerCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isRemixWorld: false,
+    isSkyblockWorld: true,
+    ref skyblockState,
+    skyblockCommands);
+  if (skyblockCommands.Count != 0 ||
+      skyblockState.Stage != WorldGenerationStage.Created ||
+      skyblockState.NextSequence != 0)
+  {
+    throw new InvalidOperationException(
+      "DirtLayerCaves did not honor the Skyblock deny-generation guard.");
+  }
+
+  Console.WriteLine(
+    $"PASS: DirtLayerCaves focused contract, deterministic commands, and commit isolation " +
+    $"({firstCommands.Count} commands; source line {LegacyDirtLayerCavesPass.SourceAnchorLine})");
+  Console.WriteLine(
+    "SUMMARY: DirtLayerCaves focused verification completed; aggregate cave ordering, full " +
+    "TileRunner parity, WLD differential, and legacy deletion remain deferred");
+}
+
+static void RunRockLayerCavesFocusedVerification()
+{
+  const int width = 800;
+  const int height = 300;
+  const int seed = 1456;
+  LegacyRockLayerCavesPassDefinition definition =
+    LegacyRockLayerCavesPassDefinitionFactory.CreateDefault();
+  definition.Validate();
+  if (definition.Density != 0.00013 ||
+      definition.LiquidPreservingChanceDenominator != 10 ||
+      definition.MinimumStrength != 6 ||
+      definition.MaximumStrengthExclusive != 20 ||
+      definition.MinimumSteps != 50 ||
+      definition.MaximumStepsExclusive != 300 ||
+      definition.CalculateInvocationCount(4200, 1200, false) != 655 ||
+      definition.CalculateInvocationCount(4200, 1200, true) != 720 ||
+      definition.CalculateInvocationCount(200, 150, false) != 3 ||
+      definition.ScaleStrength(19, true) != 13 ||
+      definition.ScaleSteps(299, true) != 209)
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves definition or floor-based cardinality drifted from the source.");
+  }
+
+  bool sawStandardTileType = false;
+  bool sawLiquidPreservingTileType = false;
+  for (int randomSeed = 0; randomSeed < 10000; randomSeed++)
+  {
+    int tileType = definition.SelectTileType(new LegacyPassRandomState(randomSeed));
+    sawStandardTileType |= tileType == -1;
+    sawLiquidPreservingTileType |= tileType == -2;
+  }
+
+  if (!sawStandardTileType || !sawLiquidPreservingTileType)
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves type selection did not preserve the -1/-2 source branches.");
+  }
+
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 80.0,
+    RockLayer: 150.0,
+    WorldSurfaceLow: 60.0,
+    WorldSurfaceHigh: 100.0,
+    RockLayerLow: 120.0,
+    RockLayerHigh: 160.0,
+    LeftBeachEnd: 100,
+    RightBeachStart: 700,
+    WaterLine: 200,
+    LavaLine: 240);
+  WorldMetadata metadata = new(
+    "rock-layer-caves-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    isRemixWorld: false);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  LegacyPassRandomState expectedRandom = new(seed);
+  int expectedTileType = definition.SelectTileType(expectedRandom);
+  int expectedStrength = expectedRandom.Next(
+    definition.MinimumStrength,
+    definition.MaximumStrengthExclusive);
+  int expectedSteps = expectedRandom.Next(
+    definition.MinimumSteps,
+    definition.MaximumStepsExclusive);
+  int expectedX = expectedRandom.Next(0, width);
+  int expectedY = expectedRandom.Next((int)profile.RockLayerHigh, height);
+  if (!world.TrySetTile(expectedX, expectedY, new WorldTile(IsActive: true, Type: 1)))
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves focused fixture could not seed an active tile.");
+  }
+
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  string inputFingerprint = CreateSnapshotWorldGridFingerprint(snapshot);
+  FieldInfo? recipeField = typeof(LegacyRockLayerCavesPass).GetField(
+    "_recipe",
+    BindingFlags.NonPublic | BindingFlags.Static);
+  if (recipeField is null || recipeField.FieldType != typeof(LegacyTileRunnerPassInput))
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves owner did not expose the private typed recipe field.");
+  }
+
+  LegacyTileRunnerPassInput recipe =
+    (LegacyTileRunnerPassInput)(recipeField.GetValue(null) ??
+      throw new InvalidOperationException("RockLayerCaves recipe was null."));
+  if (recipe.PassName != "RockLayerCaves" || recipe.RecipeName != "rock-layer" ||
+      recipe.TileType != -1 || recipe.AddTile || recipe.MinimumStrength != 6 ||
+      recipe.MaximumStrengthExclusive != 20 || recipe.MinimumSteps != 50 ||
+      recipe.MaximumStepsExclusive != 300 || recipe.VerticalRange != "rockLayerHigh..maxTilesY" ||
+      !recipe.UsesRandomX || !recipe.UsesRandomY || !recipe.ResetsRandomFromWorldSeed)
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves typed recipe drifted from the source invocation contract.");
+  }
+
+  PropertyInfo preserveTileStateProperty = typeof(TileChangeCommand).GetProperty(
+    "PreserveTileState",
+    BindingFlags.Public | BindingFlags.Instance) ??
+    throw new InvalidOperationException(
+      "Tile change commands did not expose negative TileRunner state preservation.");
+
+  MethodInfo createInvocation = typeof(LegacyRockLayerCavesPass).GetMethod(
+    "CreateInvocation",
+    BindingFlags.NonPublic | BindingFlags.Static) ??
+    throw new InvalidOperationException("RockLayerCaves invocation owner was not found.");
+  LegacyPassRandomState invocationRandom = new(seed);
+  LegacyTileRunnerPassInvocation invocation =
+    (LegacyTileRunnerPassInvocation)(createInvocation.Invoke(
+      null,
+      [snapshot, profile, definition, invocationRandom, false]) ??
+      throw new InvalidOperationException("RockLayerCaves invocation was not created."));
+  if (invocation.Request.TileType != expectedTileType ||
+      invocation.Request.Strength != expectedStrength ||
+      invocation.Request.Steps != expectedSteps ||
+      invocation.Request.X != expectedX ||
+      invocation.Request.Y != expectedY ||
+      invocation.RandomDrawCount != 5 ||
+      invocationRandom.SampleCount != 5 ||
+      invocation.Request.AddTile || invocation.Request.NoYChange ||
+      invocation.Request.SpeedX != 0.0 || invocation.Request.SpeedY != 0.0)
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves invocation did not preserve source draw order or request flags.");
+  }
+
+  WorldGenerationStateComponent firstState = new(7);
+  List<TileChangeCommand> firstCommands = new();
+  LegacyPassRandomState firstRandom = new(seed);
+  LegacyRockLayerCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    firstRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref firstState,
+    firstCommands);
+  if (firstCommands.Count == 0 ||
+      firstState.Stage != WorldGenerationStage.Cave ||
+      firstRandom.SampleCount <= 5 ||
+      !StringComparer.Ordinal.Equals(
+        inputFingerprint,
+        CreateSnapshotWorldGridFingerprint(snapshot)) ||
+      firstCommands.Any(command =>
+        !metadata.IsInside(command.X, command.Y) ||
+        command.Sequence < 0 ||
+        command.Kind != TileChangeKind.Kill ||
+        command.TileType != 0 ||
+        (bool)(preserveTileStateProperty.GetValue(command) ?? false) != true ||
+        !StringComparer.Ordinal.Equals(
+          command.Source,
+          "worldgen.cave.RockLayerCaves.rock-layer")))
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves did not emit bounded source-attributed commands from its snapshot.");
+  }
+
+  WorldGenerationStateComponent secondState = new(7);
+  List<TileChangeCommand> secondCommands = new();
+  LegacyPassRandomState secondRandom = new(seed);
+  LegacyRockLayerCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    secondRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref secondState,
+    secondCommands);
+  if (!firstCommands.SequenceEqual(secondCommands) ||
+      firstState.Stage != secondState.Stage ||
+      firstState.NextSequence != secondState.NextSequence ||
+      firstRandom.SampleCount != secondRandom.SampleCount)
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves command emission was not deterministic from an immutable snapshot.");
+  }
+
+  WorldGrid commitWorld = WorldGrid.FromSnapshot(snapshot);
+  string commitInputFingerprint =
+    CreateSnapshotWorldGridFingerprint(commitWorld.CreateSnapshot(metadata));
+  WorldTile committedInputTile = commitWorld.GetTile(firstCommands[0].X, firstCommands[0].Y);
+  if (!new TileChangeCommitSystem().TryCommit(
+        commitWorld,
+        firstCommands,
+        out TileChangeCommitResult commitResult) ||
+       !commitResult.Succeeded ||
+       commitResult.AppliedCount != firstCommands.Count ||
+       StringComparer.Ordinal.Equals(
+         commitInputFingerprint,
+         CreateSnapshotWorldGridFingerprint(commitWorld.CreateSnapshot(metadata))) ||
+       commitWorld.GetTile(firstCommands[0].X, firstCommands[0].Y) !=
+         committedInputTile with { IsActive = false })
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves typed commands did not preserve negative TileRunner state at commit.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(7);
+  List<TileChangeCommand> skyblockCommands = new();
+  LegacyPassRandomState skyblockRandom = new(seed);
+  LegacyRockLayerCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    skyblockRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: true,
+    ref skyblockState,
+    skyblockCommands);
+  if (skyblockCommands.Count != 0 || skyblockState.Stage != WorldGenerationStage.Created ||
+      skyblockState.NextSequence != 0 || skyblockRandom.SampleCount != 0)
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves did not honor the Skyblock deny-generation guard.");
+  }
+
+  LegacyTerrainRuntimeProfile invalidHighProfile = profile with
+  {
+    RockLayerHigh = height + 1.0
+  };
+  WorldGenerationStateComponent invalidHighState = new(7);
+  List<TileChangeCommand> invalidHighCommands = new();
+  LegacyPassRandomState invalidHighRandom = new(seed);
+  LegacyRockLayerCavesPass.AppendCommands(
+    snapshot,
+    invalidHighProfile,
+    invalidHighRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref invalidHighState,
+    invalidHighCommands);
+  if (invalidHighCommands.Count != 0 || invalidHighState.Stage != WorldGenerationStage.Created ||
+      invalidHighState.NextSequence != 0 || invalidHighRandom.SampleCount != 0)
+  {
+    throw new InvalidOperationException(
+      "RockLayerCaves did not no-op an invalid high-rock-layer range.");
+  }
+
+  WorldGenerationRequest request = new(
+    metadata,
+    spawnX: width / 2,
+    surfaceY: 80,
+    rockLayerY: 150,
+    terrainProfile: profile);
+  WorldGenerationStateComponent genericState = new(7);
+  List<TileChangeCommand> genericCommands = new();
+  new LegacyCavePassSystem().AppendCommands(
+    snapshot,
+    request,
+    ref genericState,
+    genericCommands);
+  if (genericCommands.Any(command =>
+        command.Source.StartsWith(
+          "worldgen.cave.RockLayerCaves.",
+          StringComparison.Ordinal)))
+  {
+    throw new InvalidOperationException(
+      "Profile-enabled RockLayerCaves was emitted by the generic cave fallback.");
+  }
+
+  Console.WriteLine(
+    $"PASS: RockLayerCaves base definition, draw order, immutable commands, guards, and " +
+    $"generic-owner exclusion ({firstCommands.Count} commands; source line " +
+    $"{LegacyRockLayerCavesPass.SourceLine})");
+  Console.WriteLine(
+    "SUMMARY: RockLayerCaves focused base-loop verification completed; Remix paired " +
+    "no-Y-change calls, complete TileRunner/liquid parity, aggregate cave ordering, WLD " +
+    "differential, and legacy deletion remain deferred");
+}
+
+static void RunMountainCavesFocusedVerification()
+{
+  const int width = 2000;
+  const int height = 300;
+  const int seed = 1456;
+  WorldMetadata metadata = new(
+    "mountain-caves-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    worldSurface: 50,
+    rockLayer: 90,
+    isRemixWorld: false);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  for (int x = 0; x < width; x++)
+  {
+    _ = world.TrySetTile(x, 40, new WorldTile(IsActive: true, Type: 1));
+  }
+
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 50,
+    RockLayer: 90,
+    WorldSurfaceLow: 40,
+    WorldSurfaceHigh: 60,
+    RockLayerLow: 80,
+    RockLayerHigh: 100,
+    LeftBeachEnd: 100,
+    RightBeachStart: 1900,
+    WaterLine: 180,
+    LavaLine: 240);
+  MethodInfo calculateInvocationCount = typeof(LegacyMountainCavesPass).GetMethod(
+    "CalculateInvocationCount",
+    BindingFlags.Public | BindingFlags.Static,
+    binder: null,
+    types: [typeof(int), typeof(bool)],
+    modifiers: null) ??
+    throw new InvalidOperationException(
+      "MountainCaves invocation-count owner did not expose its Remix contract.");
+  MethodInfo isCandidateXAccepted = typeof(LegacyMountainCavesPass).GetMethod(
+    "IsCandidateXAccepted",
+    BindingFlags.Public | BindingFlags.Static,
+    binder: null,
+    types: [typeof(int), typeof(int), typeof(IReadOnlyList<int>), typeof(bool)],
+    modifiers: null) ??
+    throw new InvalidOperationException(
+      "MountainCaves candidate owner did not expose its Remix contract.");
+  int nonRemixCount = (int)(calculateInvocationCount.Invoke(null, [width, false]) ??
+    throw new InvalidOperationException("MountainCaves non-Remix count was not returned."));
+  int remixCount = (int)(calculateInvocationCount.Invoke(null, [width, true]) ??
+    throw new InvalidOperationException("MountainCaves Remix count was not returned."));
+  bool nonRemixCenterAccepted = (bool)(isCandidateXAccepted.Invoke(
+    null,
+    [width / 2, width, Array.Empty<int>(), false]) ??
+    throw new InvalidOperationException("MountainCaves non-Remix candidate result was not returned."));
+  bool remixCenterAccepted = (bool)(isCandidateXAccepted.Invoke(
+    null,
+    [width / 2, width, Array.Empty<int>(), true]) ??
+    throw new InvalidOperationException("MountainCaves Remix candidate result was not returned."));
+  if (nonRemixCount != 2 || remixCount != 3 || nonRemixCenterAccepted || !remixCenterAccepted)
+  {
+    throw new InvalidOperationException(
+      "MountainCaves Remix count or center-candidate rule diverged from source.");
+  }
+
+  MethodInfo appendCommands = typeof(LegacyMountainCavesPass).GetMethod(
+    "AppendCommands",
+    BindingFlags.Public | BindingFlags.Static,
+    binder: null,
+    types:
+    [
+      typeof(WorldGridSnapshot),
+      typeof(LegacyTerrainRuntimeProfile),
+      typeof(LegacyPassRandomState),
+      typeof(WorldGenerationStateComponent).MakeByRefType(),
+      typeof(List<TileChangeCommand>),
+      typeof(bool),
+      typeof(bool),
+      typeof(bool),
+      typeof(bool)
+    ],
+    modifiers: null) ??
+    throw new InvalidOperationException(
+      "MountainCaves owner did not expose explicit generation-rule guards.");
+  foreach ((string guard, bool isSkyblockWorld, bool isNoSurfaceWorld,
+    bool isSurfaceDesertWorld) in new[]
+  {
+    ("Skyblock", true, false, false),
+    ("no-surface", false, true, false),
+    ("surface-desert", false, false, true)
+  })
+  {
+    WorldGenerationStateComponent state = new(seed);
+    LegacyPassRandomState random = new(seed);
+    List<TileChangeCommand> commands = new();
+    object?[] invocationArguments =
+    [
+      snapshot,
+      profile,
+      random,
+      state,
+      commands,
+      false,
+      isSkyblockWorld,
+      isNoSurfaceWorld,
+      isSurfaceDesertWorld
+    ];
+    _ = appendCommands.Invoke(null, invocationArguments);
+    state = (WorldGenerationStateComponent)invocationArguments[3]!;
+    if (commands.Count != 0 || random.SampleCount != 0 ||
+        state.Stage != WorldGenerationStage.Created || state.NextSequence != 0)
+    {
+      throw new InvalidOperationException(
+        $"MountainCaves {guard} guard consumed state, commands, or random samples.");
+    }
+  }
+
+  Console.WriteLine(
+    "PASS: MountainCaves preserves guards and Remix count/center candidate semantics");
+}
+
+static void RunWavyCavesFocusedVerification()
+{
+  Type wavyPassType = typeof(LegacyWavyCaverer).Assembly.GetType(
+    "Terraria.Dome.Simulation.WorldGeneration.LegacyWavyCavesPass") ??
+    throw new InvalidOperationException("WavyCaves pass owner was not found.");
+  MethodInfo calculateInvocationCount = wavyPassType.GetMethod(
+    "CalculateInvocationCount",
+    BindingFlags.Public | BindingFlags.Static,
+    binder: null,
+    types: [typeof(int), typeof(bool)],
+    modifiers: null) ??
+    throw new InvalidOperationException("WavyCaves owner did not expose its count contract.");
+  int baseCount = (int)(calculateInvocationCount.Invoke(null, [4200, false]) ??
+    throw new InvalidOperationException("WavyCaves base count was not returned."));
+  int remixCount = (int)(calculateInvocationCount.Invoke(null, [4200, true]) ??
+    throw new InvalidOperationException("WavyCaves Remix count was not returned."));
+  if (baseCount != 35 || remixCount != 11)
+  {
+    throw new InvalidOperationException(
+      $"WavyCaves density diverged from source: expected 35/11, got {baseCount}/{remixCount}.");
+  }
+
+  MethodInfo appendCommands = wavyPassType.GetMethod(
+    "AppendCommands",
+    BindingFlags.Public | BindingFlags.Static,
+    binder: null,
+    types:
+    [
+      typeof(WorldGridSnapshot),
+      typeof(LegacyTerrainRuntimeProfile),
+      typeof(LegacyPassRandomState),
+      typeof(LegacyWavyCavesPassDefinition),
+      typeof(bool),
+      typeof(bool),
+      typeof(bool),
+      typeof(WorldGenerationStateComponent).MakeByRefType(),
+      typeof(List<TileChangeCommand>)
+    ],
+    modifiers: null) ??
+    throw new InvalidOperationException("WavyCaves owner did not expose explicit generation guards.");
+
+  const int width = 1200;
+  const int height = 600;
+  const int seed = 1456;
+  WorldMetadata metadata = new(
+    "wavy-caves-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    worldSurface: 50,
+    rockLayer: 90);
+  WorldGridSnapshot snapshot = new WorldGrid(
+    width,
+    height,
+    initializeLegacyEmptyFrames: true).CreateSnapshot(metadata);
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 50,
+    RockLayer: 90,
+    WorldSurfaceLow: 40,
+    WorldSurfaceHigh: 60,
+    RockLayerLow: 80,
+    RockLayerHigh: 100,
+    LeftBeachEnd: 100,
+    RightBeachStart: 1100,
+    WaterLine: 300,
+    LavaLine: 500);
+
+  foreach ((string guard, bool isSkyblockWorld, bool isDontStarveWorld) in new[]
+  {
+    ("Skyblock", true, true),
+    ("non-dont-starve", false, false)
+  })
+  {
+    WorldGenerationStateComponent state = new(seed);
+    LegacyPassRandomState random = new(seed);
+    List<TileChangeCommand> commands = new();
+    object?[] invocationArguments =
+    [
+      snapshot,
+      profile,
+      random,
+      LegacyWavyCavesPassDefinition.CreateDefault(),
+      false,
+      isSkyblockWorld,
+      isDontStarveWorld,
+      state,
+      commands
+    ];
+    _ = appendCommands.Invoke(null, invocationArguments);
+    state = (WorldGenerationStateComponent)invocationArguments[7]!;
+    if (commands.Count != 0 || random.SampleCount != 0 ||
+        state.Stage != WorldGenerationStage.Created || state.NextSequence != 0)
+    {
+      throw new InvalidOperationException(
+        $"WavyCaves {guard} guard consumed state, commands, or random samples.");
+    }
+  }
+
+  WorldGenerationStateComponent firstState = new(seed);
+  WorldGenerationStateComponent secondState = new(seed);
+  LegacyPassRandomState firstRandom = new(seed);
+  LegacyPassRandomState secondRandom = new(seed);
+  List<TileChangeCommand> firstCommands = new();
+  List<TileChangeCommand> secondCommands = new();
+  object?[] firstArguments =
+  [
+    snapshot,
+    profile,
+    firstRandom,
+    LegacyWavyCavesPassDefinition.CreateDefault(),
+    false,
+    false,
+    true,
+    firstState,
+    firstCommands
+  ];
+  object?[] secondArguments =
+  [
+    snapshot,
+    profile,
+    secondRandom,
+    LegacyWavyCavesPassDefinition.CreateDefault(),
+    false,
+    false,
+    true,
+    secondState,
+    secondCommands
+  ];
+  _ = appendCommands.Invoke(null, firstArguments);
+  _ = appendCommands.Invoke(null, secondArguments);
+  firstState = (WorldGenerationStateComponent)firstArguments[7]!;
+  secondState = (WorldGenerationStateComponent)secondArguments[7]!;
+  if (firstCommands.Count == 0 || !firstCommands.SequenceEqual(secondCommands) ||
+      firstRandom.SampleCount != secondRandom.SampleCount ||
+      firstCommands.Any(command => command.Source != "worldgen.cave.WavyCaverer"))
+  {
+    throw new InvalidOperationException(
+      "WavyCaves did not preserve deterministic guarded source-attributed output.");
+  }
+
+  RunWavyCavesUnderworldUpperBoundContract();
+
+  Console.WriteLine(
+    $"PASS: WavyCaves preserves guard, density, Remix division, and deterministic output " +
+    $"({firstCommands.Count} commands; {firstRandom.SampleCount} random samples)");
+}
+
+static void RunTunnelsFocusedVerification()
+{
+  if (LegacyTunnelsPass.CalculateInvocationCount(4200) != 6 ||
+      LegacyTunnelsPass.CalculateInvocationCount(4200, isRemixWorld: true) != 9 ||
+      LegacyTunnelsPass.CalculateInvocationCount(4200, isRemixWorld: true,
+        isTenthAnniversaryWorld: true) != 9)
+  {
+    throw new InvalidOperationException(
+      "Tunnels density or Remix multiplier diverged from the legacy source.");
+  }
+
+  if (!LegacyTunnelsPass.IsCandidateXAccepted(1000, 4200, false, false) ||
+      LegacyTunnelsPass.IsCandidateXAccepted(2100, 4200, false, false) ||
+      !LegacyTunnelsPass.IsCandidateXAccepted(2100, 4200, true, false) ||
+      !LegacyTunnelsPass.IsCandidateXAccepted(2100, 4200, false, true))
+  {
+    throw new InvalidOperationException(
+      "Tunnels candidate interval or center exclusion diverged from the legacy source.");
+  }
+
+  WorldMetadata metadata = new(
+    "TunnelsFocused",
+    new WorldSeed(451),
+    width: 1200,
+    height: 600,
+    worldId: 451,
+    seedVariant: "default");
+  WorldGrid tunnelWorld = new(
+    metadata.Width,
+    metadata.Height,
+    initializeLegacyEmptyFrames: true);
+  for (int x = 450; x < metadata.Width - 450; x++)
+  {
+    tunnelWorld.TrySetTile(x, 100, new WorldTile(true, 1));
+  }
+  WorldGridSnapshot snapshot = tunnelWorld.CreateSnapshot(metadata);
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 120,
+    WorldSurfaceLow: 110,
+    WorldSurfaceHigh: 130,
+    RockLayer: 210,
+    RockLayerLow: 190,
+    RockLayerHigh: 230,
+    LeftBeachEnd: 100,
+    RightBeachStart: 1100,
+    WaterLine: 300,
+    LavaLine: 500);
+  WorldGenerationStateComponent firstState = new(451);
+  WorldGenerationStateComponent secondState = new(451);
+  List<TileChangeCommand> firstTiles = new();
+  List<LiquidChangeCommand> firstLiquids = new();
+  List<TileChangeCommand> secondTiles = new();
+  List<LiquidChangeCommand> secondLiquids = new();
+  LegacyTunnelsPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(451),
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    isNoSurfaceWorld: false,
+    isSurfaceDesertWorld: false,
+    isTenthAnniversaryWorld: false,
+    ref firstState,
+    firstTiles,
+    firstLiquids);
+  LegacyTunnelsPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(451),
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    isNoSurfaceWorld: false,
+    isSurfaceDesertWorld: false,
+    isTenthAnniversaryWorld: false,
+    ref secondState,
+    secondTiles,
+    secondLiquids);
+  if (!firstTiles.SequenceEqual(secondTiles) ||
+      !firstLiquids.SequenceEqual(secondLiquids) ||
+      firstTiles.Count == 0 ||
+      firstLiquids.Count != 0 ||
+      firstTiles.Any(command => command.Source != "worldgen.cave.Tunnels.surface-tunnel"))
+  {
+    throw new InvalidOperationException(
+      "Tunnels did not emit deterministic, dry, source-attributed commands.");
+  }
+
+  WorldGenerationStateComponent deniedState = new(451);
+  List<TileChangeCommand> deniedTiles = new();
+  List<LiquidChangeCommand> deniedLiquids = new();
+  LegacyTunnelsPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(451),
+    isRemixWorld: false,
+    isSkyblockWorld: true,
+    isNoSurfaceWorld: false,
+    isSurfaceDesertWorld: false,
+    isTenthAnniversaryWorld: false,
+    ref deniedState,
+    deniedTiles,
+    deniedLiquids);
+  if (deniedTiles.Count != 0 || deniedLiquids.Count != 0 || deniedState.NextSequence != 0)
+  {
+    throw new InvalidOperationException("Tunnels Skyblock guard consumed state or commands.");
+  }
+
+  Console.WriteLine(
+    $"PASS: Tunnels preserves density, center guard, deterministic dry commands " +
+    $"({firstTiles.Count} commands)");
+}
+
+static void RunOceanSandFocusedVerification()
+{
+  const int width = 800;
+  const int height = 300;
+  const int seed = 1456;
+  WorldMetadata metadata = new(
+    "OceanSandFocused",
+    new WorldSeed(seed),
+    width,
+    height,
+    worldId: seed,
+    seedVariant: "default");
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  for (int x = 0; x < width; x++)
+  {
+    _ = world.TrySetTile(x, 30, new WorldTile(IsActive: true, Type: 1));
+  }
+
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 50,
+    RockLayer: 90,
+    WorldSurfaceLow: 40,
+    WorldSurfaceHigh: 60,
+    RockLayerLow: 80,
+    RockLayerHigh: 100,
+    LeftBeachEnd: 100,
+    RightBeachStart: 700,
+    WaterLine: 180,
+    LavaLine: 240);
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  LegacyOceanSandPassResult first = LegacyOceanSandPass.CreatePlan(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isSkyblockWorld: false,
+    isNoSurfaceWorld: false);
+  LegacyOceanSandPassResult second = LegacyOceanSandPass.CreatePlan(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isSkyblockWorld: false,
+    isNoSurfaceWorld: false);
+  if (first.Skipped || first.Bands.Count != 3 ||
+      !first.Bands.SequenceEqual(second.Bands) ||
+      !first.Columns.SequenceEqual(second.Columns) ||
+      !first.PyramidCandidates.SequenceEqual(second.PyramidCandidates) ||
+      first.RandomSamplesConsumed != second.RandomSamplesConsumed)
+  {
+    throw new InvalidOperationException(
+      "OceanSand did not preserve deterministic band, column, and pyramid scheduling.");
+  }
+
+  LegacyOceanSandBandPlan leftBand = first.Bands[0];
+  LegacyOceanSandBandPlan centerBand = first.Bands[1];
+  LegacyOceanSandBandPlan rightBand = first.Bands[2];
+  if (leftBand.Left != 0 || leftBand.RightExclusive != profile.LeftBeachEnd ||
+      rightBand.Left != profile.RightBeachStart || rightBand.RightExclusive != width ||
+      !centerBand.IsSkipped ||
+      IsOceanSandCentralCandidate(leftBand.CandidateX, width) ||
+      IsOceanSandCentralCandidate(rightBand.CandidateX, width) ||
+      first.Columns.Count != profile.LeftBeachEnd + (width - profile.RightBeachStart))
+  {
+    throw new InvalidOperationException(
+      "OceanSand did not preserve forced beach ranges, center skip, or candidate exclusion.");
+  }
+
+  if (first.Columns.Any(column => column.FirstActiveY != 30 ||
+      column.Depth is < 50 or > 200 ||
+      column.CarveDepth < 0 || column.RandomDrawCount <= 0))
+  {
+    throw new InvalidOperationException(
+      "OceanSand did not preserve first-active scans, depth clamping, or column random draws.");
+  }
+
+  if (first.TileWrites.Count == 0 || !first.TileWrites.SequenceEqual(second.TileWrites) ||
+      first.TileWrites.Any(write =>
+        write.X < 0 || write.X >= width || write.Y < 0 || write.Y >= height))
+  {
+    throw new InvalidOperationException(
+      "OceanSand did not preserve deterministic in-bounds type-53 tile writes.");
+  }
+
+  if (first.PyramidCandidates.Any(candidate =>
+      candidate.X is not 50 and not 750 || candidate.Y != 30))
+  {
+    throw new InvalidOperationException(
+      "OceanSand pyramid candidates were not tied to a band midpoint and first active tile.");
+  }
+
+  WorldGenerationStateComponent projectionState = new(generationId: 2);
+  List<TileChangeCommand> projectedCommands = new();
+  LegacyOceanSandPassResult projected = LegacyOceanSandPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isSkyblockWorld: false,
+    isNoSurfaceWorld: false,
+    ref projectionState,
+    projectedCommands);
+  if (!projected.TileWrites.SequenceEqual(first.TileWrites) ||
+      projectedCommands.Count != projected.TileWrites.Count ||
+      projectedCommands.Any(command =>
+        command.Kind != TileChangeKind.UpdateTileType ||
+        command.TileType != 53 ||
+        command.Source != "worldgen.ocean-sand.type-53"))
+  {
+    throw new InvalidOperationException(
+      "OceanSand did not emit source-attributed type-53 tile commands.");
+  }
+
+  WorldGrid projectedWorld = WorldGrid.FromSnapshot(snapshot);
+  TileChangeCommitSystem commitSystem = new();
+  if (!commitSystem.TryCommit(
+        projectedWorld,
+        projectedCommands,
+        out TileChangeCommitResult commitResult) ||
+      commitResult.AppliedCount != projectedCommands.Count ||
+      projected.TileWrites.Any(write => projectedWorld.GetTile(write.X, write.Y).Type != 53))
+  {
+    throw new InvalidOperationException(
+      "OceanSand type-53 commands did not commit to the projected world grid.");
+  }
+
+  LegacyOceanSandPassResult skyblock = LegacyOceanSandPass.CreatePlan(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isSkyblockWorld: true,
+    isNoSurfaceWorld: false);
+  LegacyOceanSandPassResult noSurface = LegacyOceanSandPass.CreatePlan(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isSkyblockWorld: false,
+    isNoSurfaceWorld: true);
+  if (!skyblock.Skipped || !noSurface.Skipped ||
+      skyblock.Bands.Count != 0 || skyblock.Columns.Count != 0 ||
+      noSurface.Bands.Count != 0 || noSurface.Columns.Count != 0 ||
+      skyblock.RandomSamplesConsumed != 0 || noSurface.RandomSamplesConsumed != 0)
+  {
+    throw new InvalidOperationException(
+      "OceanSand guards consumed random state or produced scheduling output.");
+  }
+
+  Console.WriteLine(
+    $"PASS: OceanSand preserves source guards, three-band scheduling, beach forcing, " +
+    $"column depth state, and deterministic pyramid signals ({first.Columns.Count} columns; " +
+    $"{first.RandomSamplesConsumed} random samples)");
+  Console.WriteLine(
+    "SUMMARY: OceanSand tile-type projection, TileRunner-equivalent mutation, pyramid structure " +
+    "placement, aggregate pass ordering, global RNG/WLD parity, and legacy deletion remain deferred");
+}
+
+static bool IsOceanSandCentralCandidate(int candidateX, int width)
+{
+  return (double)candidateX > width * 0.4 && (double)candidateX < width * 0.6;
+}
+
+static void RunSandPatchesFocusedVerification()
+{
+  const int width = 1000;
+  const int height = 900;
+  const int seed = 122;
+  WorldMetadata metadata = new(
+    "sand-patches-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    worldId: seed,
+    worldSurface: 120,
+    rockLayer: 300,
+    isRemixWorld: false);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 120,
+    RockLayer: 300,
+    WorldSurfaceLow: 80,
+    WorldSurfaceHigh: 140,
+    RockLayerLow: 260,
+    RockLayerHigh: 340,
+    LeftBeachEnd: 100,
+    RightBeachStart: 900,
+    WaterLine: 400,
+    LavaLine: 700);
+  LegacySandPatchesPassDefinition definition =
+    LegacySandPatchesPassDefinition.CreateDefault();
+  if (definition.Density != 0.013 || definition.RemixInvocationDivisor != 4 ||
+      definition.MinimumStrength != 15 || definition.MaximumStrengthExclusive != 70 ||
+      definition.MinimumSteps != 20 || definition.MaximumStepsExclusive != 130 ||
+      definition.TileType != 53 ||
+      definition.CalculateInvocationCount(width, isRemixWorld: false) != 13 ||
+      definition.CalculateInvocationCount(width, isRemixWorld: true) != 3)
+  {
+    throw new InvalidOperationException(
+      "SandPatches definition or source invocation cardinality drifted.");
+  }
+
+  if (definition.GetInitialYRange(height, profile, isRemixWorld: false) != (120, 300) ||
+      definition.GetInitialYRange(height, profile, isRemixWorld: true) != (200, 550) ||
+      definition.GetRetryYRange(profile) != (120, 300))
+  {
+    throw new InvalidOperationException(
+      "SandPatches default or Remix Y ranges drifted from the source pass.");
+  }
+
+  LegacyPassRandomState defaultRandom = new(seed);
+  IReadOnlyList<LegacyTileRunnerPassInvocation> defaultInvocations =
+    LegacySandPatchesPass.CreateInvocations(
+      snapshot,
+      profile,
+      defaultRandom,
+      isRemixWorld: false,
+      isSkyblockWorld: false);
+  LegacyPassRandomState secondDefaultRandom = new(seed);
+  IReadOnlyList<LegacyTileRunnerPassInvocation> secondDefaultInvocations =
+    LegacySandPatchesPass.CreateInvocations(
+      snapshot,
+      profile,
+      secondDefaultRandom,
+      isRemixWorld: false,
+      isSkyblockWorld: false);
+  if (defaultInvocations.Count != 13 ||
+      !defaultInvocations.SequenceEqual(secondDefaultInvocations) ||
+      defaultRandom.SampleCount != secondDefaultRandom.SampleCount ||
+      defaultRandom.SampleCount !=
+        defaultInvocations.Sum(invocation => invocation.RandomDrawCount) ||
+      defaultInvocations[0].XDraw != 44 || defaultInvocations[0].YDraw != 227 ||
+      defaultInvocations[0].RandomDrawCount != 6 ||
+      !defaultInvocations.Any(invocation => invocation.RandomDrawCount > 4))
+  {
+    throw new InvalidOperationException(
+      "SandPatches default scheduling did not preserve deterministic retry draw accounting.");
+  }
+
+  LegacyTileRunnerPassInput expectedDefaultRecipe = new(
+    "SandPatches",
+    "sand-patch",
+    53,
+    false,
+    15,
+    70,
+    20,
+    130,
+    "worldSurface..rockLayer",
+    true,
+    true,
+    true);
+  if (defaultInvocations.Any(invocation => invocation.Recipe != expectedDefaultRecipe))
+  {
+    throw new InvalidOperationException(
+      "SandPatches default invocation recipe did not preserve the TileRunner contract.");
+  }
+
+  foreach (LegacyTileRunnerPassInvocation invocation in defaultInvocations)
+  {
+    LegacyTileRunnerRequest request = invocation.Request;
+    if (!metadata.IsInside(request.X, request.Y) ||
+        request.TileType != 53 || request.AddTile || request.SpeedX != 0.0 ||
+        request.SpeedY != 0.0 || request.NoYChange || !request.Overwrite ||
+        request.IgnoreTileType != -1 || request.Strength is < 15 or >= 70 ||
+        request.Steps is < 20 or >= 130 || invocation.RandomDrawCount < 4)
+    {
+      throw new InvalidOperationException(
+        "SandPatches default request fields or bounds diverged from the source call.");
+    }
+  }
+
+  LegacyPassRandomState remixRandom = new(seed);
+  IReadOnlyList<LegacyTileRunnerPassInvocation> remixInvocations =
+    LegacySandPatchesPass.CreateInvocations(
+      snapshot,
+      profile,
+      remixRandom,
+      isRemixWorld: true,
+      isSkyblockWorld: false);
+  long remixExpectedSamples = remixInvocations.Sum(invocation => invocation.RandomDrawCount);
+  if (remixInvocations.Count != 3 ||
+      remixRandom.SampleCount != remixExpectedSamples ||
+      remixInvocations[0].XDraw != 598 || remixInvocations[0].YDraw != 171 ||
+      remixInvocations[0].RandomDrawCount != 7 ||
+      remixInvocations[0].YDraw >= 200 ||
+      remixInvocations[1].YDraw is < 200 or >= 550 ||
+      remixInvocations[2].YDraw is < 200 or >= 550 ||
+      remixInvocations.Any(invocation => invocation.Recipe != expectedDefaultRecipe with
+      {
+        VerticalRange = "rockLayer-100..maxTilesY-350"
+      }))
+  {
+    throw new InvalidOperationException(
+      $"SandPatches Remix scheduling drifted: count={remixInvocations.Count}, " +
+      $"samples={remixRandom.SampleCount}, expectedSamples={remixExpectedSamples}, first=" +
+      $"({remixInvocations[0].XDraw},{remixInvocations[0].YDraw}," +
+      $"{remixInvocations[0].RandomDrawCount}), secondY={remixInvocations[1].YDraw}, " +
+      $"thirdY={remixInvocations[2].YDraw}, recipe={remixInvocations[0].Recipe.VerticalRange}.");
+  }
+
+  WorldGenerationStateComponent firstState = new(seed);
+  List<TileChangeCommand> firstCommands = new();
+  LegacySandPatchesPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref firstState,
+    firstCommands);
+  if (firstCommands.Any(command =>
+        !metadata.IsInside(command.X, command.Y) || command.TileType != 53 ||
+        command.Source != "worldgen.cave.SandPatches.sand-patch"))
+  {
+    throw new InvalidOperationException(
+      "SandPatches did not emit bounded source-attributed TileRunner commands.");
+  }
+
+  WorldGenerationStateComponent secondState = new(seed);
+  List<TileChangeCommand> secondCommands = new();
+  LegacySandPatchesPass.AppendCommands(
+    snapshot,
+    profile,
+    new LegacyPassRandomState(seed),
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    ref secondState,
+    secondCommands);
+  if (!firstCommands.SequenceEqual(secondCommands) ||
+      firstState.Stage != WorldGenerationStage.Cave ||
+      firstState.NextSequence != secondState.NextSequence)
+  {
+    throw new InvalidOperationException(
+      "SandPatches command emission was not deterministic from the immutable snapshot.");
+  }
+
+  WorldGrid commitWorld = WorldGrid.FromSnapshot(snapshot);
+  if (!new TileChangeCommitSystem().TryCommit(
+        commitWorld,
+        firstCommands,
+        out TileChangeCommitResult commitResult) ||
+      commitResult.AppliedCount != firstCommands.Count)
+  {
+    throw new InvalidOperationException(
+      "SandPatches TileRunner commands did not commit through the typed tile boundary.");
+  }
+
+  LegacyPassRandomState deniedRandom = new(seed);
+  WorldGenerationStateComponent deniedState = new(seed);
+  List<TileChangeCommand> deniedCommands = new();
+  LegacySandPatchesPass.AppendCommands(
+    snapshot,
+    profile,
+    deniedRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: true,
+    ref deniedState,
+    deniedCommands);
+  if (deniedCommands.Count != 0 || deniedRandom.SampleCount != 0 ||
+      deniedState.NextSequence != 0)
+  {
+    throw new InvalidOperationException(
+      "SandPatches Skyblock guard consumed random state or emitted commands.");
+  }
+
+  Console.WriteLine(
+    $"PASS: SandPatches preserves source guard, count, default/Remix Y ranges, central retry, " +
+    $"TileRunner requests, and bounded commands ({defaultInvocations.Count} default invocations; " +
+    $"{defaultRandom.SampleCount} random samples; {firstCommands.Count} commands)");
+  Console.WriteLine(
+    "SUMMARY: SandPatches full TileRunner traversal parity, aggregate ordering, global " +
+    "RNG/WLD parity, and legacy deletion remain deferred");
+}
+
+static void RunUnderworldEvilBoundsFocusedVerification()
+{
+  AssertThrows<ArgumentOutOfRangeException>(() =>
+    new LegacyTileRunnerRequest(-1, 10, 5.0, 1, -2, false, 0.0, 0.0, false, false, -1));
+  LegacyUnderworldLiquidCaveOrigin origin = new(
+    X: 0,
+    Y: 200,
+    SurfaceRunnersAllowed: true);
+  IReadOnlyList<LegacyTileRunnerRequest> requests =
+    LegacyUnderworldEvilRunnerFactory.Create(origin, new LegacyPassRandomState(1));
+  if (requests.Count == 0 || requests[0].X >= 0 || requests[0].Y < 0)
+  {
+    throw new InvalidOperationException(
+      "Underworld evil runner did not retain the source's out-of-world start coordinate.");
+  }
+
+  Console.WriteLine(
+    $"PASS: Underworld evil runner retains source out-of-world starts without throwing " +
+    $"({requests.Count} requests)");
+}
+
+static void RunWavyCavesUnderworldUpperBoundContract()
+{
+  const int width = 1200;
+  const int height = 600;
+  const int seed = 451;
+  WorldMetadata metadata = new(
+    "wavy-caves-underworld-bound",
+    new WorldSeed(seed),
+    width,
+    height,
+    worldSurface: 50,
+    rockLayer: 90);
+  WorldGridSnapshot snapshot = new WorldGrid(
+    width,
+    height,
+    initializeLegacyEmptyFrames: true).CreateSnapshot(metadata);
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 50,
+    RockLayer: 90,
+    WorldSurfaceLow: 40,
+    WorldSurfaceHigh: 60,
+    RockLayerLow: 80,
+    RockLayerHigh: 100,
+    LeftBeachEnd: 100,
+    RightBeachStart: 1100,
+    WaterLine: 300,
+    LavaLine: 500);
+  LegacyWavyCavesPassDefinition definition = LegacyWavyCavesPassDefinition.CreateDefault();
+  WorldGenerationStateComponent expectedState = new(seed);
+  LegacyPassRandomState expectedRandom = new(seed);
+  List<TileChangeCommand> expectedCommands = new();
+  AppendSourceWavyCavesCommands(
+    snapshot,
+    profile,
+    expectedRandom,
+    definition,
+    ref expectedState,
+    expectedCommands);
+  WorldGenerationStateComponent actualState = new(seed);
+  LegacyPassRandomState actualRandom = new(seed);
+  List<TileChangeCommand> actualCommands = new();
+  LegacyWavyCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    actualRandom,
+    definition,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    isDontStarveWorld: true,
+    ref actualState,
+    actualCommands);
+  if (!expectedCommands.SequenceEqual(actualCommands) ||
+      expectedRandom.SampleCount != actualRandom.SampleCount)
+  {
+    throw new InvalidOperationException(
+      "WavyCaves did not use Main.UnderworldLayer - 100 as its Y draw upper bound.");
+  }
+
+  Console.WriteLine("PASS: WavyCaves Y draws stop at legacy UnderworldLayer - 100");
+}
+
+static void AppendSourceWavyCavesCommands(
+  WorldGridSnapshot snapshot,
+  LegacyTerrainRuntimeProfile profile,
+  LegacyPassRandomState random,
+  LegacyWavyCavesPassDefinition definition,
+  ref WorldGenerationStateComponent state,
+  List<TileChangeCommand> commands)
+{
+  int invocationCount = definition.CalculateInvocationCount(snapshot.Metadata.Width, false);
+  int underworldLayer = snapshot.Metadata.Height - 200;
+  int minimumY = (int)profile.WorldSurface + definition.MinimumYInset;
+  int maximumYExclusive = underworldLayer - definition.UnderworldYInset;
+  int previousY = 0;
+  for (int index = 0; index < invocationCount; index++)
+  {
+    double progress = index / (double)(invocationCount - 1);
+    int startY = random.Next(minimumY, maximumYExclusive);
+    int retries = 0;
+    while (Math.Abs(startY - previousY) < definition.MinimumSpacing)
+    {
+      retries++;
+      if (retries > 100)
+      {
+        break;
+      }
+
+      startY = random.Next(minimumY, maximumYExclusive);
+    }
+
+    previousY = startY;
+    int startX = definition.MinimumStartXInset + (int)(
+      (snapshot.Metadata.Width - definition.MinimumStartXInset * 2) * progress);
+    LegacyWavyCaverer.AppendCommands(
+      snapshot,
+      new LegacyWavyCavererInvocation(
+        startX,
+        startY,
+        12 + random.Next(3, 6),
+        0.25 + random.NextDouble(),
+        random.Next(300, 500),
+        -1),
+      random,
+      ref state,
+      commands);
+  }
+}
+
+static void RunSurfaceCavesFocusedVerification()
+{
+  RunSurfaceCavesUnifiedOwnerContract();
+  RunSurfaceCavesProjectedSurfaceScanContract();
+
+  const int width = 800;
+  const int height = 300;
+  const int seed = 1456;
+  WorldMetadata metadata = new(
+    "surface-caves-focused",
+    new WorldSeed(seed),
+    width,
+    height,
+    isRemixWorld: false);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  for (int x = 0; x < width; x++)
+  {
+    for (int y = 0; y < 120; y++)
+    {
+      if (!world.TrySetTile(x, y, new WorldTile(IsActive: true, Type: 1)))
+      {
+        throw new InvalidOperationException(
+          "SurfaceCaves focused fixture could not seed its active surface.");
+      }
+    }
+  }
+
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 50.0,
+    RockLayer: 90.0,
+    WorldSurfaceLow: 40.0,
+    WorldSurfaceHigh: 60.0,
+    RockLayerLow: 80.0,
+    RockLayerHigh: 100.0,
+    LeftBeachEnd: 100,
+    RightBeachStart: 700,
+    WaterLine: 180,
+    LavaLine: 240);
+  WorldGenerationRequest request = new(
+    metadata,
+    spawnX: width / 2,
+    surfaceY: 50,
+    rockLayerY: 90,
+    terrainProfile: profile);
+  WorldGenerationStateComponent state = new(seed);
+  List<TileChangeCommand> commands = new();
+  new LegacyCavePassSystem().AppendCommands(
+    world.CreateSnapshot(metadata),
+    request,
+    ref state,
+    commands);
+  const string genericSource = "worldgen.cave.SurfaceCaves.surface-desert";
+  if (commands.Any(command => StringComparer.Ordinal.Equals(command.Source, genericSource)))
+  {
+    throw new InvalidOperationException(
+      "Profile-enabled SurfaceCaves emitted the stale generic surface-desert fallback.");
+  }
+
+  List<TileChangeCommand> dedicatedCommands = new();
+  WorldGenerationStateComponent dedicatedState = new(seed);
+  LegacySurfaceCavesVerticalPass.AppendCommands(
+    world.CreateSnapshot(metadata),
+    profile,
+    new LegacyPassRandomState(seed),
+    ref dedicatedState,
+    dedicatedCommands);
+  if (!dedicatedCommands.Any(command =>
+        command.Source.StartsWith(
+          "worldgen.cave.SurfaceCaves.vertical-",
+          StringComparison.Ordinal)))
+  {
+    throw new InvalidOperationException(
+      "SurfaceCaves dedicated vertical owner did not emit source-attributed commands.");
+  }
+
+  WorldGenerationRequest noProfileRequest = new(
+    metadata,
+    spawnX: width / 2,
+    surfaceY: 50,
+    rockLayerY: 90);
+  List<TileChangeCommand> noProfileCommands = new();
+  WorldGenerationStateComponent noProfileState = new(seed);
+  new LegacyCavePassSystem().AppendCommands(
+    world.CreateSnapshot(metadata),
+    noProfileRequest,
+    ref noProfileState,
+    noProfileCommands);
+  if (!noProfileCommands.Any(command =>
+        StringComparer.Ordinal.Equals(command.Source, genericSource)))
+  {
+    throw new InvalidOperationException(
+      "No-profile SurfaceCaves unexpectedly lost its generic compatibility fallback.");
+  }
+
+  Console.WriteLine(
+    $"PASS: profile-enabled SurfaceCaves excludes generic fallback ({commands.Count} commands); " +
+    $"no-profile fallback remains ({noProfileCommands.Count} commands)");
+  Console.WriteLine(
+    "SUMMARY: SurfaceCaves generic-owner exclusion remains pass-specific; dedicated vertical, " +
+    "Caverer, Mountain, complete TileRunner parity, aggregate ordering, WLD differential, and " +
+    "legacy deletion remain deferred");
+}
+
+static void RunSurfaceCavesProjectedSurfaceScanContract()
+{
+  const int width = 600;
+  const int height = 150;
+  const int surfaceX = 120;
+  const int firstActiveY = 40;
+  const int secondActiveY = 41;
+  const int maximumYExclusive = 60;
+  WorldMetadata metadata = new(
+    "surface-caves-projected-scan",
+    new WorldSeed(1456),
+    width,
+    height,
+    worldSurface: 50,
+    rockLayer: 90);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  _ = world.TrySetTile(surfaceX, firstActiveY, new WorldTile(IsActive: true, Type: 1));
+  _ = world.TrySetTile(surfaceX, secondActiveY, new WorldTile(IsActive: true, Type: 1));
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  Dictionary<(int X, int Y), WorldTile> projectedTiles = new()
+  {
+    [(surfaceX, firstActiveY)] = new WorldTile(
+      IsActive: false,
+      Type: 0,
+      FrameX: -1,
+      FrameY: -1)
+  };
+  MethodInfo findSurfaceY = typeof(LegacySurfaceCavesVerticalPass).GetMethod(
+    "FindSurfaceY",
+    BindingFlags.NonPublic | BindingFlags.Static,
+    binder: null,
+    types:
+    [
+      typeof(WorldGridSnapshot),
+      typeof(int),
+      typeof(int),
+      typeof(IDictionary<(int X, int Y), WorldTile>)
+    ],
+    modifiers: null) ??
+    throw new InvalidOperationException(
+      "SurfaceCaves FindSurfaceY did not expose the projected-tile scan boundary.");
+  int projectedSurfaceY = (int)(findSurfaceY.Invoke(
+    null,
+    [snapshot, surfaceX, maximumYExclusive, projectedTiles]) ??
+    throw new InvalidOperationException(
+      "SurfaceCaves FindSurfaceY returned no projected scan result."));
+  if (projectedSurfaceY != secondActiveY)
+  {
+    throw new InvalidOperationException(
+      $"SurfaceCaves FindSurfaceY ignored projected tile state: expected {secondActiveY}, " +
+      $"got {projectedSurfaceY}.");
+  }
+
+  Console.WriteLine(
+    "PASS: SurfaceCaves FindSurfaceY observes projected tile state before scanning snapshot");
+}
+
+static void RunSurfaceCavesUnifiedOwnerContract()
+{
+  const int width = 4200;
+  const int height = 1200;
+  const int seed = 1456;
+  WorldMetadata metadata = new(
+    "surface-caves-unified-owner",
+    new WorldSeed(seed),
+    width,
+    height,
+    worldSurface: 50,
+    rockLayer: 90,
+    isRemixWorld: false);
+  WorldGrid world = new(width, height, initializeLegacyEmptyFrames: true);
+  for (int x = 0; x < width; x++)
+  {
+    _ = world.TrySetTile(x, 40, new WorldTile(IsActive: true, Type: 1));
+  }
+
+  LegacyTerrainRuntimeProfile profile = new(
+    WorldSurface: 50,
+    RockLayer: 90,
+    WorldSurfaceLow: 40,
+    WorldSurfaceHigh: 60,
+    RockLayerLow: 80,
+    RockLayerHigh: 100,
+    LeftBeachEnd: 300,
+    RightBeachStart: 3900,
+    WaterLine: 700,
+    LavaLine: 1000);
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+  string inputFingerprint = CreateSnapshotWorldGridFingerprint(snapshot);
+  WorldGenerationStateComponent firstState = new(seed);
+  WorldGenerationStateComponent secondState = new(seed);
+  LegacyPassRandomState firstRandom = new(seed);
+  LegacyPassRandomState secondRandom = new(seed);
+  List<TileChangeCommand> firstCommands = new();
+  List<TileChangeCommand> secondCommands = new();
+  List<LiquidChangeCommand> firstLiquids = new();
+  List<LiquidChangeCommand> secondLiquids = new();
+  LegacySurfaceCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    firstRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    isNoSurfaceWorld: false,
+    ref firstState,
+    firstCommands,
+    firstLiquids);
+  LegacySurfaceCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    secondRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    isNoSurfaceWorld: false,
+    ref secondState,
+    secondCommands,
+    secondLiquids);
+  LegacySurfaceCavesPassDefinition definition =
+    LegacySurfaceCavesPassDefinitionFactory.CreateDefault();
+  bool commandCountValid = firstCommands.Count > 0;
+  bool deterministicCommands = firstCommands.SequenceEqual(secondCommands);
+  bool deterministicLiquids = firstLiquids.SequenceEqual(secondLiquids);
+  bool deterministicRandom = firstRandom.SampleCount == secondRandom.SampleCount;
+  bool sourcePrefixValid = firstCommands.All(command =>
+    command.Source.StartsWith("worldgen.cave.SurfaceCaves.", StringComparison.Ordinal));
+  bool hasNarrow = firstCommands.Any(command =>
+    command.Source.StartsWith("worldgen.cave.SurfaceCaves.vertical-narrow", StringComparison.Ordinal));
+  bool hasCaverer = firstCommands.Any(command =>
+    command.Source.StartsWith("worldgen.cave.SurfaceCaves.Caverer", StringComparison.Ordinal));
+  bool duplicateCavererSource = firstCommands.Any(command =>
+    command.Source.Contains("Caverer.Caverer.", StringComparison.Ordinal));
+  bool snapshotUnchanged = StringComparer.Ordinal.Equals(
+    inputFingerprint,
+    CreateSnapshotWorldGridFingerprint(snapshot));
+  int narrowCount = definition.CalculateInvocationCount(
+    LegacySurfaceCavesVerticalFamily.Narrow,
+    4200,
+    isRemixWorld: false);
+  int remixNarrowCount = definition.CalculateInvocationCount(
+    LegacySurfaceCavesVerticalFamily.Narrow,
+    4200,
+    isRemixWorld: true);
+  int remixHorizontalCount = definition.CalculateInvocationCount(
+    LegacySurfaceCavesVerticalFamily.Horizontal,
+    4200,
+    isRemixWorld: true);
+  int cavererCount = definition.CalculateCavererInvocationCount(4200);
+  if (!commandCountValid ||
+      !deterministicCommands ||
+      !deterministicLiquids ||
+      !deterministicRandom ||
+       !sourcePrefixValid ||
+       !hasNarrow ||
+       !hasCaverer ||
+       duplicateCavererSource ||
+       !snapshotUnchanged ||
+      narrowCount != 8 ||
+      remixNarrowCount != 24 ||
+      remixHorizontalCount != 1 ||
+      cavererCount != 5)
+  {
+    Console.WriteLine(
+      $"DEBUG SurfaceCaves unified: commands={firstCommands.Count}/{secondCommands.Count}, " +
+      $"liquids={firstLiquids.Count}/{secondLiquids.Count}, random=" +
+      $"{firstRandom.SampleCount}/{secondRandom.SampleCount}, prefix={sourcePrefixValid}, " +
+      $"narrow={hasNarrow}, caverer={hasCaverer}, snapshot={snapshotUnchanged}, " +
+      $"duplicateCaverer={duplicateCavererSource}, " +
+      $"counts={narrowCount}/{remixNarrowCount}/{remixHorizontalCount}/{cavererCount}");
+    throw new InvalidOperationException(
+      "SurfaceCaves unified owner did not preserve deterministic family order, counts, or snapshot input.");
+  }
+
+  WorldGenerationStateComponent skyblockState = new(seed);
+  LegacyPassRandomState skyblockRandom = new(seed);
+  List<TileChangeCommand> skyblockCommands = new();
+  List<LiquidChangeCommand> skyblockLiquids = new();
+  LegacySurfaceCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    skyblockRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: true,
+    isNoSurfaceWorld: false,
+    ref skyblockState,
+    skyblockCommands,
+    skyblockLiquids);
+  if (skyblockCommands.Count != 0 || skyblockLiquids.Count != 0 ||
+      skyblockRandom.SampleCount != 0 || skyblockState.Stage != WorldGenerationStage.Created ||
+      skyblockState.NextSequence != 0)
+  {
+    throw new InvalidOperationException(
+      "SurfaceCaves Skyblock guard consumed state, commands, or random samples.");
+  }
+
+  WorldGenerationStateComponent noSurfaceState = new(seed);
+  LegacyPassRandomState noSurfaceRandom = new(seed);
+  List<TileChangeCommand> noSurfaceCommands = new();
+  List<LiquidChangeCommand> noSurfaceLiquids = new();
+  LegacySurfaceCavesPass.AppendCommands(
+    snapshot,
+    profile,
+    noSurfaceRandom,
+    isRemixWorld: false,
+    isSkyblockWorld: false,
+    isNoSurfaceWorld: true,
+    ref noSurfaceState,
+    noSurfaceCommands,
+    noSurfaceLiquids);
+  if (noSurfaceCommands.Count != 0 || noSurfaceLiquids.Count != 0 ||
+      noSurfaceRandom.SampleCount != 0 || noSurfaceState.Stage != WorldGenerationStage.Created ||
+      noSurfaceState.NextSequence != 0)
+  {
+    throw new InvalidOperationException(
+      "SurfaceCaves no-surface guard consumed state, commands, or random samples.");
+  }
+
+  Console.WriteLine(
+    $"PASS: SurfaceCaves unified owner preserves source order, guards, and deterministic replay " +
+    $"({firstCommands.Count} commands; {firstLiquids.Count} liquids; " +
+    $"{firstRandom.SampleCount} random samples)");
 }
 
 static string FindRepositoryRoot()

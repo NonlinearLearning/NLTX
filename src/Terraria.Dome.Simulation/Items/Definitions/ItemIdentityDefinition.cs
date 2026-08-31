@@ -6,4 +6,8 @@ public readonly record struct ItemIdentityDefinition(
   bool IsQuestItem = false,
   bool UniqueStack = false,
   bool ExpertOnly = false,
-  bool IsShopCurrency = false);
+  bool Expert = false,
+  bool IsShopCurrency = false,
+  bool Buy = false,
+  bool BuyOnce = false,
+  bool IsShopItem = false);

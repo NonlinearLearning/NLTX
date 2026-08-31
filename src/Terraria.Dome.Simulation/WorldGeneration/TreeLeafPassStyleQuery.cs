@@ -1,3 +1,5 @@
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 
 namespace Terraria.Dome.Simulation.WorldGeneration;
@@ -8,6 +10,25 @@ public static class TreeLeafPassStyleQuery
   private const ushort AshTreeTileType = 633;
   private const ushort WillowTreeTileType = 616;
   private const ushort SakuraTreeTileType = 596;
+  private static readonly IReadOnlyDictionary<ushort, int> ProfilePassStyles =
+    new Dictionary<ushort, int>
+    {
+      [583] = 1249,
+      [584] = 1250,
+      [585] = 1251,
+      [586] = 1252,
+      [587] = 1253,
+      [588] = 1254,
+      [589] = 1255,
+      [SakuraTreeTileType] = 1248,
+      [WillowTreeTileType] = 1257,
+      [AshTreeTileType] = 1278
+    }.ToFrozenDictionary();
+
+  public static IReadOnlyDictionary<ushort, int> RegisterProfilePassStyles()
+  {
+    return ProfilePassStyles;
+  }
 
   public static TreeLeafPassStyleResult Evaluate(
     int x,
@@ -59,14 +80,7 @@ public static class TreeLeafPassStyleQuery
 
   private static int GetProfilePassStyle(ushort tileType)
   {
-    return tileType switch
-    {
-      SakuraTreeTileType => 1248,
-      WillowTreeTileType => 1257,
-      AshTreeTileType => 1278,
-      >= 583 and <= 589 => 1249 + tileType - 583,
-      _ => -1
-    };
+    return ProfilePassStyles.TryGetValue(tileType, out int passStyle) ? passStyle : -1;
   }
 
   private static int GetHollowTreePassStyle(

@@ -21,7 +21,10 @@ public readonly record struct NpcStateSnapshot(
   bool HasSegment,
   NpcSegmentComponent Segment,
   NpcFaction Faction = NpcFaction.Hostile,
-  NpcCategory Category = NpcCategory.Enemy)
+  NpcCategory Category = NpcCategory.Enemy,
+  string GivenName = "",
+  bool HasHomePublication = false,
+  NpcHomePublicationComponent HomePublication = default)
 {
   private const int DefaultTimeLeft = 750;
 
@@ -44,12 +47,27 @@ public readonly record struct NpcStateSnapshot(
       HasHome = HasHome,
       Home = Home,
       HasSegment = HasSegment,
-      Segment = Segment
+      Segment = Segment,
+      FlyingHorizontalAcceleration = Behavior.Flying.HorizontalAcceleration,
+      FlyingVerticalAcceleration = Behavior.Flying.VerticalAcceleration,
+      FlyingMaximumHorizontalSpeed = Behavior.Flying.MaximumHorizontalSpeed,
+      FlyingMaximumVerticalSpeed = Behavior.Flying.MaximumVerticalSpeed,
+      Faction = Faction,
+      Category = Category
     };
   }
 
   public static NpcStateSnapshot FromReplication(NpcReplicationSnapshot snapshot)
   {
+    if (!Enum.IsDefined(snapshot.BehaviorId) || !Enum.IsDefined(snapshot.SpawnSource) ||
+        !Enum.IsDefined(snapshot.DespawnReason) || !Enum.IsDefined(snapshot.Faction) ||
+        !Enum.IsDefined(snapshot.Category))
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(snapshot),
+        "NPC replication snapshot contains an undefined typed state value.");
+    }
+
     if (snapshot.MaximumHealth <= 0 && snapshot.Health == int.MaxValue)
     {
       throw new ArgumentOutOfRangeException(
@@ -64,7 +82,12 @@ public readonly record struct NpcStateSnapshot(
     NpcBehaviorStateComponent behavior = new(
       snapshot.BehaviorId,
       new NpcChaseState(1.0f, 0.0f),
-      new NpcTownHomeState(default, true, 0));
+      new NpcTownHomeState(default, true, 0),
+      new NpcFlyingState(
+        snapshot.FlyingHorizontalAcceleration,
+        snapshot.FlyingVerticalAcceleration,
+        snapshot.FlyingMaximumHorizontalSpeed,
+        snapshot.FlyingMaximumVerticalSpeed));
     NpcSpawnStateComponent spawn = new(
       snapshot.SpawnSource,
       snapshot.DifficultyScale > 0.0f ? snapshot.DifficultyScale : 1.0f,
@@ -89,6 +112,8 @@ public readonly record struct NpcStateSnapshot(
       snapshot.HasHome,
       snapshot.Home,
       snapshot.HasSegment,
-      snapshot.Segment);
+      snapshot.Segment,
+      snapshot.Faction,
+      snapshot.Category);
   }
 }

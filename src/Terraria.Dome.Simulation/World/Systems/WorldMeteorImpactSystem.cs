@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using Terraria.Dome.Simulation.Commands;
 using Terraria.Dome.Simulation.WorldModel;
@@ -13,7 +14,15 @@ public sealed class WorldMeteorImpactSystem
   private const int OuterRadius = 18;
   private const int InnerRadius = 12;
   private const int MaximumMeteoritesAtReferenceWidth = 400;
-  private static readonly ushort[] ProtectedTileTypes = [26, 226, 470, 475, 488, 597];
+  private static readonly IReadOnlySet<ushort> ProtectedTileTypes = new HashSet<ushort>
+  {
+    26, 226, 470, 475, 488, 597
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterProtectedTileDefaults()
+  {
+    return ProtectedTileTypes;
+  }
 
   public bool TryCreateCommands(
     WorldGrid world,
@@ -135,14 +144,6 @@ public sealed class WorldMeteorImpactSystem
       return false;
     }
 
-    for (int index = 0; index < ProtectedTileTypes.Length; index++)
-    {
-      if (tile.Type == ProtectedTileTypes[index])
-      {
-        return true;
-      }
-    }
-
-    return false;
+    return ProtectedTileTypes.Contains(tile.Type);
   }
 }

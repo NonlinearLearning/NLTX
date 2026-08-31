@@ -28,7 +28,8 @@ public sealed class ItemInputValidationSystem
     }
 
     ItemStack stack = inventory.GetSlot(selectedSlot);
-    if (stack.IsEmpty || !definitions.TryGet(stack.ItemType, out _))
+    if (stack.IsEmpty || !definitions.TryGet(stack.ItemType, out ItemDefinition definition) ||
+        stack.Quantity > definition.StackLimit)
     {
       return Reject("empty-or-unknown", "The selected item is empty or unknown.");
     }

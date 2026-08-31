@@ -1,6 +1,5 @@
 # Remaining ECS Migration Execution Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan one scenario
 > card at a time. Do not combine batches or mark Task 9 complete from any individual card.
 
 **Goal:** Continue the Terraria server ECS migration from the accepted WLD/import slices toward

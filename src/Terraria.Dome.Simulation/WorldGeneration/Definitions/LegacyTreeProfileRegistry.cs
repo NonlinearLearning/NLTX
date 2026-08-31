@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+
 namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class LegacyTreeProfileRegistry
@@ -85,6 +88,26 @@ public static class LegacyTreeProfileRegistry
     MinimumHeight,
     MaximumHeight,
     TopPaddingNeeded);
+
+  private static readonly IReadOnlyList<LegacyTreeProfileDefinition> DefaultProfiles =
+    Array.AsReadOnly<LegacyTreeProfileDefinition>(
+    [
+      GemTreeTopaz,
+      GemTreeAmethyst,
+      GemTreeSapphire,
+      GemTreeEmerald,
+      GemTreeRuby,
+      GemTreeDiamond,
+      GemTreeAmber,
+      VanityTreeSakura,
+      VanityTreeWillow,
+      TreeAsh
+    ]);
+
+  public static IReadOnlyList<LegacyTreeProfileDefinition> RegisterDefaults()
+  {
+    return DefaultProfiles;
+  }
 
   public static bool TryGet(ushort treeTileType, out LegacyTreeProfileDefinition profile)
   {

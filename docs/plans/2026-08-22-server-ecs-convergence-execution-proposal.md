@@ -1,6 +1,5 @@
 # Server ECS Convergence Execution Proposal
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to
 > implement this plan task-by-task.
 
 **Goal:** Converge the server-authoritative ECS migration by restoring

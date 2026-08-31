@@ -32,13 +32,6 @@ public static class LegacyTileRunnerCandidateQuery
       return false;
     }
 
-    if (tile.IsActive && !LegacyGenerationClearabilityPolicy.CanClear(
-          tile.TileType,
-          tile.IsProtectedDungeonTile))
-    {
-      return false;
-    }
-
     return LegacyTileRunnerDistancePolicy.IsWithinManhattanEnvelope(
       tileX,
       tileY,

@@ -87,83 +87,156 @@
       "Visibility": "Public",
       "Line": 556,
       "Domain": "Structure",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/SecretSeedRuntimeProjection.cs:Create"
+        ],
+        "ImplementedScope": "Projects the six source-side secret-seed runtime flags from explicit enabled variants.",
+        "ExcludedLegacyResponsibilities": [
+          "WorldGenerationPipeline does not yet execute non-default secret-seed variants."
+        ],
+        "Verification": "Terraria.Dome.DungeonBounds.Verification secret-seed runtime projection checks."
+      }
     },
     {
       "Name": "FinalizeSecretSeeds",
       "Visibility": "Public",
       "Line": 586,
       "Domain": "Liquid",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Liquid"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacySecretSeedFinalizePolicy.cs:CreateActions"
+        ],
+        "ImplementedScope": "Builds source-ordered secret-seed finalization actions from explicit enabled variants.",
+        "ExcludedLegacyResponsibilities": [
+          "Action execution remains split across world-generation, liquid, and world-object owners."
+        ],
+        "Verification": "Terraria.Dome.DungeonBounds.Verification secret-seed finalization policy checks."
+      }
     },
     {
       "Name": "DoPaintEverythingGray",
       "Visibility": "Public",
       "Line": 693,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyPaintEverythingGray.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits source-ordered paint commands from immutable tiles, explicit treasure sets, and pass-scoped random state.",
+        "ExcludedLegacyResponsibilities": [
+          "Secret-seed action scheduling and the legacy TileID ore/gem registry remain explicit caller inputs."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification gray paint command checks."
+      }
     },
     {
       "Name": "DoPaintEverythingNegative",
       "Visibility": "Public",
       "Line": 729,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyPaintEverythingNegative.cs:AppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyPaintEverythingNegativeProfile.cs:LegacyPaintEverythingNegativeProfile"
+        ],
+        "ImplementedScope": "Emits bounded selective or full negative-paint commands from immutable tiles, explicit classification sets, and pass-scoped random state.",
+        "ExcludedLegacyResponsibilities": [
+          "Secret-seed action scheduling and legacy TileID registry ownership remain explicit caller inputs."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification negative paint command checks."
+      }
     },
     {
       "Name": "DoCoatEverythingEcho",
       "Visibility": "Public",
       "Line": 803,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyCoatEverythingEcho.cs:AppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyCoatEverythingEchoProfile.cs:LegacyCoatEverythingEchoProfile"
+        ],
+        "ImplementedScope": "Emits immutable-snapshot Echo coating and error-world cleanup commands through the typed tile commit boundary.",
+        "ExcludedLegacyResponsibilities": [
+          "Legacy chest inventory injection remains a world-object responsibility and secret-seed action scheduling remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification Echo coating command checks."
+      }
     },
     {
       "Name": "DoCoatEverythingIlluminant",
       "Visibility": "Public",
       "Line": 893,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyCoatEverythingIlluminant.cs:AppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyCoatEverythingIlluminantProfile.cs:LegacyCoatEverythingIlluminantProfile"
+        ],
+        "ImplementedScope": "Emits source-ordered selective, random, or full Illuminant coating commands from immutable snapshots and a pass-scoped random state.",
+        "ExcludedLegacyResponsibilities": [
+          "Secret-seed action scheduling and legacy TileID registry ownership remain explicit caller inputs."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification Illuminant coating command checks."
+      }
     },
     {
       "Name": "DoNoSurface",
       "Visibility": "Public",
       "Line": 929,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyNoSurfacePolicy.cs:Create"
+        ],
+        "ImplementedScope": "Builds source-ordered underground meteor and spawn-randomization actions from explicit world-rule inputs.",
+        "ExcludedLegacyResponsibilities": [
+          "Meteor, spawn, and torch action execution remain owned by their authoritative systems."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification no-surface action policy checks."
+      }
     },
     {
       "Name": "DoNoSurfaceFillTheTop",
@@ -182,71 +255,144 @@
       "Visibility": "Public",
       "Line": 980,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldRandomBlock.cs:TrySelect"
+        ],
+        "ImplementedScope": "Selects an eligible ErrorWorld tile from explicit immutable tile definitions using pass-scoped rejection sampling.",
+        "ExcludedLegacyResponsibilities": [
+          "The full TileID registry and the consuming ErrorWorld block-shuffle pass remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification ErrorWorld random-block source checks."
+      }
     },
     {
       "Name": "DoErrorWorldShuffleBlocks",
       "Visibility": "Public",
       "Line": 992,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldTileSwap.cs:AppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldTileRectangleSwap.cs:AppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldCandidateQuery.cs:IsSwapEligible",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldCandidateSelector.cs:TrySelect",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldSpawnExclusionPolicy.cs:IsSingleTileExcluded",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldSpawnExclusionPolicy.cs:IsRectangleExcluded",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldSwapOperation.cs:TryAppendSingleTileSwap",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldSwapOperation.cs:TryAppendRectangleSwap",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldAxisTrail.cs:AppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldAxisTrailPolicy.cs:Create",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldPassCountPolicy.cs:Create",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldRandomBlockRewrite.cs:TryAppendCommand",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldShufflePass.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Selects source-eligible candidates, applies spawn exclusions and pass counts, and emits bounded rewrite, single-tile, non-overlapping rectangle, and axial trail commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Full TileID registry projection, overlapping rectangle ordering, and pipeline scheduling remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification ErrorWorld single-tile swap source checks."
+      }
     },
     {
       "Name": "DoErrorWorldFinish",
       "Visibility": "Public",
       "Line": 1201,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldFinishCleanup.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits bounded immutable-snapshot cleanup commands for cracked bricks, moss, walls, crystal blocks, and unwired statue frames.",
+        "ExcludedLegacyResponsibilities": [
+          "Chest swaps, wire routing, liquid pool placement, killability rules, NPC replacement, and full random-consumption parity remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification ErrorWorld finish cleanup checks."
+      }
     },
     {
       "Name": "DoErrorWorldFindChestItem",
       "Visibility": "Public",
       "Line": 1463,
       "Domain": "WorldRuntime",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyErrorWorldChestItemPolicy.cs:SelectItemType"
+        ],
+        "ImplementedScope": "Selects the source-defined ErrorWorld chest item with a single pass-scoped random draw.",
+        "ExcludedLegacyResponsibilities": [
+          "Chest placement and the complete ErrorWorld chest-swap transaction remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification ErrorWorld chest-item policy checks."
+      }
     },
     {
       "Name": "DoExtraLiquidAddLiquid",
       "Visibility": "Public",
       "Line": 1508,
       "Domain": "Liquid",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile",
         "Liquid"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyExtraLiquidAddLiquid.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits source-ordered bounded liquid commands from an immutable world snapshot.",
+        "ExcludedLegacyResponsibilities": [
+          "Bubble-block placement, QuickWater scheduling, and the full ExtraLiquid finish pass remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification ExtraLiquid command checks."
+      }
     },
     {
       "Name": "DoExtraLiquidAddBubbleBlocks",
       "Visibility": "Public",
       "Line": 1558,
       "Domain": "Liquid",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile",
         "Liquid"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyExtraLiquidAddBubbleBlocks.cs:AppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyExtraLiquidPassExecution.cs:TryExecuteBubbleBlocks"
+        ],
+        "ImplementedScope": "Emits and commits deterministic bounded bubble-square, liquid-clear, and fullbright commands.",
+        "ExcludedLegacyResponsibilities": [
+          "QuickWater scheduling, landmass persistence, and complete source random-consumption parity remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification ExtraLiquid bubble-block checks."
+      }
     },
     {
       "Name": "IsConsideredTheSpawnArea",
@@ -264,45 +410,86 @@
       "Visibility": "Public",
       "Line": 1744,
       "Domain": "Liquid",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile",
         "Liquid"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyExtraLiquidFinish.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits bounded fullbright cleanup, underworld lava, and tile-removal commands.",
+        "ExcludedLegacyResponsibilities": [
+          "QuickWater scheduling and tile 518 frame refresh remain deferred to liquid and frame systems."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification ExtraLiquid finish command checks."
+      }
     },
     {
       "Name": "DoRainsForAYear",
       "Visibility": "Public",
       "Line": 1788,
       "Domain": "WorldRuntime",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/World/LegacyRainsForAYearPolicy.cs:Apply"
+        ],
+        "ImplementedScope": "Projects the source rain duration, raining state, and cloud target into a runtime result.",
+        "ExcludedLegacyResponsibilities": [
+          "Runtime command scheduling and cloud-system ownership remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification rains-for-a-year runtime policy checks."
+      }
     },
     {
       "Name": "DoRandomSpawn",
       "Visibility": "Public",
       "Line": 1798,
       "Domain": "WorldRuntime",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyRandomSpawnPolicy.cs:Create"
+        ],
+        "ImplementedScope": "Builds the source one-time random-spawn and torch action plan.",
+        "ExcludedLegacyResponsibilities": [
+          "Spawn randomization and torch placement command execution remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification random-spawn policy checks."
+      }
     },
     {
       "Name": "DoAddTeleporters",
       "Visibility": "Public",
       "Line": 1809,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyTeleporterPlacementQuery.cs:CanPlace",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyTeleporterClearArea.cs:TryAppendCommands"
+        ],
+        "ImplementedScope": "Evaluates source candidate gates and emits bounded clear-area tile commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Pair selection, tile placement, wiring, and source retry scheduling remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification teleporter candidate checks."
+      }
     },
     {
       "Name": "DoAddTeleporters_CanPutTeleporterHere",
@@ -333,95 +520,175 @@
       "Visibility": "Public",
       "Line": 1997,
       "Domain": "WorldRuntime",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyStartInHardmodePolicy.cs:Apply"
+        ],
+        "ImplementedScope": "Projects source hardmode enablement and initialization intent into frozen generation rules.",
+        "ExcludedLegacyResponsibilities": [
+          "WorldProgression hardmode initialization and its gameplay side effects remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification start-in-hardmode policy checks."
+      }
     },
     {
       "Name": "DoNoInfection",
       "Visibility": "Public",
       "Line": 2005,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyNoInfectionPolicy.cs:GetConversion"
+        ],
+        "ImplementedScope": "Classifies source tile and wall conversion exclusions from immutable tile state.",
+        "ExcludedLegacyResponsibilities": [
+          "World conversion command execution remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification no-infection policy checks."
+      }
     },
     {
       "Name": "DoHallowOnSurface",
       "Visibility": "Public",
       "Line": 2052,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyHallowOnSurface.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits bounded surface hallow tile and wall conversion commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Pipeline scheduling and full conversion parity remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification hallow-on-surface checks."
+      }
     },
     {
       "Name": "DoWorldIsInfected",
       "Visibility": "Public",
       "Line": 2121,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyWorldInfectionPolicy.cs:CreateColumn"
+        ],
+        "ImplementedScope": "Builds deterministic source-style infection-column inputs and conversion exclusions.",
+        "ExcludedLegacyResponsibilities": [
+          "World conversion command execution remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification infection policy checks."
+      }
     },
     {
       "Name": "DoSurfaceIsInSpace",
       "Visibility": "Public",
       "Line": 2177,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacySurfaceIsInSpace.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits bounded surface cloud-wall cleanup commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Pipeline scheduling remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification surface-in-space checks."
+      }
     },
     {
       "Name": "DoSurfaceIsMushrooms",
       "Visibility": "Public",
       "Line": 2197,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacySurfaceIsMushrooms.cs:AppendNormalModeCommands"
+        ],
+        "ImplementedScope": "Emits bounded normal-mode surface mushroom conversion commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Secret-seed mode variants and pipeline scheduling remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification surface-mushroom checks."
+      }
     },
     {
       "Name": "DoWorldIsFrozenFinish",
       "Visibility": "Public",
       "Line": 2287,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyWorldIsFrozenFinishPolicy.cs:CreateNpcReplacementIntents"
+        ],
+        "ImplementedScope": "Creates bounded frozen-world chest and NPC replacement intents.",
+        "ExcludedLegacyResponsibilities": [
+          "Chest and NPC command execution remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification frozen-finish intent checks."
+      }
     },
     {
       "Name": "DoWorldIsFrozen",
       "Visibility": "Public",
       "Line": 2330,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyWorldIsFrozen.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits bounded frozen-world tile and wall conversion commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Pipeline scheduling and complete secret-seed interaction parity remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification world-is-frozen checks."
+      }
     },
     {
       "Name": "DoSurfaceIsDesertFinish",
@@ -452,96 +719,176 @@
       "Visibility": "Public",
       "Line": 2709,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacySurfaceIsDesertNoSurfaceCleanup.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits bounded surface-desert no-surface cleanup commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Pipeline scheduling remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification desert cleanup checks."
+      }
     },
     {
       "Name": "DoNoSpiderCavesILiedMoreSpiderCaves",
       "Visibility": "Public",
       "Line": 2736,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyNoSpiderCavesCleanup.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits bounded spider-wall cleanup commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Pipeline scheduling remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification spider cleanup checks."
+      }
     },
     {
       "Name": "DoActuallyNoTraps",
       "Visibility": "Public",
       "Line": 2752,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyActuallyNoTraps.cs:AppendHardModeCommands"
+        ],
+        "ImplementedScope": "Emits bounded hardmode trap-removal commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Pipeline scheduling remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification actually-no-traps checks."
+      }
     },
     {
       "Name": "DoRainbowStuff",
       "Visibility": "Public",
       "Line": 2817,
       "Domain": "Liquid",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile",
         "Liquid"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyRainbowStaticRewrite.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Emits bounded static rainbow tile and wall rewrite commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Dynamic rainbow and pipeline scheduling remain deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification rainbow static rewrite checks."
+      }
     },
     {
       "Name": "DoDigExtraHoles",
       "Visibility": "Public",
       "Line": 2957,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyDigExtraHoles.cs:CreateInvocations"
+        ],
+        "ImplementedScope": "Builds deterministic source TileRunner invocation inputs.",
+        "ExcludedLegacyResponsibilities": [
+          "Pipeline scheduling remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification dig-extra-holes checks."
+      }
     },
     {
       "Name": "DoRoundLandMasses",
       "Visibility": "Public",
       "Line": 2976,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyRoundLandmassSeedDefinitions.cs:Create"
+        ],
+        "ImplementedScope": "Builds deterministic source landmass seed definitions.",
+        "ExcludedLegacyResponsibilities": [
+          "Landmass command execution remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification round-landmass checks."
+      }
     },
     {
       "Name": "DoPooEverywhere",
       "Visibility": "Public",
       "Line": 3083,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyPooEverywherePolicy.cs:GetAttemptCount"
+        ],
+        "ImplementedScope": "Calculates the bounded source placement attempt count.",
+        "ExcludedLegacyResponsibilities": [
+          "Placement execution remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification poo policy checks."
+      }
     },
     {
       "Name": "DoPortalGunInChests",
       "Visibility": "Public",
       "Line": 3114,
       "Domain": "WorldRuntime",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyPortalGunChestPolicy.cs:TryCreateIntent"
+        ],
+        "ImplementedScope": "Creates bounded portal-gun chest item intents.",
+        "ExcludedLegacyResponsibilities": [
+          "Chest command execution remains deferred."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification portal-gun chest checks."
+      }
     },
     {
       "Name": "Calculate",
@@ -1902,11 +2249,21 @@
       "Visibility": "Public",
       "Line": 9263,
       "Domain": "Ore",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyOreHelper.cs:AppendCommands"
+        ],
+        "ImplementedScope": "Converts the bounded legacy three-by-three type 1 and 40 cleanup into snapshot-derived tile commands.",
+        "ExcludedLegacyResponsibilities": [
+          "Legacy caller scheduling, immediate mutable tile writes, and frame side effects."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification OreHelper source checks."
+      }
     },
     {
       "Name": "StonePatch",
@@ -1971,14 +2328,19 @@
         "TargetMembers": [
           "src/Terraria.Dome.Simulation/WorldGeneration/OrePatchEligibilityQuery.cs:Evaluate",
           "src/Terraria.Dome.Simulation/WorldGeneration/Systems/OrePatchPlacementSystem.cs:TryPrepare",
-          "src/Terraria.Dome.Simulation/WorldGeneration/Systems/OrePatchPlacementSystem.cs:TryAppendCommands"
+          "src/Terraria.Dome.Simulation/WorldGeneration/Systems/OrePatchPlacementSystem.cs:TryAppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/Systems/OrePatchPlacementSystem.cs:TryAppendLegacyTrailAndBlobCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyOrePatchTypePolicy.cs:SelectTileType",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyOreTierSelectionPolicy.cs:Select",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyOrePatchTrail.cs:TryAppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyOrePatchBlob.cs:TryAppendCommands"
         ],
-        "ImplementedScope": "Composes bounded OrePatch eligibility with an explicit ore definition and a conflict-safe prepare/command transaction from immutable snapshots.",
+        "ImplementedScope": "Composes bounded OrePatch eligibility, tier selection, trail/blob traversal, and a conflict-safe prepare/command transaction from immutable snapshots.",
         "ExcludedLegacyResponsibilities": [
-          "SavedOreTiers selection and legacy genRand stream parity.",
-          "OreHelper, random ore-walk mutation, SquareTileFrame, and mutable Tile ownership."
+          "World-rule tier selection projection into generation scheduling.",
+          "SquareTileFrame and mutable Tile ownership."
         ],
-        "Verification": "Terraria.Dome.WorldGeneration.Verification ore patch preparation and command checks."
+        "Verification": "Terraria.Dome.WorldGeneration.Verification ore patch, tier, trail/blob, and command checks."
       }
     },
     {
@@ -2088,9 +2450,19 @@
       "Visibility": "Public",
       "Line": 10096,
       "Domain": "Structure",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/DungeonGenerationState.cs:SetUp"
+        ],
+        "ImplementedScope": "Preserves explicit current-dungeon replacement and immutable context append/reset semantics.",
+        "ExcludedLegacyResponsibilities": [
+          "Dungeon pass scheduling and per-context generation fields remain deferred."
+        ],
+        "Verification": "Terraria.Dome.DungeonBounds.Verification immutable dungeon setup checks."
+      }
     },
     {
       "Name": "GenerateWorld",
@@ -2182,9 +2554,19 @@
       "Visibility": "Public",
       "Line": 21674,
       "Domain": "Structure",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyDualDungeonPassPolicy.cs:ShouldDisable"
+        ],
+        "ImplementedScope": "Classifies the source-defined pass names disabled by the explicit dual-dungeons rule.",
+        "ExcludedLegacyResponsibilities": [
+          "WorldGenerationPipeline does not yet schedule non-default secret-seed pass definitions."
+        ],
+        "Verification": "Terraria.Dome.DungeonBounds.Verification dual-dungeon pass policy checks."
+      }
     },
     {
       "Name": "RestoreTemporaryStateChanges",
@@ -4921,13 +5303,24 @@
       "Visibility": "Public",
       "Line": 41739,
       "Domain": "Tile",
-      "Status": "Unmapped",
+      "Status": "Partial",
       "References": [
         "Main",
         "Tile",
         "NetMessage"
       ],
-      "Mapping": null
+      "Mapping": {
+        "Status": "Partial",
+        "TargetMembers": [
+          "src/Terraria.Dome.Simulation/WorldGeneration/LegacyOreRunner.cs:AppendCommands",
+          "src/Terraria.Dome.Simulation/WorldGeneration/MossTileTypeRegistry.cs:TileTypes"
+        ],
+        "ImplementedScope": "Renders bounded deterministic ore tile and wall commands from immutable snapshots, including source-backed moss and special replacement filters.",
+        "ExcludedLegacyResponsibilities": [
+          "Paint, framing, network side effects, and legacy caller scheduling."
+        ],
+        "Verification": "Terraria.Dome.WorldGeneration.Verification OreRunner source checks."
+      }
     },
     {
       "Name": "SmashAltar",
@@ -11238,12 +11631,12 @@
     "Seed": 1456,
     "SpawnX": 200,
     "SurfaceY": 80,
-    "SnapshotFingerprint": "441BC8F4B058DDEDE3BDBD8290CF41948C012C2098316F45276C5A94FF410E06",
+    "SnapshotFingerprint": "156A3B9B3A3C8B1DD35DC8D6C66BE2825E110B677DC09B73CE5452613249B86B",
     "SectionVersions": {
-      "0,0": 14123,
-      "1,0": 14116,
-      "0,1": 30000,
-      "1,1": 30000
+      "0,0": 20032,
+      "1,0": 20001,
+      "0,1": 35865,
+      "1,1": 35383
     }
   }
 }

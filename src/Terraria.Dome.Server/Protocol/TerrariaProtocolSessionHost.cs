@@ -40,6 +40,10 @@ internal sealed class TerrariaProtocolSessionHost
   private readonly Func<IReadOnlyList<TileEntityPersistentState>> _createTileEntitySnapshots;
   private readonly Func<WorldJoinStateSnapshot> _createWorldJoinState;
   private readonly Func<LegacyWorldDataContext> _createWorldDataContext;
+  private readonly Func<byte, IReadOnlyList<NpcProjectileCursorEntry>>
+    _restoreNpcProjectileCursor;
+  private readonly Func<string, IReadOnlyList<NpcProjectileCursorEntry>>
+    _restoreNpcProjectileCursorByAccount;
   private readonly Func<PlayerBootstrapState, CancellationToken, Task<PlayerPersistentState>>
     _resolvePlayerAccountAsync;
   private readonly WorldSectionReplication _worldReplication;
@@ -65,7 +69,9 @@ internal sealed class TerrariaProtocolSessionHost
       CancellationToken,
       Task<PlayerInitialProjection>> createSessionPlayerAsync,
     WorldSectionReplication worldReplication,
-    Func<LegacyWorldDataContext> createWorldDataContext)
+    Func<LegacyWorldDataContext> createWorldDataContext,
+    Func<byte, IReadOnlyList<NpcProjectileCursorEntry>> restoreNpcProjectileCursor,
+    Func<string, IReadOnlyList<NpcProjectileCursorEntry>> restoreNpcProjectileCursorByAccount)
   {
     _enqueueCommand = enqueueCommand;
     _enqueueInboundEnvelope = enqueueInboundEnvelope ??
@@ -86,6 +92,10 @@ internal sealed class TerrariaProtocolSessionHost
       throw new ArgumentNullException(nameof(createWorldJoinState));
     _createWorldDataContext = createWorldDataContext ??
       throw new ArgumentNullException(nameof(createWorldDataContext));
+    _restoreNpcProjectileCursor = restoreNpcProjectileCursor ??
+      throw new ArgumentNullException(nameof(restoreNpcProjectileCursor));
+    _restoreNpcProjectileCursorByAccount = restoreNpcProjectileCursorByAccount ??
+      throw new ArgumentNullException(nameof(restoreNpcProjectileCursorByAccount));
     _resolvePlayerAccountAsync = resolvePlayerAccountAsync;
     _createSessionPlayerAsync = createSessionPlayerAsync;
     _worldReplication = worldReplication ??
@@ -103,6 +113,7 @@ internal sealed class TerrariaProtocolSessionHost
     byte[] response = session.AcceptHello(helloFrame);
     SessionReplicationState replicationState = new(
       (frame, writeCancellationToken) => stream.WriteAsync(frame, writeCancellationToken).AsTask());
+    replicationState.RestoreNpcProjectileCursor(_restoreNpcProjectileCursor(playerSlot));
     await replicationState.WriteFramesAsync(
       [response, TerrariaPacketCodec.EncodeInitialNetModules()],
       cancellationToken);
@@ -116,6 +127,7 @@ internal sealed class TerrariaProtocolSessionHost
         {
           byte[] frameBytes = await ReadFrameAsync(stream, cancellationToken);
           TerrariaPacketDispatchResult result = _dispatcher.Dispatch(session, frameBytes);
+          replicationState.SetContractCapabilities(session.ContractCapabilities);
           if (result.ResponseFrame is byte[] responseFrame)
           {
             if (!_enqueueOutboundFrame(playerSlot, responseFrame))
@@ -152,6 +164,8 @@ internal sealed class TerrariaProtocolSessionHost
               result.PlayerBootstrap ?? throw new InvalidDataException(
                 "RequestWorldData did not include a player bootstrap state."),
               cancellationToken);
+            replicationState.RestoreNpcProjectileCursor(
+              _restoreNpcProjectileCursorByAccount(playerAccount.Uuid));
             byte[] worldData = TerrariaV1456Compatibility.EncodeWorldData(
               _createWorldDataContext());
             await replicationState.WriteFramesAsync([worldData], cancellationToken);
@@ -299,6 +313,11 @@ internal sealed class TerrariaProtocolSessionHost
           {
             EnqueueInboundFrame(playerSlot, frameBytes);
           }
+
+          if (result.AddPlayerBuffPvp is AddPlayerBuffPvpPacket)
+          {
+            EnqueueInboundFrame(playerSlot, frameBytes);
+          }
         }
         catch (EndOfStreamException)
         {
@@ -308,7 +327,10 @@ internal sealed class TerrariaProtocolSessionHost
     }
     finally
     {
-      _ = _enqueueCommand(new DestroySessionPlayerCommand(playerSlot, replicationState));
+      _ = _enqueueCommand(new DestroySessionPlayerCommand(
+        playerSlot,
+        replicationState,
+        playerAccount?.Uuid));
     }
   }
 

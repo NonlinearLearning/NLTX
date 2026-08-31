@@ -1,9 +1,9 @@
 # Manifest Summary
 
-Generated: 2026-08-23T18:46:06
+Generated: 2026-08-31T23:10:14
 
-- docs files indexed: 254
-- Build paths referenced by docs: 519
+- docs files indexed: 477
+- Build paths referenced by docs: 1308
 - canonical process root: `docs/flowstate/`
 - private process root: `.agent-workplace/`
 

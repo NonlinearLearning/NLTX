@@ -12,6 +12,12 @@ public sealed class EquipmentReplicationAssembler
 {
   private const int ArmorSlotBase = 59;
   private const int VanityArmorSlotOffset = 10;
+  private readonly ItemDefinitionRegistry _itemDefinitions;
+
+  public EquipmentReplicationAssembler(ItemDefinitionRegistry itemDefinitions)
+  {
+    _itemDefinitions = itemDefinitions ?? throw new ArgumentNullException(nameof(itemDefinitions));
+  }
 
   public IReadOnlyList<byte[]> CollectFrames(
     byte playerSlot,
@@ -37,11 +43,7 @@ public sealed class EquipmentReplicationAssembler
       }
 
       ItemInstanceSnapshot instance = inventory.Slots[state.SourceSlot];
-      if (instance.Stack.IsEmpty || instance.State.PrefixId > byte.MaxValue)
-      {
-        throw new InvalidOperationException(
-          "An equipment source item cannot be represented by the V1456 equipment packet.");
-      }
+      ItemReplicationAdmission.ValidateEquipmentInstance(instance, state, _itemDefinitions);
 
       int slotId = ArmorSlotBase + offset;
       if (state.IsVanity)

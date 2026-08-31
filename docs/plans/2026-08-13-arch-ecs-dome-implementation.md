@@ -1,6 +1,5 @@
 # Arch ECS Dome Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Build a small Arch ECS game simulation, TCP server Dome, console client
 Dome, and executable verification harness.

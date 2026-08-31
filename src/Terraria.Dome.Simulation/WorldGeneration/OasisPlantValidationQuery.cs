@@ -12,6 +12,22 @@ public static class OasisPlantValidationQuery
   public static OasisPlantValidationResult Evaluate(
     WorldGridSnapshot snapshot,
     TileDefinitionRegistry tileDefinitions,
+    int x,
+    int y,
+    ushort plantType = 530)
+  {
+    return Evaluate(
+      snapshot,
+      tileDefinitions,
+      ConversionSandTileRegistry.RegisterDefaults(),
+      x,
+      y,
+      plantType);
+  }
+
+  public static OasisPlantValidationResult Evaluate(
+    WorldGridSnapshot snapshot,
+    TileDefinitionRegistry tileDefinitions,
     IReadOnlySet<ushort> conversionSandTileTypes,
     int x,
     int y,

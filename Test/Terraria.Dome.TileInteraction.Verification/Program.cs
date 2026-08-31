@@ -39,7 +39,88 @@ if (!interaction.HasTarget || interaction.TargetId != command.TargetId ||
   throw new InvalidOperationException("Player interaction did not preserve a typed target and mode.");
 }
 
+try
+{
+  interaction.SetTarget(7, (PlayerInteractionMode)int.MaxValue);
+  throw new InvalidOperationException("Player interaction component accepted an undefined mode.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+try
+{
+  interaction.SetTarget(-1, PlayerInteractionMode.OpenChest);
+  throw new InvalidOperationException("Player interaction component accepted a negative target ID.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
 Console.WriteLine("PASS: bounded status effects and typed player interactions are simulation-owned");
+
+using DomeSimulation interactionSimulation = new(new WorldGrid(400, 300));
+PlayerHandle interactionPlayer = interactionSimulation.CreatePlayer(new SimulationVector(10.0f, 10.0f));
+PlayerSnapshot initialInteractionSnapshot = interactionSimulation.CreateSnapshot().Players[0];
+if (initialInteractionSnapshot.HasInteractionTarget ||
+    initialInteractionSnapshot.InteractionMode != PlayerInteractionMode.None)
+{
+  throw new InvalidOperationException("Player interaction snapshot was not initially clear.");
+}
+PlayerStateSnapshot initialInteractionState =
+  interactionSimulation.CreatePlayerStateSnapshot(interactionPlayer);
+if (initialInteractionState.HasInteractionTarget ||
+    initialInteractionState.InteractionMode != PlayerInteractionMode.None)
+{
+  throw new InvalidOperationException("Player interaction state snapshot was not initially clear.");
+}
+interactionSimulation.QueuePlayerInteraction(
+  interactionPlayer,
+  targetId: 1,
+  PlayerInteractionMode.OpenChest,
+  new SimulationVector(10.0f, 10.0f));
+PlayerSnapshot queuedInteractionSnapshot = interactionSimulation.CreateSnapshot().Players[0];
+if (!queuedInteractionSnapshot.HasInteractionTarget ||
+    queuedInteractionSnapshot.InteractionMode != PlayerInteractionMode.OpenChest)
+{
+  throw new InvalidOperationException("Player interaction snapshot did not project the typed mode.");
+}
+PlayerStateSnapshot queuedInteractionState =
+  interactionSimulation.CreatePlayerStateSnapshot(interactionPlayer);
+if (!queuedInteractionState.HasInteractionTarget ||
+    queuedInteractionState.InteractionMode != PlayerInteractionMode.OpenChest)
+{
+  throw new InvalidOperationException("Player interaction state snapshot did not project the typed mode.");
+}
+Console.WriteLine("PASS: player interaction summaries project into both snapshots");
+try
+{
+  interactionSimulation.QueuePlayerInteraction(
+    interactionPlayer,
+    targetId: 1,
+    PlayerInteractionMode.OpenChest,
+    new SimulationVector(float.NaN, 10.0f));
+  throw new InvalidOperationException("Player interaction accepted a non-finite target position.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+Console.WriteLine("PASS: player interactions reject non-finite target positions");
+try
+{
+  interactionSimulation.QueuePlayerInteraction(
+    interactionPlayer,
+    targetId: 1,
+    (PlayerInteractionMode)int.MaxValue,
+    new SimulationVector(10.0f, 10.0f));
+  throw new InvalidOperationException("Player interaction accepted an undefined interaction mode.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+Console.WriteLine("PASS: player interactions reject undefined modes");
 AdvanceSessionToActive(session);
 TerrariaPacketDispatcher dispatcher = new();
 byte[] placeTileFrame = TerrariaFrameCodec.Encode(new TerrariaFrame(

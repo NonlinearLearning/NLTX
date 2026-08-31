@@ -12,6 +12,7 @@ public sealed class EquipmentStatSystem
   public void Apply(
     ref DefenseComponent defense,
     ref HealthRegenerationComponent healthRegeneration,
+    ref ManaComponent mana,
     EquipmentStateCollectionComponent equipmentStates,
     InventoryComponent inventory,
     ItemDefinitionRegistry itemDefinitions)
@@ -22,6 +23,7 @@ public sealed class EquipmentStatSystem
 
     int totalDefense = 0;
     int totalLifeRegen = 0;
+    int totalManaIncrease = 0;
     foreach (ItemEquipmentStateComponent state in equipmentStates.States.Values)
     {
       if (state.IsVanity || state.SourceSlot < 0 ||
@@ -32,6 +34,7 @@ public sealed class EquipmentStatSystem
 
       ItemStack stack = inventory.GetSlot(state.SourceSlot);
       if (stack.IsEmpty || !itemDefinitions.TryGet(stack.ItemType, out ItemDefinition definition) ||
+          stack.Quantity > definition.StackLimit ||
           definition.Equipment is not ItemEquipmentDefinition equipment ||
           equipment.Slot != state.Slot)
       {
@@ -40,10 +43,23 @@ public sealed class EquipmentStatSystem
 
       totalDefense = checked(totalDefense + equipment.Defense);
       totalLifeRegen = checked(totalLifeRegen + equipment.LifeRegen);
+      totalManaIncrease = checked(totalManaIncrease + equipment.ManaIncrease);
     }
 
     defense.Value = totalDefense;
     healthRegeneration.SetEquipmentRegenUnitsPerTick(totalLifeRegen);
+    int baseMaximumMana = mana.Maximum - mana.EquipmentIncrease;
+    if (baseMaximumMana < 0)
+    {
+      baseMaximumMana = 0;
+    }
+
+    mana.Maximum = checked(baseMaximumMana + totalManaIncrease);
+    mana.EquipmentIncrease = totalManaIncrease;
+    if (mana.Current > mana.Maximum)
+    {
+      mana.Current = mana.Maximum;
+    }
   }
 
   public void Apply(
@@ -62,7 +78,7 @@ public sealed class EquipmentStatSystem
       return;
     }
 
-    if (loadout.Revision == int.MaxValue)
+    if (loadout.Revision < 0 || loadout.Revision == int.MaxValue)
     {
       return;
     }

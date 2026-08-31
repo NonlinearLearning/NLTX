@@ -2,6 +2,7 @@ using System;
 using Arch.Core;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Items;
+using Terraria.Dome.Simulation.Items.Components;
 using Terraria.Dome.Simulation.Npc;
 using Terraria.Dome.Simulation.Players;
 using Terraria.Dome.Simulation.Player.Components;
@@ -85,7 +86,8 @@ WorldItemComponent activeItem = new(
   new SimulationVector(2.0f, 3.0f),
   IsActive: true,
   Revision: 1,
-  new WorldSectionCoordinates(0, 0));
+  new WorldSectionCoordinates(0, 0),
+  WorldState: ItemWorldStateComponent.Active(1));
 worldItemStore.Add(activeItem);
 try
 {
@@ -99,7 +101,13 @@ try
 catch (ArgumentOutOfRangeException)
 {
 }
-worldItemStore[activeItem.ReplicationId] = activeItem with { IsActive = false, Revision = 2 };
+worldItemStore[activeItem.ReplicationId] = activeItem with
+{
+  IsActive = false,
+  Revision = 2,
+  Stack = ItemStack.Empty,
+  WorldState = ItemWorldStateComponent.FromReplicationSnapshot(false, 2)
+};
 if (!worldItemStore.TryGetValue(1, out WorldItemComponent item) || item.IsActive ||
     item.Revision != 2 || worldItemStore.Count != 1)
 {

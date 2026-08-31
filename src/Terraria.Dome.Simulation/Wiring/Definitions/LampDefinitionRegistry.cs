@@ -1,24 +1,30 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace Terraria.Dome.Simulation.Wiring.Definitions;
 
 public sealed class LampDefinitionRegistry
 {
-  private readonly Dictionary<ushort, LampDefinition> _definitions;
+  private readonly IReadOnlyDictionary<ushort, LampDefinition> _definitions;
+  private readonly IReadOnlyList<LampDefinition> _orderedDefinitions;
 
   public LampDefinitionRegistry(IEnumerable<LampDefinition> definitions)
   {
     ArgumentNullException.ThrowIfNull(definitions);
-    _definitions = new Dictionary<ushort, LampDefinition>();
-    foreach (LampDefinition definition in definitions)
+    List<LampDefinition> materialized = new(definitions);
+    Dictionary<ushort, LampDefinition> indexed = new();
+    foreach (LampDefinition definition in materialized)
     {
       ArgumentNullException.ThrowIfNull(definition);
-      if (!_definitions.TryAdd(definition.TileType, definition))
+      if (!indexed.TryAdd(definition.TileType, definition))
       {
         throw new ArgumentException("Lamp definitions cannot repeat a Tile type.", nameof(definitions));
       }
     }
+
+    _definitions = new ReadOnlyDictionary<ushort, LampDefinition>(indexed);
+    _orderedDefinitions = materialized.AsReadOnly();
   }
 
   public static LampDefinitionRegistry SourceDerived { get; } = new([
@@ -44,4 +50,8 @@ public sealed class LampDefinitionRegistry
   {
     return _definitions.TryGetValue(tileType, out definition!);
   }
+
+  public IReadOnlyDictionary<ushort, LampDefinition> Definitions => _definitions;
+
+  public IReadOnlyList<LampDefinition> OrderedDefinitions => _orderedDefinitions;
 }

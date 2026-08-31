@@ -44,7 +44,11 @@ public sealed record CompatibilityWorldMetadata(
   bool IsDayTime = true,
   ulong? WorldGeneratorVersion = null,
   Guid? UniqueId = null,
-  string? SeedText = null)
+  string? SeedText = null,
+  double? RockLayer = null,
+  bool? IsNoTrapsWorld = null,
+  bool? IsSkyblockWorld = null,
+  bool? IsGoodWorld = null)
 {
   public string Name { get; init; } = Name ?? throw new ArgumentNullException(nameof(Name));
 
@@ -92,6 +96,10 @@ public sealed record CompatibilityWorldMetadata(
       metadata.IsDayTime,
       metadata.WorldGeneratorVersion,
       metadata.UniqueId,
-      metadata.SeedText);
+      metadata.SeedText,
+      metadata.RockLayer,
+      metadata.IsNoTrapsWorld,
+      metadata.IsSkyblockWorld,
+      metadata.IsGoodWorld);
   }
 }

@@ -9,7 +9,7 @@ public sealed class ItemSelectionSystem
   public void Apply(InventoryComponent inventory, ref SelectedItemComponent selection, int slot)
   {
     ArgumentNullException.ThrowIfNull(inventory);
-    if (selection.Revision == int.MaxValue)
+    if (selection.Revision < 0 || selection.Revision == int.MaxValue)
     {
       return;
     }

@@ -5,4 +5,5 @@ public readonly record struct LiquidWorkItemComponent(
   int Y,
   byte LiquidType,
   byte Amount,
-  long Sequence);
+  long Sequence,
+  string Source = "worldgen.liquid");

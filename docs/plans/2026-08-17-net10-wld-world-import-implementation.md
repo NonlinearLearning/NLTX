@@ -1,6 +1,5 @@
 # Net10 Wld World Import Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Load valid historical Terraria `.wld` files from versions `v1` through
 `v319` with an independent `net10.0` parser, project the imported state through

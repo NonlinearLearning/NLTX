@@ -17,8 +17,9 @@ public sealed class OrePlacementTransactionSystem
     ArgumentNullException.ThrowIfNull(snapshot);
     ArgumentNullException.ThrowIfNull(request);
     int depthRange = Math.Max(1, definition.MaxDepth - definition.MinDepth + 1);
-    int centerX = Math.Abs(request.Metadata.Seed.Value) % snapshot.Metadata.Width;
-    int centerY = definition.MinDepth + Math.Abs(request.Metadata.Seed.Value) % depthRange;
+    uint seed = unchecked((uint)request.Metadata.Seed.Value);
+    int centerX = (int)(seed % (uint)snapshot.Metadata.Width);
+    int centerY = definition.MinDepth + (int)(seed % (uint)depthRange);
     return TryPrepare(snapshot, definition, centerX, centerY, protection, out preparation);
   }
 
@@ -49,7 +50,11 @@ public sealed class OrePlacementTransactionSystem
       }
     }
 
-    preparation = new OrePlacementPreparationResult(definition.TileType, cells);
+    preparation = new OrePlacementPreparationResult(
+      definition.TileType,
+      cells,
+      definition.Priority,
+      definition.Id);
     return true;
   }
 
@@ -89,7 +94,9 @@ public sealed class OrePlacementTransactionSystem
         x,
         y,
         TileChangeKind.Place,
-        preparation.TileType));
+        preparation.TileType,
+        Priority: preparation.Priority,
+        Source: preparation.Source));
     }
 
     return true;

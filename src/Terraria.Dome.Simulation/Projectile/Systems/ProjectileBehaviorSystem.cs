@@ -30,7 +30,26 @@ public sealed class ProjectileBehaviorSystem
   {
     return new ProjectileBehaviorSystem([
       new LinearProjectileBehavior(),
-      new GravityProjectileBehavior()]);
+      new GravityProjectileBehavior(),
+      new LegacyAiStyle2ProjectileBehavior(),
+      new LegacyAiStyle2DelayedProjectileBehavior(),
+      new LegacyAiStyle2ImmediateGravityProjectileBehavior(),
+      new LegacyAiStyle2FiveTickGravityProjectileBehavior(),
+      new LegacyAiStyle2SixtyTickGravityProjectileBehavior(),
+      new LegacyAiStyle2RandomFrameProjectileBehavior(),
+      new LegacyAiStyle2EighteenTickGravityProjectileBehavior(),
+      new LegacyAiStyle2SixteenTickGravityProjectileBehavior(),
+      new LegacyAiStyle29ParentProjectileBehavior(),
+      new LegacyAiStyle29ChildProjectileBehavior(),
+      new LegacyAiStyle2Type162ProjectileBehavior(),
+      new LegacyAiStyle49Type281ProjectileBehavior(),
+      new LegacyAiStyle2Type166ProjectileBehavior(),
+      new LegacyAiStyle2Type304ProjectileBehavior(),
+      new LegacyAiStyle2StatusEffectProjectileBehavior(),
+      new LegacyAiStyle2HitStatusProjectileBehavior(),
+      new LegacyAiStyle190ProjectileBehavior(),
+      new LegacyAiStyle17ProjectileBehavior(),
+      new LegacyType607ProjectileBehavior()]);
   }
 
   public bool TryAdvance(

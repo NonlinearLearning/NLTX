@@ -12,10 +12,44 @@ public readonly record struct NpcTargetCandidate(
   SimulationVector Position,
   bool IsActive,
   int Health,
-  bool IsGhost = false);
+  bool IsGhost = false,
+  float TargetPriority = float.NaN);
 
 public sealed class NpcTargetSelectionSystem
 {
+  private const float NoAggroPenalty = 1000.0f;
+
+  public bool TryCalculateTargetPriority(
+    SimulationVector sourcePosition,
+    SimulationVector targetPosition,
+    int targetAggro,
+    bool targetHasNoAggro,
+    bool npcHasDirection,
+    out float priority)
+  {
+    priority = default;
+    if (!float.IsFinite(sourcePosition.X) || !float.IsFinite(sourcePosition.Y) ||
+        !float.IsFinite(targetPosition.X) || !float.IsFinite(targetPosition.Y))
+    {
+      return false;
+    }
+
+    float horizontalDistance = MathF.Abs(targetPosition.X - sourcePosition.X);
+    float verticalDistance = MathF.Abs(targetPosition.Y - sourcePosition.Y);
+    if (!float.IsFinite(horizontalDistance) || !float.IsFinite(verticalDistance))
+    {
+      return false;
+    }
+
+    priority = horizontalDistance + verticalDistance - targetAggro;
+    if (targetHasNoAggro && npcHasDirection)
+    {
+      priority += NoAggroPenalty;
+    }
+
+    return float.IsFinite(priority);
+  }
+
   public NpcTargetComponent SelectTarget(
     SimulationVector npcPosition,
     IReadOnlyList<NpcTargetCandidate> candidates)
@@ -40,12 +74,25 @@ public sealed class NpcTargetSelectionSystem
       }
 
       float distanceSquared = DistanceSquared(npcPosition, candidate.Position);
-      if (!hasTarget || distanceSquared < closestDistanceSquared ||
-          distanceSquared == closestDistanceSquared &&
+      if (!float.IsFinite(distanceSquared))
+      {
+        continue;
+      }
+
+      float priority = float.IsFinite(candidate.TargetPriority)
+        ? candidate.TargetPriority
+        : distanceSquared;
+      if (!float.IsFinite(priority))
+      {
+        continue;
+      }
+
+      if (!hasTarget || priority < closestDistanceSquared ||
+          priority == closestDistanceSquared &&
           candidate.StablePlayerId < selected.StablePlayerId)
       {
         selected = candidate;
-        closestDistanceSquared = distanceSquared;
+        closestDistanceSquared = priority;
         hasTarget = true;
       }
     }

@@ -14,8 +14,6 @@ public sealed class OrdinaryTreeTrunkCommandSystem
   private const ushort SaplingTileType = 20;
   private const ushort TreeTileType = 5;
 
-  private static readonly HashSet<ushort> CommonSaplingTypes = [SaplingTileType];
-
   public bool TryAppendCommands(
     WorldGridSnapshot snapshot,
     int originX,
@@ -36,7 +34,7 @@ public sealed class OrdinaryTreeTrunkCommandSystem
           groundY - height - CanopyTopPadding,
           groundY - 1,
           SaplingTileType,
-          CommonSaplingTypes))
+          CommonSaplingTileRegistry.RegisterDefaults()))
     {
       return false;
     }
@@ -63,7 +61,8 @@ public sealed class OrdinaryTreeTrunkCommandSystem
         originX,
         groundY - offset,
         TileChangeKind.Place,
-        TreeTileType));
+        TreeTileType,
+        Source: "worldgen.tree.ordinary"));
     }
 
     return true;

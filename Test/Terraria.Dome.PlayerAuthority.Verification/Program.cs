@@ -5,6 +5,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using Terraria.Dome.Simulation.Components;
+using Terraria.Dome.Simulation.Combat.Components;
 using Terraria.Dome.Simulation.Physics.Systems;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Players;
@@ -90,6 +91,17 @@ if (dead.IsActive || dead.Health != 0 || dead.RespawnTicks == 0)
   throw new InvalidOperationException("Queued damage did not produce a server-owned death state.");
 }
 
+try
+{
+  lifecycleSimulation.QueueRespawnPlayer(
+    lifecyclePlayer,
+    new SimulationVector(float.NaN, 0.0f));
+  throw new InvalidOperationException("Queued respawn accepted a non-finite spawn coordinate.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
 PlayerSnapshot deadBeforeInput = lifecycleSimulation.CreateSnapshot().FindPlayer(lifecyclePlayer);
 lifecycleSimulation.Tick(new SimulationInputBatch(new PlayerInput(
   lifecyclePlayer,
@@ -119,12 +131,112 @@ for (int index = 0; index < 3; index++)
 PlayerStateSnapshot respawned = lifecycleSimulation.CreatePlayerStateSnapshot(lifecyclePlayer);
 PlayerSnapshot respawnedPlayer = lifecycleSimulation.CreateSnapshot().FindPlayer(lifecyclePlayer);
 if (!respawned.IsActive || respawned.Health != 100 ||
-    respawnedPlayer.Position != new SimulationVector(10.0f, 0.0f))
+    respawnedPlayer.Position != new SimulationVector(10.0f, 0.0f) ||
+    respawnedPlayer.ColliderWidth != 1.0f || respawnedPlayer.ColliderHeight != 2.0f ||
+    respawnedPlayer.MaximumHealth != 100 ||
+    respawnedPlayer.Defense != 0 ||
+    respawnedPlayer.Aggro != 0 ||
+    respawnedPlayer.NoAggroNpcTypeCount != 0 ||
+    respawnedPlayer.WellFedRank != 0 ||
+    respawnedPlayer.WellFedTimeLeft != 0 ||
+    respawnedPlayer.BuffCount != 0 ||
+    respawnedPlayer.BuffRevision != 0 ||
+    respawnedPlayer.EquipmentStateCount != 0 ||
+    respawnedPlayer.EquipmentRevision != 0 ||
+    respawnedPlayer.SelectedSlot != 0 ||
+    respawnedPlayer.SelectedLoadout != 0 ||
+    respawnedPlayer.AccessoryVisibility != 0 ||
+    respawnedPlayer.EquipmentLoadoutRevision != 0 ||
+    respawnedPlayer.IsUsingItem ||
+    respawnedPlayer.ItemUseRevision != 0 ||
+    respawnedPlayer.ItemUseCooldownTicks != 0 ||
+    respawnedPlayer.FireCooldownTicks != 0 ||
+    respawnedPlayer.ItemAnimationTicks != 0 ||
+    respawnedPlayer.IsChannelingItem ||
+    respawnedPlayer.LifeRegenUnitsPerTick != 60 ||
+    respawnedPlayer.HealthRegenerationDelayTicks != 2 ||
+    respawnedPlayer.HealthRegenerationAccumulator != 0 ||
+    respawnedPlayer.ManaRegenerationDelayTicks != 0 ||
+    respawnedPlayer.ManaRegenerationAccumulator != 0 ||
+    respawnedPlayer.IsImmune ||
+    respawnedPlayer.ImmunityRemainingTicks != 0)
 {
   throw new InvalidOperationException("Server-owned respawn did not restore the original server spawn state.");
 }
+if (respawned.LifeRegenUnitsPerTick != 60 ||
+    respawned.ManaRegenerationDelayTicks != 0 || respawned.ManaRegenerationAccumulator != 0 ||
+    respawned.HealthRegenerationDelayTicks != 2 ||
+    respawned.HealthRegenerationAccumulator != 0 ||
+    respawned.Defense != 0 ||
+    respawned.Aggro != 0 ||
+    respawned.NoAggroNpcTypeCount != 0 ||
+    respawned.Facing != 1 ||
+    !respawned.IsGrounded ||
+    respawned.SelectedLoadout != 0 ||
+    respawned.AccessoryVisibility != 0 ||
+    respawned.EquipmentLoadoutRevision != 0 ||
+    respawned.SelectedSlot != 0 ||
+    respawned.EquipmentStateCount != 0 ||
+    respawned.EquipmentRevision != 0 ||
+    respawned.WellFedRank != 0 ||
+    respawned.WellFedTimeLeft != 0 ||
+    respawned.BuffCount != 0 ||
+    respawned.BuffRevision != 0 ||
+    respawned.FireCooldownTicks != 0 ||
+    respawned.ItemUseCooldownTicks != 0 ||
+    respawned.IsUsingItem ||
+    respawned.ItemUseRevision != 0 ||
+    respawned.ItemAnimationTicks != 0 ||
+    respawned.IsChannelingItem ||
+    respawned.ImmunityRemainingTicks != 0 ||
+    respawned.IsImmune ||
+    respawned.FlightTimeRemaining != 0 ||
+    respawned.FatigueRemaining != 0)
+{
+  throw new InvalidOperationException("Player state snapshot omitted authoritative player state.");
+}
 
 Console.WriteLine("PASS: player death and respawn lifecycle is simulation-authoritative");
+
+lifecycleSimulation.ApplyPlayerMountControl(lifecyclePlayer, 0);
+PlayerStateSnapshot mountedState = lifecycleSimulation.CreatePlayerStateSnapshot(lifecyclePlayer);
+PlayerSnapshot mountedPlayer = lifecycleSimulation.CreateSnapshot().FindPlayer(lifecyclePlayer);
+if (mountedState.MountType != 0 || mountedState.FlightTimeRemaining != 160 ||
+    mountedState.FatigueRemaining != 0 || mountedPlayer.MountType != 0 ||
+    mountedPlayer.FlightTimeRemaining != 160 || mountedPlayer.FatigueRemaining != 0)
+{
+  throw new InvalidOperationException("Mount counters were not projected from authoritative state.");
+}
+
+Console.WriteLine("PASS: mounted flight-time and fatigue counters project through both snapshots");
+
+lifecycleSimulation.ApplyPlayerMountControl(lifecyclePlayer, 5);
+lifecycleSimulation.Tick(new SimulationInputBatch(new PlayerInput(
+  lifecyclePlayer,
+  MoveLeft: false,
+  MoveRight: false,
+  Jump: false,
+  Fire: false,
+  Up: true)));
+PlayerStateSnapshot flyingState = lifecycleSimulation.CreatePlayerStateSnapshot(lifecyclePlayer);
+if (flyingState.FlightTimeRemaining != 319 || flyingState.FatigueRemaining != 319)
+{
+  throw new InvalidOperationException(
+    "Mounted upward input did not consume one flight and fatigue tick.");
+}
+
+Console.WriteLine("PASS: mounted upward input consumes one authoritative flight and fatigue tick");
+
+lifecycleSimulation.QueuePlayerShadowDodge(lifecyclePlayer);
+lifecycleSimulation.Tick(new SimulationInputBatch());
+PlayerStateSnapshot dodged = lifecycleSimulation.CreatePlayerStateSnapshot(lifecyclePlayer);
+if (!dodged.IsImmune || dodged.ImmunityRemainingTicks != ImmunityComponent.StandardShadowDodgeTicks)
+{
+  throw new InvalidOperationException(
+    "Server-owned Shadow Dodge did not apply the source-backed immunity window.");
+}
+
+Console.WriteLine("PASS: Shadow Dodge command applies authoritative immunity");
 
 TerrariaFrame playerActive = TerrariaFrameCodec.Decode(TerrariaPacketCodec.EncodePlayerActive(4, true));
 if (playerActive.MessageId != TerrariaMessageId.PlayerActive ||

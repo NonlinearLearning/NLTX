@@ -20,7 +20,7 @@ public sealed class EquipmentStateCollectionComponent
 
   public void Add(ItemEquipmentStateComponent state)
   {
-    if (state.Slot == ItemEquipmentSlot.None)
+    if (!Enum.IsDefined(state.Slot) || state.Slot == ItemEquipmentSlot.None)
     {
       throw new ArgumentException("Equipment state must target a concrete slot.", nameof(state));
     }

@@ -2,10 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
+using Terraria.Dome.Protocol.V1456.Dispatch;
 using Terraria.Dome.Protocol.V1456.Packets;
 using Terraria.Dome.Protocol.V1456.Protocol;
+using Terraria.Dome.Protocol.V1456.Session;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldObjects;
+using Terraria.Dome.Simulation.WorldObjects.Sign;
 
 WorldGrid world = new(width: 400, height: 300);
 _ = world.TrySetTile(10, 10, new WorldTile(IsActive: true, Type: 1));
@@ -117,6 +120,153 @@ if (signChestCount != 0 || encodedSignCount != 1 || signId != expectedSign.SignI
 }
 
 Console.WriteLine("PASS: V1456 TileSection sign tail is source-shaped");
+
+SignTombstoneProjection tombstoneProjection = SignTombstoneProjection.Create(
+  new SignTombstoneSnapshot(
+    SignId: 17,
+    Revision: 3,
+    Reason: SignTombstoneReason.Deleted,
+    Section: new WorldSectionCoordinates(0, 0)));
+if (tombstoneProjection.Status != SignTombstoneProjectionStatus.Deferred ||
+    !tombstoneProjection.Detail.Contains("message 47", StringComparison.Ordinal))
+{
+  throw new InvalidOperationException(
+    "V1456 sign tombstone projection did not explicitly report its deferred wire contract.");
+}
+
+SignTombstoneProjection invalidTombstoneProjection = SignTombstoneProjection.Create(
+  new SignTombstoneSnapshot(
+    SignId: short.MaxValue + 1,
+    Revision: 3,
+    Reason: SignTombstoneReason.Deleted,
+    Section: new WorldSectionCoordinates(0, 0)));
+if (invalidTombstoneProjection.Status != SignTombstoneProjectionStatus.Rejected)
+{
+  throw new InvalidOperationException(
+    "An out-of-range V1456 sign tombstone was not rejected.");
+}
+
+Console.WriteLine("PASS: V1456 sign tombstone projection is explicit and non-silent");
+
+byte[] chestRevisionEnvelope = ContractExtensionCodec.EncodeChestTransferRevision(
+  new ChestTransferRevisionEnvelope(12, 7));
+ChestTransferRevisionEnvelope decodedChestRevision =
+  ContractExtensionCodec.DecodeChestTransferRevision(chestRevisionEnvelope);
+if (decodedChestRevision != new ChestTransferRevisionEnvelope(12, 7))
+{
+  throw new InvalidOperationException(
+    "Versioned chest revision envelope did not preserve its typed fields.");
+}
+
+byte[] signDeletionFrame = ContractExtensionCodec.EncodeSignDeletion(
+  new SignDeletionFrame(17, 3, SignTombstoneReason.Deleted));
+SignDeletionFrame decodedSignDeletion =
+  ContractExtensionCodec.DecodeSignDeletion(signDeletionFrame);
+if (decodedSignDeletion != new SignDeletionFrame(17, 3, SignTombstoneReason.Deleted))
+{
+  throw new InvalidOperationException("Versioned Sign deletion frame did not round-trip.");
+}
+
+byte[] unsupportedVersionFrame = (byte[])signDeletionFrame.Clone();
+unsupportedVersionFrame[5] = 2;
+try
+{
+  _ = ContractExtensionCodec.DecodeSignDeletion(unsupportedVersionFrame);
+  throw new InvalidOperationException(
+    "An unsupported contract extension version was accepted.");
+}
+catch (InvalidDataException)
+{
+}
+
+Console.WriteLine(
+  "PASS: versioned chest revision envelope and Sign deletion frame reject unknown versions");
+
+byte[] negotiationFrame = ContractExtensionCodec.EncodeVersionNegotiation(
+  new ContractExtensionNegotiation(1));
+if (ContractExtensionCodec.DecodeVersionNegotiation(negotiationFrame) !=
+    new ContractExtensionNegotiation(1))
+{
+  throw new InvalidOperationException(
+    "Contract extension version negotiation did not round-trip.");
+}
+
+Console.WriteLine("PASS: contract extension version negotiation is explicit");
+
+TerrariaSession negotiatedSession = CreateActiveSession(1);
+byte[] capabilityOffer = ContractExtensionCodec.EncodeCapabilityOffer(
+  new ContractCapabilityOffer(1, 1));
+TerrariaPacketDispatchResult capabilityResult = new TerrariaPacketDispatcher().Dispatch(
+  negotiatedSession,
+  capabilityOffer);
+if (negotiatedSession.ContractCapabilities.State != ContractNegotiationState.Negotiated ||
+    !negotiatedSession.ContractCapabilities.SupportsSignDeletion ||
+    !negotiatedSession.ContractCapabilities.SupportsChestTransferRevision ||
+    capabilityResult.ResponseFrame is null)
+{
+  throw new InvalidOperationException("Session capability negotiation did not enable both extensions.");
+}
+
+ContractCapabilityAck capabilityAck = ContractExtensionCodec.DecodeCapabilityAck(
+  capabilityResult.ResponseFrame);
+if (capabilityAck != new ContractCapabilityAck(1, 1))
+{
+  throw new InvalidOperationException("Capability negotiation did not return the server intersection.");
+}
+
+try
+{
+  _ = new TerrariaPacketDispatcher().Dispatch(negotiatedSession, capabilityOffer);
+  throw new InvalidOperationException("Duplicate capability negotiation was accepted.");
+}
+catch (InvalidDataException)
+{
+}
+
+Console.WriteLine("PASS: capability negotiation is session-scoped, intersected and single-use");
+
+static TerrariaSession CreateActiveSession(byte assignedPlayerSlot)
+{
+  TerrariaSession session = new(assignedPlayerSlot);
+  _ = session.AcceptHello(TerrariaPacketCodec.Encode(new HelloPacket()));
+  TerrariaColor color = new(0, 0, 0);
+  _ = session.AcceptPlayerProfile(TerrariaPacketCodec.Encode(new PlayerProfilePacket(
+    assignedPlayerSlot,
+    0,
+    0,
+    0.0f,
+    0,
+    "Protocol",
+    0,
+    0,
+    0,
+    color,
+    color,
+    color,
+    color,
+    color,
+    color,
+    color,
+    0,
+    0,
+    0)));
+  _ = session.AcceptPlayerUuid(TerrariaPacketCodec.Encode(new PlayerUuidPacket(
+    "7e8f76a0-c3bc-41f1-bdc1-50b75fe1e8d8")));
+  _ = session.AcceptRequestWorldData(TerrariaPacketCodec.EncodeRequestWorldData());
+  _ = session.AcceptSpawnTileData(TerrariaPacketCodec.EncodeSpawnTileData(
+    new SpawnTileDataRequestPacket(2100, 300, 0)));
+  session.MarkInitialWorldStreamSent();
+  _ = session.AcceptPlayerSpawn(TerrariaPacketCodec.Encode(new PlayerSpawnPacket(
+    assignedPlayerSlot,
+    2100,
+    300,
+    0,
+    0,
+    0,
+    0,
+    0)));
+  return session;
+}
 
 IReadOnlyList<byte[]> initialWorldStream = TerrariaPacketCodec.CreateInitialWorldStream(
   [snapshot]);

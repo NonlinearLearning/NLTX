@@ -7,6 +7,7 @@ public sealed record LegacyTileRunnerSideEffectProfile(
   bool SetsLava,
   bool ClearsActiveTile,
   bool ClearsLiquidOnActivation,
+  bool ClearsLiquidForType59,
   bool ClearsLavaOnActivation,
   bool WritesSurfaceWall);
 
@@ -51,7 +52,8 @@ public static class LegacyTileRunnerSideEffectPolicy
     bool remixWorld,
     int rockLayer,
     int maxTilesY,
-    bool isOceanDepth)
+    bool isOceanDepth,
+    byte currentLiquidAmount = 0)
   {
     bool suppressedByRemixOceanDepth = tileType == -2 && remixWorld &&
       tileY > lavaLine &&
@@ -62,6 +64,8 @@ public static class LegacyTileRunnerSideEffectPolicy
     short injectedLiquidType = liquidType;
     bool clearsActive = tileType < 0;
     bool activates = tileType >= 0 && addTile;
+    bool clearsLiquidForType59 = tileType == 59 && tileY > waterLine &&
+      currentLiquidAmount > 0;
     bool writesWall = tileType >= 0 && noYChange &&
       tileType != 59 && tileY < worldSurface;
     return new LegacyTileRunnerSideEffectProfile(
@@ -71,6 +75,7 @@ public static class LegacyTileRunnerSideEffectPolicy
       setsLava,
       clearsActive,
       activates,
+      clearsLiquidForType59,
       activates,
       writesWall);
   }

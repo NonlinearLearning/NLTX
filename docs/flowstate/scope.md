@@ -1,28 +1,24 @@
 # Iteration Scope: Documentation Flowstate Normalization
 
-**Scope ID:** REQ-DOC-001..005
+**Scope:** `REQ-DOC-001..005`
 **Strategy:** `spec`
-**Status:** in_progress
+**Status:** `in_progress`
 **Owner:** NLTX repository maintainers
 
 ## Included
 
-- Initialize the private `.agent-workplace/` layout and ignore boundary.
-- Establish `docs/flowstate/` as the canonical documentation process context.
-- Classify all current files under `docs/` in `document-manifest.csv`.
-- Classify Build paths into evidence, generated output, tools, and historical scratch.
-- Add phase, batch, risk, DoD, and retrospective artifacts for this normalization iteration.
-- Verify manifest coverage, path existence, lifecycle values, and links to Build evidence.
+- Keep `docs/flowstate/` as the canonical process context and preserve the private workplace boundary.
+- Classify every `docs/` file and relevant `Build/` path in the two manifests.
+- Maintain plan, task, risk, DoD, debt, and retrospective artifacts.
+- Verify coverage, paths, lifecycle values, and Build evidence links.
 
 ## Excluded
 
-- Rewriting the contents of all historical research and evidence documents.
-- Moving or deleting files under `docs/` or `Build/`.
-- Treating compiled binaries, packages, generated source, or diagnostic logs as plans.
-- Claiming that documentation normalization changes the Terraria migration completion status.
+- Rewriting, moving, or deleting historical `docs/` and `Build/` files.
+- Treating binaries, packages, generated source, or diagnostics as plans.
+- Any claim about Terraria migration or WorldGen parity.
 
 ## Completion boundary
 
-This iteration is complete only when every current `docs/` file has a manifest entry, all
-canonical Flowstate artifacts exist, the Build classification is explicit, and the DoD checks
-pass. It does not imply gameplay or WorldGen parity.
+The iteration closes only when every current `docs/` file is indexed, canonical artifacts exist,
+Build classes are explicit, and the documentation gate passes. Gameplay parity is separate.

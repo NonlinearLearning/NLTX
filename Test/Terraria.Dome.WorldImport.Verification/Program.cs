@@ -10,6 +10,7 @@ using Terraria.Dome.Server.Import;
 using Terraria.Dome.Server.Startup;
 using Terraria.Dome.Protocol.V1456.Compatibility;
 using Terraria.Dome.Simulation;
+using Terraria.Dome.Simulation.WorldGeneration;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.WorldCompatibility.Model;
 using Terraria.WorldCompatibility.Projection;
@@ -36,6 +37,9 @@ VerifyDefaultBootstrapIsDeterministic();
 VerifyCompatibilityProjectionPreservesLegacyTileState();
 VerifyWorldSurfaceProjection();
 VerifyWorldRemixProjection();
+VerifyNoTrapsWorldProjection();
+VerifySkyblockWorldProjection();
+VerifyGoodWorldProjection();
 VerifyWorldGeneratorVersionProjection();
 VerifyWorldUniqueIdProjection();
 VerifyWorldSeedTextProjection();
@@ -54,6 +58,119 @@ VerifyTemporaryPortLifecycle();
 VerifyWorldStateContracts();
 LocalWorldAcceptance.RunIfConfigured();
 Console.WriteLine("PASS: strict world import options and no-listener failure lifecycle");
+
+static void VerifyNoTrapsWorldProjection()
+{
+  LegacyWorldDocument legacy = new(
+    version: 319,
+    formatVersion: WldFormatVersion.PointerTableV88ToV319,
+    metadata: new LegacyWorldMetadata(
+      "no-traps",
+      1456,
+      400,
+      300,
+      200,
+      75,
+      IsNoTrapsWorld: true),
+    tiles: [],
+    chests: [],
+    signs: [],
+    npcs: [],
+    tileEntities: [],
+    diagnostics: []);
+  CompatibilityWorldSnapshot source = WldToCompatibilityProjection.Project(legacy);
+  if (source.Metadata.IsNoTrapsWorld != true)
+  {
+    throw new InvalidOperationException(
+      "WLD compatibility projection did not preserve the no-traps world flag.");
+  }
+
+  DomeSimulationSnapshot projected = CompatibilityToDomeProjection.Project(
+    source,
+    new WorldSeed(1456));
+  if (projected.World.Metadata.IsNoTrapsWorld != true)
+  {
+    throw new InvalidOperationException(
+      "Compatibility projection did not preserve the no-traps world flag.");
+  }
+
+  Console.WriteLine("PASS: no-traps world metadata import projection");
+}
+
+static void VerifySkyblockWorldProjection()
+{
+  LegacyWorldDocument legacy = new(
+    version: 319,
+    formatVersion: WldFormatVersion.PointerTableV88ToV319,
+    metadata: new LegacyWorldMetadata(
+      "skyblock",
+      1457,
+      400,
+      300,
+      200,
+      75,
+      IsSkyblockWorld: true),
+    tiles: [],
+    chests: [],
+    signs: [],
+    npcs: [],
+    tileEntities: [],
+    diagnostics: []);
+  CompatibilityWorldSnapshot source = WldToCompatibilityProjection.Project(legacy);
+  DomeSimulationSnapshot projected = CompatibilityToDomeProjection.Project(
+    source,
+    new WorldSeed(1457));
+  WorldGenerationRequest request = new(
+    projected.World.Metadata,
+    spawnX: 200,
+    surfaceY: 75);
+  if (source.Metadata.IsSkyblockWorld != true ||
+      projected.World.Metadata.IsSkyblockWorld != true || !request.IsSkyblockWorld)
+  {
+    throw new InvalidOperationException(
+      "Skyblock world metadata did not reach the generation request.");
+  }
+
+  Console.WriteLine("PASS: skyblock world metadata and generation-request projection");
+}
+
+static void VerifyGoodWorldProjection()
+{
+  LegacyWorldDocument legacy = new(
+    version: 319,
+    formatVersion: WldFormatVersion.PointerTableV88ToV319,
+    metadata: new LegacyWorldMetadata(
+      "good-world",
+      1458,
+      400,
+      300,
+      200,
+      75,
+      IsGoodWorld: true),
+    tiles: [],
+    chests: [],
+    signs: [],
+    npcs: [],
+    tileEntities: [],
+    diagnostics: []);
+  CompatibilityWorldSnapshot source = WldToCompatibilityProjection.Project(legacy);
+  DomeSimulationSnapshot projected = CompatibilityToDomeProjection.Project(
+    source,
+    new WorldSeed(1458));
+  WorldGenerationRequest request = new(
+    projected.World.Metadata,
+    spawnX: 200,
+    surfaceY: 75);
+  if (source.Metadata.IsGoodWorld != true ||
+      projected.World.Metadata.IsGoodWorld != true ||
+      !request.IsGoodWorld)
+  {
+    throw new InvalidOperationException(
+      "Good-world metadata did not reach the compatibility projection and generation request.");
+  }
+
+  Console.WriteLine("PASS: good-world metadata and generation-request projection");
+}
 
 static void VerifyWorldTimeAndEndlessRainRepairProjection()
 {
@@ -126,7 +243,8 @@ static void VerifyWorldTimeAndEndlessRainRepairProjection()
     endlessRain,
     new WorldSeed(1456),
     isRainsForAYearSecretSeedActive: true);
-  if (!preserved.WorldRules.IsRaining || preserved.WorldRules.RainTimeTicks != 5184000 ||
+  if (!preserved.WorldRules.IsRaining || !preserved.WorldRules.IsRainingForever ||
+      preserved.WorldRules.RainTimeTicks != WorldRuleState.EndlessRainThresholdTicks ||
       preserved.WorldRules.MaximumRainStrength != 0.5f)
   {
     throw new InvalidOperationException(
@@ -532,6 +650,7 @@ static void VerifyWorldRemixProjection()
       200,
       75,
       WorldSurface: 100,
+      RockLayer: 210,
       IsRemixWorld: true),
     tiles: [],
     chests: [],
@@ -543,7 +662,8 @@ static void VerifyWorldRemixProjection()
     compatibility,
     new WorldSeed(1456));
   if (snapshot.World.Metadata.IsRemixWorld != true ||
-      snapshot.World.Metadata.WorldSurface != 100)
+      snapshot.World.Metadata.WorldSurface != 100 ||
+      snapshot.World.Metadata.RockLayer != 210)
   {
     throw new InvalidOperationException(
       "Compatibility projection did not preserve the authoritative Remix world metadata.");

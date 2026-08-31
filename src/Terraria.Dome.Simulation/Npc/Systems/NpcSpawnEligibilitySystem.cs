@@ -20,7 +20,7 @@ public sealed class NpcSpawnEligibilitySystem
     }
 
     HashSet<int> requestedIds = new(snapshot.ExistingReplicationIds);
-    int activeCount = snapshot.ActiveNpcCount;
+    double activeSlots = snapshot.ActiveNpcSlots;
     int protectedCount = snapshot.ProtectedSlotCount;
     for (int index = 0; index < snapshot.Candidates.Count; index++)
     {
@@ -34,7 +34,9 @@ public sealed class NpcSpawnEligibilitySystem
           command.DefinitionId <= 0 ||
           command.DifficultyScale <= 0.0f ||
           !float.IsFinite(command.Position.X) ||
-          !float.IsFinite(command.Position.Y))
+          !float.IsFinite(command.Position.Y) ||
+          !float.IsFinite(candidate.NpcSlotCost) ||
+          candidate.NpcSlotCost < 0.0f)
       {
         continue;
       }
@@ -50,7 +52,8 @@ public sealed class NpcSpawnEligibilitySystem
         if (!_invasionSpawnEligibilitySystem.CanSpawn(
           invasionState.InvasionType,
           invasionState.InvasionSize,
-          invasionState.InvasionDelayTicks))
+          invasionState.InvasionDelayTicks) ||
+            invasionState.ReachedInvasionBossCap)
         {
           continue;
         }
@@ -66,7 +69,9 @@ public sealed class NpcSpawnEligibilitySystem
         protectedCount--;
       }
 
-      if (activeCount >= snapshot.MaximumNpcCount)
+      double nextActiveSlots = activeSlots + candidate.NpcSlotCost;
+      if (activeSlots >= snapshot.MaximumNpcCount ||
+          nextActiveSlots > snapshot.MaximumNpcCount)
       {
         break;
       }
@@ -78,7 +83,7 @@ public sealed class NpcSpawnEligibilitySystem
       }
 
       commands.Add(command);
-      activeCount++;
+      activeSlots = nextActiveSlots;
     }
 
     return commands;

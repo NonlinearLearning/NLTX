@@ -1,6 +1,5 @@
 # WLD Moon Phase Import Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Carry validated legacy WLD moon phase into the authoritative Dome world clock.
 

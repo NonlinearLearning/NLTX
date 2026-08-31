@@ -44,7 +44,10 @@ public sealed record LegacyWorldMetadata(
   bool IsDayTime = true,
   ulong? WorldGeneratorVersion = null,
   Guid? UniqueId = null,
-  string? SeedText = null)
+  string? SeedText = null,
+  bool? IsNoTrapsWorld = null,
+  bool? IsSkyblockWorld = null,
+  bool? IsGoodWorld = null)
 {
   public string Name { get; init; } = Name ?? throw new ArgumentNullException(nameof(Name));
 }

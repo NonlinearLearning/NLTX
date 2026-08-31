@@ -1,6 +1,5 @@
 # MessageBuffer / NetMessage 隔离网络执行提案
 
-> **For Claude:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task.
 
 **Goal:** 在不改变外部 V1456 网络帧与命令式调用形状的前提下，将旧版 `MessageBuffer`/
 `NetMessage` 纳入可追溯的协议基线，并通过隔离层把 socket、Dome tick、服务器命令和只读网络

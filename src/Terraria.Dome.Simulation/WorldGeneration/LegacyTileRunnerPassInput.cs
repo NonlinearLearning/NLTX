@@ -19,76 +19,29 @@ public sealed record LegacyTileRunnerPassInput(
 
 public static class LegacyTileRunnerPassInputDefinition
 {
+  private static readonly IReadOnlyList<LegacyTileRunnerPassInput> DefaultRecipes =
+    Array.AsReadOnly<LegacyTileRunnerPassInput>(
+    [
+      new LegacyTileRunnerPassInput(
+        "DirtLayerCaves", "surface-dirt", 1, false, 4, 15, 5, 40,
+        "0..worldSurfaceLow", true, true, true),
+      new LegacyTileRunnerPassInput(
+        "DirtLayerCaves", "surface-high-dirt", 1, false, 4, 10, 5, 30,
+        "worldSurfaceLow..worldSurfaceHigh", true, true, true),
+      new LegacyTileRunnerPassInput(
+        "DirtLayerCaves", "rock-high-dirt", 1, false, 2, 7, 2, 23,
+        "worldSurfaceHigh..rockLayerHigh", true, true, true),
+      new LegacyTileRunnerPassInput(
+        "RockLayerCaves", "rock-layer-stone", 0, false, 2, 6, 2, 40,
+        "rockLayerLow..maxTilesY", true, true, true),
+      new LegacyTileRunnerPassInput(
+        "SurfaceCaves", "surface-desert", 40, false, 4, 14, 10, 50,
+        "0..worldSurfaceLow", true, true, true)
+    ]);
+
   public static IReadOnlyList<LegacyTileRunnerPassInput> CreateDefaultRecipes()
   {
-    return new[]
-    {
-      new LegacyTileRunnerPassInput(
-        "DirtLayerCaves",
-        "surface-dirt",
-        1,
-        false,
-        4,
-        15,
-        5,
-        40,
-        "0..worldSurfaceLow",
-        true,
-        true,
-        true),
-      new LegacyTileRunnerPassInput(
-        "DirtLayerCaves",
-        "surface-high-dirt",
-        1,
-        false,
-        4,
-        10,
-        5,
-        30,
-        "worldSurfaceLow..worldSurfaceHigh",
-        true,
-        true,
-        true),
-      new LegacyTileRunnerPassInput(
-        "DirtLayerCaves",
-        "rock-high-dirt",
-        1,
-        false,
-        2,
-        7,
-        2,
-        23,
-        "worldSurfaceHigh..rockLayerHigh",
-        true,
-        true,
-        true),
-      new LegacyTileRunnerPassInput(
-        "RockLayerCaves",
-        "rock-layer-stone",
-        0,
-        false,
-        2,
-        6,
-        2,
-        40,
-        "rockLayerLow..maxTilesY",
-        true,
-        true,
-        true),
-      new LegacyTileRunnerPassInput(
-        "SurfaceCaves",
-        "surface-desert",
-        40,
-        false,
-        4,
-        14,
-        10,
-        50,
-        "0..worldSurfaceLow",
-        true,
-        true,
-        true)
-    };
+    return DefaultRecipes;
   }
 
   public static void Validate(IReadOnlyCollection<LegacyTileRunnerPassInput> recipes)

@@ -6,17 +6,19 @@ using System.Text;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Items;
 using Terraria.Dome.Simulation.Items.Components;
+using Terraria.Dome.Simulation.Npc.Definitions;
 using Terraria.Dome.Simulation.Players;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Systems;
 using Terraria.Dome.Simulation.WorldObjects;
+using Terraria.Dome.Simulation.WorldObjects.Sign;
 
 namespace Terraria.Dome.Server.Persistence;
 
 public static class DomeStatePersistenceFormat
 {
   private const int Magic = 0x44535444;
-  private const int CurrentFormatVersion = 31;
+  private const int CurrentFormatVersion = 37;
   private const int FirstFormatVersion = 1;
   private const int ObjectStateFormatVersion = 3;
   private const int WorldStateFormatVersion = 4;
@@ -46,12 +48,19 @@ public static class DomeStatePersistenceFormat
   private const int WorldGeneratorVersionStateFormatVersion = 29;
   private const int WorldUniqueIdStateFormatVersion = 30;
   private const int WorldSeedTextStateFormatVersion = 31;
+  private const int NpcTypedStateFormatVersion = 33;
+  private const int NpcDefinitionStateFormatVersion = 34;
+  private const int LanternNightScheduleSequenceStateFormatVersion = 35;
+  private const int MutationSequenceCursorStateFormatVersion = 36;
+  private const int GoodWorldStateFormatVersion = 37;
+  private const int SignTombstoneStateFormatVersion = 33;
   private const byte WorldUniqueIdTailBit = 1;
   private const byte WorldSeedTextTailBit = 2;
   private const int MaximumNpcCount = 4096;
   private const int MaximumPlayerAccountCount = 1024;
   private const int MaximumPlayerNameLength = 20;
-  private const int MaximumItemNameOverrideLength = 200;
+  private const int MaximumItemNameOverrideLength =
+    ItemInstanceStateComponent.MaximumNameOverrideLength;
   private const int MaximumWorldItemCount = 8192;
   private const int MaximumWorldPayloadBytes = 256 * 1024 * 1024;
   private const int MaximumChestCount = 8192;
@@ -96,7 +105,7 @@ public static class DomeStatePersistenceFormat
       throw new InvalidDataException("The simulation tick cannot be negative.");
     }
 
-    NpcReplicationSnapshot[] npcs = ReadNpcs(reader);
+    NpcReplicationSnapshot[] npcs = ReadNpcs(reader, formatVersion);
     ItemReplicationSnapshot[] worldItems = ReadWorldItems(reader, formatVersion);
     PlayerPersistentState[] playerAccounts = formatVersion == FirstFormatVersion ? [] :
       ReadPlayerAccounts(reader, formatVersion);
@@ -115,12 +124,19 @@ public static class DomeStatePersistenceFormat
     ulong? worldGeneratorVersion = null;
     Guid? uniqueId = null;
     string? seedText = null;
-      if (formatVersion >= WorldStateFormatVersion)
-      {
+    SignTombstoneSnapshot[] signTombstones = [];
+    int nextProjectileIdentity = 1;
+    long nextChestMutationSequence = 0;
+    long nextLiquidSequence = 0;
+    long nextWiringSequence = 0;
+    bool? persistedGoodWorld = null;
+    if (formatVersion >= WorldStateFormatVersion)
+    {
         clock = ReadWorldClock(reader, tickNumber);
         WorldMetadata metadata = ReadWorldMetadata(reader, world.Metadata, formatVersion);
         worldRules = ReadWorldRules(reader, formatVersion);
         progression = ReadWorldProgression(reader, formatVersion);
+        long lanternNightScheduleSequence = progression.LanternNightScheduleSequence;
         double? worldSurface = ReadWorldSurface(reader, formatVersion);
         clock = clock with { MoonPhase = ReadMoonPhase(reader, formatVersion) };
         worldRules = worldRules.WithGameMode(ReadGameMode(reader, formatVersion));
@@ -176,7 +192,8 @@ public static class DomeStatePersistenceFormat
             worldGeneratorVersion = reader.ReadUInt64();
           }
 
-          byte identityFlags = hasGeneratorVersion || reader.PeekChar() != -1
+          byte identityFlags = formatVersion >= SignTombstoneStateFormatVersion || hasGeneratorVersion ||
+              reader.PeekChar() != -1
             ? reader.ReadByte()
             : (byte)0;
           if ((identityFlags & ~(WorldUniqueIdTailBit | WorldSeedTextTailBit)) != 0)
@@ -207,27 +224,109 @@ public static class DomeStatePersistenceFormat
         {
           worldGeneratorVersion = reader.ReadBoolean() ? reader.ReadUInt64() : null;
         }
-          metadata = new WorldMetadata(
-          metadata.Name,
-          metadata.Seed,
-          metadata.Width,
-          metadata.Height,
-          metadata.WorldId,
-          metadata.SpawnX,
-          metadata.SpawnY,
-          metadata.SeedVariant,
-          metadata.RandomStreamVersion,
-          worldSurface,
-          world.Metadata.IsRemixWorld,
-          worldGeneratorVersion,
-          uniqueId,
-          seedText);
+      metadata = new WorldMetadata(
+        metadata.Name,
+        metadata.Seed,
+        metadata.Width,
+        metadata.Height,
+        metadata.WorldId,
+        metadata.SpawnX,
+        metadata.SpawnY,
+        metadata.SeedVariant,
+        metadata.RandomStreamVersion,
+        worldSurface,
+        world.Metadata.RockLayer,
+        world.Metadata.IsRemixWorld,
+        worldGeneratorVersion,
+        uniqueId,
+        seedText,
+        metadata.IsNoTrapsWorld,
+        metadata.IsSkyblockWorld,
+        isGoodWorld: formatVersion >= GoodWorldStateFormatVersion
+          ? metadata.IsGoodWorld
+          : null);
         world = WorldGrid.FromSnapshot(world).CreateSnapshot(metadata);
+        progression = progression.WithLanternNightScheduleSequence(lanternNightScheduleSequence);
       }
 
     if (formatVersion >= WorldGeneratorVersionStateFormatVersion && reader.PeekChar() != -1)
     {
-      throw new InvalidDataException("The Dome state contains trailing data.");
+      if (formatVersion < SignTombstoneStateFormatVersion)
+      {
+        throw new InvalidDataException("The Dome state contains trailing data.");
+      }
+    }
+
+    if (formatVersion >= SignTombstoneStateFormatVersion)
+    {
+      signTombstones = ReadSignTombstones(reader);
+      if (reader.PeekChar() != -1)
+      {
+        nextProjectileIdentity = ReadProjectileIdentityCursor(reader);
+      }
+
+      if (formatVersion >= MutationSequenceCursorStateFormatVersion)
+      {
+        if (reader.PeekChar() == -1)
+        {
+          throw new EndOfStreamException(
+            "The V36 mutation sequence cursor tail was truncated.");
+        }
+
+        nextChestMutationSequence = reader.ReadInt64();
+        nextLiquidSequence = reader.ReadInt64();
+        nextWiringSequence = reader.ReadInt64();
+        if (nextChestMutationSequence < 0 || nextChestMutationSequence >= long.MaxValue)
+        {
+          throw new InvalidDataException(
+            "The persisted chest mutation sequence cursor is invalid.");
+        }
+
+        if (nextLiquidSequence < 0 || nextLiquidSequence >= long.MaxValue)
+        {
+          throw new InvalidDataException("The persisted Liquid sequence cursor is invalid.");
+        }
+
+        if (nextWiringSequence < 0 || nextWiringSequence >= long.MaxValue)
+        {
+          throw new InvalidDataException("The persisted Wiring sequence cursor is invalid.");
+        }
+      }
+
+      if (formatVersion >= GoodWorldStateFormatVersion && reader.PeekChar() != -1)
+      {
+        persistedGoodWorld = ReadGoodWorld(reader);
+      }
+
+      if (reader.PeekChar() != -1)
+      {
+        throw new InvalidDataException("The Dome state contains trailing data.");
+      }
+    }
+
+    if (persistedGoodWorld.HasValue)
+    {
+      WorldMetadata metadata = world.Metadata;
+      WorldMetadata updatedMetadata = new(
+        metadata.Name,
+        metadata.Seed,
+        metadata.Width,
+        metadata.Height,
+        metadata.WorldId,
+        metadata.SpawnX,
+        metadata.SpawnY,
+        metadata.SeedVariant,
+        metadata.RandomStreamVersion,
+        metadata.WorldSurface,
+        metadata.RockLayer,
+        metadata.IsRemixWorld,
+        metadata.WorldGeneratorVersion,
+        metadata.UniqueId,
+        metadata.SeedText,
+        metadata.IsNoTrapsWorld,
+        metadata.IsSkyblockWorld,
+        persistedGoodWorld);
+      world = WorldGrid.FromSnapshot(world).CreateSnapshot(updatedMetadata);
     }
 
     return new DomeSimulationSnapshot(
@@ -244,7 +343,12 @@ public static class DomeStatePersistenceFormat
       worldRules: worldRules,
       progression: progression,
       worldEventRandomState: worldEventRandomState,
-      worldTimeRate: worldTimeRate);
+      worldTimeRate: worldTimeRate,
+      signTombstones: signTombstones,
+      nextProjectileIdentity: nextProjectileIdentity,
+      nextChestMutationSequence: nextChestMutationSequence,
+      nextLiquidSequence: nextLiquidSequence,
+      nextWiringSequence: nextWiringSequence);
   }
 
   public static void Write(Stream output, DomeSimulationSnapshot snapshot)
@@ -303,7 +407,8 @@ public static class DomeStatePersistenceFormat
       identityFlags |= WorldSeedTextTailBit;
     }
 
-    if (identityFlags != 0 || snapshot.World.Metadata.WorldGeneratorVersion.HasValue)
+    if (identityFlags != 0 || snapshot.World.Metadata.WorldGeneratorVersion.HasValue ||
+        CurrentFormatVersion >= 32)
     {
       writer.Write(identityFlags);
       if ((identityFlags & WorldUniqueIdTailBit) != 0)
@@ -316,6 +421,27 @@ public static class DomeStatePersistenceFormat
         WriteBoundedString(writer, snapshot.World.Metadata.SeedText!, "world seed text");
       }
     }
+
+    WriteSignTombstones(writer, snapshot.SignTombstones);
+    writer.Write(snapshot.NextProjectileIdentity);
+    writer.Write(snapshot.NextChestMutationSequence);
+    writer.Write(snapshot.NextLiquidSequence);
+    writer.Write(snapshot.NextWiringSequence);
+    if (snapshot.World.Metadata.IsGoodWorld is bool isGoodWorld)
+    {
+      WriteGoodWorld(writer, isGoodWorld);
+    }
+  }
+
+  private static int ReadProjectileIdentityCursor(BinaryReader reader)
+  {
+    int nextIdentity = reader.ReadInt32();
+    if (nextIdentity <= 0 || nextIdentity >= int.MaxValue)
+    {
+      throw new InvalidDataException("The projectile identity cursor is invalid.");
+    }
+
+    return nextIdentity;
   }
 
   private static WorldClockSnapshot ReadWorldClock(BinaryReader reader, long tickNumber)
@@ -373,16 +499,29 @@ public static class DomeStatePersistenceFormat
   {
     try
     {
+      int worldId = reader.ReadInt32();
+      int spawnX = reader.ReadInt32();
+      int spawnY = reader.ReadInt32();
+      string seedVariant = ReadBoundedString(
+        reader,
+        MaximumCompatibilityTextLength,
+        "world seed variant");
+      int randomStreamVersion = reader.ReadInt32();
       return new WorldMetadata(
         persistedWorldMetadata.Name,
         persistedWorldMetadata.Seed,
         persistedWorldMetadata.Width,
         persistedWorldMetadata.Height,
-        reader.ReadInt32(),
-        reader.ReadInt32(),
-        reader.ReadInt32(),
-        ReadBoundedString(reader, MaximumCompatibilityTextLength, "world seed variant"),
-        reader.ReadInt32());
+        worldId,
+        spawnX,
+        spawnY,
+        seedVariant,
+        randomStreamVersion,
+        isNoTrapsWorld: persistedWorldMetadata.IsNoTrapsWorld,
+        isSkyblockWorld: persistedWorldMetadata.IsSkyblockWorld,
+        isGoodWorld: formatVersion >= GoodWorldStateFormatVersion
+          ? persistedWorldMetadata.IsGoodWorld
+          : null);
     }
     catch (ArgumentException exception)
     {
@@ -398,6 +537,16 @@ public static class DomeStatePersistenceFormat
     }
 
     return reader.ReadDouble();
+  }
+
+  private static bool? ReadGoodWorld(BinaryReader reader)
+  {
+    if (!reader.ReadBoolean())
+    {
+      return null;
+    }
+
+    return reader.ReadBoolean();
   }
 
   private static byte ReadMoonPhase(BinaryReader reader, int formatVersion)
@@ -496,6 +645,10 @@ public static class DomeStatePersistenceFormat
       int lanternNightCooldownTicks = formatVersion >= LanternNightCooldownStateFormatVersion
         ? reader.ReadInt32()
         : 0;
+      long lanternNightScheduleSequence =
+        formatVersion >= LanternNightScheduleSequenceStateFormatVersion
+        ? reader.ReadInt64()
+        : -1;
       return new WorldProgressionState(
         isHardMode,
         defeatedEyeOfCthulhu,
@@ -514,7 +667,8 @@ public static class DomeStatePersistenceFormat
         isMeteorScheduled,
         slimeRainCooldownTicks: slimeRainCooldownTicks,
         isNextNightLanternNight: isNextNightLanternNight,
-        lanternNightCooldownTicks: lanternNightCooldownTicks);
+        lanternNightCooldownTicks: lanternNightCooldownTicks,
+        lanternNightScheduleSequence: lanternNightScheduleSequence);
     }
     catch (ArgumentException exception)
     {
@@ -776,7 +930,7 @@ public static class DomeStatePersistenceFormat
     writer.Write(profile.ConsumableFlags);
   }
 
-  private static NpcReplicationSnapshot[] ReadNpcs(BinaryReader reader)
+  private static NpcReplicationSnapshot[] ReadNpcs(BinaryReader reader, int formatVersion)
   {
     int count = reader.ReadInt32();
     if (count < 0 || count > MaximumNpcCount)
@@ -787,7 +941,7 @@ public static class DomeStatePersistenceFormat
     NpcReplicationSnapshot[] npcs = new NpcReplicationSnapshot[count];
     for (int index = 0; index < count; index++)
     {
-      npcs[index] = new NpcReplicationSnapshot(
+      NpcReplicationSnapshot snapshot = new(
         reader.ReadInt32(),
         reader.ReadInt32(),
         new SimulationVector(reader.ReadSingle(), reader.ReadSingle()),
@@ -796,6 +950,30 @@ public static class DomeStatePersistenceFormat
         reader.ReadBoolean(),
         reader.ReadInt64(),
         new WorldSectionCoordinates(reader.ReadInt32(), reader.ReadInt32()));
+      if (formatVersion >= NpcDefinitionStateFormatVersion)
+      {
+        snapshot = snapshot with
+        {
+          DefinitionId = reader.ReadInt32(),
+          MaximumHealth = reader.ReadInt32()
+        };
+      }
+
+      if (formatVersion >= NpcTypedStateFormatVersion)
+      {
+        snapshot = snapshot with
+        {
+          BehaviorId = (NpcBehaviorId)reader.ReadInt32(),
+          FlyingHorizontalAcceleration = reader.ReadSingle(),
+          FlyingVerticalAcceleration = reader.ReadSingle(),
+          FlyingMaximumHorizontalSpeed = reader.ReadSingle(),
+          FlyingMaximumVerticalSpeed = reader.ReadSingle(),
+          Faction = (NpcFaction)reader.ReadInt32(),
+          Category = (NpcCategory)reader.ReadInt32()
+        };
+      }
+
+      npcs[index] = snapshot;
     }
 
     return npcs;
@@ -858,7 +1036,7 @@ public static class DomeStatePersistenceFormat
         }
       }
 
-      items[index] = new ItemReplicationSnapshot(
+      ItemReplicationSnapshot item = new(
         replicationId,
         stack,
         position,
@@ -867,6 +1045,16 @@ public static class DomeStatePersistenceFormat
         section,
         instanceState,
         worldState);
+      try
+      {
+        item.Validate();
+      }
+      catch (ArgumentOutOfRangeException exception)
+      {
+        throw new InvalidDataException("The world-item snapshot is invalid.", exception);
+      }
+
+      items[index] = item;
     }
 
     return items;
@@ -896,6 +1084,15 @@ public static class DomeStatePersistenceFormat
       writer.Write(npc.Revision);
       writer.Write(npc.Section.X);
       writer.Write(npc.Section.Y);
+      writer.Write(npc.DefinitionId);
+      writer.Write(npc.MaximumHealth);
+      writer.Write((int)npc.BehaviorId);
+      writer.Write(npc.FlyingHorizontalAcceleration);
+      writer.Write(npc.FlyingVerticalAcceleration);
+      writer.Write(npc.FlyingMaximumHorizontalSpeed);
+      writer.Write(npc.FlyingMaximumVerticalSpeed);
+      writer.Write((int)npc.Faction);
+      writer.Write((int)npc.Category);
     }
   }
 
@@ -912,6 +1109,15 @@ public static class DomeStatePersistenceFormat
     for (int index = 0; index < worldItems.Count; index++)
     {
       ItemReplicationSnapshot item = worldItems[index];
+      try
+      {
+        item.Validate();
+      }
+      catch (ArgumentOutOfRangeException exception)
+      {
+        throw new InvalidDataException("The world-item snapshot is invalid.", exception);
+      }
+
       writer.Write(item.ReplicationId);
       writer.Write(item.Stack.ItemType);
       writer.Write(item.Stack.Quantity);
@@ -1039,6 +1245,38 @@ public static class DomeStatePersistenceFormat
     }
 
     return signs;
+  }
+
+  private static SignTombstoneSnapshot[] ReadSignTombstones(BinaryReader reader)
+  {
+    int count = reader.ReadInt32();
+    if (count < 0 || count > MaximumSignCount)
+    {
+      throw new InvalidDataException("The sign tombstone count is invalid.");
+    }
+
+    SignTombstoneSnapshot[] tombstones = new SignTombstoneSnapshot[count];
+    HashSet<int> ids = [];
+    for (int index = 0; index < count; index++)
+    {
+      int signId = reader.ReadInt32();
+      long revision = reader.ReadInt64();
+      int reason = reader.ReadInt32();
+      WorldSectionCoordinates section = new(reader.ReadInt32(), reader.ReadInt32());
+      if (signId < 0 || signId == int.MaxValue || revision < 0 ||
+          !Enum.IsDefined(typeof(SignTombstoneReason), reason) || !ids.Add(signId))
+      {
+        throw new InvalidDataException("The sign tombstone is invalid.");
+      }
+
+      tombstones[index] = new SignTombstoneSnapshot(
+        signId,
+        revision,
+        (SignTombstoneReason)reason,
+        section);
+    }
+
+    return tombstones;
   }
 
   private static TileEntityPersistentState[] ReadTileEntities(BinaryReader reader)
@@ -1190,6 +1428,33 @@ public static class DomeStatePersistenceFormat
     }
   }
 
+  private static void WriteSignTombstones(
+    BinaryWriter writer,
+    IReadOnlyList<SignTombstoneSnapshot> tombstones)
+  {
+    if (tombstones.Count > MaximumSignCount)
+    {
+      throw new InvalidDataException("The sign tombstone count is too large.");
+    }
+
+    writer.Write(tombstones.Count);
+    for (int index = 0; index < tombstones.Count; index++)
+    {
+      SignTombstoneSnapshot tombstone = tombstones[index];
+      if (tombstone.SignId < 0 || tombstone.SignId == int.MaxValue || tombstone.Revision < 0 ||
+          !Enum.IsDefined(tombstone.Reason))
+      {
+        throw new InvalidDataException("The sign tombstone is invalid.");
+      }
+
+      writer.Write(tombstone.SignId);
+      writer.Write(tombstone.Revision);
+      writer.Write((int)tombstone.Reason);
+      writer.Write(tombstone.Section.X);
+      writer.Write(tombstone.Section.Y);
+    }
+  }
+
   private static void WriteTileEntities(
     BinaryWriter writer,
     IReadOnlyList<TileEntityPersistentState> entities)
@@ -1278,6 +1543,12 @@ public static class DomeStatePersistenceFormat
     writer.Write(metadata.RandomStreamVersion);
   }
 
+  private static void WriteGoodWorld(BinaryWriter writer, bool isGoodWorld)
+  {
+    writer.Write(true);
+    writer.Write(isGoodWorld);
+  }
+
   private static void WriteWorldProgression(
     BinaryWriter writer,
     WorldProgressionState progression)
@@ -1301,6 +1572,7 @@ public static class DomeStatePersistenceFormat
     writer.Write(progression.SlimeRainCooldownTicks);
     writer.Write(progression.IsNextNightLanternNight);
     writer.Write(progression.LanternNightCooldownTicks);
+    writer.Write(progression.LanternNightScheduleSequence);
   }
 
   private static void WriteWorldSurface(BinaryWriter writer, double? worldSurface)

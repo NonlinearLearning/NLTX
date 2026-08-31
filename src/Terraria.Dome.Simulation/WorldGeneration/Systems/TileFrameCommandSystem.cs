@@ -34,7 +34,8 @@ public sealed class TileFrameCommandSystem
         evaluation.FrameX,
         evaluation.FrameY,
         evaluation.IsHalfBrick,
-        evaluation.Slope));
+        evaluation.Slope,
+        Source: request.Source));
     }
 
     return true;

@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace Terraria.Dome.Simulation.WorldGeneration.Systems;
@@ -19,7 +20,8 @@ public enum WorldGenerationSystemId
 
 public static class WorldGenerationSystemOrder
 {
-  public static IReadOnlyList<WorldGenerationSystemId> Systems { get; } =
+  private static readonly IReadOnlyList<WorldGenerationSystemId> DefaultSystems =
+    Array.AsReadOnly(
     new[]
     {
       WorldGenerationSystemId.TerrainBase,
@@ -33,5 +35,13 @@ public static class WorldGenerationSystemOrder
       WorldGenerationSystemId.TileFrame,
       WorldGenerationSystemId.TileChangeCommit,
       WorldGenerationSystemId.Validation
-    };
+    });
+
+  public static IReadOnlyList<WorldGenerationSystemId> Systems { get; } =
+    DefaultSystems;
+
+  public static IReadOnlyList<WorldGenerationSystemId> RegisterDefaults()
+  {
+    return DefaultSystems;
+  }
 }

@@ -13,6 +13,15 @@ using Terraria.Dome.Simulation.World.Events;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Systems;
 
+IReadOnlySet<ushort> meteorProtectedDefaults =
+  WorldMeteorImpactSystem.RegisterProtectedTileDefaults();
+if (meteorProtectedDefaults.Count != 6 || !meteorProtectedDefaults.Contains(26) ||
+    !meteorProtectedDefaults.Contains(597) ||
+    !meteorProtectedDefaults.SetEquals(WorldMeteorImpactSystem.RegisterProtectedTileDefaults()))
+{
+  throw new InvalidOperationException("Meteor protected Tile defaults were mutable or unstable.");
+}
+
 using DomeSimulation first = new(new WorldGrid(400, 300));
 using DomeSimulation second = new(new WorldGrid(400, 300));
 for (int index = 0; index < 120; index++)
@@ -28,6 +37,49 @@ if (first.CreateWorldRuleSnapshot() != second.CreateWorldRuleSnapshot() ||
 }
 
 Console.WriteLine("PASS: deterministic world time advances only from simulation ticks");
+
+WorldMetadata noSurface = new("no-surface", new WorldSeed(1), 400, 300, worldSurface: null);
+WorldMetadata thresholdSurface = new("threshold", new WorldSeed(2), 400, 300, worldSurface: 30.0);
+WorldMetadata functionalSurface = new("functional", new WorldSeed(3), 400, 300, worldSurface: 30.1);
+if (!noSurface.HasNoFunctionalSurface || !thresholdSurface.HasNoFunctionalSurface ||
+    functionalSurface.HasNoFunctionalSurface || noSurface.HasWorldSurface)
+{
+  throw new InvalidOperationException(
+    "World surface functional-state projection did not preserve the legacy threshold.");
+}
+
+Console.WriteLine("PASS: world surface functional-state threshold projection");
+
+WorldMetadata missingWorldSurface = new("missing", new WorldSeed(4), 400, 300);
+WorldMetadata insufficientWorldSurface = new("insufficient", new WorldSeed(5), 400, 300, worldSurface: 50.0);
+WorldMetadata sufficientWorldSurface = new("sufficient", new WorldSeed(6), 400, 300, worldSurface: 50.1);
+if (missingWorldSurface.HasWorldSurface || insufficientWorldSurface.HasWorldSurface ||
+    !sufficientWorldSurface.HasWorldSurface)
+{
+  throw new InvalidOperationException(
+    "World surface existence projection did not preserve the legacy >50 threshold.");
+}
+
+Console.WriteLine("PASS: world surface existence threshold projection");
+
+WorldProgressionState progressionIdentity = new(
+  defeatedGoblins: true,
+  defeatedFrost: true,
+  lanternNightScheduleSequence: 17);
+progressionIdentity = progressionIdentity
+  .WithInvasionSizeStart(20)
+  .WithInvasionDelayTicks(3)
+  .WithInvasionX(12.5)
+  .WithSlimeRainCooldown(4)
+  .WithMeteorScheduled(true);
+if (!progressionIdentity.DefeatedGoblins || !progressionIdentity.DefeatedFrost ||
+    progressionIdentity.LanternNightScheduleSequence != 17)
+{
+  throw new InvalidOperationException(
+    "Progression transformations dropped durable event identity or clear flags.");
+}
+
+Console.WriteLine("PASS: progression transformations preserve durable identity");
 
 WorldClock overflowClock = new(tickNumber: long.MaxValue - 1, timeOfDay: 0);
 try
@@ -161,6 +213,9 @@ Console.WriteLine("PASS: blood-moon progression is deterministic, bounded and pe
 
 VerifyEclipseStateMachine();
 Console.WriteLine("PASS: eclipse progression is deterministic, qualified and persistent");
+
+VerifyProgressionTransitionFacts();
+Console.WriteLine("PASS: progression transition facts expose authoritative event edges");
 
 VerifyInvasionStateMachine();
 VerifyInvasionSpawnEligibility();
@@ -332,6 +387,12 @@ Console.WriteLine("PASS: deterministic Martian invasion start position is isolat
 
 VerifyRainStateMachine();
 Console.WriteLine("PASS: rain state is deterministic, bounded and persistent");
+
+VerifyWeatherUsesResolvedTimeRate();
+Console.WriteLine("PASS: weather consumes the resolved simulation time rate");
+
+VerifyEnvironmentTransitionFact();
+Console.WriteLine("PASS: committed environment transition fact is deterministic");
 
 VerifyRawRainStateModel();
 Console.WriteLine("PASS: raw weather state preserves independent rain activity and maximum strength");
@@ -548,6 +609,124 @@ static void VerifyEclipseStateMachine()
   }
 }
 
+static void VerifyProgressionTransitionFacts()
+{
+  WorldMetadata metadata = new(
+    "progression-transition",
+    new WorldSeed(24),
+    400,
+    300,
+    spawnX: 200,
+    spawnY: 75);
+  DomeSimulationSnapshot nightSnapshot = new(
+    new WorldGrid(400, 300).CreateSnapshot(metadata),
+    [],
+    [],
+    0,
+    worldClock: new WorldClockSnapshot(0, 0, false, false, 1));
+  using DomeSimulation nightSimulation = new(nightSnapshot);
+  if (!nightSimulation.TryQueueWorldEvent(new WorldEventStartCommand(WorldEventKind.BloodMoon, 1)))
+  {
+    throw new InvalidOperationException("Blood-moon transition input was rejected.");
+  }
+
+  nightSimulation.Tick(new SimulationInputBatch());
+  WorldProgressionTransition? start = nightSimulation.LastWorldProgressionTransition;
+  if (start is not
+      { EventKind: WorldEventKind.BloodMoon, Started: true, Stopped: false, Sequence: 1 } ||
+      start.Value.TickNumber != 1)
+  {
+    throw new InvalidOperationException("Blood-moon start transition was not published.");
+  }
+
+  DomeSimulationSnapshot persisted = nightSimulation.CreatePersistenceSnapshot(metadata);
+  using DomeSimulation restored = new(persisted);
+  restored.Tick(new SimulationInputBatch());
+  if (restored.LastWorldProgressionTransition is not null)
+  {
+    throw new InvalidOperationException("An unchanged progression state emitted a transition.");
+  }
+
+  DomeSimulationSnapshot dawnSnapshot = new(
+    new WorldGrid(400, 300).CreateSnapshot(metadata),
+    [],
+    [],
+    0,
+    worldClock: new WorldClockSnapshot(
+      0,
+      WorldClock.DefaultNightLengthTicks - 1,
+      false,
+      false,
+      1),
+    progression: new WorldProgressionState(isBloodMoon: true));
+  using DomeSimulation dawnSimulation = new(dawnSnapshot);
+  dawnSimulation.Tick(new SimulationInputBatch());
+  WorldProgressionTransition? stop = dawnSimulation.LastWorldProgressionTransition;
+  if (stop is not { EventKind: WorldEventKind.BloodMoon, Started: false, Stopped: true })
+  {
+    throw new InvalidOperationException("Blood-moon stop transition was not published.");
+  }
+
+  DomeSimulationSnapshot pausedSnapshot = new(
+    new WorldGrid(400, 300).CreateSnapshot(metadata),
+    [],
+    [],
+    0,
+    worldClock: new WorldClockSnapshot(0, 0, false, true, 1),
+    progression: new WorldProgressionState(isBloodMoon: true));
+  using DomeSimulation pausedSimulation = new(pausedSnapshot);
+  pausedSimulation.Tick(new SimulationInputBatch());
+  if (pausedSimulation.LastWorldProgressionTransition is not null)
+  {
+    throw new InvalidOperationException("A paused tick emitted a progression transition.");
+  }
+
+  DomeSimulationSnapshot eclipseSnapshot = new(
+    new WorldGrid(400, 300).CreateSnapshot(metadata),
+    [],
+    [],
+    0,
+    worldClock: new WorldClockSnapshot(0, 0, true, false, 1),
+    progression: new WorldProgressionState(
+      isHardMode: true,
+      defeatedMechanicalBoss: true));
+  using DomeSimulation eclipseSimulation = new(eclipseSnapshot);
+  if (!eclipseSimulation.TryQueueWorldEvent(new WorldEventStartCommand(WorldEventKind.Eclipse, 2)))
+  {
+    throw new InvalidOperationException("Eclipse transition input was rejected.");
+  }
+
+  eclipseSimulation.Tick(new SimulationInputBatch());
+  if (eclipseSimulation.LastWorldProgressionTransition is not
+      { EventKind: WorldEventKind.Eclipse, Started: true, Stopped: false })
+  {
+    throw new InvalidOperationException("Eclipse start transition was not published.");
+  }
+
+  DomeSimulationSnapshot eclipseStopSnapshot = new(
+    new WorldGrid(400, 300).CreateSnapshot(metadata),
+    [],
+    [],
+    0,
+    worldClock: new WorldClockSnapshot(
+      0,
+      WorldClock.DefaultDayLengthTicks - 1,
+      true,
+      false,
+      1),
+    progression: new WorldProgressionState(
+      isHardMode: true,
+      defeatedMechanicalBoss: true,
+      isEclipse: true));
+  using DomeSimulation eclipseStopSimulation = new(eclipseStopSnapshot);
+  eclipseStopSimulation.Tick(new SimulationInputBatch());
+  if (eclipseStopSimulation.LastWorldProgressionTransition is not
+      { EventKind: WorldEventKind.Eclipse, Started: false, Stopped: true })
+  {
+    throw new InvalidOperationException("Eclipse stop transition was not published.");
+  }
+}
+
 static void VerifyInvasionStateMachine()
 {
   try
@@ -578,6 +757,8 @@ static void VerifyInvasionStateMachine()
   WorldProgressionState started = simulation.CreateWorldProgressionSnapshot();
   if (started.InvasionType != 2 || started.InvasionSize != 40 ||
       started.InvasionSizeStart != 40 ||
+      simulation.LastWorldInvasionTransition is not
+        { Started: true, Completed: false, CurrentType: 2, Sequence: 7 } ||
       !simulation.TryQueueWorldInvasionProgress(new WorldInvasionProgressCommand(15, 10)) ||
       simulation.TryQueueWorldInvasionProgress(new WorldInvasionProgressCommand(5, 10)))
   {
@@ -591,12 +772,23 @@ static void VerifyInvasionStateMachine()
   {
     throw new InvalidOperationException("Invasion progress did not commit deterministically.");
   }
+  if (simulation.LastWorldInvasionTransition is not
+      { Started: false, Completed: false, Progressed: true, CurrentSize: 25, Sequence: 10 })
+  {
+    throw new InvalidOperationException("Invasion progress transition was not published.");
+  }
 
   DomeSimulationSnapshot persisted = simulation.CreatePersistenceSnapshot(metadata);
   using DomeSimulation restored = new(persisted);
   if (restored.CreateWorldProgressionSnapshot() != reduced)
   {
     throw new InvalidOperationException("Invasion state did not survive snapshot continuation.");
+  }
+  restored.Tick(new SimulationInputBatch());
+  if (restored.LastWorldInvasionTransition is not null ||
+      restored.CreateWorldInvasionCompletedEvents().Count != 0)
+  {
+    throw new InvalidOperationException("Invasion restart repeated a committed transition.");
   }
 
   using DomeServer invasionServer = new(persisted);
@@ -627,6 +819,12 @@ static void VerifyInvasionStateMachine()
   {
     throw new InvalidOperationException(
       "Invasion completion did not publish its authoritative source type.");
+  }
+  if (simulation.LastWorldInvasionTransition is not
+      { Started: false, Completed: true, Progressed: true, ClearFlag: WorldInvasionClearFlag.Frost,
+        Sequence: 11 })
+  {
+    throw new InvalidOperationException("Invasion completion transition was not published.");
   }
 }
 
@@ -736,15 +934,27 @@ static void VerifyInvasionProgressProjection()
 {
   WorldInvasionProgressProjectionSystem system = new();
   WorldInvasionProgressResult result = system.Resolve(
-    new WorldProgressionState(invasionType: 2, invasionSize: 25, invasionSizeStart: 40));
-  if (!result.IsAvailable || result.Progress != 15 || result.ProgressMax != 40 || result.Icon != 5)
+    new WorldProgressionState(invasionType: 2, invasionSize: 25, invasionSizeStart: 40),
+    progressWave: 7);
+  if (!result.IsAvailable || result.Progress != 15 || result.ProgressMax != 40 ||
+      result.Icon != 5 || result.Wave != 7)
   {
-    throw new InvalidOperationException("Invasion progress projection did not preserve source values.");
+    throw new InvalidOperationException(
+      "Invasion progress projection did not preserve source values.");
+  }
+
+  WorldInvasionProgressResult defaultWave = system.Resolve(
+    new WorldProgressionState(invasionType: 2, invasionSize: 25, invasionSizeStart: 40));
+  if (defaultWave.Wave != 0)
+  {
+    throw new InvalidOperationException(
+      "Invasion progress projection changed the legacy no-wave default.");
   }
 
   WorldInvasionProgressResult unknown = system.Resolve(
-    new WorldProgressionState(invasionType: 2, invasionSize: 25));
-  if (unknown.IsAvailable)
+    new WorldProgressionState(invasionType: 2, invasionSize: 25),
+    progressWave: 7);
+  if (unknown.IsAvailable || unknown.Wave != 0)
   {
     throw new InvalidOperationException(
       "Invasion progress projection fabricated an unavailable original size.");
@@ -808,6 +1018,81 @@ static void VerifyRainStateMachine()
       completed != initial)
   {
     throw new InvalidOperationException("Expired rain was not normalized to a clear weather state.");
+  }
+}
+
+static void VerifyWeatherUsesResolvedTimeRate()
+{
+  using DomeSimulation simulation = new(new WorldGrid(400, 300));
+  simulation.ConfigureWorldTimeRate(new WorldTimeRateInput(isFastForwarding: true));
+  if (!simulation.TryQueueWorldRain(new WorldRainStartCommand(100, 0.5f, 91)))
+  {
+    throw new InvalidOperationException("Fast-forward weather fixture could not start rain.");
+  }
+
+  simulation.Tick(new SimulationInputBatch());
+  simulation.Tick(new SimulationInputBatch());
+  if (simulation.CreateWorldRuleState().RainTimeTicks != 40)
+  {
+    throw new InvalidOperationException(
+      "Weather advanced by the fixed clock rate instead of the resolved fast-forward rate.");
+  }
+}
+
+static void VerifyEnvironmentTransitionFact()
+{
+  WorldWeatherSystem weather = new();
+  WorldEnvironmentTransitionResult directResult = weather.AdvanceWithTransition(
+    new WorldClockSnapshot(0, 0, true, false, 1),
+    0,
+    new WorldRuleState(),
+    [new WorldRainStartCommand(0, 0.5f, 11), new WorldRainStartCommand(3, 0.5f, 12)],
+    []);
+  if (directResult.Transition.Sequence != 12)
+  {
+    throw new InvalidOperationException(
+      "Environment transition identity did not skip an invalid leading rain request.");
+  }
+
+  WorldMetadata metadata = new(
+    "environment-transition",
+    new WorldSeed(81),
+    400,
+    300,
+    spawnX: 200,
+    spawnY: 75);
+  DomeSimulationSnapshot snapshot = new(
+    new WorldGrid(400, 300).CreateSnapshot(metadata),
+    [],
+    [],
+    0,
+    worldClock: new WorldClockSnapshot(0, 1, false, false, 1));
+  using DomeSimulation simulation = new(snapshot);
+  if (!simulation.TryQueueWorldRain(new WorldRainStartCommand(3, 0.5f, 1)) ||
+      !simulation.TryQueueWorldWind(new WorldWindChangeCommand(0.25f, 2)))
+  {
+    throw new InvalidOperationException("Environment transition fixture was not queueable.");
+  }
+
+  simulation.Tick(new SimulationInputBatch());
+  WorldEnvironmentTransition transition = simulation.LastWorldEnvironmentTransition
+    ?? throw new InvalidOperationException("The environment transition fact was not published.");
+  if (!transition.RainStarted || transition.RainTimeTicks != 3 ||
+      transition.RainStrength != 0.5f || transition.WindTarget != 0.25f ||
+      transition.TickNumber != 1 || transition.Sequence != 1)
+  {
+    throw new InvalidOperationException(
+      "The environment transition fact did not capture the committed authoritative values.");
+  }
+
+  simulation.Tick(new SimulationInputBatch());
+  WorldEnvironmentTransition continuation = simulation.LastWorldEnvironmentTransition
+    ?? throw new InvalidOperationException(
+      "The environment continuation did not publish a transition fact.");
+  if (continuation.RainStarted || continuation.RainTimeTicks != 2)
+  {
+    throw new InvalidOperationException(
+      "The environment transition fact did not capture deterministic rain continuation.");
   }
 }
 
@@ -895,7 +1180,9 @@ static void VerifySlimeRainStateMachine()
 
   simulation.Tick(new SimulationInputBatch());
   WorldProgressionState started = simulation.CreateWorldProgressionSnapshot();
-  if (!started.IsSlimeRaining || started.SlimeRainTimeTicks != 3)
+  if (!started.IsSlimeRaining || started.SlimeRainTimeTicks != 3 ||
+      simulation.LastWorldSlimeRainTransition is not
+        { Started: true, Stopped: false, CurrentRainTicks: 3, Sequence: 18 })
   {
     throw new InvalidOperationException("Accepted slime-rain input did not commit authoritative state.");
   }
@@ -907,6 +1194,11 @@ static void VerifySlimeRainStateMachine()
   if (!continued.IsSlimeRaining || continued.SlimeRainTimeTicks != 2)
   {
     throw new InvalidOperationException("Slime-rain state did not survive snapshot continuation.");
+  }
+  if (restored.LastWorldSlimeRainTransition is not
+      { Started: false, Stopped: false, WarningPublished: false, CurrentRainTicks: 2 })
+  {
+    throw new InvalidOperationException("Slime-rain restart emitted an invalid edge fact.");
   }
 
   using DomeServer slimeRainServer = new(persisted);
@@ -964,6 +1256,8 @@ static void VerifySlimeRainCooldownStateMachine()
   WorldProgressionState stopped = simulation.CreateWorldProgressionSnapshot();
   if (stopped.IsSlimeRaining || stopped.SlimeRainTimeTicks != 0 ||
       !stopped.IsSlimeRainCoolingDown || stopped.SlimeRainCooldownTicks != 3 ||
+      simulation.LastWorldSlimeRainTransition is not
+        { Started: false, Stopped: true, CooldownStarted: true, Sequence: 31 } ||
       simulation.TryQueueWorldSlimeRain(new WorldSlimeRainStartCommand(3, 33)))
   {
     throw new InvalidOperationException("Slime-rain cooldown did not block immediate restart.");
@@ -1064,6 +1358,11 @@ static void VerifySlimeRainEligibilityMetadata()
 
 static void VerifySlimeRainWarningStateMachine()
 {
+  if (WorldProgressionSystem.DefaultSlimeRainWarningDelayTicks != 420)
+  {
+    throw new InvalidOperationException("Slime Rain warning delay owner drifted from the legacy rule.");
+  }
+
   using DomeSimulation starting = new(new WorldGrid(400, 300));
   if (!starting.TryQueueWorldSlimeRain(new WorldSlimeRainStartCommand(500, 40, true)))
   {
@@ -1076,7 +1375,8 @@ static void VerifySlimeRainWarningStateMachine()
       starting.CreateWorldSlimeRainWarningEvents().Count != 0)
   {
     throw new InvalidOperationException(
-      "Announced Slime Rain did not start its 420-tick warning countdown.");
+      $"Announced Slime Rain did not start its " +
+      $"{WorldProgressionSystem.DefaultSlimeRainWarningDelayTicks}-tick warning countdown.");
   }
 
   for (int index = 0; index < 418; index++)
@@ -1097,6 +1397,11 @@ static void VerifySlimeRainWarningStateMachine()
   {
     throw new InvalidOperationException(
       "Slime Rain warning did not emit exactly one active-state event at expiry.");
+  }
+  if (starting.LastWorldSlimeRainTransition is not
+      { WarningPublished: true, Started: false, Stopped: false })
+  {
+    throw new InvalidOperationException("Slime Rain warning transition was not published.");
   }
 
   starting.Tick(new SimulationInputBatch());
@@ -1328,7 +1633,9 @@ static void VerifyLanternNightStateMachine()
   }
 
   nightSimulation.Tick(new SimulationInputBatch());
-  if (!nightSimulation.CreateWorldProgressionSnapshot().IsLanternNight)
+  if (!nightSimulation.CreateWorldProgressionSnapshot().IsLanternNight ||
+      nightSimulation.LastWorldLanternNightTransition is not
+        { Started: true, Stopped: false, IsActive: true, Sequence: 1 })
   {
     throw new InvalidOperationException("Accepted nighttime request did not start Lantern Night.");
   }
@@ -1350,9 +1657,62 @@ static void VerifyLanternNightStateMachine()
   using DomeSimulation daySimulation = new(daySnapshot);
   daySimulation.Tick(new SimulationInputBatch());
   if (daySimulation.CreateWorldProgressionSnapshot().IsLanternNight ||
+      daySimulation.LastWorldLanternNightTransition is not
+        { Started: false, Stopped: true, IsActive: false } ||
       daySimulation.TryQueueWorldEvent(new WorldEventStartCommand(WorldEventKind.LanternNight, 3)))
   {
     throw new InvalidOperationException("Lantern Night did not clear at the daytime boundary.");
+  }
+
+  foreach (WorldProgressionState conflictingProgression in new[]
+  {
+    new WorldProgressionState(isMeteorScheduled: true),
+    new WorldProgressionState(isBloodMoon: true),
+    new WorldProgressionState(invasionType: 1, invasionSize: 10)
+  })
+  {
+    WorldGrid conflictWorld = new(400, 300);
+    DomeSimulationSnapshot conflictSnapshot = new(
+      conflictWorld.CreateSnapshot(metadata),
+      [],
+      [],
+      0,
+      worldClock: new WorldClockSnapshot(0, 1, false, false, 1),
+      progression: conflictingProgression);
+    using DomeSimulation conflictSimulation = new(conflictSnapshot);
+    if (conflictSimulation.TryQueueWorldEvent(
+          new WorldEventStartCommand(WorldEventKind.LanternNight, 4)))
+    {
+      throw new InvalidOperationException(
+        "Lantern Night bypassed a conflicting authoritative world-event state.");
+    }
+  }
+
+  using DomeSimulation sameTickConflict = new(nightSnapshot);
+  if (!sameTickConflict.TryQueueWorldEvent(
+        new WorldEventStartCommand(WorldEventKind.BloodMoon, 5)) ||
+      !sameTickConflict.TryQueueWorldEvent(
+        new WorldEventStartCommand(WorldEventKind.LanternNight, 6)))
+  {
+    throw new InvalidOperationException("Same-tick event conflict fixture was not queueable.");
+  }
+
+  sameTickConflict.Tick(new SimulationInputBatch());
+  WorldProgressionState conflictResult = sameTickConflict.CreateWorldProgressionSnapshot();
+  if (!conflictResult.IsBloodMoon || conflictResult.IsLanternNight)
+  {
+    throw new InvalidOperationException(
+      "Same-tick Blood Moon and Lantern Night produced an impossible combined state.");
+  }
+
+  using DomeSimulation duplicateSequence = new(nightSnapshot);
+  if (!duplicateSequence.TryQueueWorldEvent(
+        new WorldEventStartCommand(WorldEventKind.BloodMoon, 7)) ||
+      duplicateSequence.TryQueueWorldEvent(
+        new WorldEventStartCommand(WorldEventKind.LanternNight, 7)))
+  {
+    throw new InvalidOperationException(
+      "World-event input sequence was reused across distinct event kinds.");
   }
 }
 
@@ -1482,12 +1842,32 @@ static void VerifyLanternNightScheduleStateMachine()
       "A daytime Lantern Night schedule was consumed before the night phase.");
   }
 
+  DomeSimulationSnapshot pendingScheduleSnapshot = simulation.CreatePersistenceSnapshot(metadata);
+  using DomeSimulation restoredPendingSchedule = new(pendingScheduleSnapshot);
+  restoredPendingSchedule.Tick(new SimulationInputBatch());
+  if (restoredPendingSchedule.LastWorldLanternNightTransition is not
+      { ScheduleConsumed: true, Started: true, Sequence: 1 })
+  {
+    throw new InvalidOperationException(
+      "Persisted Lantern Night schedule did not retain its source sequence.");
+  }
+
   simulation.Tick(new SimulationInputBatch());
   WorldProgressionState started = simulation.CreateWorldProgressionSnapshot();
-  if (!started.IsLanternNight || started.IsNextNightLanternNight)
+  if (!started.IsLanternNight || started.IsNextNightLanternNight ||
+      simulation.LastWorldLanternNightTransition is not
+        { ScheduleConsumed: true, Started: true, IsScheduled: false, IsActive: true, Sequence: 1 })
   {
     throw new InvalidOperationException(
       "The scheduled Lantern Night did not consume exactly once at night.");
+  }
+
+  DomeSimulationSnapshot persistedSchedule = simulation.CreatePersistenceSnapshot(metadata);
+  using DomeSimulation restoredSchedule = new(persistedSchedule);
+  if (restoredSchedule.CreateWorldProgressionSnapshot().LanternNightScheduleSequence != -1)
+  {
+    throw new InvalidOperationException(
+      "Consumed Lantern Night schedule identity was not cleared before persistence.");
   }
 
   DomeSimulationSnapshot nextNightSnapshot = new(
@@ -1504,6 +1884,10 @@ static void VerifyLanternNightScheduleStateMachine()
   {
     throw new InvalidOperationException(
       "A consumed Lantern Night schedule restarted on a later night.");
+  }
+  if (nextNightSimulation.LastWorldLanternNightTransition is not null)
+  {
+    throw new InvalidOperationException("Consumed Lantern Night schedule emitted a duplicate fact.");
   }
 }
 
@@ -1722,7 +2106,9 @@ static void VerifyMeteorScheduleStateMachine()
   }
 
   nightSimulation.Tick(new SimulationInputBatch());
-  if (!nightSimulation.CreateWorldProgressionSnapshot().IsMeteorScheduled)
+  if (!nightSimulation.CreateWorldProgressionSnapshot().IsMeteorScheduled ||
+      nightSimulation.LastWorldMeteorTransition is not
+        { ScheduleStarted: true, ScheduleCleared: false, IsScheduled: true, Sequence: 1 })
   {
     throw new InvalidOperationException("Accepted nighttime request did not schedule a meteor.");
   }
@@ -1732,6 +2118,11 @@ static void VerifyMeteorScheduleStateMachine()
   if (!restored.CreateWorldProgressionSnapshot().IsMeteorScheduled)
   {
     throw new InvalidOperationException("Meteor schedule did not survive snapshot continuation.");
+  }
+  restored.Tick(new SimulationInputBatch());
+  if (restored.LastWorldMeteorTransition is not null)
+  {
+    throw new InvalidOperationException("Meteor schedule restart repeated a transition.");
   }
 
   DomeSimulationSnapshot dayBoundarySnapshot = new(
@@ -1753,7 +2144,9 @@ static void VerifyMeteorScheduleStateMachine()
 
   daySimulation.Tick(new SimulationInputBatch());
   if (daySimulation.CreateWorldProgressionSnapshot().IsMeteorScheduled ||
-      daySimulation.TimeOfDay != 16201)
+      daySimulation.TimeOfDay != 16201 ||
+      daySimulation.LastWorldMeteorTransition is not
+        { ScheduleStarted: false, ScheduleCleared: true, IsScheduled: false })
   {
     throw new InvalidOperationException("Meteor schedule did not clear after the source cutoff.");
   }
@@ -1840,7 +2233,9 @@ static void VerifyScheduledMeteorResolution()
   resolution.Tick(new SimulationInputBatch());
   if (resolution.CreateWorldProgressionSnapshot().IsMeteorScheduled ||
       resolution.TimeOfDay != 16202 ||
-      CountTiles(resolution.WorldGrid, 37) == 0)
+      CountTiles(resolution.WorldGrid, 37) == 0 ||
+      resolution.LastWorldMeteorTransition is not
+        { ScheduleCleared: true, ImpactQueued: true, IsScheduled: false, Sequence: 2 })
   {
     throw new InvalidOperationException(
       "Scheduled meteor resolution did not clear pending state and commit its impact.");

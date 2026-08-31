@@ -20,9 +20,9 @@ executable verifier. Missing or contradictory reference behavior is Unknown.
 | Reference Git metadata | absent |
 | Reference C# files | 980 |
 | Terraria directory C# files | 70 |
-| Main.cs | 13,996 lines / 379,274 bytes |
+| Main.cs | 14,735 lines / 379,274 bytes |
 | Main.cs SHA-256 | 844A862B4EF863FF848227C1D682E89DAB799EEAD48070ADEA07565EC933254D |
-| Inventory timestamp | Task 0 execution; see JSON evidence for per-file timestamps |
+| Inventory timestamp | Refreshed 2026-08-25; see `Build/diagnostics/main-tick/task-0-baseline/20260825-230000/main-source-baseline.json` |
 | Current worktree | dirty with modified, deleted and untracked files |
 | Resolved Simulation target | net10.0 |
 | Resolved Simulation output | D:\TRbackup\NLTX\Build\bin\Terraria.Dome.Simulation |
@@ -37,10 +37,10 @@ The mechanically generated 535-file comparison is recorded in
 `docs/migrations/version4-physical-deletion-ledger.csv`, with methodology in the adjacent Markdown
 file and the gate result in
 `Build/diagnostics/server-ecs-convergence/P4-deletion/20260822-1930/gate-run.md`. The inventory
-contains 416 `ClientOnly`, 57 `ServerRelevant`, 3 `ReplacedWithEvidence`, 59 `SharedDefinition`,
+contains 425 `ClientOnly`, 44 `ServerRelevant`, 4 `ReplacedWithEvidence`, 60 `SharedDefinition`,
 and 0 `Unknown` rows. All unresolved rows remain deferred; the completeness gate exits `1` because
-57 server-relevant deletions are explicitly deferred. Their removed-source anchors and reasons are
-recorded, while the three accepted replacements have explicit ECS owner/state/command/protocol/
+44 server-relevant deletions are explicitly deferred. Their removed-source anchors and reasons are
+recorded, while the four accepted replacements have explicit ECS owner/state/command/protocol/
 verifier evidence.
 classification. This ledger does not authorize physical deletion.
 
@@ -50,7 +50,7 @@ Full byte counts, line counts, timestamps and SHA-256 values are in the JSON evi
 
 | Reference file | Lines | Server migration relevance |
 |---|---:|---|
-| Terraria/Main.cs | 13,996 | global host, world state, update loop and client state mixed together |
+| Terraria/Main.cs | 14,735 | global host, world state, update loop and client state mixed together |
 | Terraria/WorldGen.cs | 73,073 | terrain, Tile changes, structures, liquid and world events |
 | Terraria/NPC.cs | 79,302 | NPC lifecycle, AI, combat, drops, progression and replication source |
 | Terraria/Projectile.cs | 54,668 | projectile lifecycle, AI, collision, damage and ownership |

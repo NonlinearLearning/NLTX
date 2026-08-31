@@ -9,4 +9,7 @@ public readonly record struct PlayerInput(
   int SelectedSlot = 0,
   bool UseItem = false,
   int Facing = 0,
-  bool Down = false);
+  bool Down = false,
+  bool Up = false,
+  bool UseTile = false,
+  bool Dash = false);

@@ -51,15 +51,21 @@ public sealed class NpcSpawnCommitSystem
     failureReason = string.Empty;
     if (replicationId <= 0 || replicationId == int.MaxValue ||
         !definitions.TryGet(command.DefinitionId, out NpcDefinition definition) ||
-        !float.IsFinite(command.Position.X) || !float.IsFinite(command.Position.Y))
+        !Enum.IsDefined(command.Source) ||
+        !float.IsFinite(command.Position.X) || !float.IsFinite(command.Position.Y) ||
+        !float.IsFinite(command.DifficultyScale) || command.DifficultyScale <= 0.0f ||
+        command.ReleaseOwner < 0 || command.ReleaseOwner > byte.MaxValue ||
+        command.ReleaseVariant is < 0 or > 4 ||
+        command.GivenName is not null && command.GivenName.Length > NpcComponents.NpcGivenNameComponent.MaximumLength)
     {
       failureReason = "NPC definition or replication identity is invalid.";
       return false;
     }
 
-    if (command.DifficultyScale <= 0.0f)
+    float scaledHealth = definition.MaximumHealth * command.DifficultyScale;
+    if (!float.IsFinite(scaledHealth) || scaledHealth > int.MaxValue)
     {
-      failureReason = "NPC difficulty scale must be positive.";
+      failureReason = "NPC difficulty scale produces an unrepresentable health value.";
       return false;
     }
 
@@ -71,7 +77,7 @@ public sealed class NpcSpawnCommitSystem
       return false;
     }
 
-    int maximumHealth = checked((int)MathF.Max(1.0f, definition.MaximumHealth * command.DifficultyScale));
+    int maximumHealth = Math.Max(1, (int)MathF.Max(1.0f, scaledHealth));
     Entity entity = world.Create(
       new NpcTagComponent(),
       new NpcComponents.NpcDefinitionComponent(
@@ -82,7 +88,11 @@ public sealed class NpcSpawnCommitSystem
       new NpcComponents.NpcAuthorityComponent(
         definition.AiStyle,
         definition.IsImmortal,
-        definition.AlwaysReplicate),
+        definition.AlwaysReplicate,
+        definition.TakenDamageMultiplier,
+        definition.NpcSlotCost,
+        definition.IsTrapImmune,
+        definition.IsLavaImmune),
       new TransformComponent(command.Position.X, command.Position.Y),
       new VelocityComponent(0.0f, 0.0f),
       new FacingComponent(-1),
@@ -98,13 +108,21 @@ public sealed class NpcSpawnCommitSystem
       new NpcComponents.NpcBehaviorStateComponent(
         definition.BehaviorId,
         new NpcComponents.NpcChaseState(1.0f, 0.0f),
-        new NpcComponents.NpcTownHomeState(default, true, 0)),
+        new NpcComponents.NpcTownHomeState(default, true, 0),
+        doesNotTakeDamageFromHostiles: command.DoesNotTakeDamageFromHostiles),
       new NpcComponents.NpcSpawnStateComponent(
         command.Source,
         command.DifficultyScale,
         command.ReleaseOwner,
-        command.Source == NpcComponents.NpcSpawnSource.Statue),
-      new NpcComponents.NpcLifecycleComponent(isActive: true, timeLeft: 750),
+        command.Source == NpcComponents.NpcSpawnSource.Statue || command.ReleaseVariant > 2),
+      new NpcComponents.NpcLifecycleComponent(
+        isActive: true,
+        timeLeft: 750,
+        canBeReplaced: command.CanBeReplaced,
+        doesNotCountMe: command.DoesNotCountMe,
+        homelessDespawn: command.HomelessDespawn),
+      new NpcComponents.NpcGivenNameComponent(command.GivenName),
+      new NpcComponents.NpcInteractionComponent(),
       new NpcComponents.NpcReplicationComponent(replicationId, revision: 1));
     result = new NpcSpawnCommitResult(entity, replicationId);
     return true;

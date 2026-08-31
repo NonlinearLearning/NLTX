@@ -23,6 +23,7 @@ public sealed class NpcSegmentLifecycleSystem
   {
     ArgumentNullException.ThrowIfNull(segments);
     HashSet<NpcHandle> handles = new();
+    HashSet<(NpcHandle Root, int Index)> segmentIndexes = new();
     Dictionary<NpcHandle, NpcSegmentState> byHandle = new();
     for (int index = 0; index < segments.Count; index++)
     {
@@ -30,6 +31,11 @@ public sealed class NpcSegmentLifecycleSystem
       if (!state.Handle.IsValid || !handles.Add(state.Handle))
       {
         return new(false, "Segment handles must be valid and unique.");
+      }
+
+      if (!Enum.IsDefined(state.Segment.LifePolicy))
+      {
+        return new(false, "Segment life policy is undefined.");
       }
 
       if (state.Segment.IsRoot && state.Segment.Root != state.Handle)
@@ -40,6 +46,11 @@ public sealed class NpcSegmentLifecycleSystem
       if (!state.Segment.IsRoot && !state.Segment.Parent.IsValid)
       {
         return new(false, "A non-root segment must reference a parent.");
+      }
+
+      if (!segmentIndexes.Add((state.Segment.Root, state.Segment.SegmentIndex)))
+      {
+        return new(false, "Segment indexes must be unique within a root relationship.");
       }
 
       byHandle.Add(state.Handle, state);

@@ -6,6 +6,8 @@ public sealed class WorldClock
 {
   public const int DefaultDayLengthTicks = 54000;
   public const int DefaultNightLengthTicks = 32400;
+  public const int TicksPerSecond = 60;
+  public const int WrappedHourSeconds = 3600;
 
   public WorldClock(
     long tickNumber = 0,
@@ -42,6 +44,8 @@ public sealed class WorldClock
   public int TicksPerUpdate { get; }
   public long TickNumber { get; private set; }
   public double TimeOfDay { get; private set; }
+  public float GlobalTimeWrappedHourly =>
+    (float)(TickNumber % (TicksPerSecond * WrappedHourSeconds) / (double)TicksPerSecond);
 
   public WorldClockSnapshot CreateSnapshot()
   {
@@ -100,6 +104,13 @@ public sealed class WorldClock
   {
     ValidateTickNumber(snapshot.TickNumber);
     ValidateRate(snapshot.TicksPerUpdate);
+    if (snapshot.TicksPerUpdate != TicksPerUpdate)
+    {
+      throw new ArgumentException(
+        "The clock snapshot uses an incompatible update rate.",
+        nameof(snapshot));
+    }
+
     if (snapshot.DayLengthTicks != DayLengthTicks ||
         snapshot.NightLengthTicks != NightLengthTicks)
     {

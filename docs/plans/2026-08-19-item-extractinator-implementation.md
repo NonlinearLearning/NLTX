@@ -1,6 +1,5 @@
 # Item Extractinator ECS Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Add exact Version4 Extractinator rule-distribution behavior to the server-authoritative
 Item ECS domain for direct player use and Wiring/Chest activation.

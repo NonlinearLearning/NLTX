@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Terraria.Dome.Simulation\Terraria.Dome.Simulation.csproj" />
+    <ProjectReference Include="..\..\src\Terraria.Dome.Protocol.V1456\Terraria.Dome.Protocol.V1456.csproj" />
   </ItemGroup>
 </Project>

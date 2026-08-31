@@ -44,7 +44,7 @@ public static class CactusValidationQuery
       ? snapshot.GetTile(supportX, supportY)
       : default;
     bool supported = support.IsActive && !support.IsHalfBrick && support.Slope == 0 &&
-      support.Type is 53 or 112 or 116 or 234 &&
+      CactusFrameQuery.RegisterSupportedGroundDefaults().Contains(support.Type) &&
       TileStateQuery.IsSolid(support, tileDefinitions);
     bool attached = x == supportX ||
       HasCactus(snapshot, x, y + 1) ||

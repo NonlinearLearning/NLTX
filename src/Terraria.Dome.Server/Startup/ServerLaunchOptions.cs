@@ -4,13 +4,18 @@ using System.IO;
 
 namespace Terraria.Dome.Server.Startup;
 
-public sealed record ServerLaunchOptions(string WorldPath, int Port)
+public sealed record ServerLaunchOptions(
+  string WorldPath,
+  int Port,
+  int NpcStreamSpeed = NpcStreamSpeedPolicy.DefaultTicks)
 {
   public static ServerLaunchOptions Parse(IReadOnlyList<string> args)
   {
     ArgumentNullException.ThrowIfNull(args);
     string? worldPath = null;
     int? port = null;
+    int npcStreamSpeed = NpcStreamSpeedPolicy.DefaultTicks;
+    bool hasNpcStreamSpeed = false;
     for (int index = 0; index < args.Count; index++)
     {
       string argument = args[index];
@@ -34,6 +39,18 @@ public sealed record ServerLaunchOptions(string WorldPath, int Port)
 
           port = parsedPort;
           break;
+        case "--npc-stream-speed":
+          if (hasNpcStreamSpeed || ++index >= args.Count ||
+              !int.TryParse(args[index], out int parsedSpeed))
+          {
+            throw new ArgumentException(
+              "--npc-stream-speed must be provided exactly once as an integer.",
+              nameof(args));
+          }
+
+          hasNpcStreamSpeed = true;
+          npcStreamSpeed = NpcStreamSpeedPolicy.Normalize(parsedSpeed);
+          break;
         default:
           throw new ArgumentException($"Unknown server argument '{argument}'.", nameof(args));
       }
@@ -55,6 +72,9 @@ public sealed record ServerLaunchOptions(string WorldPath, int Port)
       throw new ArgumentOutOfRangeException(nameof(args), "The requested port is not allowed.");
     }
 
-    return new ServerLaunchOptions(Path.GetFullPath(worldPath), port.Value);
+    return new ServerLaunchOptions(
+      Path.GetFullPath(worldPath),
+      port.Value,
+      npcStreamSpeed);
   }
 }

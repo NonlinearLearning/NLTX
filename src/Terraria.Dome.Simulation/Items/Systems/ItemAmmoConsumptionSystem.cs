@@ -12,7 +12,7 @@ public sealed class ItemAmmoConsumptionSystem
   {
     ArgumentNullException.ThrowIfNull(inventory);
     ArgumentNullException.ThrowIfNull(definitions);
-    if (ammoType == 0 || !definitions.TryGet(ammoType, out _))
+    if (ammoType == 0 || !definitions.TryGet(ammoType, out ItemDefinition definition))
     {
       return false;
     }
@@ -20,7 +20,8 @@ public sealed class ItemAmmoConsumptionSystem
     for (int index = 0; index < InventoryComponent.SlotCount; index++)
     {
       ItemStack stack = inventory.GetSlot(index);
-      if (!stack.IsEmpty && stack.ItemType == ammoType)
+      if (!stack.IsEmpty && stack.ItemType == ammoType &&
+          stack.Quantity <= definition.StackLimit)
       {
         return true;
       }
@@ -44,7 +45,8 @@ public sealed class ItemAmmoConsumptionSystem
     for (int index = 0; index < InventoryComponent.SlotCount; index++)
     {
       ItemStack stack = inventory.GetSlot(index);
-      if (stack.ItemType != ammoType || stack.IsEmpty)
+      if (stack.ItemType != ammoType || stack.IsEmpty ||
+          stack.Quantity > definitions.Get(ammoType).StackLimit)
       {
         continue;
       }

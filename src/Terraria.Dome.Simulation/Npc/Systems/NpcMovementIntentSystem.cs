@@ -24,16 +24,24 @@ public sealed class NpcMovementIntentSystem
     NpcComponents.NpcTargetComponent target =
       world.Get<NpcComponents.NpcTargetComponent>(npc);
     TransformComponent npcTransform = world.Get<TransformComponent>(npc);
+    NpcComponents.NpcTargetComponent effectiveTarget = target;
     SimulationVector targetPosition = default;
     if (target.HasTarget && world.IsAlive(target.Target))
     {
       TransformComponent targetTransform = world.Get<TransformComponent>(target.Target);
       targetPosition = new SimulationVector(targetTransform.X, targetTransform.Y);
     }
+    else
+    {
+      effectiveTarget = new NpcComponents.NpcTargetComponent(
+        default,
+        0,
+        NpcComponents.NpcTargetLockReason.NoValidTarget);
+    }
 
     NpcBehaviorResult result = _behaviorSystem.Evaluate(
       behavior,
-      target,
+      effectiveTarget,
       new SimulationVector(npcTransform.X, npcTransform.Y),
       targetPosition,
       isDayTime);

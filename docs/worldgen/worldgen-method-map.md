@@ -14,45 +14,45 @@ Entries remain `Unmapped` unless a source-line mapping records target scope and 
 | 499 | Public | `CheckInputForSecretSeed` | WorldRuntime | Unmapped |  |
 | 530 | Public | `Enable` | WorldRuntime | Unmapped |  |
 | 545 | Public | `Disable` | WorldRuntime | Unmapped |  |
-| 556 | Public | `InitializeSecretSeeds` | Structure | Unmapped | Main |
-| 586 | Public | `FinalizeSecretSeeds` | Liquid | Unmapped | Main, Liquid |
-| 693 | Public | `DoPaintEverythingGray` | Tile | Unmapped | Main, Tile |
-| 729 | Public | `DoPaintEverythingNegative` | Tile | Unmapped | Main, Tile |
-| 803 | Public | `DoCoatEverythingEcho` | Tile | Unmapped | Main, Tile |
-| 893 | Public | `DoCoatEverythingIlluminant` | Tile | Unmapped | Main, Tile |
-| 929 | Public | `DoNoSurface` | Tile | Unmapped | Main, Tile |
+| 556 | Public | `InitializeSecretSeeds` | Structure | Partial | Main |
+| 586 | Public | `FinalizeSecretSeeds` | Liquid | Partial | Main, Liquid |
+| 693 | Public | `DoPaintEverythingGray` | Tile | Partial | Main, Tile |
+| 729 | Public | `DoPaintEverythingNegative` | Tile | Partial | Main, Tile |
+| 803 | Public | `DoCoatEverythingEcho` | Tile | Partial | Main, Tile |
+| 893 | Public | `DoCoatEverythingIlluminant` | Tile | Partial | Main, Tile |
+| 929 | Public | `DoNoSurface` | Tile | Partial | Main, Tile |
 | 949 | Public | `DoNoSurfaceFillTheTop` | Tile | Unmapped | Main, Tile |
-| 980 | Public | `DoErrorWorldGetRandomBlock` | Tile | Unmapped | Main, Tile |
-| 992 | Public | `DoErrorWorldShuffleBlocks` | Tile | Unmapped | Main, Tile |
-| 1201 | Public | `DoErrorWorldFinish` | Tile | Unmapped | Main, Tile |
-| 1463 | Public | `DoErrorWorldFindChestItem` | WorldRuntime | Unmapped |  |
-| 1508 | Public | `DoExtraLiquidAddLiquid` | Liquid | Unmapped | Main, Tile, Liquid |
-| 1558 | Public | `DoExtraLiquidAddBubbleBlocks` | Liquid | Unmapped | Main, Tile, Liquid |
+| 980 | Public | `DoErrorWorldGetRandomBlock` | Tile | Partial | Main, Tile |
+| 992 | Public | `DoErrorWorldShuffleBlocks` | Tile | Partial | Main, Tile |
+| 1201 | Public | `DoErrorWorldFinish` | Tile | Partial | Main, Tile |
+| 1463 | Public | `DoErrorWorldFindChestItem` | WorldRuntime | Partial |  |
+| 1508 | Public | `DoExtraLiquidAddLiquid` | Liquid | Partial | Main, Tile, Liquid |
+| 1558 | Public | `DoExtraLiquidAddBubbleBlocks` | Liquid | Partial | Main, Tile, Liquid |
 | 1721 | Public | `IsConsideredTheSpawnArea` | Biome | Unmapped | Main |
-| 1744 | Public | `DoExtraLiquidFinish` | Liquid | Unmapped | Main, Tile, Liquid |
-| 1788 | Public | `DoRainsForAYear` | WorldRuntime | Unmapped | Main |
-| 1798 | Public | `DoRandomSpawn` | WorldRuntime | Unmapped |  |
-| 1809 | Public | `DoAddTeleporters` | Tile | Unmapped | Main, Tile |
+| 1744 | Public | `DoExtraLiquidFinish` | Liquid | Partial | Main, Tile, Liquid |
+| 1788 | Public | `DoRainsForAYear` | WorldRuntime | Partial | Main |
+| 1798 | Public | `DoRandomSpawn` | WorldRuntime | Partial |  |
+| 1809 | Public | `DoAddTeleporters` | Tile | Partial | Main, Tile |
 | 1901 | Public | `DoAddTeleporters_CanPutTeleporterHere` | Tile | Unmapped | Main, Tile |
 | 1939 | Public | `DoAddTeleporters_ClearArea` | Tile | Unmapped | Main, Tile |
-| 1997 | Public | `DoStartInHardmode` | WorldRuntime | Unmapped | Main |
-| 2005 | Public | `DoNoInfection` | Tile | Unmapped | Main, Tile |
-| 2052 | Public | `DoHallowOnSurface` | Tile | Unmapped | Main, Tile |
-| 2121 | Public | `DoWorldIsInfected` | Tile | Unmapped | Main, Tile |
-| 2177 | Public | `DoSurfaceIsInSpace` | Tile | Unmapped | Main, Tile |
-| 2197 | Public | `DoSurfaceIsMushrooms` | Tile | Unmapped | Main, Tile |
-| 2287 | Public | `DoWorldIsFrozenFinish` | Tile | Unmapped | Main, Tile |
-| 2330 | Public | `DoWorldIsFrozen` | Tile | Unmapped | Main, Tile |
+| 1997 | Public | `DoStartInHardmode` | WorldRuntime | Partial | Main |
+| 2005 | Public | `DoNoInfection` | Tile | Partial | Main, Tile |
+| 2052 | Public | `DoHallowOnSurface` | Tile | Partial | Main, Tile |
+| 2121 | Public | `DoWorldIsInfected` | Tile | Partial | Main, Tile |
+| 2177 | Public | `DoSurfaceIsInSpace` | Tile | Partial | Main, Tile |
+| 2197 | Public | `DoSurfaceIsMushrooms` | Tile | Partial | Main, Tile |
+| 2287 | Public | `DoWorldIsFrozenFinish` | Tile | Partial | Main, Tile |
+| 2330 | Public | `DoWorldIsFrozen` | Tile | Partial | Main, Tile |
 | 2403 | Public | `DoSurfaceIsDesertFinish` | Tile | Unmapped | Main, Tile |
 | 2469 | Public | `DoSurfaceIsDesert` | Tile | Unmapped | Main, Tile |
-| 2709 | Public | `DoSurfaceIsDesertNoSurfaceCleanup` | Tile | Unmapped | Main, Tile |
-| 2736 | Public | `DoNoSpiderCavesILiedMoreSpiderCaves` | Tile | Unmapped | Main, Tile |
-| 2752 | Public | `DoActuallyNoTraps` | Tile | Unmapped | Main, Tile |
-| 2817 | Public | `DoRainbowStuff` | Liquid | Unmapped | Main, Tile, Liquid |
-| 2957 | Public | `DoDigExtraHoles` | Tile | Unmapped | Main, Tile |
-| 2976 | Public | `DoRoundLandMasses` | Tile | Unmapped | Main, Tile |
-| 3083 | Public | `DoPooEverywhere` | Tile | Unmapped | Main, Tile |
-| 3114 | Public | `DoPortalGunInChests` | WorldRuntime | Unmapped | Main |
+| 2709 | Public | `DoSurfaceIsDesertNoSurfaceCleanup` | Tile | Partial | Main, Tile |
+| 2736 | Public | `DoNoSpiderCavesILiedMoreSpiderCaves` | Tile | Partial | Main, Tile |
+| 2752 | Public | `DoActuallyNoTraps` | Tile | Partial | Main, Tile |
+| 2817 | Public | `DoRainbowStuff` | Liquid | Partial | Main, Tile, Liquid |
+| 2957 | Public | `DoDigExtraHoles` | Tile | Partial | Main, Tile |
+| 2976 | Public | `DoRoundLandMasses` | Tile | Partial | Main, Tile |
+| 3083 | Public | `DoPooEverywhere` | Tile | Partial | Main, Tile |
+| 3114 | Public | `DoPortalGunInChests` | WorldRuntime | Partial | Main |
 | 3195 | Public | `Calculate` | Tile | Unmapped | Main, Tile, NetMessage |
 | 3286 | Public | `ScanTiles` | Tile | Unmapped | Main, Tile |
 | 3343 | Public | `Initialize` | WorldRuntime | Unmapped | Main |
@@ -156,7 +156,7 @@ Entries remain `Unmapped` unless a source-line mapping records target scope and 
 | 9177 | Public | `checkUnderground` | Tile | Unmapped | Main, Tile |
 | 9226 | Public | `GetNextJungleChestItem` | WorldRuntime | Unmapped |  |
 | 9262 | Private | `ScanTileColumnAndRemoveClumps` | Tile | Unmapped | Tile |
-| 9263 | Public | `OreHelper` | Ore | Unmapped | Main |
+| 9263 | Public | `OreHelper` | Ore | Partial | Main |
 | 9279 | Public | `StonePatch` | Tile | Unmapped | Main, Tile |
 | 9371 | Public | `ShellPile` | Tile | Unmapped | Main, Tile |
 | 9476 | Public | `MarblePileWithStatues` | Tile | Unmapped | Main, Tile |
@@ -169,12 +169,12 @@ Entries remain `Unmapped` unless a source-line mapping records target scope and 
 | 10048 | Public | `SetBoulderSolidity` | WorldRuntime | Unmapped | Main |
 | 10063 | Public | `SetCrackedBrickSolidity` | WorldRuntime | Unmapped | Main |
 | 10072 | Public | `CanGeneratePressurePlateAt` | Tile | Partial | Main, Tile |
-| 10096 | Public | `GenerateWorld_SetupDungeonGenVars` | Structure | Unmapped |  |
+| 10096 | Public | `GenerateWorld_SetupDungeonGenVars` | Structure | Partial |  |
 | 10108 | Public | `GenerateWorld` | Tile | Partial | Main, Tile |
 | 10148 | Public | `Reset` | Liquid | Unmapped | Main, Tile, Liquid |
 | 10533 | Public | `IsDungeonPlatformOrShelf` | Tile | Partial | Tile |
 | 10553 | Public | `AddPasses` | Liquid | Partial | Main, Tile, Liquid |
-| 21674 | Public | `DisablePassesForSpecialSeeds` | Structure | Unmapped |  |
+| 21674 | Public | `DisablePassesForSpecialSeeds` | Structure | Partial |  |
 | 21694 | Public | `RestoreTemporaryStateChanges` | WorldRuntime | Unmapped | Main |
 | 21704 | Public | `Finish` | WorldRuntime | Unmapped | Main |
 | 21713 | Private | `GenerateSkyBlockWorld` | WorldRuntime | Unmapped |  |
@@ -380,7 +380,7 @@ Entries remain `Unmapped` unless a source-line mapping records target scope and 
 | 41298 | Public | `Check2x2` | Tile | Unmapped | Main, Tile |
 | 41705 | Public | `CheckBoulderChest` | Tile | Unmapped | Main, Tile |
 | 41728 | Public | `IsAContainer` | Tile | Unmapped | Tile |
-| 41739 | Public | `OreRunner` | Tile | Unmapped | Main, Tile, NetMessage |
+| 41739 | Public | `OreRunner` | Tile | Partial | Main, Tile, NetMessage |
 | 41831 | Public | `SmashAltar` | Tile | Unmapped | Main, Tile, NetMessage |
 | 41997 | Public | `Check3x1` | Tile | Unmapped | Main, Tile |
 | 42075 | Public | `Check3x2` | Tile | Unmapped | Main, Tile |

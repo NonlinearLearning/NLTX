@@ -5,13 +5,26 @@ namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class TownAchievementEligibilityQuery
 {
-  private static readonly int[] RealEstateNpcTypes =
-  [
+  private static readonly IReadOnlyList<int> RealEstateNpcTypes =
+    Array.AsReadOnly(
+    new[]
+    {
     38, 17, 107, 19, 22, 124, 228, 178, 18, 229, 209, 54, 108, 160, 20, 369, 207, 227,
     208, 441, 353, 550, 588, 633, 663
-  ];
+    });
 
-  private static readonly int[] TownSlimeNpcTypes = [670, 678, 679, 680, 681, 682, 683, 684];
+  private static readonly IReadOnlyList<int> TownSlimeNpcTypes =
+    Array.AsReadOnly(new[] { 670, 678, 679, 680, 681, 682, 683, 684 });
+
+  public static IReadOnlyList<int> RegisterRealEstateDefaults()
+  {
+    return RealEstateNpcTypes;
+  }
+
+  public static IReadOnlyList<int> RegisterTownSlimeDefaults()
+  {
+    return TownSlimeNpcTypes;
+  }
 
   public static TownAchievementEligibilityResult Evaluate(
     IReadOnlyCollection<int> activeNpcTypes)

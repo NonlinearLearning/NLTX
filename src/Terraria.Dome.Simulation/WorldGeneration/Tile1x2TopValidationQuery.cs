@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Definitions;
 
@@ -9,6 +11,15 @@ public static class Tile1x2TopValidationQuery
   private const int TileFrameWidth = 18;
   private const int TileFrameBandHeight = 36;
   private const ushort SpecialPlatformType = 380;
+  private static readonly IReadOnlySet<ushort> PlatformSupportTileTypes = new HashSet<ushort>
+  {
+    42, 270, 271, 572, 581, 660, 698
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterPlatformSupportDefaults()
+  {
+    return PlatformSupportTileTypes;
+  }
 
   public static Tile1x2TopValidationResult Evaluate(
     WorldGridSnapshot snapshot,
@@ -36,7 +47,7 @@ public static class Tile1x2TopValidationQuery
       bottom.FrameY == checked((short)(styleBand * TileFrameBandHeight + TileFrameWidth));
 
     WorldTile support = GetTile(snapshot, x, originY - 1);
-    bool usesPlatformSupport = tileType is 42 or 270 or 271 or 572 or 581 or 660 or 698;
+    bool usesPlatformSupport = PlatformSupportTileTypes.Contains(tileType);
     bool usesRopeSupport = tileType == 698;
     bool platform = support.IsActive &&
       (IsPlatform(tileDefinitions, support.Type) || support.Type == SpecialPlatformType);
@@ -68,6 +79,6 @@ public static class Tile1x2TopValidationQuery
 
   private static bool IsRope(ushort type)
   {
-    return type is 213 or 214 or 353 or 365 or 366 or 449 or 450 or 451 or 504;
+    return TileRopeQuery.IsRopeTileType(type);
   }
 }

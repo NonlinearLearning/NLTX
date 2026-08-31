@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using Terraria.Dome.Simulation.Liquid.Components;
 
 namespace Terraria.Dome.Simulation.Liquid.Definitions;
@@ -9,14 +10,26 @@ public sealed class LiquidRuleRegistry
   private readonly IReadOnlyDictionary<LiquidType, LiquidRuleDefinition> _definitions;
   private readonly IReadOnlyDictionary<(LiquidType First, LiquidType Second), LiquidMergeRule>
     _mergeRules;
+  private readonly IReadOnlyList<LiquidRuleDefinition> _orderedDefinitions;
 
   private LiquidRuleRegistry(
     IReadOnlyDictionary<LiquidType, LiquidRuleDefinition> definitions,
     IReadOnlyDictionary<(LiquidType First, LiquidType Second), LiquidMergeRule> mergeRules)
   {
-    _definitions = definitions;
-    _mergeRules = mergeRules;
+    _definitions = new ReadOnlyDictionary<LiquidType, LiquidRuleDefinition>(
+      new Dictionary<LiquidType, LiquidRuleDefinition>(definitions));
+    _mergeRules = new ReadOnlyDictionary<(LiquidType First, LiquidType Second), LiquidMergeRule>(
+      new Dictionary<(LiquidType First, LiquidType Second), LiquidMergeRule>(mergeRules));
+    _orderedDefinitions = Array.AsReadOnly([
+      _definitions[LiquidType.Water],
+      _definitions[LiquidType.Lava],
+      _definitions[LiquidType.Honey],
+      _definitions[LiquidType.Shimmer]]);
   }
+
+  public IReadOnlyDictionary<LiquidType, LiquidRuleDefinition> Definitions => _definitions;
+
+  public IReadOnlyList<LiquidRuleDefinition> OrderedDefinitions => _orderedDefinitions;
 
   public LiquidRuleDefinition Get(LiquidType type)
   {

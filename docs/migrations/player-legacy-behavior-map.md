@@ -52,7 +52,13 @@ than a replacement for the syntax-level declaration inventory above.
   protocol, persistence, or compatibility assembly.
 - `ClientOnly` means it must not be reintroduced into the simulation assembly.
 - `Blocked` is reserved for a named dependency. It is not evidence that a core
-  behavior is complete; Phase 7 must leave no unexplained blocked core cluster.
+  behavior is complete. Every current blocker is explicitly archived in
+  `player-blocked-core-archive.md`; Phase 7 still requires either resolution or
+  a documented release boundary before claiming full migration.
+- The current per-PB accepted-slice/deferred-boundary evidence is in
+  `player-blocked-core-evidence-reconciliation.md`; its partial Phase 7 decision
+  is in `player-blocked-core-phase7-boundary-20260829.md`. These records do not
+  promote an archive row from `Blocked`.
 
 ## Verification Anchors
 

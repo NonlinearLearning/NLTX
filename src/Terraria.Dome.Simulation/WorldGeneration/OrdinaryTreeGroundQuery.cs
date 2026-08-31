@@ -1,21 +1,22 @@
+using System.Collections.Frozen;
+using System.Collections.Generic;
+
 namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class OrdinaryTreeGroundQuery
 {
+  private static readonly IReadOnlySet<ushort> SuitableGroundTileTypes = new HashSet<ushort>
+  {
+    2, 23, 60, 70, 109, 147, 199, 477, 492, 633, 661, 662
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterDefaults()
+  {
+    return SuitableGroundTileTypes;
+  }
+
   public static bool IsSuitable(ushort tileType)
   {
-    return tileType is
-      2 or
-      23 or
-      60 or
-      70 or
-      109 or
-      147 or
-      199 or
-      477 or
-      492 or
-      633 or
-      661 or
-      662;
+    return SuitableGroundTileTypes.Contains(tileType);
   }
 }

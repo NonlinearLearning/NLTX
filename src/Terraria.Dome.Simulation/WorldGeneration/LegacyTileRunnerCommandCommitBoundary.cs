@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Terraria.Dome.Simulation.Commands;
 using Terraria.Dome.Simulation.WorldModel;
 
@@ -40,9 +41,23 @@ public static class LegacyTileRunnerCommandCommitBoundary
       return false;
     }
 
+    TileChangeCommand[] tileCommands = new TileChangeCommand[passBatch.TileCommands.Count];
+    for (int index = 0; index < tileCommands.Length; index++)
+    {
+      tileCommands[index] = passBatch.TileCommands[index] with { ExpectedSectionVersion = null };
+    }
+
+    LiquidChangeCommand[] liquidCommands =
+      new LiquidChangeCommand[passBatch.LiquidCommands.Count];
+    for (int index = 0; index < liquidCommands.Length; index++)
+    {
+      liquidCommands[index] =
+        passBatch.LiquidCommands[index] with { ExpectedSectionVersion = null };
+    }
+
     if (!new TileChangeCommitSystem().TryCommit(
           world,
-          passBatch.TileCommands,
+          tileCommands,
           out TileChangeCommitResult tileResult))
     {
       result = LegacyTileRunnerCommandCommitResult.Failed(tileResult.FailureReason!);
@@ -51,7 +66,7 @@ public static class LegacyTileRunnerCommandCommitBoundary
 
     if (!new LiquidChangeCommitSystem().TryCommit(
           world,
-          passBatch.LiquidCommands,
+          liquidCommands,
           liquidDefinitions,
           out LiquidChangeCommitResult liquidResult))
     {
@@ -156,6 +171,13 @@ public static class LegacyTileRunnerCommandCommitBoundary
       return false;
     }
 
+    if (string.IsNullOrWhiteSpace(command.Source) ||
+        !MatchesExpectedSectionVersion(world, command.X, command.Y, command.ExpectedSectionVersion))
+    {
+      failureReason = "TileRunner tile command metadata was invalid.";
+      return false;
+    }
+
     if (!Enum.IsDefined(command.Kind))
     {
       failureReason = "TileRunner tile command kind was invalid.";
@@ -181,6 +203,13 @@ public static class LegacyTileRunnerCommandCommitBoundary
     if (!world.Contains(command.X, command.Y))
     {
       failureReason = "TileRunner liquid command was outside the world.";
+      return false;
+    }
+
+    if (string.IsNullOrWhiteSpace(command.Source) ||
+        !MatchesExpectedSectionVersion(world, command.X, command.Y, command.ExpectedSectionVersion))
+    {
+      failureReason = "TileRunner liquid command metadata was invalid.";
       return false;
     }
 
@@ -303,5 +332,15 @@ public static class LegacyTileRunnerCommandCommitBoundary
     versionDeltas[coordinates] = versionDeltas.TryGetValue(coordinates, out int current)
       ? current + 1
       : 1;
+  }
+
+  private static bool MatchesExpectedSectionVersion(
+    WorldGrid world,
+    int x,
+    int y,
+    long? expectedSectionVersion)
+  {
+    return !expectedSectionVersion.HasValue ||
+      world.GetSectionVersion(world.GetSectionCoordinates(x, y)) == expectedSectionVersion.Value;
   }
 }

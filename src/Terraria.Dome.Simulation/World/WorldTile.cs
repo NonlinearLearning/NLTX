@@ -21,4 +21,7 @@ public readonly record struct WorldTile(
   bool IsInvisibleBlock = false,
   bool IsInvisibleWall = false,
   bool IsFullbrightBlock = false,
-  bool IsFullbrightWall = false);
+  bool IsFullbrightWall = false,
+  byte WallFrameNumber = 0,
+  short WallFrameX = 0,
+  short WallFrameY = 0);

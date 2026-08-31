@@ -77,7 +77,8 @@ public sealed class TreePlacementSystem
         x,
         y,
         TileChangeKind.Place,
-        tileType));
+        tileType,
+        Source: definition.Id));
     }
 
     return true;

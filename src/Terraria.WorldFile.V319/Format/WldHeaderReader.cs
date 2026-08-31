@@ -46,12 +46,20 @@ internal static class WldHeaderReader
 
     int gameMode = 0;
     bool? isRemixWorld = null;
+    bool? isNoTrapsWorld = null;
+    bool? isSkyblockWorld = null;
+    bool? isGoodWorld = null;
     if (version >= 209)
     {
       gameMode = reader.ReadInt32();
       if (version >= 222)
       {
-        isRemixWorld = ReadWorldVariantBooleans(version, reader);
+        isRemixWorld = ReadWorldVariantBooleans(
+          version,
+          reader,
+          out isGoodWorld,
+          out isNoTrapsWorld,
+          out isSkyblockWorld);
       }
     }
     else if (version >= 112)
@@ -205,12 +213,23 @@ internal static class WldHeaderReader
       IsDayTime: isDayTime,
       WorldGeneratorVersion: worldGeneratorVersion,
       UniqueId: uniqueId,
-      SeedText: seedText);
+      SeedText: seedText,
+      IsNoTrapsWorld: isNoTrapsWorld,
+      IsSkyblockWorld: isSkyblockWorld,
+      IsGoodWorld: isGoodWorld);
   }
 
-  private static bool? ReadWorldVariantBooleans(int version, WldBinaryReader reader)
+  private static bool? ReadWorldVariantBooleans(
+    int version,
+    WldBinaryReader reader,
+    out bool? isGoodWorld,
+    out bool? isNoTrapsWorld,
+    out bool? isSkyblockWorld)
   {
     bool? isRemixWorld = null;
+    isGoodWorld = null;
+    isNoTrapsWorld = null;
+    isSkyblockWorld = null;
     int count = version >= 302 ? 9 : 8;
     for (int index = 0; index < count; index++)
     {
@@ -218,6 +237,21 @@ internal static class WldHeaderReader
       if (version >= 249 && index == 5)
       {
         isRemixWorld = value;
+      }
+
+      if (version >= 227 && index == 1)
+      {
+        isGoodWorld = value;
+      }
+
+      if (version >= 266 && index == 6)
+      {
+        isNoTrapsWorld = value;
+      }
+
+      if (version >= 302 && index == 8)
+      {
+        isSkyblockWorld = value;
       }
     }
 

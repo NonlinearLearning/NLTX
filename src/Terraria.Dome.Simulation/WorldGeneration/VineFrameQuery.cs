@@ -1,10 +1,27 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 
 namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class VineFrameQuery
 {
+  private static readonly IReadOnlySet<ushort> VineTileTypes = new HashSet<ushort>
+  {
+    52, 62, 115, 205, 382, 528, 636, 638
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterDefaults()
+  {
+    return VineTileTypes;
+  }
+
+  public static bool IsVineTileType(ushort tileType)
+  {
+    return VineTileTypes.Contains(tileType);
+  }
+
   public static VineFrameResult Evaluate(WorldGridSnapshot snapshot, int x, int y)
   {
     ArgumentNullException.ThrowIfNull(snapshot);

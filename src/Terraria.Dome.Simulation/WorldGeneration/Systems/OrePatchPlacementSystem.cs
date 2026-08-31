@@ -14,6 +14,40 @@ public sealed class OrePatchPlacementSystem
     int worldSurfaceY,
     IReadOnlyDictionary<ushort, OrePatchTileDefinition> tileDefinitions,
     OreDefinition definition,
+    ushort copperTileType,
+    ushort ironTileType,
+    LegacyPassRandomState random,
+    TileProtectionComponent protection,
+    out OrePatchPlacementPreparation preparation)
+  {
+    ArgumentNullException.ThrowIfNull(random);
+    ushort selectedTileType = LegacyOrePatchTypePolicy.SelectTileType(
+      copperTileType, ironTileType, random);
+    OreDefinition selectedDefinition = new(
+      definition.Id,
+      selectedTileType,
+      definition.MinDepth,
+      definition.MaxDepth,
+      definition.VeinRadius,
+      definition.Priority);
+    return TryPrepare(
+      snapshot,
+      originX,
+      originY,
+      worldSurfaceY,
+      tileDefinitions,
+      selectedDefinition,
+      protection,
+      out preparation);
+  }
+
+  public bool TryPrepare(
+    WorldGridSnapshot snapshot,
+    int originX,
+    int originY,
+    int worldSurfaceY,
+    IReadOnlyDictionary<ushort, OrePatchTileDefinition> tileDefinitions,
+    OreDefinition definition,
     TileProtectionComponent protection,
     out OrePatchPlacementPreparation preparation)
   {
@@ -46,7 +80,7 @@ public sealed class OrePatchPlacementSystem
       return false;
     }
 
-    preparation = new OrePatchPlacementPreparation(eligibility, transaction);
+    preparation = new OrePatchPlacementPreparation(eligibility, transaction, originX);
     return true;
   }
 
@@ -70,5 +104,48 @@ public sealed class OrePatchPlacementSystem
       protection,
       ref state,
       commands);
+  }
+
+  public bool TryAppendLegacyTrailAndBlobCommands(
+    WorldGridSnapshot snapshot,
+    OrePatchPlacementPreparation preparation,
+    LegacyPassRandomState random,
+    ref WorldGenerationStateComponent state,
+    List<TileChangeCommand> commands)
+  {
+    ArgumentNullException.ThrowIfNull(snapshot);
+    ArgumentNullException.ThrowIfNull(random);
+    ArgumentNullException.ThrowIfNull(commands);
+    if (!preparation.IsPrepared || preparation.OriginX < 0)
+    {
+      return false;
+    }
+
+    WorldGenerationStateComponent nextState = state;
+    List<TileChangeCommand> nextCommands = new();
+    if (!LegacyOrePatchTrail.TryAppendCommands(
+          snapshot,
+          preparation.OriginX,
+          preparation.GroundY,
+          preparation.Transaction.TileType,
+          random,
+          ref nextState,
+          nextCommands,
+          out LegacyOrePatchTrailEnd trailEnd) ||
+        !LegacyOrePatchBlob.TryAppendCommands(
+          snapshot,
+          trailEnd.X,
+          trailEnd.Y,
+          preparation.Transaction.TileType,
+          random,
+          ref nextState,
+          nextCommands))
+    {
+      return false;
+    }
+
+    commands.AddRange(nextCommands);
+    state = nextState;
+    return true;
   }
 }

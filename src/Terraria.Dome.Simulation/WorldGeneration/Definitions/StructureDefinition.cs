@@ -10,7 +10,8 @@ public readonly struct StructureDefinition
     int height,
     ushort tileType,
     ushort wallType,
-    bool allowReplaceExisting)
+    bool allowReplaceExisting,
+    int priority = 0)
     : this()
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(id);
@@ -25,6 +26,7 @@ public readonly struct StructureDefinition
     TileType = tileType;
     WallType = wallType;
     AllowReplaceExisting = allowReplaceExisting;
+    Priority = priority;
   }
 
   public string Id { get; }
@@ -38,4 +40,6 @@ public readonly struct StructureDefinition
   public ushort WallType { get; }
 
   public bool AllowReplaceExisting { get; }
+
+  public int Priority { get; }
 }

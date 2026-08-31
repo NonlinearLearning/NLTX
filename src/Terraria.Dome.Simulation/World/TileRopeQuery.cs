@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel.Definitions;
 
 namespace Terraria.Dome.Simulation.WorldModel;
@@ -7,6 +9,20 @@ public static class TileRopeQuery
 {
   private const ushort PlatformBridgeTileType = 314;
   private const ushort SpecialPlatformBridgeTileType = 380;
+  private static readonly IReadOnlySet<ushort> RopeTileTypes = new HashSet<ushort>
+  {
+    213, 214, 353, 365, 366, 449, 450, 451, 504
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterDefaults()
+  {
+    return RopeTileTypes;
+  }
+
+  public static bool IsRopeTileType(ushort tileType)
+  {
+    return RopeTileTypes.Contains(tileType);
+  }
 
   public static TileRopeEnds FindEnds(
     WorldGridSnapshot snapshot,
@@ -104,6 +120,6 @@ public static class TileRopeQuery
 
   private static bool IsRopeTile(WorldTile tile)
   {
-    return tile.Type is 213 or 214 or 353 or 365 or 366 or 449 or 450 or 451 or 504;
+    return IsRopeTileType(tile.Type);
   }
 }

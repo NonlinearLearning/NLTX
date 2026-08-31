@@ -7,6 +7,17 @@ namespace Terraria.Dome.Simulation.Items.Systems;
 
 public sealed class ItemVariantSystem
 {
+  private readonly ItemDefinitionRegistry? _itemDefinitions;
+
+  public ItemVariantSystem()
+  {
+  }
+
+  public ItemVariantSystem(ItemDefinitionRegistry itemDefinitions)
+  {
+    _itemDefinitions = itemDefinitions ?? throw new ArgumentNullException(nameof(itemDefinitions));
+  }
+
   public bool TryApply(
     ItemStack stack,
     ref ItemInstanceStateComponent state,
@@ -15,8 +26,21 @@ public sealed class ItemVariantSystem
     out ItemCommandRejection rejection,
     IReadOnlyDictionary<string, int>? conditionValues = null)
   {
+    try
+    {
+      state.Validate();
+    }
+    catch (ArgumentOutOfRangeException)
+    {
+      result = stack;
+      rejection = ItemCommandRejection.Invalid("The item instance state is invalid.");
+      return false;
+    }
+
     if (stack.IsEmpty || variant.VariantId == 0 || variant.SourceItemType != stack.ItemType ||
         variant.ReplacementItemType == 0 || (variant.OneTime && state.VariantId != 0) ||
+        !IsItemDefinitionCompatible(stack.ItemType, stack.Quantity) ||
+        !IsItemDefinitionCompatible(variant.ReplacementItemType, stack.Quantity) ||
         !AreConditionsMet(variant.Conditions, conditionValues))
     {
       result = stack;
@@ -25,9 +49,16 @@ public sealed class ItemVariantSystem
     }
 
     state = state with { VariantId = variant.VariantId };
-    result = new ItemStack(variant.ReplacementItemType, stack.Quantity);
+    result = new ItemStack(variant.ReplacementItemType, stack.Quantity, stack.Prefix);
     rejection = default;
     return true;
+  }
+
+  private bool IsItemDefinitionCompatible(ushort itemType, int quantity)
+  {
+    return _itemDefinitions is null ||
+      _itemDefinitions.TryGet(itemType, out ItemDefinition definition) &&
+      quantity <= definition.StackLimit;
   }
 
   private static bool AreConditionsMet(

@@ -13,6 +13,15 @@ public static class TileFrameImportant324Query
     WorldGridSnapshot snapshot,
     TileDefinitionRegistry tileDefinitions,
     int x,
+    int y)
+  {
+    return Evaluate(snapshot, tileDefinitions, x, y, BoulderTileRegistry.RegisterDefaults());
+  }
+
+  public static TileFrameImportant324Result Evaluate(
+    WorldGridSnapshot snapshot,
+    TileDefinitionRegistry tileDefinitions,
+    int x,
     int y,
     IReadOnlySet<ushort> boulderTileTypes)
   {

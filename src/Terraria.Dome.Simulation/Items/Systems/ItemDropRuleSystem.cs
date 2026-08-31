@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Terraria.Dome.Simulation.Items;
 using Terraria.Dome.Simulation.Items.Commands;
 using Terraria.Dome.Simulation.Items.Definitions;
 using Terraria.Dome.Simulation.WorldModel;
@@ -8,6 +9,17 @@ namespace Terraria.Dome.Simulation.Items.Systems;
 
 public sealed class ItemDropRuleSystem
 {
+  private readonly ItemDefinitionRegistry? _itemDefinitions;
+
+  public ItemDropRuleSystem()
+  {
+  }
+
+  public ItemDropRuleSystem(ItemDefinitionRegistry itemDefinitions)
+  {
+    _itemDefinitions = itemDefinitions ?? throw new ArgumentNullException(nameof(itemDefinitions));
+  }
+
   public IReadOnlyList<CreateWorldItemCommand> Evaluate(
     WorldSeed seed,
     int sourceEntityId,
@@ -132,7 +144,7 @@ public sealed class ItemDropRuleSystem
       (int)tick * 486187739 ^ discriminator * 214013));
   }
 
-  private static bool IsEligible(
+  private bool IsEligible(
     ItemDropDefinition definition,
     bool expertMode,
     bool masterMode,
@@ -140,9 +152,17 @@ public sealed class ItemDropRuleSystem
   {
     return definition.ItemType != 0 && definition.MinimumQuantity > 0 &&
       definition.MaximumQuantity >= definition.MinimumQuantity && definition.Weight > 0 &&
+      IsItemDefinitionCompatible(definition) &&
       (!definition.MasterOnly || masterMode) &&
       (!definition.ExpertOnly || expertMode || masterMode) &&
       AreConditionsMet(definition.Conditions, conditionValues);
+  }
+
+  private bool IsItemDefinitionCompatible(ItemDropDefinition definition)
+  {
+    return _itemDefinitions is null ||
+      _itemDefinitions.TryGet(definition.ItemType, out ItemDefinition itemDefinition) &&
+      definition.MaximumQuantity <= itemDefinition.StackLimit;
   }
 
   private static bool AreConditionsMet(

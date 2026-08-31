@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Definitions;
 
@@ -7,6 +9,17 @@ namespace Terraria.Dome.Simulation.WorldGeneration;
 public static class Tile3x3ValidationQuery
 {
   private const int TileFrameWidth = 18;
+  private static readonly IReadOnlySet<ushort> BottomSupportTileTypes = new HashSet<ushort>
+  {
+    106, 212, 219, 220, 228, 231, 243, 247, 283,
+    300, 301, 302, 303, 304, 305, 306, 307, 308,
+    354, 355, 406, 412, 452, 455, 491, 642, 733
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterBottomSupportDefaults()
+  {
+    return BottomSupportTileTypes;
+  }
 
   public static Tile3x3ValidationResult Evaluate(
     WorldGridSnapshot snapshot,
@@ -81,7 +94,6 @@ public static class Tile3x3ValidationQuery
 
   private static bool UsesBottomSupport(ushort tileType)
   {
-    return tileType is 106 or 212 or 219 or 220 or 228 or 231 or 243 or 247 or 283 or
-      (>= 300 and <= 308) or 354 or 355 or 406 or 412 or 452 or 455 or 491 or 642 or 733;
+    return BottomSupportTileTypes.Contains(tileType);
   }
 }

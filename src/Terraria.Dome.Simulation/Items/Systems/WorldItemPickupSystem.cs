@@ -21,6 +21,17 @@ public sealed class WorldItemPickupSystem
   {
     ArgumentNullException.ThrowIfNull(inventory);
     ArgumentNullException.ThrowIfNull(definitions);
+    try
+    {
+      item.InstanceState.Validate();
+    }
+    catch (ArgumentOutOfRangeException)
+    {
+      pickupEvent = default;
+      rejection = ItemCommandRejection.Invalid("World item instance state is invalid.");
+      return false;
+    }
+
     if (!item.IsActive || item.ReplicationId != command.WorldItemId ||
         item.WorldState.PickupDelayTicks > 0 ||
         item.WorldState.LastOwnerRevision == long.MaxValue ||
@@ -43,6 +54,14 @@ public sealed class WorldItemPickupSystem
     {
       pickupEvent = default;
       rejection = ItemCommandRejection.Invalid("Player is outside the world item pickup range.");
+      return false;
+    }
+
+    if (!definitions.TryGet(item.Stack.ItemType, out ItemDefinition definition) ||
+        item.Stack.Quantity > definition.StackLimit)
+    {
+      pickupEvent = default;
+      rejection = ItemCommandRejection.Invalid("World item stack exceeds its definition limit.");
       return false;
     }
 

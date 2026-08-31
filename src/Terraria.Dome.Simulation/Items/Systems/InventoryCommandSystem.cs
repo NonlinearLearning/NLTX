@@ -1,3 +1,4 @@
+using System;
 using Terraria.Dome.Simulation.Items.Components;
 
 namespace Terraria.Dome.Simulation.Items.Systems;
@@ -85,10 +86,23 @@ public sealed class InventoryCommandSystem
 
     ItemStack source = inventory.GetSlot(sourceSlot);
     ItemStack destination = inventory.GetSlot(destinationSlot);
-    if (source.IsEmpty || quantity > source.Quantity ||
+    if (!definitions.TryGet(source.ItemType, out ItemDefinition definition) ||
+        source.IsEmpty || quantity > source.Quantity ||
         (!allowWholeSource && quantity >= source.Quantity))
     {
       rejection = ItemCommandRejection.Invalid("The source stack cannot provide the requested quantity.");
+      return false;
+    }
+
+    ItemInstanceStateComponent sourceState = inventory.GetInstanceState(sourceSlot);
+    try
+    {
+      sourceState.Validate();
+      inventory.GetInstanceState(destinationSlot).Validate();
+    }
+    catch (ArgumentOutOfRangeException)
+    {
+      rejection = ItemCommandRejection.Invalid("The inventory instance state is invalid.");
       return false;
     }
 
@@ -104,24 +118,29 @@ public sealed class InventoryCommandSystem
       return false;
     }
 
-    ItemInstanceStateComponent sourceState = inventory.GetInstanceState(sourceSlot);
     if (destination.IsEmpty)
     {
+      if ((!allowWholeSource && !definition.CanStack) || quantity > definition.StackLimit)
+      {
+        rejection = ItemCommandRejection.Invalid("The item cannot be split into an empty slot.");
+        return false;
+      }
+
       inventory.SetSlot(sourceSlot, source.WithQuantity(source.Quantity - quantity));
-      inventory.SetSlot(destinationSlot, new ItemStack(source.ItemType, quantity));
+      inventory.SetSlot(destinationSlot, new ItemStack(source.ItemType, quantity, source.Prefix));
       inventory.SetInstanceState(destinationSlot, sourceState);
       rejection = default;
       return true;
     }
 
-    if (!definitions.TryGet(source.ItemType, out ItemDefinition definition) ||
-        destination.ItemType != source.ItemType ||
+    if (destination.ItemType != source.ItemType ||
+        !definition.CanStack ||
         !InventoryComponent.CanMerge(
           destination,
           inventory.GetInstanceState(destinationSlot),
           source,
           sourceState,
-          definition.Identity?.UniqueStack ?? false))
+          definition.IsUniqueStack))
     {
       rejection = ItemCommandRejection.Invalid("The item instances cannot be merged.");
       return false;

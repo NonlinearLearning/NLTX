@@ -1,6 +1,5 @@
 # Dome Full Server Packet Parity Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Make the Dome server reproduce the complete server's full-client `join-stable`
 packet exchange under the recorded 2026-08-16 scenario, including exact directional counts.

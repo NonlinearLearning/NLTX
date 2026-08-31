@@ -34,6 +34,7 @@ internal static class WldVersionMatrixFixtureWriter
     int rainTimeTicks = 0,
     float maximumRainStrength = 0.0f,
     bool isRemixWorld = false,
+    bool isGoodWorld = false,
     ulong worldGeneratorVersion = 0,
     Guid? uniqueId = null,
     string? seedText = null)
@@ -92,6 +93,7 @@ internal static class WldVersionMatrixFixtureWriter
           rainTimeTicks,
           maximumRainStrength,
           isRemixWorld,
+          isGoodWorld,
           worldGeneratorVersion,
           uniqueId,
           seedText);
@@ -140,6 +142,7 @@ internal static class WldVersionMatrixFixtureWriter
     int rainTimeTicks,
     float maximumRainStrength,
     bool isRemixWorld,
+    bool isGoodWorld,
     ulong worldGeneratorVersion,
     Guid? uniqueId,
     string? seedText)
@@ -176,7 +179,7 @@ internal static class WldVersionMatrixFixtureWriter
       writer.Write(gameMode);
       if (version >= 222)
       {
-        WriteWorldVariantBooleans(writer, version, isRemixWorld);
+        WriteWorldVariantBooleans(writer, version, isRemixWorld, isGoodWorld);
       }
     }
     else if (version >= 112)
@@ -506,6 +509,7 @@ internal static class WldVersionMatrixFixtureWriter
     int rainTimeTicks,
     float maximumRainStrength,
     bool isRemixWorld,
+    bool isGoodWorld,
     ulong worldGeneratorVersion,
     Guid? uniqueId,
     string? seedText)
@@ -536,6 +540,7 @@ internal static class WldVersionMatrixFixtureWriter
           rainTimeTicks,
           maximumRainStrength,
           isRemixWorld,
+          isGoodWorld,
           worldGeneratorVersion,
           uniqueId,
           seedText);
@@ -630,12 +635,19 @@ internal static class WldVersionMatrixFixtureWriter
   private static void WriteWorldVariantBooleans(
     BinaryWriter writer,
     int version,
-    bool isRemixWorld)
+    bool isRemixWorld,
+    bool isGoodWorld)
   {
     int count = version >= 302 ? 9 : 8;
     for (int index = 0; index < count; index++)
     {
-      writer.Write(version >= 249 && index == 5 && isRemixWorld);
+      bool value = version >= 227 && index == 1 && isGoodWorld;
+      if (version >= 249 && index == 5)
+      {
+        value = isRemixWorld;
+      }
+
+      writer.Write(value);
     }
   }
 

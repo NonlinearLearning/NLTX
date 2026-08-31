@@ -38,13 +38,14 @@ public static class TileMutationProjection
       TileChangeKind.Kill => CreateKilledTile(
         current,
         command.PreserveLiquid,
+        command.PreserveTileState,
         command.FrameX,
         command.FrameY),
       TileChangeKind.SetInactive => current with { IsInactive = command.IsInactive },
       TileChangeKind.SetWall => current with { WallType = command.WallType },
       TileChangeKind.UpdateTileType => current with
       {
-        IsActive = true,
+        IsActive = command.IsActive ?? true,
         Type = command.TileType,
         FrameX = command.FrameX ?? current.FrameX,
         FrameY = command.FrameY ?? current.FrameY
@@ -54,8 +55,20 @@ public static class TileMutationProjection
         IsHalfBrick = command.IsHalfBrick ?? current.IsHalfBrick,
         Slope = command.Slope ?? current.Slope
       },
+      TileChangeKind.SetPaint => current with
+      {
+        TileColor = command.TileColor ?? current.TileColor,
+        WallColor = command.WallColor ?? current.WallColor
+      },
+      TileChangeKind.SetCoating => current with
+      {
+        IsInvisibleBlock = command.IsInvisibleBlock ?? current.IsInvisibleBlock,
+        IsInvisibleWall = command.IsInvisibleWall ?? current.IsInvisibleWall,
+        IsFullbrightBlock = command.IsFullbrightBlock ?? current.IsFullbrightBlock,
+        IsFullbrightWall = command.IsFullbrightWall ?? current.IsFullbrightWall
+      },
       TileChangeKind.Place or TileChangeKind.PlaceTile => new WorldTile(
-        IsActive: true,
+        IsActive: command.IsActive ?? true,
         Type: command.TileType,
         FrameX: command.FrameX ?? 0,
         FrameY: command.FrameY ?? 0),
@@ -66,10 +79,13 @@ public static class TileMutationProjection
   private static WorldTile CreateKilledTile(
     WorldTile current,
     bool preserveLiquid,
+    bool preserveTileState,
     short? frameX,
     short? frameY)
   {
-    WorldTile killed = preserveLiquid
+    WorldTile killed = preserveTileState
+      ? current with { IsActive = false }
+      : preserveLiquid
       ? new WorldTile(
         IsActive: false,
         Type: 0,

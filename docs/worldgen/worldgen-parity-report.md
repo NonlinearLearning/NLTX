@@ -2,6 +2,296 @@
 
 ## Evidence
 
+### Fresh 2026-08-30 cave-pass random contract
+
+- The source oracle was rebuilt after adding a diagnostic-only `UnifiedRandom.SampleCount` and
+  pass checkpoint recorder. The instrumentation does not alter the random algorithm or consume
+  samples; it records the stream before `GenPass.Apply`, immediately after `Apply`, and the
+  existing `GenPassResult.RandNext` sample.
+- Source evidence is `Build/worldgen-oracle/legacy-instrumented-source/Terraria.WorldBuilding/WorldGenerator.cs:524-553`:
+  `RunPass` assigns `Main.rand = new UnifiedRandom(_seed)` before every pass and consumes one
+  additional `Next()` for `GenPassResult.RandNext` after the pass returns. The captured stream
+  uses `UnifiedRandom` from
+  `Build/worldgen-oracle/legacy-instrumented-source/Terraria.Utilities/UnifiedRandom.cs`.
+- Fresh trace: `Build/diagnostics/server-ecs-convergence/P9-worldgen/resume-20260830-differential/legacy-pass-random-trace-20260830-01.jsonl`.
+  Contract projection: `Build/diagnostics/server-ecs-convergence/P9-worldgen/resume-20260830-differential/cave-random-contract-20260830-01.json`.
+- Under the default seed-1456 profile (`4200 x 1200`, difficulty `0`, non-hardmode, non-remix,
+  non-dont-starve), all ten cave-related passes reset to `sampleCount=0` and the same initial
+  peek `810676643`. Nine passes consume a continuous stream inside `Apply`; `Wavy Caves` is a
+  source pass but consumes zero samples because its `dontStarveWorldGen` guard is false.
+- An independent consistency replay checks the raw JSONL rather than trusting the projection:
+  `CheckCaveRandomTraceConsistency-20260830-01.ps1` validates exactly 20 cave checkpoints (one
+  start and one end for each of ten passes), the expected per-pass sample counts, the shared
+  initial peek, and `RandNext == Normalize(UnifiedRandom.Peek())`. It exits `0` and writes
+  `cave-random-consistency-20260830-01.json`; all 10 passes satisfy the checks.
+- The complete bounded WorldGeneration verifier was also run from the built Release DLL. Its
+  explicit result is `exitCode=0`, `279` `PASS` lines, and `0` `FAIL`/`ERROR` lines. The run
+  summary is `worldgeneration-verifier-run-summary-20260830-01.json`; this verifies the bounded
+  contracts only and does not convert the negative generated-world differential into parity.
+- A fresh serial Release build of `Terraria.Dome.Simulation` followed by the WorldGeneration
+  verifier also exited `0`; both logs report `0` warnings and `0` errors:
+  `final-simulation-build-random-contract-20260830-02.log` and
+  `final-worldgeneration-verifier-build-random-contract-20260830-02.log`.
+- `git diff --check` was rerun over the dirty worktree and exited `0`; its captured output contains
+  only pre-existing LF/CRLF normalization notices (`final-diff-check-20260830-03.log`), with no
+  whitespace errors.
+
+| Oracle pass | Source lines | Samples consumed before `RandNext` |
+| --- | --- | ---: |
+| Mount Caves | `WorldGen.cs:12119-12192` | 576 |
+| Dirt Wall Backgrounds | `WorldGen.cs:12193-12233` | 4,198 |
+| Rocks In Dirt | `WorldGen.cs:12234-12263` | 3,436,063 |
+| Dirt In Rocks | `WorldGen.cs:12264-12296` | 3,724,072 |
+| Clay | `WorldGen.cs:12383-12503` | 522,600 |
+| Small Holes | `WorldGen.cs:12346-12405` | 7,033,907 |
+| Dirt Layer Caves | `WorldGen.cs:12406-12446` | 576,249 |
+| Rock Layer Caves | `WorldGen.cs:12606-12649` | 6,945,153 |
+| Surface Caves | `WorldGen.cs:12503-12612` | 253,304 |
+| Wavy Caves | `WorldGen.cs:12613-12654` | 0 (default guard) |
+
+This confirms the reset/consumption contract, but it is not aggregate tile parity evidence. The ECS
+Cave boundary still combines a placeholder tunnel, a late MountainCaves helper, and helper passes
+in an order that differs from the legacy schedule. `RocksInDirt` and `DirtInRocks` now have
+separate typed, pass-specific owners with zero-mismatch default-profile comparisons (see below);
+`Clay` and the non-Remix `RockLayerCaves` base loop now have separate typed owners, with Clay
+matching its captured snapshot and RockLayerCaves retaining a documented traversal differential
+(see below). The source random contract therefore still does not authorize an aggregate cave
+rewrite or legacy WorldGen deletion.
+
+### Fresh 2026-08-30 DirtWallBackgrounds pass boundary
+
+- Source anchors are `WorldGen.cs:12119-12233` in the instrumented legacy tree. The selected
+  downstream pass is `DirtWallBackgrounds` (`12193-12233`), and its upstream stage is the runtime
+  `Mount Caves` boundary (`12119-12192`). The full source schedule also runs `Tunnels` before
+  `Mount Caves`; the current ECS helper does not claim that upstream parity.
+- The diagnostic oracle was rerun with the stage filter `Terrain,Mount Caves,Dirt Wall Backgrounds`.
+  It captured `4,198` ordered `genRand.Next(-1, 2)` decisions and a binary immutable Mount-stage
+  projection containing active/type/liquid/frame/wall fields:
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/dirt-wall-boundary-20260830-04/legacy-stage-trace.jsonl`,
+  `legacy-dirt-wall-offsets.csv`, and `legacy-mount-caves-snapshot.bin`. The offset artifact SHA-256
+  is `A4AB031A512188153A9EED1CE5CE2047F05BC474D22D351F973ADE9A06ACAD5E`.
+- The first RED probe intentionally ran Terrain directly into the current ECS Mountain helper and
+  failed with `Mount Caves=0` commands and `Dirt Wall=3,314` wall tiles. Using the captured Mount
+  snapshot isolates the selected pass and records the architectural upstream limitation instead
+  of treating it as Dirt Wall parity:
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/dirt-wall-boundary-20260830-03/dirt-wall-boundary-probe-20260830-01.json`.
+- Two source details were then fixed in Simulation. `TerrainPass.cs:212` sets legacy
+  `Main.worldSurface` to `(int)(worldSurfaceHigh + 25)`, which is distinct from the traced
+  `GenVars.worldSurface` (`229` versus `325` for this profile). The wall loop also uses a strict
+  `j < Main.worldSurface + 10`; an offset of `10` must not include the row at exactly `+10`.
+  `LegacyMainWorldSurfacePolicy` and the typed `LegacyPassRandomState` overload now preserve both
+  contracts while emitting only `TileChangeCommand` values.
+- The GREEN pass-specific probe exits `0` and matches all selected boundaries against the immutable
+  Mount input: Terrain fingerprint, Mount fingerprint, Dirt Wall tile/frame/liquid fingerprint,
+  wall fingerprint, and wall count `363,512`; the generated offset stream matches all `4,198`
+  oracle decisions. Evidence:
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/dirt-wall-boundary-20260830-04/dirt-wall-boundary-probe-20260830-02.json`.
+- Serial Release Simulation build exits `0` with `0` warnings and `0` errors. The WorldGeneration
+  verifier exits `0` with `281` `PASS` lines and no `FAIL`/`ERROR` lines (stderr is empty). These are bounded
+  pass-contract results only. Complete cave ordering, full Remix parity, the remaining cave passes, full WLD
+  differential, `canRemoveLegacyWorldGen`, and the `44` deferred ServerRelevant deletion rows
+  remain blocked/deferred.
+
+### Fresh 2026-08-30 RocksInDirt pass boundary
+
+- The selected source range is `WorldGen.cs:12234-12263`. `LegacyRocksInDirtPassDefinition` keeps
+  the three source recipes, densities (`0.00015`, `0.0002`, `0.0045`), inclusive projected Y
+  ranges, source loop order, and the second-family one-shot inactive `(x, y - 10)` reroll.
+  `LegacyRocksInDirtPass` consumes an immutable `WorldGridSnapshot`, validated terrain profile, and
+  pass-reset typed random state, then emits source-attributed tile commands through the deterministic
+  commit boundary.
+- The fresh oracle and invocation/candidate traces are under
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/rocks-in-dirt-boundary-20260830-12/`.
+  For seed `1456` and `4200 x 1200`, it records `24,444` invocations (`756`, `1,008`, and
+  `22,680` by family) and consumes `3,436,063` random samples.
+- The focused GREEN artifact at
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/rocks-in-dirt-boundary-20260830-16/rocks-in-dirt-boundary-green-20260830-09.json`
+  reports `285,014` commands, `285,014` applied commands, source attribution, and zero active,
+  type, liquid, frame, and wall mismatches against the immutable Rocks In Dirt oracle snapshot.
+  Serial Simulation/WorldGeneration builds and the verifier run exit `0`; the latest verifier log
+  contains `280` `PASS`, `40` bounded `CHECK`, and no `FAIL`/`ERROR` lines.
+- This is `RocksInDirt` pass-specific evidence for the captured default profile. It does not close
+  generic TileRunner modes, aggregate cave ordering, extended state/side effects, full WLD
+  differential parity, `canRemoveLegacyWorldGen`, or legacy deletion.
+
+### Fresh 2026-08-30 DirtInRocks pass boundary
+
+- The selected source block is `WorldGen.cs:12321-12353`. The pass is guarded by
+  `!Skyblock.denyAllGeneration`, uses density `0.005`, and emits `25,200` base invocations for
+  the seed-1456 `4200x1200` profile. Each invocation draws X from `[0, maxTilesX)`, Y from
+  `[(int)rockLayerLow, maxTilesY)`, strength from `[2, 6)`, and steps from `[2, 40)`, then
+  invokes `TileRunner` with target type `0`. The source random stream resets from the world
+  seed before this pass.
+- The immutable upstream and downstream snapshots, invocation trace, and random trace are under
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/dirt-in-rocks-boundary-20260830-02/`.
+  The RocksInDirt input snapshot SHA-256 is
+  `EB8D62DFF9E8B4F6FE1FB39B57C86FEB6358F6EF98FCC9D78E099EDA68A14198`; the DirtInRocks oracle
+  snapshot SHA-256 is `5DD4904442EA066C7F40103E4614F376CA7B0AF287373B0D3A9D43591866E701`.
+  The oracle records `25,200` invocation lines and `3,724,072` random samples, from initial
+  peek `810676643` to end peek/RandNext `1756760189`. The wrapper's `ExitCode=-1` is expected
+  because it stops immediately after the selected stage.
+- A pre-owner focused RED run is retained at
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/dirt-in-rocks-boundary-20260830-01/focused-red-run.log`.
+  The first typed comparison exposed `610` type-only (`0->53`) mismatches; diagnostic candidate
+  traces in `...-20260830-07/` showed that legacy `TileRunner` preserves type `53` while
+  `l < Main.worldSurface`. `TerrainPass.cs:212` computes `Main.worldSurface` as
+  `(int)(worldSurfaceHigh + 25.0)`, yielding `325` while `GenVars.worldSurface` is `229` for
+  this profile. `LegacyMainWorldSurfacePolicy` now supplies the computed value to the owner,
+  including the Remix start-row calculation.
+- `LegacyDirtInRocksPassDefinition` and `LegacyDirtInRocksPass` consume an immutable
+  `WorldGridSnapshot`, validated terrain profile, and pass-reset typed random state. They emit
+  source-attributed `TileChangeCommand` values through the deterministic commit boundary and
+  keep projected writes separate from the input snapshot. The optional Remix branch is a
+  distinct active type `0`/`1` toggle owner; focused source-contract coverage is present, but
+  the captured non-Remix oracle has no full Remix trace.
+- The fresh default-profile result is
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/dirt-in-rocks-boundary-20260830-08/dirt-in-rocks-boundary-green.json`.
+  It reports `515,925` emitted/applied commands, `3,724,072` simulation random samples, and
+  zero active, type, liquid amount/type, frame X/Y, and wall mismatches; the decision is
+  `pass-specific-dirt-in-rocks-matched`. The focused verifier exits `0` with `839` bounded
+  fixture commands, and the complete verifier exits `0` with `280` `PASS`, `40` bounded
+  `CHECK`, and no `FAIL`/`ERROR` lines. Final build and run logs are in the same `...-08/`
+  directory.
+- This is pass-specific evidence for the captured default profile. Complete TileRunner
+  semantics, aggregate cave ordering, full Remix oracle parity, remaining cave passes, extended state/side
+  effects, full WLD differential parity, `canRemoveLegacyWorldGen`, and legacy deletion remain
+  deferred.
+
+### Fresh 2026-08-30 RockLayerCaves pass boundary
+
+- The selected non-Remix base-loop body is `WorldGen.cs:12606-12649` in the current instrumented
+  source. The source-contract envelope is `12605-12660`, with source SHA-256
+  `C7C2F2196CEA0F6E56C20863A27824917391B74B34232D50590D1DDF4FF321AC` and excerpt SHA-256
+  `781868ace1ac8cb723f8d804016615602221544f82528e4941bb124005f171ad`.
+- The pass is guarded by `!Skyblock.denyAllGeneration`, uses density `0.00013`, and emits
+  `655` floor-truncated invocations for the default `4200x1200` profile. Each invocation draws
+  `Next(10)` for `-2` versus `-1`, then `Next(6,20)` strength, `Next(50,300)` steps,
+  `Next(0,maxTilesX)` X, and `Next((int)rockLayerHigh,maxTilesY)` Y. It calls `TileRunner` with
+  `addTile=false`, zero speed, `noYChange=false`, `overwrite=true`, and `ignoreTileType=-1`.
+  Remix's `1.1` base-count/`0.7` strength and step scaling is represented in the typed definition;
+  the additional `0.00013 * 0.4` paired no-Y-change loop is outside this boundary.
+- The oracle capture is under
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/rock-layer-caves-boundary-20260830-05/`.
+  It includes the committed Clay input snapshot (SHA-256
+  `C39DC98ECB82C22248FE0B245755C7CCF29E299C2D8CAAE1032F93099465AD2C`), RockLayerCaves output
+  snapshot (SHA-256 `F9E362D88D2744288049F22E00ABA067FC3B86B438D4271CBAABBB0E1B086D06`),
+  `655` invocation rows, and the reset stream for seed `1456` (`sampleCount=0`, peek
+  `810676643`; end sample count `6,945,153`, peek/RandNext `647554835`). The wrapper's process
+  exit `-1` is expected because it stops immediately after the requested stage snapshot.
+- The typed owner is `LegacyRockLayerCavesPass` with definition
+  `LegacyRockLayerCavesPassDefinition`; it consumes an immutable Clay-stage snapshot and emits
+  `worldgen.cave.RockLayerCaves.rock-layer` commands after the Clay commit. The generic
+  profile-enabled RockLayer recipe is excluded so the dedicated owner runs exactly once.
+  Negative TileRunner commands carry `PreserveTileState`: projection clears only `IsActive`,
+  preserves type/frame/wall/other state, emits nothing for already-inactive candidates, and skips
+  active type `53`, matching the bounded legacy branch.
+- The formal differential artifact is
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/rock-layer-caves-boundary-20260830-07/rock-layer-caves-boundary-green.json`.
+  Its probe build exits `0`; the diagnostic differential exits `2` intentionally because shared
+  TileRunner traversal is not full parity. It emits/applies `526,468` source-attributed commands
+  and consumes exactly `6,945,153` random samples. Against `5,040,000` tiles it reports
+  `774,708` active, `191,078` liquid-amount, and `84,463` liquid-type mismatches; type, frame-X,
+  frame-Y, and wall mismatches are all `0`. The decision is
+  `partial-rock-layer-caves-traversal-mismatch`, so this artifact does not authorize aggregate
+  parity or deletion.
+- Fresh verification in
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/rock-layer-caves-boundary-20260830-08/`
+  records Simulation and WorldGeneration verifier Release builds at exit `0` with zero
+  warnings/errors, the focused verifier at exit `0` with one current-fixture command, and the
+  complete bounded verifier at exit `0` with `280` PASS, `40` bounded CHECK, and no FAIL/ERROR.
+- This is pass-specific `completed_partial` evidence for the captured non-Remix loop. Remix's
+  paired no-Y-change loop, `-2` liquid/lava side effects, complete TileRunner traversal,
+  aggregate cave ordering, full WLD/extended-state differential, legacy `WorldGen.cs` deletion,
+  `canRemoveLegacyWorldGen`, and the `44` deferred `ServerRelevant` rows remain open.
+
+### Fresh 2026-08-30 Clay pass boundary
+
+- The selected Version4 source block is `WorldGen.cs:12383-12503`. The pass is guarded by
+  `!Skyblock.denyAllGeneration`, targets tile type `40`, and runs four source-ordered
+  `TileRunner` recipe families. The densities are `2E-05`, `7E-05`, `5E-05`, and `2E-05` for
+  `surface-low-clay`, `remix-clay`, `surface-high-clay`, and `rock-high-clay`, respectively.
+  The non-Remix seed-1456 `4200x1200` profile therefore has floor-truncated invocation counts
+  `100`, `252`, and `100` (`452` total); the Remix branch replaces the two normal high families
+  with `352` `remix-clay` invocations.
+- The oracle capture is under
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/clay-boundary-20260830-01/`. It records
+  six stage checkpoints through Clay, `452` non-Remix invocation rows, `522,600` random samples,
+  and `4,190` cleanup column rows, of which `1,044` changed tiles. The immutable DirtInRocks
+  input snapshot is `legacy-mount-caves-snapshot-Dirt-In-Rocks.bin` (SHA-256
+  `5DD4904442EA066C7F40103E4614F376CA7B0AF287373B0D3A9D43591866E701`); the Clay oracle
+  snapshot is `legacy-mount-caves-snapshot-Clay.bin` (SHA-256
+  `C39DC98ECB82C22248FE0B245755C7CCF29E299C2D8CAAE1032F93099465AD2C`). The wrapper's
+  `ExitCode=-1` is expected because it stops after the selected stage.
+- `LegacyClayPassDefinition` retains the four recipes and floor-based cardinality. The typed
+  `LegacyClayPass` consumes the immutable DirtInRocks snapshot, resets a typed random stream from
+  seed `1456`, preserves projected writes across runners and cleanup, emits only
+  `worldgen.cave.Clay.*` commands, and assigns cleanup commands priority `1`. Cleanup resolves
+  legacy `Main.worldSurface` as `(int)(worldSurfaceHigh + 25)` (`325` for this profile), scans
+  columns `5..width-6`, and converts up to five type-40 tiles after the first active tile.
+  `WorldGenerationPipeline` commits Clay after DirtInRocks and before the Cave-stage capture.
+- The fresh production-vs-oracle result is
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/clay-boundary-20260830-03/
+  clay-boundary-green.json`. It reports `63,216` emitted commands and `63,216` applied commands,
+  `522,600` simulation random samples, `1,044` cleanup commands, source attribution for every
+  command, and zero active, type, liquid amount/type, frame X/Y, and wall mismatches. The
+  decision is `pass-specific-clay-matched`; `FirstMismatches=[]`.
+- The focused Clay verifier and complete bounded WorldGeneration verifier exit `0`; the fresh
+  probe Release build exits `0` with zero warnings/errors, the probe run exits `0`, and its stderr
+  log is empty. These checks establish the captured non-Remix pass boundary only.
+- This does not establish full Remix oracle parity, complete TileRunner semantics, upstream
+  Mount/Tunnels parity, aggregate cave ordering, extended tile side effects, command-sequence
+  equivalence, full WLD differential parity, compatibility with all world profiles,
+  `canRemoveLegacyWorldGen`, or legacy deletion. The repository aggregate baseline remains
+  `5,040,000` compared tiles, `3,190,404` tile mismatches, and `1,046,843` extended-state
+  mismatches; the `44` deferred `ServerRelevant` deletion rows remain open.
+
+### Fresh 2026-08-30 SurfaceCaves generic-owner boundary
+
+- The selected source contract is `WorldGen.cs:12676-12785` in the current instrumented
+  source. The source SHA-256 is
+  `C7C2F2196CEA0F6E56C20863A27824917391B74B34232D50590D1DDF4FF321AC`; the recorded excerpt
+  hash is `893004829204FD43307A78AB6F768C338EA6CAC4F18619A4E70B80111DCFB185` after LF
+  normalization with a trailing LF. The source guard is
+  `!Skyblock.denyAllGeneration && !SecretSeed.noSurface.Enabled`, and its order is vertical
+  families, horizontal `noYChange`, then `Caverer`. No generic `surface-desert` recipe occurs
+  in this source pass.
+- `LegacyCavePassSystem` now skips the generic `SurfaceCaves` schedule entry only when a
+  `LegacyTerrainRuntimeProfile` is present. The existing dedicated vertical, Caverer, and
+  Mountain owners remain in `WorldGenerationPipeline`; no-profile requests retain the generic
+  compatibility fallback.
+- The focused `--surface-caves-only` verifier uses seed `1456` and an `800x300` active-surface
+  fixture. The RED run reached the stale generic owner. The GREEN run emits `2,907` profile
+  commands with `0` generic `surface-desert` commands, observes dedicated vertical provenance,
+  and keeps `4,342` generic commands for no-profile compatibility. The fresh `...-03/` rerun
+  records `125,479` unified-owner commands and `412,918` random samples; its Release builds are
+  warning/error free and the bounded verifier reports `280 PASS / 40 CHECK / 0 FAIL/ERROR`.
+  Evidence and the source contract are under
+  `Build/diagnostics/server-ecs-convergence/P9-worldgen/surface-caves-boundary-20260830-02/`
+  and `...-03/`; the boundary research is
+  `docs/research/2026-08-30-worldgen-surface-caves-boundary.md`.
+- This is a `completed_partial` owner-exclusion correction, not complete SurfaceCaves parity.
+  Shared dedicated random coordination, Remix/no-surface rules, complete Caverer/Mountain and
+  TileRunner semantics, aggregate ordering, full WLD differential, legacy deletion,
+  `canRemoveLegacyWorldGen`, and the 44 deferred `ServerRelevant` rows remain open.
+
+### Fresh 2026-08-24 baseline
+
+- Artifact: `Build/diagnostics/worldgen-complete/task-0-baseline/20260824-090000/`
+- The full bounded WorldGeneration verifier now exits `0`; its synthetic 400 x 300 terrain
+  profile fixture uses valid `WaterLine=200` and `LavaLine=250` inputs.
+- Fresh WLD differential exits `0` as a comparator process, but reports `3,190,553 / 5,040,000`
+  tile mismatches and `1,046,778` extended-state mismatches. This is a parity failure, not a
+  successful parity gate.
+- Current source inventory remains `684` methods, `233` fields, `125` partial methods, and
+  `559` unmapped methods. `canRemoveLegacyWorldGen` remains `false`.
+- The generation pipeline now drains liquid propagation through resumable bounded batches before
+  framing. The fresh differential remains mismatched at `3,190,565` tiles and `1,046,778`
+  extended-state tiles, so this change does not close the parity gate.
+- A fresh post-structure/tree/frame/liquid run on 2026-08-24 compared the same `5,040,000`
+  tiles and reported `3,190,565` mismatches and `1,046,790` extended-state mismatches, with
+  generated fingerprint `25897465AA9453E849D7922C5E59848EA644F277A0CB0C2A3BCF8F5A11FE3818`.
+  The comparator exited `0` as a completed diagnostic process; the parity gate remains failed.
+
 - Fact source: `D:\TRbackup\Version4物理删除了某些文件\Terraria\WorldGen.cs`
 - Source bytes: `1,901,533`
 - Source lines: `73,355`

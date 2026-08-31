@@ -569,6 +569,13 @@ public static class TerrariaV1456Compatibility
     writer.Write(progression.EventFlags9);
     writer.Write(progression.EventFlags10);
     writer.Write(progression.EventFlags11);
+    byte worldVariantFlags = context.IsNoTrapsWorld ? (byte)1 : (byte)0;
+    if (context.IsSkyblockWorld)
+    {
+      worldVariantFlags |= 1 << 6;
+    }
+
+    writer.Write(worldVariantFlags);
     writer.Write(progression.SundialCooldown);
     writer.Write(progression.MoondialCooldown);
     writer.Write(oreTiers.Copper);

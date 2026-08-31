@@ -10,6 +10,20 @@ public static class TreeLeafScanQuery
     WorldGridSnapshot snapshot,
     int x,
     int y,
+    int hollowTreeFoliageStyle)
+  {
+    return Scan(
+      snapshot,
+      x,
+      y,
+      TreeLeafCheckedTypeRegistry.RegisterDefaults(),
+      hollowTreeFoliageStyle);
+  }
+
+  public static TreeLeafScanResult Scan(
+    WorldGridSnapshot snapshot,
+    int x,
+    int y,
     IReadOnlySet<ushort> getsCheckedForLeavesTypes,
     int hollowTreeFoliageStyle)
   {

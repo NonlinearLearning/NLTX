@@ -32,6 +32,33 @@ AssertSequence(
   "The named active tick schedule changed.");
 Console.WriteLine("PASS: named active phase schedule");
 
+using DomeSimulation traceSimulation = new(new WorldGrid(400, 300));
+traceSimulation.Tick(new SimulationInputBatch(10, 12));
+SimulationTickTrace trace = traceSimulation.LastTickTrace
+  ?? throw new InvalidOperationException("The completed tick did not publish a trace.");
+Assert(
+  trace.TickNumber == 1 &&
+  trace.InputSequenceStart == 10 &&
+  trace.InputSequenceEnd == 12 &&
+  trace.CommandCount == 0 &&
+  trace.EventCount == 0 &&
+  trace.Phases.SequenceEqual(expectedPhases),
+  "The completed tick trace did not capture deterministic boundary data.");
+Console.WriteLine("PASS: completed tick publishes deterministic boundary trace");
+
+using DomeSimulation pausedTraceSimulation = new(new WorldGrid(400, 300));
+pausedTraceSimulation.SetWorldTimePaused(true);
+pausedTraceSimulation.Tick(new SimulationInputBatch(20, 20));
+SimulationTickTrace pausedTrace = pausedTraceSimulation.LastTickTrace
+  ?? throw new InvalidOperationException("The paused tick did not publish a trace.");
+Assert(
+  pausedTrace.TickNumber == 0 && pausedTrace.InputSequenceStart == 20 &&
+  pausedTrace.InputSequenceEnd == 20 && pausedTrace.Phases.SequenceEqual(
+    [SimulationTickPhase.BeginTick, SimulationTickPhase.ApplyWorldClock,
+      SimulationTickPhase.EndTick]),
+  "The paused tick trace did not stop at the documented boundary.");
+Console.WriteLine("PASS: paused tick publishes a bounded trace");
+
 using DomeSimulation simulation = new(new WorldGrid(400, 300));
 simulation.Tick(new SimulationInputBatch());
 AssertSequence(
@@ -270,6 +297,12 @@ NpcHandle deathOrderNpc = deathOrderSimulation.CreateNpc(new SimulationVector(30
 deathOrderSimulation.Tick(new SimulationInputBatch());
 deathOrderSimulation.QueueNpcDamage(deathOrderNpc, 100);
 deathOrderSimulation.Tick(new SimulationInputBatch());
+SimulationTickTrace deathTrace = deathOrderSimulation.LastTickTrace
+  ?? throw new InvalidOperationException("The NPC death tick did not publish a trace.");
+Assert(
+  deathTrace.CommandCount > 0 && deathTrace.EventCount > 0,
+  "The tick trace did not count committed NPC death commands and events.");
+Console.WriteLine("PASS: tick trace counts committed commands and events");
 IReadOnlyList<SimulationTickPhase> deathPhases = deathOrderSimulation.LastTickPhases;
 int combatPhaseIndex = IndexOf(deathPhases, SimulationTickPhase.ResolveCombat);
 int commitPhaseIndex = IndexOf(deathPhases, SimulationTickPhase.CommitDomainCommands);

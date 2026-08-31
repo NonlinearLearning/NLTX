@@ -1,6 +1,5 @@
 # Full Client KillProjectile Compatibility Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Keep a Terraria 1.4.5.6 client connected after world entry by safely
 accepting its legitimate `KillProjectile` message 29.

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Definitions;
 
@@ -12,6 +14,15 @@ public static class Tile2x2ValidationQuery
   private const ushort Type172TileType = 172;
   private const ushort BoulderTileType = 132;
   private const ushort Special652TileType = 652;
+  private static readonly IReadOnlySet<ushort> DeferredSpecialCaseTileTypes = new HashSet<ushort>
+  {
+    BedTopSupportTileType, DresserTopSupportTileType, BoulderTileType, Special652TileType
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterDeferredSpecialCaseDefaults()
+  {
+    return DeferredSpecialCaseTileTypes;
+  }
 
   public static Tile2x2ValidationResult Evaluate(
     WorldGridSnapshot snapshot,
@@ -80,8 +91,7 @@ public static class Tile2x2ValidationQuery
       valid &= support;
     }
 
-    bool deferredSpecialCase = tileType is BoulderTileType or Special652TileType or
-      BedTopSupportTileType or DresserTopSupportTileType;
+    bool deferredSpecialCase = DeferredSpecialCaseTileTypes.Contains(tileType);
     return new Tile2x2ValidationResult(
       valid,
       !valid,

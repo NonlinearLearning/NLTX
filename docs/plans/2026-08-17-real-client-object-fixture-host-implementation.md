@@ -1,6 +1,5 @@
 # Real Client Object Fixture Host Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Start a disposable server with nearby door, sign, and chest fixtures so a
 source-built full Terraria client can verify object interaction semantics without

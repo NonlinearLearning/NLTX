@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 
@@ -6,8 +7,8 @@ namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class TreeCanopyClearanceQuery
 {
-  private static readonly HashSet<ushort> PlantTileExceptions =
-  [
+  private static readonly IReadOnlySet<ushort> PlantTileExceptions = new ushort[]
+  {
     3,
     24,
     32,
@@ -31,7 +32,30 @@ public static class TreeCanopyClearanceQuery
     530,
     637,
     655
-  ];
+  }.ToFrozenSet<ushort>();
+
+  public static IReadOnlySet<ushort> RegisterPlantExceptionDefaults()
+  {
+    return PlantTileExceptions;
+  }
+
+  public static bool IsClear(
+    WorldGridSnapshot snapshot,
+    int startX,
+    int endX,
+    int startY,
+    int endY,
+    int ignoreId)
+  {
+    return IsClear(
+      snapshot,
+      startX,
+      endX,
+      startY,
+      endY,
+      ignoreId,
+      CommonSaplingTileRegistry.RegisterDefaults());
+  }
 
   public static bool IsClear(
     WorldGridSnapshot snapshot,

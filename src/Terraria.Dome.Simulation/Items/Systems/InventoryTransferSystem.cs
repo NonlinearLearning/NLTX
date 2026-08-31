@@ -29,19 +29,36 @@ public sealed class InventoryTransferSystem
       return 0;
     }
 
+    incomingState.Validate();
+
     ItemDefinition definition = definitions.Get(incoming.ItemType);
     if (incoming.Quantity > definition.StackLimit)
     {
       throw new ArgumentOutOfRangeException(nameof(incoming));
     }
 
+    if (!definition.CanStack && incoming.Quantity > 1)
+    {
+      return incoming.Quantity;
+    }
+
     ItemStack current = inventory.GetSlot(slot);
+    if (!current.IsEmpty && current.Quantity > definition.StackLimit)
+    {
+      return incoming.Quantity;
+    }
+
     if (!current.IsEmpty && current.ItemType != incoming.ItemType)
     {
       return incoming.Quantity;
     }
 
-    bool uniqueStack = definition.Identity?.UniqueStack ?? false;
+    if (!current.IsEmpty && !definition.CanStack)
+    {
+      return incoming.Quantity;
+    }
+
+    bool uniqueStack = definition.IsUniqueStack;
     if (!current.IsEmpty && !InventoryComponent.CanMerge(
         current,
         inventory.GetInstanceState(slot),
@@ -59,7 +76,9 @@ public sealed class InventoryTransferSystem
       return incoming.Quantity;
     }
 
-    inventory.SetSlot(slot, new ItemStack(incoming.ItemType, current.Quantity + accepted));
+    inventory.SetSlot(
+      slot,
+      new ItemStack(incoming.ItemType, current.Quantity + accepted, incoming.Prefix));
     inventory.SetInstanceState(slot, incomingState);
     return incoming.Quantity - accepted;
   }

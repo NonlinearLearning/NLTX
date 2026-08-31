@@ -197,6 +197,37 @@ public sealed class WorldGrid
     _tileChanges.Add(command);
   }
 
+  public void EnqueueProjectileTileConversion(
+    Terraria.Dome.Simulation.Projectile.Commands.ProjectileTileConversionCommand command)
+  {
+    if (!command.IsValid(this))
+    {
+      throw new ArgumentException("Projectile tile conversion command is invalid.", nameof(command));
+    }
+
+    WorldTile tile = GetTile(command.X, command.Y);
+    ushort convertedType = command.ConversionType switch
+    {
+      1 when tile.Type == 0 => 1,
+      2 when tile.Type == 0 => 2,
+      4 when tile.Type == 0 => 477,
+      _ => tile.Type
+    };
+    if (convertedType == tile.Type)
+    {
+      return;
+    }
+
+    EnqueueTileChange(new TileChangeCommand(
+      command.Sequence,
+      command.X,
+      command.Y,
+      TileChangeKind.UpdateTileType,
+      convertedType,
+      Source: command.Source,
+      IsActive: true));
+  }
+
   public void EnqueueTileFrameChange(TileFrameCommand command)
   {
     if (command.Sequence < 0)

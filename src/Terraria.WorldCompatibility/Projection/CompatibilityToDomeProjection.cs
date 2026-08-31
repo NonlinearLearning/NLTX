@@ -4,6 +4,7 @@ using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Items;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldObjects;
+using Terraria.Dome.Simulation.Npc.Snapshots;
 using Terraria.WorldCompatibility.Model;
 
 namespace Terraria.WorldCompatibility.Projection;
@@ -35,10 +36,14 @@ public static class CompatibilityToDomeProjection
       snapshot.Metadata.SpawnX,
       snapshot.Metadata.SpawnY,
       worldSurface: snapshot.Metadata.WorldSurface,
+      rockLayer: snapshot.Metadata.RockLayer,
       isRemixWorld: snapshot.Metadata.IsRemixWorld,
       worldGeneratorVersion: snapshot.Metadata.WorldGeneratorVersion,
       uniqueId: snapshot.Metadata.UniqueId,
-      seedText: snapshot.Metadata.SeedText);
+      seedText: snapshot.Metadata.SeedText,
+      isNoTrapsWorld: snapshot.Metadata.IsNoTrapsWorld,
+      isSkyblockWorld: snapshot.Metadata.IsSkyblockWorld,
+      isGoodWorld: snapshot.Metadata.IsGoodWorld);
     WorldGrid world = new(metadata.Width, metadata.Height);
     for (int index = 0; index < snapshot.Tiles.Count; index++)
     {
@@ -72,10 +77,11 @@ public static class CompatibilityToDomeProjection
 
     WorldGridSnapshot worldSnapshot = world.CreateSnapshot(metadata);
     List<NpcReplicationSnapshot> npcs = new(snapshot.Npcs.Count);
+    List<NpcStateSnapshot> npcStates = new(snapshot.Npcs.Count);
     for (int index = 0; index < snapshot.Npcs.Count; index++)
     {
       CompatibilityNpcSnapshot source = snapshot.Npcs[index];
-      npcs.Add(new NpcReplicationSnapshot(
+      NpcReplicationSnapshot replication = new(
         index + 1,
         source.Type,
         new SimulationVector(source.PositionX, source.PositionY),
@@ -83,7 +89,14 @@ public static class CompatibilityToDomeProjection
         100,
         true,
         1,
-        GetSection(source.PositionX, source.PositionY)));
+        GetSection(source.PositionX, source.PositionY),
+        DefinitionId: source.Type,
+        MaximumHealth: 100);
+      npcs.Add(replication);
+      npcStates.Add(NpcStateSnapshot.FromReplication(replication) with
+      {
+        GivenName = source.Name
+      });
     }
 
     List<ChestPersistentState> chests = new(snapshot.Chests.Count);
@@ -149,6 +162,7 @@ public static class CompatibilityToDomeProjection
       npcs,
       [],
       0,
+      npcStates: npcStates,
       worldClock: new WorldClockSnapshot(
         0,
         GetValidatedTimeOfDay(snapshot.Metadata),

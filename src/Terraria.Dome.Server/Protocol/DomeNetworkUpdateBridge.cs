@@ -1,4 +1,5 @@
 using System;
+using Terraria.Dome.Protocol.V1456.Compatibility;
 using Terraria.Dome.Protocol.V1456.Isolation;
 using Terraria.Dome.Protocol.V1456.Packets;
 using Terraria.Dome.Protocol.V1456.Protocol;
@@ -20,9 +21,12 @@ internal sealed class DomeNetworkUpdateBridge : IProtocolCommandSink
     switch (messageId)
     {
       case TerrariaMessageId.PlayerControls:
+        LegacyPlayerControlsProjection projection =
+          TerrariaPacketCodec.DecodePlayerControlsCompatibility(envelope.FrameBytes.Span);
         return Enqueue(new ApplyPlayerControlCommand(
           envelope.PlayerSlot,
-          TerrariaPacketCodec.DecodePlayerControls(envelope.FrameBytes.Span)));
+          projection.Intent,
+          projection.State.MountType));
       case TerrariaMessageId.TileManipulation:
         return Enqueue(new ApplyTileManipulationCommand(
           envelope.PlayerSlot,
@@ -47,6 +51,10 @@ internal sealed class DomeNetworkUpdateBridge : IProtocolCommandSink
         return Enqueue(new TransferChestItemCommand(
           envelope.PlayerSlot,
           TerrariaPacketCodec.DecodeChestTransfer(envelope.FrameBytes.Span)));
+      case TerrariaMessageId.AddPlayerBuffPvp:
+        return Enqueue(new AddPlayerBuffPvpCommand(
+          envelope.PlayerSlot,
+          TerrariaPacketCodec.DecodeAddPlayerBuffPvp(envelope.FrameBytes.Span)));
       default:
         return ProtocolCommandResult.Unsupported;
     }

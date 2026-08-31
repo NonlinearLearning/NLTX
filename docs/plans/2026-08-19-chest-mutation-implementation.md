@@ -1,6 +1,5 @@
 # Chest Mutation Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Make world-chest placement and destruction deterministic, coordinate-unique, and
 server-owned without adding a client force-close protocol.

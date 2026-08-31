@@ -1,10 +1,22 @@
+using System.Collections.Frozen;
+using System.Collections.Generic;
+
 namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class TileSlopingQuery
 {
+  private static readonly IReadOnlySet<ushort> NonSlopingTileTypes = new HashSet<ushort>
+  {
+    21, 26, 77, 88, 235, 237, 441, 467, 468, 470, 475, 488, 597
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterDefaults()
+  {
+    return NonSlopingTileTypes;
+  }
+
   public static bool ForbidsSloping(ushort tileType)
   {
-    return tileType is 21 or 26 or 77 or 88 or 235 or 237 or 441 or 467 or 468 or 470 or
-      475 or 488 or 597;
+    return NonSlopingTileTypes.Contains(tileType);
   }
 }

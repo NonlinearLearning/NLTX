@@ -15,6 +15,13 @@ public static class ProjectileStateProjection
       throw new ArgumentOutOfRangeException(nameof(snapshot));
     }
 
+    float knockback = snapshot.DefinitionKnockback != 0.0f
+      ? snapshot.DefinitionKnockback
+      : snapshot.Knockback;
+    int originalDamage = snapshot.DefinitionOriginalDamage != 0
+      ? snapshot.DefinitionOriginalDamage
+      : snapshot.OriginalDamage;
+
     return new ProjectileSyncPacket(
       (short)identity,
       snapshot.Position,
@@ -26,8 +33,14 @@ public static class ProjectileStateProjection
       snapshot.Ai2 == 0.0f ? null : snapshot.Ai2,
       snapshot.Banner == 0 ? null : snapshot.Banner,
       checked((short)snapshot.Damage),
-      snapshot.Knockback == 0.0f ? null : snapshot.Knockback,
-      snapshot.OriginalDamage == 0 ? null : checked((short)snapshot.OriginalDamage),
+      knockback == 0.0f ? null : knockback,
+      originalDamage == 0 ? null : checked((short)originalDamage),
       snapshot.Uuid == 0 ? null : snapshot.Uuid);
+  }
+
+  public static ProjectileSyncPacket Project(NpcProjectileReplicationSnapshot snapshot)
+  {
+    throw new NotSupportedException(
+      "V1456 SyncProjectile cannot represent an NPC-owned projectile owner contract.");
   }
 }

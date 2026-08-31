@@ -9,4 +9,5 @@ public sealed record TileFrameRequest(
   int Y,
   TileFrameMutationKind MutationKind,
   WorldGridSnapshot Snapshot,
-  IReadOnlyCollection<TileChangeCommand> PendingMutations);
+  IReadOnlyCollection<TileChangeCommand> PendingMutations,
+  string Source = "worldgen.frame");

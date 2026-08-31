@@ -8,5 +8,7 @@ public enum TileChangeKind
   SetWall = 3,
   SetInactive = 4,
   UpdateTileType = 5,
-  UpdateTileShape = 6
+  UpdateTileShape = 6,
+  SetPaint = 7,
+  SetCoating = 8
 }

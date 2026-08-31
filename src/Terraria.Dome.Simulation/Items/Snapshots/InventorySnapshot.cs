@@ -12,7 +12,7 @@ public sealed class InventorySnapshot
     long revision)
   {
     ArgumentNullException.ThrowIfNull(slots);
-    if (selectedSlot < 0 ||
+    if (!player.IsValid || selectedSlot < 0 ||
         selectedSlot >= Terraria.Dome.Simulation.Items.InventoryComponent.HotbarSlotCount ||
         revision < 0)
     {
@@ -20,6 +20,16 @@ public sealed class InventorySnapshot
     }
 
     Player = player;
+    for (int index = 0; index < slots.Count; index++)
+    {
+      if (slots[index] is null)
+      {
+        throw new ArgumentException(
+          "Inventory snapshots cannot contain null item instances.",
+          nameof(slots));
+      }
+    }
+
     Slots = Array.AsReadOnly([.. slots]);
     SelectedSlot = selectedSlot;
     Revision = revision;

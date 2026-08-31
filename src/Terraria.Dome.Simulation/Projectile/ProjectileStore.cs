@@ -8,6 +8,8 @@ public sealed class ProjectileStore
 {
   private readonly Dictionary<Entity, int> _replicationIdsByEntity = new();
 
+  public int Count => _replicationIdsByEntity.Count;
+
   public void Add(Entity entity, int replicationId)
   {
     if (replicationId <= 0)
@@ -29,5 +31,20 @@ public sealed class ProjectileStore
   public bool TryGetValue(Entity entity, out int replicationId)
   {
     return _replicationIdsByEntity.TryGetValue(entity, out replicationId);
+  }
+
+  public bool TryGetEntity(int replicationId, out Entity entity)
+  {
+    foreach (KeyValuePair<Entity, int> entry in _replicationIdsByEntity)
+    {
+      if (entry.Value == replicationId)
+      {
+        entity = entry.Key;
+        return true;
+      }
+    }
+
+    entity = default;
+    return false;
   }
 }

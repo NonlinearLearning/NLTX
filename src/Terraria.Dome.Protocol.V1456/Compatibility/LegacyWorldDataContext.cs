@@ -22,7 +22,10 @@ public readonly record struct LegacyWorldDataContext(
   LegacyWorldBackgroundState Background,
   LegacyWorldProgressionState Progression,
   LegacyOreTierState OreTiers,
-  LegacySpawnPointSet ExtraSpawnPoints)
+  LegacySpawnPointSet ExtraSpawnPoints,
+  bool IsNoTrapsWorld = false,
+  bool IsSkyblockWorld = false,
+  bool IsGoodWorld = false)
 {
   public static LegacyWorldDataContext CreateDomeDefaults()
   {
@@ -47,7 +50,10 @@ public readonly record struct LegacyWorldDataContext(
       Background: default,
       Progression: default,
       OreTiers: default,
-      ExtraSpawnPoints: new LegacySpawnPointSet([]));
+      ExtraSpawnPoints: new LegacySpawnPointSet([]),
+      IsNoTrapsWorld: false,
+      IsSkyblockWorld: false,
+      IsGoodWorld: false);
   }
 
   public static LegacyWorldDataContext FromWorldMetadata(WorldMetadata metadata)
@@ -80,7 +86,10 @@ public readonly record struct LegacyWorldDataContext(
       Background: default,
       Progression: default,
       OreTiers: default,
-      ExtraSpawnPoints: new LegacySpawnPointSet([]));
+      ExtraSpawnPoints: new LegacySpawnPointSet([]),
+      IsNoTrapsWorld: metadata.IsNoTrapsWorld == true,
+      IsSkyblockWorld: metadata.IsSkyblockWorld == true,
+      IsGoodWorld: metadata.IsGoodWorld == true);
   }
 
   public LegacyWorldDataContext WithWorldState(

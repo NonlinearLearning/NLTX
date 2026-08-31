@@ -12,4 +12,5 @@ public readonly record struct ItemUsedEvent(
   long Sequence,
   int ManaConsumed = 0,
   ushort BuffType = 0,
-  int BuffDurationTicks = 0);
+  int BuffDurationTicks = 0,
+  int ItemPrefix = 0);

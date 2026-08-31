@@ -1,6 +1,5 @@
 # Remaining Blocked Responsibilities Execution Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Resolve or explicitly re-qualify the remaining migration blockers without inventing legacy
 semantics, while keeping validation limited to the approximately 40 percent focused test policy.

@@ -1,6 +1,5 @@
 # Item ECS Migration Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 将 Version4 的 `Terraria.Item` 物品域拆为可运行的服务器权威 ECS 定义、组件、系统、命令、事件、快照和边界适配器。
 

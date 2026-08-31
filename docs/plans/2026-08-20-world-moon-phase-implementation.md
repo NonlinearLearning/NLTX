@@ -1,6 +1,5 @@
 # World Moon Phase Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Give the server-owned world clock a V1456 moon phase that advances at dawn, persists safely,
 and projects through existing WorldData.

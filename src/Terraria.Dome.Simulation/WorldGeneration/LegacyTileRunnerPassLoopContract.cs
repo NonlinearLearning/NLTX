@@ -29,16 +29,23 @@ public sealed record LegacyTileRunnerPassLoopDefinition(
 
 public static class LegacyTileRunnerPassLoopContractDefinition
 {
-  public static IReadOnlyList<LegacyTileRunnerPassLoopDefinition> CreateDefault()
-  {
-    return new[]
-    {
+  private static readonly IReadOnlyList<LegacyTileRunnerPassLoopDefinition> DefaultDefinitions =
+    Array.AsReadOnly<LegacyTileRunnerPassLoopDefinition>(
+    [
       new LegacyTileRunnerPassLoopDefinition(
         "DirtLayerCaves", "surface-dirt", 0.00015, 1.0),
       new LegacyTileRunnerPassLoopDefinition(
         "DirtLayerCaves", "surface-high-dirt", 0.0002, 1.0),
       new LegacyTileRunnerPassLoopDefinition(
-        "DirtLayerCaves", "rock-high-dirt", 0.0045, 1.0)
-    };
+        "DirtLayerCaves", "rock-high-dirt", 0.0045, 1.0),
+      new LegacyTileRunnerPassLoopDefinition(
+        "RockLayerCaves", "rock-layer-stone", 0.005, 1.0),
+      new LegacyTileRunnerPassLoopDefinition(
+        "SurfaceCaves", "surface-desert", 0.00002, 1.0)
+    ]);
+
+  public static IReadOnlyList<LegacyTileRunnerPassLoopDefinition> CreateDefault()
+  {
+    return DefaultDefinitions;
   }
 }

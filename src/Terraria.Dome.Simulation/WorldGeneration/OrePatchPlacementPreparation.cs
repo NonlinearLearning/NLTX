@@ -2,7 +2,8 @@ namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public readonly record struct OrePatchPlacementPreparation(
   OrePatchEligibilityResult Eligibility,
-  OrePlacementPreparationResult Transaction)
+  OrePlacementPreparationResult Transaction,
+  int OriginX = -1)
 {
   public bool IsPrepared => Eligibility.IsEligible && Transaction.IsPrepared;
 

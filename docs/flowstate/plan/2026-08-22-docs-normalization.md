@@ -1,26 +1,13 @@
 # Documentation Normalization Plan
 
-**Strategy:** `spec`
-**Iteration:** Documentation Flowstate normalization
+**Strategy:** `spec`  |  **Status:** completed
 
-## Phase 1: Inventory and boundary
+| Phase | Deliverable | Acceptance |
+| --- | --- | --- |
+| P1 Inventory/boundary | Private workplace; stable historical paths | Reproducible counts |
+| P2 Canonical context | Requirements, scope, risks, plan, task, DoD, debt, retrospective | Cross-links and clear authority |
+| P3 Manifests | One row per `docs/` file; Build classes explicit | Existing paths and allowed values |
+| P4 Gate/handoff | Coverage, path, link, and schema checks | Gate result recorded; debt remains visible |
 
-Create the private workplace, count and classify `docs/` and `Build/`, and freeze the rule
-that historical paths are preserved. Acceptance: inventory counts are reproducible.
-
-## Phase 2: Canonical Flowstate artifacts
-
-Create requirements, scope, risks, plan, task, DoD, technical-debt, and retrospective outputs.
-Acceptance: each artifact links to the next lifecycle stage and has no unresolved authority
-ambiguity.
-
-## Phase 3: Manifest and evidence mapping
-
-Generate one manifest row for every current `docs/` file and explicit rows for the Build
-artifact classes. Acceptance: all referenced paths exist and every lifecycle value is allowed.
-
-## Phase 4: Gate and handoff
-
-Run manifest coverage, path, link, and schema checks; record results in the DoD and close with
-a retrospective. Acceptance: no missing docs entry, no generated-output path classified as a
-plan, and all remaining concerns are recorded as technical debt or deferred scope.
+Historical documents stay at their original paths. A failed phase is repaired before the next
+phase is accepted.

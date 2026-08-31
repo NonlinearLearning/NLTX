@@ -7,4 +7,7 @@ public readonly record struct TileFrameCommand(
   short FrameX,
   short FrameY,
   bool? IsHalfBrick = null,
-  byte? Slope = null);
+  byte? Slope = null,
+  int Priority = 0,
+  string Source = "unspecified",
+  long? ExpectedSectionVersion = null);

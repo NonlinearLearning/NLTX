@@ -30,6 +30,12 @@ public sealed class WorldGenerationValidationSystem
       }
     }
 
+    if (pendingWorkItems.Count != 0)
+    {
+      return WorldGenerationValidationResult.Failed(
+        "World generation liquid propagation had pending work at validation.");
+    }
+
     foreach (StructurePlacementComponent placement in placements)
     {
       for (int y = 0; y < placement.Footprint.Height; y++)

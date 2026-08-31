@@ -7,6 +7,8 @@ namespace Terraria.Dome.Simulation.WorldModel;
 
 public sealed class TileChangeCommitSystem
 {
+  private const ushort CartTrackTileType = 314;
+
   public bool TryCommit(
     WorldGrid world,
     IReadOnlyCollection<TileFrameCommand> commands,
@@ -34,6 +36,13 @@ public sealed class TileChangeCommitSystem
       if (!world.Contains(command.X, command.Y))
       {
         result = TileFrameCommitResult.Failed("Tile frame command was outside the world.");
+        return false;
+      }
+
+      if (string.IsNullOrWhiteSpace(command.Source) ||
+          !MatchesExpectedSectionVersion(world, command.X, command.Y, command.ExpectedSectionVersion))
+      {
+        result = TileFrameCommitResult.Failed("Tile frame command metadata was invalid.");
         return false;
       }
     }
@@ -101,9 +110,26 @@ public sealed class TileChangeCommitSystem
         return false;
       }
 
+      if (string.IsNullOrWhiteSpace(command.Source) ||
+          !MatchesExpectedSectionVersion(world, command.X, command.Y, command.ExpectedSectionVersion))
+      {
+        result = TileChangeCommitResult.Failed("Tile command metadata was invalid.");
+        return false;
+      }
+
       if (!Enum.IsDefined(command.Kind))
       {
         result = TileChangeCommitResult.Failed("Tile command kind was invalid.");
+        return false;
+      }
+
+      if (command.IsCartTrack &&
+          (command.Kind is not (TileChangeKind.Place or TileChangeKind.PlaceTile) ||
+           command.TileType != CartTrackTileType || command.WallType != 0))
+      {
+        result = TileChangeCommitResult.Failed(
+          $"CartTrack tile commands require tile type {CartTrackTileType} placement " +
+          "without a wall.");
         return false;
       }
     }
@@ -142,6 +168,18 @@ public sealed class TileChangeCommitSystem
 
     public int Compare(TileChangeCommand first, TileChangeCommand second)
     {
+      int priorityComparison = first.Priority.CompareTo(second.Priority);
+      if (priorityComparison != 0)
+      {
+        return priorityComparison;
+      }
+
+      int sourceComparison = StringComparer.Ordinal.Compare(first.Source, second.Source);
+      if (sourceComparison != 0)
+      {
+        return sourceComparison;
+      }
+
       int sequenceComparison = first.Sequence.CompareTo(second.Sequence);
       if (sequenceComparison != 0)
       {
@@ -165,6 +203,18 @@ public sealed class TileChangeCommitSystem
 
     public int Compare(TileFrameCommand first, TileFrameCommand second)
     {
+      int priorityComparison = first.Priority.CompareTo(second.Priority);
+      if (priorityComparison != 0)
+      {
+        return priorityComparison;
+      }
+
+      int sourceComparison = StringComparer.Ordinal.Compare(first.Source, second.Source);
+      if (sourceComparison != 0)
+      {
+        return sourceComparison;
+      }
+
       int sequenceComparison = first.Sequence.CompareTo(second.Sequence);
       if (sequenceComparison != 0)
       {
@@ -188,6 +238,16 @@ public sealed class TileChangeCommitSystem
         ? frameXComparison
         : first.FrameY.CompareTo(second.FrameY);
     }
+  }
+
+  private static bool MatchesExpectedSectionVersion(
+    WorldGrid world,
+    int x,
+    int y,
+    long? expectedSectionVersion)
+  {
+    return !expectedSectionVersion.HasValue ||
+      world.GetSectionVersion(world.GetSectionCoordinates(x, y)) == expectedSectionVersion.Value;
   }
 }
 

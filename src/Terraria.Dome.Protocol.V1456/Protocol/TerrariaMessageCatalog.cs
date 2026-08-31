@@ -36,7 +36,7 @@ public static class TerrariaMessageCatalog
     "PlayerBuffs|MiscDataSync|LockAndUnlock|AddNPCBuff|NPCBuffs|AddPlayerBuffPvP|" +
     "UniqueTownNPCInfoSyncRequest|Unknown57|InstrumentSound|HitSwitch|Unknown60|" +
     "SpawnBossUseLicenseStartEvent|Unknown62|SyncTilePaintOrCoating|SyncWallPaintOrCoating|" +
-    "TeleportEntity|Unknown66|Unknown67|Unknown68|ChestName|BugCatching|BugReleasing|" +
+    "TeleportEntity|PlayerHealOther|Unused67|Unknown68|ChestName|BugCatching|BugReleasing|" +
     "TravelMerchantItems|RequestTeleportationByServer|AnglerQuest|AnglerQuestFinished|" +
     "QuestsCountSync|TemporaryAnimation|InvasionProgressReport|PlaceObject|" +
     "SyncPlayerChestIndex|CombatTextInt|NetModules|Unused83|PlayerStealth|QuickStackChests|" +
@@ -111,10 +111,78 @@ public static class TerrariaMessageCatalog
       TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Handled);
     Set(descriptors, TerrariaMessageId.NpcBuffs, TerrariaPacketDirection.ServerToClient,
       TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.AddPlayerBuffPvp,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Handled);
     Set(descriptors, TerrariaMessageId.WorldBiomeTypes, TerrariaPacketDirection.ServerToClient,
       TerrariaPacketSupport.Handled);
     Set(descriptors, TerrariaMessageId.NpcHome, TerrariaPacketDirection.ServerToClient,
       TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.TeleportEntity,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.PlayerHealOther,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.PlayerStealth,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.SyncExtraValue,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.TeleportPlayerThroughPortal,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.MinionRestTargetUpdate,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.TeleportNpcThroughPortal,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.NebulaLevelupRequest,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.MoonlordHorror,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.ShopOverride,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.GemLockToggle,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.PoofOfSmoke,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.WiredCannonShot,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.MassWireOperation,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.MassWireOperationPay,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.SpecialFx,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.CrystalInvasionStart,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.CrystalInvasionWipeAllTheThingsss,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.MinionAttackTargetUpdate,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.CrystalInvasionSendWaitTime,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.PlayerHurtV2,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.PlayerDeathV2,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.CombatTextString,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.Emoji,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.TedisplayDollDataSync,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.RequestTileEntityInteraction,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.WeaponsRackTryPlacing,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.TehatRackItemSync,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.SyncPlayerChestLocation,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.SyncRevengeMarker,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.RemoveRevengeMarker,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.LandGolfBallInCup,
+      TerrariaPacketDirection.Bidirectional, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.FishOutNpc,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Handled);
     Set(descriptors, TerrariaMessageId.PlayerUuid, TerrariaPacketDirection.ClientToServer,
       TerrariaPacketSupport.Handled);
     Set(descriptors, TerrariaMessageId.NetModules, TerrariaPacketDirection.Bidirectional,
@@ -167,6 +235,28 @@ public static class TerrariaMessageCatalog
       TerrariaPacketSupport.Handled);
     Set(descriptors, TerrariaMessageId.SyncProjectile, TerrariaPacketDirection.Bidirectional,
       TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.InvasionProgressReport,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.SyncPlayerChestIndex,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.CombatTextInt,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.TemporaryAnimation,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.QuestsCountSync,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Handled);
+    Set(descriptors, TerrariaMessageId.AnglerQuestFinished,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Framed);
+    Set(descriptors, TerrariaMessageId.RequestTeleportationByServer,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Framed);
+    Set(descriptors, TerrariaMessageId.TravelMerchantItems,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Unsupported);
+    Set(descriptors, TerrariaMessageId.BugCatching,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Framed);
+    Set(descriptors, TerrariaMessageId.BugReleasing,
+      TerrariaPacketDirection.ClientToServer, TerrariaPacketSupport.Framed);
+    Set(descriptors, TerrariaMessageId.ChestName,
+      TerrariaPacketDirection.ServerToClient, TerrariaPacketSupport.Unsupported);
     Set(descriptors, TerrariaMessageId.KillProjectile, TerrariaPacketDirection.Bidirectional,
       TerrariaPacketSupport.Handled);
     Set(descriptors, TerrariaMessageId.FinishedConnectingToServer,

@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Arch.Core;
 using World = Arch.Core.World;
 using Terraria.Dome.Simulation.Components;
+using Terraria.Dome.Simulation.Player.Components;
 
 namespace Terraria.Dome.Simulation.Player.Systems;
 
@@ -14,7 +15,16 @@ internal sealed class PlayerGravitySystem
     foreach (Entity entity in players)
     {
       ref VelocityComponent velocity = ref world.Get<VelocityComponent>(entity);
-      velocity.Y += GravityPerTick;
+      PhysicsStateComponent physics = world.Get<PhysicsStateComponent>(entity);
+      PlayerMountStateComponent mount = world.Get<PlayerMountStateComponent>(entity);
+      if (mount.IsHoverActive)
+      {
+        continue;
+      }
+      float gravityDirection = physics.GravityDirection == 0.0f
+        ? 1.0f
+        : physics.GravityDirection;
+      velocity.Y += GravityPerTick * gravityDirection;
     }
   }
 }

@@ -18,4 +18,5 @@ public readonly record struct TerrariaPacketDispatchResult(
   byte[]? ResponseFrame = null,
   LegacyPlayerControlsState? LegacyPlayerControls = null,
   SignOpenRequestPacket? SignOpenRequest = null,
-  TileEntityPlacementIntent? TileEntityPlacement = null);
+  TileEntityPlacementIntent? TileEntityPlacement = null,
+  AddPlayerBuffPvpPacket? AddPlayerBuffPvp = null);

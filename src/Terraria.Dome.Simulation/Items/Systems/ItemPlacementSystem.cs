@@ -46,7 +46,8 @@ public sealed class ItemPlacementSystem
       y,
       hasTile ? TileChangeKind.Place : TileChangeKind.SetWall,
       hasTile ? (ushort)placement.TileType : (ushort)0,
-      hasWall ? (ushort)placement.WallType : (ushort)0);
+      hasWall ? (ushort)placement.WallType : (ushort)0,
+      IsCartTrack: placement.CartTrack);
     rejection = default;
     return true;
   }

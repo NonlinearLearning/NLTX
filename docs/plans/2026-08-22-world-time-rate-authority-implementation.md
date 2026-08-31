@@ -1,6 +1,5 @@
 # World Time-Rate Authority Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use `executing-plans` to implement this plan task-by-task.
 
 **Goal:** Verify and complete the approved versioned time-rate authority so invasion travel uses
 the source-derived `dayRate` semantics without conflating it with clock tick rate.

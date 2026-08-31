@@ -16,8 +16,66 @@ public sealed record LegacyTileRunnerRequest
     bool noYChange,
     bool overwrite,
     int ignoreTileType)
+    : this(
+      x,
+      y,
+      strength,
+      steps,
+      tileType,
+      addTile,
+      speedX,
+      speedY,
+      noYChange,
+      overwrite,
+      ignoreTileType,
+      allowOutOfWorldStart: false)
   {
-    if (x < 0 || y < 0 || !double.IsFinite(strength) || strength <= 0 || steps <= 0)
+  }
+
+  internal static LegacyTileRunnerRequest CreateLegacyUnboundedStart(
+    int x,
+    int y,
+    double strength,
+    int steps,
+    int tileType,
+    bool addTile,
+    double speedX,
+    double speedY,
+    bool noYChange,
+    bool overwrite,
+    int ignoreTileType)
+  {
+    return new LegacyTileRunnerRequest(
+      x,
+      y,
+      strength,
+      steps,
+      tileType,
+      addTile,
+      speedX,
+      speedY,
+      noYChange,
+      overwrite,
+      ignoreTileType,
+      allowOutOfWorldStart: true);
+  }
+
+  private LegacyTileRunnerRequest(
+    int x,
+    int y,
+    double strength,
+    int steps,
+    int tileType,
+    bool addTile,
+    double speedX,
+    double speedY,
+    bool noYChange,
+    bool overwrite,
+    int ignoreTileType,
+    bool allowOutOfWorldStart)
+  {
+    if ((!allowOutOfWorldStart && (x < 0 || y < 0)) ||
+        !double.IsFinite(strength) || strength <= 0 || steps <= 0)
     {
       throw new ArgumentOutOfRangeException(nameof(x));
     }

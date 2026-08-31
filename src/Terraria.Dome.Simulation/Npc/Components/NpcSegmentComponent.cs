@@ -28,6 +28,11 @@ public struct NpcSegmentComponent
       throw new ArgumentOutOfRangeException(nameof(segmentIndex));
     }
 
+    if (!Enum.IsDefined(lifePolicy))
+    {
+      throw new ArgumentOutOfRangeException(nameof(lifePolicy));
+    }
+
     if (isRoot && parent.IsValid)
     {
       throw new ArgumentException(

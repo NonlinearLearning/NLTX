@@ -4,12 +4,14 @@ using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Components;
 using Terraria.Dome.Simulation.Player.Components;
 using Terraria.Dome.Simulation.Player.Systems;
+using Terraria.Dome.Simulation.Player.Definitions;
 using Terraria.Dome.Simulation.Players;
 using Terraria.Dome.Simulation.WorldModel;
 using Arch.Core;
 
 VerifyDeathAndRespawnSystems();
 VerifyWellFedContract();
+VerifySpawnAreaPolicy();
 
 const string uuid = "2eecdeea-c45e-456f-8244-75ec32da6172";
 PlayerPersistentState account = CreateAccount(uuid);
@@ -89,6 +91,62 @@ static void VerifyWellFedContract()
   }
 
   Console.WriteLine("PASS: WellFed oracle counters, command ownership and persistence");
+}
+
+static void VerifySpawnAreaPolicy()
+{
+  WorldGrid world = new(400, 300);
+  SimulationVector position = new(10.0f, 8.0f);
+  if (!PlayerSpawnAreaPolicy.IsValid(world, position))
+  {
+    throw new InvalidOperationException("An empty spawn area was rejected.");
+  }
+
+  if (!world.TrySetTile(10, 6, new WorldTile(IsActive: true, Type: 1)) ||
+      PlayerSpawnAreaPolicy.IsValid(world, position))
+  {
+    throw new InvalidOperationException("A solid tile in the spawn area was accepted.");
+  }
+
+  _ = world.TrySetTile(10, 6, default);
+  if (!world.TrySetLiquid(10, 6, 64, 0) || PlayerSpawnAreaPolicy.IsValid(world, position))
+  {
+    throw new InvalidOperationException("Liquid in the spawn area was accepted.");
+  }
+
+  if (PlayerSpawnAreaPolicy.IsValid(world, new SimulationVector(float.NaN, 8.0f)))
+  {
+    throw new InvalidOperationException("A non-finite spawn coordinate was accepted.");
+  }
+
+  using DomeSimulation simulation = new(world);
+  PlayerHandle player = simulation.CreatePlayer(position);
+  simulation.QueuePlayerDamage(player, 100);
+  simulation.Tick(new SimulationInputBatch());
+  simulation.Tick(new SimulationInputBatch());
+  simulation.Tick(new SimulationInputBatch());
+  simulation.Tick(new SimulationInputBatch());
+  if (!world.TrySetTile(10, 6, new WorldTile(IsActive: true, Type: 1)))
+  {
+    throw new InvalidOperationException("The blocked spawn fixture could not be created.");
+  }
+
+  simulation.QueueRespawnPlayer(player, position);
+  simulation.Tick(new SimulationInputBatch());
+  if (simulation.CreatePlayerStateSnapshot(player).IsActive)
+  {
+    throw new InvalidOperationException("Respawn commit accepted a blocked spawn area.");
+  }
+
+  _ = world.TrySetTile(10, 6, default);
+  simulation.QueueRespawnPlayer(player, position);
+  simulation.Tick(new SimulationInputBatch());
+  if (!simulation.CreatePlayerStateSnapshot(player).IsActive)
+  {
+    throw new InvalidOperationException("Respawn commit rejected a clear spawn area.");
+  }
+
+  Console.WriteLine("PASS: spawn area policy rejects solid, liquid and non-finite positions");
 }
 
 static void VerifyDeathAndRespawnSystems()

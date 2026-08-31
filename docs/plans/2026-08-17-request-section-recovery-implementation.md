@@ -1,6 +1,5 @@
 # Request Section Recovery Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Restore V1456 client-requested map-section delivery after a client has entered a Dome world.
 

@@ -34,8 +34,13 @@ public sealed class ItemInventorySanitizationSystem
       return;
     }
 
-    int quantity = Math.Min(stack.Quantity, definition.StackLimit);
-    inventory.SetSlot(slotId, stack.WithQuantity(quantity));
+    if (stack.Quantity > definition.StackLimit)
+    {
+      inventory.SetSlot(slotId, ItemStack.Empty);
+      return;
+    }
+
+    inventory.SetSlot(slotId, stack);
 
     ItemInstanceStateComponent state = inventory.GetInstanceState(slotId);
     // Keep unrepresentable prefixes visible so V1456 persistence rejects them instead of truncating.

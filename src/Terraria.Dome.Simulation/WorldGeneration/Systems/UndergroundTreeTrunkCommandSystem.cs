@@ -49,7 +49,8 @@ public sealed class UndergroundTreeTrunkCommandSystem
         originX,
         groundY - offset,
         TileChangeKind.Place,
-        TreeTileType));
+        TreeTileType,
+        Source: "worldgen.tree.underground"));
     }
 
     return true;

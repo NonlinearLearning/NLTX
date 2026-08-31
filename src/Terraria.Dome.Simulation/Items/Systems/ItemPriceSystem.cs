@@ -68,3 +68,11 @@ public static class ItemPriceSystem
     ArgumentOutOfRangeException.ThrowIfNegative(value, parameterName);
   }
 }
+
+public static class ItemCurrencySystem
+{
+  public static bool IsCoinType(ushort itemType)
+  {
+    return itemType is >= 71 and <= 74;
+  }
+}

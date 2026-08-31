@@ -135,4 +135,28 @@ if (!openSystem.TryApply(
   throw new InvalidOperationException("A non-consuming key did not preserve its inventory stack.");
 }
 
+ItemStack[] mutableSlots = new ItemStack[ChestComponent.SlotCount];
+mutableSlots[0] = new ItemStack(77, 2);
+ChestSnapshot chestSnapshot = new(
+  chestId: 14,
+  tileX: 200,
+  tileY: 150,
+  opener: opener,
+  slots: mutableSlots,
+  revision: 1,
+  section: new WorldSectionCoordinates(1, 1),
+  isLocked: false);
+mutableSlots[0] = ItemStack.Empty;
+if (chestSnapshot.Slots[0] != new ItemStack(77, 2) || chestSnapshot.Slots is ItemStack[])
+{
+  throw new InvalidOperationException("Chest snapshot exposed mutable slot storage.");
+}
+
+using DomeSimulation signSimulation = new(new WorldGrid(400, 300));
+if (signSimulation.CreateSign(200, 150, "first") != 0 ||
+    signSimulation.CreateSign(201, 150, "second") != 1)
+{
+  throw new InvalidOperationException("Sign IDs did not start at zero and advance without reuse.");
+}
+
 Console.WriteLine("PASS: shared liquid/mechanism command contracts are deterministic and commit-safe");

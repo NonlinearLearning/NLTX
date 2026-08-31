@@ -4,6 +4,8 @@ namespace Terraria.Dome.Simulation.WorldModel;
 
 public sealed record WorldRuleState
 {
+  public const int EndlessRainThresholdTicks = 5184000;
+
   private const float MaximumWindSpeedCurrent = 1.25f;
 
   public WorldRuleState(
@@ -17,7 +19,8 @@ public sealed record WorldRuleState
     float windSpeedCurrent = 0.0f,
     WorldGameMode gameMode = WorldGameMode.Classic,
     bool? isRaining = null,
-    float? maximumRainStrength = null)
+    float? maximumRainStrength = null,
+    bool isPvpEnabled = false)
   {
     if (difficulty < 0 || difficulty > 3)
     {
@@ -74,6 +77,7 @@ public sealed record WorldRuleState
     WindSpeedTarget = windSpeedTarget;
     WindSpeedCurrent = windSpeedCurrent;
     GameMode = gameMode;
+    IsPvpEnabled = isPvpEnabled;
   }
 
   public int Difficulty { get; }
@@ -82,7 +86,9 @@ public sealed record WorldRuleState
   public bool IsExpertMode { get; }
   public bool IsJourneyMode => GameMode == WorldGameMode.Journey;
   public bool IsRaining { get; }
+  public bool IsRainingForever => RainTimeTicks >= EndlessRainThresholdTicks;
   public bool IsMasterMode { get; }
+  public bool IsPvpEnabled { get; }
   public float RainStrength { get; }
   public int RainTimeTicks { get; }
   public float MaximumRainStrength { get; }
@@ -114,7 +120,8 @@ public sealed record WorldRuleState
       WindSpeedCurrent,
       GameMode,
       isRaining: true,
-      maximumRainStrength: MaximumRainStrength);
+      maximumRainStrength: MaximumRainStrength,
+      isPvpEnabled: IsPvpEnabled);
   }
 
   public WorldRuleState WithRain(int rainTimeTicks, float rainStrength)
@@ -130,7 +137,8 @@ public sealed record WorldRuleState
       WindSpeedCurrent,
       GameMode,
       isRaining: rainTimeTicks > 0,
-      maximumRainStrength: MaximumRainStrength);
+      maximumRainStrength: MaximumRainStrength,
+      isPvpEnabled: IsPvpEnabled);
   }
 
   public WorldRuleState WithRawRain(bool isRaining, float maximumRainStrength)
@@ -146,7 +154,8 @@ public sealed record WorldRuleState
       WindSpeedCurrent,
       GameMode,
       isRaining,
-      maximumRainStrength);
+      maximumRainStrength,
+      IsPvpEnabled);
   }
 
   public WorldRuleState WithGameMode(WorldGameMode gameMode)
@@ -162,7 +171,25 @@ public sealed record WorldRuleState
       WindSpeedCurrent,
       gameMode,
       IsRaining,
-      MaximumRainStrength);
+      MaximumRainStrength,
+      IsPvpEnabled);
+  }
+
+  public WorldRuleState WithPvpEnabled(bool isPvpEnabled)
+  {
+    return new WorldRuleState(
+      Difficulty,
+      IsExpertMode,
+      IsMasterMode,
+      IsCrimsonWorld,
+      RainTimeTicks,
+      RainStrength,
+      WindSpeedTarget,
+      WindSpeedCurrent,
+      GameMode,
+      IsRaining,
+      MaximumRainStrength,
+      isPvpEnabled);
   }
 
   public WorldRuleState AdvanceWind(int ticksPerUpdate, float rainStrength = 0.0f)
@@ -203,6 +230,7 @@ public sealed record WorldRuleState
       windSpeedCurrent,
       GameMode,
       IsRaining,
-      MaximumRainStrength);
+      MaximumRainStrength,
+      IsPvpEnabled);
   }
 }

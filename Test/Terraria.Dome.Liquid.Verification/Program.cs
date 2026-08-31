@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Commands;
@@ -25,6 +26,10 @@ if (tileDefinitions.Definitions.Count != 753 ||
     !tileDefinitions.TryGet(3, out TileDefinition lavaDeathDefinition) ||
     lavaDeathDefinition.WaterDestroysTile ||
     !lavaDeathDefinition.LavaDestroysTile ||
+    !tileDefinitions.TryGet(435, out TileDefinition ropePlatformLavaDefinition) ||
+    !ropePlatformLavaDefinition.LavaDestroysTile ||
+    !tileDefinitions.TryGet(439, out TileDefinition finalRopePlatformLavaDefinition) ||
+    !finalRopePlatformLavaDefinition.LavaDestroysTile ||
     !tileDefinitions.TryGet(7, out TileDefinition ordinaryDefinition) ||
     ordinaryDefinition.WaterDestroysTile || ordinaryDefinition.LavaDestroysTile ||
     !tileDefinitions.TryGet(546, out TileDefinition boulderDefinition) ||
@@ -140,6 +145,19 @@ Console.WriteLine("PASS: global Liquid death tables produce deferred Tile commit
 TileObjectLiquidRuleRegistry objectRules = new([
   new TileObjectLiquidRule(215, LiquidType.Water, 2, 2, 0, 35, true)
 ]);
+if (objectRules.Rules.Count != 1 || objectRules.Rules[0].TileType != 215)
+{
+  throw new InvalidOperationException("Tile-object Liquid rules did not preserve registration order.");
+}
+
+try
+{
+  ((IList<TileObjectLiquidRule>)objectRules.Rules).Clear();
+  throw new InvalidOperationException("Tile-object Liquid rules projection was mutable.");
+}
+catch (NotSupportedException)
+{
+}
 WorldGrid objectRuleWorld = new(400, 300);
 for (int row = 0; row < 2; row++)
 {
@@ -390,6 +408,22 @@ if (replication.CreateSnapshots(first.Commands, revision: 1).Count !=
 }
 
 LiquidRuleRegistry rules = LiquidRuleRegistry.CreateDefault();
+if (rules.OrderedDefinitions.Count != 4 ||
+    rules.OrderedDefinitions[0].Type != LiquidType.Water ||
+    rules.OrderedDefinitions[3].Type != LiquidType.Shimmer)
+{
+  throw new InvalidOperationException("Liquid definitions did not preserve deterministic order.");
+}
+
+try
+{
+  ((IDictionary<LiquidType, LiquidRuleDefinition>)rules.Definitions)[LiquidType.Water] =
+    rules.Get(LiquidType.Water);
+  throw new InvalidOperationException("Liquid definition projection was mutable.");
+}
+catch (NotSupportedException)
+{
+}
 if (rules.Get(LiquidType.Water).Gravity != LiquidGravity.Down ||
     rules.Get(LiquidType.Shimmer).CanMergeWith(LiquidType.Lava))
 {

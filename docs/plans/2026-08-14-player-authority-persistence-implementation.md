@@ -1,6 +1,5 @@
 # Player Authority Persistence Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Import original Terraria player bootstrap state once, persist it by
 UUID, and restore server-owned inventory, buffs, equipment, and loadouts on

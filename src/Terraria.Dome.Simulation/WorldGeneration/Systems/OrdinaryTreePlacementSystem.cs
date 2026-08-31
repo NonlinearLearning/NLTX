@@ -10,8 +10,6 @@ public sealed class OrdinaryTreePlacementSystem
   private const int MaximumHeight = 16;
   private const int MinimumHeight = 5;
 
-  private static readonly HashSet<ushort> CommonSaplingTypes = [20];
-
   public bool TryPrepareWithHeightSelection(
     WorldGridSnapshot snapshot,
     int originX,
@@ -81,7 +79,7 @@ public sealed class OrdinaryTreePlacementSystem
           eligibility.GroundY - height - 4,
           eligibility.GroundY - 1,
           20,
-          CommonSaplingTypes))
+          CommonSaplingTileRegistry.RegisterDefaults()))
     {
       failureReason = "ordinary tree canopy is blocked";
       return false;

@@ -14,29 +14,34 @@ public static class LegacyItemImportAdapter
     out ItemInstanceSnapshot snapshot)
   {
     snapshot = new ItemInstanceSnapshot(ItemStack.Empty, default);
-    if (item.SlotId < 0 || item.Stack <= 0 || item.ItemType <= 0 ||
+    if (item.SlotId < 0 || item.SlotId >= PlayerPersistentState.ItemSlotCount ||
+        item.Stack <= 0 || item.ItemType <= 0 ||
         item.ItemType > ushort.MaxValue || definition.ItemType != item.ItemType ||
-        definition.StackLimit <= 0)
+        definition.StackLimit <= 0 || item.Stack > definition.StackLimit)
     {
       return false;
     }
 
-    int quantity = Math.Min(item.Stack, definition.StackLimit);
-    if (quantity <= 0)
+    ItemInstanceStateComponent state = new(
+      PrefixId: item.Prefix,
+      VariantId: item.VariantId,
+      Dye: item.Dye,
+      Paint: item.Paint,
+      IsFavorited: item.IsFavorited,
+      IsNewAndShiny: item.IsNewAndShiny,
+      NameOverride: item.NameOverride);
+    try
+    {
+      state.Validate();
+    }
+    catch (ArgumentOutOfRangeException)
     {
       return false;
     }
 
     snapshot = new ItemInstanceSnapshot(
-      new ItemStack((ushort)item.ItemType, quantity),
-      new ItemInstanceStateComponent(
-        PrefixId: item.Prefix,
-        VariantId: item.VariantId,
-        Dye: item.Dye,
-        Paint: item.Paint,
-        IsFavorited: item.IsFavorited,
-        IsNewAndShiny: item.IsNewAndShiny,
-        NameOverride: item.NameOverride));
+      new ItemStack((ushort)item.ItemType, item.Stack),
+      state);
     return true;
   }
 }

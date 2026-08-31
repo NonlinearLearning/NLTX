@@ -34,7 +34,8 @@ public sealed class LiquidSourceSystem
         source.Y,
         source.LiquidType,
         source.Amount,
-        state.ReserveSequence()));
+        state.ReserveSequence(),
+        source.Source));
     }
   }
 }

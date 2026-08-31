@@ -1,3 +1,4 @@
+using System.Collections.Frozen;
 using System.Collections.Generic;
 
 namespace Terraria.Dome.Simulation.WorldGeneration;
@@ -23,7 +24,12 @@ public static class LegacyGenerationClearabilityPolicy
     481,
     482,
     483
-  };
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<int> RegisterDefaults()
+  {
+    return NonClearableTileTypes;
+  }
 
   public static bool CanClear(int tileType, bool isProtectedDungeonTile)
   {

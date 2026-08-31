@@ -5,14 +5,879 @@ using System.IO.Compression;
 using System.Linq;
 using Terraria.Dome.Protocol.V1456.Compatibility;
 using Terraria.Dome.Protocol.V1456.Dispatch;
+using Terraria.Dome.Protocol.V1456.Isolation;
 using Terraria.Dome.Protocol.V1456.Packets;
 using Terraria.Dome.Protocol.V1456.Protocol;
 using Terraria.Dome.Protocol.V1456.Session;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Items;
+using Terraria.Dome.Simulation.StatusEffects.Snapshots;
 using Terraria.Dome.Simulation.WorldModel;
+using Terraria.Dome.Simulation.WorldGeneration;
 
 LegacyWorldDataContext domeContext = LegacyWorldDataContext.CreateDomeDefaults();
+NpcStatusEffectEnvelope npcStatusEffect = new(
+  7,
+  11,
+  [new StatusEffectSnapshot(StatusEffectTargetKind.Npc, 7, 11, 119, 1800)]);
+byte[] npcStatusEffectFrame = ContractExtensionCodec.EncodeNpcStatusEffect(npcStatusEffect);
+NpcStatusEffectEnvelope decodedNpcStatusEffect =
+  ContractExtensionCodec.DecodeNpcStatusEffect(npcStatusEffectFrame);
+if (!ContractExtensionCodec.IsNpcStatusEffect(npcStatusEffectFrame) ||
+    decodedNpcStatusEffect.ReplicationId != npcStatusEffect.ReplicationId ||
+    decodedNpcStatusEffect.Revision != npcStatusEffect.Revision ||
+    !decodedNpcStatusEffect.Effects.SequenceEqual(npcStatusEffect.Effects))
+{
+  throw new InvalidOperationException(
+    "V1456 NPC status extension did not preserve bounded immutable status state.");
+}
+
+byte[] invasionProgressFrame = TerrariaPacketCodec.EncodeInvasionProgressReport(
+  new InvasionProgressReportPacket(3, 120, -7, 2));
+InvasionProgressReportPacket invasionProgress = TerrariaPacketCodec.DecodeInvasionProgressReport(
+  invasionProgressFrame);
+if (invasionProgress != new InvasionProgressReportPacket(3, 120, -7, 2) ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.InvasionProgressReport).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 InvasionProgressReport did not preserve its source-shaped payload.");
+}
+
+byte[] chestIndexFrame = TerrariaPacketCodec.EncodeSyncPlayerChestIndex(
+  new SyncPlayerChestIndexPacket(7, -12));
+SyncPlayerChestIndexPacket chestIndex = TerrariaPacketCodec.DecodeSyncPlayerChestIndex(
+  chestIndexFrame);
+if (chestIndex != new SyncPlayerChestIndexPacket(7, -12) ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.SyncPlayerChestIndex).Direction !=
+      TerrariaPacketDirection.ServerToClient)
+{
+  throw new InvalidOperationException(
+    "V1456 SyncPlayerChestIndex did not preserve its source-shaped payload.");
+}
+
+ChestNamePacket chestName = new(-1, 120, 240, "宝箱-A");
+ChestNamePacket decodedChestName = TerrariaPacketCodec.DecodeChestName(
+  TerrariaPacketCodec.EncodeChestName(chestName));
+if (decodedChestName != chestName ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.ChestName).Direction !=
+      TerrariaPacketDirection.ServerToClient)
+{
+  throw new InvalidOperationException("V1456 ChestName did not preserve its source-shaped string payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeChestName(
+    TerrariaPacketCodec.EncodeChestName(chestName)[..^1]);
+  throw new InvalidOperationException("V1456 ChestName accepted a truncated string payload.");
+}
+catch (InvalidDataException)
+{
+}
+
+PlayerHurtV2Packet playerHurt = new(3, new byte[] { 0x20, 0xFE, 0x01 }, -42, 1, 3, -2);
+PlayerHurtV2Packet decodedHurt = TerrariaPacketCodec.DecodePlayerHurtV2(
+  TerrariaPacketCodec.Encode(playerHurt));
+if (
+    decodedHurt.PlayerId != playerHurt.PlayerId ||
+    !decodedHurt.DeathReasonPayload.AsSpan().SequenceEqual(playerHurt.DeathReasonPayload) ||
+    decodedHurt.Damage != playerHurt.Damage || decodedHurt.Direction != playerHurt.Direction ||
+    decodedHurt.Flags != playerHurt.Flags || decodedHurt.CooldownCounter != playerHurt.CooldownCounter ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.PlayerHurtV2).Support != TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 PlayerHurtV2 did not preserve its variable reason payload and fixed trailer.");
+}
+
+PlayerDeathV2Packet playerDeath = new(4, new byte[] { 0x40, 0x02 }, 77, 0, 1);
+PlayerDeathV2Packet decodedDeath = TerrariaPacketCodec.DecodePlayerDeathV2(
+  TerrariaPacketCodec.Encode(playerDeath));
+if (decodedDeath.PlayerId != playerDeath.PlayerId ||
+    !decodedDeath.DeathReasonPayload.AsSpan().SequenceEqual(playerDeath.DeathReasonPayload) ||
+    decodedDeath.Damage != playerDeath.Damage || decodedDeath.Direction != playerDeath.Direction ||
+    decodedDeath.Pvp != playerDeath.Pvp ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.PlayerDeathV2).Support != TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 PlayerDeathV2 did not preserve its variable reason payload and fixed trailer.");
+}
+
+CombatTextStringPacket combatTextString = new(1.5f, -2.5f, new TerrariaColor(4, 5, 6),
+  new byte[] { 0, 3, 0x41, 0x42 });
+CombatTextStringPacket decodedCombatTextString = TerrariaPacketCodec.DecodeCombatTextString(
+  TerrariaPacketCodec.Encode(combatTextString));
+if (decodedCombatTextString.PositionX != combatTextString.PositionX ||
+    decodedCombatTextString.PositionY != combatTextString.PositionY ||
+    decodedCombatTextString.Color != combatTextString.Color ||
+    !decodedCombatTextString.TextPayload.AsSpan().SequenceEqual(combatTextString.TextPayload) ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.CombatTextString).Direction !=
+      TerrariaPacketDirection.ServerToClient)
+{
+  throw new InvalidOperationException(
+    "V1456 CombatTextString did not preserve its source-shaped text payload.");
+}
+
+EmojiPacket emoji = new(6, 42);
+if (TerrariaPacketCodec.DecodeEmoji(TerrariaPacketCodec.Encode(emoji)) != emoji ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.Emoji).Direction != TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.Emoji).Support != TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException("V1456 Emoji did not preserve its two-byte payload.");
+}
+
+DisplayDollDataSyncPacket doll = new(2, 901, 4, 7, new byte[] { 1, 2, 3, 4 });
+DisplayDollDataSyncPacket decodedDoll = TerrariaPacketCodec.DecodeDisplayDollDataSync(
+  TerrariaPacketCodec.Encode(doll));
+if (decodedDoll.PlayerId != doll.PlayerId || decodedDoll.EntityId != doll.EntityId ||
+    decodedDoll.Slot != doll.Slot || decodedDoll.Param != doll.Param ||
+    !decodedDoll.DataPayload.AsSpan().SequenceEqual(doll.DataPayload) ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TedisplayDollDataSync).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 TEDisplayDollDataSync did not preserve its variable data payload.");
+}
+
+RequestTileEntityInteractionPacket tileEntityRequest = new(-1, 9);
+if (TerrariaPacketCodec.DecodeRequestTileEntityInteraction(
+      TerrariaPacketCodec.Encode(tileEntityRequest)) != tileEntityRequest ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.RequestTileEntityInteraction).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.RequestTileEntityInteraction).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 RequestTileEntityInteraction did not preserve its five-byte payload.");
+}
+
+WeaponsRackTryPlacingPacket rack = new(-12, 34, 100, 5, 2);
+if (TerrariaPacketCodec.DecodeWeaponsRackTryPlacing(TerrariaPacketCodec.Encode(rack)) != rack ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.WeaponsRackTryPlacing).Direction !=
+      TerrariaPacketDirection.ClientToServer ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.WeaponsRackTryPlacing).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 WeaponsRackTryPlacing did not preserve its nine-byte payload.");
+}
+
+HatRackItemSyncPacket hatRack = new(5, 700, 1, true, 88, 3);
+if (TerrariaPacketCodec.DecodeHatRackItemSync(TerrariaPacketCodec.Encode(hatRack)) != hatRack ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TehatRackItemSync).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TehatRackItemSync).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 TEHatRackItemSync did not preserve its eleven-byte payload.");
+}
+
+SyncPlayerChestLocationPacket chestLocation = new(3, -10, 25, 2);
+if (TerrariaPacketCodec.DecodeSyncPlayerChestLocation(
+      TerrariaPacketCodec.Encode(chestLocation)) != chestLocation ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.SyncPlayerChestLocation).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.SyncPlayerChestLocation).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 SyncPlayerChestLocation did not preserve its six-byte payload.");
+}
+
+SyncRevengeMarkerPacket revengeMarker = new(-123);
+if (TerrariaPacketCodec.DecodeSyncRevengeMarker(
+      TerrariaPacketCodec.Encode(revengeMarker)) != revengeMarker ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.SyncRevengeMarker).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.SyncRevengeMarker).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 SyncRevengeMarker did not preserve its two-byte payload.");
+}
+
+RemoveRevengeMarkerPacket removeMarker = new(-987654);
+if (TerrariaPacketCodec.DecodeRemoveRevengeMarker(
+      TerrariaPacketCodec.Encode(removeMarker)) != removeMarker ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.RemoveRevengeMarker).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.RemoveRevengeMarker).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 RemoveRevengeMarker did not preserve its four-byte payload.");
+}
+
+LandGolfBallInCupPacket golf = new(7, 100, 200, 300, 400);
+if (TerrariaPacketCodec.DecodeLandGolfBallInCup(TerrariaPacketCodec.Encode(golf)) != golf ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.LandGolfBallInCup).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.LandGolfBallInCup).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 LandGolfBallInCup did not preserve its nine-byte payload.");
+}
+
+FishOutNpcPacket fishOut = new(160, 320, -682);
+if (TerrariaPacketCodec.DecodeFishOutNpc(TerrariaPacketCodec.Encode(fishOut)) != fishOut ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.FishOutNpc).Direction !=
+      TerrariaPacketDirection.ClientToServer ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.FishOutNpc).Support != TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException("V1456 FishOutNPC did not preserve its six-byte payload.");
+}
+
+CrystalInvasionNextWaveWaitPacket invasionWait = new(321);
+if (TerrariaPacketCodec.DecodeCrystalInvasionNextWaveWait(
+      TerrariaPacketCodec.Encode(invasionWait)) != invasionWait ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.CrystalInvasionSendWaitTime).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.CrystalInvasionSendWaitTime).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 CrystalInvasionSendWaitTime did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeCrystalInvasionNextWaveWait(
+    TerrariaPacketCodec.Encode(invasionWait)[..^1]);
+  throw new InvalidOperationException(
+    "V1456 CrystalInvasionSendWaitTime accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+short[] merchantItems = new short[TravelMerchantItemsPacket.SlotCount];
+merchantItems[0] = -1;
+merchantItems[^1] = 321;
+TravelMerchantItemsPacket merchantPacket = new(merchantItems);
+TravelMerchantItemsPacket decodedMerchantPacket = TerrariaPacketCodec.DecodeTravelMerchantItems(
+  TerrariaPacketCodec.EncodeTravelMerchantItems(merchantPacket));
+if (!decodedMerchantPacket.ItemIds.SequenceEqual(merchantItems) ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TravelMerchantItems).Support !=
+      TerrariaPacketSupport.Unsupported)
+{
+  throw new InvalidOperationException("V1456 TravelMerchantItems did not preserve its fixed table boundary.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeTravelMerchantItems(
+    TerrariaPacketCodec.EncodeTravelMerchantItems(merchantPacket)[..^1]);
+  throw new InvalidOperationException("V1456 TravelMerchantItems accepted a truncated table.");
+}
+catch (InvalidDataException)
+{
+}
+
+BugCatchingPacket bugCatch = new(-1, 255);
+if (TerrariaPacketCodec.DecodeBugCatching(TerrariaPacketCodec.EncodeBugCatching(bugCatch)) != bugCatch ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.BugCatching).Support != TerrariaPacketSupport.Framed)
+{
+  throw new InvalidOperationException("V1456 BugCatching did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeBugCatching(
+    TerrariaPacketCodec.EncodeBugCatching(bugCatch)[..^1]);
+  throw new InvalidOperationException("V1456 BugCatching accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+BugReleasingPacket bugRelease = new(-100, 200, -7, 255);
+if (TerrariaPacketCodec.DecodeBugReleasing(TerrariaPacketCodec.EncodeBugReleasing(bugRelease)) !=
+    bugRelease ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.BugReleasing).Support != TerrariaPacketSupport.Framed)
+{
+  throw new InvalidOperationException("V1456 BugReleasing did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeBugReleasing(
+    TerrariaPacketCodec.EncodeBugReleasing(bugRelease)[..^1]);
+  throw new InvalidOperationException("V1456 BugReleasing accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+CombatTextIntPacket combatText = new(
+  12.5f,
+  -4.25f,
+  new TerrariaColor(1, 2, 3),
+  -900);
+if (TerrariaPacketCodec.DecodeCombatTextInt(TerrariaPacketCodec.EncodeCombatTextInt(combatText)) !=
+    combatText ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.CombatTextInt).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException("V1456 CombatTextInt did not preserve its source-shaped payload.");
+}
+
+TeleportEntityPacket teleportEntity = new(
+  Flags: 0x08,
+  TargetId: 17,
+  PositionX: 123.5f,
+  PositionY: -42.25f,
+  Style: 2,
+  ExtraInfo: 901);
+if (TerrariaPacketCodec.DecodeTeleportEntity(TerrariaPacketCodec.Encode(teleportEntity)) !=
+    teleportEntity ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TeleportEntity).Direction !=
+      TerrariaPacketDirection.ServerToClient)
+{
+  throw new InvalidOperationException(
+    "V1456 TeleportEntity did not preserve its optional source-shaped payload.");
+}
+
+TeleportEntityPacket teleportWithoutExtra = new(0, 4, 1.0f, 2.0f, 0, null);
+if (TerrariaPacketCodec.DecodeTeleportEntity(TerrariaPacketCodec.Encode(teleportWithoutExtra)).ExtraInfo is not null)
+{
+  throw new InvalidOperationException("V1456 TeleportEntity incorrectly decoded absent extra info.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeTeleportEntity(
+    TerrariaPacketCodec.Encode(teleportEntity)[..^1]);
+  throw new InvalidOperationException("V1456 TeleportEntity accepted a truncated optional field.");
+}
+catch (InvalidDataException)
+{
+}
+
+PlayerHealOtherPacket playerHealOther = new(12, -25);
+if (TerrariaPacketCodec.DecodePlayerHealOther(
+      TerrariaPacketCodec.Encode(playerHealOther)) != playerHealOther ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.PlayerHealOther).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.PlayerHealOther).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 PlayerHealOther did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodePlayerHealOther(
+    TerrariaPacketCodec.Encode(playerHealOther)[..^1]);
+  throw new InvalidOperationException("V1456 PlayerHealOther accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+TerrariaMessageDescriptor unused67 = TerrariaMessageCatalog.Get(TerrariaMessageId.Unused67);
+if (unused67.Name != "Unused67" || unused67.Support != TerrariaPacketSupport.Unsupported)
+{
+  throw new InvalidOperationException(
+    "V1456 message 67 must remain an explicitly isolated legacy no-op.");
+}
+
+PlayerStealthPacket playerStealth = new(9, 0.375f);
+if (TerrariaPacketCodec.DecodePlayerStealth(TerrariaPacketCodec.Encode(playerStealth)) !=
+    playerStealth ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.PlayerStealth).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.PlayerStealth).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 PlayerStealth did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodePlayerStealth(
+    TerrariaPacketCodec.Encode(playerStealth)[..^1]);
+  throw new InvalidOperationException("V1456 PlayerStealth accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+SyncExtraValuePacket syncExtraValue = new(-4, 123456, 12.5f, -8.25f);
+if (TerrariaPacketCodec.DecodeSyncExtraValue(TerrariaPacketCodec.Encode(syncExtraValue)) !=
+    syncExtraValue ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.SyncExtraValue).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.SyncExtraValue).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 SyncExtraValue did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeSyncExtraValue(
+    TerrariaPacketCodec.Encode(syncExtraValue)[..^1]);
+  throw new InvalidOperationException("V1456 SyncExtraValue accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+TeleportPlayerThroughPortalPacket portalTeleport = new(
+  5,
+  -13,
+  100.25f,
+  -50.5f,
+  2.0f,
+  -3.75f);
+if (TerrariaPacketCodec.DecodeTeleportPlayerThroughPortal(
+      TerrariaPacketCodec.Encode(portalTeleport)) != portalTeleport ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TeleportPlayerThroughPortal).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TeleportPlayerThroughPortal).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 TeleportPlayerThroughPortal did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeTeleportPlayerThroughPortal(
+    TerrariaPacketCodec.Encode(portalTeleport)[..^1]);
+  throw new InvalidOperationException(
+    "V1456 TeleportPlayerThroughPortal accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+MinionRestTargetUpdatePacket minionRest = new(3, 45.5f, -12.25f);
+if (TerrariaPacketCodec.DecodeMinionRestTargetUpdate(
+      TerrariaPacketCodec.Encode(minionRest)) != minionRest ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MinionRestTargetUpdate).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MinionRestTargetUpdate).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 MinionRestTargetUpdate did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeMinionRestTargetUpdate(
+    TerrariaPacketCodec.Encode(minionRest)[..^1]);
+  throw new InvalidOperationException(
+    "V1456 MinionRestTargetUpdate accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+TeleportNpcThroughPortalPacket npcPortal = new(
+  60000,
+  -9,
+  10.5f,
+  -20.25f,
+  1.75f,
+  -2.5f);
+if (TerrariaPacketCodec.DecodeTeleportNpcThroughPortal(
+      TerrariaPacketCodec.Encode(npcPortal)) != npcPortal ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TeleportNpcThroughPortal).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TeleportNpcThroughPortal).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 TeleportNpcThroughPortal did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeTeleportNpcThroughPortal(
+    TerrariaPacketCodec.Encode(npcPortal)[..^1]);
+  throw new InvalidOperationException(
+    "V1456 TeleportNpcThroughPortal accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+NebulaLevelupRequestPacket nebula = new(7, 179, 320.5f, -44.75f);
+if (TerrariaPacketCodec.DecodeNebulaLevelupRequest(TerrariaPacketCodec.Encode(nebula)) != nebula ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.NebulaLevelupRequest).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.NebulaLevelupRequest).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 NebulaLevelupRequest did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeNebulaLevelupRequest(
+    TerrariaPacketCodec.Encode(nebula)[..^1]);
+  throw new InvalidOperationException("V1456 NebulaLevelupRequest accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+MoonlordHorrorPacket moonlordHorror = new(1200, -35);
+if (TerrariaPacketCodec.DecodeMoonlordHorror(TerrariaPacketCodec.Encode(moonlordHorror)) !=
+    moonlordHorror ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MoonlordHorror).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MoonlordHorror).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 MoonlordHorror did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeMoonlordHorror(
+    TerrariaPacketCodec.Encode(moonlordHorror)[..^1]);
+  throw new InvalidOperationException("V1456 MoonlordHorror accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+GemLockTogglePacket gemLock = new(-120, 340, true);
+if (TerrariaPacketCodec.DecodeGemLockToggle(TerrariaPacketCodec.Encode(gemLock)) != gemLock ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.GemLockToggle).Direction !=
+      TerrariaPacketDirection.Bidirectional ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.GemLockToggle).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 GemLockToggle did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeGemLockToggle(
+    TerrariaPacketCodec.Encode(gemLock)[..^1]);
+  throw new InvalidOperationException("V1456 GemLockToggle accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+PoofOfSmokePacket poof = new(0xC1234567u);
+if (TerrariaPacketCodec.DecodePoofOfSmoke(TerrariaPacketCodec.Encode(poof)) != poof ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.PoofOfSmoke).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.PoofOfSmoke).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 PoofOfSmoke did not preserve its packed source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodePoofOfSmoke(
+    TerrariaPacketCodec.Encode(poof)[..^1]);
+  throw new InvalidOperationException("V1456 PoofOfSmoke accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+ShopOverridePacket shopOverride = new(4, 521, 3, 7, -1200, 0xA5);
+if (TerrariaPacketCodec.DecodeShopOverride(TerrariaPacketCodec.Encode(shopOverride)) !=
+    shopOverride ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.ShopOverride).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.ShopOverride).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 ShopOverride did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeShopOverride(TerrariaPacketCodec.Encode(shopOverride)[..^1]);
+  throw new InvalidOperationException("V1456 ShopOverride accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+WiredCannonShotPacket cannonShot = new(45, 3.5f, -10, 20, 90, 521, 6);
+if (TerrariaPacketCodec.DecodeWiredCannonShot(TerrariaPacketCodec.Encode(cannonShot)) !=
+    cannonShot ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.WiredCannonShot).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.WiredCannonShot).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 WiredCannonShot did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeWiredCannonShot(
+    TerrariaPacketCodec.Encode(cannonShot)[..^1]);
+  throw new InvalidOperationException("V1456 WiredCannonShot accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+MassWireOperationPacket wireOperation = new(-10, 20, 30, -40, 3);
+if (TerrariaPacketCodec.DecodeMassWireOperation(TerrariaPacketCodec.Encode(wireOperation)) !=
+    wireOperation ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MassWireOperation).Direction !=
+      TerrariaPacketDirection.ClientToServer ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MassWireOperation).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 MassWireOperation did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeMassWireOperation(
+    TerrariaPacketCodec.Encode(wireOperation)[..^1]);
+  throw new InvalidOperationException("V1456 MassWireOperation accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+MassWireOperationPayPacket wirePay = new(-25, 4, 9);
+if (TerrariaPacketCodec.DecodeMassWireOperationPay(TerrariaPacketCodec.Encode(wirePay)) !=
+    wirePay ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MassWireOperationPay).Direction !=
+      TerrariaPacketDirection.ClientToServer ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MassWireOperationPay).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 MassWireOperationPay did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeMassWireOperationPay(
+    TerrariaPacketCodec.Encode(wirePay)[..^1]);
+  throw new InvalidOperationException(
+    "V1456 MassWireOperationPay accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+SpecialFxPacket specialFx = new(2, 1000, -2000, 4, -12, 7);
+if (TerrariaPacketCodec.DecodeSpecialFx(TerrariaPacketCodec.Encode(specialFx)) != specialFx ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.SpecialFx).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.SpecialFx).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException("V1456 SpecialFX did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeSpecialFx(TerrariaPacketCodec.Encode(specialFx)[..^1]);
+  throw new InvalidOperationException("V1456 SpecialFX accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+CrystalInvasionStartPacket crystalStart = new(-300, 450);
+if (TerrariaPacketCodec.DecodeCrystalInvasionStart(TerrariaPacketCodec.Encode(crystalStart)) !=
+    crystalStart ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.CrystalInvasionStart).Direction !=
+      TerrariaPacketDirection.ClientToServer ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.CrystalInvasionStart).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 CrystalInvasionStart did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeCrystalInvasionStart(
+    TerrariaPacketCodec.Encode(crystalStart)[..^1]);
+  throw new InvalidOperationException("V1456 CrystalInvasionStart accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+CrystalInvasionWipePacket crystalWipe = new();
+if (TerrariaPacketCodec.DecodeCrystalInvasionWipe(
+      TerrariaPacketCodec.Encode(crystalWipe)) != crystalWipe ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.CrystalInvasionWipeAllTheThingsss).Direction !=
+      TerrariaPacketDirection.ServerToClient ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.CrystalInvasionWipeAllTheThingsss).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 CrystalInvasionWipe did not preserve its empty source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeCrystalInvasionWipe(
+    TerrariaFrameCodec.Encode(new TerrariaFrame(
+      TerrariaMessageId.CrystalInvasionWipeAllTheThingsss,
+      new byte[] { 1 })));
+  throw new InvalidOperationException("V1456 CrystalInvasionWipe accepted a non-empty payload.");
+}
+catch (InvalidDataException)
+{
+}
+
+MinionAttackTargetUpdatePacket minionAttack = new(8, -17);
+if (TerrariaPacketCodec.DecodeMinionAttackTargetUpdate(
+      TerrariaPacketCodec.Encode(minionAttack)) != minionAttack ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MinionAttackTargetUpdate).Direction !=
+      TerrariaPacketDirection.ClientToServer ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.MinionAttackTargetUpdate).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException(
+    "V1456 MinionAttackTargetUpdate did not preserve its source-shaped payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeMinionAttackTargetUpdate(
+    TerrariaPacketCodec.Encode(minionAttack)[..^1]);
+  throw new InvalidOperationException(
+    "V1456 MinionAttackTargetUpdate accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+TemporaryAnimationPacket animation = new(-2, 600, -12, 34);
+if (TerrariaPacketCodec.DecodeTemporaryAnimation(TerrariaPacketCodec.EncodeTemporaryAnimation(animation)) !=
+    animation ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.TemporaryAnimation).Direction !=
+      TerrariaPacketDirection.ServerToClient)
+{
+  throw new InvalidOperationException("V1456 TemporaryAnimation did not preserve its source-shaped payload.");
+}
+
+QuestsCountSyncPacket questCounts = new(9, -3, 42);
+if (TerrariaPacketCodec.DecodeQuestsCountSync(TerrariaPacketCodec.EncodeQuestsCountSync(questCounts)) !=
+    questCounts ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.QuestsCountSync).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException("V1456 QuestsCountSync did not preserve its source-shaped payload.");
+}
+
+byte[] anglerFinishedFrame = TerrariaPacketCodec.EncodeAnglerQuestFinished(
+  new AnglerQuestFinishedPacket());
+_ = TerrariaPacketCodec.DecodeAnglerQuestFinished(anglerFinishedFrame);
+if (TerrariaMessageCatalog.Get(TerrariaMessageId.AnglerQuestFinished).Direction !=
+      TerrariaPacketDirection.ClientToServer ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.AnglerQuestFinished).Support !=
+      TerrariaPacketSupport.Framed)
+{
+  throw new InvalidOperationException("V1456 AnglerQuestFinished did not preserve its framed boundary.");
+}
+
+RequestTeleportationByServerPacket teleportRequest = new(4);
+if (TerrariaPacketCodec.DecodeRequestTeleportationByServer(
+      TerrariaPacketCodec.EncodeRequestTeleportationByServer(teleportRequest)) != teleportRequest ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.RequestTeleportationByServer).Support !=
+      TerrariaPacketSupport.Framed)
+{
+  throw new InvalidOperationException(
+    "V1456 RequestTeleportationByServer did not preserve its selector boundary.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.EncodeRequestTeleportationByServer(new RequestTeleportationByServerPacket(5));
+  throw new InvalidOperationException("V1456 RequestTeleportationByServer accepted an invalid selector.");
+}
+catch (ArgumentOutOfRangeException)
+{
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeAnglerQuestFinished(
+    TerrariaFrameCodec.Encode(new TerrariaFrame(
+      TerrariaMessageId.AnglerQuestFinished,
+      new byte[] { 1 })));
+  throw new InvalidOperationException("V1456 AnglerQuestFinished accepted a non-empty payload.");
+}
+catch (InvalidDataException)
+{
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeQuestsCountSync(
+    TerrariaPacketCodec.EncodeQuestsCountSync(questCounts)[..^1]);
+  throw new InvalidOperationException("V1456 QuestsCountSync accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeTemporaryAnimation(
+    TerrariaPacketCodec.EncodeTemporaryAnimation(animation)[..^1]);
+  throw new InvalidOperationException("V1456 TemporaryAnimation accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeCombatTextInt(
+    TerrariaPacketCodec.EncodeCombatTextInt(combatText)[..^1]);
+  throw new InvalidOperationException("V1456 CombatTextInt accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeSyncPlayerChestIndex(chestIndexFrame[..^1]);
+  throw new InvalidOperationException("V1456 SyncPlayerChestIndex accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeInvasionProgressReport(invasionProgressFrame[..^1]);
+  throw new InvalidOperationException("V1456 InvasionProgressReport accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
+}
+
 byte[] tracedHello =
 [
   0x0F, 0x00, (byte)TerrariaMessageId.Hello, 0x0B,
@@ -1116,6 +1981,27 @@ if (!TerrariaPacketCodec.EncodeChestItem(new ChestItemReplicationSnapshot(
   throw new InvalidOperationException("V1456 SyncChestItem did not retain its source wire form.");
 }
 
+bool rejectedNonCanonicalChestItem = false;
+try
+{
+  _ = TerrariaPacketCodec.EncodeChestItem(new ChestItemReplicationSnapshot(
+    1,
+    0,
+    new ItemStack(0, 1),
+    null,
+    0));
+}
+catch (ArgumentOutOfRangeException)
+{
+  rejectedNonCanonicalChestItem = true;
+}
+
+if (!rejectedNonCanonicalChestItem)
+{
+  throw new InvalidOperationException(
+    "V1456 SyncChestItem accepted a non-canonical empty ItemStack.");
+}
+
 byte[] tracedWorldItem = Convert.FromHexString(
   "1B0015010000008041000080410000000000000000010000010100");
 if (!TerrariaPacketCodec.EncodeItemReplication(new ItemReplicationSnapshot(
@@ -1127,6 +2013,28 @@ if (!TerrariaPacketCodec.EncodeItemReplication(new ItemReplicationSnapshot(
   new WorldSectionCoordinates(0, 0))).AsSpan().SequenceEqual(tracedWorldItem))
 {
   throw new InvalidOperationException("V1456 SyncItem did not retain its source wire form.");
+}
+
+bool rejectedInvalidNetworkItemProjection = false;
+try
+{
+  NetworkItemSlice.From(new ItemReplicationSnapshot(
+    1,
+    ItemStack.Empty,
+    new SimulationVector(1.0f, 1.0f),
+    IsActive: true,
+    Revision: 1,
+    new WorldSectionCoordinates(0, 0)));
+}
+catch (ArgumentOutOfRangeException)
+{
+  rejectedInvalidNetworkItemProjection = true;
+}
+
+if (!rejectedInvalidNetworkItemProjection)
+{
+  throw new InvalidOperationException(
+    "Network item isolation projected an invalid active/empty replication snapshot.");
 }
 
 byte[] tracedProjectileDespawn = Convert.FromHexString("06001D010001");
@@ -1172,6 +2080,25 @@ if (!TerrariaPacketCodec.EncodeAnglerQuest(WorldJoinStateSnapshot.CreateDefault(
   .SequenceEqual(Convert.FromHexString("05004A1400")))
 {
   throw new InvalidOperationException("V1456 AnglerQuest did not retain its source wire form.");
+}
+
+AnglerQuestPacket anglerQuest = new(42, FinishedToday: true);
+if (TerrariaPacketCodec.DecodeAnglerQuest(TerrariaPacketCodec.EncodeAnglerQuest(anglerQuest)) !=
+    anglerQuest ||
+    TerrariaMessageCatalog.Get(TerrariaMessageId.AnglerQuest).Support !=
+      TerrariaPacketSupport.Handled)
+{
+  throw new InvalidOperationException("V1456 AnglerQuest did not preserve its typed fields.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.DecodeAnglerQuest(
+    TerrariaPacketCodec.EncodeAnglerQuest(anglerQuest)[..^1]);
+  throw new InvalidOperationException("V1456 AnglerQuest accepted a truncated frame.");
+}
+catch (InvalidDataException)
+{
 }
 
 if (!TerrariaPacketCodec.EncodeNpcHome(new NpcHomeSnapshot(1, 2152, 300, false)).AsSpan()
@@ -1259,7 +2186,7 @@ if (tracedPlayerEquipment.PlayerSlot != 1 || tracedPlayerEquipment.SlotId != 0 |
 }
 
 byte[] domeWorldData = TerrariaV1456Compatibility.EncodeWorldData(domeContext);
-if (domeWorldData.Length != 173)
+if (domeWorldData.Length != 174)
 {
   throw new InvalidOperationException("Dome WorldData no longer has its projected V1456 length.");
 }
@@ -1278,7 +2205,7 @@ if ((invasionFlagsContext.Progression.EventFlags8 & (1 << 6)) == 0 ||
     (invasionFlagsContext.Progression.EventFlags10 & 1) == 0 ||
     (invasionFlagsContext.Progression.EventFlags10 & (1 << 1)) == 0 ||
     (invasionFlagsContext.Progression.EventFlags10 & (1 << 2)) == 0 ||
-    TerrariaV1456Compatibility.EncodeWorldData(invasionFlagsContext).Length != 173)
+    TerrariaV1456Compatibility.EncodeWorldData(invasionFlagsContext).Length != 174)
 {
   throw new InvalidOperationException(
     "V1456 WorldData did not project the named invasion clear flags into source bits.");
@@ -1300,7 +2227,7 @@ if (moonPhaseFrame.MessageId != TerrariaMessageId.WorldData ||
 
 LegacyWorldDataContext traceNameContext = domeContext with { WorldName = "FullServerTrace" };
 byte[] traceNameWorldData = TerrariaV1456Compatibility.EncodeWorldData(traceNameContext);
-if (traceNameWorldData.Length != 178)
+if (traceNameWorldData.Length != 179)
 {
   throw new InvalidOperationException(
     "V1456 WorldData must account for the authoritative world name length.");
@@ -1334,19 +2261,20 @@ LegacyWorldDataContext rawWorldDataContext = new(
   rawWorldProgression,
   rawWorldOreTiers,
   new LegacySpawnPointSet(
-    [new LegacySpawnPoint(700, 800), new LegacySpawnPoint(-3, 900)]));
+    [new LegacySpawnPoint(700, 800), new LegacySpawnPoint(-3, 900)]),
+  IsNoTrapsWorld: true,
+  IsSkyblockWorld: true);
 byte[] tracedWorldData = Convert.FromHexString(string.Concat(
-  "AC000744332211E507A00FB004D0072C01FA00BC0288776655014102",
+  "AD000744332211E507A00FB004D0072C01FA00BC0288776655014102",
   "33221100554477668899AABBCCDDEEFF080706050403020103",
   "0102030405060708090A0B0C0D0E0F100000C03F1165000000CA0000002F010000",
   "1213141594010000F90100005E020000161718191A1B1C1D1E1F20212223242526",
-  "000020403132333435363738393A3B3C3DE903EA03EB03EC03ED03EE03EF03FB",
+  "000020403132333435363738393A3B413C3DE903EA03EB03EC03ED03EE03EF03FB",
   "18171615141312110000604002BC022003FDFF8403"));
 if (!TerrariaV1456Compatibility.EncodeWorldData(rawWorldDataContext).AsSpan()
   .SequenceEqual(tracedWorldData))
 {
-  throw new InvalidOperationException(
-    "V1456 WorldData did not retain the complete source field order.");
+  throw new InvalidOperationException("V1456 WorldData did not retain the complete source field order.");
 }
 
 IReadOnlyList<byte[]> greetings = TerrariaV1456Compatibility.CreateJoinGreetingFrames(
@@ -1374,6 +2302,28 @@ if (tileSquareFrame.Payload.Length != 12 ||
     tileSquareFrame.Payload.Span[9] != 0)
 {
   throw new InvalidOperationException("V1456 TileSquare did not retain the original three flag bytes.");
+}
+
+byte[] exploitDestroyTileSquare = TerrariaPacketCodec.EncodeExploitDestroyTileSquare(
+  world,
+  new ExploitDestroyTileSquareIntent(10, 10));
+TerrariaFrame exploitDestroyTileSquareFrame = TerrariaFrameCodec.Decode(exploitDestroyTileSquare);
+if (exploitDestroyTileSquareFrame.MessageId != TerrariaMessageId.TileSquare ||
+    !exploitDestroyTileSquare.AsSpan().SequenceEqual(tileSquare))
+{
+  throw new InvalidOperationException(
+    "V1456 exploit-destroy projection did not preserve the broadcast tile-square payload.");
+}
+
+try
+{
+  _ = TerrariaPacketCodec.EncodeExploitDestroyTileSquare(
+    world,
+    new ExploitDestroyTileSquareIntent(10, 10, RemoteClient: 1));
+  throw new InvalidOperationException("V1456 exploit-destroy projection accepted a directed client.");
+}
+catch (ArgumentOutOfRangeException)
+{
 }
 
 LegacyTileSquareTile tracedTileSquareTile = new(
@@ -1779,7 +2729,7 @@ if (!sparseTileEntitySectionPayload.AsSpan().SequenceEqual(Convert.FromHexString
 
 Console.WriteLine("PASS: V1456 compatibility length contracts");
 
-foreach (byte messageId in new byte[] { 69, 108, 109, 110 })
+foreach (byte messageId in new byte[] { 69 })
 {
   TerrariaMessageDescriptor descriptor = TerrariaMessageCatalog.Get(
     (TerrariaMessageId)messageId);
@@ -1803,28 +2753,25 @@ TerrariaMessageDescriptor tileEntityPlacementDescriptor = TerrariaMessageCatalog
   TerrariaMessageId.TileEntityPlacement);
 if (tileEntitySharingDescriptor.Direction != TerrariaPacketDirection.ServerToClient ||
     tileEntitySharingDescriptor.Support != TerrariaPacketSupport.Handled ||
-    tileEntityPlacementDescriptor.Direction != TerrariaPacketDirection.ServerToClient ||
+    tileEntityPlacementDescriptor.Direction != TerrariaPacketDirection.Bidirectional ||
     tileEntityPlacementDescriptor.Support != TerrariaPacketSupport.Handled)
 {
   throw new InvalidOperationException(
-    "TrainingDummy tile-entity messages are not cataloged as server-owned projections.");
+    "TrainingDummy tile-entity message directions are not source-faithful.");
 }
 
-try
+TerrariaPacketDispatchResult placementResult = new TerrariaPacketDispatcher().Dispatch(
+  new TerrariaSession(1),
+  TerrariaPacketCodec.EncodeTrainingDummyTileEntityPlacement(12, 14));
+if (placementResult.Outcome != TerrariaPacketDispatchOutcome.TileEntityPlacementAccepted ||
+    placementResult.TileEntityPlacement != new TileEntityPlacementIntent(12, 14, 0))
 {
-  _ = new TerrariaPacketDispatcher().Dispatch(
-    new TerrariaSession(1),
-    TerrariaPacketCodec.EncodeTrainingDummyTileEntityPlacement(12, 14));
   throw new InvalidOperationException(
-    "Inbound TrainingDummy placement was accepted outside the tile interaction authority path.");
-}
-catch (InvalidDataException exception) when (
-  exception.Message.Contains("server-only", StringComparison.Ordinal))
-{
+    "Inbound TrainingDummy placement was not decoded as a typed intent.");
 }
 
 Console.WriteLine("PASS: unsupported wiring messages are explicitly isolated and NetModules is typed");
-Console.WriteLine("PASS: TrainingDummy tile-entity messages are server-owned projections");
+Console.WriteLine("PASS: TrainingDummy sharing is server-owned and placement is a typed bidirectional intent");
 
 static TerrariaSession CreateActiveSession(byte assignedPlayerSlot)
 {

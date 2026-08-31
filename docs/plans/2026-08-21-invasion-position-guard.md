@@ -18,9 +18,8 @@ No NPC list, collision query, random fallback, spawn table or client behavior is
 
 ## Verification Scope
 
-WorldRules and NPC focused verifiers pass. Two clean WorldRules replays produce identical output
-hashes. Simulation and Server Release builds report zero warnings and errors, and the scoped diff
-check passes.
+Verification: WorldRules/NPC focused runs and two clean replays pass; Simulation/Server Release
+builds are warning-free and the scoped diff check passes.
 
 Evidence:
 `Build/diagnostics/main-migration/task-9-invasion-position-guard/20260821-230021/`

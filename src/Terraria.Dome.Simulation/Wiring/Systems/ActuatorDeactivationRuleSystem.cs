@@ -1,7 +1,20 @@
+using System.Collections.Frozen;
+using System.Collections.Generic;
+
 namespace Terraria.Dome.Simulation.Wiring.Systems;
 
 public static class ActuatorDeactivationRuleSystem
 {
+  private static readonly IReadOnlySet<ushort> SpecialNonActuatedTileTypes = new HashSet<ushort>
+  {
+    314, 379, 386, 387, 388, 389, 476
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterSpecialNonActuatedDefaults()
+  {
+    return SpecialNonActuatedTileTypes;
+  }
+
   public static bool ShouldDeactivate(
     bool isActive,
     bool isActuated,
@@ -30,6 +43,6 @@ public static class ActuatorDeactivationRuleSystem
 
   private static bool IsSpecialNonActuatedType(ushort tileType)
   {
-    return tileType is 314 or 379 or 386 or 387 or 388 or 389 or 476;
+    return SpecialNonActuatedTileTypes.Contains(tileType);
   }
 }

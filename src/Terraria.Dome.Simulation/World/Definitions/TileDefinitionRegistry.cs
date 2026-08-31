@@ -38,7 +38,7 @@ public sealed class TileDefinitionRegistry
 
   public IReadOnlyList<TileDefinition> Definitions { get; }
 
-  public static TileDefinitionRegistry CreateVersion4Base()
+  public static TileDefinitionRegistry RegisterDefaults()
   {
     HashSet<int> solidTypes =
     [
@@ -115,6 +115,17 @@ public sealed class TileDefinitionRegistry
         lavaDeathTypes.Contains(tileType)));
     }
 
+    return new TileDefinitionRegistry(definitions);
+  }
+
+  public static TileDefinitionRegistry CreateVersion4Base()
+  {
+    return RegisterDefaults();
+  }
+
+  public static TileDefinitionRegistry Create(IReadOnlyList<TileDefinition> definitions)
+  {
+    ArgumentNullException.ThrowIfNull(definitions);
     return new TileDefinitionRegistry(definitions);
   }
 

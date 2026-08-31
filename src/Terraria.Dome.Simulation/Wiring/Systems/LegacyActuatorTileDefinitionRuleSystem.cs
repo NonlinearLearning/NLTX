@@ -17,6 +17,6 @@ public static class LegacyActuatorTileDefinitionRuleSystem
 
   private static bool IsSpecialNonActuated(ushort tileType)
   {
-    return tileType is 314 or 379 or 386 or 387 or 388 or 389 or 476;
+    return ActuatorDeactivationRuleSystem.RegisterSpecialNonActuatedDefaults().Contains(tileType);
   }
 }

@@ -40,7 +40,13 @@ internal sealed class PlayerInputApplySystem
     foreach (Entity entity in players.Values)
     {
       ref PlayerInputComponent input = ref world.Get<PlayerInputComponent>(entity);
+      bool previousUseItem = input.UseItem;
+      bool previousUseTile = input.UseTile;
+      bool previousDash = input.Dash;
       input = new PlayerInputComponent();
+      input.UseItemJustReleased = previousUseItem;
+      input.UseTileJustReleased = previousUseTile;
+      input.DashJustReleased = previousDash;
     }
 
     for (int index = 0; index < inputBatch.Inputs.Count; index++)
@@ -48,12 +54,24 @@ internal sealed class PlayerInputApplySystem
       PlayerInput supplied = inputBatch.Inputs[index];
       Entity entity = players[supplied.Player];
       ref PlayerInputComponent input = ref world.Get<PlayerInputComponent>(entity);
+      bool previousDash = input.DashJustReleased;
+      bool previousUseTile = input.UseTileJustReleased;
+      bool previousUseItem = input.UseItemJustReleased;
       input.Down = supplied.Down;
+      input.Dash = supplied.Dash;
+      input.DashJustPressed = supplied.Dash && !previousDash;
+      input.DashJustReleased = !supplied.Dash && previousDash;
       input.MoveLeft = supplied.MoveLeft;
       input.MoveRight = supplied.MoveRight;
       input.Jump = supplied.Jump;
       input.Fire = supplied.Fire;
       input.UseItem = supplied.UseItem;
+      input.Up = supplied.Up;
+      input.UseTile = supplied.UseTile;
+      input.UseTileJustPressed = supplied.UseTile && !previousUseTile;
+      input.UseTileJustReleased = !supplied.UseTile && previousUseTile;
+      input.UseItemJustPressed = supplied.UseItem && !previousUseItem;
+      input.UseItemJustReleased = !supplied.UseItem && previousUseItem;
       input.Facing = supplied.Facing;
     }
   }

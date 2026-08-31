@@ -1,6 +1,5 @@
 # Main Server ECS Migration Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Replace the server responsibilities of Version4/Terraria/Main.cs with explicit,
 deterministic Dome ECS state and systems without importing legacy Main globals, client runtime,

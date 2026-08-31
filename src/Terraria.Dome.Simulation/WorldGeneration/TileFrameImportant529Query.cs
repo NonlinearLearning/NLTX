@@ -13,6 +13,20 @@ public static class TileFrameImportant529Query
     WorldGridSnapshot snapshot,
     TileDefinitionRegistry tileDefinitions,
     int x,
+    int y)
+  {
+    return Evaluate(
+      snapshot,
+      tileDefinitions,
+      x,
+      y,
+      ConversionSandTileRegistry.RegisterDefaults());
+  }
+
+  public static TileFrameImportant529Result Evaluate(
+    WorldGridSnapshot snapshot,
+    TileDefinitionRegistry tileDefinitions,
+    int x,
     int y,
     IReadOnlySet<ushort> conversionSandTileTypes)
   {

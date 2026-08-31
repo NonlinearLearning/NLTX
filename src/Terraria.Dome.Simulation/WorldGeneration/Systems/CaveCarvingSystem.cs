@@ -52,7 +52,8 @@ public sealed class CaveCarvingSystem
           TileChangeKind.Kill,
           0,
           FrameX: -1,
-          FrameY: -1));
+          FrameY: -1,
+          Source: "worldgen.cave"));
       }
     }
   }

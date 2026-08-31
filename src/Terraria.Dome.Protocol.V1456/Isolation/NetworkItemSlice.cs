@@ -13,6 +13,7 @@ public readonly record struct NetworkItemSlice(
 {
   public static NetworkItemSlice From(ItemReplicationSnapshot snapshot)
   {
+    snapshot.Validate();
     return new NetworkItemSlice(
       snapshot.ReplicationId,
       snapshot.Stack.ItemType,

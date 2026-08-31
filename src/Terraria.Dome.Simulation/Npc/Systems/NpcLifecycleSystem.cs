@@ -13,7 +13,9 @@ public sealed class NpcLifecycleSystem
   public NpcLifecycleResult Advance(
     ref NpcLifecycleComponent lifecycle,
     int currentHealth,
-    bool isImmortal = false)
+    bool isImmortal = false,
+    bool doesNotDespawnToInactivity = false,
+    bool isTownNpc = false)
   {
     if (!lifecycle.IsActive)
     {
@@ -30,6 +32,11 @@ public sealed class NpcLifecycleSystem
       lifecycle.IsActive = false;
       lifecycle.DespawnReason = NpcDespawnReason.Killed;
       return new(true, true, null);
+    }
+
+    if (doesNotDespawnToInactivity || isTownNpc)
+    {
+      return new(false, false, null);
     }
 
     if (lifecycle.TimeLeft > 0)

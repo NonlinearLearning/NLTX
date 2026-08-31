@@ -28,4 +28,10 @@ public readonly record struct NpcReplicationSnapshot(
   bool HasHome = false,
   NpcHomeComponent Home = default,
   bool HasSegment = false,
-  NpcSegmentComponent Segment = default);
+  NpcSegmentComponent Segment = default,
+  float FlyingHorizontalAcceleration = 0.0f,
+  float FlyingVerticalAcceleration = 0.0f,
+  float FlyingMaximumHorizontalSpeed = 0.0f,
+  float FlyingMaximumVerticalSpeed = 0.0f,
+  NpcFaction Faction = NpcFaction.Hostile,
+  NpcCategory Category = NpcCategory.Enemy);

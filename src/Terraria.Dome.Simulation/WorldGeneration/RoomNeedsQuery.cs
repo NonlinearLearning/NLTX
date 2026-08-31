@@ -5,6 +5,16 @@ namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class RoomNeedsQuery
 {
+  public static RoomNeedsResult Evaluate(IReadOnlySet<int> houseTileTypes)
+  {
+    return Evaluate(
+      houseTileTypes,
+      RoomNeedsTileRegistry.RegisterChairDefaults(),
+      RoomNeedsTileRegistry.RegisterTableDefaults(),
+      RoomNeedsTileRegistry.RegisterDoorDefaults(),
+      RoomNeedsTileRegistry.RegisterTorchDefaults());
+  }
+
   public static RoomNeedsResult Evaluate(
     IReadOnlySet<int> houseTileTypes,
     IReadOnlySet<int> chairTileTypes,

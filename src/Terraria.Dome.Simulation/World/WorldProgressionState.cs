@@ -32,7 +32,8 @@ public sealed record WorldProgressionState
     bool defeatedGoblins = false,
     bool defeatedFrost = false,
     bool defeatedPirates = false,
-    bool defeatedMartians = false)
+    bool defeatedMartians = false,
+    long lanternNightScheduleSequence = -1)
   {
     if (invasionType < 0)
     {
@@ -86,6 +87,11 @@ public sealed record WorldProgressionState
       throw new ArgumentOutOfRangeException(nameof(lanternNightCooldownTicks));
     }
 
+    if (lanternNightScheduleSequence < -1)
+    {
+      throw new ArgumentOutOfRangeException(nameof(lanternNightScheduleSequence));
+    }
+
     if (slimeRainTimeTicks > 0 && slimeRainCooldownTicks > 0)
     {
       throw new ArgumentException(
@@ -119,6 +125,7 @@ public sealed record WorldProgressionState
     SlimeRainWarningTicks = slimeRainWarningTicks;
     IsNextNightLanternNight = isNextNightLanternNight;
     LanternNightCooldownTicks = lanternNightCooldownTicks;
+    LanternNightScheduleSequence = lanternNightScheduleSequence;
   }
 
   public bool DefeatedEaterOrBrain { get; }
@@ -144,6 +151,7 @@ public sealed record WorldProgressionState
   public bool IsMeteorScheduled { get; }
   public bool IsNextNightLanternNight { get; }
   public int LanternNightCooldownTicks { get; }
+  public long LanternNightScheduleSequence { get; }
   public bool IsSlimeRainCoolingDown => SlimeRainCooldownTicks > 0;
   public bool IsSlimeRaining => SlimeRainTimeTicks > 0;
   public int SlimeRainCooldownTicks { get; }
@@ -178,7 +186,8 @@ public sealed record WorldProgressionState
       defeatedGoblins: DefeatedGoblins,
       defeatedFrost: DefeatedFrost,
       defeatedPirates: DefeatedPirates,
-      defeatedMartians: DefeatedMartians);
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithEclipse(bool isEclipse)
@@ -209,7 +218,8 @@ public sealed record WorldProgressionState
       defeatedGoblins: DefeatedGoblins,
       defeatedFrost: DefeatedFrost,
       defeatedPirates: DefeatedPirates,
-      defeatedMartians: DefeatedMartians);
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithInvasion(int invasionType, int invasionSize)
@@ -245,7 +255,8 @@ public sealed record WorldProgressionState
       defeatedGoblins: DefeatedGoblins,
       defeatedFrost: DefeatedFrost,
       defeatedPirates: DefeatedPirates,
-      defeatedMartians: DefeatedMartians);
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithInvasionSizeStart(int invasionSizeStart)
@@ -272,7 +283,12 @@ public sealed record WorldProgressionState
       LanternNightCooldownTicks,
       invasionSizeStart,
       InvasionDelayTicks,
-      InvasionX);
+      InvasionX,
+      defeatedGoblins: DefeatedGoblins,
+      defeatedFrost: DefeatedFrost,
+      defeatedPirates: DefeatedPirates,
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithInvasionDelayTicks(int invasionDelayTicks)
@@ -299,7 +315,12 @@ public sealed record WorldProgressionState
       LanternNightCooldownTicks,
       InvasionSizeStart,
       invasionDelayTicks,
-      InvasionX);
+      InvasionX,
+      defeatedGoblins: DefeatedGoblins,
+      defeatedFrost: DefeatedFrost,
+      defeatedPirates: DefeatedPirates,
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithInvasionX(double invasionX)
@@ -330,7 +351,8 @@ public sealed record WorldProgressionState
       DefeatedGoblins,
       DefeatedFrost,
       DefeatedPirates,
-      DefeatedMartians);
+      DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithInvasionClearFlag(WorldInvasionClearFlag clearFlag)
@@ -361,7 +383,8 @@ public sealed record WorldProgressionState
       DefeatedGoblins || clearFlag == WorldInvasionClearFlag.Goblins,
       DefeatedFrost || clearFlag == WorldInvasionClearFlag.Frost,
       DefeatedPirates || clearFlag == WorldInvasionClearFlag.Pirates,
-      DefeatedMartians || clearFlag == WorldInvasionClearFlag.Martians);
+      DefeatedMartians || clearFlag == WorldInvasionClearFlag.Martians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithSlimeRain(int slimeRainTimeTicks)
@@ -392,7 +415,8 @@ public sealed record WorldProgressionState
       defeatedGoblins: DefeatedGoblins,
       defeatedFrost: DefeatedFrost,
       defeatedPirates: DefeatedPirates,
-      defeatedMartians: DefeatedMartians);
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithLanternNight(bool isLanternNight)
@@ -423,7 +447,8 @@ public sealed record WorldProgressionState
       defeatedGoblins: DefeatedGoblins,
       defeatedFrost: DefeatedFrost,
       defeatedPirates: DefeatedPirates,
-      defeatedMartians: DefeatedMartians);
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithMeteorScheduled(bool isMeteorScheduled)
@@ -454,7 +479,8 @@ public sealed record WorldProgressionState
       defeatedGoblins: DefeatedGoblins,
       defeatedFrost: DefeatedFrost,
       defeatedPirates: DefeatedPirates,
-      defeatedMartians: DefeatedMartians);
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithSlimeRainCooldown(int cooldownTicks)
@@ -485,7 +511,8 @@ public sealed record WorldProgressionState
       defeatedGoblins: DefeatedGoblins,
       defeatedFrost: DefeatedFrost,
       defeatedPirates: DefeatedPirates,
-      defeatedMartians: DefeatedMartians);
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithSlimeRainWarning(int warningTicks)
@@ -516,7 +543,8 @@ public sealed record WorldProgressionState
       defeatedGoblins: DefeatedGoblins,
       defeatedFrost: DefeatedFrost,
       defeatedPirates: DefeatedPirates,
-      defeatedMartians: DefeatedMartians);
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
   }
 
   public WorldProgressionState WithNextNightLanternNight(bool isNextNightLanternNight)
@@ -547,6 +575,44 @@ public sealed record WorldProgressionState
       defeatedGoblins: DefeatedGoblins,
       defeatedFrost: DefeatedFrost,
       defeatedPirates: DefeatedPirates,
-      defeatedMartians: DefeatedMartians);
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: LanternNightScheduleSequence);
+  }
+
+  public WorldProgressionState WithLanternNightScheduleSequence(long sequence)
+  {
+    if (sequence < -1)
+    {
+      throw new ArgumentOutOfRangeException(nameof(sequence));
+    }
+
+    return new WorldProgressionState(
+      IsHardMode,
+      DefeatedEyeOfCthulhu,
+      DefeatedEaterOrBrain,
+      DefeatedSkeletron,
+      DefeatedWallOfFlesh,
+      DefeatedMechanicalBoss,
+      DefeatedPlantera,
+      DefeatedGolem,
+      IsBloodMoon,
+      IsEclipse,
+      IsLanternNight,
+      InvasionType,
+      InvasionSize,
+      SlimeRainTimeTicks,
+      IsMeteorScheduled,
+      SlimeRainCooldownTicks,
+      SlimeRainWarningTicks,
+      IsNextNightLanternNight,
+      LanternNightCooldownTicks,
+      invasionSizeStart: InvasionSizeStart,
+      invasionDelayTicks: InvasionDelayTicks,
+      invasionX: InvasionX,
+      defeatedGoblins: DefeatedGoblins,
+      defeatedFrost: DefeatedFrost,
+      defeatedPirates: DefeatedPirates,
+      defeatedMartians: DefeatedMartians,
+      lanternNightScheduleSequence: sequence);
   }
 }

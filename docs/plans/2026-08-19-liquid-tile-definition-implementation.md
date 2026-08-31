@@ -1,6 +1,5 @@
 # Liquid Tile Definition Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Make ordinary Liquid propagation honor a source-derived 753-ID Tile solidity/platform registry.
 

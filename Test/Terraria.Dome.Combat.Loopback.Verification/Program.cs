@@ -14,7 +14,7 @@ using Terraria.Dome.Simulation.Items.Events;
 using Terraria.Dome.Simulation.WorldModel;
 
 const short CombatSpawnX = 2100;
-const short CombatSpawnY = 1;
+const short CombatSpawnY = 4;
 const int WorldHeight = 1200;
 const int WorldWidth = 4200;
 
@@ -28,9 +28,7 @@ WorldMetadata metadata = new("Combat Verification", new WorldSeed(1456), WorldWi
 DomeSimulationSnapshot serverSnapshot;
 using (DomeSimulation setup = new(world))
 {
-  _ = setup.CreateNpc(
-    new SimulationVector(CombatSpawnX + 20.0f, CombatSpawnY),
-    DomeSimulation.FixtureNpcType);
+  _ = setup.CreateNpc(new SimulationVector(CombatSpawnX + 20.0f, CombatSpawnY));
   serverSnapshot = setup.CreatePersistenceSnapshot(metadata);
 }
 
@@ -46,7 +44,7 @@ NetworkStream attacker = attackerClient.GetStream();
 NetworkStream observer = observerClient.GetStream();
 NetworkStream hidden = hiddenClient.GetStream();
 byte attackerSlot = await ActivateAsync(attacker, CombatSpawnX, CombatSpawnY, "Attacker");
-byte observerSlot = await ActivateAsync(observer, CombatSpawnX, CombatSpawnY, "Observer");
+byte observerSlot = await ActivateAsync(observer, (short)(CombatSpawnX - 200), CombatSpawnY, "Observer");
 byte hiddenSlot = await ActivateAsync(hidden, 100, CombatSpawnY, "Hidden");
 await observer.WriteAsync(TerrariaPacketCodec.EncodePlayerControls(
   new PlayerControlIntent(
@@ -57,7 +55,7 @@ await observer.WriteAsync(TerrariaPacketCodec.EncodePlayerControls(
     UseItem: false,
     FacingRight: true,
     SelectedItem: 0),
-  CombatSpawnX * TerrariaWorldCoordinates.PixelsPerTile,
+  (CombatSpawnX - 200) * TerrariaWorldCoordinates.PixelsPerTile,
   CombatSpawnY * TerrariaWorldCoordinates.PixelsPerTile));
 await hidden.WriteAsync(TerrariaPacketCodec.EncodePlayerControls(
   new PlayerControlIntent(
@@ -76,7 +74,7 @@ for (int index = 0; index < 1_200 && !server.LatestSnapshot.Npcs.Any(npc => npc.
 {
   PlayerControlIntent fire = new(
     attackerSlot,
-    MoveLeft: false,
+    MoveLeft: true,
     MoveRight: false,
     Jump: false,
     UseItem: true,
@@ -171,9 +169,11 @@ catch (OperationCanceledException)
 
 await Task.Delay(TimeSpan.FromMilliseconds(250));
 int worldItemCount = server.CreateWorldItemSnapshots().Count;
+IReadOnlyList<ItemReplicationSnapshot> replicatedItems = server.CreateItemReplicationSnapshots();
 IReadOnlyList<WorldItemCreatedEvent> createdItems = server.CreateWorldItemCreatedEvents();
 IReadOnlyList<WorldItemPickedUpEvent> pickedUpItems = server.CreateWorldItemPickedUpEvents();
-if (hiddenSawTargetCombat || worldItemCount != 1)
+if (hiddenSawTargetCombat || worldItemCount != 1 || replicatedItems.Count != 1 ||
+    replicatedItems[0].Revision != 1 || replicatedItems[0].WorldState.SpawnSource <= 0)
 {
   string createdSummary = string.Join(",", createdItems.Select(item =>
     $"id={item.ReplicationId}:type={item.Stack.ItemType}:qty={item.Stack.Quantity}:" +
@@ -184,7 +184,14 @@ if (hiddenSawTargetCombat || worldItemCount != 1)
   throw new InvalidOperationException(
     $"Combat PVS or authoritative NPC loot ownership was violated. " +
     $"Items={worldItemCount}, Created={createdItems.Count}[{createdSummary}], " +
-    $"PickedUp={pickedUpItems.Count}[{pickedUpSummary}], Frame={hiddenCombatFrame}.");
+    $"PickedUp={pickedUpItems.Count}[{pickedUpSummary}], Frame={hiddenCombatFrame}, " +
+    $"WorldItems={string.Join(',', server.CreateWorldItemSnapshots().Select(item =>
+      $"{item.ReplicationId}:{item.Position.X:F1},{item.Position.Y:F1}:" +
+      $"active={item.IsActive}:stack={item.Stack.Quantity}"))}, " +
+    $"Players={string.Join(',', server.LatestSnapshot.Players.Select(player =>
+      $"{player.Player.Value}:{player.Position.X:F1},{player.Position.Y:F1}"))}, " +
+    $"WorldRevision={string.Join(',', replicatedItems.Select(item => item.Revision))}, " +
+    $"WorldSource={string.Join(',', replicatedItems.Select(item => item.WorldState.SpawnSource))}.");
 }
 
 Console.WriteLine("PASS: two-session combat is PVS-limited and produces one server-owned drop");

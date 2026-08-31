@@ -10,9 +10,87 @@ using Terraria.Dome.Simulation.Wiring.Commands;
 using Terraria.Dome.Simulation.Wiring.Components;
 using Terraria.Dome.Simulation.Wiring.Definitions;
 using Terraria.Dome.Simulation.Wiring.Systems;
+using Terraria.Dome.Simulation.WorldGeneration;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldObjects;
 using Terraria.Dome.Simulation.WorldObjects.Chest.Systems;
+
+IReadOnlySet<ushort> containerDefaults =
+  TileBreakabilityProtectionRuleSystem.RegisterContainerDefaults();
+IReadOnlySet<ushort> topRemovalDefaults =
+  TileBreakabilityProtectionRuleSystem.RegisterTopRemovalDefaults();
+if (containerDefaults.Count != 7 || topRemovalDefaults.Count != 17 ||
+    !containerDefaults.Contains(21) || !topRemovalDefaults.Contains(634) ||
+    containerDefaults.Contains(1) || topRemovalDefaults.Contains(1) ||
+    !containerDefaults.SetEquals(TileBreakabilityProtectionRuleSystem.RegisterContainerDefaults()) ||
+    !topRemovalDefaults.SetEquals(TileBreakabilityProtectionRuleSystem.RegisterTopRemovalDefaults()))
+{
+  throw new InvalidOperationException("Tile breakability defaults were not stable or bounded.");
+}
+
+IReadOnlySet<ushort> legacyContainerDefaults = LegacyTileContainerRegistry.RegisterDefaults();
+HashSet<ushort> expectedLegacyContainerDefaults = [21, 88, 467, 470, 475];
+if (!legacyContainerDefaults.SetEquals(expectedLegacyContainerDefaults) ||
+    legacyContainerDefaults.Contains(441) || legacyContainerDefaults.Contains(468))
+{
+  throw new InvalidOperationException("Legacy tile-container defaults drifted from Version4.");
+}
+
+HashSet<ushort> expectedLegacySignDefaults = [55, 85, 425, 573];
+if (!LegacySignTileRegistry.RegisterDefaults().SetEquals(expectedLegacySignDefaults) ||
+    LegacySignTileRegistry.IsSign(1))
+{
+  throw new InvalidOperationException("Legacy sign-tile defaults drifted from Version4.");
+}
+
+if (LampDefinitionRegistry.SourceDerived.OrderedDefinitions.Count != 16 ||
+    LampDefinitionRegistry.SourceDerived.OrderedDefinitions[0].TileType != 4 ||
+    LampDefinitionRegistry.SourceDerived.OrderedDefinitions[15].TileType != 646)
+{
+  throw new InvalidOperationException("Lamp definitions did not preserve source registration order.");
+}
+
+IReadOnlySet<ushort> boulderDefaults = LegacyBoulderRuleSystem.RegisterDefaults();
+IReadOnlySet<ushort> treeTrunkDefaults = LegacyTreeTrunkRuleSystem.RegisterDefaults();
+if (boulderDefaults.Count != 10 || treeTrunkDefaults.Count != 12 ||
+    !boulderDefaults.Contains(138) || !treeTrunkDefaults.Contains(634) ||
+    !boulderDefaults.SetEquals(LegacyBoulderRuleSystem.RegisterDefaults()) ||
+    !treeTrunkDefaults.SetEquals(LegacyTreeTrunkRuleSystem.RegisterDefaults()))
+{
+  throw new InvalidOperationException("Boulder or tree-trunk defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> actuationDefaults = LegacyActuationProtectionRuleSystem.RegisterDefaults();
+IReadOnlySet<ushort> specialDeactivationDefaults =
+  ActuatorDeactivationRuleSystem.RegisterSpecialNonActuatedDefaults();
+if (actuationDefaults.Count != 11 || specialDeactivationDefaults.Count != 7 ||
+    !actuationDefaults.Contains(21) || !actuationDefaults.Contains(468) ||
+    !specialDeactivationDefaults.Contains(314) || !specialDeactivationDefaults.Contains(476) ||
+    !actuationDefaults.SetEquals(LegacyActuationProtectionRuleSystem.RegisterDefaults()) ||
+    !specialDeactivationDefaults.SetEquals(
+      ActuatorDeactivationRuleSystem.RegisterSpecialNonActuatedDefaults()))
+{
+  throw new InvalidOperationException("Actuation protection defaults were mutable or unstable.");
+}
+
+IReadOnlySet<ushort> alwaysProtectedDefaults =
+  SpecialTileProtectionRuleSystem.RegisterAlwaysProtectedDefaults();
+if (alwaysProtectedDefaults.Count != 7 || !alwaysProtectedDefaults.Contains(21) ||
+    !alwaysProtectedDefaults.Contains(488) ||
+    !alwaysProtectedDefaults.SetEquals(SpecialTileProtectionRuleSystem.RegisterAlwaysProtectedDefaults()))
+{
+  throw new InvalidOperationException("Special tile protection defaults were mutable or unstable.");
+}
+
+try
+{
+  ((IDictionary<ushort, LampDefinition>)LampDefinitionRegistry.SourceDerived.Definitions)[4] =
+    LampDefinitionRegistry.SourceDerived.OrderedDefinitions[0];
+  throw new InvalidOperationException("Lamp definition projection was mutable.");
+}
+catch (NotSupportedException)
+{
+}
 
 if (!ActuatorDeactivationRuleSystem.ShouldDeactivate(
       isActive: true,

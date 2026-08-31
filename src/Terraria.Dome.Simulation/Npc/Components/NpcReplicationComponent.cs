@@ -14,4 +14,14 @@ public struct NpcReplicationComponent
   public long Revision;
   public bool IsDirty;
   public int ThrottleTicks;
+
+  public void MarkDirty()
+  {
+    IsDirty = true;
+  }
+
+  public void ClearDirty()
+  {
+    IsDirty = false;
+  }
 }

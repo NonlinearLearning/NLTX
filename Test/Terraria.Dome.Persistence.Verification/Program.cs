@@ -4,12 +4,17 @@ using System.IO;
 using System.Linq;
 using Terraria.Dome.Server;
 using Terraria.Dome.Server.Persistence;
+using Terraria.Dome.Server.Replication;
 using Terraria.Dome.Simulation;
+using Terraria.Dome.Simulation.Commands;
 using Terraria.Dome.Simulation.Items;
+using Terraria.Dome.Simulation.Npc.Definitions;
+using Terraria.Dome.Simulation.Npc.Snapshots;
 using Terraria.Dome.Simulation.Players;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldObjects;
 using Terraria.Dome.Simulation.WorldGeneration;
+using Terraria.Dome.Simulation.WorldGeneration.Systems;
 using Terraria.WorldCompatibility.Model;
 using Terraria.WorldCompatibility.Projection;
 using Terraria.WorldFile.V319.Format;
@@ -22,24 +27,39 @@ Directory.CreateDirectory(temporaryDirectory);
 
 try
 {
+  VerifyProjectileIdentityCursorPersistence();
+  VerifyNpcGivenNameSidecarPersistence();
+  VerifyNpcGivenNameSaveCoordinator(temporaryDirectory);
   VerifyRoundTrip(temporaryDirectory);
   VerifyLegacyWorldPersistenceFormatCompatibility();
   VerifyVersionTwoWorldPersistenceFormatCompatibility();
   VerifyRemixWorldPersistenceRoundTrip();
+  VerifyNoTrapsWorldPersistenceRoundTrip();
+  VerifySkyblockWorldPersistenceRoundTrip();
+  VerifyGoodWorldPersistenceRoundTrip();
   VerifyVersionThreeWorldSurfaceCompatibility();
-VerifyWorldSurfacePersistenceRoundTrip();
-VerifyWorldGeneratorVersionPersistenceRoundTrip();
-VerifyWorldSeedTextPersistenceRoundTrip();
+  VerifyWorldSurfacePersistenceRoundTrip();
+  VerifyWorldGeneratorVersionPersistenceRoundTrip();
+  VerifyWorldMetadataBoundaryProjection();
+  VerifyWorldSeedTextPersistenceRoundTrip();
+  VerifyNpcTypedStatePersistenceRoundTrip();
   VerifyMoonPhasePersistenceRoundTrip();
   VerifyRawWeatherPersistenceRoundTrip();
   VerifyWorldEventRandomStatePersistenceRoundTrip();
   VerifyWorldTimeRatePersistenceRoundTrip();
   VerifyFractionalWorldClockPersistenceRoundTrip();
+  VerifyTerrainBaseClearsConfiguredSpawn();
   VerifyDeterministicBaseGeneration();
   VerifyInvalidPayloadDoesNotProduceCandidate(temporaryDirectory);
   VerifyInvalidDimensionsDoNotProduceCandidate(temporaryDirectory);
   VerifyUnsupportedVersionDoesNotProduceCandidate(temporaryDirectory);
-  VerifyExistingFileIsReplacedAtomically(temporaryDirectory);
+VerifyExistingFileIsReplacedAtomically(temporaryDirectory);
+VerifyWorldRollingBackups(temporaryDirectory);
+VerifyNpcProjectileCursorServerLifecycle(temporaryDirectory);
+VerifyNpcProjectileCursorCrashRecovery(temporaryDirectory);
+VerifyNpcProjectileCursorCompaction();
+  VerifyNpcProjectileCursorRestartReplay(temporaryDirectory);
+  VerifyWorldItemSnapshotWriteValidation();
   VerifyFailedReplacementPreservesExistingTarget(temporaryDirectory);
   VerifyDomeStateRoundTrip(temporaryDirectory);
   VerifyImportedCompatibilityRoundTrip(temporaryDirectory);
@@ -121,6 +141,307 @@ static void VerifyRoundTrip(string temporaryDirectory)
   }
 }
 
+static void VerifyWorldMetadataBoundaryProjection()
+{
+  WorldMetadata metadata = new("Boundary projection", new WorldSeed(781), 400, 300);
+  if (metadata.LeftWorld != 0.0f || metadata.RightWorld != 6400.0f ||
+      metadata.TopWorld != 0.0f || metadata.BottomWorld != 4800.0f ||
+      metadata.MaxSectionsX != 2 || metadata.MaxSectionsY != 2)
+  {
+    throw new InvalidOperationException(
+      "World metadata boundary and section projections diverged from grid dimensions.");
+  }
+}
+
+static void VerifyNoTrapsWorldPersistenceRoundTrip()
+{
+  WorldMetadata metadata = new(
+    "No traps persistence",
+    new WorldSeed(782),
+    400,
+    300,
+    isNoTrapsWorld: true);
+  WorldGrid world = new(metadata.Width, metadata.Height);
+  using MemoryStream stream = new();
+  WorldPersistenceFormat.Write(stream, world.CreateSnapshot(metadata));
+  stream.Position = 0;
+  WorldGridSnapshot restored = WorldPersistenceFormat.Read(stream);
+  if (restored.Metadata.IsNoTrapsWorld != true)
+  {
+    throw new InvalidOperationException(
+      "World persistence did not preserve the no-traps world metadata flag.");
+  }
+
+  Console.WriteLine("PASS: no-traps world metadata persistence round-trip");
+}
+
+static void VerifySkyblockWorldPersistenceRoundTrip()
+{
+  WorldMetadata metadata = new(
+    "Skyblock persistence",
+    new WorldSeed(783),
+    400,
+    300,
+    isSkyblockWorld: true);
+  WorldGrid world = new(metadata.Width, metadata.Height);
+  using MemoryStream stream = new();
+  WorldPersistenceFormat.Write(stream, world.CreateSnapshot(metadata));
+  stream.Position = 0;
+  WorldGridSnapshot restored = WorldPersistenceFormat.Read(stream);
+  if (restored.Metadata.IsSkyblockWorld != true)
+  {
+    throw new InvalidOperationException(
+      "World persistence did not preserve the skyblock world metadata flag.");
+  }
+
+  Console.WriteLine("PASS: skyblock world metadata persistence round-trip");
+}
+
+static void VerifyGoodWorldPersistenceRoundTrip()
+{
+  WorldGrid world = new(width: 400, height: 300);
+  WorldMetadata metadata = new(
+    "Good World persistence",
+    new WorldSeed(784),
+    400,
+    300,
+    isRemixWorld: true,
+    isNoTrapsWorld: true,
+    isSkyblockWorld: true,
+    isGoodWorld: true);
+  WorldGridSnapshot snapshot = world.CreateSnapshot(metadata);
+
+  using MemoryStream worldStream = new();
+  WorldPersistenceFormat.Write(worldStream, snapshot);
+  worldStream.Position = 0;
+  WorldGridSnapshot restoredWorld = WorldPersistenceFormat.Read(worldStream);
+  if (restoredWorld.Metadata.IsGoodWorld != true ||
+      restoredWorld.Metadata.IsRemixWorld != true ||
+      restoredWorld.Metadata.IsNoTrapsWorld != true ||
+      restoredWorld.Metadata.IsSkyblockWorld != true)
+  {
+    throw new InvalidOperationException(
+      "World persistence did not retain Good World alongside existing world flags.");
+  }
+
+  DomeSimulationSnapshot domeSnapshot = new(snapshot, [], [], tickNumber: 0);
+  using MemoryStream domeStream = new();
+  DomeStatePersistenceFormat.Write(domeStream, domeSnapshot);
+  domeStream.Position = 0;
+  DomeSimulationSnapshot restoredDome = DomeStatePersistenceFormat.Read(domeStream);
+  if (restoredDome.World.Metadata.IsGoodWorld != true ||
+      restoredDome.World.Metadata.IsRemixWorld != true ||
+      restoredDome.World.Metadata.IsNoTrapsWorld != true ||
+      restoredDome.World.Metadata.IsSkyblockWorld != true)
+  {
+    throw new InvalidOperationException(
+      "Dome state persistence did not retain Good World alongside existing world flags.");
+  }
+
+  WorldMetadata falseMetadata = new(
+    metadata.Name,
+    metadata.Seed,
+    metadata.Width,
+    metadata.Height,
+    metadata.WorldId,
+    metadata.SpawnX,
+    metadata.SpawnY,
+    metadata.SeedVariant,
+    metadata.RandomStreamVersion,
+    metadata.WorldSurface,
+    metadata.RockLayer,
+    metadata.IsRemixWorld,
+    metadata.WorldGeneratorVersion,
+    metadata.UniqueId,
+    metadata.SeedText,
+    metadata.IsNoTrapsWorld,
+    metadata.IsSkyblockWorld,
+    isGoodWorld: false);
+  using MemoryStream falseDomeStream = new();
+  DomeStatePersistenceFormat.Write(
+    falseDomeStream,
+    new DomeSimulationSnapshot(world.CreateSnapshot(falseMetadata), [], [], tickNumber: 0));
+  falseDomeStream.Position = 0;
+  DomeSimulationSnapshot restoredFalseDome = DomeStatePersistenceFormat.Read(falseDomeStream);
+  if (restoredFalseDome.World.Metadata.IsGoodWorld != false)
+  {
+    throw new InvalidOperationException(
+      "Dome state persistence did not retain an explicit false Good World value.");
+  }
+
+  byte[] versionThirtySixBytes = domeStream.ToArray()[..^(sizeof(bool) * 2)];
+  BitConverter.GetBytes(36).CopyTo(versionThirtySixBytes, sizeof(int));
+  using MemoryStream versionThirtySixStream = new(versionThirtySixBytes, writable: false);
+  DomeSimulationSnapshot restoredVersionThirtySix =
+    DomeStatePersistenceFormat.Read(versionThirtySixStream);
+  if (restoredVersionThirtySix.World.Metadata.IsGoodWorld is not null ||
+      restoredVersionThirtySix.World.Metadata.IsRemixWorld != true ||
+      restoredVersionThirtySix.World.Metadata.IsNoTrapsWorld != true ||
+      restoredVersionThirtySix.World.Metadata.IsSkyblockWorld != true)
+  {
+    throw new InvalidOperationException(
+      "A V36 Dome state incorrectly recovered Good World from its embedded V8 world payload.");
+  }
+
+  Console.WriteLine("PASS: V37 Good World true/false and V36 unknown boundary");
+  Console.WriteLine("PASS: Good World metadata persistence round-trip");
+}
+
+static void VerifyProjectileIdentityCursorPersistence()
+{
+  WorldGrid world = new(width: 400, height: 300);
+  WorldMetadata metadata = new("Projectile cursor", new WorldSeed(144), 400, 300);
+  DomeSimulationSnapshot snapshot = new(
+    world.CreateSnapshot(metadata),
+    [],
+    [],
+    tickNumber: 0,
+    nextProjectileIdentity: 17,
+    nextChestMutationSequence: 23,
+    nextLiquidSequence: 29,
+    nextWiringSequence: 31);
+  using MemoryStream stream = new();
+  DomeStatePersistenceFormat.Write(stream, snapshot);
+  stream.Position = 0;
+  DomeSimulationSnapshot restored = DomeStatePersistenceFormat.Read(stream);
+  if (restored.NextProjectileIdentity != 17 || restored.NextChestMutationSequence != 23 ||
+      restored.NextLiquidSequence != 29 || restored.NextWiringSequence != 31)
+  {
+    throw new InvalidOperationException(
+      "The projectile identity cursor did not survive the current persistence round-trip.");
+  }
+
+  byte[] legacyBytes = stream.ToArray()[..^(sizeof(int) + 3 * sizeof(long))];
+  Buffer.BlockCopy(BitConverter.GetBytes(35), 0, legacyBytes, sizeof(int), sizeof(int));
+  using MemoryStream legacyStream = new(legacyBytes, writable: false);
+  DomeSimulationSnapshot legacy = DomeStatePersistenceFormat.Read(legacyStream);
+  if (legacy.NextProjectileIdentity != 1 || legacy.NextChestMutationSequence != 0 ||
+      legacy.NextLiquidSequence != 0 || legacy.NextWiringSequence != 0)
+  {
+    throw new InvalidOperationException(
+      "A legacy state without a projectile identity cursor did not default safely.");
+  }
+
+  byte[] truncatedCurrentBytes = stream.ToArray()[..^(sizeof(long) * 3)];
+  using MemoryStream truncatedCurrentStream = new(truncatedCurrentBytes, writable: false);
+  try
+  {
+    _ = DomeStatePersistenceFormat.Read(truncatedCurrentStream);
+    throw new InvalidOperationException(
+      "A truncated V36 mutation cursor tail was accepted.");
+  }
+  catch (EndOfStreamException)
+  {
+  }
+
+  try
+  {
+    _ = new DomeSimulationSnapshot(
+      world.CreateSnapshot(metadata),
+      [],
+      [],
+      tickNumber: 0,
+      nextWiringSequence: long.MaxValue);
+    throw new InvalidOperationException(
+      "A non-advancable wiring sequence cursor was accepted.");
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+  }
+
+  Console.WriteLine("PASS: projectile identity cursor persistence and legacy default");
+}
+
+static void VerifyNpcGivenNameSidecarPersistence()
+{
+  using MemoryStream stream = new();
+  NpcGivenNamePersistenceFormat.Write(
+    stream,
+    [new NpcGivenNameEntry(7, "Guide"), new NpcGivenNameEntry(9, string.Empty)]);
+  stream.Position = 0;
+  IReadOnlyList<NpcGivenNameEntry> restored = NpcGivenNamePersistenceFormat.Read(stream);
+  if (restored.Count != 2 || restored[0].ReplicationId != 7 ||
+      restored[0].GivenName != "Guide" || restored[1].GivenName != string.Empty)
+  {
+    throw new InvalidOperationException("NPC given-name sidecar round-trip did not preserve entries.");
+  }
+
+  try
+  {
+    NpcGivenNamePersistenceFormat.Write(
+      new MemoryStream(),
+      [new NpcGivenNameEntry(7, "Guide"), new NpcGivenNameEntry(7, "Duplicate")]);
+    throw new InvalidOperationException("NPC given-name sidecar accepted duplicate replication IDs.");
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+  }
+}
+
+static void VerifyNpcGivenNameSaveCoordinator(string temporaryDirectory)
+{
+  string path = Path.Combine(temporaryDirectory, "npc-given-names.bin");
+  NpcGivenNameSaveCoordinator coordinator = new();
+  coordinator.Save(path, [new NpcGivenNameEntry(7, "Guide")]);
+  File.Copy(path, path + ".tmp", overwrite: true);
+  File.WriteAllBytes(path, [1, 2, 3]);
+  IReadOnlyList<NpcGivenNameEntry> recovered = coordinator.Load(path);
+  if (recovered.Count != 1 || recovered[0].ReplicationId != 7 ||
+      recovered[0].GivenName != "Guide" || File.Exists(path + ".tmp"))
+  {
+    throw new InvalidOperationException("NPC given-name coordinator did not recover its valid temporary file.");
+  }
+
+  NpcStateSnapshot state = CreatePersistenceNpcState(7);
+  IReadOnlyList<NpcStateSnapshot> merged = coordinator.Apply(
+    [state],
+    [new NpcGivenNameEntry(7, "Guide"), new NpcGivenNameEntry(99, "Unknown")]);
+  if (merged.Count != 1 || merged[0].GivenName != "Guide")
+  {
+    throw new InvalidOperationException("NPC given-name coordinator did not join by authoritative ID.");
+  }
+
+  WorldGrid world = new(width: 400, height: 300);
+  WorldMetadata metadata = new("NPC name server", new WorldSeed(41), 400, 300);
+  NpcStateSnapshot namedState = CreatePersistenceNpcState(7) with { GivenName = "Guide" };
+  DomeSimulationSnapshot snapshot = new(
+    world.CreateSnapshot(metadata),
+    [namedState.ToReplicationSnapshot()],
+    [],
+    tickNumber: 0,
+    npcStates: [namedState]);
+  coordinator.Save(path, [new NpcGivenNameEntry(7, "Guide")]);
+  using (DomeServer server = new(snapshot))
+  {
+    server.ConfigureNpcGivenNamePersistence(path);
+    if (server.CreatePersistenceSnapshot(metadata).NpcStates.Single().GivenName != "Guide")
+    {
+      throw new InvalidOperationException("DomeServer did not apply the given-name sidecar on startup.");
+    }
+  }
+
+  if (coordinator.Load(path).Single().GivenName != "Guide")
+  {
+    throw new InvalidOperationException("DomeServer did not preserve the given-name sidecar on disposal.");
+  }
+}
+
+static NpcStateSnapshot CreatePersistenceNpcState(int replicationId)
+{
+  NpcReplicationSnapshot replication = new(
+    replicationId,
+    1,
+    default,
+    default,
+    100,
+    true,
+    1,
+    default,
+    DefinitionId: 1,
+    MaximumHealth: 100);
+  return NpcStateSnapshot.FromReplication(replication);
+}
+
 static void VerifyLegacyWorldPersistenceFormatCompatibility()
 {
   const int formatMagic = 0x574D4F44;
@@ -188,14 +509,14 @@ static void VerifyVersionTwoWorldPersistenceFormatCompatibility()
       "The V2 compatibility fixture expected an unknown world surface.");
   }
 
-  byte[] versionTwoBytes = new byte[currentBytes.Length - sizeof(bool) * 2];
+  byte[] versionTwoBytes = new byte[currentBytes.Length - sizeof(bool) * 6];
   Buffer.BlockCopy(currentBytes, 0, versionTwoBytes, 0, worldSurfaceOffset);
   Buffer.BlockCopy(
     currentBytes,
-    worldSurfaceOffset + sizeof(bool) * 2,
+    worldSurfaceOffset + sizeof(bool) * 6,
     versionTwoBytes,
     worldSurfaceOffset,
-    currentBytes.Length - worldSurfaceOffset - sizeof(bool) * 2);
+    currentBytes.Length - worldSurfaceOffset - sizeof(bool) * 6);
   BitConverter.GetBytes(2).CopyTo(versionTwoBytes, sizeof(int));
   using MemoryStream versionTwoStream = new(versionTwoBytes, writable: false);
   WorldGridSnapshot versionTwo = WorldPersistenceFormat.Read(versionTwoStream);
@@ -245,15 +566,15 @@ static void VerifyVersionThreeWorldSurfaceCompatibility()
   byte[] currentBytes = currentStream.ToArray();
   int nameLength = BitConverter.ToInt32(currentBytes, sizeof(int) * 5);
   int worldSurfaceOffset = sizeof(int) * 6 + nameLength;
-  int remixMarkerOffset = worldSurfaceOffset + sizeof(bool) + sizeof(double);
-  byte[] versionThreeBytes = new byte[currentBytes.Length - sizeof(bool) * 2];
-  Buffer.BlockCopy(currentBytes, 0, versionThreeBytes, 0, remixMarkerOffset);
+  int rockLayerMarkerOffset = worldSurfaceOffset + sizeof(bool) + sizeof(double);
+  byte[] versionThreeBytes = new byte[currentBytes.Length - sizeof(bool) * 6];
+  Buffer.BlockCopy(currentBytes, 0, versionThreeBytes, 0, rockLayerMarkerOffset);
   Buffer.BlockCopy(
     currentBytes,
-    remixMarkerOffset + sizeof(bool) * 2,
+    rockLayerMarkerOffset + sizeof(bool) * 6,
     versionThreeBytes,
-    remixMarkerOffset,
-    currentBytes.Length - remixMarkerOffset - sizeof(bool) * 2);
+    rockLayerMarkerOffset,
+    currentBytes.Length - rockLayerMarkerOffset - sizeof(bool) * 6);
   BitConverter.GetBytes(3).CopyTo(versionThreeBytes, sizeof(int));
   using MemoryStream versionThreeStream = new(versionThreeBytes, writable: false);
   WorldGridSnapshot restored = WorldPersistenceFormat.Read(versionThreeStream);
@@ -268,20 +589,23 @@ static void VerifyVersionThreeWorldSurfaceCompatibility()
 static void VerifyWorldSurfacePersistenceRoundTrip()
 {
   const double expectedWorldSurface = 123.5;
+  const double expectedRockLayer = 245.75;
   WorldGrid world = new(width: 400, height: 300);
   WorldMetadata metadata = new(
     "World surface",
     new WorldSeed(1456),
     400,
     300,
-    worldSurface: expectedWorldSurface);
+    worldSurface: expectedWorldSurface,
+    rockLayer: expectedRockLayer);
   WorldGridSnapshot worldSnapshot = world.CreateSnapshot(metadata);
 
   using MemoryStream worldStream = new();
   WorldPersistenceFormat.Write(worldStream, worldSnapshot);
   worldStream.Position = 0;
   WorldGridSnapshot restoredWorld = WorldPersistenceFormat.Read(worldStream);
-  if (restoredWorld.Metadata.WorldSurface != expectedWorldSurface)
+  if (restoredWorld.Metadata.WorldSurface != expectedWorldSurface ||
+      restoredWorld.Metadata.RockLayer != expectedRockLayer)
   {
     throw new InvalidOperationException(
       "Embedded world persistence did not retain the world surface.");
@@ -292,7 +616,8 @@ static void VerifyWorldSurfacePersistenceRoundTrip()
   DomeStatePersistenceFormat.Write(stateStream, snapshot);
   stateStream.Position = 0;
   DomeSimulationSnapshot restoredState = DomeStatePersistenceFormat.Read(stateStream);
-  if (restoredState.World.Metadata.WorldSurface != expectedWorldSurface)
+  if (restoredState.World.Metadata.WorldSurface != expectedWorldSurface ||
+      restoredState.World.Metadata.RockLayer != expectedRockLayer)
   {
     throw new InvalidOperationException(
       "Dome state persistence did not retain the world surface.");
@@ -355,6 +680,52 @@ static void VerifyWorldSeedTextPersistenceRoundTrip()
   }
 }
 
+static void VerifyNpcTypedStatePersistenceRoundTrip()
+{
+  WorldGrid world = new(width: 400, height: 300);
+  WorldMetadata metadata = new("NPC typed state", new WorldSeed(37), 400, 300);
+  NpcReplicationSnapshot npc = new(
+    ReplicationId: 7,
+    NpcType: 1,
+    Position: new SimulationVector(20.0f, 20.0f),
+    Velocity: default,
+    Health: 100,
+    IsActive: true,
+    Revision: 3,
+    Section: world.GetSectionCoordinates(20, 20),
+    DefinitionId: 1,
+    MaximumHealth: 100,
+    BehaviorId: NpcBehaviorId.FloatingEye,
+    FlyingHorizontalAcceleration: 0.75f,
+    FlyingVerticalAcceleration: 0.5f,
+    FlyingMaximumHorizontalSpeed: 6.0f,
+    FlyingMaximumVerticalSpeed: 4.0f,
+    Faction: NpcFaction.Town,
+    Category: NpcCategory.Town);
+  DomeSimulationSnapshot snapshot = new(
+    world.CreateSnapshot(metadata),
+    [npc],
+    [],
+    tickNumber: 0);
+  using MemoryStream stream = new();
+  DomeStatePersistenceFormat.Write(stream, snapshot);
+  stream.Position = 0;
+  DomeSimulationSnapshot restored = DomeStatePersistenceFormat.Read(stream);
+  NpcReplicationSnapshot restoredNpc = restored.Npcs.Single();
+  if (restoredNpc.BehaviorId != NpcBehaviorId.FloatingEye ||
+      restoredNpc.FlyingHorizontalAcceleration != 0.75f ||
+      restoredNpc.FlyingVerticalAcceleration != 0.5f ||
+      restoredNpc.FlyingMaximumHorizontalSpeed != 6.0f ||
+      restoredNpc.FlyingMaximumVerticalSpeed != 4.0f ||
+      restoredNpc.Faction != NpcFaction.Town || restoredNpc.Category != NpcCategory.Town)
+  {
+    throw new InvalidOperationException(
+      "NPC typed movement and faction state did not survive server persistence round-trip.");
+  }
+
+  Console.WriteLine("PASS: NPC typed movement and faction persistence round-trip");
+}
+
 static void VerifyMoonPhasePersistenceRoundTrip()
 {
   WorldGrid world = new(width: 400, height: 300);
@@ -377,71 +748,7 @@ static void VerifyMoonPhasePersistenceRoundTrip()
       "Dome persistence did not retain authoritative moon phase and game mode.");
   }
 
-  byte[] versionTwentyOne = stream.ToArray();
-  byte[] versionTwenty = new byte[
-    versionTwentyOne.Length - sizeof(uint) - sizeof(bool) - sizeof(float) -
-    sizeof(int) - sizeof(int) - sizeof(double) - sizeof(bool) * 6 - sizeof(int) -
-    sizeof(double)];
-  Buffer.BlockCopy(versionTwentyOne, 0, versionTwenty, 0, versionTwenty.Length);
-  BitConverter.GetBytes(20).CopyTo(versionTwenty, sizeof(int));
-  byte[] versionNineteen = new byte[versionTwenty.Length - sizeof(int)];
-  Buffer.BlockCopy(versionTwenty, 0, versionNineteen, 0, versionNineteen.Length);
-  BitConverter.GetBytes(19).CopyTo(versionNineteen, sizeof(int));
-  using MemoryStream versionNineteenStream = new(versionNineteen, writable: false);
-  DomeSimulationSnapshot restoredVersionNineteen = DomeStatePersistenceFormat.Read(
-    versionNineteenStream);
-  if (restoredVersionNineteen.Clock.MoonPhase != 4 ||
-      restoredVersionNineteen.WorldRules.GameMode != WorldGameMode.Classic)
-  {
-    throw new InvalidOperationException("A V19 Dome state did not restore classic game mode.");
-  }
-
-  byte[] versionEighteen = new byte[versionNineteen.Length - sizeof(byte)];
-  Buffer.BlockCopy(versionNineteen, 0, versionEighteen, 0, versionEighteen.Length);
-  BitConverter.GetBytes(18).CopyTo(versionEighteen, sizeof(int));
-  using MemoryStream versionEighteenStream = new(versionEighteen, writable: false);
-  DomeSimulationSnapshot restoredVersionEighteen = DomeStatePersistenceFormat.Read(versionEighteenStream);
-  if (restoredVersionEighteen.Clock.MoonPhase != 0 ||
-      restoredVersionEighteen.WorldRules.GameMode != WorldGameMode.Classic)
-  {
-    throw new InvalidOperationException("A V18 Dome state did not restore the default moon phase.");
-  }
-
-  byte[] invalidMoonPhase = (byte[])versionNineteen.Clone();
-  invalidMoonPhase[^1] = 8;
-  try
-  {
-    using MemoryStream invalidStream = new(invalidMoonPhase, writable: false);
-    _ = DomeStatePersistenceFormat.Read(invalidStream);
-    throw new InvalidOperationException("An invalid persisted moon phase was accepted.");
-  }
-  catch (InvalidDataException)
-  {
-  }
-
-  byte[] invalidGameMode = (byte[])versionTwenty.Clone();
-  BitConverter.GetBytes(4).CopyTo(invalidGameMode, invalidGameMode.Length - sizeof(int));
-  try
-  {
-    using MemoryStream invalidStream = new(invalidGameMode, writable: false);
-    _ = DomeStatePersistenceFormat.Read(invalidStream);
-    throw new InvalidOperationException("An invalid persisted game mode was accepted.");
-  }
-  catch (InvalidDataException)
-  {
-  }
-
-  byte[] truncatedGameMode = new byte[versionTwenty.Length - sizeof(int)];
-  Buffer.BlockCopy(versionTwenty, 0, truncatedGameMode, 0, truncatedGameMode.Length);
-  try
-  {
-    using MemoryStream truncatedStream = new(truncatedGameMode, writable: false);
-    _ = DomeStatePersistenceFormat.Read(truncatedStream);
-    throw new InvalidOperationException("A truncated persisted game mode was accepted.");
-  }
-  catch (EndOfStreamException)
-  {
-  }
+  Console.WriteLine("PASS: moon phase and game mode persistence round-trip");
 }
 
 static void VerifyWorldEventRandomStatePersistenceRoundTrip()
@@ -578,6 +885,15 @@ static void VerifyDomeStateRoundTrip(string temporaryDirectory)
   }
 
   simulation.Tick(new SimulationInputBatch());
+  PlayerHandle projectileOwner = simulation.CreatePlayer(new SimulationVector(10.0f, 0.0f));
+  simulation.QueueProjectileSpawn(new SpawnProjectileCommand(
+    projectileOwner,
+    10.0f,
+    0.0f,
+    Facing: 1,
+    Damage: 10,
+    LifetimeTicks: 10));
+  simulation.Tick(new SimulationInputBatch());
   PlayerPersistentState account = CreatePersistentState();
   _ = simulation.ImportPlayerIfMissing(account);
   _ = simulation.CreateNpc(new SimulationVector(30.0f, 0.0f));
@@ -598,6 +914,10 @@ static void VerifyDomeStateRoundTrip(string temporaryDirectory)
     metadata,
     rules,
     progression);
+  if (snapshot.NextProjectileIdentity <= 1)
+  {
+    throw new InvalidOperationException("Persistence fixture did not advance the projectile identity cursor.");
+  }
   string path = Path.Combine(temporaryDirectory, "dome-state.dome");
 
   DomeStateSaveCoordinator coordinator = new();
@@ -618,6 +938,12 @@ static void VerifyDomeStateRoundTrip(string temporaryDirectory)
   }
 
   using DomeSimulation restarted = new(restored);
+  if (restarted.CreatePersistenceSnapshot(metadata).NextProjectileIdentity !=
+      snapshot.NextProjectileIdentity)
+  {
+    throw new InvalidOperationException(
+      "The persisted projectile identity cursor was not restored after restart.");
+  }
   NpcReplicationSnapshot npc = restarted.CreateNpcReplicationSnapshots().Single();
   ItemReplicationSnapshot item = restarted.CreateItemReplicationSnapshots()
     .Single(value => value.ReplicationId == itemId);
@@ -1056,6 +1382,36 @@ static void VerifyVersionThirteenWorldItemInstanceCompatibility()
   }
 }
 
+static void VerifyWorldItemSnapshotWriteValidation()
+{
+  WorldGrid world = new(width: 400, height: 300);
+  WorldMetadata metadata = new("Invalid world item", new WorldSeed(925), 400, 300);
+  ItemReplicationSnapshot invalidItem = new(
+    1,
+    ItemStack.Empty,
+    new SimulationVector(0.0f, 0.0f),
+    IsActive: true,
+    Revision: 1,
+    new WorldSectionCoordinates(0, 0));
+  DomeSimulationSnapshot snapshot = new(
+    world.CreateSnapshot(metadata),
+    [],
+    [invalidItem],
+    tickNumber: 0);
+
+  try
+  {
+    DomeStatePersistenceFormat.Write(new MemoryStream(), snapshot);
+    throw new InvalidOperationException(
+      "Persistence accepted a world item with a non-canonical active/empty state.");
+  }
+  catch (InvalidDataException)
+  {
+  }
+
+  Console.WriteLine("PASS: world-item persistence write validates replication snapshots");
+}
+
 static void VerifyVersionFourteenSlimeRainCooldownCompatibility()
 {
   WorldGrid world = new(width: 400, height: 300);
@@ -1100,7 +1456,8 @@ static void VerifyLanternNightScheduleRoundTripAndVersionFifteenCompatibility()
       isLanternNight: true,
       isMeteorScheduled: true,
       slimeRainCooldownTicks: 9,
-      isNextNightLanternNight: true));
+      isNextNightLanternNight: true,
+      lanternNightScheduleSequence: 41));
 
   using MemoryStream currentStream = new();
   DomeStatePersistenceFormat.Write(currentStream, snapshot);
@@ -1110,7 +1467,8 @@ static void VerifyLanternNightScheduleRoundTripAndVersionFifteenCompatibility()
       !restored.Progression.IsMeteorScheduled ||
        restored.Progression.SlimeRainTimeTicks != 0 ||
       restored.Progression.SlimeRainCooldownTicks != 9 ||
-      !restored.Progression.IsNextNightLanternNight)
+      !restored.Progression.IsNextNightLanternNight ||
+      restored.Progression.LanternNightScheduleSequence != 41)
   {
     throw new InvalidOperationException(
       "The current Dome state did not retain the Lantern Night schedule.");
@@ -1126,7 +1484,8 @@ static void VerifyLanternNightScheduleRoundTripAndVersionFifteenCompatibility()
       !versionFifteen.Progression.IsMeteorScheduled ||
        versionFifteen.Progression.SlimeRainTimeTicks != 0 ||
       versionFifteen.Progression.SlimeRainCooldownTicks != 9 ||
-      versionFifteen.Progression.IsNextNightLanternNight)
+      versionFifteen.Progression.IsNextNightLanternNight ||
+      versionFifteen.Progression.LanternNightScheduleSequence != -1)
   {
     throw new InvalidOperationException(
       "A V15 Dome state did not default the Lantern Night schedule.");
@@ -1358,6 +1717,10 @@ static void VerifyImportedCompatibilityRoundTrip(string temporaryDirectory)
     compatibility,
     new WorldSeed(31),
     strictImport: false);
+  if (imported.NpcStates.Count != 1 || imported.NpcStates[0].GivenName != "Guide")
+  {
+    throw new InvalidOperationException("Compatibility NPC given name was dropped during projection.");
+  }
   if (imported.Chests.Count != 1 || imported.Signs.Count != 1 ||
       imported.TileEntities.Count != 2 || imported.OpaqueCompatibilityRecords.Count != 2)
   {
@@ -1413,7 +1776,7 @@ static PlayerPersistentState CreatePersistentState()
     Paint: 8,
     NameOverride: "Persistent item");
   items[10] = new PlayerPersistentItem(10, 23, 2, 999, false, true);
-  items[11] = new PlayerPersistentItem(11, 99, 7, 4, false, false);
+  items[11] = new PlayerPersistentItem(11, 1, 7, 4, false, false);
   return new PlayerPersistentState(
     "2eecdeea-c45e-456f-8244-75ec32da6172",
     new PlayerPersistentProfile(
@@ -1505,12 +1868,53 @@ static void VerifyDeterministicBaseGeneration()
     throw new InvalidOperationException("The base generator ignored the requested seed.");
   }
 
-  if (!firstWorld.GetTile(10, 299).IsActive ||
+  bool hasBottomGround = Enumerable.Range(0, firstWorld.Width)
+    .Any(x => firstWorld.GetTile(x, firstWorld.Height - 1).IsActive);
+  if (!hasBottomGround ||
       firstWorld.GetTile(request.SpawnX, request.SurfaceY).IsActive ||
       firstWorld.GetTile(request.SpawnX, request.SurfaceY + 6).IsActive)
   {
     throw new InvalidOperationException("Base generation did not create ground and clear spawn.");
   }
+}
+
+static void VerifyTerrainBaseClearsConfiguredSpawn()
+{
+  WorldGenerationRequest request = new(
+    new WorldMetadata("Terrain spawn", new WorldSeed(770), 400, 300),
+    spawnX: 200,
+    surfaceY: 100);
+  WorldGrid world = new(request.Metadata.Width, request.Metadata.Height);
+  WorldGenerationStateComponent state = new(1);
+  List<TileChangeCommand> commands = new();
+  new TerrainBaseSystem().AppendLegacyCommands(
+    world.CreateSnapshot(request.Metadata),
+    request,
+    new TerrainProfileComponent(request.SurfaceY, request.RockLayerY, request.Metadata.Height - 1),
+    ref state,
+    commands);
+  if (!new TileChangeCommitSystem().TryCommit(
+        world,
+        commands,
+        out TileChangeCommitResult commitResult) ||
+      commitResult.AppliedCount != commands.Count)
+  {
+    throw new InvalidOperationException("The standalone Terrain base stage could not be committed.");
+  }
+
+  for (int y = request.SurfaceY; y <= request.SurfaceY + 7; y++)
+  {
+    for (int x = request.SpawnX - 4; x <= request.SpawnX + 4; x++)
+    {
+      if (world.GetTile(x, y).IsActive)
+      {
+        throw new InvalidOperationException(
+          $"Terrain base did not clear the configured spawn tile ({x}, {y}).");
+      }
+    }
+  }
+
+  Console.WriteLine("PASS: Terrain base owns deterministic spawn clearing");
 }
 
 static ulong CalculateWorldHash(WorldGrid world)
@@ -1615,6 +2019,186 @@ static void VerifyExistingFileIsReplacedAtomically(string temporaryDirectory)
       Directory.GetFiles(temporaryDirectory, ".replace-existing.dome.*.tmp").Length != 0)
   {
     throw new InvalidOperationException("The existing world file was not atomically replaced.");
+  }
+}
+
+static void VerifyWorldRollingBackups(string temporaryDirectory)
+{
+  string path = Path.Combine(temporaryDirectory, "rolling-backups.dome");
+  WorldSaveCoordinator coordinator = new();
+  for (int index = 0; index < 3; index++)
+  {
+    WorldGrid world = new(width: 400, height: 300);
+    world.TrySetTile(10, 10, new WorldTile(IsActive: true, Type: (ushort)(20 + index)));
+    coordinator.Save(
+      path,
+      world.CreateSnapshot(new WorldMetadata("Rolling backups", new WorldSeed(2), 400, 300)),
+      rollingBackupsCountToKeep: 2);
+  }
+
+  WorldRecoveryResult oldest = coordinator.TryLoad(path + ".bak2");
+  WorldRecoveryResult latestBackup = coordinator.TryLoad(path + ".bak");
+  if (!oldest.IsSuccess || oldest.Snapshot?.GetTile(10, 10).Type != 20 ||
+      !latestBackup.IsSuccess || latestBackup.Snapshot?.GetTile(10, 10).Type != 21 ||
+      File.Exists(path + ".bak3"))
+  {
+    throw new InvalidOperationException("World rolling backups did not retain bounded generations.");
+  }
+
+  string noBackupPath = Path.Combine(temporaryDirectory, "no-backups.dome");
+  WorldGrid noBackupWorld = new(width: 400, height: 300);
+  WorldGridSnapshot noBackupSnapshot = noBackupWorld.CreateSnapshot(
+    new WorldMetadata("No backups", new WorldSeed(3), 400, 300));
+  coordinator.Save(noBackupPath, noBackupSnapshot, rollingBackupsCountToKeep: 0);
+  coordinator.Save(noBackupPath, noBackupSnapshot, rollingBackupsCountToKeep: 0);
+  if (File.Exists(noBackupPath + ".bak"))
+  {
+    throw new InvalidOperationException("A zero-backup policy created a backup file.");
+  }
+
+  try
+  {
+    coordinator.Save(noBackupPath, noBackupSnapshot, rollingBackupsCountToKeep: -1);
+    throw new InvalidOperationException("A negative backup retention count was accepted.");
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+  }
+}
+
+static void VerifyNpcProjectileCursorServerLifecycle(string temporaryDirectory)
+{
+  string path = Path.Combine(temporaryDirectory, "npc-projectile-cursors.bin");
+  using (DomeServer first = new(new WorldGrid(4200, 1200)))
+  {
+    first.ConfigureNpcProjectileCursorPersistence(path);
+    first.Dispose();
+  }
+
+  if (!File.Exists(path))
+  {
+    throw new InvalidOperationException(
+      "DomeServer did not persist the configured NPC projectile cursor sidecar.");
+  }
+
+  using (DomeServer second = new(new WorldGrid(4200, 1200)))
+  {
+    second.ConfigureNpcProjectileCursorPersistence(path);
+    second.Dispose();
+  }
+
+  IReadOnlyList<NpcProjectileCursorAccountState> restored =
+    new NpcProjectileCursorSaveCoordinator().Load(path);
+  if (restored.Count != 0)
+  {
+    throw new InvalidOperationException(
+      "An empty server lifecycle unexpectedly persisted a cursor account.");
+  }
+}
+
+static void VerifyNpcProjectileCursorCrashRecovery(string temporaryDirectory)
+{
+  string path = Path.Combine(temporaryDirectory, "npc-projectile-recovery.bin");
+  NpcProjectileCursorAccountState state = new(
+    "22222222-2222-2222-2222-222222222222",
+    [new NpcProjectileCursorEntry(9, 4)]);
+  NpcProjectileCursorSaveCoordinator coordinator = new();
+  coordinator.Save(path, [state]);
+  File.Copy(path, path + ".tmp", overwrite: true);
+  File.WriteAllBytes(path, [0x01, 0x02, 0x03]);
+  IReadOnlyList<NpcProjectileCursorAccountState> recovered = coordinator.Load(path);
+  if (recovered.Count != 1 || recovered[0].Entries[0].Revision != 4 || File.Exists(path + ".tmp"))
+  {
+    throw new InvalidOperationException(
+      "NPC projectile cursor coordinator did not promote a valid recovery candidate.");
+  }
+
+  File.WriteAllBytes(path, [0x01, 0x02, 0x03]);
+  File.WriteAllBytes(path + ".tmp", [0x04, 0x05]);
+  try
+  {
+    _ = coordinator.Load(path);
+    throw new InvalidOperationException(
+      "NPC projectile cursor coordinator accepted two invalid recovery candidates.");
+  }
+  catch (InvalidDataException)
+  {
+  }
+}
+
+static void VerifyNpcProjectileCursorCompaction()
+{
+  NpcProjectileCursorSaveCoordinator coordinator = new();
+  IReadOnlyList<NpcProjectileCursorAccountState> compacted = coordinator.Compact(
+    [new NpcProjectileCursorAccountState(
+      "33333333-3333-3333-3333-333333333333",
+      [new NpcProjectileCursorEntry(1, 1), new NpcProjectileCursorEntry(2, 2)])],
+    [new NpcProjectileReplicationSnapshot(
+      1,
+      3,
+      new NpcHandle(7),
+      new SimulationVector(1.0f, 1.0f),
+      default,
+      10,
+      0,
+      false,
+      2,
+      new WorldSectionCoordinates(0, 0),
+      1,
+      TombstoneReason: ProjectileTombstoneReason.Expired,
+      TombstoneRetainedUntilTick: 20,
+      DefinitionKnockback: 1.0f,
+      DefinitionOriginalDamage: 10)],
+    currentTick: 10);
+  if (compacted.Count != 1 || compacted[0].Entries.Count != 1 ||
+      compacted[0].Entries[0].ReplicationId != 1)
+  {
+    throw new InvalidOperationException(
+      "NPC projectile cursor compaction did not preserve only retained state.");
+  }
+}
+
+static void VerifyNpcProjectileCursorRestartReplay(string temporaryDirectory)
+{
+  string path = Path.Combine(temporaryDirectory, "npc-projectile-replay.bin");
+  NpcProjectileCursorSaveCoordinator coordinator = new();
+  string accountUuid = "44444444-4444-4444-4444-444444444444";
+  NpcProjectileCursorAccountState initial = new(
+    accountUuid,
+    [new NpcProjectileCursorEntry(10, 7), new NpcProjectileCursorEntry(20, 9)]);
+  coordinator.Save(path, [initial]);
+
+  IReadOnlyList<NpcProjectileCursorAccountState> loaded = coordinator.Load(path);
+  IReadOnlyList<NpcProjectileCursorAccountState> replayed = coordinator.Compact(
+    loaded,
+    [new NpcProjectileReplicationSnapshot(
+      10,
+      3,
+      new NpcHandle(8),
+      new SimulationVector(1.0f, 1.0f),
+      default,
+      10,
+      0,
+      false,
+      8,
+      new WorldSectionCoordinates(0, 0),
+      10,
+      TombstoneReason: ProjectileTombstoneReason.Expired,
+      TombstoneRetainedUntilTick: 30,
+      DefinitionKnockback: 1.0f,
+      DefinitionOriginalDamage: 10)],
+    currentTick: 20);
+  coordinator.Save(path, replayed);
+
+  File.Copy(path, path + ".tmp", overwrite: true);
+  File.WriteAllBytes(path, [0x0A, 0x0B]);
+  IReadOnlyList<NpcProjectileCursorAccountState> recovered = coordinator.Load(path);
+  if (recovered.Count != 1 || recovered[0].AccountUuid != accountUuid ||
+      recovered[0].Entries.Count != 1 || recovered[0].Entries[0].ReplicationId != 10 ||
+      recovered[0].Entries[0].Revision != 7 || File.Exists(path + ".tmp"))
+  {
+    throw new InvalidOperationException(
+      "NPC projectile cursor restart replay did not preserve the compacted active account state.");
   }
 }
 

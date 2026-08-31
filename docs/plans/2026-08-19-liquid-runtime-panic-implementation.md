@@ -1,6 +1,5 @@
 # Liquid Runtime Panic Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Add a deterministic, bounded ordinary-runtime Panic policy to the Simulation Liquid
 queue without importing generation-time Liquid behavior.

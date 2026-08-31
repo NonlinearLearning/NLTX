@@ -1,10 +1,22 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 
 namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class TreeFrameValidationQuery
 {
+  private static readonly IReadOnlySet<ushort> GroundNormalizationTileTypes = new HashSet<ushort>
+  {
+    23, 60, 70, 109, 147, 199, 234, 477, 492, 661, 662
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterGroundNormalizationDefaults()
+  {
+    return GroundNormalizationTileTypes;
+  }
+
   public static TreeFrameValidationResult Evaluate(
     WorldGridSnapshot snapshot,
     int x,
@@ -78,9 +90,7 @@ public static class TreeFrameValidationQuery
       return -1;
     }
 
-    return tile.Type is 23 or 60 or 70 or 109 or 147 or 199 or 234 or 477 or 492 or 661 or 662
-      ? 2
-      : tile.Type;
+    return GroundNormalizationTileTypes.Contains(tile.Type) ? 2 : tile.Type;
   }
 
   private static bool IsBranchFrame(WorldTile tile)

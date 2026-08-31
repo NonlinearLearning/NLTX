@@ -1,6 +1,5 @@
 # Player Top-Slope Collision Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Migrate the source-backed player contact behavior for Version4 top slopes `1` and `2`
 without claiming complete slope, hoik, NPC, or reverse-gravity collision parity.

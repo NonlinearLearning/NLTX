@@ -31,8 +31,8 @@ public sealed class NetworkChestSlice
 
   public static NetworkChestSlice From(ChestSnapshot snapshot)
   {
-    NetworkItemStackSlice[] slots = new NetworkItemStackSlice[snapshot.Slots.Length];
-    for (int index = 0; index < snapshot.Slots.Length; index++)
+    NetworkItemStackSlice[] slots = new NetworkItemStackSlice[snapshot.Slots.Count];
+    for (int index = 0; index < snapshot.Slots.Count; index++)
     {
       slots[index] = NetworkItemStackSlice.From(snapshot.Slots[index]);
     }

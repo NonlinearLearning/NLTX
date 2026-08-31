@@ -2,6 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
@@ -14,6 +15,7 @@ using Terraria.Dome.Protocol.V1456.Session;
 using Terraria.Dome.Server.Protocol;
 using Terraria.Dome.Server.Replication;
 using Terraria.Dome.Server.Startup;
+using Terraria.Dome.Server.Persistence;
 using Terraria.Dome.Server.Validation;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Commands;
@@ -21,10 +23,15 @@ using Terraria.Dome.Simulation.Items;
 using Terraria.Dome.Simulation.Items.Events;
 using Terraria.Dome.Simulation.Liquid.Components;
 using Terraria.Dome.Simulation.Liquid.Snapshots;
+using Terraria.Dome.Simulation.Npc.Snapshots;
 using Terraria.Dome.Simulation.Players;
+using Terraria.Dome.Simulation.StatusEffects.Snapshots;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.World.Events;
 using Terraria.Dome.Simulation.WorldObjects;
+using Terraria.Dome.Simulation.WorldObjects.Placement;
+using Terraria.Dome.Simulation.WorldObjects.Sign;
+using Terraria.Dome.Simulation.WorldObjects.Sign.Commands;
 using PipelineLiquidSourceComponent = Terraria.Dome.Simulation.Liquid.Components.LiquidSourceComponent;
 
 namespace Terraria.Dome.Server;
@@ -57,16 +64,25 @@ public sealed class DomeServer : IDisposable
   private readonly Dictionary<byte, long> _inventoryRevisionsBySlot = new();
   private readonly Dictionary<byte, long> _equipmentRevisionsBySlot = new();
   private readonly Dictionary<byte, SessionReplicationState> _replicationBySlot = new();
+  private readonly Dictionary<byte, IReadOnlyList<NpcProjectileCursorEntry>>
+    _npcProjectileCursorsBySlot = new();
+  private readonly Dictionary<string, IReadOnlyList<NpcProjectileCursorEntry>>
+    _npcProjectileCursorsByAccount = new(StringComparer.Ordinal);
+  private readonly NpcProjectileCursorSaveCoordinator _npcProjectileCursorPersistence = new();
+  private readonly NpcGivenNameSaveCoordinator _npcGivenNamePersistence = new();
   private readonly object _sessionGate = new();
   private readonly DomeSimulation _simulation;
   private readonly TerrariaProtocolSessionHost _protocolSessionHost;
-  private readonly ItemReplicationAssembler _itemReplication = new();
-  private readonly InventoryReplicationAssembler _inventoryReplication = new();
-  private readonly EquipmentReplicationAssembler _equipmentReplication = new();
+  private readonly ItemReplicationAssembler _itemReplication;
+  private readonly InventoryReplicationAssembler _inventoryReplication;
+  private readonly EquipmentReplicationAssembler _equipmentReplication;
   private readonly ItemInteractionValidator _itemInteractionValidator = new();
   private readonly ContainerInteractionValidator _containerInteractionValidator = new();
   private readonly CombatReplicationAssembler _combatReplication = new();
+  private readonly Dictionary<byte, ObjectPlacementReplicationAssembler>
+    _objectPlacementReplications = new();
   private readonly WorldGrid _world;
+  private readonly WorldEntityLimits _entityLimits;
   private readonly LegacyWorldDataContext _baseWorldDataContext;
   private readonly DefaultWorldEnvironmentConvergence _worldEnvironment;
   private readonly WorldSectionReplication _worldReplication;
@@ -80,6 +96,8 @@ public sealed class DomeServer : IDisposable
   private long _droppedProtocolCommandCount;
   private bool _usesDefaultWorld;
   private bool _disposed;
+  private string? _npcProjectileCursorPersistencePath;
+  private string? _npcGivenNamePersistencePath;
 
   public DomeServer()
     : this(WorldBootstrap.CreateDefault())
@@ -87,7 +105,9 @@ public sealed class DomeServer : IDisposable
   }
 
   public DomeServer(WorldBootstrapResult bootstrap)
-    : this(bootstrap?.Snapshot ?? throw new ArgumentNullException(nameof(bootstrap)))
+    : this(
+      bootstrap?.Snapshot ?? throw new ArgumentNullException(nameof(bootstrap)),
+      bootstrap.EntityLimits)
   {
     _usesDefaultWorld = bootstrap.UsesDefaultWorld;
   }
@@ -95,6 +115,7 @@ public sealed class DomeServer : IDisposable
   public DomeServer(WorldGrid world)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
+    _entityLimits = new WorldEntityLimits();
     _networkIsolation = new(
       maxInboundCount: MaximumPendingProtocolCommands,
       maxOutboundCount: MaximumPendingProtocolCommands);
@@ -102,6 +123,9 @@ public sealed class DomeServer : IDisposable
     _networkIsolationAdapter = new(_networkIsolation, EnqueueProtocolCommand);
     _worldEnvironment = DefaultWorldEnvironmentConvergence.Create(_world);
     _simulation = new DomeSimulation(_world);
+    _itemReplication = new(_simulation.ItemDefinitions);
+    _inventoryReplication = new(_simulation.ItemDefinitions);
+    _equipmentReplication = new(_simulation.ItemDefinitions);
     _baseWorldDataContext = LegacyWorldDataContext.CreateDomeDefaults();
     _worldReplication = new WorldSectionReplication(_world);
     _protocolSessionHost = new TerrariaProtocolSessionHost(
@@ -117,12 +141,20 @@ public sealed class DomeServer : IDisposable
       ResolvePlayerAccountAsync,
       CreateSessionPlayerAsync,
       _worldReplication,
-      CreateWorldDataContext);
+      CreateWorldDataContext,
+      RestoreNpcProjectileCursor,
+      RestoreNpcProjectileCursorByAccount);
   }
 
   public DomeServer(DomeSimulationSnapshot snapshot)
+    : this(snapshot, new WorldEntityLimits())
+  {
+  }
+
+  private DomeServer(DomeSimulationSnapshot snapshot, WorldEntityLimits entityLimits)
   {
     ArgumentNullException.ThrowIfNull(snapshot);
+    _entityLimits = (entityLimits ?? throw new ArgumentNullException(nameof(entityLimits))).Validate();
     _world = WorldGrid.FromSnapshot(snapshot.World);
     _networkIsolation = new(
       maxInboundCount: MaximumPendingProtocolCommands,
@@ -130,7 +162,10 @@ public sealed class DomeServer : IDisposable
     _networkMessage = new NetMessage(_networkIsolation);
     _networkIsolationAdapter = new(_networkIsolation, EnqueueProtocolCommand);
     _worldEnvironment = DefaultWorldEnvironmentConvergence.Create(_world);
-    _simulation = new DomeSimulation(_world, snapshot);
+    _simulation = new DomeSimulation(_world, snapshot, ToSimulationLimits(entityLimits));
+    _itemReplication = new(_simulation.ItemDefinitions);
+    _inventoryReplication = new(_simulation.ItemDefinitions);
+    _equipmentReplication = new(_simulation.ItemDefinitions);
     _baseWorldDataContext = LegacyWorldDataContext.FromWorldMetadata(snapshot.World.Metadata);
     _worldReplication = new WorldSectionReplication(_world);
     _protocolSessionHost = new TerrariaProtocolSessionHost(
@@ -146,7 +181,9 @@ public sealed class DomeServer : IDisposable
       ResolvePlayerAccountAsync,
       CreateSessionPlayerAsync,
       _worldReplication,
-      CreateWorldDataContext);
+      CreateWorldDataContext,
+      RestoreNpcProjectileCursor,
+      RestoreNpcProjectileCursorByAccount);
   }
 
   public SimulationSnapshot LatestSnapshot { get; private set; } = new(
@@ -160,9 +197,52 @@ public sealed class DomeServer : IDisposable
   public int PendingProtocolCommandCount => Volatile.Read(ref _pendingProtocolCommandCount);
   public long DroppedProtocolCommandCount => Interlocked.Read(ref _droppedProtocolCommandCount);
   public Exception? SimulationFault { get; private set; }
+  public long SimulationTickNumber => _simulation.TickNumber;
   public WorldGrid World => _world;
 
   public DomeNetworkIsolation NetworkIsolation => _networkIsolation;
+
+  public void ConfigureNpcProjectileCursorPersistence(string path)
+  {
+    ThrowIfStarted();
+    ArgumentException.ThrowIfNullOrWhiteSpace(path);
+    IReadOnlyList<NpcProjectileCursorAccountState> accounts =
+      _npcProjectileCursorPersistence.Load(path);
+    _npcProjectileCursorsByAccount.Clear();
+    for (int index = 0; index < accounts.Count; index++)
+    {
+      NpcProjectileCursorAccountState account = accounts[index];
+      _npcProjectileCursorsByAccount.Add(account.AccountUuid, account.Entries);
+    }
+
+    _npcProjectileCursorPersistencePath = path;
+  }
+
+  public void ConfigureNpcGivenNamePersistence(string path)
+  {
+    ThrowIfStarted();
+    ArgumentException.ThrowIfNullOrWhiteSpace(path);
+    IReadOnlyList<NpcGivenNameEntry> entries = _npcGivenNamePersistence.Load(path);
+    Dictionary<int, string> names = new(entries.Count);
+    for (int index = 0; index < entries.Count; index++)
+    {
+      NpcGivenNameEntry entry = entries[index];
+      names[entry.ReplicationId] = entry.GivenName;
+    }
+
+    _simulation.ApplyNpcGivenNames(names);
+    _npcGivenNamePersistencePath = path;
+  }
+
+  private static SimulationEntityLimits ToSimulationLimits(WorldEntityLimits limits)
+  {
+    return new SimulationEntityLimits(
+      limits.MaximumPlayers,
+      limits.MaximumNpcs,
+      limits.MaximumProjectiles,
+      limits.MaximumWorldItems,
+      limits.MaximumChests);
+  }
 
   public LegacyWorldDataContext CreateWorldDataContext()
   {
@@ -177,6 +257,26 @@ public sealed class DomeServer : IDisposable
   public DomeSimulationSnapshot CreatePersistenceSnapshot(WorldMetadata metadata)
   {
     return _simulation.CreatePersistenceSnapshot(metadata);
+  }
+
+  public IReadOnlyList<PlayerStatusEffectStateSnapshot> CreatePlayerStatusEffectStateSnapshots()
+  {
+    return _simulation.CreatePlayerStatusEffectStateSnapshots();
+  }
+
+  public PlayerHandle ResolvePlayerHandleForSlot(byte playerSlot)
+  {
+    if (!_playersBySlot.TryGetValue(playerSlot, out PlayerHandle player))
+    {
+      throw new ArgumentException("Player slot is not active.", nameof(playerSlot));
+    }
+
+    return player;
+  }
+
+  public bool TryResolvePlayerHandleForSlot(byte playerSlot, out PlayerHandle player)
+  {
+    return _playersBySlot.TryGetValue(playerSlot, out player);
   }
 
   public bool TryQueueWorldEvent(WorldEventStartCommand command)
@@ -222,6 +322,11 @@ public sealed class DomeServer : IDisposable
   public IReadOnlyList<WorldItemSnapshot> CreateWorldItemSnapshots()
   {
     return _simulation.CreateWorldItemSnapshots();
+  }
+
+  public IReadOnlyList<ItemReplicationSnapshot> CreateItemReplicationSnapshots()
+  {
+    return _simulation.CreateItemReplicationSnapshots();
   }
 
   public IReadOnlyList<WorldItemCreatedEvent> CreateWorldItemCreatedEvents()
@@ -362,6 +467,67 @@ public sealed class DomeServer : IDisposable
     return await completion.Task.WaitAsync(cancellationToken);
   }
 
+  public async Task<WorldObjectPlacementResult> QueueVerificationSignPlacementAsync(
+    byte playerSlot,
+    long sequence,
+    int originX,
+    int originY,
+    int style,
+    int direction,
+    string signText,
+    CancellationToken cancellationToken = default)
+  {
+    if (_disposed)
+    {
+      throw new ObjectDisposedException(nameof(DomeServer));
+    }
+
+    ArgumentNullException.ThrowIfNull(signText);
+    TaskCompletionSource<WorldObjectPlacementResult> completion = new(
+      TaskCreationOptions.RunContinuationsAsynchronously);
+    if (!EnqueueProtocolCommand(new QueueVerificationSignPlacementCommand(
+          playerSlot,
+          sequence,
+          originX,
+          originY,
+          style,
+          direction,
+          signText,
+          completion)))
+    {
+      throw new IOException("The placement command queue is full.");
+    }
+
+    return await completion.Task.WaitAsync(cancellationToken);
+  }
+
+  public async Task<bool> PrepareVerificationSignPlacementAsync(
+    byte playerSlot,
+    long sequence,
+    int originX,
+    int originY,
+    CancellationToken cancellationToken = default)
+  {
+    if (_disposed)
+    {
+      throw new ObjectDisposedException(nameof(DomeServer));
+    }
+
+    TaskCompletionSource<bool> completion = new(
+      TaskCreationOptions.RunContinuationsAsynchronously);
+    if (!EnqueueProtocolCommand(new PrepareVerificationSignPlacementCommand(
+          playerSlot,
+          sequence,
+          originX,
+          originY,
+          completion)))
+    {
+      throw new IOException("The placement preparation queue is full.");
+    }
+
+    return await completion.Task.WaitAsync(cancellationToken);
+  }
+
   public void SetChestItem(int chestId, int chestSlot, ItemStack stack)
   {
     _simulation.SetChestItem(chestId, chestSlot, stack);
@@ -395,6 +561,72 @@ public sealed class DomeServer : IDisposable
   public IReadOnlyList<SignSnapshot> CreateSignSnapshots()
   {
     return _simulation.CreateSignSnapshots();
+  }
+
+  public IReadOnlyList<SignTombstoneProjection> CreateSignTombstoneProjections()
+  {
+    IReadOnlyList<SignTombstoneSnapshot> tombstones =
+      _simulation.CreateSignTombstoneSnapshots();
+    SignTombstoneProjection[] projections = new SignTombstoneProjection[tombstones.Count];
+    for (int index = 0; index < tombstones.Count; index++)
+    {
+      projections[index] = SignTombstoneProjection.Create(tombstones[index]);
+    }
+
+    return projections;
+  }
+
+  public IReadOnlyList<byte[]> CreateSignDeletionFrames()
+  {
+    return Array.Empty<byte[]>();
+  }
+
+  public IReadOnlyList<byte[]> CreateSignDeletionFrames(
+    SessionContractCapabilities capabilities)
+  {
+    if (!capabilities.SupportsSignDeletion)
+    {
+      return Array.Empty<byte[]>();
+    }
+
+    IReadOnlyList<SignTombstoneSnapshot> tombstones =
+      _simulation.CreateSignTombstoneSnapshots();
+    byte[][] frames = new byte[tombstones.Count][];
+    for (int index = 0; index < tombstones.Count; index++)
+    {
+      SignTombstoneSnapshot tombstone = tombstones[index];
+      frames[index] = ContractExtensionCodec.EncodeSignDeletion(
+        new SignDeletionFrame(tombstone.SignId, tombstone.Revision, tombstone.Reason));
+    }
+
+    return frames;
+  }
+
+  public IReadOnlyList<byte[]> CreateSignDeletionFrames(SessionReplicationState state)
+  {
+    ArgumentNullException.ThrowIfNull(state);
+    IReadOnlyList<SignTombstoneSnapshot> tombstones =
+      _simulation.CreateSignTombstoneSnapshots();
+    List<byte[]> frames = new();
+    for (int index = 0; index < tombstones.Count; index++)
+    {
+      SignTombstoneSnapshot tombstone = tombstones[index];
+      if (!state.ShouldSendSignTombstone(tombstone))
+      {
+        continue;
+      }
+
+      frames.Add(ContractExtensionCodec.EncodeSignDeletion(
+        new SignDeletionFrame(tombstone.SignId, tombstone.Revision, tombstone.Reason)));
+      state.MarkSignTombstoneSent(tombstone);
+    }
+
+    return frames;
+  }
+
+  public bool TryDeleteSign(int signId, long expectedRevision)
+  {
+    return _simulation.TryDeleteSign(new DeleteSignCommand(signId, expectedRevision));
   }
 
   public WorldJoinStateSnapshot CreateWorldJoinState()
@@ -442,6 +674,41 @@ public sealed class DomeServer : IDisposable
     }
     catch (AggregateException)
     {
+    }
+
+    if (_npcProjectileCursorPersistencePath is string cursorPath)
+    {
+      List<NpcProjectileCursorAccountState> accounts = new(_npcProjectileCursorsByAccount.Count);
+      foreach (KeyValuePair<string, IReadOnlyList<NpcProjectileCursorEntry>> entry in
+        _npcProjectileCursorsByAccount)
+      {
+        accounts.Add(new NpcProjectileCursorAccountState(entry.Key, entry.Value));
+      }
+
+      IReadOnlyList<NpcProjectileCursorAccountState> compacted =
+        _npcProjectileCursorPersistence.Compact(
+          accounts,
+          _simulation.CreateNpcProjectileReplicationSnapshots(),
+          _simulation.TickNumber);
+      _npcProjectileCursorPersistence.Save(cursorPath, compacted);
+    }
+
+    if (_npcGivenNamePersistencePath is string givenNamePath)
+    {
+      IReadOnlyList<NpcStateSnapshot> states = _simulation.CreateNpcStateSnapshots();
+      List<NpcGivenNameEntry> entries = new(states.Count);
+      for (int index = 0; index < states.Count; index++)
+      {
+        NpcStateSnapshot state = states[index];
+        if (state.GivenName.Length != 0)
+        {
+          entries.Add(new NpcGivenNameEntry(
+            state.Replication.ReplicationId,
+            state.GivenName));
+        }
+      }
+
+      _npcGivenNamePersistence.Save(givenNamePath, entries);
     }
 
     _simulation.Dispose();
@@ -728,11 +995,12 @@ public sealed class DomeServer : IDisposable
         await ReplicatePlayerStatesAsync(cancellationToken);
         await ReplicateInventoryStatesAsync(cancellationToken);
         await ReplicateEquipmentStatesAsync(cancellationToken);
-        await ReplicateCombatStatesAsync(cancellationToken);
+        await ReplicateObjectPlacementStatesAsync(cancellationToken);
         await ReplicateItemStatesAsync(cancellationToken);
         await ReplicateChestStatesAsync(cancellationToken);
         await ReplicateDoorStatesAsync(cancellationToken);
         await ReplicateSignStatesAsync(cancellationToken);
+        await ReplicateCombatStatesAsync(cancellationToken);
         await ReplicateTileEntityStatesAsync(cancellationToken);
         await ReplicateWorldRulesAsync(cancellationToken);
         await FlushNetworkIsolationOutboundAsync(cancellationToken);
@@ -805,11 +1073,66 @@ public sealed class DomeServer : IDisposable
           queueLiquidSource.Completion.TrySetException(exception);
         }
         return;
+      case PrepareVerificationSignPlacementCommand preparePlacement:
+        try
+        {
+          if (!_playersBySlot.TryGetValue(preparePlacement.PlayerSlot, out PlayerHandle owner))
+          {
+            preparePlacement.Completion.TrySetResult(false);
+            return;
+          }
+
+          preparePlacement.Completion.TrySetResult(
+            _simulation.PrepareProjectileSignPlacementFixture(
+              owner,
+              preparePlacement.Sequence,
+              preparePlacement.OriginX,
+              preparePlacement.OriginY,
+              out _));
+        }
+        catch (Exception exception)
+        {
+          preparePlacement.Completion.TrySetException(exception);
+        }
+
+        return;
+      case QueueVerificationSignPlacementCommand queuePlacement:
+        try
+        {
+          if (!_playersBySlot.TryGetValue(queuePlacement.PlayerSlot, out PlayerHandle owner))
+          {
+            queuePlacement.Completion.TrySetResult(WorldObjectPlacementResult.Rejected(
+              queuePlacement.Sequence,
+              WorldObjectPlacementFailureCode.OwnerInactive));
+            return;
+          }
+
+          queuePlacement.Completion.TrySetResult(
+            _simulation.TryCommitProjectileSignPlacementFixture(
+              owner,
+              queuePlacement.Sequence,
+              queuePlacement.OriginX,
+              queuePlacement.OriginY,
+              queuePlacement.Style,
+              queuePlacement.Direction,
+              queuePlacement.SignText));
+        }
+        catch (Exception exception)
+        {
+          queuePlacement.Completion.TrySetException(exception);
+        }
+
+        return;
       case CreateSessionPlayerCommand createPlayer:
         try
         {
           if (!_playersBySlot.TryGetValue(createPlayer.PlayerSlot, out PlayerHandle player))
           {
+            if (_playersBySlot.Count >= _entityLimits.MaximumPlayers)
+            {
+              throw new InvalidOperationException("The configured player limit has been reached.");
+            }
+
             player = _simulation.CreatePlayer(
               createPlayer.Account,
               new SimulationVector(createPlayer.SpawnX, createPlayer.SpawnY),
@@ -863,6 +1186,8 @@ public sealed class DomeServer : IDisposable
         {
           return;
         }
+
+        _simulation.ApplyPlayerMountControl(controlledPlayer, applyControls.MountType);
 
         inputs.Add(new PlayerInput(
           controlledPlayer,
@@ -1058,7 +1383,10 @@ public sealed class DomeServer : IDisposable
         }
 
         PlayerSnapshot transferPlayerSnapshot = _simulation.CreateSnapshot().FindPlayer(transferPlayer);
-        if (!transferState.TryGetChestRevision(transferChest.Value.ChestId, out long expectedRevision))
+        if (!transferState.TryAuthorizeChestTransfer(
+              transferChest.Value.ChestId,
+              transferChestItem.Intent.ExpectedRevision,
+              out long expectedRevision))
         {
           return;
         }
@@ -1072,9 +1400,27 @@ public sealed class DomeServer : IDisposable
           transferPlayerSnapshot.Position,
           expectedRevision);
         return;
+      case AddPlayerBuffPvpCommand addPlayerBuffPvp:
+        if (!_playersBySlot.TryGetValue(addPlayerBuffPvp.SenderSlot, out PlayerHandle sender) ||
+            !_playersBySlot.TryGetValue(
+              addPlayerBuffPvp.Request.PlayerSlot,
+              out PlayerHandle target))
+        {
+          return;
+        }
+
+        _ = _simulation.TryQueuePlayerPvpBuff(
+          sender,
+          target,
+          addPlayerBuffPvp.Request.BuffType,
+          addPlayerBuffPvp.Request.DurationTicks);
+        return;
       case DestroySessionPlayerCommand destroyPlayer:
         RemoveDestroyedPlayerInputs(inputs, destroyPlayer);
-        RemoveSessionPlayer(destroyPlayer.PlayerSlot, destroyPlayer.ReplicationState);
+        RemoveSessionPlayer(
+          destroyPlayer.PlayerSlot,
+          destroyPlayer.ReplicationState,
+          destroyPlayer.AccountUuid);
         return;
       default:
         throw new InvalidOperationException("Unknown Terraria protocol command.");
@@ -1591,6 +1937,11 @@ public sealed class DomeServer : IDisposable
     IReadOnlyList<NpcReplicationSnapshot> npcs = _simulation.CreateNpcReplicationSnapshots();
     IReadOnlyList<ProjectileReplicationSnapshot> projectiles =
       _simulation.CreateProjectileReplicationSnapshots();
+    IReadOnlyList<NpcProjectileReplicationSnapshot> npcProjectiles =
+      _simulation.CreateNpcProjectileReplicationSnapshots();
+    IReadOnlyList<Terraria.Dome.Simulation.StatusEffects.Snapshots.NpcStatusEffectStateSnapshot>
+      npcStatusEffects = _simulation.CreateNpcStatusEffectStateSnapshots();
+    long currentTick = _simulation.TickNumber;
     List<SessionRemovalRequest> failedSessions = new();
     foreach (KeyValuePair<byte, SessionReplicationState> entry in _replicationBySlot)
     {
@@ -1599,10 +1950,16 @@ public sealed class DomeServer : IDisposable
         continue;
       }
 
+      entry.Value.PruneCombatProjectileCursor(projectiles, currentTick);
+      entry.Value.PruneNpcProjectileCursor(npcProjectiles, currentTick);
+
       CombatReplicationBatch batch = _combatReplication.CollectBatch(
         entry.Value,
         npcs,
-        projectiles);
+        projectiles,
+        npcProjectiles,
+        npcStatusEffects,
+        currentTick);
       if (batch.Frames.Count == 0)
       {
         continue;
@@ -1771,6 +2128,76 @@ public sealed class DomeServer : IDisposable
       catch (IOException)
       {
         failedSessions.Add(new SessionRemovalRequest(entry.Key, entry.Value));
+      }
+    }
+
+    RemoveFailedSessions(failedSessions);
+  }
+
+  private async Task ReplicateObjectPlacementStatesAsync(CancellationToken cancellationToken)
+  {
+    IReadOnlyList<WorldObjectPlacementCommittedEvent> placements =
+      _simulation.CreateWorldObjectPlacementEvents();
+    if (placements.Count == 0)
+    {
+      return;
+    }
+
+    List<SessionRemovalRequest> failedSessions = new();
+    foreach (KeyValuePair<byte, SessionReplicationState> entry in _replicationBySlot)
+    {
+      SessionReplicationState state = entry.Value;
+      if (!state.IsActive || state.IsInitialVisibilityLocked)
+      {
+        continue;
+      }
+
+      if (!_objectPlacementReplications.TryGetValue(
+            entry.Key,
+            out ObjectPlacementReplicationAssembler? assembler))
+      {
+        assembler = new ObjectPlacementReplicationAssembler();
+        _objectPlacementReplications.Add(entry.Key, assembler);
+      }
+
+      List<byte[]> frames = new();
+      List<SignSnapshot> sentSigns = new();
+      for (int index = 0; index < placements.Count; index++)
+      {
+        WorldObjectPlacementCommittedEvent placement = placements[index];
+        bool visible = placement.Sections.Any(state.VisibleSections.Contains);
+        if (!visible ||
+            !assembler.TryEncodeOrderedFrames(
+              placement,
+              entry.Key,
+              out IReadOnlyList<byte[]> ordered))
+        {
+          continue;
+        }
+
+        frames.AddRange(ordered);
+        if (placement.Sign is SignSnapshot sign)
+        {
+          sentSigns.Add(sign);
+        }
+      }
+
+      if (frames.Count == 0)
+      {
+        continue;
+      }
+
+      try
+      {
+        QueueOutboundFrames(entry.Key, frames);
+        for (int index = 0; index < sentSigns.Count; index++)
+        {
+          state.MarkSignSent(sentSigns[index]);
+        }
+      }
+      catch (IOException)
+      {
+        failedSessions.Add(new SessionRemovalRequest(entry.Key, state));
       }
     }
 
@@ -2059,7 +2486,10 @@ public sealed class DomeServer : IDisposable
     }
   }
 
-  private void RemoveSessionPlayer(byte playerSlot, SessionReplicationState replicationState)
+  private void RemoveSessionPlayer(
+    byte playerSlot,
+    SessionReplicationState replicationState,
+    string? accountUuid = null)
   {
     if (!_replicationBySlot.TryGetValue(playerSlot, out SessionReplicationState? currentState) ||
         !ReferenceEquals(currentState, replicationState))
@@ -2067,6 +2497,14 @@ public sealed class DomeServer : IDisposable
       return;
     }
 
+    IReadOnlyList<NpcProjectileCursorEntry> cursor =
+      replicationState.CreateNpcProjectileCursorSnapshot();
+    _npcProjectileCursorsBySlot[playerSlot] = cursor;
+    _objectPlacementReplications.Remove(playerSlot);
+    if (!string.IsNullOrWhiteSpace(accountUuid))
+    {
+      _npcProjectileCursorsByAccount[accountUuid] = cursor;
+    }
     _replicationBySlot.Remove(playerSlot);
     _inventoryRevisionsBySlot.Remove(playerSlot);
     _equipmentRevisionsBySlot.Remove(playerSlot);
@@ -2077,6 +2515,23 @@ public sealed class DomeServer : IDisposable
     }
 
     currentState.Dispose();
+  }
+
+  private IReadOnlyList<NpcProjectileCursorEntry> RestoreNpcProjectileCursor(byte playerSlot)
+  {
+    return _npcProjectileCursorsBySlot.TryGetValue(playerSlot, out IReadOnlyList<NpcProjectileCursorEntry>? snapshot)
+      ? snapshot
+      : Array.Empty<NpcProjectileCursorEntry>();
+  }
+
+  private IReadOnlyList<NpcProjectileCursorEntry> RestoreNpcProjectileCursorByAccount(
+    string accountUuid)
+  {
+    return _npcProjectileCursorsByAccount.TryGetValue(
+        accountUuid,
+        out IReadOnlyList<NpcProjectileCursorEntry>? snapshot)
+      ? snapshot
+      : Array.Empty<NpcProjectileCursorEntry>();
   }
 
   private static int ProjectWorldTimeToLegacy(double timeOfDay)

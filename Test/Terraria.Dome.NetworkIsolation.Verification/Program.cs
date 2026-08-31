@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Terraria.Dome.Protocol.V1456.Compatibility;
 using Terraria.Dome.Simulation;
+using Terraria.Dome.Simulation.Player.Components;
 using Terraria.Dome.Simulation.Items;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldObjects;
@@ -15,6 +16,30 @@ using Terraria.Dome.Protocol.V1456.Protocol;
 using Terraria.Dome.Server;
 
 List<string> results = new();
+
+Test("Network isolation and projection do not advance an unstarted simulation", () =>
+{
+  using DomeServer server = new();
+  if (server.SimulationTickNumber != 0)
+  {
+    throw new InvalidOperationException("A new server did not start at simulation Tick zero.");
+  }
+
+  if (!server.NetworkIsolation.EnqueueInbound(NetworkInboundEnvelope.FromFrame(
+        1,
+        TerrariaFrameCodec.Encode(
+          new TerrariaFrame(TerrariaMessageId.Ping, Array.Empty<byte>())))))
+  {
+    throw new InvalidOperationException("The host rejected an inbound isolation envelope.");
+  }
+
+  _ = server.CreateWorldDataContext();
+  if (server.SimulationTickNumber != 0)
+  {
+    throw new InvalidOperationException(
+      "Protocol isolation or world projection advanced simulation before the host Tick loop.");
+  }
+});
 
 Test("Inbound envelopes preserve sequence and drain once", () =>
 {
@@ -274,38 +299,137 @@ Test("Network slices copy Dome snapshot state", () =>
     new SimulationVector(10, 20),
     new SimulationVector(1, 2),
     Facing: 1,
-    IsGrounded: true,
+    IsGrounded: false,
     Health: 80,
     IsActive: true,
-    RespawnTicks: 0,
+    RespawnTicks: 14,
     AssignedSlot: 7,
     Mana: 15,
-    MaximumMana: 30);
+    MaximumMana: 30,
+    GravityDirection: -1.0f,
+    ColliderWidth: 1.5f,
+    ColliderHeight: 2.5f,
+    SelectedSlot: 4,
+    SelectedLoadout: 2,
+    AccessoryVisibility: 3,
+    EquipmentStateCount: 5,
+    EquipmentRevision: 8,
+    EquipmentLoadoutRevision: 2,
+    BuffCount: 3,
+    BuffRevision: 9,
+    WellFedRank: 2,
+    WellFedTimeLeft: 600,
+    MaximumHealth: 120,
+    Defense: 17,
+    LifeRegenUnitsPerTick: 75,
+    HealthRegenerationDelayTicks: 6,
+    HealthRegenerationAccumulator: 3,
+    ManaRegenerationDelayTicks: 4,
+    ManaRegenerationAccumulator: 2,
+    ImmunityRemainingTicks: 5,
+    IsImmune: true,
+    UseItem: true,
+    IsUsingItem: true,
+    ItemUseRevision: 6,
+    ItemUseCooldownTicks: 3,
+    ItemAnimationTicks: 2,
+    IsChannelingItem: true,
+    FireCooldownTicks: 11,
+    Aggro: 8,
+    NoAggroNpcTypeCount: 3,
+    HasInteractionTarget: true,
+    InteractionMode: PlayerInteractionMode.OpenChest,
+    Down: true,
+    Up: true,
+    Fire: true,
+    UseTile: true,
+    Dash: true,
+    MoveLeft: true,
+    MoveRight: true,
+    Jump: true,
+    Stealth: 0.375f,
+    IsInvisible: true,
+    HasShroomiteStealth: true,
+    IsVortexStealthActive: true,
+    StealthTimer: 4,
+    ItemAnimationJustStarted: true);
   NetworkPlayerSlice playerSlice = NetworkPlayerSlice.From(player);
   if (playerSlice.PlayerSlot != 7 || playerSlice.Health != 80 ||
-      playerSlice.PositionX != 10 || playerSlice.VelocityY != 2)
+      playerSlice.RespawnTicks != 14 ||
+      playerSlice.PositionX != 10 || playerSlice.VelocityY != 2 ||
+      playerSlice.GravityDirection != -1.0f ||
+      playerSlice.ColliderWidth != 1.5f || playerSlice.ColliderHeight != 2.5f ||
+      playerSlice.SelectedSlot != 4 || playerSlice.SelectedLoadout != 2 ||
+      playerSlice.AccessoryVisibility != 3 || playerSlice.MaximumHealth != 120 ||
+      playerSlice.EquipmentStateCount != 5 || playerSlice.EquipmentRevision != 8 ||
+      playerSlice.EquipmentLoadoutRevision != 2 || playerSlice.BuffCount != 3 ||
+      playerSlice.BuffRevision != 9 || playerSlice.WellFedRank != 2 ||
+      playerSlice.WellFedTimeLeft != 600 ||
+      playerSlice.Defense != 17 || playerSlice.IsGrounded ||
+      playerSlice.LifeRegenUnitsPerTick != 75 ||
+      playerSlice.HealthRegenerationDelayTicks != 6 ||
+      playerSlice.HealthRegenerationAccumulator != 3 ||
+      playerSlice.ManaRegenerationDelayTicks != 4 ||
+      playerSlice.ManaRegenerationAccumulator != 2 ||
+      playerSlice.ImmunityRemainingTicks != 5 || !playerSlice.IsImmune ||
+      !playerSlice.IsUsingItem || !playerSlice.UseItem || playerSlice.ItemUseRevision != 6 ||
+      playerSlice.ItemUseCooldownTicks != 3 || playerSlice.ItemAnimationTicks != 2 ||
+      !playerSlice.IsChannelingItem || playerSlice.FireCooldownTicks != 11 ||
+      playerSlice.Aggro != 8 || playerSlice.NoAggroNpcTypeCount != 3 ||
+      !playerSlice.HasInteractionTarget ||
+      playerSlice.InteractionMode != PlayerInteractionMode.OpenChest ||
+      !playerSlice.Down || !playerSlice.Up || !playerSlice.Fire ||
+      !playerSlice.UseTile || !playerSlice.Dash || !playerSlice.MoveLeft ||
+      !playerSlice.MoveRight || !playerSlice.Jump ||
+      playerSlice.Stealth != 0.375f || !playerSlice.IsInvisible ||
+      !playerSlice.HasShroomiteStealth || !playerSlice.IsVortexStealthActive ||
+      playerSlice.StealthTimer != 4 || !playerSlice.ItemAnimationJustStarted)
   {
     throw new InvalidOperationException("Player slice did not preserve snapshot fields.");
   }
 
   ItemStack[] slots = [new ItemStack(42, 3)];
   ChestSnapshot chest = new(
-    ChestId: 2,
-    TileX: 4,
-    TileY: 5,
-    Opener: null,
-    Slots: slots,
-    Revision: 1,
-    Section: new WorldSectionCoordinates(0, 0),
-    IsLocked: false);
-  NetworkChestSlice chestSlice = NetworkChestSlice.From(chest);
-  slots[0] = ItemStack.Empty;
-  if (chestSlice.Slots[0].ItemType != 42 || chestSlice.Slots[0].Quantity != 3)
-  {
-    throw new InvalidOperationException("Chest slice retained mutable source storage.");
-  }
+    chestId: 2,
+    tileX: 4,
+    tileY: 5,
+    opener: null,
+    slots: slots,
+    revision: 1,
+    section: new WorldSectionCoordinates(0, 0),
+    isLocked: false);
+NetworkChestSlice chestSlice = NetworkChestSlice.From(chest);
+slots[0] = ItemStack.Empty;
+if (chestSlice.Slots[0].ItemType != 42 || chestSlice.Slots[0].Quantity != 3)
+{
+  throw new InvalidOperationException("Chest slice retained mutable source storage.");
+}
 
-  WorldTile[,] tiles = new WorldTile[2, 1];
+bool rejectedInvalidChestStackProjection = false;
+try
+{
+  _ = NetworkChestSlice.From(new ChestSnapshot(
+    chestId: 2,
+    tileX: 4,
+    tileY: 5,
+    opener: null,
+    slots: [new ItemStack(0, 1)],
+    revision: 1,
+    section: new WorldSectionCoordinates(0, 0),
+    isLocked: false));
+}
+catch (ArgumentOutOfRangeException)
+{
+  rejectedInvalidChestStackProjection = true;
+}
+
+if (!rejectedInvalidChestStackProjection)
+{
+  throw new InvalidOperationException(
+    "Chest network isolation projected a non-canonical empty ItemStack.");
+}
+
+WorldTile[,] tiles = new WorldTile[2, 1];
   tiles[0, 0] = new WorldTile(IsActive: true, Type: 5);
   WorldSectionSnapshot section = new(
     new WorldSectionCoordinates(1, 2),

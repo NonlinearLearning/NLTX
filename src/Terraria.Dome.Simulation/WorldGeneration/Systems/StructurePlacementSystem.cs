@@ -97,7 +97,21 @@ public sealed class StructurePlacementSystem
           placement.OriginX + localX,
           placement.OriginY + localY,
           TileChangeKind.Place,
-          definition.TileType));
+          definition.TileType,
+          Priority: definition.Priority,
+          Source: definition.Id));
+        if (definition.WallType != 0)
+        {
+          commands.Add(new TileChangeCommand(
+            state.ReserveSequence(),
+            placement.OriginX + localX,
+            placement.OriginY + localY,
+            TileChangeKind.SetWall,
+            TileType: 0,
+            WallType: definition.WallType,
+            Priority: definition.Priority,
+            Source: definition.Id));
+        }
       }
     }
 

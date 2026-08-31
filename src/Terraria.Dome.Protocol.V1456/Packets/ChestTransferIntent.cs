@@ -5,4 +5,5 @@ public readonly record struct ChestTransferIntent(
   int ChestId,
   byte InventorySlot,
   byte ChestSlot,
-  bool Withdraw);
+  bool Withdraw,
+  long ExpectedRevision = -1);

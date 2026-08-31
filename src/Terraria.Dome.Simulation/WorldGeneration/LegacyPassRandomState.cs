@@ -41,6 +41,8 @@ public sealed class LegacyPassRandomState
     }
   }
 
+  public long SampleCount { get; private set; }
+
   public int Next(int minimumInclusive, int maximumExclusive)
   {
     if (minimumInclusive > maximumExclusive)
@@ -67,8 +69,18 @@ public sealed class LegacyPassRandomState
     return Next(0, maximumExclusive);
   }
 
+  public double NextDouble()
+  {
+    return InternalSample() * (1.0 / MaximumSample);
+  }
+
   private int InternalSample()
   {
+    if (SampleCount == long.MaxValue)
+    {
+      throw new InvalidOperationException("Legacy pass random sample count was exhausted.");
+    }
+
     uint current = _index + 1;
     if (current > 55)
     {
@@ -90,6 +102,7 @@ public sealed class LegacyPassRandomState
     sample += (sample >> 31) & MaximumSample;
     _seedArray[current] = sample;
     _index = current;
+    SampleCount++;
     return sample;
   }
 }

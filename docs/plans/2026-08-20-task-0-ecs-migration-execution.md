@@ -1,6 +1,5 @@
 # Task 0 ECS Migration Execution Protocol Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Establish the repeatable, evidence-backed execution protocol that drives every
 subsequent Terraria server gameplay migration from legacy behavior to authoritative ECS state.

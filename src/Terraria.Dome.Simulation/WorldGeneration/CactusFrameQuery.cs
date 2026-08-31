@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 
 namespace Terraria.Dome.Simulation.WorldGeneration;
@@ -6,6 +8,15 @@ namespace Terraria.Dome.Simulation.WorldGeneration;
 public static class CactusFrameQuery
 {
   private const ushort CactusTileType = 80;
+  private static readonly IReadOnlySet<ushort> SupportedGroundTileTypes = new HashSet<ushort>
+  {
+    53, 112, 116, 234
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterSupportedGroundDefaults()
+  {
+    return SupportedGroundTileTypes;
+  }
 
   public static CactusFrameResult Evaluate(WorldGridSnapshot snapshot, int x, int y)
   {
@@ -78,6 +89,6 @@ public static class CactusFrameQuery
   private static bool IsSupportedGround(WorldTile tile)
   {
     return tile.IsActive && !tile.IsHalfBrick && tile.Slope == 0 &&
-      tile.Type is 53 or 112 or 116 or 234;
+      SupportedGroundTileTypes.Contains(tile.Type);
   }
 }

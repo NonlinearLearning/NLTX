@@ -1,6 +1,5 @@
 # Lantern Night Manual/Genuine ECS Migration Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan
 > task-by-task.
 
 **Goal:** Recover and migrate the server-authoritative distinction between manual and genuine
@@ -399,4 +398,3 @@ slice:
   receive a Manual bit;
 - reclassifying the existing generic `WorldEventStartCommand(LanternNight)` by assumption;
 - claiming Task 7 or the Main ECS migration is complete after this slice.
-

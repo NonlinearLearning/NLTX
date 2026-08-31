@@ -13,12 +13,14 @@ public struct ManaComponent
 
     Current = current;
     Maximum = maximum;
+    EquipmentIncrease = 0;
     RegenerationDelayTicks = regenerationDelayTicks;
     RegenerationAccumulator = 0;
   }
 
   public int Current;
   public int Maximum;
+  public int EquipmentIncrease;
   public int RegenerationAccumulator;
   public int RegenerationDelayTicks;
 }

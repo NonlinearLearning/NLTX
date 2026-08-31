@@ -7,7 +7,8 @@ public enum NpcBehaviorId
   OrdinaryChase = 1,
   TownHome = 2,
   Segment = 3,
-  TrainingDummy = 4
+  TrainingDummy = 4,
+  FloatingEye = 5
 }
 
 public enum NpcFaction
@@ -26,6 +27,9 @@ public enum NpcCategory
 
 public readonly record struct NpcDefinition
 {
+  private const int MaxAiStyle = 127;
+  private const int MaxNetId = 696;
+
   public NpcDefinition(
     int DefinitionId,
     int NetId,
@@ -39,14 +43,24 @@ public readonly record struct NpcDefinition
     NpcCategory Category = NpcCategory.Enemy,
     int AiStyle = 0,
     bool IsImmortal = false,
-    bool AlwaysReplicate = false)
+    bool AlwaysReplicate = false,
+    bool IsLikeTownNpc = false,
+    bool IsTownPet = false,
+    bool SupportsNpcTargets = false,
+    bool IsBoss = false,
+    bool ShouldBeCountedAsBossForRainbowBoulders = false,
+    float TakenDamageMultiplier = 1.0f,
+    bool SuppressLootWhenSpawnedFromStatue = false,
+    float NpcSlotCost = 1.0f,
+    bool IsTrapImmune = false,
+    bool IsLavaImmune = false)
   {
     if (DefinitionId <= 0)
     {
       throw new ArgumentOutOfRangeException(nameof(DefinitionId));
     }
 
-    if (NetId <= 0)
+    if (NetId <= 0 || NetId > MaxNetId)
     {
       throw new ArgumentOutOfRangeException(nameof(NetId));
     }
@@ -56,14 +70,62 @@ public readonly record struct NpcDefinition
       throw new ArgumentOutOfRangeException(nameof(MaximumHealth));
     }
 
+    if (Defense < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(Defense));
+    }
+
+    if (LootTableId < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(LootTableId));
+    }
+
+    if (AiStyle < 0 || AiStyle > MaxAiStyle)
+    {
+      throw new ArgumentOutOfRangeException(nameof(AiStyle));
+    }
+
     if (!Enum.IsDefined(BehaviorId) || !Enum.IsDefined(Faction) || !Enum.IsDefined(Category))
     {
       throw new ArgumentOutOfRangeException(nameof(BehaviorId));
     }
 
-    if (ColliderWidth <= 0.0f || ColliderHeight <= 0.0f)
+    if (BehaviorId == NpcBehaviorId.TownHome &&
+        (Faction != NpcFaction.Town || Category != NpcCategory.Town))
+    {
+      throw new ArgumentException(
+        "Town-home behavior requires town faction and category.",
+        nameof(BehaviorId));
+    }
+
+    if (BehaviorId == NpcBehaviorId.Segment && Category != NpcCategory.Segment)
+    {
+      throw new ArgumentException(
+        "Segment behavior requires the segment category.",
+        nameof(Category));
+    }
+
+    if (Category == NpcCategory.Segment && BehaviorId != NpcBehaviorId.Segment)
+    {
+      throw new ArgumentException(
+        "The segment category requires segment behavior.",
+        nameof(Category));
+    }
+
+    if (!float.IsFinite(ColliderWidth) || !float.IsFinite(ColliderHeight) ||
+        ColliderWidth <= 0.0f || ColliderHeight <= 0.0f)
     {
       throw new ArgumentOutOfRangeException(nameof(ColliderWidth));
+    }
+
+    if (!float.IsFinite(TakenDamageMultiplier) || TakenDamageMultiplier < 1.0f)
+    {
+      throw new ArgumentOutOfRangeException(nameof(TakenDamageMultiplier));
+    }
+
+    if (!float.IsFinite(NpcSlotCost) || NpcSlotCost < 0.0f)
+    {
+      throw new ArgumentOutOfRangeException(nameof(NpcSlotCost));
     }
 
     this.DefinitionId = DefinitionId;
@@ -79,6 +141,16 @@ public readonly record struct NpcDefinition
     this.AiStyle = AiStyle;
     this.IsImmortal = IsImmortal;
     this.AlwaysReplicate = AlwaysReplicate;
+    this.IsLikeTownNpc = IsLikeTownNpc;
+    this.IsTownPet = IsTownPet;
+    this.SupportsNpcTargets = SupportsNpcTargets;
+    this.IsBoss = IsBoss;
+    this.ShouldBeCountedAsBossForRainbowBoulders = ShouldBeCountedAsBossForRainbowBoulders;
+    this.TakenDamageMultiplier = TakenDamageMultiplier;
+    this.SuppressLootWhenSpawnedFromStatue = SuppressLootWhenSpawnedFromStatue;
+    this.NpcSlotCost = NpcSlotCost;
+    this.IsTrapImmune = IsTrapImmune;
+    this.IsLavaImmune = IsLavaImmune;
   }
 
   public int DefinitionId { get; }
@@ -94,4 +166,45 @@ public readonly record struct NpcDefinition
   public int AiStyle { get; }
   public bool IsImmortal { get; }
   public bool AlwaysReplicate { get; }
+  public bool IsLikeTownNpc { get; }
+  public bool IsTownPet { get; }
+  public bool SupportsNpcTargets { get; }
+  public bool IsBoss { get; }
+  public bool ShouldBeCountedAsBossForRainbowBoulders { get; }
+  public float TakenDamageMultiplier { get; }
+  public bool SuppressLootWhenSpawnedFromStatue { get; }
+  public float NpcSlotCost { get; }
+  public bool IsTrapImmune { get; }
+  public bool IsLavaImmune { get; }
+
+  public bool TreatedAsABossForRainbowBoulders =>
+    IsBoss || ShouldBeCountedAsBossForRainbowBoulders;
+
+  public NpcDefinition WithSupportsNpcTargets(bool supportsNpcTargets)
+  {
+    return new NpcDefinition(
+      DefinitionId,
+      NetId,
+      MaximumHealth,
+      Defense,
+      ColliderWidth,
+      ColliderHeight,
+      BehaviorId,
+      LootTableId,
+      Faction,
+      Category,
+      AiStyle,
+      IsImmortal,
+      AlwaysReplicate,
+      IsLikeTownNpc,
+      IsTownPet,
+      supportsNpcTargets,
+      IsBoss,
+      ShouldBeCountedAsBossForRainbowBoulders,
+      TakenDamageMultiplier,
+      SuppressLootWhenSpawnedFromStatue,
+      NpcSlotCost,
+      IsTrapImmune,
+      IsLavaImmune);
+  }
 }

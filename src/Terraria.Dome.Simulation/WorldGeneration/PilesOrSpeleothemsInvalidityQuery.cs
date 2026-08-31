@@ -6,6 +6,11 @@ namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class PilesOrSpeleothemsInvalidityQuery
 {
+  public static bool Evaluate(WorldGridSnapshot snapshot, int x, int y)
+  {
+    return Evaluate(snapshot, x, y, BoulderTileRegistry.RegisterDefaults());
+  }
+
   public static bool Evaluate(
     WorldGridSnapshot snapshot,
     int x,

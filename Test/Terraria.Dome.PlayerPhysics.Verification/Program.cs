@@ -19,6 +19,21 @@ if (snapshot.Position.Y != 21.0f || !snapshot.IsGrounded)
 
 Console.WriteLine("PASS: falling players stop above solid tiles");
 
+using DomeSimulation invertedGravitySimulation = new(new WorldGrid(400, 300));
+PlayerHandle invertedGravityPlayer = invertedGravitySimulation.CreatePlayer(
+  new SimulationVector(20.0f, 20.0f));
+invertedGravitySimulation.SetPlayerGravityDirection(invertedGravityPlayer, -1.0f);
+invertedGravitySimulation.Tick(new SimulationInputBatch());
+PlayerSnapshot invertedGravitySnapshot =
+  invertedGravitySimulation.CreateSnapshot().FindPlayer(invertedGravityPlayer);
+if (invertedGravitySnapshot.Position.Y != 21.0f || invertedGravitySnapshot.Velocity.Y != 1.0f ||
+    invertedGravitySnapshot.GravityDirection != -1.0f)
+{
+  throw new InvalidOperationException("Player gravity direction did not affect authoritative movement.");
+}
+
+Console.WriteLine("PASS: player gravity direction is simulation-owned");
+
 VerifyTileDefinitionDrivenCollision();
 VerifyHalfBrickCollisionGeometry();
 VerifyTopSlopeContactGeometry();

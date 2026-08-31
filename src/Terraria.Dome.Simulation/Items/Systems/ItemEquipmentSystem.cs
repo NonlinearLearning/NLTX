@@ -1,3 +1,4 @@
+using System;
 using Terraria.Dome.Simulation;
 using Terraria.Dome.Simulation.Items.Components;
 using Terraria.Dome.Simulation.Items.Definitions;
@@ -11,15 +12,20 @@ public sealed class ItemEquipmentSystem
     PlayerHandle player,
     ItemStack stack,
     int sourceSlot,
-    ItemEquipmentDefinition definition,
+    ItemDefinition itemDefinition,
     ItemEquipmentStateComponent? existing,
     bool vanity,
     out ItemEquipmentStateComponent state,
     out ItemEquippedEvent equippedEvent,
     out ItemCommandRejection rejection)
   {
-    if (stack.IsEmpty || sourceSlot < 0 || definition.Slot == ItemEquipmentSlot.None ||
-        existing.HasValue)
+    if (!player.IsValid || stack.IsEmpty || stack.ItemType != itemDefinition.ItemType ||
+        stack.Quantity > itemDefinition.StackLimit || sourceSlot < 0 ||
+        sourceSlot >= InventoryComponent.SlotCount ||
+        itemDefinition.Equipment is not ItemEquipmentDefinition definition ||
+        !Enum.IsDefined(definition.Slot) ||
+        definition.Slot == ItemEquipmentSlot.None ||
+        existing.HasValue || vanity && !definition.Vanity)
     {
       state = default;
       equippedEvent = default;

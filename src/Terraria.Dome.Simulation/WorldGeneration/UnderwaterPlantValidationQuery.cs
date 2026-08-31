@@ -13,6 +13,24 @@ public static class UnderwaterPlantValidationQuery
   public static UnderwaterPlantValidationResult Evaluate(
     WorldGridSnapshot snapshot,
     TileDefinitionRegistry tileDefinitions,
+    ushort plantType,
+    int x,
+    int y,
+    bool ignoreSelf = true)
+  {
+    return Evaluate(
+      snapshot,
+      tileDefinitions,
+      ConversionSandTileRegistry.RegisterDefaults(),
+      plantType,
+      x,
+      y,
+      ignoreSelf);
+  }
+
+  public static UnderwaterPlantValidationResult Evaluate(
+    WorldGridSnapshot snapshot,
+    TileDefinitionRegistry tileDefinitions,
     IReadOnlySet<ushort> conversionSandTileTypes,
     ushort plantType,
     int x,

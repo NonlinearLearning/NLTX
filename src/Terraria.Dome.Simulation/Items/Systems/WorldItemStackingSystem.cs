@@ -15,6 +15,18 @@ public sealed class WorldItemStackingSystem
     out WorldItemComponent mergedDonor)
   {
     ArgumentNullException.ThrowIfNull(definitions);
+    try
+    {
+      receiver.InstanceState.Validate();
+      donor.InstanceState.Validate();
+    }
+    catch (ArgumentOutOfRangeException)
+    {
+      mergedReceiver = receiver;
+      mergedDonor = donor;
+      return false;
+    }
+
     if (tick < 0 || !float.IsFinite(maximumDistance) || maximumDistance < 0.0f ||
         !float.IsFinite(receiver.Position.X) || !float.IsFinite(receiver.Position.Y) ||
         !float.IsFinite(donor.Position.X) || !float.IsFinite(donor.Position.Y) ||
@@ -27,13 +39,16 @@ public sealed class WorldItemStackingSystem
         donor.WorldState.Revision == long.MaxValue ||
         receiver.Stack.IsEmpty || donor.Stack.IsEmpty ||
         !definitions.TryGet(receiver.Stack.ItemType, out ItemDefinition definition) ||
+        receiver.Stack.Quantity > definition.StackLimit ||
+        donor.Stack.Quantity > definition.StackLimit ||
         receiver.Stack.ItemType != donor.Stack.ItemType ||
+        !definition.CanStack ||
         !InventoryComponent.CanMerge(
           receiver.Stack,
           receiver.InstanceState,
           donor.Stack,
           donor.InstanceState,
-          definition.Identity?.UniqueStack ?? false))
+          definition.IsUniqueStack))
     {
       mergedReceiver = receiver;
       mergedDonor = donor;

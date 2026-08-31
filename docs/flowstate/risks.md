@@ -1,12 +1,12 @@
 # Documentation Risks
 
-| ID | Risk | Impact | Mitigation | Status |
-| --- | --- | --- | --- | --- |
-| RISK-DOC-001 | Physical moves break source/evidence links | High | Preserve historical paths; central manifest first | mitigated |
-| RISK-DOC-002 | Old plans are mistaken for current authority | High | Mark lifecycle in manifest and point to canonical artifacts | active |
-| RISK-DOC-003 | Build output is treated as durable documentation | High | Separate evidence/generated/tool classes | mitigated |
-| RISK-DOC-004 | Stale diagnostic paths are cited as fresh proof | High | Require existence checks and verification timestamp | active |
-| RISK-DOC-005 | Bulk front matter creates noisy unrelated diffs | Medium | Defer per-file rewrites; use a generated manifest | mitigated |
-| RISK-DOC-006 | User/parallel worktree changes are overwritten | High | Read-only inventory first; edit only flowstate-owned files | active |
+| ID | Risk | Mitigation | Status |
+| --- | --- | --- | --- |
+| RISK-DOC-001 | Moving history breaks links | Preserve paths; index first | mitigated |
+| RISK-DOC-002 | Old plans look authoritative | Manifest status and canonical links | active |
+| RISK-DOC-003 | Build output is mistaken for docs | Separate evidence/output/tool classes | mitigated |
+| RISK-DOC-004 | Stale diagnostics look current | Existence checks and timestamps | active |
+| RISK-DOC-005 | Bulk front matter creates noise | Defer per-file rewrites | mitigated |
+| RISK-DOC-006 | Concurrent work is overwritten | Edit only Flowstate-owned files | active |
 
-Risks marked `active` remain visible in the next retrospective and are not silently closed.
+Active risks carry into the next retrospective; they are not closed implicitly.

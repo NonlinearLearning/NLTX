@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 
@@ -6,11 +7,40 @@ namespace Terraria.Dome.Simulation.WorldGeneration;
 
 public static class TilePoundingEligibilityQuery
 {
-  private const ushort DungeonDoorTileType = 10;
-  private const ushort DyePlantTileType = 190;
-  private const ushort RollingCactusTileType = 484;
-  private const ushort SandstoneTileType = 30;
-  private const ushort SpecialPlatformTileType = 380;
+  private static readonly IReadOnlySet<ushort> BlockedTileTypes = new HashSet<ushort>
+  {
+    10, 48, 137, 232, 380, 387, 388, 476, 484
+  }.ToFrozenSet();
+  private static readonly IReadOnlySet<ushort> GenerationBlockedTileTypes = new HashSet<ushort>
+  {
+    190, 30
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterBlockedDefaults()
+  {
+    return BlockedTileTypes;
+  }
+
+  public static IReadOnlySet<ushort> RegisterGenerationBlockedDefaults()
+  {
+    return GenerationBlockedTileTypes;
+  }
+
+  public static bool CanPound(
+    WorldGridSnapshot snapshot,
+    int x,
+    int y,
+    bool isGeneratingOrLoadingWorld,
+    Func<int, int, bool> canKillTile)
+  {
+    return CanPound(
+      snapshot,
+      x,
+      y,
+      BoulderTileRegistry.RegisterDefaults(),
+      isGeneratingOrLoadingWorld,
+      canKillTile);
+  }
 
   public static bool CanPound(
     WorldGridSnapshot snapshot,
@@ -35,7 +65,7 @@ public static class TilePoundingEligibilityQuery
       return false;
     }
 
-    if (isGeneratingOrLoadingWorld && tile.Type is DyePlantTileType or SandstoneTileType)
+    if (isGeneratingOrLoadingWorld && GenerationBlockedTileTypes.Contains(tile.Type))
     {
       return false;
     }
@@ -51,7 +81,6 @@ public static class TilePoundingEligibilityQuery
 
   private static bool IsPoundingBlockedTileType(ushort tileType)
   {
-    return tileType is DungeonDoorTileType or 48 or 137 or 232 or SpecialPlatformTileType or
-      387 or 388 or 476 or RollingCactusTileType;
+    return BlockedTileTypes.Contains(tileType);
   }
 }

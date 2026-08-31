@@ -83,5 +83,17 @@ public sealed class NpcSystemPipeline
     {
       throw new InvalidOperationException("NPC tick pipeline must have exactly twelve stages.");
     }
+
+    HashSet<string> names = new(StringComparer.Ordinal);
+    for (int index = 0; index < _registrations.Count; index++)
+    {
+      NpcSystemRegistration registration = _registrations[index];
+      if (registration.Stage != (NpcSystemStage)index || string.IsNullOrWhiteSpace(registration.Name) ||
+          !names.Add(registration.Name))
+      {
+        throw new InvalidOperationException(
+          "NPC tick pipeline stages must be contiguous, named, and unique.");
+      }
+    }
   }
 }

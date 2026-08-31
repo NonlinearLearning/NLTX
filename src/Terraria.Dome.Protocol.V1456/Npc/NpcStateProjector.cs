@@ -131,6 +131,22 @@ public sealed class NpcStateProjector
         ai2 = Present(state.Segment.Parent.Value);
         ai3 = Present(state.Segment.Child.Value);
         return true;
+      case NpcBehaviorId.FloatingEye:
+        NpcFlyingState flying = state.Behavior.Flying;
+        if (!IsPositiveFinite(flying.HorizontalAcceleration) ||
+            !IsPositiveFinite(flying.VerticalAcceleration) ||
+            !IsPositiveFinite(flying.MaximumHorizontalSpeed) ||
+            !IsPositiveFinite(flying.MaximumVerticalSpeed))
+        {
+          unsupportedReason = "FloatingEye behavior contains an invalid movement parameter.";
+          return false;
+        }
+
+        ai0 = Present(flying.HorizontalAcceleration);
+        ai1 = Present(flying.VerticalAcceleration);
+        ai2 = Present(flying.MaximumHorizontalSpeed);
+        ai3 = Present(flying.MaximumVerticalSpeed);
+        return true;
       default:
         unsupportedReason = $"NPC behavior {state.Behavior.BehaviorId} has no SyncNPC projection.";
         return false;
@@ -150,5 +166,10 @@ public sealed class NpcStateProjector
   private static bool IsFinite(SimulationVector value)
   {
     return float.IsFinite(value.X) && float.IsFinite(value.Y);
+  }
+
+  private static bool IsPositiveFinite(float value)
+  {
+    return float.IsFinite(value) && value > 0.0f;
   }
 }

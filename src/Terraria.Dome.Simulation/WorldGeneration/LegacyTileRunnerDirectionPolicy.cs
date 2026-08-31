@@ -25,7 +25,7 @@ public static class LegacyTileRunnerDirectionPolicy
   {
     if (!double.IsFinite(directionX) || !double.IsFinite(directionY) ||
         !double.IsFinite(strength) || !double.IsFinite(centerY) ||
-        !double.IsFinite(rockLayer) || worldHeight <= 300 || xRoll < -10 || xRoll > 10 ||
+        !double.IsFinite(rockLayer) || worldHeight < 2 || xRoll < -10 || xRoll > 10 ||
         drunkXRoll < -10 || drunkXRoll > 10 || yRoll < -10 || yRoll > 10)
     {
       throw new ArgumentOutOfRangeException(nameof(directionX));

@@ -1,3 +1,4 @@
+using System;
 using Terraria.Dome.Simulation.Items.Components;
 using Terraria.Dome.Simulation.Items.Events;
 
@@ -5,6 +6,18 @@ namespace Terraria.Dome.Simulation.Items.Systems;
 
 public sealed class ItemPrefixSystem
 {
+  private readonly ItemDefinitionRegistry? _itemDefinitions;
+
+  public ItemPrefixSystem()
+  {
+  }
+
+  public ItemPrefixSystem(ItemDefinitionRegistry itemDefinitions)
+  {
+    _itemDefinitions = itemDefinitions ??
+      throw new ArgumentNullException(nameof(itemDefinitions));
+  }
+
   public bool TryApply(
     ItemStack stack,
     ItemDefinition definition,
@@ -13,7 +26,19 @@ public sealed class ItemPrefixSystem
     out ItemPrefixChangedEvent changed,
     out ItemCommandRejection rejection)
   {
-    if (stack.IsEmpty)
+    try
+    {
+      state.Validate();
+    }
+    catch (ArgumentOutOfRangeException)
+    {
+      changed = default;
+      rejection = ItemCommandRejection.Invalid("The item instance state is invalid.");
+      return false;
+    }
+
+    if (stack.IsEmpty || stack.Quantity > definition.StackLimit ||
+        !IsAuthoritativeDefinition(stack, definition))
     {
       changed = default;
       rejection = ItemCommandRejection.Invalid("An empty item cannot receive a prefix.");
@@ -42,5 +67,12 @@ public sealed class ItemPrefixSystem
     changed = new ItemPrefixChangedEvent(stack.ItemType, previous, prefixId);
     rejection = default;
     return true;
+  }
+
+  private bool IsAuthoritativeDefinition(ItemStack stack, ItemDefinition definition)
+  {
+    return _itemDefinitions is null ||
+      _itemDefinitions.TryGet(stack.ItemType, out ItemDefinition registeredDefinition) &&
+      registeredDefinition == definition;
   }
 }

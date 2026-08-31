@@ -1,6 +1,5 @@
 # Half-Brick Collision Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Make an active, known, ordinary solid half-brick occupy only its source-backed lower
 half during Dome runtime tile collision, without widening the slice to slopes or special tiles.

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace Terraria.Dome.Simulation.WorldObjects.Definitions;
 
@@ -20,7 +21,10 @@ public static class TileEntityDefinitionRegistry
     new(10, "CritterAnchor")
   ];
 
-  public static IReadOnlyList<TileEntityDefinition> Definitions => DefinitionsByType;
+  private static readonly IReadOnlyList<TileEntityDefinition> ReadOnlyDefinitions =
+    Array.AsReadOnly(DefinitionsByType);
+
+  public static IReadOnlyList<TileEntityDefinition> Definitions => ReadOnlyDefinitions;
 
   public static bool TryGet(byte type, out TileEntityDefinition definition)
   {

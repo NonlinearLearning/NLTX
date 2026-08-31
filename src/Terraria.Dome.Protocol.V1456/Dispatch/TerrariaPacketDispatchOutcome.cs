@@ -6,6 +6,8 @@ public enum TerrariaPacketDispatchOutcome
   PlayerBootstrapAccepted,
   PlayerControlsAccepted,
   ActiveSynchronizationAccepted,
+  ClientProjectileSyncIgnored,
+  ClientProjectileTerminationIgnored,
   ClientProjectileTerminationAccepted,
   NetModuleAccepted,
   TileManipulationAccepted,

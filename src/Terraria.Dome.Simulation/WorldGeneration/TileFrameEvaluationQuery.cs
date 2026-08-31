@@ -88,6 +88,7 @@ public static class TileFrameEvaluationQuery
     }
 
     List<TileFrameRequest> requests = new(coordinates.Count);
+    string source = ResolveSource(pendingMutations);
     foreach (TileFrameCoordinate coordinate in coordinates)
     {
       requests.Add(new TileFrameRequest(
@@ -95,7 +96,8 @@ public static class TileFrameEvaluationQuery
         coordinate.Y,
         mutationKind,
         snapshot,
-        pendingMutations));
+        pendingMutations,
+        source));
     }
 
     return requests;
@@ -131,6 +133,26 @@ public static class TileFrameEvaluationQuery
     yield return new TileFrameCoordinate(x + 1, y);
     yield return new TileFrameCoordinate(x, y - 1);
     yield return new TileFrameCoordinate(x, y + 1);
+  }
+
+  private static string ResolveSource(IReadOnlyCollection<TileChangeCommand> pendingMutations)
+  {
+    string? source = null;
+    foreach (TileChangeCommand mutation in pendingMutations)
+    {
+      if (string.IsNullOrWhiteSpace(mutation.Source) ||
+          StringComparer.Ordinal.Equals(mutation.Source, "unspecified"))
+      {
+        continue;
+      }
+
+      if (source is null || StringComparer.Ordinal.Compare(mutation.Source, source) < 0)
+      {
+        source = mutation.Source;
+      }
+    }
+
+    return source ?? "worldgen.frame";
   }
 
   private static WorldTile GetPendingTile(

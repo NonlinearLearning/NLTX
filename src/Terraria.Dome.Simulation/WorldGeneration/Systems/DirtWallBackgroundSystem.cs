@@ -15,6 +15,65 @@ public sealed class DirtWallBackgroundSystem
 
   public void AppendCommands(
     WorldGridSnapshot snapshot,
+    LegacyTerrainRuntimeProfile profile,
+    LegacyPassRandomState random,
+    ref WorldGenerationStateComponent state,
+    List<TileChangeCommand> commands)
+  {
+    ArgumentNullException.ThrowIfNull(snapshot);
+    ArgumentNullException.ThrowIfNull(profile);
+    ArgumentNullException.ThrowIfNull(random);
+    ArgumentNullException.ThrowIfNull(commands);
+    int worldSurfaceY = LegacyMainWorldSurfacePolicy.Resolve(profile, snapshot.Metadata);
+    AppendCommands(snapshot, worldSurfaceY, random, ref state, commands);
+  }
+
+  public void AppendCommands(
+    WorldGridSnapshot snapshot,
+    LegacyTerrainRuntimeProfile profile,
+    IReadOnlyList<int> surfaceOffsetChanges,
+    ref WorldGenerationStateComponent state,
+    List<TileChangeCommand> commands)
+  {
+    ArgumentNullException.ThrowIfNull(snapshot);
+    ArgumentNullException.ThrowIfNull(profile);
+    ArgumentNullException.ThrowIfNull(surfaceOffsetChanges);
+    ArgumentNullException.ThrowIfNull(commands);
+    int worldSurfaceY = LegacyMainWorldSurfacePolicy.Resolve(profile, snapshot.Metadata);
+    AppendCommands(
+      snapshot,
+      worldSurfaceY,
+      surfaceOffsetChanges,
+      ref state,
+      commands);
+  }
+
+  public void AppendCommands(
+    WorldGridSnapshot snapshot,
+    int worldSurfaceY,
+    LegacyPassRandomState random,
+    ref WorldGenerationStateComponent state,
+    List<TileChangeCommand> commands)
+  {
+    ArgumentNullException.ThrowIfNull(snapshot);
+    ArgumentNullException.ThrowIfNull(random);
+    ArgumentNullException.ThrowIfNull(commands);
+    List<int> surfaceOffsetChanges = new(snapshot.Metadata.Width - 2);
+    for (int x = 1; x < snapshot.Metadata.Width - 1; x++)
+    {
+      surfaceOffsetChanges.Add(random.Next(-1, 2));
+    }
+
+    AppendCommands(
+      snapshot,
+      worldSurfaceY,
+      surfaceOffsetChanges,
+      ref state,
+      commands);
+  }
+
+  public void AppendCommands(
+    WorldGridSnapshot snapshot,
     int worldSurfaceY,
     IReadOnlyList<int> surfaceOffsetChanges,
     ref WorldGenerationStateComponent state,
@@ -53,8 +112,10 @@ public sealed class DirtWallBackgroundSystem
       surfaceOffset = Math.Clamp(surfaceOffset + offsetChange, 0, MaximumSurfaceOffset);
       bool hasEnclosedTile = false;
       ushort wallType = DirtWallType;
-      int endY = Math.Min(snapshot.Metadata.Height - 1, worldSurfaceY + surfaceOffset);
-      for (int y = 0; y <= endY; y++)
+      int endYExclusive = Math.Min(
+        snapshot.Metadata.Height,
+        worldSurfaceY + MaximumSurfaceOffset);
+      for (int y = 0; y < endYExclusive && y <= worldSurfaceY + surfaceOffset; y++)
       {
         WorldTile tile = snapshot.GetTile(x, y);
         if (tile.IsActive)
@@ -70,7 +131,8 @@ public sealed class DirtWallBackgroundSystem
             y,
             TileChangeKind.SetWall,
             0,
-            wallType));
+            wallType,
+            Source: "worldgen.dirt-wall"));
         }
 
         if (IsEnclosed(snapshot, x, y))

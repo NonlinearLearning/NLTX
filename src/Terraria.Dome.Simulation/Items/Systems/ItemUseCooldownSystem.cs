@@ -30,5 +30,8 @@ public sealed class ItemUseCooldownSystem
     {
       state.IsChanneling = false;
     }
+
+    state.IsUsing = state.CooldownTicks > 0;
+    state.JustStarted = false;
   }
 }

@@ -15,6 +15,17 @@ using Terraria.Dome.Simulation.Items.Components;
 using Terraria.Dome.Simulation.Items.Definitions;
 using Terraria.Dome.Simulation.WorldModel;
 
+ItemDefinitionRegistry itemDefinitions = new([
+  new ItemDefinition(
+    1,
+    2,
+    Prefixes: new ItemPrefixDefinition([4])),
+  new ItemDefinition(
+    4,
+    1,
+    Equipment: new ItemEquipmentDefinition(ItemEquipmentSlot.Head),
+    Prefixes: new ItemPrefixDefinition([4]))]);
+
 Terraria.Dome.Simulation.Items.Snapshots.InventorySnapshot inventoryProjection = new(
   new PlayerHandle(1),
   [new Terraria.Dome.Simulation.Items.Snapshots.ItemInstanceSnapshot(
@@ -25,12 +36,14 @@ Terraria.Dome.Simulation.Items.Snapshots.InventorySnapshot inventoryProjection =
       IsNewAndShiny: true))],
   0,
   1);
-IReadOnlyList<byte[]> inventoryFrames = new InventoryReplicationAssembler().CollectFrames(
+IReadOnlyList<byte[]> inventoryFrames = new InventoryReplicationAssembler(itemDefinitions)
+  .CollectFrames(
   playerSlot: 7,
   inventoryProjection);
 if (inventoryFrames.Count != 1)
 {
-  throw new InvalidOperationException("Inventory replication did not emit the projected slot frame.");
+  throw new InvalidOperationException(
+    "Inventory replication did not emit the projected slot frame.");
 }
 
 PlayerEquipmentPacket projectedInventory = TerrariaPacketCodec.DecodePlayerEquipment(
@@ -42,6 +55,56 @@ if (projectedInventory.PlayerSlot != 7 || projectedInventory.SlotId != 0 ||
 {
   throw new InvalidOperationException(
     "Inventory replication discarded authoritative item instance metadata.");
+}
+
+Terraria.Dome.Simulation.Items.Snapshots.InventorySnapshot forgedInventoryProjection = new(
+  new PlayerHandle(1),
+  [new Terraria.Dome.Simulation.Items.Snapshots.ItemInstanceSnapshot(
+    new ItemStack(600, 1),
+    default)],
+  0,
+  1);
+bool unknownItemTypeRejected = false;
+try
+{
+  _ = new InventoryReplicationAssembler(itemDefinitions).CollectFrames(
+    playerSlot: 7,
+    forgedInventoryProjection);
+}
+catch (InvalidOperationException)
+{
+  unknownItemTypeRejected = true;
+}
+
+if (!unknownItemTypeRejected)
+{
+  throw new InvalidOperationException(
+    "Inventory replication accepted an item type missing from the authoritative definitions.");
+}
+
+Terraria.Dome.Simulation.Items.Snapshots.InventorySnapshot overLimitInventoryProjection = new(
+  new PlayerHandle(1),
+  [new Terraria.Dome.Simulation.Items.Snapshots.ItemInstanceSnapshot(
+    new ItemStack(1, 3),
+    default)],
+  0,
+  1);
+bool overLimitItemRejected = false;
+try
+{
+  _ = new InventoryReplicationAssembler(itemDefinitions).CollectFrames(
+    playerSlot: 7,
+    overLimitInventoryProjection);
+}
+catch (InvalidOperationException)
+{
+  overLimitItemRejected = true;
+}
+
+if (!overLimitItemRejected)
+{
+  throw new InvalidOperationException(
+    "Inventory replication accepted a stack above its authoritative Definition limit.");
 }
 
 Terraria.Dome.Simulation.Items.Snapshots.InventorySnapshot
@@ -59,7 +122,8 @@ Terraria.Dome.Simulation.Items.Snapshots.EquipmentSnapshot equipmentProjection =
   new PlayerHandle(1),
   [new ItemEquipmentStateComponent(ItemEquipmentSlot.Head, 0, IsVanity: false)],
   1);
-IReadOnlyList<byte[]> equipmentFrames = new EquipmentReplicationAssembler().CollectFrames(
+IReadOnlyList<byte[]> equipmentFrames = new EquipmentReplicationAssembler(itemDefinitions)
+  .CollectFrames(
   playerSlot: 7,
   equipmentProjection,
   equipmentInventoryProjection);
@@ -78,6 +142,29 @@ if (projectedEquipment.PlayerSlot != 7 || projectedEquipment.SlotId != 59 ||
 {
   throw new InvalidOperationException(
     "Equipment replication discarded the authoritative source inventory instance.");
+}
+
+Terraria.Dome.Simulation.Items.Snapshots.EquipmentSnapshot forgedEquipmentProjection = new(
+  new PlayerHandle(1),
+  [new ItemEquipmentStateComponent(ItemEquipmentSlot.Head, 0, IsVanity: false)],
+  1);
+bool missingEquipmentDefinitionRejected = false;
+try
+{
+  _ = new EquipmentReplicationAssembler(itemDefinitions).CollectFrames(
+    playerSlot: 7,
+    forgedEquipmentProjection,
+    inventoryProjection);
+}
+catch (InvalidOperationException)
+{
+  missingEquipmentDefinitionRejected = true;
+}
+
+if (!missingEquipmentDefinitionRejected)
+{
+  throw new InvalidOperationException(
+    "Equipment replication accepted a source item without an equipment Definition.");
 }
 
 using DomeServer server = new(new WorldGrid(width: 4200, height: 1200));

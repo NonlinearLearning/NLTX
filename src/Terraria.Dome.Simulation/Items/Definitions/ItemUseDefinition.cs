@@ -4,9 +4,12 @@ public readonly record struct ItemUseDefinition(
   int UseTime = 0,
   int UseAnimation = 0,
   int UseStyle = 0,
+  int ReuseDelayTicks = 0,
   bool Channel = false,
   bool AutoReuse = false,
   bool UseTurn = false,
+  bool NoUseGraphic = false,
+  bool Potion = false,
   bool Consumable = false,
   int HealthRestore = 0,
   int ManaRestore = 0,
@@ -15,4 +18,5 @@ public readonly record struct ItemUseDefinition(
   ushort ShootType = 0,
   float ShootSpeed = 0,
   ushort AmmoType = 0,
-  bool ConsumesAmmo = false);
+  bool ConsumesAmmo = false,
+  bool ShootsEveryUse = false);

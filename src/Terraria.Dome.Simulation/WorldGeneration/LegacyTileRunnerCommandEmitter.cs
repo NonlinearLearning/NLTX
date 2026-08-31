@@ -28,7 +28,8 @@ public static class LegacyTileRunnerCommandEmitter
     int rockLayer,
     int maxTilesY,
     bool isOceanDepth,
-    byte liquidAmount = byte.MaxValue)
+    byte liquidAmount = byte.MaxValue,
+    byte currentLiquidAmount = 0)
   {
     LegacyTileRunnerSideEffectProfile sideEffects =
       LegacyTileRunnerSideEffectPolicy.Classify(
@@ -44,7 +45,8 @@ public static class LegacyTileRunnerCommandEmitter
         remixWorld,
         rockLayer,
         maxTilesY,
-        isOceanDepth);
+        isOceanDepth,
+        currentLiquidAmount);
 
     TileChangeCommand? tileCommand = null;
     if (sideEffects.ClearsActiveTile)
@@ -55,7 +57,8 @@ public static class LegacyTileRunnerCommandEmitter
         y,
         TileChangeKind.Kill,
         TileType: 0,
-        PreserveLiquid: sideEffects.InjectsLiquidBeforeClear);
+        PreserveLiquid: sideEffects.InjectsLiquidBeforeClear,
+        Source: "worldgen.tile-runner");
     }
     else if (tileType >= 0)
     {
@@ -66,7 +69,8 @@ public static class LegacyTileRunnerCommandEmitter
         TileChangeKind.Place,
         checked((ushort)tileType),
         WallType: sideEffects.WritesSurfaceWall ? (ushort)1 : (ushort)0,
-        PreserveLiquid: false);
+        PreserveLiquid: false,
+        Source: "worldgen.tile-runner");
     }
 
     LiquidChangeCommand? liquidCommand = null;
@@ -82,11 +86,19 @@ public static class LegacyTileRunnerCommandEmitter
         x,
         y,
         liquidAmount,
-        projection.CommandLiquidType);
+        projection.CommandLiquidType,
+        Source: "worldgen.tile-runner");
     }
-    else if (sideEffects.ClearsLiquidOnActivation || sideEffects.ClearsLavaOnActivation)
+    else if (sideEffects.ClearsLiquidOnActivation || sideEffects.ClearsLiquidForType59 ||
+             sideEffects.ClearsLavaOnActivation)
     {
-      liquidCommand = new LiquidChangeCommand(liquidSequence, x, y, 0, 0);
+      liquidCommand = new LiquidChangeCommand(
+        liquidSequence,
+        x,
+        y,
+        0,
+        0,
+        Source: "worldgen.tile-runner");
     }
 
     return new LegacyTileRunnerCommandBatch(tileCommand, liquidCommand, sideEffects.SetsLava);

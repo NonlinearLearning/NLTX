@@ -1,6 +1,5 @@
 # Liquid Contact Destruction Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Add the approved source-derived global Liquid contact destruction slice without bypassing
 the Simulation Tile command boundary.

@@ -7,7 +7,9 @@ public readonly record struct NpcDeathInput(
   int Health,
   bool WasActive,
   SimulationVector Position,
-  int LootTableId);
+  int LootTableId,
+  bool SpawnedFromStatue = false,
+  bool SuppressLootWhenSpawnedFromStatue = false);
 
 public readonly record struct NpcDeathResult(
   NpcHandle Npc,
@@ -26,6 +28,7 @@ public sealed class NpcDeathSystem
       input.Npc,
       input.Position,
       input.LootTableId,
-      validIdentity && validPosition && validLootTable && input.WasActive && input.Health <= 0);
+      validIdentity && validPosition && validLootTable && input.WasActive && input.Health <= 0 &&
+      !(input.SpawnedFromStatue && input.SuppressLootWhenSpawnedFromStatue));
   }
 }

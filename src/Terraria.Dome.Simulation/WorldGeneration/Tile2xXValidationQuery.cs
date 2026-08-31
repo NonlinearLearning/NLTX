@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Definitions;
 
@@ -7,6 +9,15 @@ namespace Terraria.Dome.Simulation.WorldGeneration;
 public static class Tile2xXValidationQuery
 {
   private const int TileFrameWidth = 18;
+  private static readonly IReadOnlySet<ushort> TopSupportTileTypes = new HashSet<ushort>
+  {
+    465, 531, 591, 592
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterTopSupportDefaults()
+  {
+    return TopSupportTileTypes;
+  }
 
   public static Tile2xXValidationResult Evaluate(
     WorldGridSnapshot snapshot,
@@ -54,7 +65,7 @@ public static class Tile2xXValidationQuery
       }
     }
 
-    bool usesTopSupport = tileType is 465 or 531 or 591 or 592;
+    bool usesTopSupport = TopSupportTileTypes.Contains(tileType);
     if (usesTopSupport)
     {
       valid &= TileStateQuery.IsSolidAllowingTopSlope(

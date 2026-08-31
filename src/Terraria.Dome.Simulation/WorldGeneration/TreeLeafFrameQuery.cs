@@ -8,6 +8,11 @@ public static class TreeLeafFrameQuery
 {
   private const ushort PalmTreeTileType = 323;
 
+  public static bool IsLeafyTreeTop(WorldTile tile)
+  {
+    return IsLeafyTreeTop(tile, TreeLeafCheckedTypeRegistry.RegisterDefaults());
+  }
+
   public static bool IsLeafyTreeTop(
     WorldTile tile,
     IReadOnlySet<ushort> getsCheckedForLeavesTypes)

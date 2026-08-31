@@ -69,6 +69,7 @@ VerifyLegacyHardModeVersionBoundary();
 VerifyLegacyInvasionFacts();
 VerifyLegacyRleCannotCrossRowBoundary();
 VerifyPointerVersionMatrix();
+VerifyGoodWorldVersionBoundary();
 VerifyRemixWorldVersionBoundary();
 VerifyWorldGeneratorVersionBoundary();
 VerifyWorldUniqueIdBoundary();
@@ -543,6 +544,43 @@ static void VerifyRemixWorldVersionBoundary()
     throw new InvalidOperationException(
       "The v249 WLD Remix world bit was not restored from the header.");
   }
+}
+
+static void VerifyGoodWorldVersionBoundary()
+{
+  LegacyWorldDocument beforeGoodWorld = WldWorldReader.Read(
+    WldVersionMatrixFixtureWriter.CreateMinimalPointerWorld(226, isGoodWorld: true));
+  if (beforeGoodWorld.Metadata.IsGoodWorld is not null ||
+      beforeGoodWorld.Metadata.IsRemixWorld is not null)
+  {
+    throw new InvalidOperationException(
+      "A pre-v227 WLD unexpectedly supplied Good World or Remix metadata.");
+  }
+
+  LegacyWorldDocument goodWorld = WldWorldReader.Read(
+    WldVersionMatrixFixtureWriter.CreateMinimalPointerWorld(
+      227,
+      isGoodWorld: true,
+      isRemixWorld: true));
+  if (goodWorld.Metadata.IsGoodWorld != true ||
+      goodWorld.Metadata.IsRemixWorld is not null)
+  {
+    throw new InvalidOperationException(
+      "The v227 WLD Good World bit was not isolated from the later Remix bit.");
+  }
+
+  LegacyWorldDocument current = WldWorldReader.Read(
+    WldVersionMatrixFixtureWriter.CreateMinimalPointerWorld(
+      319,
+      isGoodWorld: true,
+      isRemixWorld: true));
+  if (current.Metadata.IsGoodWorld != true || current.Metadata.IsRemixWorld != true)
+  {
+    throw new InvalidOperationException(
+      "The v319 WLD Good World and Remix bits were not preserved independently.");
+  }
+
+  Console.WriteLine("PASS: WLD v226/v227/v319 Good World boundary");
 }
 
 static void VerifyWorldGeneratorVersionBoundary()

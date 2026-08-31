@@ -73,14 +73,18 @@ public sealed class StructurePlacementTransactionSystem
           x,
           y,
           TileChangeKind.Place,
-          definition.TileType));
+          definition.TileType,
+          Priority: definition.Priority,
+          Source: definition.Id));
         commands.Add(new TileChangeCommand(
           state.ReserveSequence(),
           x,
           y,
           TileChangeKind.SetWall,
           TileType: 0,
-          WallType: definition.WallType));
+          WallType: definition.WallType,
+          Priority: definition.Priority,
+          Source: definition.Id));
       }
     }
 

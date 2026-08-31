@@ -47,6 +47,11 @@ public sealed class NpcHomeSystem
       throw new ArgumentOutOfRangeException(nameof(position));
     }
 
+    if (home.ReturnTimeoutTicks < 0 || home.TownVariant < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(home));
+    }
+
     movementIntent.HasNpcIntent = true;
     movementIntent.NpcHorizontalVelocity = 0.0f;
     movementIntent.NpcVerticalVelocity = 0.0f;

@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Frozen;
+using System.Collections.Generic;
 using Terraria.Dome.Simulation.WorldModel;
 using Terraria.Dome.Simulation.WorldModel.Definitions;
 
@@ -8,6 +10,15 @@ public static class Tile2x2StyleValidationQuery
 {
   private const int TileFrameWidth = 18;
   private const ushort PumpkinTileType = 254;
+  private static readonly IReadOnlySet<ushort> PumpkinSupportTileTypes = new HashSet<ushort>
+  {
+    2, 109, 477, 492
+  }.ToFrozenSet();
+
+  public static IReadOnlySet<ushort> RegisterPumpkinSupportDefaults()
+  {
+    return PumpkinSupportTileTypes;
+  }
 
   public static Tile2x2StyleValidationResult Evaluate(
     WorldGridSnapshot snapshot,
@@ -68,7 +79,7 @@ public static class Tile2x2StyleValidationQuery
         WorldTile support = snapshot.Metadata.IsInside(originX + offsetX, originY + 2)
           ? snapshot.GetTile(originX + offsetX, originY + 2)
           : default;
-        supported = support.Type is 2 or 109 or 477 or 492;
+        supported = PumpkinSupportTileTypes.Contains(support.Type);
       }
 
       valid &= supported;

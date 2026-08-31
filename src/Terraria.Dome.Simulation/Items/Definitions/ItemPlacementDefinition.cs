@@ -4,4 +4,8 @@ public readonly record struct ItemPlacementDefinition(
   short TileType = -1,
   short WallType = -1,
   int PlaceStyle = 0,
-  int TileBoost = 0);
+  int TileBoost = 0,
+  bool CartTrack = false)
+{
+  public const short CartTrackTileType = 314;
+}

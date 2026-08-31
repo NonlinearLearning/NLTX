@@ -24,6 +24,20 @@ using (Dome source = new())
 
   WorldMetadata metadata = new("npc-protocol", new WorldSeed(12), 4200, 1200);
   DomeSimulationSnapshot persistence = source.CreatePersistenceSnapshot(metadata);
+  NpcStateSnapshot namedState = state with { GivenName = "Guide" };
+  using (Dome namedRestore = new(new DomeSimulationSnapshot(
+           persistence.World,
+           persistence.Npcs,
+           persistence.WorldItems,
+           persistence.TickNumber,
+           npcStates: [namedState])))
+  {
+    if (namedRestore.CreateNpcStateSnapshots().Single().GivenName != "Guide")
+    {
+      throw new InvalidOperationException("NPC given name did not survive state snapshot restore.");
+    }
+  }
+
   if (persistence.NpcStates.Count != 1)
   {
     throw new InvalidOperationException("Dome persistence snapshot did not include NPC state snapshots.");
@@ -42,6 +56,7 @@ using (Dome source = new())
 
   NpcStateSnapshot townState = state with
   {
+    DefinitionId = Dome.FixtureNpcType,
     Replication = state.Replication with { ReplicationId = 2 },
     Behavior = new NpcBehaviorStateComponent(
       NpcBehaviorId.TownHome,
@@ -54,6 +69,7 @@ using (Dome source = new())
   };
   NpcStateSnapshot segmentState = state with
   {
+    DefinitionId = 999,
     Replication = state.Replication with { ReplicationId = 3 },
     Behavior = new NpcBehaviorStateComponent(
       NpcBehaviorId.Segment,
@@ -104,6 +120,61 @@ using (Dome source = new())
       decoded.Target != projection.Packet.Target || decoded.DirectionRight != projection.Packet.DirectionRight)
   {
     throw new InvalidOperationException("SyncNPC codec did not preserve identity and sparse state.");
+  }
+
+  NpcStateSnapshot floatingEyeState = state with
+  {
+    Replication = state.Replication with { ReplicationId = 4 },
+    Behavior = new NpcBehaviorStateComponent(
+      NpcBehaviorId.FloatingEye,
+      state.Behavior.Chase,
+      state.Behavior.TownHome,
+      new NpcFlyingState(0.75f, 0.5f, 6.0f, 4.0f))
+  };
+  NpcStateSnapshot floatingEyeReplicationRestore = NpcStateSnapshot.FromReplication(
+    floatingEyeState.ToReplicationSnapshot());
+  if (floatingEyeReplicationRestore.Behavior.Flying != floatingEyeState.Behavior.Flying)
+  {
+    throw new InvalidOperationException(
+      "FloatingEye typed movement state was lost during replication snapshot restore.");
+  }
+
+  NpcStateSnapshot townReplicationRestore = NpcStateSnapshot.FromReplication(
+    townState.ToReplicationSnapshot());
+  if (townReplicationRestore.Faction != NpcFaction.Town ||
+      townReplicationRestore.Category != NpcCategory.Town)
+  {
+    throw new InvalidOperationException(
+      "NPC faction/category state was lost during replication snapshot restore.");
+  }
+  NpcProjectionResult floatingEyeProjection = projector.Project(floatingEyeState);
+  if (!floatingEyeProjection.IsSupported || floatingEyeProjection.Packet.Ai0 != 0.75f ||
+      floatingEyeProjection.Packet.Ai1 != 0.5f || floatingEyeProjection.Packet.Ai2 != 6.0f ||
+      floatingEyeProjection.Packet.Ai3 != 4.0f)
+  {
+    throw new InvalidOperationException("FloatingEye movement state did not project to sparse SyncNPC AI.");
+  }
+
+  NpcSyncPacket decodedFloatingEye = NpcSyncPacketCodec.Decode(
+    NpcSyncPacketCodec.Encode(floatingEyeProjection.Packet));
+  if (decodedFloatingEye.Ai0 != 0.75f || decodedFloatingEye.Ai1 != 0.5f ||
+      decodedFloatingEye.Ai2 != 6.0f || decodedFloatingEye.Ai3 != 4.0f)
+  {
+    throw new InvalidOperationException("FloatingEye sparse AI values did not survive SyncNPC codec round-trip.");
+  }
+
+  NpcStateSnapshot invalidFloatingEyeState = floatingEyeState with
+  {
+    Behavior = new NpcBehaviorStateComponent(
+      NpcBehaviorId.FloatingEye,
+      state.Behavior.Chase,
+      state.Behavior.TownHome,
+      new NpcFlyingState(float.NaN, 0.5f, 6.0f, 4.0f))
+  };
+  NpcProjectionResult invalidFloatingEyeProjection = projector.Project(invalidFloatingEyeState);
+  if (invalidFloatingEyeProjection.IsSupported)
+  {
+    throw new InvalidOperationException("Invalid FloatingEye movement state was projected to SyncNPC.");
   }
 
   NpcSyncPacket lifeWidthPacket = projection.Packet with
@@ -168,6 +239,23 @@ using (Dome source = new())
   if (unsupportedProjection.IsSupported || string.IsNullOrWhiteSpace(unsupportedProjection.UnsupportedReason))
   {
     throw new InvalidOperationException("Unsupported NPC behavior was guessed instead of reported.");
+  }
+
+  bool rejectedUndefinedReplicationState = false;
+  try
+  {
+    _ = NpcStateSnapshot.FromReplication(
+      state.ToReplicationSnapshot() with { Faction = (NpcFaction)99 });
+  }
+  catch (ArgumentOutOfRangeException)
+  {
+    rejectedUndefinedReplicationState = true;
+  }
+
+  if (!rejectedUndefinedReplicationState)
+  {
+    throw new InvalidOperationException(
+      "NPC replication restore accepted an undefined faction value.");
   }
 }
 

@@ -1,6 +1,5 @@
 # Open ECS Responsibilities Execution Proposal
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Close the remaining open responsibilities in the Main-to-ECS migration by first building source-backed authority models, then implementing only the branches that have a unique owner and deterministic verification contract.
 

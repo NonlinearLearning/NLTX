@@ -85,6 +85,8 @@ public sealed class InventoryComponent
   public void SetInstanceState(int slot, ItemInstanceStateComponent state)
   {
     ValidateSlot(slot);
+    state.Validate();
+
     if (_slots[slot].IsEmpty && state != default)
     {
       throw new InvalidOperationException("An empty slot cannot carry item instance state.");

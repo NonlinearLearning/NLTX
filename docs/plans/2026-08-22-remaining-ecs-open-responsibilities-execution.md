@@ -1,6 +1,5 @@
 # Remaining ECS Open Responsibilities Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Advance the remaining ECS migration blockers only where a source-backed owner,
 observable contract, and focused verifier can be recovered, while preserving explicit deferred

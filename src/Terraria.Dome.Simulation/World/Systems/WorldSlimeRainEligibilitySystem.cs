@@ -16,8 +16,6 @@ public readonly record struct WorldSlimeRainEligibilityResult(
 
 public sealed class WorldSlimeRainEligibilitySystem
 {
-  private const double MinimumWorldSurface = 50.0;
-
   public WorldSlimeRainEligibilityResult Evaluate(WorldMetadata metadata)
   {
     if (metadata.IsRemixWorld is not bool isRemixWorld)
@@ -30,9 +28,7 @@ public sealed class WorldSlimeRainEligibilitySystem
       return new(false, WorldSlimeRainStartRejection.RemixWorld);
     }
 
-    if (metadata.WorldSurface is not double worldSurface ||
-        !double.IsFinite(worldSurface) ||
-        worldSurface <= MinimumWorldSurface)
+    if (!metadata.HasWorldSurface)
     {
       return new(false, WorldSlimeRainStartRejection.NoWorldSurface);
     }

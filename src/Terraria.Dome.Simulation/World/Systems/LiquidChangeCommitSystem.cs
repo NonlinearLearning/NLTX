@@ -37,6 +37,13 @@ public sealed class LiquidChangeCommitSystem
         return false;
       }
 
+      if (command.Sequence == long.MaxValue || string.IsNullOrWhiteSpace(command.Source) ||
+          !MatchesExpectedSectionVersion(world, command.X, command.Y, command.ExpectedSectionVersion))
+      {
+        result = LiquidChangeCommitResult.Failed("Liquid command metadata was invalid.");
+        return false;
+      }
+
       if (!world.Contains(command.X, command.Y))
       {
         result = LiquidChangeCommitResult.Failed("Liquid command was outside the world.");
@@ -49,6 +56,12 @@ public sealed class LiquidChangeCommitSystem
         result = LiquidChangeCommitResult.Failed("Liquid type or amount was invalid.");
         return false;
       }
+    }
+
+    if (orderedCommands.Count != 0 && orderedCommands[^1].Sequence >= long.MaxValue - 1)
+    {
+      result = LiquidChangeCommitResult.Failed("Liquid command sequence has no successor.");
+      return false;
     }
 
     orderedCommands.Sort(static (first, second) =>
@@ -75,6 +88,16 @@ public sealed class LiquidChangeCommitSystem
 
     result = new LiquidChangeCommitResult(true, orderedCommands.Count, null);
     return true;
+  }
+
+  private static bool MatchesExpectedSectionVersion(
+    WorldGrid world,
+    int x,
+    int y,
+    long? expectedSectionVersion)
+  {
+    return !expectedSectionVersion.HasValue ||
+      world.GetSectionVersion(world.GetSectionCoordinates(x, y)) == expectedSectionVersion.Value;
   }
 }
 

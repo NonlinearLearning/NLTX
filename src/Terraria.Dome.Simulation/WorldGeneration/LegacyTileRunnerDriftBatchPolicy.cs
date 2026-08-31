@@ -29,6 +29,14 @@ public static class LegacyTileRunnerDriftBatchPolicy
     900
   };
 
+  private static readonly IReadOnlyList<int> ReadOnlyStrengthThresholds =
+    Array.AsReadOnly(StrengthThresholds);
+
+  public static IReadOnlyList<int> RegisterDefaults()
+  {
+    return ReadOnlyStrengthThresholds;
+  }
+
   public static LegacyTileRunnerDriftBatch Apply(
     double centerX,
     double centerY,

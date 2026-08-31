@@ -1,3 +1,5 @@
+using System;
+
 namespace Terraria.Dome.Simulation.Player.Components;
 
 public enum PlayerInteractionMode
@@ -28,6 +30,16 @@ public struct PlayerInteractionComponent
 
   public void SetTarget(int targetId, PlayerInteractionMode mode)
   {
+    if (targetId < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(targetId));
+    }
+
+    if (!Enum.IsDefined(mode))
+    {
+      throw new ArgumentOutOfRangeException(nameof(mode));
+    }
+
     HasTarget = true;
     Mode = mode;
     TargetId = targetId;

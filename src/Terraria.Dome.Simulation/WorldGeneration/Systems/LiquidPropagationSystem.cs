@@ -53,6 +53,13 @@ public sealed class LiquidPropagationSystem
       definition => definition.Type);
     foreach (LiquidWorkItemComponent workItem in workItems)
     {
+      if (string.IsNullOrWhiteSpace(workItem.Source) ||
+          StringComparer.Ordinal.Equals(workItem.Source, "unspecified"))
+      {
+        return LiquidPropagationResult.Failed(
+          "Liquid work item source provenance was missing.");
+      }
+
       if (!byType.ContainsKey(workItem.LiquidType))
       {
         return LiquidPropagationResult.Failed("Liquid work item type was not defined.");
@@ -113,7 +120,8 @@ public sealed class LiquidPropagationSystem
         workItem.X,
         workItem.Y,
         amount,
-        liquidType));
+        liquidType,
+        Source: workItem.Source));
       consumed++;
       byte nextAmount = (byte)(workItem.Amount / 2);
       if (nextAmount == 0)
@@ -131,7 +139,8 @@ public sealed class LiquidPropagationSystem
             y,
             workItem.LiquidType,
             nextAmount,
-            state.ReserveSequence()));
+            state.ReserveSequence(),
+            workItem.Source));
         }
       }
     }

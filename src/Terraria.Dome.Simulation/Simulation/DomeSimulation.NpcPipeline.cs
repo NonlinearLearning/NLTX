@@ -5,6 +5,7 @@ using Terraria.Dome.Simulation.Npc;
 using Terraria.Dome.Simulation.Npc.Components;
 using Terraria.Dome.Simulation.Npc.Definitions;
 using Terraria.Dome.Simulation.Npc.Systems;
+using Terraria.Dome.Simulation.WorldModel;
 
 namespace Terraria.Dome.Simulation;
 
@@ -41,6 +42,7 @@ public sealed partial class DomeSimulation
         case NpcSystemStage.Lifecycle:
           CommitNpcDespawnCommands();
           AdvanceNpcLifecycles();
+          RefreshProjectileOwnerMinionTargets();
           break;
         case NpcSystemStage.Death:
           RefreshNpcReplications();
@@ -88,13 +90,37 @@ public sealed partial class DomeSimulation
         health.Current,
         WasActive: true,
         Position: replication.Position,
-        LootTableId: definition.LootTableId));
+        LootTableId: definition.LootTableId,
+        SpawnedFromStatue: World.Get<NpcSpawnStateComponent>(entry.Value).SpawnedFromStatue,
+        SuppressLootWhenSpawnedFromStatue: definition.SuppressLootWhenSpawnedFromStatue));
       if (death.Published)
       {
         _pendingNpcDeaths.Add(death);
         _publishedNpcDeaths.Add(entry.Key);
+        QueueNpcInvasionProgress(definitionComponent.NetId);
       }
     }
+  }
+
+  private void QueueNpcInvasionProgress(int npcType)
+  {
+    NpcCheckDeadInvasionProgressDecision decision =
+      NpcCheckDeadInvasionProgressPolicy.Evaluate(new NpcCheckDeadInvasionProgressInput(
+        npcType,
+        _worldProgression.InvasionType,
+        _worldProgression.InvasionSize,
+        _worldProgression.InvasionSizeStart));
+    if (_nextNpcDeathSequence == long.MaxValue ||
+        !NpcCheckDeadInvasionProgressCommandPolicy.TryCreate(
+          decision,
+          _nextNpcDeathSequence,
+          out WorldInvasionProgressCommand command))
+    {
+      return;
+    }
+
+    _nextNpcDeathSequence++;
+    _ = TryQueueWorldInvasionProgress(command);
   }
 
   private void CommitNpcLoot()

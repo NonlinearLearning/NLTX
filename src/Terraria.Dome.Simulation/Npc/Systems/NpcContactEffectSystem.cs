@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Terraria.Dome.Simulation.Components;
+using Terraria.Dome.Simulation.Npc.Definitions;
 using Terraria.Dome.Simulation.Player.Commands;
 
 namespace Terraria.Dome.Simulation.Npc.Systems;
@@ -9,6 +10,7 @@ public readonly record struct NpcContactCandidate(
   NpcHandle Npc,
   SimulationVector Position,
   ColliderComponent Collider,
+  NpcFaction Faction,
   bool IsActive);
 
 public readonly record struct PlayerContactCandidate(
@@ -36,7 +38,8 @@ public sealed class NpcContactEffectSystem
     for (int npcIndex = 0; npcIndex < npcs.Count; npcIndex++)
     {
       NpcContactCandidate npc = npcs[npcIndex];
-      if (!npc.IsActive || !npc.Npc.IsValid || !IsValidGeometry(npc.Position, npc.Collider))
+      if (!npc.IsActive || !npc.Npc.IsValid || npc.Faction != NpcFaction.Hostile ||
+          !IsValidGeometry(npc.Position, npc.Collider))
       {
         continue;
       }

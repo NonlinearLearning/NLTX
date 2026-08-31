@@ -1,6 +1,5 @@
 # World Surface Metadata Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Preserve an authoritative V319 WLD world-surface `double` through import, immutable Dome
 metadata, and both persistence layers without enabling unsupported Type 226 behavior.

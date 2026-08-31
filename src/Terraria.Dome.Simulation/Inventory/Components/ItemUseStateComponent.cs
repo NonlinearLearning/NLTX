@@ -5,4 +5,5 @@ public struct ItemUseStateComponent
   public int CooldownTicks;
   public bool IsUsing;
   public int UseRevision;
+  public bool JustStarted;
 }

@@ -1,43 +1,47 @@
 # NLTX Flowstate Context
 
-This directory is the canonical, committed context for the NLTX documentation lifecycle.
-It applies the Flowstate N1-N9 workflow without moving or rewriting the historical evidence
-under `docs/archive`, `docs/migrations`, `docs/plans`, `docs/protocol`, `docs/research`,
-`docs/server-completion`, or `docs/worldgen`.
+`docs/flowstate/` is the committed authority for the documentation lifecycle (N1-N9).
+Historical evidence keeps its original path; this directory indexes and gates it.
 
-## Authority rules
+## Authority
 
-- `docs/flowstate/requirements.md` is the current requirement classification.
-- `docs/flowstate/scope.md` is the signed iteration boundary. Unknown scope stays deferred.
-- `docs/flowstate/risks.md` is the active risk register.
-- `docs/flowstate/plan/` contains formal phases and declares the execution strategy. The
-  active convergence plan is `plan/2026-08-22-server-ecs-convergence.md`.
-- `docs/flowstate/task/` contains batch-level tasks and acceptance criteria. The active
-  convergence graph is `task/2026-08-22-server-ecs-convergence.md`.
-- `docs/flowstate/dod-checklist.md` is the current N6 acceptance gate.
-- `docs/flowstate/tech-debt.md` records compromises and deferred documentation work.
-- `docs/flowstate/document-manifest.csv` maps every `docs/` document to a lifecycle stage,
-  status, evidence class, and canonical Flowstate artifact.
-- `Build/diagnostics/` is immutable verification evidence. It is referenced, never used as
-  a hand-edited planning surface.
-- `Build/bin`, `Build/obj`, `Build/generated`, and `Build/packages` are generated output and
-  are not documentation context.
-- `.agent-workplace/` is private process state and is intentionally ignored by Git.
+| Concern | File |
+| --- | --- |
+| Requirements and deferred policy | `requirements.md` |
+| Iteration boundary | `scope.md` |
+| Active risks | `risks.md` |
+| Execution plans and batch tasks | `plan/`, `task/` |
+| Acceptance gate | `dod-checklist.md` |
+| Debt and follow-up | `tech-debt.md`, `retrospective.md` |
+| Documentation/build inventories | `document-manifest.csv`, `build-context-manifest.csv` |
+| Build concurrency contract | [`AGENTS.md#dotnet-build-concurrency-contract`](../../AGENTS.md#dotnet-build-concurrency-contract) |
+
+The active convergence pair is `plan/2026-08-22-server-ecs-convergence.md` and
+`task/2026-08-22-server-ecs-convergence.md`.
+
+## Build concurrency entry point
+
+The repository-wide build rule is defined once in the root
+[`AGENTS.md#dotnet-build-concurrency-contract`](../../AGENTS.md#dotnet-build-concurrency-contract).
+It applies to all human, Codex, subagent, and parallel sessions sharing this checkout:
+source edits may be parallel when write sets are disjoint, while every `dotnet` command that can
+compile or write shared outputs is one serial critical section. `progress.md` exposes the same
+link for model-context startup. The executable launch path is
+`Build/Tools/Invoke-SerialDotnet.ps1`, which queues shared-output `dotnet` commands on the
+checkout-specific named Mutex.
+
+## Boundaries
+
+- Every file under `docs/` has one manifest row and a canonical Flowstate artifact.
+- `Build/diagnostics/` is immutable verification evidence; `Build/bin`, `obj`, `generated`,
+  and `packages` are generated output.
+- `.agent-workplace/` is private process state and is not documentation context.
+- Do not move, delete, or bulk-rewrite historical documents without a separate `fst-change`.
 
 ## Lifecycle
 
-```text
-N1 inventory -> N2 scope freeze -> N3 information architecture
-N4 normalize in batches -> N6 document/link/schema gate -> N7 release decision
-N8 retrospective -> next N4 batch
-```
+`N1 inventory -> N2 scope -> N3 information architecture -> N4 batch normalization ->
+N6 document/link/schema gate -> N7 release decision -> N8 retrospective`.
 
-Historical documents remain at their original paths so source anchors and evidence links do
-not break. New work must link to this directory and must not create an unregistered planning
-document elsewhere under `docs/`.
-
-## Use
-
-Start with `fst-workplace`, then `fst-iterate` using the plan and task files here. A new
-requirement or changed scope must go through `fst-change`; completion must go through
-`fst-review` and the DoD checklist.
+Use `fst-workplace` and `fst-iterate` for active work; route changes through `fst-change` and
+completion through `fst-review` plus the DoD checklist.

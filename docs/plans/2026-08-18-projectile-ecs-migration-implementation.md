@@ -1,6 +1,5 @@
 # Projectile ECS Migration Implementation Plan
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** Migrate the selected Terraria projectile behavior slice from the legacy `Projectile.cs`
 into deterministic ECS components and systems while preserving V1456 projectile replication.
@@ -225,4 +224,3 @@ families. Mark the result partial until all planned behavior families and protoc
 
 Do not physically delete the Version4 source in this task. Schedule deletion only as a separate
 change after an explicit review of the gate report.
-

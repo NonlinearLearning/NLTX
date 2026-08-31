@@ -14,6 +14,7 @@ public sealed class ItemReplicationCursor
 
   public bool ShouldSend(ItemReplicationSnapshot snapshot)
   {
+    snapshot.Validate();
     if (_revisions.TryGetValue(snapshot.ReplicationId, out long revision) &&
         revision >= snapshot.Revision)
     {
