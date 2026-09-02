@@ -36,7 +36,7 @@
   Definitions/
 ```
 
-完整规则见 [游戏ECS文件组织.md](游戏ECS文件组织.md)。
+当前正式约束见 [ECS文件组织设计约束.md](ECS文件组织设计约束.md)；本报告保留为样本审查记录。
 
 ## Space Station 14
 
