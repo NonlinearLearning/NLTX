@@ -25,7 +25,6 @@
 <代码根>/
   Movement/
   Physics/
-  Combat/
   Inventory/
 ```
 
@@ -108,7 +107,7 @@ PascalCase，避免无语义的 `Misc`、`Data`、`Helper`、`Utility`、`Utils`
 
 ### 4.1 领域目录
 
-领域目录使用游戏语义命名，例如 `Entity`、`Movement`、`Physics`、`Combat`、`Player`、
+领域目录使用游戏语义命名，例如 `Entity`、`Movement`、`Physics`、`Player`、
 `Npc`、`Projectile`、`Tiles` 和 `Liquid`。领域命名必须能够回答“这些文件共同表达哪项
 能力或规则”。
 
@@ -156,8 +155,8 @@ Physics/
 新增组件按以下顺序归属：
 
 1. 只属于一种实体类别：放入该实体类别领域，例如 `PlayerInputComponent` 放入 `Player/`。
-2. 表达多个实体共享的明确能力：放入能力领域，例如 `HealthComponent` 放入 `Combat/`，
-   `VelocityComponent` 放入 `Movement/`，`ColliderComponent` 放入 `Physics/`。
+2. 表达多个实体共享的明确能力：放入能力领域，例如 `VelocityComponent` 放入
+   `Movement/`，`ColliderComponent` 放入 `Physics/`。
 3. 几乎适用于所有实体且不表达特定玩法：放入 `Entity/`。
 
 禁止建立泛化 `Shared/Components/` 目录作为暂时无法归属的收容处。无法确定归属时，
