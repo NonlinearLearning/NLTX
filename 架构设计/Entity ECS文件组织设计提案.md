@@ -7,61 +7,47 @@
 | 适用范围 | `src/Share/Entity` ECS 样本线 |
 | 参考项目 | `C:\Users\shan\Downloads\ECS\space-station-14-master` |
 | 文档状态 | 已确认设计 |
-| 设计原则 | 领域优先、职责次级、按需建目录、渐进迁移 |
+| 设计原则 | 领域优先、文件直放、按需建目录、渐进迁移 |
 
-本提案只讨论 Entity ECS 样本线的源码文件组织，不改变 `dome/` 下的世界文件、协议、
-服务器、传输层或验证项目，也不规定 ECS 运行时、网络、渲染、UI、持久化和构建输出的
-目录。
+本提案只规定 Entity ECS 的组件与相关查询文件组织。它不规定 System、Event、Command、
+Snapshot、Definition、ECS 运行时、网络、渲染、UI、持久化、构建输出或 `dome/` 下其他
+项目的目录。
 
-## 2. 背景与问题
+## 2. 设计背景
 
-当前样本位于单一项目 `src/Share/Entity/Terraria.EntityEcs.csproj`，已有文件按技术类别
-集中在以下目录：
+当前样本是单一项目 `src/Share/Entity/Terraria.EntityEcs.csproj`，源码按技术类别集中在
+`Components/` 和 `Queries/`。这种结构在文件较少时简单，但会把不同游戏能力混在同一
+技术目录中；随着组件增加，维护者需要从类型名而不是目录判断领域归属。
 
-```text
-src/Share/Entity/
-  Components/
-  Queries/
-```
+Space Station 14 的可采纳经验是：第一层优先表达玩法领域，相关代码在领域边界内聚合；
+领域内部的子目录则按规模和稳定职责按需出现，而不是每个领域套用同一份固定模板。其
+`Content.Shared/Doors/` 同时包含根目录文件、`Components/`、`Systems/` 和
+`Electronics/`；`Movement/` 使用 `Components/` 与 `Events/`；`EntityTable/` 使用
+`Conditions/` 与 `EntitySelectors/`。这说明“领域优先”与“职责子目录”是两个独立决策。
 
-这种布局适合文件数量较少的起步阶段，但随着系统、事件、命令和定义加入，会产生两个
-问题：
+本项目当前只有一个轻量共享 ECS 项目，不照搬 SS14 的大规模 `Shared/Server/Client`
+项目树，也不预先创建空的职责目录。
 
-1. 同一项游戏能力的状态、行为和查询被横向拆散，维护者需要跨多个全局目录理解一个
-   规则。
-2. 共享组件容易按首次使用者归类，导致 `Velocity`、`Collider` 等跨实体能力被错误地
-   放入 `Player`、`Npc` 或 `Projectile` 目录。
-
-Space Station 14 的组织方式提供了可复用的启发：先按玩法领域切片（例如 `Doors`），
-再在领域内部按组件、系统和事件分类；当共享、服务端和客户端实现并存时，保持领域名
-一致并在端别目录下提供对应实现。本项目当前只有一个共享 ECS 样本项目，因此只采用
-“领域内聚”原则，暂不提前创建 `Server`、`Client` 空壳。
-
-## 3. 设计目标与非目标
+## 3. 目标与非目标
 
 ### 3.1 目标
 
-- 维护者能够从领域目录理解一项游戏规则的完整边界。
-- 共享组件按其表达的游戏能力归属，而不是按实体类别归属。
-- `Component`、`System`、`Query`、`Event`、`Command`、`Snapshot` 和 `Definition` 的
-  生命周期与职责清晰可辨。
-- 新领域可以渐进增加，不要求一次性迁移整个样本。
-- 未来拆分共享、服务端和客户端实现时，不需要重新设计领域名称。
-- 目录组织不承担系统调度职责；执行顺序由显式代码契约表达。
+- 通过领域目录表达组件和查询服务的游戏语义。
+- 跨实体共享能力按能力归属，而不是按首次使用的实体类别归属。
+- 小型领域目录直接放置实际文件，不增加无实际价值的 `Components/` 或 `Queries/` 子目录。
+- 子目录只在领域内部形成稳定的职责聚合、规模边界或依赖边界后按需引入。
+- 组件与查询文件的迁移不强制改变 C# 命名空间。
+- 为未来扩展系统或端别实现保留清晰边界，但不在本提案中规定其位置。
 
 ### 3.2 非目标
 
-- 本提案不引入新的 ECS 框架、注册机制或运行时抽象。
-- 本提案不要求立即移动现有文件。
-- 本提案不创建没有实际文件的空目录。
-- 本提案不重构 `dome/` 下已经存在的多项目结构。
-- 本提案不把协议 DTO、世界文件模型、数据库模型或构建脚本混入 Entity ECS 领域。
+- 不在本轮建立测试项目；查询边界测试作为后续质量待办。
+- 不在本轮实现文件移动、组件重构或公共 API 变更。
+- 不为 `Systems/`、`Events/`、`Commands/`、`Snapshots/`、`Definitions/` 创建目录规范。
+- 不提前创建 `Shared/Server/Client` 三套目录或项目。
+- 不触碰 `dome/` 下的源码和测试项目。
 
-## 4. 采用的总体结构
-
-### 4.1 当前阶段：单项目、领域优先
-
-目标目录如下。目录仅在拥有实际文件时创建：
+## 4. 目标目录结构
 
 ```text
 src/
@@ -70,220 +56,175 @@ src/
       Terraria.EntityEcs.csproj
 
       Entity/
-        Components/
-          EntityIdentityComponent.cs
-          LocationComponent.cs
-          DirectionComponent.cs
+        EntityIdentityComponent.cs
+        LocationComponent.cs
+        DirectionComponent.cs
 
       Movement/
-        Components/
-          VelocityComponent.cs
+        VelocityComponent.cs
 
       Physics/
-        Components/
-          ColliderComponent.cs
-        Queries/
-          EntityGeometryQuery.cs
-          EntityHitbox.cs
-          EntitySpatialQuery.cs
+        ColliderComponent.cs
+        EntityGeometryQuery.cs
+        EntityHitbox.cs
+        EntitySpatialQuery.cs
 
-      Environment/
-        Components/
-          LiquidComponent.cs
+      Liquid/
+        LiquidComponent.cs
 ```
 
-这里的 `Entity` 是基础实体领域，不是实体继承树。它表达实体身份和基础空间状态；
-玩家、NPC、投射物等实体应通过组合领域组件构成，而不是创建 `PlayerEntity`、
-`NpcEntity` 或 `ProjectileEntity` 派生目录。
+### 4.1 目录规则
 
-### 4.2 未来阶段：出现端别实现后的外壳
+1. 先按游戏能力或规则选择领域目录，再决定文件属于组件还是查询。
+2. 小型领域目录直接承载文件；当前不创建 `Entity/Components/`、`Movement/Components/`
+   或 `Physics/Queries/` 等固定模板子目录。
+3. 只有领域中确实存在文件时才创建目录，不为未来可能出现的职责预留空目录。
+4. 当领域内部出现稳定的职责聚合、规模增长或依赖边界时，才按需增加子目录；该决定
+   必须以实际文件和不变量为依据，并单独记录迁移影响。
+5. 本提案的领域目录只涵盖组件和相关查询；系统等其他职责若未来出现，另行提出组织
+   决策，不自动塞入当前领域目录。
+6. 目录路径变化不自动要求命名空间变化；命名空间迁移是后续独立变更。
 
-只有在共享、服务端和客户端出现真实的独立代码与项目引用后，才引入端别外壳：
+## 5. 领域归属
 
-```text
-src/
-  Shared/
-    Entity/
-      Components/
-      Queries/
-      Systems/
+### 5.1 `Entity`
 
-  Server/
-    Entity/
-      Systems/
+放置所有实体都可能拥有、且不表达特定玩法的基础状态。当前包括：
 
-  Client/
-    Entity/
-      Systems/
-```
+- `EntityIdentityComponent`：ECS 权威实体身份根。
+- `LocationComponent`：实体世界坐标。
+- `DirectionComponent`：当前样本的基础水平朝向。
 
-端别拆分时，各端仍应围绕相同领域命名；例如服务端和客户端的门系统都应位于 `Doors`
-领域，而不是建立全局的 `Server/Systems` 和 `Client/Systems` 技术堆栈。若端别实现
-仍然很少，继续放在单一共享项目中更合适。
+`Entity` 是领域名称，不是实体继承树；不建立 `PlayerEntity`、`NpcEntity` 或
+`ProjectileEntity` 派生目录。
 
-## 5. 领域与职责契约
+### 5.2 `Movement`
 
-### 5.1 领域命名
+放置跨实体共享的移动能力状态。当前包括：
 
-第一层目录回答“这是哪项游戏能力或规则”，使用 PascalCase 的游戏语义名称，例如：
+- `VelocityComponent`：实体速度。
 
-- `Entity`：实体身份与最低层空间状态。
-- `Movement`：速度、移动意图和移动规则。
-- `Physics`：碰撞、命中体、空间查询和几何约束。
-- `Combat`：生命、伤害和伤害修正。
-- `Player`、`Npc`、`Projectile`：仅放实体类别独有的状态或规则。
-- `Environment`：液体等世界环境能力；当液体规则稳定并具有独立系统时，可进一步
-  提取为 `Liquid` 领域。
+当未来出现明确的移动意图、移动规则或移动查询时，仍先评估其是否属于 `Movement`，
+而不是按实体类别复制一份组件。
 
-不要建立以下全局技术目录作为长期导航入口：
+### 5.3 `Physics`
 
-```text
-src/Share/Entity/Components/
-src/Share/Entity/Systems/
-src/Share/Entity/Events/
-```
+放置碰撞、命中体、几何和空间访问相关文件。当前包括：
 
-也不要建立语义不明的 `Shared/Components/` 收容目录。无法归属的类型应先澄清其业务
-语义，再决定是否形成新领域。
+- `ColliderComponent`：碰撞尺寸状态。
+- `EntityGeometryQuery`：中心点、边缘点和命中体等派生几何计算。
+- `EntityHitbox`：几何查询使用的命中体值类型。
+- `EntitySpatialQuery`：距离、角度、方向和范围等空间查询。
 
-### 5.2 领域内职责目录
+查询文件直接放在 `Physics/`，不再增加 `Physics/Queries/` 子目录。
 
-| 目录 | 放置内容 | 语义与生命周期 |
-| --- | --- | --- |
-| `Components/` | 实体或世界的持续状态 | 随模拟 tick 变化，可被系统读写 |
-| `Systems/` | 规则计算、事件处理和状态提交逻辑 | 代码固定，按显式调度执行 |
-| `Queries/` | 只读访问、几何计算和筛选逻辑 | 不直接拥有持续状态 |
-| `Events/` | 已经发生的一次性事实 | 发布后短暂存在，不替代组件状态 |
-| `Commands/` | 尚待提交的确定性变更意图 | 由系统产生，提交后失效 |
-| `Snapshots/` | tick 边界的稳定只读输入视图 | 创建、替换或失效由边界控制 |
-| `Definitions/` | 跨实例复用的静态规则或原型 | 通常不可变，不随 tick 改变 |
+### 5.4 `Liquid`
 
-`Queries/` 是当前样本已经存在的职责分类，因此保留在领域内部。查询与快照不能混用：
-查询描述“如何读取或计算”，快照描述“某个 tick 使用的稳定输入”。
+液体作为独立能力领域，组件文件直接放在该领域目录：
 
-### 5.3 共享组件归属规则
+- `LiquidComponent` → `Liquid/LiquidComponent.cs`。
 
-放置一个新组件时依次判断：
-
-1. 是否只属于一种实体类别？是则放入该实体类别领域，例如 `PlayerInputComponent` 放入
-   `Player/Components/`。
-2. 是否表达多个实体共享的一项明确能力？是则放入能力领域，例如 `HealthComponent`
-   放入 `Combat/Components/`，`VelocityComponent` 放入 `Movement/Components/`。
-3. 是否几乎适用于所有实体且不表达特定玩法？是则放入 `Entity/Components/`。
-
-组件归属应由其不变量和主要读写者决定，而不是由第一个调用它的系统决定。
+Player、NPC 和 Projectile 的液体特有规则不因共享 `LiquidComponent` 而合并；本提案不
+规定这些规则文件的位置。
 
 ## 6. 当前文件迁移映射
 
-本节只定义目标归属，不在本提案中执行移动。
+本节只定义目标路径，不在本提案中执行移动。
 
-| 当前文件 | 目标位置 | 归属理由 |
+| 当前路径 | 目标路径 | 归属依据 |
 | --- | --- | --- |
-| `Components/EntityIdentityComponent.cs` | `Entity/Components/` | 实体身份是基础实体状态 |
-| `Components/LocationComponent.cs` | `Entity/Components/` | 表达实体在世界中的基础位置 |
-| `Components/DirectionComponent.cs` | `Entity/Components/` | 当前作为基础空间朝向使用；若未来只服务移动意图，再迁入 `Movement` |
-| `Components/VelocityComponent.cs` | `Movement/Components/` | 表达跨实体共享的移动能力 |
-| `Components/ColliderComponent.cs` | `Physics/Components/` | 表达碰撞能力，不属于某一实体类别 |
-| `Components/LiquidComponent.cs` | `Environment/Components/` | 表达环境液体状态；液体规则独立后可提取为 `Liquid` 领域 |
-| `Queries/EntityGeometryQuery.cs` | `Physics/Queries/` | 几何约束和空间计算属于物理能力 |
-| `Queries/EntityHitbox.cs` | `Physics/Queries/` | 命中体是碰撞/命中查询数据 |
-| `Queries/EntitySpatialQuery.cs` | `Physics/Queries/` | 空间筛选依赖物理空间和碰撞边界 |
+| `Components/EntityIdentityComponent.cs` | `Entity/EntityIdentityComponent.cs` | 基础实体身份 |
+| `Components/LocationComponent.cs` | `Entity/LocationComponent.cs` | 基础世界位置 |
+| `Components/DirectionComponent.cs` | `Entity/DirectionComponent.cs` | 当前为基础水平朝向；未来有独立移动语义时再评估 |
+| `Components/VelocityComponent.cs` | `Movement/VelocityComponent.cs` | 跨实体移动能力 |
+| `Components/ColliderComponent.cs` | `Physics/ColliderComponent.cs` | 碰撞能力 |
+| `Components/LiquidComponent.cs` | `Liquid/LiquidComponent.cs` | 独立液体能力领域 |
+| `Queries/EntityGeometryQuery.cs` | `Physics/EntityGeometryQuery.cs` | 几何查询 |
+| `Queries/EntityHitbox.cs` | `Physics/EntityHitbox.cs` | 命中体查询数据 |
+| `Queries/EntitySpatialQuery.cs` | `Physics/EntitySpatialQuery.cs` | 空间查询 |
 
-如果实现细节表明某个查询只服务于实体索引而不涉及物理约束，可以在迁移评审时将其
-放入 `Entity/Queries/`；目录归属以实际不变量为准，不以文件名中的 `Entity` 前缀
-机械决定。
+目录移动期间可以暂时保留现有 `EntityEcs.Components`、`EntityEcs.Queries` 命名空间；
+命名空间是否按领域细分，留给后续独立变更决定。
 
-## 7. 依赖与调度规则
+## 7. 命名和基线门禁
 
-目录层级只表达归属，不自动表达依赖。代码应遵守以下边界：
+这些门禁属于文件迁移的前置条件，但不扩大本提案的字段设计范围。
 
-- `Components` 和 `Definitions` 保持数据与静态规则纯净，不反向依赖具体系统。
-- `Queries` 可以读取组件或快照，但不应隐式修改组件。
-- `Systems` 可以组合查询、读取组件、消费事件并产生命令。
-- `Commands` 由明确的提交系统消费；提交完成后发布对应事件或生成新快照。
-- 跨领域调用通过稳定的查询、命令、事件或接口完成，避免直接访问对方的私有状态。
-- 系统执行顺序必须通过调度器、阶段声明或注册代码显式表达，禁止依赖文件枚举顺序、
-  目录顺序或项目文件顺序。
+### 7.1 位置命名统一
 
-推荐的确定性数据流为：
+查询链和相关引用必须统一使用 `LocationComponent`。不得同时保留公共
+`TransformComponent` 与 `LocationComponent` 两套位置组件名称。当前源码中引用
+`TransformComponent` 的地方，应在目录迁移前完成基线修复。
 
-```text
-Snapshot / Component
-        |
-        v
-      Query
-        |
-        v
-      System -----> Command
-        |              |
-        |              v
-        +--------> Commit System
-                       |
-                       v
-                 Component / Snapshot
-                       |
-                       v
-                     Event
-```
+### 7.2 身份命名统一
 
-该流程不是强制的运行时实现，而是用于区分“当前状态”“读取计算”“变更意图”和“已
-发生事实”的文件职责。
+`EntityIdentityComponent` 的权威身份语义使用 `EntityUuid`。`UUID` → `EntityUuid` 是
+命名门禁；网络标识、账户 UUID、复制 ID 和 `whoAmI` 仍属于各自边界，不进入该身份根
+命名。
+
+### 7.3 朝向类型门禁
+
+`DirectionComponent` 的公共朝向表示使用 `DirectionKind`，不再以可任意赋值的裸 `int`
+作为公共契约。本提案只记录类型门禁，不规定枚举字段实现细节；表现方向、NPC 垂直方向
+和 Projectile 特殊方向继续保持独立语义。
+
+### 7.4 编译验证门禁
+
+目录迁移前后分别验证 `Terraria.EntityEcs.csproj`：
+
+1. 先修复 `LocationComponent` 命名基线。
+2. 通过仓库规定的串行脚本执行项目编译。
+3. 完成目录移动后，用相同命令再次编译。
+4. 记录命令、项目、退出码、警告/错误数量和 `Build/bin/` 输出路径。
+
+当前不建立测试项目；几何/空间查询的零尺寸、零距离和退化向量边界测试列为后续质量
+待办，不作为本轮目录设计的阻塞条件。
 
 ## 8. 渐进迁移策略
 
-迁移应以小批次进行，每批保持项目可编译且不改变行为。
+### 阶段 A：先修复基线
 
-### 阶段 A：冻结归属规则
+- 统一查询参数和引用中的 `TransformComponent` → `LocationComponent`。
+- 将 `UUID` → `EntityUuid`、`int` 朝向 → `DirectionKind` 记录为实现门禁。
+- 在串行构建空闲且所有者明确后，验证项目基线可编译。
 
-- 将本提案作为 `src/Share/Entity` 的组织基线。
-- 新增类型必须先选择领域，再选择职责目录。
-- 暂不为不存在的系统、事件或端别创建空目录。
+### 阶段 B：按领域移动文件
 
-### 阶段 B：按领域移动现有文件
+- 创建实际需要的 `Entity/`、`Movement/`、`Physics/`、`Liquid/` 目录。
+- 按第 6 节映射移动组件和查询文件。
+- 默认保持命名空间不变，只修正路径相关的项目引用或文档链接。
+- 用相同串行命令重新编译，确认目录变化没有引入错误。
 
-建议按以下顺序迁移，避免一次性大范围改动：
+### 阶段 C：后续独立决策
 
-1. 创建 `Entity`、`Movement`、`Physics`、`Environment` 中实际需要的目录。
-2. 先移动无行为变化的组件文件。
-3. 再移动查询文件并修正命名空间或项目内引用。
-4. 每批完成后运行受影响项目的编译验证。
+以下内容不由本提案自动触发：
 
-### 阶段 C：引入新职责
-
-- 首次出现系统时，在对应领域创建 `Systems/`。
-- 首次出现一次性事实时创建 `Events/`；不要把事件塞入组件目录。
-- 首次出现待提交变更时创建 `Commands/`，并同时明确消费它的提交系统。
-- 只有存在稳定跨实例静态规则时才创建 `Definitions/`。
-
-### 阶段 D：评估端别拆分
-
-满足以下条件后再考虑 `Shared/Server/Client` 外壳：
-
-- 至少有一项领域同时存在共享规则和端别专有规则。
-- 端别代码拥有独立项目边界或独立依赖约束。
-- 不拆分会导致共享项目引用明显膨胀或出现反向依赖。
+- 命名空间是否按领域细分；
+- System、Event、Command、Snapshot、Definition 的文件组织；
+- 是否新增测试项目；
+- 是否拆分 Shared/Server/Client 项目；
+- 是否将某个领域进一步拆成更细的子领域。
 
 ## 9. 验收清单
 
-每次新增或迁移 Entity ECS 文件时，检查：
-
-- [ ] 文件位于表达游戏语义的领域目录，而不是全局技术目录。
-- [ ] 组件、查询、系统、事件、命令、快照和定义的职责没有混淆。
-- [ ] 跨实体共享能力按能力领域归属。
-- [ ] 没有为了完整性创建空目录或泛化 `Shared/Components/`。
-- [ ] 一个核心公开类型对应一个 PascalCase 文件名。
-- [ ] 目录移动没有改变命名空间、公共 API 或运行时行为（除非变更另有批准）。
-- [ ] 系统顺序由显式调度/注册代码保证，而不是由文件枚举顺序推断。
-- [ ] 受影响的 `Terraria.EntityEcs.csproj` 使用仓库规定的串行脚本完成编译验证，输出
-      位于 `Build/bin/`。
-- [ ] 迁移没有触碰 `dome/` 或无关测试项目。
+- [ ] 文件按游戏领域归属，而不是继续放入全局 `Components/` 或 `Queries/`。
+- [ ] 当前小型领域直接放文件，没有为模板完整性增加 `Components/` 或 `Queries/` 子目录。
+- [ ] 未来新增子目录有明确的稳定职责、规模或依赖边界依据。
+- [ ] `LiquidComponent` 位于独立 `Liquid/` 领域。
+- [ ] 查询文件位于 `Physics/`，不建立 `Physics/Queries/`。
+- [ ] `LocationComponent` 是唯一公共位置组件名称。
+- [ ] `EntityUuid`、`DirectionKind` 作为后续实现门禁记录在案。
+- [ ] 命名空间迁移未被误当成本轮目录迁移的一部分。
+- [ ] 未新增测试项目，查询边界测试已记录为后续质量待办。
+- [ ] 未触碰 `dome/` 或无关项目。
+- [ ] 迁移前后均按仓库串行构建规则验证，并记录 `Build/bin/` 输出证据。
 
 ## 10. 结论
 
-`src/Share/Entity` 采用“领域优先、职责次级”的单项目布局：先用 `Entity`、`Movement`、
-`Physics` 和 `Environment` 表达能力边界，再在领域内部按 ECS 文件职责分类。该布局
-保留当前样本的轻量性，避免照搬 SS14 的大规模端别项目结构，同时为未来出现服务端和
-客户端实现保留稳定的领域命名和迁移路径。
+本项目的 Entity ECS 样本采用轻量的领域优先布局：`Entity`、`Movement`、`Physics` 和
+`Liquid` 作为领域目录，组件与相关查询文件直接放在领域目录内。该方案吸收 SS14 的
+领域内聚经验，同时采用其“子目录按需出现”的实践，而不复制其大规模端别项目和固定
+职责模板，适合当前只有一个共享 ECS 项目的阶段。
 
-本提案只锁定文件组织规则；具体文件移动和新系统实现应作为后续独立变更，逐批提交、
-逐批验证。
+字段模型、系统组织、测试项目和命名空间迁移均明确留给后续独立决策，避免文件结构设计
+文档越界为实现或数据模型设计。
