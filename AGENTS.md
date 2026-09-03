@@ -7,34 +7,35 @@ directory, but cannot weaken these build and safety requirements.
 
 ## ECS File Organization
 
-- For any ECS component, query, system, event, command, snapshot, definition, or related domain
-  file added, moved, split, merged, or renamed anywhere in this repository, read and follow
+- For any ECS, domain-model, test, or related file that is added, moved, split, merged, or
+  renamed, follow the formal rules in
   [`架构设计/ECS文件组织设计约束.md`](架构设计/ECS文件组织设计约束.md).
-- That document is the formal repository-wide entry for ECS file organization. It takes
-  precedence over older ECS proposals or sample-specific notes unless a more specific
-  directory-level `AGENTS.md` explicitly defines an approved exception.
-- Keep the change scoped: do not delete or rewrite unrelated architecture documents merely
-  because they are older analyses or historical records.
+- Organize by game domain or capability first; keep small domains flat and add responsibility
+  subdirectories only when a stable boundary, meaningful scale, or independent test/migration
+  unit exists. Do not create generic catch-all directories such as `Shared/Components/`.
+- Assign shared components to the capability they express (or `Entity/` for universal identity
+  state), keep one core public type per same-named PascalCase file, and preserve namespaces,
+  public APIs, and behavior when moving files; never use file or directory order to define runtime
+  execution order.
+- For migrations, record source/target paths and dependency impact, then verify affected projects
+  under the repository build rules. Do not rewrite unrelated architecture history.
 
 ## C# Code
 
 - Before adding or refactoring C#, read `约束/Google-CSharp-Style-Guide-约束.md`.
-- For changed code, follow its naming, layout, and member-ordering rules without
-  creating unrelated formatting churn.
-- Architecture, safety, layering, and testing take precedence when they conflict
-  with style.
-- Use `PascalCase` for types and public members, `camelCase` for locals and
-  parameters, `_camelCase` for non-public fields and properties, and an `I`
-  prefix for interfaces. Use `Npc`, `Ai`, `Id`, and `Uid` rather than all-caps
-  abbreviations.
-- Prefer one core type per PascalCase file. Do not introduce generic
-  `Manager`, `Helper`, `Utility`, `Utils`, `Misc`, or `Data` types.
-- Keep `using` directives alphabetized with `System` namespaces first. Do not use aliases merely
-  to shorten type names.
-- Use 2-space indentation, no tabs, a maximum line width of 100 characters, braces for all
-  control-flow blocks, and same-line opening braces. Keep one statement per line.
-- Prefer `const`, then `readonly`, over magic numbers. Use the narrowest read-only collection
-  interface that expresses an input contract.
+- Apply the guide to changed code without unrelated formatting churn; architecture, safety,
+  layering, and tests take precedence over style.
+- Use conventional C# naming (`PascalCase` types/public members, `camelCase` locals/parameters,
+  `_camelCase` private members, `I`-prefixed interfaces), one core public type per same-named file,
+  and 2-space indentation with braces for control flow.
+
+## Side-Effect Isolation
+
+- For imperative C#, ECS systems, background tasks, and protocol adapters, use the draft rules in
+  [`约束/非函数式编码副作用隔离规范.md`](约束/非函数式编码副作用隔离规范.md).
+- Keep business rules as deterministic calculations where practical; isolate I/O, clocks,
+  randomness, logging, persistence, messaging, and UI effects behind explicit ports and adapters.
+- Keep effect ordering, ownership, failure, and retry behavior visible and testable.
 
 ## Build Environment
 

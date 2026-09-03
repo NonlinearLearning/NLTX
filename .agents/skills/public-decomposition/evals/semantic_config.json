@@ -1,0 +1,15 @@
+{
+  "fallback_positive_concepts": ["decomposition", "ecs", "state_ownership", "verification"],
+  "positive_concepts": {
+    "decomposition": {"weight": 0.35, "phrases": ["拆分", "重构", "decomposition", "refactor", "职责", "继承"]},
+    "ecs": {"weight": 0.25, "phrases": ["ecs", "entity component system", "component", "system", "query", "adapter"]},
+    "state_ownership": {"weight": 0.2, "phrases": ["状态所有权", "state ownership", "访问模式", "access pattern", "隐式状态", "边界"]},
+    "verification": {"weight": 0.2, "phrases": ["验证计划", "verifier", "测试", "test", "system order", "调度顺序"]}
+  },
+  "negative_concepts": {
+    "explain_only": {"weight": 0.3, "exclusive": true, "phrases": ["只介绍", "explain", "历史和基本概念"]},
+    "rendering_only": {"weight": 0.3, "exclusive": true, "phrases": ["shader", "渲染", "rendering-only"]},
+    "one_off": {"weight": 0.25, "exclusive": true, "phrases": ["一次性", "one-off", "single regex"]},
+    "translate_only": {"weight": 0.35, "exclusive": true, "phrases": ["翻译", "translate"]}
+  }
+}

@@ -3,6 +3,8 @@
 > 来源：<https://google.github.io/styleguide/csharp-style.html>
 >
 > 说明：本文档为**面向本仓库执行的中文约束化整理 / 意译总结**，用于代码实现与评审，不是原文逐字拷贝。
+> 官方页面同时引用 Microsoft C# 命名指南和 CoreFX C# 编码指南；下文在不改变官方
+> 意图的前提下，补充了本仓库的分层与增量改动要求。
 
 ## 1. 适用范围
 
@@ -90,20 +92,20 @@ public protected internal private new abstract virtual override sealed static re
 
 ### 4.3 换行与对齐
 
-- 普通续行默认缩进 4 个空格
+- 普通续行默认缩进 4 个空格。该规则源自 Google C++ 风格，并针对 Microsoft C# 格式化工具做了适配。
 - 带 braces 的续行块（对象初始化器、集合初始化器、lambda 等）按块体规则缩进，不额外算续行层级
 - 方法定义或调用一行放不下时：
-  - 优先将后续参数与第一个参数对齐
-  - 如果这种对齐不清晰或放不下，则所有参数改为新行 + 4 空格缩进
+  - 优先将后续参数与第一个参数对齐；
+  - 如果这种对齐不清晰或放不下，则所有参数改为新行 + 4 空格缩进。
 - 闭包右括号与包含左括号的那一行首字符对齐
 - 空块在非常短小且可读时可以写成单行
 
-## 5. 常量与字段
+## 5. 常量、字段与字段初始化器
 
 - 能写 `const` 的必须写 `const`
 - 不能 `const` 时，优先考虑 `readonly`
 - 优先使用具名常量，不要散落 magic numbers
-- 字段初始化器通常是鼓励的
+- 字段初始化器通常是鼓励的；它是独立于 `const` / `readonly` 选择的初始化方式。
 
 ## 6. 集合接口选择
 
@@ -123,9 +125,9 @@ public protected internal private new abstract virtual override sealed static re
 ## 7. 生成器与容器
 
 - 生成器写法不一定更易读；能直接构造容器时不要机械改成生成器
-- 若结果会被懒处理，生成器可能更高效
+- 若结果会被懒处理（例如不需要全部结果），生成器可能更高效
 - 生成器结果马上 `ToList()`，通常不如直接填充容器高效
-- 需要多次枚举时，容器通常比重复运行生成器更快
+- 需要多次枚举时，容器通常比重复运行生成器更快；生成器每次调用都会重新执行其逻辑
 
 ## 8. 属性与表达式体
 
@@ -195,7 +197,8 @@ public protected internal private new abstract virtual override sealed static re
 - 容量会变化时，优先 `List<T>`
 - 容量固定且构造时已知时，可优先数组
 - 多维数组优先数组而不是 `List<T>` 嵌套模拟
-- 牢记：数组定长；`List<T>``更灵活`
+- 数组和 `List<T>` 都是线性、连续的容器；数组容量固定，`List<T>` 可以继续添加元素。
+- 某些场景数组性能更好，但通常 `List<T>` 更灵活。
 
 ## 15. 文件夹与文件位置
 
@@ -207,16 +210,16 @@ public protected internal private new abstract virtual override sealed static re
 - 一般优先具名类型，而不是 `Tuple<>`
 - 尤其是复杂返回结果，应建清晰命名的类/结构体
 
-## 17. 字符串拼接
+## 17. 字符串插值、`String.Format`、`String.Concat` 与 `operator+`
 
-- 默认优先选择**最易读**的方式，尤其在日志和断言信息中
-- 连续 `+` 拼接在性能和内存上更差
-- 多段字符串高频拼接时优先 `StringBuilder`
+- 默认优先选择**最易读**的方式，尤其在日志和断言信息中；不要求为风格而机械替换为某一种 API。
+- 连续 `operator+` 拼接可能更慢并造成明显的内存抖动。
+- 关注性能时，多段字符串拼接优先考虑 `StringBuilder`。
 
 ## 18. 对象初始化器
 
 - 对“Plain Old Data”类型可使用对象初始化器
-- 对带复杂构造语义的类 / struct，避免滥用对象初始化器
+- 对带构造函数的类或 `struct`，避免使用对象初始化器，以免绕过构造语义
 - 多行初始化器缩进一个块级
 
 ## 19. 命名空间
@@ -224,14 +227,14 @@ public protected internal private new abstract virtual override sealed static re
 - 通常不要超过 2 层深度
 - 不强制文件夹布局与命名空间一一对应
 - 共享库 / 模块代码使用命名空间
-- 叶子应用代码可适度放宽
+- 叶子应用代码（例如 Unity 应用）可以不使用命名空间
 - 新顶层命名空间名称必须全局可识别、避免冲突
 
 ## 20. struct 默认值 / null 返回
 
 - 对 struct 返回失败场景，优先：`bool success + out value`
-- 若性能不是问题且可读性收益明显，可使用 nullable struct
-- 但要意识到 Google 风格总体不鼓励把 `null` 当作通用失败语义
+- 若性能不是问题且可读性收益明显（例如可空条件运算符链比深层嵌套 `if` 更清晰），可使用 nullable struct
+- 但要意识到 nullable struct 会强化“`null` 表示失败”的模式；Google 风格总体不鼓励把 `null` 当作通用失败语义
 
 ## 21. 遍历时删除容器元素
 
@@ -247,24 +250,23 @@ public protected internal private new abstract virtual override sealed static re
 - 优先空条件调用：`someDelegate?.Invoke()`
 - 这样更清晰，也更能规避竞态下的空引用问题
 
-## 23. var 使用规则
+## 23. `var` 关键字使用规则
 
 ### 23.1 鼓励使用 var 的场景
 
 - 类型非常明显：`var apple = new Apple();`
-- 工厂返回泛型类型且右侧已充分表达类型
+- 工厂返回泛型类型且右侧已充分表达类型，例如：`var request = Factory.Create<HttpRequest>();`
 - 只作为临时中转并马上交给其他方法处理的变量
 
 ### 23.2 不鼓励使用 var 的场景
 
 - 基础类型：如 `bool`、`int` 等明显但语义重要时
-- 编译器推断的数值混合类型，容易误判精度/类型
-- 调用方明显需要一眼知道真实类型的变量
+- 编译器推断的内置数值类型，容易误判精度/类型，例如：`var number = 12 * ReturnsFloat();`
+- 调用方明显需要一眼知道真实类型的变量，例如：`var listOfItems = GetList();`
 
 ## 24. Attributes
 
-- 特性放在其所修饰成员的上一行
-- 成员与特性之间保留换行
+- 特性放在其所修饰字段、属性或方法的上一行；特性与成员之间保留换行
 - 多个特性各占一行，便于搜索、增删、评审
 
 ## 25. 参数可读性
@@ -306,4 +308,10 @@ public protected internal private new abstract virtual override sealed static re
 - Google C# Style Guide: <https://google.github.io/styleguide/csharp-style.html>
 - Microsoft C# naming guidelines: <https://learn.microsoft.com/dotnet/csharp/fundamentals/coding-style/identifier-names>
 - CoreFX / .NET runtime coding guidelines（Google 页内提及）: <https://github.com/dotnet/runtime/blob/main/docs/coding-guidelines/coding-style.md>
+
+## 29. 公共拆分入口
+
+涉及模块拆分、ECS 组件/系统/查询、适配器或投影设计时，必须同时遵循：
+
+- [公共拆分约束](./公共拆分约束.md)
 

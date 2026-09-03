@@ -1,9 +1,10 @@
 <Project>
   <PropertyGroup>
     <TargetFramework Condition="'$(TargetFramework)' == ''">net10.0</TargetFramework>
-    <BaseOutputPath>$(MSBuildThisFileDirectory)Build\bin\$(MSBuildProjectName)\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Build\obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
-    <RestorePackagesPath>$(MSBuildThisFileDirectory)Build\packages\</RestorePackagesPath>
+    <RepositoryBuildRoot>$(MSBuildThisFileDirectory)Build\</RepositoryBuildRoot>
+    <BaseOutputPath>$(RepositoryBuildRoot)bin\$(MSBuildProjectName)\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(RepositoryBuildRoot)obj\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <RestorePackagesPath>$(RepositoryBuildRoot)packages\</RestorePackagesPath>
     <LangVersion>preview</LangVersion>
     <DefaultItemExcludes>$(DefaultItemExcludes);Build\**\*</DefaultItemExcludes>
     <AppendTargetFrameworkToOutputPath>true</AppendTargetFrameworkToOutputPath>
@@ -12,7 +13,7 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
   <PropertyGroup Condition="'$(FixtureHostBuild)' == 'true'">
-    <BaseOutputPath>$(MSBuildThisFileDirectory)Build\bin\FixtureHost\$(MSBuildProjectName)\</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(MSBuildThisFileDirectory)Build\obj\FixtureHost\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(RepositoryBuildRoot)bin\FixtureHost\$(MSBuildProjectName)\</BaseOutputPath>
+    <BaseIntermediateOutputPath>$(RepositoryBuildRoot)obj\FixtureHost\$(MSBuildProjectName)\</BaseIntermediateOutputPath>
   </PropertyGroup>
 </Project>

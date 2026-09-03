@@ -1,0 +1,26 @@
+interface:
+  display_name: "Public Decomposition"
+  short_description: "Decompose large modules and ECS designs with explicit ownership and verification"
+  default_prompt: "Use $public-decomposition to analyze this module, design boundaries, and produce a focused verification plan."
+compatibility:
+  canonical_format: "agent-skills"
+  adapter_targets:
+    - "openai"
+    - "claude"
+    - "generic"
+    - "vscode"
+  activation:
+    mode: "manual"
+    paths: []
+  execution:
+    context: "inline"
+    shell: "powershell"
+  trust:
+    source_tier: "local"
+    remote_inline_execution: "forbid"
+    remote_metadata_policy: "allow-metadata-only"
+  degradation:
+    openai: "metadata-adapter"
+    claude: "neutral-source-plus-adapter"
+    generic: "neutral-source"
+    vscode: "agent-skills-source-with-vscode-notes"

@@ -1,0 +1,28 @@
+namespace Terraria.Dome.Simulation.WorldGeneration;
+
+public readonly record struct WorldGenerationTerrainState(
+  int WorldSurfaceY,
+  int RockLayerY,
+  int UnderworldLayerY,
+  int OceanLevelY,
+  int BeachDistance,
+  int BeachSandDepth,
+  int SurfaceOffset,
+  int SpawnX,
+  int SpawnY,
+  int DungeonX,
+  int DungeonY,
+  int JungleX,
+  int JungleY,
+  int SnowX,
+  int SnowY,
+  int DesertX,
+  int DesertY,
+  bool SurfaceIsDesert,
+  bool SurfaceIsMushrooms,
+  bool SurfaceIsInSpace,
+  bool IsOceanAtSpawn,
+  bool IsBeachAtSpawn,
+  bool IsNoSurface,
+  bool IsRemix,
+  bool IsErrorWorld);

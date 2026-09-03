@@ -28,6 +28,124 @@ CS0105: The using directive for System appeared previously in this namespace.
 
 ---
 
+## [ERR-20260902-003] research_agent_service_unavailable
+
+**Logged**: 2026-09-02T10:45:00+08:00
+**Priority**: medium
+**Status**: resolved
+**Area**: docs
+
+### Summary
+Background research agent failed before producing findings because its model service returned HTTP 503.
+
+### Error
+```text
+unexpected status 503 Service Unavailable: No available channel for model gpt-5.4-mini
+```
+
+### Context
+- The `research` skill requested a background agent for source collection.
+- Direct read-only requests to Microsoft Learn, Elm Guide, Cockburn's paper, and other first-party pages succeeded.
+
+### Resolution
+- Complete the source review directly with accessible primary sources.
+- Keep the research note explicit about URLs and access date; do not claim agent-derived evidence.
+
+### Metadata
+- Reproducible: unknown
+- Related Files: dome/docs/research/2026-09-02-functional-side-effect-isolation-sources.md
+
+---
+
+## [ERR-20260902-003] research_subagent_service_unavailable
+
+**Logged**: 2026-09-02T10:33:00+08:00
+**Priority**: low
+**Status**: pending
+**Area**: docs
+
+### Summary
+The research workflow could not start its required background agent because the assigned model
+service had no available channel.
+
+### Error
+```text
+503 Service Unavailable: No available channel for model gpt-5.4-mini
+```
+
+### Context
+- Task: cross-check the repository's Google C# style constraint against the official Google page.
+- The official primary-source page was fetched directly and used to complete the documentation
+  update after the background task failed.
+
+### Suggested Fix
+Retry the research agent when model capacity is available; keep a direct primary-source fallback
+for small documentation audits.
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 约束/Google-CSharp-Style-Guide-约束.md
+
+---
+
+## [ERR-20260902-YAO]
+
+**Logged**: 2026-09-02T00:00:00+08:00
+**Priority**: medium
+**Status**: pending
+**Area**: infra
+
+### Summary
+`yao-meta-skill` initialization could not run on the current Windows Python runtime because its dependency imports the Unix-only `fcntl` module.
+
+### Error
+```text
+ModuleNotFoundError: No module named 'fcntl'
+```
+
+### Context
+- Command: `python C:\Users\shan\.codex\skills\yao-meta-skill\scripts\init_skill.py --help`
+- Repository: `D:\TRbackup\NLTX`
+- The target skill is external to the Yao engine; no Yao source files were modified.
+
+### Suggested Fix
+Use the platform-independent validators and create the target package manually, or update the initializer to use a Windows-compatible file-locking abstraction.
+
+### Metadata
+- Reproducible: yes
+- Related Files: C:/Users/shan/.codex/skills/yao-meta-skill/scripts/evidence_store.py
+
+---
+
+## [ERR-20260902-PKG]
+
+**Logged**: 2026-09-02T00:00:00+08:00
+**Priority**: low
+**Status**: pending
+**Area**: infra
+
+### Summary
+The skill packaging helper used the Windows GBK default encoding and failed on Unicode skill content.
+
+### Error
+```text
+UnicodeEncodeError: 'gbk' codec can't encode character
+UnicodeDecodeError: 'gbk' codec can't decode byte 0x80
+```
+
+### Context
+- Command: `python C:\Users\shan\.codex\skills\skill-creator\scripts\package_skill.py .agents/skills/public-decomposition .agent-workplace\\packages`
+- The package source remains intact; no generated archive was produced by the failed attempt.
+
+### Suggested Fix
+Run the helper with `python -X utf8` or update the helper to pass `encoding="utf-8"` explicitly and avoid Unicode console assumptions.
+
+### Metadata
+- Reproducible: yes
+- Related Files: C:/Users/shan/.codex/skills/skill-creator/scripts/package_skill.py
+
+---
+
 ## [ERR-20260831-004] powershell_builtin_matches_collision
 
 **Logged**: 2026-08-31T18:39:00+08:00
@@ -659,5 +777,123 @@ Persistence: Base generation did not create ground and clear spawn.
 ### Metadata
 - Reproducible: yes
 - Related Files: Test/Terraria.Dome.Combat.Verification/Program.cs; Test/Terraria.Dome.Persistence.Verification/Program.cs
+
+---
+
+## [ERR-20260902-001] powershell_windows_drive_colon_split
+
+**Logged**: 2026-09-02T00:00:00+08:00
+**Priority**: low
+**Status**: resolved
+**Area**: tests
+
+### Summary
+An ad hoc Markdown verification command split Windows drive-letter colons as if they were
+`file:line` separators and falsely reported drive `D` as a missing path.
+
+### Error
+```text
+missing ref: D
+```
+
+### Context
+- The command validated report headings and source references.
+- It used `($reference -split ':')[0]` on absolute Windows paths such as
+  `D:\\TRbackup\\Version4\\Terraria\\Entity.cs`.
+- No repository source or report content was affected.
+
+### Resolution
+- Validate absolute paths separately from optional line annotations; do not split on the first
+  colon when the input may contain a Windows drive letter.
+
+### Metadata
+- Reproducible: yes
+- Related Files: 架构设计/Entity派生类同质组件审查报告.md
+
+---
+
+## [ERR-20260902-002] guessed_ecs_decomposition_constraint_path
+
+**Logged**: 2026-09-02T00:00:00+08:00
+**Priority**: low
+**Status**: resolved
+**Area**: docs
+
+### Summary
+A public-decomposition evidence read guessed a separate `约束/ECS拆分约束.md` file,
+but this checkout places the applicable rules in `约束/公共拆分约束.md` only.
+
+### Error
+```text
+Cannot find path 'D:\\TRbackup\\NLTX\\约束\\ECS拆分约束.md'
+```
+
+### Context
+- The failed operation was read-only and did not affect source or the decomposition report.
+- `rg --files 约束 | rg 'ECS|拆分'` returned only `约束/公共拆分约束.md`.
+
+### Resolution
+- Locate constraint files with `rg --files` before reading a guessed filename.
+- Use `约束/公共拆分约束.md` as the repository-level ECS decomposition constraint.
+
+### Metadata
+- Reproducible: yes
+- Related Files: 约束/公共拆分约束.md
+
+---
+
+## [ERR-20260903-001] research_agent_channel_unavailable
+
+**Logged**: 2026-09-03T11:06:32+08:00
+**Priority**: medium
+**Status**: pending
+**Area**: docs
+
+### Summary
+The delegated research agent failed before producing findings because its model channel returned HTTP 503.
+
+### Error
+```text
+503 Service Unavailable: No available channel for model gpt-5.4-mini
+```
+
+### Context
+- Requested additional primary-source research for the side-effect isolation proposal review.
+- Local project and SS14 source inspection continued successfully in the primary session.
+
+### Suggested Fix
+Retry delegation with an available model channel; if unavailable, finish the evidence pass from local first-party sources and official documentation.
+
+### Metadata
+- Reproducible: unknown
+- Related Files: 约束/非函数式编码副作用隔离规范.md; dome/docs/research/2026-09-02-functional-side-effect-isolation-sources.md
+
+---
+
+## [ERR-20260903-002] research_agent_rate_limited
+
+**Logged**: 2026-09-03T11:07:00+08:00
+**Priority**: medium
+**Status**: pending
+**Area**: docs
+
+### Summary
+The retry of delegated research was rate-limited before producing findings.
+
+### Error
+```text
+429 Too Many Requests
+```
+
+### Context
+- A second background research attempt was started after the initial model-channel 503.
+- The primary session completed the local SS14 and official-document evidence pass instead.
+
+### Suggested Fix
+Avoid repeated delegation while the service is rate-limited; use local first-party sources and direct official documentation until capacity recovers.
+
+### Metadata
+- Reproducible: unknown
+- Related Files: dome/docs/research/2026-09-03-side-effect-isolation-additional-sources.md
 
 ---
