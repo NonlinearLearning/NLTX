@@ -40,15 +40,19 @@
 
 ## 3. 产物布局
 
-实现阶段创建以下文件。第一个是唯一事实源，第二个是 AI 优先读取的速查视图，第三个用于反向
+实现阶段在当前根项目的 `docs/migrations/` 下创建以下文件。第一个是唯一事实源，第二个是 AI 优先读取的速查视图，第三个用于反向
 检查目标组件字段是否存在或成为无来源的权威字段。
 
 ```text
-docs/migration/
+docs/migrations/
 ├── Version4-member-migration-map.json
 ├── Version4-member-migration-quick-reference.md
 └── Version4-component-target-index.json
 ```
+
+仓库中的 `dome/docs/migrations/` 是已有的历史迁移证据区。实现时可以读取其中与当前成员对应的
+记录作为迁移上下文，但不能把它自动当作当前根项目账本，也不能覆盖或重写其中的历史记录；当前
+根项目的 `docs/migrations/` 才是本设计定义的 AI 持续迁移入口。
 
 审计和生成工具放在：
 
