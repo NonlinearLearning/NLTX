@@ -8,4 +8,6 @@ public struct DefenseComponent
   }
 
   public int Value;
+
+  public bool HasValue => Value != 0;
 }

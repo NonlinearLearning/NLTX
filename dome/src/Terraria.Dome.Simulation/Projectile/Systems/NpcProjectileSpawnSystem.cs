@@ -116,6 +116,11 @@ public sealed class NpcProjectileSpawnSystem
     {
       ProjectileSentryComponent sentry = new();
       world.Add(entity, in sentry);
+      SummonedProjectileStateComponent summoned = new(
+        SummonedProjectileKind.Sentry,
+        0.0f,
+        persistsWhileOwnerAlive: true);
+      world.Add(entity, in summoned);
     }
 
     if (request.Definition.IsMinion)
@@ -124,6 +129,12 @@ public sealed class NpcProjectileSpawnSystem
         request.Definition.MinionSlots,
         request.Definition.MinionPosition);
       world.Add(entity, in minion);
+      SummonedProjectileStateComponent summoned = new(
+        SummonedProjectileKind.Minion,
+        request.Definition.MinionSlots,
+        request.Definition.MinionPosition,
+        persistsWhileOwnerAlive: true);
+      world.Add(entity, in summoned);
     }
 
     if (request.Definition.IsTrap)

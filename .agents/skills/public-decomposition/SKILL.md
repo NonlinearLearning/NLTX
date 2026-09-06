@@ -38,7 +38,7 @@ description: Use when refactoring a large class, deep inheritance tree, or ECS m
 
 1. 盘点子系统字段、属性、方法、事件和初始化路径，给每个成员标记读写者、生命周期、状态类型、候选归属及 `confirmed`/`partial`/`missing`。
 2. 只读学习 `C:\Users\shan\Downloads\ECS\space-station-14-master` 的组件粒度和 System/Query 边界；禁止复制代码、命名或领域语义。
-3. 用 <https://docs.tmodloader.net/docs/stable/index.html> 核对 Terraria 字段语义前，先读取 `references/tmodloader-documentation-retrieval.md`；按其中的索引、实际链接和成员锚点流程取得证据，并记录 URL、版本/标题和证据状态。
+3. 用 `D:\TRbackup\tmodloader-api-docs-stable\index.html` 核对 Terraria 字段语义前，先读取 `references/tmodloader-documentation-retrieval.md`；按其中的离线索引、实际链接和成员锚点流程取得证据，并记录本地路径、版本/标题和证据状态。
 4. 关键字段缺证据时按序只读回退 `D:\TRbackup\Version4`，再回退 `D:\TRbackup\无任何删减通过编译`；命中充分证据即停止。
 5. 权威、公开 API、持久化/网络和生命周期字段必须确认；冲突或仍为 `missing` 时选择匹配的补证据 skill，列出缺口并向调用者反问，暂停实现。
 

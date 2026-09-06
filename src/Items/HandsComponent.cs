@@ -12,4 +12,7 @@ public struct HandsComponent
 
   public EntityReference Primary;
   public EntityReference Secondary;
+
+  public bool HasPrimary => !Primary.IsEmpty;
+  public bool HasSecondary => !Secondary.IsEmpty;
 }

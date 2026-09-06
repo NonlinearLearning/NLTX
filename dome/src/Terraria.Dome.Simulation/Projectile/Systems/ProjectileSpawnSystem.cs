@@ -6,6 +6,7 @@ using Terraria.Dome.Simulation.Combat.Components;
 using Terraria.Dome.Simulation.Combat.Systems;
 using Terraria.Dome.Simulation.Components;
 using Terraria.Dome.Simulation.Projectile.Definitions;
+using Terraria.Dome.Simulation.Fishing;
 
 using EntityEcs.Components;
 namespace Terraria.Dome.Simulation.Projectile.Systems;
@@ -152,6 +153,11 @@ public sealed class ProjectileSpawnSystem
     {
       ProjectileSentryComponent sentry = new();
       world.Add(entity, in sentry);
+      SummonedProjectileStateComponent summoned = new(
+        SummonedProjectileKind.Sentry,
+        0.0f,
+        persistsWhileOwnerAlive: true);
+      world.Add(entity, in summoned);
     }
 
     if (command.IsDd2Summon)
@@ -164,6 +170,12 @@ public sealed class ProjectileSpawnSystem
     {
       ProjectileMinionComponent minion = new(definition.MinionSlots, definition.MinionPosition);
       world.Add(entity, in minion);
+      SummonedProjectileStateComponent summoned = new(
+        SummonedProjectileKind.Minion,
+        definition.MinionSlots,
+        definition.MinionPosition,
+        persistsWhileOwnerAlive: true);
+      world.Add(entity, in summoned);
 
       if (command.MinionSpawnItemType != 0)
       {
@@ -184,6 +196,8 @@ public sealed class ProjectileSpawnSystem
     {
       ProjectileBobberComponent bobber = new();
       world.Add(entity, in bobber);
+      FishingBobberStateComponent bobberState = new(command.Owner, definition.ProjectileType);
+      world.Add(entity, in bobberState);
     }
 
     if (definition.IsCounterweight)

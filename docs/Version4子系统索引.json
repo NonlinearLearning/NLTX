@@ -1,0 +1,1313 @@
+{
+  "apiEvidence": {
+    "version": "tModLoader v2026.07",
+    "role": "public-boundary-cross-check only",
+    "source": "D:/TRbackup/tmodloader-api-docs-stable"
+  },
+  "schemaVersion": 1,
+  "subsystems": [
+    {
+      "id": "RuntimeComposition",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Owns startup, ordered tick phases, failure visibility, and only the composition of domain systems.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Main.cs",
+          "line": 1612,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Initializes runtime services and enters global update orchestration."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 253,
+        "usage": "Cross-checks world update phase boundary."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [],
+        "reason": "No top-level composition project or ordered dispatcher is present."
+      },
+      "relatedSubsystems": [
+        "WorldSession",
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Main helper methods",
+          "reason": "Helpers remain internal mechanisms, not independent state roots."
+        }
+      ],
+      "risks": [
+        "Global sequencing is not executable in NLTX."
+      ]
+    },
+    {
+      "id": "LiquidSimulation",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns liquid amount/type state transitions, queued flow, liquid reactions, and tile/network change publication.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Liquid.cs",
+          "line": 1015,
+          "referenceStatus": "version4-confirmed",
+          "reason": "UpdateLiquid drains the liquid work queue, mutates tile liquid state, handles water/lava/honey/shimmer reactions, and invalidates client sections."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "struct_tile.html",
+        "line": 250,
+        "usage": "Cross-checks authoritative liquid amount/type and one-tick skip fields on Tile."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [],
+        "reason": "No NLTX liquid solver or focused verifier exists; liquid contact is currently embedded in SpatialSimulation."
+      },
+      "relatedSubsystems": [
+        "SpatialSimulation",
+        "WorldStorage",
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "LiquidRenderer",
+          "reason": "Rendering a liquid surface is a client projection, not the flow solver."
+        }
+      ],
+      "risks": [
+        "Solver ordering and reaction atomicity are unverified."
+      ]
+    },
+    {
+      "id": "DeathPenaltyAndRevenge",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns coin-loss revenge markers, expiration, eligibility, respawn attempts, enemy recreation, and marker synchronization.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.GameContent/CoinLossRevengeSystem.cs",
+          "line": 302,
+          "referenceStatus": "version4-confirmed",
+          "reason": "The marker store has independent update, reset, expiration, respawn, NPC spawn, persistence serialization, and network publication paths."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_player.html",
+        "line": 4270,
+        "usage": "Cross-checks the player death interception boundary; the private revenge mechanic remains Version4-specific."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [],
+        "reason": "No NLTX marker state, respawn system, or verifier exists."
+      },
+      "relatedSubsystems": [
+        "CombatAndStatus",
+        "NpcAndTownSimulation",
+        "ItemContainerAndEconomy",
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Single revenge marker",
+          "reason": "A marker is an instance; the manager owns the lifecycle and is the subsystem candidate."
+        }
+      ],
+      "risks": [
+        "Interaction with death, coin loss, and NPC spawn needs a transaction seam."
+      ]
+    },
+    {
+      "id": "LeashedEntitySimulation",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns the registry, section activation, spawn/despawn, update, anchor identity, and network streaming of leashed entities.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.GameContent/LeashedEntity.cs",
+          "line": 234,
+          "referenceStatus": "version4-confirmed",
+          "reason": "UpdateEntities rechecks active sections and updates a dedicated collection; registry and NetModule provide separate lifecycle and replication paths."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_packet.html",
+        "line": 94,
+        "usage": "Cross-checks the documented server/client synchronization boundary; no public ModLeashedEntity API is claimed."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [],
+        "reason": "No NLTX leashed-entity registry, section lifecycle, or verifier exists."
+      },
+      "relatedSubsystems": [
+        "ProjectileSimulation",
+        "WorldStorage",
+        "NetworkSessionAndSectionStreaming"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "One leashed critter type",
+          "reason": "Twenty registered prototypes and a section manager form a lifecycle, not a single entity."
+        }
+      ],
+      "risks": [
+        "Anchor destruction and section activation ordering are unverified."
+      ]
+    },
+    {
+      "id": "PersistenceAndRecovery",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Owns world/player save-load transactions, format validation, temporary files, rollback backups, and recovery/migration seams.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.IO/WorldFile.cs",
+          "line": 658,
+          "referenceStatus": "version4-confirmed",
+          "reason": "LoadWorld and SaveWorld have dedicated format, validation, temporary, rollback, tile/entity, and footer phases."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 1087,
+        "usage": "Cross-checks SaveWorldData/LoadWorldData as explicit persistence hooks."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [],
+        "reason": "NLTX has state models but no persistence adapter, format validator, or recovery verifier."
+      },
+      "relatedSubsystems": [
+        "WorldStorage",
+        "WorldSession",
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "FileMetadata",
+          "reason": "Metadata is an adapter value, not the save/load transaction owner."
+        }
+      ],
+      "risks": [
+        "Version migration and partial-write recovery are absent."
+      ]
+    },
+    {
+      "id": "NetworkSessionAndSectionStreaming",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Owns server/client connection lifecycle, handshake, packet ingestion, section visibility, bandwidth state, and replication scheduling.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Netplay.cs",
+          "line": 247,
+          "referenceStatus": "version4-confirmed",
+          "reason": "StartServer, ServerLoop, connection acceptance, timeout handling, and section reset form an independent session lifecycle."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_packet.html",
+        "line": 139,
+        "usage": "Cross-checks client/server packet direction and relay semantics."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [],
+        "reason": "NLTX has no session transport, handshake, section stream, or replication adapter."
+      },
+      "relatedSubsystems": [
+        "ExternalBoundaries",
+        "RuntimeComposition",
+        "WorldStorage"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "NetModule registry",
+          "reason": "Registration is a protocol mechanism; the session lifecycle owns transport state."
+        }
+      ],
+      "risks": [
+        "Authorization, ordering, and replay protection require explicit seams."
+      ]
+    },
+    {
+      "id": "ContentLifecycleAndRegistration",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Owns content autoload, setup ordering, cross-content finalization, initialization, and unload/reload lifecycle.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.Initializers/NetworkInitializer.cs",
+          "line": 14,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Initialization registers runtime modules in a deterministic load phase separate from content definitions."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 210,
+        "usage": "Cross-checks SetupContent/PostSetupContent lifecycle and finalization ordering."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [],
+        "reason": "NLTX content definitions exist but no loader, setup barrier, or unload verifier is present."
+      },
+      "relatedSubsystems": [
+        "ContentCatalog",
+        "RuntimeComposition",
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "One content ID or initializer",
+          "reason": "Individual definitions and initializers are members of the lifecycle, not separate systems."
+        }
+      ],
+      "risks": [
+        "Load ordering and stale registry invalidation are not modeled."
+      ]
+    },
+    {
+      "id": "WiringAndMechanisms",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns wire signal propagation, mechanism cooldowns, logic gates, actuators, pumps, and synchronized tile-trigger effects.",
+      "qualificationCriteriaMet": ["independent-lifecycle", "controlled-commit", "cross-domain-boundary", "independent-verifier"],
+      "version4Evidence": [{"path": "Terraria/Wiring.cs", "line": 151, "referenceStatus": "full-reference-supplemented", "fullReferencePath": "D:/TRbackup/无任何删减通过编译/Terraria/Wiring.cs", "fullReferenceLine": 477, "reason": "Version4 retains the mechanism lifecycle and call graph but reduces CheckMech, XferWater, and CheckLogicGate to stubs; the full reference supplies matching implementations by signature and surrounding traversal state."}],
+      "tModLoaderEvidence": {"path": "class_wiring.html", "line": 113, "usage": "CheckMech documents mechanism cooldown ownership; HitSwitchAndSync documents server/client synchronization."},
+      "nltxMapping": {"status": "missing", "paths": [], "reason": "WorldInteraction has structural commands but no wire graph, mechanism queue, cooldown, logic-gate, or synchronized trigger execution chain."},
+      "relatedSubsystems": ["WorldInteractionAndStructures", "WorldStorage", "NetworkSessionAndSectionStreaming", "SpawnLifecycleAndLoot"],
+      "excludedCandidates": [{"name": "single pressure plate or logic sensor", "reason": "Resident trigger types use the shared wiring lifecycle and do not own the propagation write set."}],
+      "risks": ["Version4 CheckLogicGate and several trigger paths are reduced; full-reference matching is required before behavior migration."]
+    },
+    {
+      "id": "MountAndVehicleSimulation",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns mount and vehicle attachment, dismount, movement mode, ability, drill/minecart behavior, and player-mounted state transitions.",
+      "qualificationCriteriaMet": ["independent-lifecycle", "controlled-commit", "cross-domain-boundary", "independent-verifier"],
+      "version4Evidence": [{"path": "Terraria/Mount.cs", "line": 647, "referenceStatus": "version4-confirmed", "reason": "Mount initializes a registry and has dedicated UpdateAfterEquips, UpdateDrill, UpdateFrame, UpdateEffects, SetMount, and Dismount paths that modify player movement and projectile/tile interactions."}],
+      "tModLoaderEvidence": {"path": "class_mount.html", "line": 169, "usage": "SetMount, Dismount, UseAbility, and update methods define the public mount lifecycle and player boundary."},
+      "nltxMapping": {"status": "partial", "paths": ["src/Player/PlayerMountState.cs", "src/Teleportation"], "reason": "Player mount state exists, but mount registry, movement mode, ability, and vehicle interaction execution are not closed."},
+      "relatedSubsystems": ["PlayerGameplay", "SpatialSimulation", "ProjectileSimulation", "WiringAndMechanisms"],
+      "excludedCandidates": [{"name": "mount drawing and frame texture", "reason": "Client presentation projection, not authoritative mounted state."}],
+      "risks": ["Mount, minecart, and player movement share collision and input invariants; splitting without an explicit phase seam can create divergent velocity commits."]
+    },
+    {
+      "id": "WorldSession",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns persistent world rules, time/weather facts, and session-level readiness state.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Main.cs",
+          "line": 12972,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Global update reads and commits world time and weather facts."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 253,
+        "usage": "Documents post-time world update boundary."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/WorldSession/WorldSessionComponents.cs"
+        ],
+        "reason": "State records exist; ownership and execution chain do not close."
+      },
+      "relatedSubsystems": [
+        "WorldCalendarAndEventOrchestration",
+        "WorldStorage"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "One static Main field",
+          "reason": "A field is evidence, not a subsystem."
+        }
+      ],
+      "risks": [
+        "Duplicate world concepts remain possible."
+      ]
+    },
+    {
+      "id": "WorldCalendarAndEventOrchestration",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns calendar boundaries, event eligibility, event instances, and their committed facts.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Main.cs",
+          "line": 13470,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Day/night boundary rotates quests and evaluates events."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 253,
+        "usage": "Cross-checks time update ordering."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/WorldSession/WorldSessionComponents.cs"
+        ],
+        "reason": "Event state exists without scheduler or focused verifier."
+      },
+      "relatedSubsystems": [
+        "WorldSession",
+        "NpcAndTownSimulation"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "One event type",
+          "reason": "Individual events are mechanisms within the orchestrator."
+        }
+      ],
+      "risks": [
+        "Ordering with spawn and ecology is unverified."
+      ]
+    },
+    {
+      "id": "WorldProgressionAndTransition",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns long-running world transitions such as Hardmode planning, commit barriers, and resynchronization.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/WorldGen.cs",
+          "line": 26084,
+          "referenceStatus": "version4-confirmed",
+          "reason": "StartHardmode changes world state through a dedicated transition path."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 139,
+        "usage": "Cross-checks modifiable Hardmode task sequence."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/WorldSession/WorldSessionComponents.cs"
+        ],
+        "reason": "HardMode state exists but no transition executor or verifier exists."
+      },
+      "relatedSubsystems": [
+        "WorldGenerationAndEcology",
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "HardMode boolean",
+          "reason": "The flag is a state result, not the transition transaction."
+        }
+      ],
+      "risks": [
+        "Background/section synchronization semantics absent."
+      ]
+    },
+    {
+      "id": "WorldProgressionAndUnlocks",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns persistent discovery and unlock facts that alter authoritative eligibility.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.GameContent.Bestiary/BestiaryUnlocksTracker.cs",
+          "line": 5,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Tracker owns persistence, reset, validation, and player synchronization."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 322,
+        "usage": "Cross-checks world save/load extension boundary."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [
+          "src/Content/ContentIdentityCatalog.cs"
+        ],
+        "reason": "Only content identity/presentation metadata is present."
+      },
+      "relatedSubsystems": [
+        "NpcAndTownSimulation",
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Achievement notification",
+          "reason": "Platform achievement presentation is not an authoritative unlock root."
+        }
+      ],
+      "risks": [
+        "Persistence and consumer queries are absent."
+      ]
+    },
+    {
+      "id": "SimulationRuleOverrides",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns permissioned Journey/Creative rule overrides and immutable tick snapshots.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.GameContent.Creative/CreativePowerManager.cs",
+          "line": 92,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Registers authority-changing powers with world/player save and sync paths."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 253,
+        "usage": "Cross-checks server/world update timing for rule consumption."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [
+          "src/Content/ContentPresentationIndex.cs"
+        ],
+        "reason": "Creative entries are display metadata only."
+      },
+      "relatedSubsystems": [
+        "WorldSession",
+        "WorldGenerationAndEcology"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Creative UI sort order",
+          "reason": "Presentation metadata does not own simulation overrides."
+        }
+      ],
+      "risks": [
+        "No permission, restore, or replication contract."
+      ]
+    },
+    {
+      "id": "WorldStorage",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Owns tiles, sections, containers, TileEntities, and durable world identity through controlled mutation.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/TileEntity.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "TileEntity store is the durable structure identity boundary."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_tile_entity.html",
+        "line": 538,
+        "usage": "Cross-checks host validation and removal cleanup."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/WorldStorage/PylonRegistryState.cs"
+        ],
+        "reason": "Storage state exists but controlled writer surface is incomplete."
+      },
+      "relatedSubsystems": [
+        "WorldInteractionAndStructures",
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Single TileEntity type",
+          "reason": "Concrete entities remain storage residents, not subsystems."
+        }
+      ],
+      "risks": [
+        "Writer ownership and persistence adapters are incomplete."
+      ]
+    },
+    {
+      "id": "ContentCatalog",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Owns validated immutable definitions, ID mappings, recipes, and declarative drop rules.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.ID/ItemID.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Defines stable content identifiers consumed across runtime domains."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_recipe.html",
+        "line": 99,
+        "usage": "Cross-checks load-time recipe registration boundary."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/Content"
+        ],
+        "reason": "Catalog foundations exist; full snapshot validation is not evidenced."
+      },
+      "relatedSubsystems": [
+        "ItemContainerAndEconomy",
+        "FishingAndCatchSimulation"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "One ID constant",
+          "reason": "A constant is catalog data, not a subsystem."
+        }
+      ],
+      "risks": [
+        "Versioning and validation lifecycle remain partial."
+      ]
+    },
+    {
+      "id": "IntentAndInteraction",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Owns validated external intents and delegates successful commands to the respective authoritative writer.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.GameContent.ObjectInteractions/SmartInteractSystem.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Interaction selection separates intent from structure mutation."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_tile.html",
+        "line": 1,
+        "usage": "Public tile interaction boundary cross-check."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/WorldInteraction"
+        ],
+        "reason": "Local interaction models exist but no unified command ingress exists."
+      },
+      "relatedSubsystems": [
+        "WorldInteractionAndStructures",
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Network message ID",
+          "reason": "Message encoding is an adapter, not the command boundary."
+        }
+      ],
+      "risks": [
+        "Trust and rejection semantics are not centralized."
+      ]
+    },
+    {
+      "id": "SpatialSimulation",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns deterministic movement, collision, liquid contact, and spatial qualification queries.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Collision.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Collision is the shared spatial rule surface."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_player.html",
+        "line": 1,
+        "usage": "Public player spatial surface cross-check."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/Physics",
+          "src/Share/Entity/Components"
+        ],
+        "reason": "State models exist; execution and query contracts remain partial."
+      },
+      "relatedSubsystems": [
+        "PlayerGameplay",
+        "WorldInteractionAndStructures"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "One collision axis",
+          "reason": "An axis is a value type, not a lifecycle owner."
+        }
+      ],
+      "risks": [
+        "Coordinate and collision policy duplication remains."
+      ]
+    },
+    {
+      "id": "WorldInteractionAndStructures",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns validated placement, destruction, wiring, and structural changes submitted to WorldStorage.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Wiring.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Wiring coordinates world-structure interactions."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_tile_entity.html",
+        "line": 505,
+        "usage": "Cross-checks placement, update, and synchronization responsibilities."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/WorldInteraction"
+        ],
+        "reason": "Components exist; command-to-storage commit path is incomplete."
+      },
+      "relatedSubsystems": [
+        "WorldStorage",
+        "IntentAndInteraction"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "TileEntity lifecycle",
+          "reason": "It is a structure-storage mechanism, not a separate root."
+        }
+      ],
+      "risks": [
+        "Atomicity across tile and entity changes is unverified."
+      ]
+    },
+    {
+      "id": "PlayerGameplay",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns player resources, equipment, use, life cycle, abilities, and state transitions.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Player.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Player is the aggregate source for player-state update paths."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_player.html",
+        "line": 1,
+        "usage": "Cross-checks public player lifecycle extensions."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/Player"
+        ],
+        "reason": "Many state components exist without an orchestrated execution chain."
+      },
+      "relatedSubsystems": [
+        "CombatAndStatus",
+        "ItemContainerAndEconomy"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Single player field",
+          "reason": "Fields are owned state details, not standalone subsystems."
+        }
+      ],
+      "risks": [
+        "Cross-component invariants are not enforced by systems."
+      ]
+    },
+    {
+      "id": "NpcAndTownSimulation",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns NPC AI, targeting, spawn eligibility, town housing, and town rule consumption.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/NPC.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "NPC update model provides autonomous lifecycle and state transitions."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_n_p_c.html",
+        "line": 1,
+        "usage": "Cross-checks public NPC extension boundary."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/Npc",
+          "src/Town"
+        ],
+        "reason": "Entity state exists; systems and town query chain are incomplete."
+      },
+      "relatedSubsystems": [
+        "SpawnLifecycleAndLoot",
+        "WorldProgressionAndUnlocks"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "One Town NPC",
+          "reason": "A single NPC is an instance, not a system boundary."
+        }
+      ],
+      "risks": [
+        "Housing and spawn ordering are not executable."
+      ]
+    },
+    {
+      "id": "ProjectileSimulation",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns projectile trajectory, collision, lifetime, and specialized projectile state machines.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Projectile.cs",
+          "line": 25365,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Projectile update dispatches specialized AI styles."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_projectile.html",
+        "line": 1,
+        "usage": "Cross-checks public projectile update boundary."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/Projectile"
+        ],
+        "reason": "Definitions exist; trajectory and lifecycle systems are incomplete."
+      },
+      "relatedSubsystems": [
+        "FishingAndCatchSimulation",
+        "CombatAndStatus"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "One AI style",
+          "reason": "AI styles are internal strategies, not primary systems."
+        }
+      ],
+      "risks": [
+        "Specialized AI coverage is mostly absent."
+      ]
+    },
+    {
+      "id": "TeleportationAndTraversal",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns endpoint eligibility, destination selection, location migration, cooldown, and travel result facts.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.GameContent/TeleportPylonsSystem.cs",
+          "line": 25,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Dedicated update refreshes endpoint snapshot and synchronizes changes."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_pylon.html",
+        "line": 700,
+        "usage": "Cross-checks ordered travel eligibility boundary."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/Teleportation/PortalNetworkState.cs",
+          "src/Teleportation/TeleportCooldownState.cs"
+        ],
+        "reason": "State exists; request, qualification, commit, and verifier are missing."
+      },
+      "relatedSubsystems": [
+        "SpatialSimulation",
+        "WorldStorage"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Pylon protocol message",
+          "reason": "Protocol is an external adapter, not the authoritative travel transaction."
+        }
+      ],
+      "risks": [
+        "No atomic travel commit or projection."
+      ]
+    },
+    {
+      "id": "FishingAndCatchSimulation",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns fishing eligibility, bobber timing, catch decision, and Item/NPC outcome request.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Projectile.cs",
+          "line": 34073,
+          "referenceStatus": "full-reference-supplemented",
+          "reason": "Version4 declares empty fishing methods reached from projectile update; full reference supplies the matching implementation.",
+          "fullReferencePath": "D:/TRbackup/无任何删减通过编译/Terraria/Projectile.cs",
+          "fullReferenceLine": 51236
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_player.html",
+        "line": 2604,
+        "usage": "Cross-checks attempt qualification before catch outcome selection."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/Player/PlayerFishingCapabilityState.cs",
+          "src/Content/FishingDropRuleCatalog.cs"
+        ],
+        "reason": "Capabilities and rules exist without bobber state, transaction, or outcome commit."
+      },
+      "relatedSubsystems": [
+        "ProjectileSimulation",
+        "ItemContainerAndEconomy"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Fishing bobber projectile",
+          "reason": "The bobber carries time; it is not the catch transaction boundary."
+        }
+      ],
+      "risks": [
+        "Version4 contains reduced core methods; source supplement is required."
+      ]
+    },
+    {
+      "id": "CombatAndStatus",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns damage eligibility, resolution, immunity, death, attribution, and status effect transitions.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Player.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Player combat state participates in authoritative resolution."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_player.html",
+        "line": 1,
+        "usage": "Cross-checks public damage/lifecycle extension surface."
+      },
+      "nltxMapping": {
+        "status": "confirmed",
+        "paths": [
+          "src/Combat",
+          "src/StatusEffects",
+          "Test/Terraria.Combat.Verification"
+        ],
+        "reason": "Damage resolution systems and a focused verifier have an authoritative state, execution chain, and passing verification."
+      },
+      "relatedSubsystems": [
+        "PlayerGameplay",
+        "NpcAndTownSimulation"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Damage number UI",
+          "reason": "UI is a projection of committed combat facts."
+        }
+      ],
+      "risks": [
+        "Adapter and global phase integration are missing."
+      ]
+    },
+    {
+      "id": "ItemContainerAndEconomy",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns item instances, inventory/container transactions, crafting, commerce, and item result commits.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/Item.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Item model underlies inventory and world item transactions."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_recipe.html",
+        "line": 124,
+        "usage": "Cross-checks recipe condition and consumption boundary."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/Items"
+        ],
+        "reason": "State records exist; atomic multi-container transaction surface is incomplete."
+      },
+      "relatedSubsystems": [
+        "ContentCatalog",
+        "SpawnLifecycleAndLoot"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Recipe registration",
+          "reason": "Registration is catalog loading; consumption is transactional gameplay."
+        }
+      ],
+      "risks": [
+        "Rollback and concurrency semantics are not evidenced."
+      ]
+    },
+    {
+      "id": "WorldGenerationAndEcology",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns world generation plans, biome/ecology transformation, housing scans, and ready-state transitions.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/WorldGen.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "WorldGen contains staged world transformation and ecology logic."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 139,
+        "usage": "Cross-checks world generation and task mutation surface."
+      },
+      "nltxMapping": {
+        "status": "partial",
+        "paths": [
+          "src/WorldSession/WorldGeneration"
+        ],
+        "reason": "Lifecycle state exists without generation executor or verifier."
+      },
+      "relatedSubsystems": [
+        "WorldStorage",
+        "WorldProgressionAndTransition"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "SceneMetrics",
+          "reason": "Client-centric scene cache is not a world-state root."
+        }
+      ],
+      "risks": [
+        "Deterministic passes and commit boundaries are missing."
+      ]
+    },
+    {
+      "id": "SpawnLifecycleAndLoot",
+      "layer": "authoritative-simulation",
+      "responsibility": "Owns cross-domain spawn, cleanup, destruction, drop publication, and structural result commits.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.GameContent.ItemDropRules/CommonDrop.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Drop rules express result generation independent of entity-specific lifecycle."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_global_n_p_c.html",
+        "line": 1,
+        "usage": "Cross-checks NPC spawn/drop extension boundary."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [],
+        "reason": "No distinct shared spawn/cleanup transaction model or focused verifier exists."
+      },
+      "relatedSubsystems": [
+        "NpcAndTownSimulation",
+        "ItemContainerAndEconomy"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Single item drop rule",
+          "reason": "A rule is declarative content, not the lifecycle/commit coordinator."
+        }
+      ],
+      "risks": [
+        "No unified structural change seam."
+      ]
+    },
+    {
+      "id": "ExternalBoundaries",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Owns one-way replication, persistence adapters, session transport, and client/server adaptation of committed facts.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "controlled-commit",
+        "cross-domain-boundary"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria/NetMessage.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Network adapter serializes runtime facts across the external boundary."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "class_mod_system.html",
+        "line": 322,
+        "usage": "Cross-checks world persistence extension boundary."
+      },
+      "nltxMapping": {
+        "status": "missing",
+        "paths": [],
+        "reason": "No top-level replication or persistence adapter project is present."
+      },
+      "relatedSubsystems": [
+        "RuntimeComposition",
+        "WorldStorage"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "Protocol registry",
+          "reason": "Protocol registration is an adapter detail, not an independent state root."
+        }
+      ],
+      "risks": [
+        "Current dirty state is not a replication contract."
+      ]
+    },
+    {
+      "id": "ClientPresentationAndTools",
+      "layer": "client-presentation-and-toolchain",
+      "responsibility": "Owns UI, rendering, audio, diagnostics, and client-only tooling derived from committed state.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "cross-domain-boundary",
+        "independent-verifier"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.Audio/SoundEngine.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Audio presentation service consumes runtime events without becoming authority."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "not-applicable",
+        "line": 0,
+        "usage": ""
+      },
+      "nltxMapping": {
+        "status": "excluded",
+        "paths": [],
+        "reason": "NLTX production scope intentionally contains no client presentation implementation."
+      },
+      "relatedSubsystems": [
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "GolfState",
+          "reason": "Local camera/input state is presentation/tooling, not an authority root."
+        }
+      ],
+      "risks": [
+        "Must remain one-way from authoritative facts."
+      ]
+    },
+    {
+      "id": "SharedRuntimeMechanisms",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Owns reusable value types, collections, localization, command helpers, and diagnostics that do not own game rules.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "cross-domain-boundary",
+        "independent-verifier"
+      ],
+      "version4Evidence": [
+        {
+          "path": "Terraria.DataStructures/BufferPool.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Shared allocation mechanism is reused without authority over domain state."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "not-applicable",
+        "line": 0,
+        "usage": ""
+      },
+      "nltxMapping": {
+        "status": "excluded",
+        "paths": [],
+        "reason": "NLTX uses project-local shared primitives; these Version4 mechanisms are not migration targets."
+      },
+      "relatedSubsystems": [
+        "RuntimeComposition"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "CallTracker",
+          "reason": "Diagnostics has no authoritative state write set."
+        }
+      ],
+      "risks": [
+        "Accidental elevation would create a generic catch-all subsystem."
+      ]
+    },
+    {
+      "id": "ExternalDependencyOrGenerated",
+      "layer": "runtime-infrastructure-and-adapters",
+      "responsibility": "Tracks third-party, platform interop, generated, and assembly metadata files outside self-owned runtime design.",
+      "qualificationCriteriaMet": [
+        "independent-lifecycle",
+        "cross-domain-boundary",
+        "independent-verifier"
+      ],
+      "version4Evidence": [
+        {
+          "path": "BCrypt.Net/BCrypt.cs",
+          "line": 1,
+          "referenceStatus": "version4-confirmed",
+          "reason": "Third-party cryptographic implementation is external to Terraria game rules."
+        }
+      ],
+      "tModLoaderEvidence": {
+        "path": "not-applicable",
+        "line": 0,
+        "usage": ""
+      },
+      "nltxMapping": {
+        "status": "excluded",
+        "paths": [],
+        "reason": "Not an NLTX migration or implementation target."
+      },
+      "relatedSubsystems": [
+        "ExternalBoundaries"
+      ],
+      "excludedCandidates": [
+        {
+          "name": "NAT COM interface",
+          "reason": "Platform interop is an external dependency."
+        }
+      ],
+      "risks": [
+        "Must not inflate simulation coverage."
+      ]
+    }
+  ],
+  "coverageBaseline": "D:/TRbackup/Version4 excluding bin/obj"
+}

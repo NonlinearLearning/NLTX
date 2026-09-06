@@ -17,6 +17,8 @@
 "docs/flowstate/scope.md","N1","active","canonical-process","flowstate","docs/flowstate/README.md","2026-08-29T22:38:58"
 "docs/flowstate/task/2026-08-22-docs-normalization.md","N1","active","canonical-process","flowstate","docs/flowstate/README.md","2026-08-29T22:40:09"
 "docs/flowstate/tech-debt.md","N1","active","canonical-process","flowstate","docs/flowstate/README.md","2026-08-29T22:40:09"
+"docs/Version4世界生成Biome生态系统公共拆分报告.md","N4","active","architecture-report","world-generation","docs/flowstate/README.md","2026-09-05T00:00:00"
+"docs/Version4世界生成Biome生态系统组件设计.md","N4","active","architecture-design","world-generation","docs/Version4世界生成Biome生态系统公共拆分报告.md","2026-09-05T00:00:00"
 "docs/migrations/item-ecs-member-mapping.md","N3","active","migration-evidence","migrations","docs/flowstate/scope.md","2026-08-19T13:56:58"
 "docs/migrations/item-field-property-ecs-migration.md","N3","active","migration-evidence","migrations","docs/flowstate/scope.md","2026-08-31T23:06:32"
 "docs/migrations/main-field-property-ecs-migration.md","N3","active","migration-evidence","migrations","docs/flowstate/scope.md","2026-08-31T22:43:41"

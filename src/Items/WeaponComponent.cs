@@ -8,7 +8,9 @@ public struct WeaponComponent
     int useAnimationTicks,
     int useTimeTicks,
     int projectileType,
-    float projectileSpeed)
+    float projectileSpeed,
+    int ammoCategoryId = 0,
+    bool consumesAmmo = false)
   {
     Damage = damage;
     Knockback = knockback;
@@ -16,6 +18,8 @@ public struct WeaponComponent
     UseTimeTicks = useTimeTicks;
     ProjectileType = projectileType;
     ProjectileSpeed = projectileSpeed;
+    AmmoCategoryId = ammoCategoryId;
+    ConsumesAmmo = consumesAmmo;
   }
 
   public int Damage;
@@ -24,4 +28,8 @@ public struct WeaponComponent
   public int UseTimeTicks;
   public int ProjectileType;
   public float ProjectileSpeed;
+  public int AmmoCategoryId;
+  public bool ConsumesAmmo;
+
+  public bool CanSpawnProjectile => ProjectileType > 0;
 }
