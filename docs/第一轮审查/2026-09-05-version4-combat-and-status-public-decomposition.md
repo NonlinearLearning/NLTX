@@ -1,85 +1,223 @@
-# 16 — CombatAndStatus 独立只读审查与 ECS 设计提示词
+# 16 — CombatAndStatus 子系统审查与 ECS 拆分设计
 
-本文件必须与以下公共协议共同使用，开始任务前先完整读取该文件：
-D:\TRbackup\NLTX\docs\第一轮审查\2026-09-05-version4-public-decomposition-common-protocol.md
+> subsystemId: CombatAndStatus  
+> taskNumber: 16  
+> evidenceStatus: partial  
+> nltxStatus: confirmed  
+> verificationStatus: not-run
 
-公共协议中的只读、并行、证据优先级、行号复核、状态枚举、事实/设计隔离、ECS 文件组织、副作用隔离、报告结构和 Integration Handoff 规则全部适用于本任务。若本任务包与公共协议冲突，以公共协议为准。
+## 1. 执行摘要
 
-本任务属于已经固定的 19 个游戏模拟子系统。不得改名、合并、拆分或扩展固定清单；如果当前全量索引出现额外候选，只能记录为 boundary-challenge，交由最终整合会话处理。
+本报告只审查固定任务 CombatAndStatus，不扩展 19 个子系统清单。Version4 证据显示该责任面具有自己的状态写集、生命周期或跨域提交边界；但它不能因此被解释为已经迁移到 NLTX。报告中的 ECS 名称、路径和接口均为 proposed design。
 
-## 任务元数据
+当前边界：初始战斗责任；DeathPenaltyAndRevenge 只接收死亡/金币结果。本轮没有运行构建、测试或任何 compile-capable 命令，不能声称行为等价、迁移完成或 API 兼容。
 
-- taskNumber: 16
-- subsystemId: CombatAndStatus
-- layer: authoritative-simulation
-- currentNltxStatus: confirmed
-- originalBoundary: 初始战斗责任；DeathPenaltyAndRevenge 只接收死亡/金币结果
-- relatedSubsystems: PlayerGameplay, NpcAndTownSimulation, ProjectileSimulation, DeathPenaltyAndRevenge, ItemContainerAndEconomy, SpatialSimulation
-- reportPath: D:\TRbackup\NLTX\docs\research\2026-09-05-version4-combat-and-status-public-decomposition.md
+## 2. 范围和不负责内容
 
-## 专属目标
+负责本任务所列的权威事实、独立生命周期、资格/规则计算、显式 Command、受控提交、持久化和网络投影边界。不负责相邻子系统的最终 owner、共享基础类型、客户端 UI 事实、平台接口和未被 Version4 当前文件直接证明的完整实现。相邻系统只能通过只读 view、Query、Command 或 Adapter 交接；共享 ID、快照和 commit port 标记 crossSubsystemOwner: integration-review。
 
-围绕 CombatAndStatus，基于真实 Version4 代码确定权威状态、写入根、生命周期、调用方向和跨域提交边界，并提出可实现但不落地的 ECS 拆分设计。该子系统的责任是：伤害资格、结算、免疫、死亡、归因和状态效果转换。
+## 3. 证据来源和角色
 
-“拆分为组件”只表示 proposed design。不得创建实际组件、System、Query、Command、Adapter、Projection、测试或项目文件。
+| 来源 | 证据 | 角色 | 状态 |
+| --- | --- | --- | --- |
+| Version4 | Terraria\Player.cs:22572、生命/免疫/伤害字段；NPC.cs StrikeNPC/CheckDead；Projectile.cs 命中/穿透；Collision.cs CanHit；MessageBuffer.cs:1315、1420；当前 src/Combat 与 Test/Terraria.Combat.Verification | 真实字段、方法、调用链和副作用 | confirmed / partial |
+| 完整可编译参考 | 仅在同路径、同签名的删减处补证；不替代 Version4 | 补证，不扩展基线 | partial |
+| tModLoader | D:\TRbackup\tmodloader-api-docs-stable，v2026.07；任务包指定公开 API 页面 | 公开生命周期/网络/扩展边界 | partial |
+| Space Station 14 | 没有找到与 Terraria 私有责任面直接对应的行为证据 | 仅 ECS 粒度参考 | missing |
 
-## Version4 必须深读和重新定位的专属证据
+tModLoader 不能证明 Version4 私有算法；Space Station 14 无直接对应证据，以下边界仅由 Version4 真实代码和 NLTX 项目约束决定。
 
-- D:\TRbackup\Version4\Terraria\Player.cs：KillMe（约 :22572）、生命/免疫/伤害字段和玩家战斗调用。
-- D:\TRbackup\Version4\Terraria\NPC.cs：StrikeNPC、CheckDead、免疫和死亡/掉落边界；MessageBuffer.cs:1315、:1420：网络伤害入口。
-- D:\TRbackup\Version4\Terraria\Projectile.cs：命中、穿透和伤害提交；Collision.cs：CanHit/受伤 Tile 查询。
-- 当前 NLTX：D:\TRbackup\NLTX\src\Combat、src\StatusEffects、D:\TRbackup\NLTX\Test\Terraria.Combat.Verification；只能读取已有代码和历史验证。
+## 4. Version4 真实代码事实
 
-任务包中的路径和行号只是检索线索。必须重新读取文件、定位实际符号和调用上下文；报告使用实际行号，并标记 confirmed、partial、missing、unresolved、evidence-mismatch 或 version-drift。
+1. Player.KillMe 在 Player.cs:22572 形成玩家死亡结算入口；生命、免疫和伤害字段由 Player/Combat 逻辑读取和更新。
+2. NPC StrikeNPC/CheckDead、Projectile hit/penetration 和 MessageBuffer:1315、1420 网络伤害入口形成多来源 DamageRequest，但最终 health/death writer 必须收口。
+3. Collision.CanHit/CanHitWithCheck 只提供空间资格；状态效果、免疫、死亡结果和 replication/presentation 应分离。
+4. 当前 NLTX 已有 src/Combat 的 DamageRequest、DamageResolutionSystem、Health/Immunity 等模型和 Combat verifier 源码；静态覆盖可标 confirmed，但本轮验证状态仍是 not-run。
 
-## tModLoader 公开 API 交叉验证
+### 4.1 事实调用方向
 
-- D:\TRbackup\tmodloader-api-docs-stable\class_mod_player.html：ModPlayer 伤害、死亡和状态扩展；按索引重新定位实际成员。
-- class_global_n_p_c.html、class_mod_projectile.html：NPC/Projectile 命中边界，仅作公开契约交叉验证。
+```text
+upstream input/fact
+  -> owner state / eligibility calculation
+  -> lifecycle or domain commit
+  -> downstream entity/world mutation
+  -> persistence/network/client projection
+```
 
-不得用 tModLoader 文档替代 Version4 私有行为；必须记录实际 HTML 文件、页面标题、文档版本、成员锚点和仅用于何种边界交叉验证。
+主要读者：PlayerGameplay、NpcAndTownSimulation、ProjectileSimulation、DeathPenaltyAndRevenge、SpawnLifecycleAndLoot、SpatialSimulation。主要写者候选：DamageResolutionSystem owns damage/health result；death/loot/revenge consume event；projection read-only。confirmed 只证明当前成员和调用点，不证明理想化的单写者架构。
 
-## Space Station 14 最小相关 ECS 参考
+## 5. 成员、读者、写者和生命周期
 
-只读检索下列最小相关关键词和目录：
-- damage、health、status effect、death、stun、immunity
-- damage system、event/command、component state、entity query、replication
+| 状态/行为组 | 归类 | 读者 | 写者 | 生命周期 | 副作用 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 核心事实/实例状态 | 权威状态候选 | 本责任面和下游只读系统 | Version4 owner 与跨域调用者 | 初始化、Tick、恢复、卸载 | 世界/实体状态 | partial |
+| 资格/规则计算 | Query/策略 | owner system、下游 | 无权威写入 | 请求/边界 | 应保持纯、确定 | partial |
+| 生命周期/事务状态 | 行为状态 | coordinator、commit system | 单一协调器候选 | 请求到完成/失败/重试 | 实体/世界/网络 | partial |
+| 网络/存档值 | Adapter 输入/Projection | 外部边界 | Adapter | 加载、保存、同步 | I/O、wire bytes | partial |
+| UI/平台结果 | Projection | 客户端/平台 | 外部投影 | 事件或帧 | UI/平台副作用 | excluded |
 
-只记录实际读取的 Space Station 14 文件、类型/方法和参考用途（Component 粒度、System/Query 边界、Event/Command、关系、网络或持久化）。禁止复制代码、命名、目录结构和领域语义；若无直接对应证据，明确写无直接对应证据。
+失败、重复请求、幂等和部分提交不能隐藏在 Query 中，必须由 System/Command/Adapter 返回可观察结果。
 
-## 当前 NLTX 必须浅读核对
+## 6. proposed ECS 边界
 
-- 当前索引将 CombatAndStatus 标为 confirmed，但本会话不得重新声称迁移完成；必须区分历史 existing-evidence 与本次 verificationStatus=not-run。
-- 读取现有 Combat System 和 verifier，指出仍未覆盖的全局编排、Adapter、NPC 交接或行为等价风险。
+以下均为 status: proposed，不是当前已存在实现：
 
-只能读取当前 src、Test、dome/src 和既有验证材料，不得修改；本轮并行审查不运行编译/测试命令，验证状态写为 not-run，历史真实输出只能写 existing-evidence。
+- proposed DamageRequest，status: proposed；目标路径仅为设计提示
+- proposed DamageEligibilityQuery，status: proposed；目标路径仅为设计提示
+- proposed DamageResolutionSystem，status: proposed；目标路径仅为设计提示
+- proposed HealthComponent，status: proposed；目标路径仅为设计提示
+- proposed ImmunityComponent，status: proposed；目标路径仅为设计提示
+- proposed StatusEffectStateComponent，status: proposed；目标路径仅为设计提示
+- proposed DeathResultEvent，status: proposed；目标路径仅为设计提示
+- proposed CombatReplicationProjection，status: proposed；目标路径仅为设计提示
 
-## public-decomposition 专属问题
+契约要求：
 
-- 伤害请求、资格 Query、结算、免疫、生命状态、死亡事实和状态效果转换的唯一写者。
-- 死亡事实何时交给 DeathPenaltyAndRevenge、SpawnLifecycleAndLoot、PlayerGameplay；Combat 不拥有金币 marker 或 NPC 重建。
-- NPC/Player/Projectile 的伤害来源、归因、网络输入和客户端战斗文本如何隔离。
-- 现有 NLTX System/组件是否满足 controlled commit 和 focused verifier；哪些仍是 partial。
-- 状态效果叠加、免疫窗口、死亡幂等和失败边界如何表达。
+- Component 只保存一个内聚概念的权威数据，不放网络 DTO、日志、时钟或 UI。
+- Query 只读快照并返回资格/规则结果，不修改状态。
+- System 读取输入并产出状态转换或 Command；失败原因、重试次数和幂等键可观察。
+- Commit port 是唯一候选写入口，最终共享 owner 交由 integration-review。
+- Adapter 负责 Version4 binary/network/外部类型转换；Projection 只输出不可变视图。
 
-必须完成成员/字段/方法盘点、读者/写者/生命周期/副作用表、权威状态所有权表、访问模式分组、Component/System/Query/Command/Adapter/Projection 接口契约、System 顺序、跨域依赖、ECS ID/关系建模、不拆分项和行为保持风险。所有新类型、路径和签名均标记 status: proposed；跨子系统类型标记 crossSubsystemOwner: integration-review。
+| 边界 | Interface | Implementation | Seam | Depth / Leverage / Locality |
+| --- | --- | --- | --- | --- |
+| 资格 | proposed ICombatAndStatusEligibilityQuery | 纯字段/快照计算 | fake read view | medium / high / domain |
+| 生命周期 | proposed ICombatAndStatusLifecycleSystem | 显式状态机 | command recorder | deep / high / domain |
+| 提交 | proposed ICombatAndStatusCommitPort | owner adapter | atomic result | deep / very high / cross-domain |
+| 网络/存档 | proposed CombatAndStatusReplicationAdapter / PersistenceAdapter | 不可变快照编解码 | in-memory stream/golden bytes | medium / high / adapter |
+| 客户端 | proposed CombatAndStatusProjection | 只读视图 | fake snapshot | shallow / medium / client |
 
-## 专属交付重点
+## 7. 调用方向和 System 顺序
 
-- 提出 DamageRequest、DamageEligibilityQuery、DamageResolutionSystem、Health/Immunity/Status Components、DeathResultEvent、Replication/Presentation Projection 的 proposed 边界。
-- 报告必须引用现有 Test/Terraria.Combat.Verification 的实际测试和历史输出（若读取到），并明确本次未运行。
+建议顺序（均为 proposed，不是 Version4 已实现顺序）：
 
-报告必须写入：
-D:\TRbackup\NLTX\docs\research\2026-09-05-version4-combat-and-status-public-decomposition.md
+```text
+input/load/world/entity boundary
+  -> validation and eligibility Query
+  -> state/lifecycle System
+  -> Command construction
+  -> CombatAndStatusCommitSystem
+  -> downstream result
+  -> persistence/replication Projection
+```
 
-报告必须包含 Version4 事实、完整参考补证、tModLoader 交叉验证、Space Station 14 参考、当前 NLTX 状态、proposed 设计、not-run 验证、证据缺口、blocking-decision 和 Integration Handoff。报告只能使用中文说明与英文稳定 ID，不能宣称迁移完成、行为等价或 API 兼容。
+本任务的交接顺序为：input/hit -> eligibility -> damage calculation -> immunity/status -> health commit -> death result -> loot/revenge handoff -> replication/presentation。失败时保留旧权威状态；只有 commit port 成功才产生持久化/网络快照。Retry 必须有最大次数、幂等键和诊断结果。
 
-## 明确不拆分的专属对象
+## 8. 持久化、网络和客户端边界
 
-- 单个伤害数字、单个 Buff、单个 NPC 命中、单个 CombatText、单个 PreKill Hook、DeathPenalty marker。
+Persistence Adapter（status: proposed）只接受已提交 snapshot，保留 Version4 字段顺序、版本分支、坏数据拒绝和失败不覆盖旧状态语义。Replication Projection（status: proposed）只从 committed revision 生成不可变消息；入站先转为权限和版本验证过的 Command，客户端不能直接写权威状态。客户端 Projection（status: proposed）可以落后，但不能成为 Simulation owner。
 
-请说明每个对象为什么只是实例、策略、规则、查询、缓存、Adapter 或 Projection，而不是一级子系统。
+关键缺口：Version4 全部 damage source、RNG/crit 时点、status effect persistence、网络权限、Combat verifier 本轮未执行。
 
-## 完成条件
+## 9. 当前 NLTX 状态
 
-完成只读证据审查并生成唯一指定报告后，在最终回复中简要说明报告路径、实际读取的主要证据、本次未运行构建/测试、evidence-gap、blocking-decision 以及未修改生产代码。
+当前 NLTX Combat 边界有较完整组件、系统和 verifier 源码，按任务包/既有索引为 confirmed；不把本轮未运行误写成 independently-verified。
+
+当前可作为边界证据的路径：src/Combat、src/StatusEffects、dome/src/Terraria.Dome.Simulation/Combat/ 与 Test/Terraria.Combat.Verification。
+
+这些路径最多证明局部类型/命令/策略存在，不证明完整 Version4 调用链、主运行时接线或行为等价。不能用目录顺序决定执行顺序。
+
+## 10. focused verifier 计划
+
+下列 verifier 均为 status: proposed，本轮不创建、不运行：
+
+| verifier ID | 目标 | 核心断言 |
+| --- | --- | --- |
+| COMBATANDSTATUS-STATE | 权威状态 | 只有指定 owner 能写；旧值、revision 和重复命令可审计 |
+| COMBATANDSTATUS-ELIGIBILITY | 纯资格 Query | 相同快照相同结果；Query 不写状态 |
+| COMBATANDSTATUS-LIFECYCLE | 生命周期 | 成功、失败、过期、取消、重复请求和恢复状态明确 |
+| COMBATANDSTATUS-COMMIT | 受控提交 | 非法输入整批拒绝，不发生隐式部分成功 |
+| COMBATANDSTATUS-PERSISTENCE | 存档恢复 | 版本、坏数据、回滚和旧状态保留 |
+| COMBATANDSTATUS-REPLICATION | 网络投影 | 只从 committed snapshot 发送；入站无权限不能写 |
+| COMBATANDSTATUS-CROSS | 跨域顺序 | input/hit -> eligibility -> damage calculation -> immunity/status -> health commit -> death result -> loot/revenge handoff -> replication/presentation 可由 trace recorder 观察 |
+
+未来实施时才允许按 AGENTS.md 通过串行包装器运行受影响 verifier；本轮未运行 dotnet，因此没有 exit code、warning/error count 或 artifact path。
+
+## 11. 不拆分项
+
+- 单个伤害类型：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 buff/debuff：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个免疫 flag：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 hit packet：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 death hook：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个碰撞资格查询：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+
+## 12. 兼容策略、风险和未决事项
+
+兼容策略：保留 Version4 字段/序列化顺序和调用时点；先建立只读 legacy facade，再迁移单一写集；以 golden bytes、状态机 trace 和错误边界锁定行为；分别建模 EntityId、PersistentEntityId、NetworkId、Player/Npc ID、WorldSectionId 和外部 SessionId。
+
+主要风险：
+
+- RISK-16-COMBATANDSTATUS-DOUBLE-WRITE：旧 writer 与 proposed owner 并存，导致状态漂移。
+- RISK-16-COMBATANDSTATUS-ORDER：系统顺序改变，使下游在不同阶段观察事实。
+- RISK-16-COMBATANDSTATUS-PROJECTION：网络/存档/UI 反向写入权威状态。
+- RISK-16-COMBATANDSTATUS-PARTIAL：只迁移局部模型却宣称完整 Version4 行为。
+
+evidence-gap：Version4 全部 damage source、RNG/crit 时点、status effect persistence、网络权限、Combat verifier 本轮未执行。
+
+blocking-decision：
+
+- BD-CS-01 health/death owner；BD-CS-02 status effect writer；BD-CS-03 damage result 与 loot/revenge 的 event schema。
+- 这些问题会改变权威 owner、事务边界或必须保持的 System 顺序，本报告不替代最终整合裁决。
+
+## 13. Integration Handoff
+
+```text
+subsystemId: CombatAndStatus
+taskNumber: 16
+reportPath: D:\TRbackup\NLTX\docs\第一轮审查\2026-09-05-version4-combat-and-status-public-decomposition.md
+
+evidenceStatus: partial
+nltxStatus: confirmed
+verificationStatus: not-run
+
+confirmedOwners:
+- Version4 中由上述真实成员/调用点直接证明的核心事实和生命周期入口；最终 ECS owner 仅在没有跨域冲突时可候选确认。
+- Terraria\Player.cs:22572、生命/免疫/伤害字段；NPC.cs StrikeNPC/CheckDead；Projectile.cs 命中/穿透；Collision.cs CanHit；MessageBuffer.cs:1315、1420；当前 src/Combat 与 Test/Terraria.Combat.Verification
+
+proposedTypes:
+- proposed DamageRequest, status: proposed
+- proposed DamageEligibilityQuery, status: proposed
+- proposed DamageResolutionSystem, status: proposed
+- proposed HealthComponent, status: proposed
+- proposed ImmunityComponent, status: proposed
+- proposed StatusEffectStateComponent, status: proposed
+- proposed DeathResultEvent, status: proposed
+- proposed CombatReplicationProjection, status: proposed
+
+sharedTypesForIntegrationReview:
+- EntityId、PersistentEntityId、NetworkId、WorldSectionId、WorldTickSnapshot、CombatAndStatusResult、CombatAndStatusCommitPort；candidate owner 未裁决。
+
+crossSubsystemReaders:
+- PlayerGameplay、NpcAndTownSimulation、ProjectileSimulation、DeathPenaltyAndRevenge、SpawnLifecycleAndLoot、SpatialSimulation
+
+crossSubsystemWriters:
+- DamageResolutionSystem owns damage/health result；death/loot/revenge consume event；projection read-only
+
+orderingConstraints:
+- input/hit -> eligibility -> damage calculation -> immunity/status -> health commit -> death result -> loot/revenge handoff -> replication/presentation
+- commit 成功后才允许 persistence/replication projection。
+
+boundaryChallenges:
+- 初始战斗责任；DeathPenaltyAndRevenge 只接收死亡/金币结果
+- 任务包状态与当前局部模型可能存在 version-drift；不能从局部文件推断完整迁移。
+
+evidenceGaps:
+- Version4 全部 damage source、RNG/crit 时点、status effect persistence、网络权限、Combat verifier 本轮未执行
+
+blockingDecisions:
+- BD-CS-01 health/death owner；BD-CS-02 status effect writer；BD-CS-03 damage result 与 loot/revenge 的 event schema
+
+notImplemented:
+- 本报告未创建或修改 Component、System、Query、Command、Adapter、Projection、测试或项目文件。
+- 本报告不声明当前 NLTX 行为等价或 API 兼容。
+
+verifierPlan:
+- COMBATANDSTATUS-STATE、ELIGIBILITY、LIFECYCLE、COMMIT、PERSISTENCE、REPLICATION、CROSS，全部 status: proposed；本轮 verificationStatus: not-run。
+```
+
+## 14. 最终声明
+
+本报告是基于 Version4、完整参考源码、tModLoader 公开文档和有限 ECS 结构参考形成的子系统边界与 ECS 拆分设计。它不是迁移完成报告，不是行为等价证明，不是 API 兼容证明，也不是当前 NLTX 已实现能力的声明。
+
+本报告只写入任务指定的唯一报告文件，未修改生产代码、测试代码、dome/src、Version4、完整参考源码、tModLoader 文档或其他共享审查材料。本轮未运行构建或测试，验证状态为 not-run。

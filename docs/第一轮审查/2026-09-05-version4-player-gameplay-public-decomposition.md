@@ -1,85 +1,227 @@
-# 11 — PlayerGameplay 独立只读审查与 ECS 设计提示词
+# 11 — PlayerGameplay 子系统审查与 ECS 拆分设计
 
-本文件必须与以下公共协议共同使用，开始任务前先完整读取该文件：
-D:\TRbackup\NLTX\docs\第一轮审查\2026-09-05-version4-public-decomposition-common-protocol.md
+> subsystemId: PlayerGameplay  
+> taskNumber: 11  
+> evidenceStatus: partial  
+> nltxStatus: partial  
+> verificationStatus: not-run
 
-公共协议中的只读、并行、证据优先级、行号复核、状态枚举、事实/设计隔离、ECS 文件组织、副作用隔离、报告结构和 Integration Handoff 规则全部适用于本任务。若本任务包与公共协议冲突，以公共协议为准。
+## 1. 执行摘要
 
-本任务属于已经固定的 19 个游戏模拟子系统。不得改名、合并、拆分或扩展固定清单；如果当前全量索引出现额外候选，只能记录为 boundary-challenge，交由最终整合会话处理。
+本报告只审查固定任务 PlayerGameplay，不扩展 19 个子系统清单。Version4 证据显示该责任面具有自己的状态写集、生命周期或跨域提交边界；但它不能因此被解释为已经迁移到 NLTX。报告中的 ECS 名称、路径和接口均为 proposed design。
 
-## 任务元数据
+当前边界：初始玩家聚合责任；Combat/Items/Spatial/Projectile 与其交接。本轮没有运行构建、测试或任何 compile-capable 命令，不能声称行为等价、迁移完成或 API 兼容。
 
-- taskNumber: 11
-- subsystemId: PlayerGameplay
-- layer: authoritative-simulation
-- currentNltxStatus: partial
-- originalBoundary: 初始玩家聚合责任；CombatAndStatus、ItemContainerAndEconomy、SpatialSimulation、ProjectileSimulation 等与其交接
-- relatedSubsystems: CombatAndStatus, ItemContainerAndEconomy, SpatialSimulation, ProjectileSimulation, WorldSession, IntentAndInteraction
-- reportPath: D:\TRbackup\NLTX\docs\research\2026-09-05-version4-player-gameplay-public-decomposition.md
+## 2. 范围和不负责内容
 
-## 专属目标
+负责本任务所列的权威事实、独立生命周期、资格/规则计算、显式 Command、受控提交、持久化和网络投影边界。不负责相邻子系统的最终 owner、共享基础类型、客户端 UI 事实、平台接口和未被 Version4 当前文件直接证明的完整实现。相邻系统只能通过只读 view、Query、Command 或 Adapter 交接；共享 ID、快照和 commit port 标记 crossSubsystemOwner: integration-review。
 
-围绕 PlayerGameplay，基于真实 Version4 代码确定权威状态、写入根、生命周期、调用方向和跨域提交边界，并提出可实现但不落地的 ECS 拆分设计。该子系统的责任是：玩家资源、装备、物品使用、生命、能力、实体生命周期和玩家状态转换。
+## 3. 证据来源和角色
 
-“拆分为组件”只表示 proposed design。不得创建实际组件、System、Query、Command、Adapter、Projection、测试或项目文件。
+| 来源 | 证据 | 角色 | 状态 |
+| --- | --- | --- | --- |
+| Version4 | Terraria\Player.cs:156、14789、19603、22572、11988；Terraria\Main.cs:11420-11472；MessageBuffer.cs 输入；Terraria.IO\PlayerFileData.cs | 真实字段、方法、调用链和副作用 | confirmed / partial |
+| 完整可编译参考 | 仅在同路径、同签名的删减处补证；不替代 Version4 | 补证，不扩展基线 | partial |
+| tModLoader | D:\TRbackup\tmodloader-api-docs-stable，v2026.07；任务包指定公开 API 页面 | 公开生命周期/网络/扩展边界 | partial |
+| Space Station 14 | 没有找到与 Terraria 私有责任面直接对应的行为证据 | 仅 ECS 粒度参考 | missing |
 
-## Version4 必须深读和重新定位的专属证据
+tModLoader 不能证明 Version4 私有算法；Space Station 14 无直接对应证据，以下边界仅由 Version4 真实代码和 NLTX 项目约束决定。
 
-- D:\TRbackup\Version4\Terraria\Player.cs：Update（约 :156）、Update(int)（约 :14789）、ItemCheckWrapped（:19603）、KillMe（:22572）、OnKillNPC（:11988）以及玩家字段。
-- D:\TRbackup\Version4\Terraria\Main.cs:11420-11472：玩家在世界 Tick 中的更新位置；MessageBuffer.cs：入站输入写入玩家状态。
-- Player.cs 中生命/死亡、装备、背包、物品使用、坐骑、钓鱼、召唤、重生和移动状态的读写者。
-- D:\TRbackup\Version4\Terraria.IO\PlayerFileData.cs、WorldFile.cs：玩家文件和与世界状态交互的存档路径。
+## 4. Version4 真实代码事实
 
-任务包中的路径和行号只是检索线索。必须重新读取文件、定位实际符号和调用上下文；报告使用实际行号，并标记 confirmed、partial、missing、unresolved、evidence-mismatch 或 version-drift。
+1. Player.Update():156 和 Update(int):14789 承载玩家 Tick；Main.cs:11420-11472 将玩家置于世界更新顺序中。
+2. ItemCheckWrapped:19603、OnKillNPC:11988、KillMe:22572 连接物品使用、击杀结果和死亡事实，但不应把 Combat/Item/DeathPenalty 的写集都塞回 Player。
+3. MessageBuffer 入站输入只应转为 InputIntent/Command；玩家位置、生命、装备、库存、坐骑、钓鱼和重生具有不同生命周期。
+4. PlayerFileData 与 WorldFile 是持久化边界，玩家实体身份、存档 ID、网络 slot 必须分开。
 
-## tModLoader 公开 API 交叉验证
+### 4.1 事实调用方向
 
-- D:\TRbackup\tmodloader-api-docs-stable\class_mod_player.html：公开玩家生命周期、伤害、物品、输入和更新扩展；必须从本地索引重新定位实际标题、版本和成员锚点。
-- 按公共协议检索 ModPlayer.PreKill、ModifyHurt、PostUpdate、SaveData/LoadData 等页面，只作公开边界交叉验证。
+```text
+upstream input/fact
+  -> owner state / eligibility calculation
+  -> lifecycle or domain commit
+  -> downstream entity/world mutation
+  -> persistence/network/client projection
+```
 
-不得用 tModLoader 文档替代 Version4 私有行为；必须记录实际 HTML 文件、页面标题、文档版本、成员锚点和仅用于何种边界交叉验证。
+主要读者：CombatAndStatus、ItemContainerAndEconomy、SpatialSimulation、ProjectileSimulation、FishingAndCatchSimulation、WorldSession。主要写者候选：Player systems own player-local state；Combat/Items/Spatial only commit their own results；network adapter never writes arbitrary fields。confirmed 只证明当前成员和调用点，不证明理想化的单写者架构。
 
-## Space Station 14 最小相关 ECS 参考
+## 5. 成员、读者、写者和生命周期
 
-只读检索下列最小相关关键词和目录：
-- player entity、player session、input intent、equipment、inventory、health
-- component composition、system/query、session/entity relation、network state、persistence
+| 状态/行为组 | 归类 | 读者 | 写者 | 生命周期 | 副作用 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 核心事实/实例状态 | 权威状态候选 | 本责任面和下游只读系统 | Version4 owner 与跨域调用者 | 初始化、Tick、恢复、卸载 | 世界/实体状态 | partial |
+| 资格/规则计算 | Query/策略 | owner system、下游 | 无权威写入 | 请求/边界 | 应保持纯、确定 | partial |
+| 生命周期/事务状态 | 行为状态 | coordinator、commit system | 单一协调器候选 | 请求到完成/失败/重试 | 实体/世界/网络 | partial |
+| 网络/存档值 | Adapter 输入/Projection | 外部边界 | Adapter | 加载、保存、同步 | I/O、wire bytes | partial |
+| UI/平台结果 | Projection | 客户端/平台 | 外部投影 | 事件或帧 | UI/平台副作用 | excluded |
 
-只记录实际读取的 Space Station 14 文件、类型/方法和参考用途（Component 粒度、System/Query 边界、Event/Command、关系、网络或持久化）。禁止复制代码、命名、目录结构和领域语义；若无直接对应证据，明确写无直接对应证据。
+失败、重复请求、幂等和部分提交不能隐藏在 Query 中，必须由 System/Command/Adapter 返回可观察结果。
 
-## 当前 NLTX 必须浅读核对
+## 6. proposed ECS 边界
 
-- 当前 NLTX src/Player 已有身份、生命、装备、背包、物品使用等多个状态组件，但没有完整 orchestrated execution chain。
-- 检查 src/Player、src/Physics、src/Items、src/Combat、Test 和 dome/src；不得把其他子系统状态重新合并进 PlayerGameplay。
+以下均为 status: proposed，不是当前已存在实现：
 
-只能读取当前 src、Test、dome/src 和既有验证材料，不得修改；本轮并行审查不运行编译/测试命令，验证状态写为 not-run，历史真实输出只能写 existing-evidence。
+- proposed PlayerIdentityComponent，status: proposed；目标路径仅为设计提示
+- proposed PlayerLifecycleComponent，status: proposed；目标路径仅为设计提示
+- proposed PlayerVitalComponent，status: proposed；目标路径仅为设计提示
+- proposed PlayerEquipmentComponent，status: proposed；目标路径仅为设计提示
+- proposed PlayerInventoryView，status: proposed；目标路径仅为设计提示
+- proposed PlayerUseState，status: proposed；目标路径仅为设计提示
+- proposed PlayerAbilityState，status: proposed；目标路径仅为设计提示
+- proposed InputIntentComponent，status: proposed；目标路径仅为设计提示
+- proposed PlayerUpdateSystem，status: proposed；目标路径仅为设计提示
+- proposed PlayerRespawnCommand，status: proposed；目标路径仅为设计提示
 
-## public-decomposition 专属问题
+契约要求：
 
-- 玩家实体身份、输入意图、生命/恢复、装备/背包、能力和移动状态如何按访问模式拆分。
-- 死亡事实由 CombatAndStatus 提交还是 PlayerGameplay 拥有生命周期结果；金币、钓鱼、传送和投射物如何通过命令交接。
-- 玩家实体 ID、持久化玩家 ID、网络/Session ID 如何分离并标记 integration-review。
-- Update、ItemCheck、KillMe 等巨型方法如何分解为 System，同时保留权威写入顺序和副作用隔离。
-- 哪些玩家字段是权威状态、派生缓存、兼容字段或客户端 Projection。
+- Component 只保存一个内聚概念的权威数据，不放网络 DTO、日志、时钟或 UI。
+- Query 只读快照并返回资格/规则结果，不修改状态。
+- System 读取输入并产出状态转换或 Command；失败原因、重试次数和幂等键可观察。
+- Commit port 是唯一候选写入口，最终共享 owner 交由 integration-review。
+- Adapter 负责 Version4 binary/network/外部类型转换；Projection 只输出不可变视图。
 
-必须完成成员/字段/方法盘点、读者/写者/生命周期/副作用表、权威状态所有权表、访问模式分组、Component/System/Query/Command/Adapter/Projection 接口契约、System 顺序、跨域依赖、ECS ID/关系建模、不拆分项和行为保持风险。所有新类型、路径和签名均标记 status: proposed；跨子系统类型标记 crossSubsystemOwner: integration-review。
+| 边界 | Interface | Implementation | Seam | Depth / Leverage / Locality |
+| --- | --- | --- | --- | --- |
+| 资格 | proposed IPlayerGameplayEligibilityQuery | 纯字段/快照计算 | fake read view | medium / high / domain |
+| 生命周期 | proposed IPlayerGameplayLifecycleSystem | 显式状态机 | command recorder | deep / high / domain |
+| 提交 | proposed IPlayerGameplayCommitPort | owner adapter | atomic result | deep / very high / cross-domain |
+| 网络/存档 | proposed PlayerGameplayReplicationAdapter / PersistenceAdapter | 不可变快照编解码 | in-memory stream/golden bytes | medium / high / adapter |
+| 客户端 | proposed PlayerGameplayProjection | 只读视图 | fake snapshot | shallow / medium / client |
 
-## 专属交付重点
+## 7. 调用方向和 System 顺序
 
-- 提出 PlayerIdentity、PlayerLifecycle、PlayerVital、PlayerEquipment、PlayerInventory、PlayerUse、PlayerAbility、InputIntent 等 proposed 组件及 System/Query/Command 边界。
-- 报告必须给出玩家更新、输入验证、移动/战斗/物品交接、死亡、重生和存档投影的 focused verifier 设计。
+建议顺序（均为 proposed，不是 Version4 已实现顺序）：
 
-报告必须写入：
-D:\TRbackup\NLTX\docs\research\2026-09-05-version4-player-gameplay-public-decomposition.md
+```text
+input/load/world/entity boundary
+  -> validation and eligibility Query
+  -> state/lifecycle System
+  -> Command construction
+  -> PlayerGameplayCommitSystem
+  -> downstream result
+  -> persistence/replication Projection
+```
 
-报告必须包含 Version4 事实、完整参考补证、tModLoader 交叉验证、Space Station 14 参考、当前 NLTX 状态、proposed 设计、not-run 验证、证据缺口、blocking-decision 和 Integration Handoff。报告只能使用中文说明与英文稳定 ID，不能宣称迁移完成、行为等价或 API 兼容。
+本任务的交接顺序为：network/input -> intent validation -> player lifecycle/vital/use -> movement/combat/item commands -> domain commits -> save/replication projection。失败时保留旧权威状态；只有 commit port 成功才产生持久化/网络快照。Retry 必须有最大次数、幂等键和诊断结果。
 
-## 明确不拆分的专属对象
+## 8. 持久化、网络和客户端边界
 
-- 单个玩家字段、单个 Buff、单个按键、单个 UI 控件、单个网络 packet、完整 Player 巨型组件。
+Persistence Adapter（status: proposed）只接受已提交 snapshot，保留 Version4 字段顺序、版本分支、坏数据拒绝和失败不覆盖旧状态语义。Replication Projection（status: proposed）只从 committed revision 生成不可变消息；入站先转为权限和版本验证过的 Command，客户端不能直接写权威状态。客户端 Projection（status: proposed）可以落后，但不能成为 Simulation owner。
 
-请说明每个对象为什么只是实例、策略、规则、查询、缓存、Adapter 或 Projection，而不是一级子系统。
+关键缺口：完整 Player 字段清单、Mount/Fishing/Summon owner、死亡与 DeathPenalty handoff、PlayerFileData 的版本化字段。
 
-## 完成条件
+## 9. 当前 NLTX 状态
 
-完成只读证据审查并生成唯一指定报告后，在最终回复中简要说明报告路径、实际读取的主要证据、本次未运行构建/测试、evidence-gap、blocking-decision 以及未修改生产代码。
+当前 src/Player 已有 InputIntent、identity/lifecycle/vital/equipment/inventory/use 等状态文件，dome 也有 Player spawn/respawn 与 fishing use 局部系统；判为 partial。
+
+当前可作为边界证据的路径：src/Player、src/Items、src/Physics、dome/src/Terraria.Dome.Simulation/Player/ 与 PlayerLifecycle/Spawn 文件。
+
+这些路径最多证明局部类型/命令/策略存在，不证明完整 Version4 调用链、主运行时接线或行为等价。不能用目录顺序决定执行顺序。
+
+## 10. focused verifier 计划
+
+下列 verifier 均为 status: proposed，本轮不创建、不运行：
+
+| verifier ID | 目标 | 核心断言 |
+| --- | --- | --- |
+| PLAYERGAMEPLAY-STATE | 权威状态 | 只有指定 owner 能写；旧值、revision 和重复命令可审计 |
+| PLAYERGAMEPLAY-ELIGIBILITY | 纯资格 Query | 相同快照相同结果；Query 不写状态 |
+| PLAYERGAMEPLAY-LIFECYCLE | 生命周期 | 成功、失败、过期、取消、重复请求和恢复状态明确 |
+| PLAYERGAMEPLAY-COMMIT | 受控提交 | 非法输入整批拒绝，不发生隐式部分成功 |
+| PLAYERGAMEPLAY-PERSISTENCE | 存档恢复 | 版本、坏数据、回滚和旧状态保留 |
+| PLAYERGAMEPLAY-REPLICATION | 网络投影 | 只从 committed snapshot 发送；入站无权限不能写 |
+| PLAYERGAMEPLAY-CROSS | 跨域顺序 | network/input -> intent validation -> player lifecycle/vital/use -> movement/combat/item commands -> domain commits -> save/replication projection 可由 trace recorder 观察 |
+
+未来实施时才允许按 AGENTS.md 通过串行包装器运行受影响 verifier；本轮未运行 dotnet，因此没有 exit code、warning/error count 或 artifact path。
+
+## 11. 不拆分项
+
+- 单个 Player 字段：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个输入按键：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 buff：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个装备槽：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 ItemCheck Hook：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 UI projection：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+
+## 12. 兼容策略、风险和未决事项
+
+兼容策略：保留 Version4 字段/序列化顺序和调用时点；先建立只读 legacy facade，再迁移单一写集；以 golden bytes、状态机 trace 和错误边界锁定行为；分别建模 EntityId、PersistentEntityId、NetworkId、Player/Npc ID、WorldSectionId 和外部 SessionId。
+
+主要风险：
+
+- RISK-11-PLAYERGAMEPLAY-DOUBLE-WRITE：旧 writer 与 proposed owner 并存，导致状态漂移。
+- RISK-11-PLAYERGAMEPLAY-ORDER：系统顺序改变，使下游在不同阶段观察事实。
+- RISK-11-PLAYERGAMEPLAY-PROJECTION：网络/存档/UI 反向写入权威状态。
+- RISK-11-PLAYERGAMEPLAY-PARTIAL：只迁移局部模型却宣称完整 Version4 行为。
+
+evidence-gap：完整 Player 字段清单、Mount/Fishing/Summon owner、死亡与 DeathPenalty handoff、PlayerFileData 的版本化字段。
+
+blocking-decision：
+
+- BD-PG-01 Player 聚合与多个 capability owner；BD-PG-02 输入/模拟时点；BD-PG-03 死亡/重生跨域事务。
+- 这些问题会改变权威 owner、事务边界或必须保持的 System 顺序，本报告不替代最终整合裁决。
+
+## 13. Integration Handoff
+
+```text
+subsystemId: PlayerGameplay
+taskNumber: 11
+reportPath: D:\TRbackup\NLTX\docs\第一轮审查\2026-09-05-version4-player-gameplay-public-decomposition.md
+
+evidenceStatus: partial
+nltxStatus: partial
+verificationStatus: not-run
+
+confirmedOwners:
+- Version4 中由上述真实成员/调用点直接证明的核心事实和生命周期入口；最终 ECS owner 仅在没有跨域冲突时可候选确认。
+- Terraria\Player.cs:156、14789、19603、22572、11988；Terraria\Main.cs:11420-11472；MessageBuffer.cs 输入；Terraria.IO\PlayerFileData.cs
+
+proposedTypes:
+- proposed PlayerIdentityComponent, status: proposed
+- proposed PlayerLifecycleComponent, status: proposed
+- proposed PlayerVitalComponent, status: proposed
+- proposed PlayerEquipmentComponent, status: proposed
+- proposed PlayerInventoryView, status: proposed
+- proposed PlayerUseState, status: proposed
+- proposed PlayerAbilityState, status: proposed
+- proposed InputIntentComponent, status: proposed
+- proposed PlayerUpdateSystem, status: proposed
+- proposed PlayerRespawnCommand, status: proposed
+
+sharedTypesForIntegrationReview:
+- EntityId、PersistentEntityId、NetworkId、WorldSectionId、WorldTickSnapshot、PlayerGameplayResult、PlayerGameplayCommitPort；candidate owner 未裁决。
+
+crossSubsystemReaders:
+- CombatAndStatus、ItemContainerAndEconomy、SpatialSimulation、ProjectileSimulation、FishingAndCatchSimulation、WorldSession
+
+crossSubsystemWriters:
+- Player systems own player-local state；Combat/Items/Spatial only commit their own results；network adapter never writes arbitrary fields
+
+orderingConstraints:
+- network/input -> intent validation -> player lifecycle/vital/use -> movement/combat/item commands -> domain commits -> save/replication projection
+- commit 成功后才允许 persistence/replication projection。
+
+boundaryChallenges:
+- 初始玩家聚合责任；Combat/Items/Spatial/Projectile 与其交接
+- 任务包状态与当前局部模型可能存在 version-drift；不能从局部文件推断完整迁移。
+
+evidenceGaps:
+- 完整 Player 字段清单、Mount/Fishing/Summon owner、死亡与 DeathPenalty handoff、PlayerFileData 的版本化字段
+
+blockingDecisions:
+- BD-PG-01 Player 聚合与多个 capability owner；BD-PG-02 输入/模拟时点；BD-PG-03 死亡/重生跨域事务
+
+notImplemented:
+- 本报告未创建或修改 Component、System、Query、Command、Adapter、Projection、测试或项目文件。
+- 本报告不声明当前 NLTX 行为等价或 API 兼容。
+
+verifierPlan:
+- PLAYERGAMEPLAY-STATE、ELIGIBILITY、LIFECYCLE、COMMIT、PERSISTENCE、REPLICATION、CROSS，全部 status: proposed；本轮 verificationStatus: not-run。
+```
+
+## 14. 最终声明
+
+本报告是基于 Version4、完整参考源码、tModLoader 公开文档和有限 ECS 结构参考形成的子系统边界与 ECS 拆分设计。它不是迁移完成报告，不是行为等价证明，不是 API 兼容证明，也不是当前 NLTX 已实现能力的声明。
+
+本报告只写入任务指定的唯一报告文件，未修改生产代码、测试代码、dome/src、Version4、完整参考源码、tModLoader 文档或其他共享审查材料。本轮未运行构建或测试，验证状态为 not-run。

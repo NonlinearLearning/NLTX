@@ -1,84 +1,224 @@
-# 08 — SimulationRuleOverrides 独立只读审查与 ECS 设计提示词
+# 08 — SimulationRuleOverrides 子系统审查与 ECS 拆分设计
 
-本文件必须与以下公共协议共同使用，开始任务前先完整读取该文件：
-D:\TRbackup\NLTX\docs\第一轮审查\2026-09-05-version4-public-decomposition-common-protocol.md
+> subsystemId: SimulationRuleOverrides  
+> taskNumber: 08  
+> evidenceStatus: partial  
+> nltxStatus: partial  
+> verificationStatus: not-run
 
-公共协议中的只读、并行、证据优先级、行号复核、状态枚举、事实/设计隔离、ECS 文件组织、副作用隔离、报告结构和 Integration Handoff 规则全部适用于本任务。若本任务包与公共协议出现冲突，以公共协议为准。
+## 1. 执行摘要
 
-本任务属于已经固定的 19 个游戏模拟子系统。不得改名、合并、拆分或扩展固定清单；如果当前全量索引出现额外候选，只能记录为 boundary-challenge，交由最终整合会话处理。
+本报告只审查固定任务 SimulationRuleOverrides，不扩展 19 个子系统清单。Version4 证据显示该责任面具有自己的状态写集、生命周期或跨域提交边界；但它不能因此被解释为已经迁移到 NLTX。报告中的所有 ECS 名称、路径和接口均为 proposed design。
 
-## 任务元数据
+当前边界：从 ContentCatalog/客户端 Creative 元数据中提升。任务包的旧状态为 partial，当前结论为 partial。本轮没有运行构建、测试或任何 compile-capable 命令，不能声称行为等价、迁移完成或 API 兼容。
 
-- taskNumber: 08
-- subsystemId: SimulationRuleOverrides
-- layer: authoritative-simulation
-- currentNltxStatus: missing
-- originalBoundary: 从 ContentCatalog/客户端 Creative 元数据中提升
-- relatedSubsystems: WorldSession, WorldGenerationAndEcology, WorldCalendarAndEventOrchestration, PlayerGameplay, PersistenceAndRecovery, NetworkSessionAndSectionStreaming
-- reportPath: D:\TRbackup\NLTX\docs\research\2026-09-05-version4-simulation-rule-overrides-public-decomposition.md
+## 2. 范围和不负责内容
 
-## 专属目标
+负责本任务所列的权威事实、独立生命周期、资格/规则计算、显式 Command、受控提交、持久化和网络投影边界。不负责相邻子系统的最终 owner、共享基础类型、客户端 UI 事实、平台接口和未被 Version4 当前文件直接证明的完整实现。
 
-围绕 SimulationRuleOverrides，基于真实 Version4 代码确定权威状态、写入根、生命周期、调用方向和跨域提交边界，并提出可实现但不落地的 ECS 拆分设计。该子系统的责任是：Journey/Creative 权限控制的规则覆写、权限校验和每 Tick 不可变规则快照。
+相邻系统只能通过只读 view、Query、Command 或 Adapter 交接。跨两个以上子系统使用的 ID、快照和 commit port 标记 crossSubsystemOwner: integration-review。
 
-“拆分为组件”只表示 proposed design。不得创建实际组件、System、Query、Command、Adapter、Projection、测试或项目文件。
+## 3. 证据来源和角色
 
-## Version4 必须深读和重新定位的专属证据
+| 来源 | 证据 | 角色 | 状态 |
+| --- | --- | --- | --- |
+| Version4 | Terraria.GameContent\Creative\CreativePowerManager.cs:92-110、132-197；Terraria\Main.cs:3159-3175、11364-11374；Terraria\WorldGen.cs:59408-59415；Terraria.IO\WorldFile.cs:3284、3517-3525 | 真实字段、方法、调用链和副作用 | confirmed / partial |
+| 完整可编译参考 | 仅在与 Version4 同路径、同签名的删减处补证；本任务未用补证替代 Version4 | 补证，不扩展基线 | partial |
+| tModLoader | D:\TRbackup\tmodloader-api-docs-stable，v2026.07；任务包指定公开 API 页面 | 公开生命周期/网络/扩展边界交叉验证 | partial |
+| Space Station 14 | 本任务没有找到与 Terraria 私有责任面直接对应的行为证据 | 仅保留 ECS 粒度参考 | missing |
 
-- D:\TRbackup\Version4\Terraria.GameContent.Creative\CreativePowerManager.cs:92-110：Power 注册和权威规则类别；:132-197：保存/加载、权限和玩家同步路径。
-- D:\TRbackup\Version4\Terraria\Main.cs:3159-3175：UpdateTimeRate 读取时间 Power；:11364-11374：世界难度覆写。
-- D:\TRbackup\Version4\Terraria\WorldGen.cs:59408-59415：生态传播读取停止/覆写 Power；相关刷怪、天气和生态调用点。
-- D:\TRbackup\Version4\Terraria\WorldFile.cs:3284、:3517-3525：Creative powers 校验、保存和加载。
+tModLoader 页面不能证明 Version4 私有算法；Space Station 14 无直接对应证据，以下边界仅由 Version4 真实代码和 NLTX 项目约束决定。
 
-任务包中的路径和行号只是检索线索。必须重新读取文件、定位实际符号和调用上下文；报告使用实际行号，并标记 confirmed、partial、missing、unresolved、evidence-mismatch 或 version-drift。
+## 4. Version4 真实代码事实
 
-## tModLoader 公开 API 交叉验证
+1. CreativePowerManager.cs:92-110 注册 Power，:132-197 处理保存/加载、权限和玩家同步，说明 override 不是静态内容元数据。
+2. Main.cs:3159-3175 读取时间速率 Power，:11364-11374 读取世界难度覆写；它们在规则消费侧形成只读 effective snapshot。
+3. WorldGen.cs:59408-59415 读取生态传播停止/覆写 Power；同一 override 会影响多个子系统。
+4. WorldFile.cs:3284、:3517-3525 处理 Creative powers 校验、保存和加载，网络命令必须先经过权限/版本检查。
 
-- D:\TRbackup\tmodloader-api-docs-stable\class_mod_system.html:253-259：规则在世界 Tick 中被消费的阶段交叉验证。
-- 按索引检索世界/玩家存档、网络接收和权限相关公开页面；不把 UI 排序当作权威证据。
+### 4.1 事实调用方向
 
-不得用 tModLoader 文档替代 Version4 私有行为；必须记录实际 HTML 文件、页面标题、文档版本、成员锚点和仅用于何种边界交叉验证。
+```text
+upstream input/fact
+  -> Version4 owner state / eligibility calculation
+  -> lifecycle or progression commit
+  -> downstream entity/world mutation
+  -> persistence/network/client projection
+```
 
-## Space Station 14 最小相关 ECS 参考
+实际读者：WorldSession、WorldGenerationAndEcology、WorldCalendarAndEventOrchestration、PlayerGameplay、PersistenceAndRecovery、NetworkSession。实际写者候选：授权的 server command/CreativePower manager adapter；模拟系统只读 effective snapshot。confirmed 只证明当前成员和调用点，不证明理想化的单写者架构。
 
-只读检索下列最小相关关键词和目录：
-- permissions、rule override、game rule、admin command
-- immutable snapshot、configuration component、system ordering、network/persistence adapter
+## 5. 成员、读者、写者和生命周期
 
-只记录实际读取的 Space Station 14 文件、类型/方法和参考用途（Component 粒度、System/Query 边界、Event/Command、关系、网络或持久化）。禁止复制代码、命名、目录结构和领域语义；若无直接对应证据，明确写无直接对应证据。
+| 状态/行为组 | 归类 | 读者 | 写者 | 生命周期 | 副作用 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 核心事实/实例状态 | 权威状态候选 | 本责任面和下游只读系统 | Version4 owner 与少数跨域调用者 | 初始化、Tick、恢复、卸载 | 世界/实体状态 | partial |
+| 资格/规则计算 | Query 或策略 | owner system、下游 | 无权威写入 | 请求/边界 | 应保持纯、确定 | partial |
+| 生命周期/事务状态 | 行为状态 | coordinator、commit system | 单一协调器候选 | 请求到完成/失败/重试 | spawn/despawn/save/net | partial |
+| 网络/存档值 | Adapter 输入/Projection | 外部边界 | Adapter | 加载、保存、同步 | I/O、wire bytes | partial |
+| UI/平台结果 | Projection | 客户端/平台 | 外部投影 | 事件或帧 | UI/平台副作用 | excluded |
 
-## 当前 NLTX 必须浅读核对
+失败、重复请求、幂等和部分提交不能隐藏在 Query 中，必须由 System/Command/Adapter 返回可观察结果。
 
-- 当前 NLTX 的 src/Content/ContentPresentationIndex.cs 仅表达 Creative 显示元数据；没有权限、覆写状态、命令、恢复或复制闭环。
-- 不得因为存在 Creative 内容名或排序就标为 partial/confirmed。
+## 6. proposed ECS 边界
 
-只能读取当前 src、Test、dome/src 和既有验证材料，不得修改；本轮并行审查不运行编译/测试命令，验证状态写为 not-run，历史真实输出只能写 existing-evidence。
+以下均为 status: proposed，不是当前已存在实现：
 
-## public-decomposition 专属问题
+- proposed RuleOverrideState，status: proposed；目标路径仅为设计提示
+- proposed OverridePermissionView，status: proposed；目标路径仅为设计提示
+- proposed OverrideCommand，status: proposed；目标路径仅为设计提示
+- proposed RuleSnapshot，status: proposed；目标路径仅为设计提示
+- proposed RuleOverrideSystem，status: proposed；目标路径仅为设计提示
+- proposed PermissionQuery，status: proposed；目标路径仅为设计提示
+- proposed OverridePersistenceAdapter，status: proposed；目标路径仅为设计提示
+- proposed OverrideReplicationProjection，status: proposed；目标路径仅为设计提示
 
-- Power 定义、权限、玩家/世界作用域、当前值和过期/恢复状态如何分离。
-- 覆写命令何时验证、何时提交；Tick 开始采样的 immutable RuleSnapshot 如何防止中途双写。
-- 时间、天气、生态、刷怪率和难度覆写分别由哪些下游 System 读取。
-- Persistence/Network 只传输权威快照；外部权限/session ID 如何隔离。
+最小契约：
 
-必须完成成员/字段/方法盘点、读者/写者/生命周期/副作用表、权威状态所有权表、访问模式分组、Component/System/Query/Command/Adapter/Projection 接口契约、System 顺序、跨域依赖、ECS ID/关系建模、不拆分项和行为保持风险。所有新类型、路径和签名均标记 status: proposed；跨子系统类型标记 crossSubsystemOwner: integration-review。
+- Component 只保存一个内聚概念的权威数据，不放网络 DTO、日志、时钟或 UI。
+- Query 只读快照并返回资格/规则结果，不修改状态。
+- System 读取输入并产出明确状态转换或 Command；失败原因、重试次数和幂等键可观察。
+- Commit port 是唯一候选写入口；最终共享 owner 交由 integration-review。
+- Adapter 负责 Version4 binary/network/外部类型转换；Projection 只输出不可变视图。
 
-## 专属交付重点
+| 边界 | Interface | Implementation | Seam | Depth / Leverage / Locality |
+| --- | --- | --- | --- | --- |
+| 资格 | proposed ISimulationRuleOverridesEligibilityQuery | 纯字段/快照计算 | fake read view | medium / high / domain |
+| 生命周期 | proposed ISimulationRuleOverridesLifecycleSystem | 显式状态机 | command recorder | deep / high / domain |
+| 提交 | proposed ISimulationRuleOverridesCommitPort | owner adapter | atomic result | deep / very high / cross-domain |
+| 网络/存档 | proposed SimulationRuleOverridesReplicationAdapter / PersistenceAdapter | 不可变快照编解码 | in-memory stream/golden bytes | medium / high / adapter |
+| 客户端 | proposed SimulationRuleOverridesProjection | 只读视图 | fake snapshot | shallow / medium / client |
 
-- 提出 RuleOverrideState、PermissionQuery、OverrideCommand、RuleSnapshotSystem、Persistence/Replication Adapter 的 proposed 设计。
-- 报告必须说明一个 Power、一个玩家权限、一个世界覆写和一个非法命令的 focused verifier 计划。
+## 7. 调用方向和 System 顺序
 
-报告必须写入：
-D:\TRbackup\NLTX\docs\research\2026-09-05-version4-simulation-rule-overrides-public-decomposition.md
+建议顺序（均为 proposed，不是 Version4 已实现顺序）：
 
-报告必须包含 Version4 事实、完整参考补证、tModLoader 交叉验证、Space Station 14 参考、当前 NLTX 状态、proposed 设计、not-run 验证、证据缺口、blocking-decision 和 Integration Handoff。报告只能使用中文说明与英文稳定 ID，不能宣称迁移完成、行为等价或 API 兼容。
+```text
+input/load/death/world boundary
+  -> validation and eligibility Query
+  -> state/lifecycle System
+  -> Command construction
+  -> SimulationRuleOverridesCommitSystem
+  -> downstream entity/world result
+  -> persistence/replication Projection
+```
 
-## 明确不拆分的专属对象
+本任务的交接顺序为：network/input command -> permission query -> override validation -> override commit -> effective rule snapshot -> WorldSession/WorldGen/Calendar consumers。失败时保留旧权威状态；只有 commit port 成功才产生持久化/网络快照。Retry 必须有最大次数、幂等键和诊断结果。
 
-- 单个 CreativePower、UI 排序项、按钮/菜单、单个权限消息、客户端 slider。
+## 8. 持久化、网络和客户端边界
 
-请说明每个对象为什么只是实例、策略、规则、查询、缓存、Adapter 或 Projection，而不是一级子系统。
+Persistence Adapter（status: proposed）只接受已提交 snapshot，保留 Version4 字段顺序、版本分支、坏数据拒绝和失败不覆盖旧状态语义。Replication Projection（status: proposed）只从 committed revision 生成不可变消息；入站先转为权限和版本验证过的 Command，客户端不能直接写权威状态。客户端/平台 Projection（status: proposed）可以落后，但不能成为 Simulation owner。
 
-## 完成条件
+关键缺口：每类 Power 的注册/权限完整清单、客户端回显与服务器事实分离、WorldFile 版本迁移和冲突提交。
 
-完成只读证据审查并生成唯一指定报告后，在最终回复中简要说明报告路径、实际读取的主要证据、本次未运行构建/测试、evidence-gap、blocking-decision 以及未修改生产代码。
+## 9. 当前 NLTX 状态
+
+当前 NLTX 有 WorldSession、WorldGeneration、Player 状态和若干 override/creative 相关命中，但没有本轮验证的统一 RuleOverride owner；判为 partial/version-drift。
+
+当前可作为边界证据的路径：src/WorldSession、src/Player、dome/src/Terraria.Dome.Simulation/WorldGeneration/TileSolidityOverrideQuery.cs 等只能作为局部映射；不得将其合并为一个共享基础组件。
+
+这些路径最多证明局部类型/命令/策略存在，不证明完整 Version4 调用链、主运行时接线或行为等价。不能用目录顺序决定执行顺序。
+
+## 10. focused verifier 计划
+
+下列 verifier 均为 status: proposed，本轮不创建、不运行：
+
+| verifier ID | 目标 | 核心断言 |
+| --- | --- | --- |
+| SIMULATIONRULEOVERRIDES-STATE | 权威状态 | 只有指定 owner 能写；旧值、revision 和重复命令可审计 |
+| SIMULATIONRULEOVERRIDES-ELIGIBILITY | 纯资格 Query | 相同快照相同结果；Query 不写状态 |
+| SIMULATIONRULEOVERRIDES-LIFECYCLE | 生命周期 | 成功、失败、过期、取消、重复请求和恢复状态明确 |
+| SIMULATIONRULEOVERRIDES-COMMIT | 受控提交 | 非法输入整批拒绝，不发生隐式部分成功 |
+| SIMULATIONRULEOVERRIDES-PERSISTENCE | 存档恢复 | 版本、坏数据、回滚和旧状态保留 |
+| SIMULATIONRULEOVERRIDES-REPLICATION | 网络投影 | 只从 committed snapshot 发送；入站无权限不能写 |
+| SIMULATIONRULEOVERRIDES-CROSS | 跨域顺序 | network/input command -> permission query -> override validation -> override commit -> effective rule snapshot -> WorldSession/WorldGen/Calendar consumers 可由 trace recorder 观察 |
+
+未来实施时才允许按 AGENTS.md 通过串行包装器运行受影响 verifier；本轮未运行 dotnet，因此没有 exit code、warning/error count 或 artifact path。
+
+## 11. 不拆分项
+
+- 单个 Power：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个权限 bool：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个世界 override：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个客户端按钮：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个非法网络命令：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+
+## 12. 兼容策略、风险和未决事项
+
+兼容策略：保留 Version4 字段/序列化顺序和调用时点；先建立只读 legacy facade，再迁移单一写集；以 golden bytes、状态机 trace 和错误边界锁定行为；分别建模 EntityId、PersistentEntityId、NetworkId、Player/Npc ID、WorldSectionId 和外部 SessionId。
+
+主要风险：
+
+- RISK-08-SIMULATIONRULEOVERRIDES-DOUBLE-WRITE：旧 writer 与 proposed owner 并存，导致状态漂移。
+- RISK-08-SIMULATIONRULEOVERRIDES-ORDER：系统顺序改变，使下游在不同阶段观察事实。
+- RISK-08-SIMULATIONRULEOVERRIDES-PROJECTION：网络/存档/UI 反向写入权威状态。
+- RISK-08-SIMULATIONRULEOVERRIDES-PARTIAL：只迁移局部模型却宣称完整 Version4 行为。
+
+evidence-gap：每类 Power 的注册/权限完整清单、客户端回显与服务器事实分离、WorldFile 版本迁移和冲突提交。
+
+blocking-decision：
+
+- BD-SRO-01 override state 是玩家级还是世界级；BD-SRO-02 permission owner；BD-SRO-03 effective snapshot 的 revision/传播时点。
+- 这些问题会改变权威 owner、事务边界或必须保持的 System 顺序，本报告不替代最终整合裁决。
+
+## 13. Integration Handoff
+
+```text
+subsystemId: SimulationRuleOverrides
+taskNumber: 08
+reportPath: D:\TRbackup\NLTX\docs\第一轮审查\2026-09-05-version4-simulation-rule-overrides-public-decomposition.md
+
+evidenceStatus: partial
+nltxStatus: partial
+verificationStatus: not-run
+
+confirmedOwners:
+- Version4 中由上述真实成员/调用点直接证明的核心事实和生命周期入口；最终 ECS owner 仅在没有跨域冲突时可候选确认。
+- Terraria.GameContent\Creative\CreativePowerManager.cs:92-110、132-197；Terraria\Main.cs:3159-3175、11364-11374；Terraria\WorldGen.cs:59408-59415；Terraria.IO\WorldFile.cs:3284、3517-3525
+
+proposedTypes:
+- proposed RuleOverrideState, status: proposed
+- proposed OverridePermissionView, status: proposed
+- proposed OverrideCommand, status: proposed
+- proposed RuleSnapshot, status: proposed
+- proposed RuleOverrideSystem, status: proposed
+- proposed PermissionQuery, status: proposed
+- proposed OverridePersistenceAdapter, status: proposed
+- proposed OverrideReplicationProjection, status: proposed
+
+sharedTypesForIntegrationReview:
+- EntityId、PersistentEntityId、NetworkId、WorldSectionId、WorldTickSnapshot、SimulationRuleOverridesResult、SimulationRuleOverridesCommitPort；candidate owner 未裁决。
+
+crossSubsystemReaders:
+- WorldSession、WorldGenerationAndEcology、WorldCalendarAndEventOrchestration、PlayerGameplay、PersistenceAndRecovery、NetworkSession
+
+crossSubsystemWriters:
+- 授权的 server command/CreativePower manager adapter；模拟系统只读 effective snapshot
+
+orderingConstraints:
+- network/input command -> permission query -> override validation -> override commit -> effective rule snapshot -> WorldSession/WorldGen/Calendar consumers
+- commit 成功后才允许 persistence/replication projection。
+
+boundaryChallenges:
+- 从 ContentCatalog/客户端 Creative 元数据中提升
+- 任务包状态与当前局部模型可能存在 version-drift；不能从局部文件推断完整迁移。
+
+evidenceGaps:
+- 每类 Power 的注册/权限完整清单、客户端回显与服务器事实分离、WorldFile 版本迁移和冲突提交
+
+blockingDecisions:
+- BD-SRO-01 override state 是玩家级还是世界级；BD-SRO-02 permission owner；BD-SRO-03 effective snapshot 的 revision/传播时点
+
+notImplemented:
+- 本报告未创建或修改 Component、System、Query、Command、Adapter、Projection、测试或项目文件。
+- 本报告不声明当前 NLTX 行为等价或 API 兼容。
+
+verifierPlan:
+- SIMULATIONRULEOVERRIDES-STATE、ELIGIBILITY、LIFECYCLE、COMMIT、PERSISTENCE、REPLICATION、CROSS，全部 status: proposed；本轮 verificationStatus: not-run。
+```
+
+## 14. 最终声明
+
+本报告是基于 Version4、完整参考源码、tModLoader 公开文档和有限 ECS 结构参考形成的子系统边界与 ECS 拆分设计。它不是迁移完成报告，不是行为等价证明，不是 API 兼容证明，也不是当前 NLTX 已实现能力的声明。
+
+本报告只写入任务指定的唯一报告文件，未修改生产代码、测试代码、dome/src、Version4、完整参考源码、tModLoader 文档或其他共享审查材料。本轮未运行构建或测试，验证状态为 not-run。

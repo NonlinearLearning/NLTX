@@ -34,9 +34,9 @@
 1. `progress.md`：确认当前没有活动迁移批次或续接计划。
 2. `AGENTS.md`：尤其是 .NET 串行构建契约、文档/输出限制和保留用户未提交改动的要求。
 3. `docs/Version4权威游戏模拟子系统审查报告.md`：已有 20 个初始责任面的总表与历史边界。
-4. `docs/research/2026-09-05-version4-authoritative-simulation-subsystem-findings.md`：权威模拟主干和外部边界证据。
-5. `docs/research/2026-09-05-version4-tmodloader-additional-authoritative-subsystems.md`：传送、钓鱼、世界过渡、日历事件、规则覆写、解锁进度六项补充候选。
-6. `docs/research/2026-09-05-tmodloader-travel-and-subsystem-boundaries.md`：旅行/传送的独立边界、排除项与 NLTX 映射。
+4. `docs/第一轮审查/报告/2026-09-05-version4-authoritative-simulation-subsystem-findings.md`：权威模拟主干和外部边界证据。
+5. `docs/第一轮审查/报告/2026-09-05-version4-tmodloader-additional-authoritative-subsystems.md`：传送、钓鱼、世界过渡、日历事件、规则覆写、解锁进度六项补充候选。
+6. `docs/第一轮审查/报告/2026-09-05-tmodloader-travel-and-subsystem-boundaries.md`：旅行/传送的独立边界、排除项与 NLTX 映射。
 7. `D:\TRbackup\Version4`：覆盖基线和与旧报告对应的删减参考。
 8. `D:\TRbackup\无任何删减通过编译`：完整行为补证。
 9. `D:\TRbackup\tmodloader-api-docs-stable`：公开 Hook、存档、复制、服务器/客户端职责的交叉验证资料。
@@ -58,8 +58,8 @@
 | 文件 | 用途 |
 | --- | --- |
 | `docs/Version4权威游戏模拟子系统全量审查报告-2026-09-05.md` | 新的主审查报告；解释范围、方法、分层系统、关键证据、NLTX 映射、旧结论修订、风险与未闭合点。 |
-| `docs/Version4子系统索引.json` | 机器可读的一级子系统索引；适合表达数组、证据链和跨域关系。 |
-| `docs/Version4源码覆盖.tsv` | 每个 Version4 基线 `.cs` 文件一行；用于核验唯一主归属和覆盖率。 |
+| `docs/迁移参考表/Version4子系统索引.json` | 机器可读的一级子系统索引；适合表达数组、证据链和跨域关系。 |
+| `docs/迁移参考表/Version4源码覆盖.tsv` | 每个 Version4 基线 `.cs` 文件一行；用于核验唯一主归属和覆盖率。 |
 | `docs/Version4与完整源码差异附录-2026-09-05.md` | Version4 删减点的补证，以及完整源码独有文件的 `outside-Version4-baseline` 记录。 |
 | `Build/Tools/Test-Version4SubsystemCoverage.ps1` | 只读校验脚本；验证 JSON/TSV 与 Version4 文件基线的一致性。 |
 

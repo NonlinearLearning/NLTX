@@ -1,85 +1,223 @@
-# 15 — FishingAndCatchSimulation 独立只读审查与 ECS 设计提示词
+# 15 — FishingAndCatchSimulation 子系统审查与 ECS 拆分设计
 
-本文件必须与以下公共协议共同使用，开始任务前先完整读取该文件：
-D:\TRbackup\NLTX\docs\第一轮审查\2026-09-05-version4-public-decomposition-common-protocol.md
+> subsystemId: FishingAndCatchSimulation  
+> taskNumber: 15  
+> evidenceStatus: partial  
+> nltxStatus: partial  
+> verificationStatus: not-run
 
-公共协议中的只读、并行、证据优先级、行号复核、状态枚举、事实/设计隔离、ECS 文件组织、副作用隔离、报告结构和 Integration Handoff 规则全部适用于本任务。若本任务包与公共协议冲突，以公共协议为准。
+## 1. 执行摘要
 
-本任务属于已经固定的 19 个游戏模拟子系统。不得改名、合并、拆分或扩展固定清单；如果当前全量索引出现额外候选，只能记录为 boundary-challenge，交由最终整合会话处理。
+本报告只审查固定任务 FishingAndCatchSimulation，不扩展 19 个子系统清单。Version4 证据显示该责任面具有自己的状态写集、生命周期或跨域提交边界；但它不能因此被解释为已经迁移到 NLTX。报告中的 ECS 名称、路径和接口均为 proposed design。
 
-## 任务元数据
+当前边界：从 ProjectileSimulation 与 ItemContainerAndEconomy 交界提升。本轮没有运行构建、测试或任何 compile-capable 命令，不能声称行为等价、迁移完成或 API 兼容。
 
-- taskNumber: 15
-- subsystemId: FishingAndCatchSimulation
-- layer: authoritative-simulation
-- currentNltxStatus: partial
-- originalBoundary: 从 ProjectileSimulation 与 ItemContainerAndEconomy 交界提升
-- relatedSubsystems: ProjectileSimulation, ItemContainerAndEconomy, PlayerGameplay, WorldSession, WorldGenerationAndEcology, LiquidSimulation, SpawnLifecycleAndLoot
-- reportPath: D:\TRbackup\NLTX\docs\research\2026-09-05-version4-fishing-and-catch-simulation-public-decomposition.md
+## 2. 范围和不负责内容
 
-## 专属目标
+负责本任务所列的权威事实、独立生命周期、资格/规则计算、显式 Command、受控提交、持久化和网络投影边界。不负责相邻子系统的最终 owner、共享基础类型、客户端 UI 事实、平台接口和未被 Version4 当前文件直接证明的完整实现。相邻系统只能通过只读 view、Query、Command 或 Adapter 交接；共享 ID、快照和 commit port 标记 crossSubsystemOwner: integration-review。
 
-围绕 FishingAndCatchSimulation，基于真实 Version4 代码确定权威状态、写入根、生命周期、调用方向和跨域提交边界，并提出可实现但不落地的 ECS 拆分设计。该子系统的责任是：钓鱼资格、浮标时序、钓获判定以及 Item/NPC 结果请求。
+## 3. 证据来源和角色
 
-“拆分为组件”只表示 proposed design。不得创建实际组件、System、Query、Command、Adapter、Projection、测试或项目文件。
+| 来源 | 证据 | 角色 | 状态 |
+| --- | --- | --- | --- |
+| Version4 | Terraria\Projectile.cs:25365、34073-34074、47784；完整参考 Projectile.cs:51236、51496；Main.cs:1612-1674、3359-3364；Player.cs、Liquid.cs、World/biome queries | 真实字段、方法、调用链和副作用 | confirmed / partial |
+| 完整可编译参考 | 仅在同路径、同签名的删减处补证；不替代 Version4 | 补证，不扩展基线 | partial |
+| tModLoader | D:\TRbackup\tmodloader-api-docs-stable，v2026.07；任务包指定公开 API 页面 | 公开生命周期/网络/扩展边界 | partial |
+| Space Station 14 | 没有找到与 Terraria 私有责任面直接对应的行为证据 | 仅 ECS 粒度参考 | missing |
 
-## Version4 必须深读和重新定位的专属证据
+tModLoader 不能证明 Version4 私有算法；Space Station 14 无直接对应证据，以下边界仅由 Version4 真实代码和 NLTX 项目约束决定。
 
-- D:\TRbackup\Version4\Terraria\Projectile.cs:25365：进入 AI_061_FishingBobber；:34073-34074：AI_061_FishingBobber 和交付方法空体；:47784：交付调用点。
-- D:\TRbackup\无任何删减通过编译\Terraria\Projectile.cs:51236、:51496：只有路径、类型、签名和调用邻域匹配时才补证，不能扩大 Version4 基线。
-- D:\TRbackup\Version4\Terraria\Main.cs:1612-1674、:3359-3364：FishDropsDB 初始化和任务鱼轮换。
-- Player.cs、Liquid.cs、WorldSession、Biome/Scene 查询和 Item/NPC 生成路径：资格和结果跨域证据。
+## 4. Version4 真实代码事实
 
-任务包中的路径和行号只是检索线索。必须重新读取文件、定位实际符号和调用上下文；报告使用实际行号，并标记 confirmed、partial、missing、unresolved、evidence-mismatch 或 version-drift。
+1. Version4 Projectile.cs:25365 进入 AI_061_FishingBobber；:34073-34074 的 bobber/交付方法为空体，:47784 仍有交付调用点。
+2. 完整参考同路径 Projectile.cs:51236、51496 有同类型、成员签名和周边调用链的实现，只能标 full-reference-supplemented，不能写成 Version4 自身事实。
+3. Main.cs:1612-1674、3359-3364 初始化 FishDropsDB/任务鱼轮换；资格还需要 Player、Liquid、Biome/Scene 和时间事实。
+4. catch result 必须与饵料消耗、Item/NPC outcome、网络和失败重试分开；bobber 是时间载体，不是交易边界。
 
-## tModLoader 公开 API 交叉验证
+### 4.1 事实调用方向
 
-- D:\TRbackup\tmodloader-api-docs-stable\class_mod_player.html:2604-2632：ModifyFishingAttempt 资格阶段；:1636-1692：CatchFish/结果阶段，必须实际复核锚点。
-- 按索引检索鱼饵、掉落、NPC/Item 生成和网络页面；公开 API 不替代 Version4 空实现补证。
+```text
+upstream input/fact
+  -> owner state / eligibility calculation
+  -> lifecycle or domain commit
+  -> downstream entity/world mutation
+  -> persistence/network/client projection
+```
 
-不得用 tModLoader 文档替代 Version4 私有行为；必须记录实际 HTML 文件、页面标题、文档版本、成员锚点和仅用于何种边界交叉验证。
+主要读者：ProjectileSimulation、PlayerGameplay、WorldSession、WorldGenerationAndEcology、LiquidSimulation、ItemContainerAndEconomy、SpawnLifecycleAndLoot。主要写者候选：Fishing transaction coordinator；Projectile only publishes bobber event；Item/Spawn commit outcomes。confirmed 只证明当前成员和调用点，不证明理想化的单写者架构。
 
-## Space Station 14 最小相关 ECS 参考
+## 5. 成员、读者、写者和生命周期
 
-只读检索下列最小相关关键词和目录：
-- fishing、catch、interaction、random outcome、reagent/fluid contact
-- component state machine、eligibility query、event/command、loot result、inventory transaction
+| 状态/行为组 | 归类 | 读者 | 写者 | 生命周期 | 副作用 | 状态 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 核心事实/实例状态 | 权威状态候选 | 本责任面和下游只读系统 | Version4 owner 与跨域调用者 | 初始化、Tick、恢复、卸载 | 世界/实体状态 | partial |
+| 资格/规则计算 | Query/策略 | owner system、下游 | 无权威写入 | 请求/边界 | 应保持纯、确定 | partial |
+| 生命周期/事务状态 | 行为状态 | coordinator、commit system | 单一协调器候选 | 请求到完成/失败/重试 | 实体/世界/网络 | partial |
+| 网络/存档值 | Adapter 输入/Projection | 外部边界 | Adapter | 加载、保存、同步 | I/O、wire bytes | partial |
+| UI/平台结果 | Projection | 客户端/平台 | 外部投影 | 事件或帧 | UI/平台副作用 | excluded |
 
-只记录实际读取的 Space Station 14 文件、类型/方法和参考用途（Component 粒度、System/Query 边界、Event/Command、关系、网络或持久化）。禁止复制代码、命名、目录结构和领域语义；若无直接对应证据，明确写无直接对应证据。
+失败、重复请求、幂等和部分提交不能隐藏在 Query 中，必须由 System/Command/Adapter 返回可观察结果。
 
-## 当前 NLTX 必须浅读核对
+## 6. proposed ECS 边界
 
-- 当前 NLTX 有 src/Player/PlayerFishingCapabilityState.cs 和 src/Content/FishingDropRuleCatalog.cs，但无 bobber 状态机、环境资格、鱼饵事务和结果提交。
-- 状态/规则元数据不能替代 Fishing System；必须核对 dome/src/Fishing（如存在）只能作为现状证据。
+以下均为 status: proposed，不是当前已存在实现：
 
-只能读取当前 src、Test、dome/src 和既有验证材料，不得修改；本轮并行审查不运行编译/测试命令，验证状态写为 not-run，历史真实输出只能写 existing-evidence。
+- proposed FishingAttemptState，status: proposed；目标路径仅为设计提示
+- proposed BobberTimingComponent，status: proposed；目标路径仅为设计提示
+- proposed FishingEligibilityQuery，status: proposed；目标路径仅为设计提示
+- proposed CatchDecision，status: proposed；目标路径仅为设计提示
+- proposed CatchResultCommand，status: proposed；目标路径仅为设计提示
+- proposed BaitReservation，status: proposed；目标路径仅为设计提示
+- proposed FishingOutcomeAdapter，status: proposed；目标路径仅为设计提示
+- proposed FishingReplicationProjection，status: proposed；目标路径仅为设计提示
 
-## public-decomposition 专属问题
+契约要求：
 
-- 浮标是 Projectile 载体还是钓获事务的实体；资格、时序、结果和提交如何分 System。
-- 液体、天气、时间、Biome、任务、玩家能力和内容掉落规则的只读输入。
-- Item 结果和 NPC 结果分别由 ItemContainerAndEconomy、Spawn/Loot 提交，本子系统只发结果 Command。
-- 空实现与完整参考的证据状态、source-gap、version-drift 和行为风险。
-- 鱼饵消耗、失败、重复钓获、网络请求和客户端提示如何保持幂等。
+- Component 只保存一个内聚概念的权威数据，不放网络 DTO、日志、时钟或 UI。
+- Query 只读快照并返回资格/规则结果，不修改状态。
+- System 读取输入并产出状态转换或 Command；失败原因、重试次数和幂等键可观察。
+- Commit port 是唯一候选写入口，最终共享 owner 交由 integration-review。
+- Adapter 负责 Version4 binary/network/外部类型转换；Projection 只输出不可变视图。
 
-必须完成成员/字段/方法盘点、读者/写者/生命周期/副作用表、权威状态所有权表、访问模式分组、Component/System/Query/Command/Adapter/Projection 接口契约、System 顺序、跨域依赖、ECS ID/关系建模、不拆分项和行为保持风险。所有新类型、路径和签名均标记 status: proposed；跨子系统类型标记 crossSubsystemOwner: integration-review。
+| 边界 | Interface | Implementation | Seam | Depth / Leverage / Locality |
+| --- | --- | --- | --- | --- |
+| 资格 | proposed IFishingAndCatchSimulationEligibilityQuery | 纯字段/快照计算 | fake read view | medium / high / domain |
+| 生命周期 | proposed IFishingAndCatchSimulationLifecycleSystem | 显式状态机 | command recorder | deep / high / domain |
+| 提交 | proposed IFishingAndCatchSimulationCommitPort | owner adapter | atomic result | deep / very high / cross-domain |
+| 网络/存档 | proposed FishingAndCatchSimulationReplicationAdapter / PersistenceAdapter | 不可变快照编解码 | in-memory stream/golden bytes | medium / high / adapter |
+| 客户端 | proposed FishingAndCatchSimulationProjection | 只读视图 | fake snapshot | shallow / medium / client |
 
-## 专属交付重点
+## 7. 调用方向和 System 顺序
 
-- 提出 FishingAttemptState、BobberTiming、FishingEligibilityQuery、CatchDecision、CatchResultCommand、Item/NPC outcome Adapter/Projection 的 proposed 设计。
-- 报告必须覆盖有鱼/无鱼、资格拒绝、鱼饵消耗、Item/NPC 结果、网络和 focused verifier 场景。
+建议顺序（均为 proposed，不是 Version4 已实现顺序）：
 
-报告必须写入：
-D:\TRbackup\NLTX\docs\research\2026-09-05-version4-fishing-and-catch-simulation-public-decomposition.md
+```text
+input/load/world/entity boundary
+  -> validation and eligibility Query
+  -> state/lifecycle System
+  -> Command construction
+  -> FishingAndCatchSimulationCommitSystem
+  -> downstream result
+  -> persistence/replication Projection
+```
 
-报告必须包含 Version4 事实、完整参考补证、tModLoader 交叉验证、Space Station 14 参考、当前 NLTX 状态、proposed 设计、not-run 验证、证据缺口、blocking-decision 和 Integration Handoff。报告只能使用中文说明与英文稳定 ID，不能宣称迁移完成、行为等价或 API 兼容。
+本任务的交接顺序为：bobber state -> timing/eligibility -> bait reservation -> catch decision -> item/NPC result command -> inventory/spawn commit -> replication。失败时保留旧权威状态；只有 commit port 成功才产生持久化/网络快照。Retry 必须有最大次数、幂等键和诊断结果。
 
-## 明确不拆分的专属对象
+## 8. 持久化、网络和客户端边界
 
-- 浮标 Projectile 实例、单个鱼种、单个掉落规则、单个鱼饵字段、单个 UI bobber、单个 API Hook。
+Persistence Adapter（status: proposed）只接受已提交 snapshot，保留 Version4 字段顺序、版本分支、坏数据拒绝和失败不覆盖旧状态语义。Replication Projection（status: proposed）只从 committed revision 生成不可变消息；入站先转为权限和版本验证过的 Command，客户端不能直接写权威状态。客户端 Projection（status: proposed）可以落后，但不能成为 Simulation owner。
 
-请说明每个对象为什么只是实例、策略、规则、查询、缓存、Adapter 或 Projection，而不是一级子系统。
+关键缺口：Version4 空体补证范围、完整资格公式、饵料消费/回滚、FishDropsDB 的持久化、NPC catch、网络结果。
 
-## 完成条件
+## 9. 当前 NLTX 状态
 
-完成只读证据审查并生成唯一指定报告后，在最终回复中简要说明报告路径、实际读取的主要证据、本次未运行构建/测试、evidence-gap、blocking-decision 以及未修改生产代码。
+当前 Dome 有 FishingBobberPhase、FishingBobberStateComponent、PlayerFishingUseSystem/Policy 等局部模型，判为 partial；没有本轮独立运行 verifier。
+
+当前可作为边界证据的路径：dome/src/Terraria.Dome.Simulation/Fishing/；src/Player/PlayerFishingCapabilityState.cs；Projectile bobber components。
+
+这些路径最多证明局部类型/命令/策略存在，不证明完整 Version4 调用链、主运行时接线或行为等价。不能用目录顺序决定执行顺序。
+
+## 10. focused verifier 计划
+
+下列 verifier 均为 status: proposed，本轮不创建、不运行：
+
+| verifier ID | 目标 | 核心断言 |
+| --- | --- | --- |
+| FISHINGANDCATCHSIMULATION-STATE | 权威状态 | 只有指定 owner 能写；旧值、revision 和重复命令可审计 |
+| FISHINGANDCATCHSIMULATION-ELIGIBILITY | 纯资格 Query | 相同快照相同结果；Query 不写状态 |
+| FISHINGANDCATCHSIMULATION-LIFECYCLE | 生命周期 | 成功、失败、过期、取消、重复请求和恢复状态明确 |
+| FISHINGANDCATCHSIMULATION-COMMIT | 受控提交 | 非法输入整批拒绝，不发生隐式部分成功 |
+| FISHINGANDCATCHSIMULATION-PERSISTENCE | 存档恢复 | 版本、坏数据、回滚和旧状态保留 |
+| FISHINGANDCATCHSIMULATION-REPLICATION | 网络投影 | 只从 committed snapshot 发送；入站无权限不能写 |
+| FISHINGANDCATCHSIMULATION-CROSS | 跨域顺序 | bobber state -> timing/eligibility -> bait reservation -> catch decision -> item/NPC result command -> inventory/spawn commit -> replication 可由 trace recorder 观察 |
+
+未来实施时才允许按 AGENTS.md 通过串行包装器运行受影响 verifier；本轮未运行 dotnet，因此没有 exit code、warning/error count 或 artifact path。
+
+## 11. 不拆分项
+
+- 单个 bobber projectile：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 fish drop：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 bait item：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 fishing biome query：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 catch animation：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+- 单个 packet：只是实例、规则条目、Hook、缓存、Adapter 或 Projection，不拥有完整状态、生命周期和跨域提交边界。
+
+## 12. 兼容策略、风险和未决事项
+
+兼容策略：保留 Version4 字段/序列化顺序和调用时点；先建立只读 legacy facade，再迁移单一写集；以 golden bytes、状态机 trace 和错误边界锁定行为；分别建模 EntityId、PersistentEntityId、NetworkId、Player/Npc ID、WorldSectionId 和外部 SessionId。
+
+主要风险：
+
+- RISK-15-FISHINGANDCATCHSIMULATION-DOUBLE-WRITE：旧 writer 与 proposed owner 并存，导致状态漂移。
+- RISK-15-FISHINGANDCATCHSIMULATION-ORDER：系统顺序改变，使下游在不同阶段观察事实。
+- RISK-15-FISHINGANDCATCHSIMULATION-PROJECTION：网络/存档/UI 反向写入权威状态。
+- RISK-15-FISHINGANDCATCHSIMULATION-PARTIAL：只迁移局部模型却宣称完整 Version4 行为。
+
+evidence-gap：Version4 空体补证范围、完整资格公式、饵料消费/回滚、FishDropsDB 的持久化、NPC catch、网络结果。
+
+blocking-decision：
+
+- BD-FC-01 full-reference implementation adoption；BD-FC-02 bait reservation owner；BD-FC-03 Item/NPC outcome atomicity。
+- 这些问题会改变权威 owner、事务边界或必须保持的 System 顺序，本报告不替代最终整合裁决。
+
+## 13. Integration Handoff
+
+```text
+subsystemId: FishingAndCatchSimulation
+taskNumber: 15
+reportPath: D:\TRbackup\NLTX\docs\第一轮审查\2026-09-05-version4-fishing-and-catch-simulation-public-decomposition.md
+
+evidenceStatus: partial
+nltxStatus: partial
+verificationStatus: not-run
+
+confirmedOwners:
+- Version4 中由上述真实成员/调用点直接证明的核心事实和生命周期入口；最终 ECS owner 仅在没有跨域冲突时可候选确认。
+- Terraria\Projectile.cs:25365、34073-34074、47784；完整参考 Projectile.cs:51236、51496；Main.cs:1612-1674、3359-3364；Player.cs、Liquid.cs、World/biome queries
+
+proposedTypes:
+- proposed FishingAttemptState, status: proposed
+- proposed BobberTimingComponent, status: proposed
+- proposed FishingEligibilityQuery, status: proposed
+- proposed CatchDecision, status: proposed
+- proposed CatchResultCommand, status: proposed
+- proposed BaitReservation, status: proposed
+- proposed FishingOutcomeAdapter, status: proposed
+- proposed FishingReplicationProjection, status: proposed
+
+sharedTypesForIntegrationReview:
+- EntityId、PersistentEntityId、NetworkId、WorldSectionId、WorldTickSnapshot、FishingAndCatchSimulationResult、FishingAndCatchSimulationCommitPort；candidate owner 未裁决。
+
+crossSubsystemReaders:
+- ProjectileSimulation、PlayerGameplay、WorldSession、WorldGenerationAndEcology、LiquidSimulation、ItemContainerAndEconomy、SpawnLifecycleAndLoot
+
+crossSubsystemWriters:
+- Fishing transaction coordinator；Projectile only publishes bobber event；Item/Spawn commit outcomes
+
+orderingConstraints:
+- bobber state -> timing/eligibility -> bait reservation -> catch decision -> item/NPC result command -> inventory/spawn commit -> replication
+- commit 成功后才允许 persistence/replication projection。
+
+boundaryChallenges:
+- 从 ProjectileSimulation 与 ItemContainerAndEconomy 交界提升
+- 任务包状态与当前局部模型可能存在 version-drift；不能从局部文件推断完整迁移。
+
+evidenceGaps:
+- Version4 空体补证范围、完整资格公式、饵料消费/回滚、FishDropsDB 的持久化、NPC catch、网络结果
+
+blockingDecisions:
+- BD-FC-01 full-reference implementation adoption；BD-FC-02 bait reservation owner；BD-FC-03 Item/NPC outcome atomicity
+
+notImplemented:
+- 本报告未创建或修改 Component、System、Query、Command、Adapter、Projection、测试或项目文件。
+- 本报告不声明当前 NLTX 行为等价或 API 兼容。
+
+verifierPlan:
+- FISHINGANDCATCHSIMULATION-STATE、ELIGIBILITY、LIFECYCLE、COMMIT、PERSISTENCE、REPLICATION、CROSS，全部 status: proposed；本轮 verificationStatus: not-run。
+```
+
+## 14. 最终声明
+
+本报告是基于 Version4、完整参考源码、tModLoader 公开文档和有限 ECS 结构参考形成的子系统边界与 ECS 拆分设计。它不是迁移完成报告，不是行为等价证明，不是 API 兼容证明，也不是当前 NLTX 已实现能力的声明。
+
+本报告只写入任务指定的唯一报告文件，未修改生产代码、测试代码、dome/src、Version4、完整参考源码、tModLoader 文档或其他共享审查材料。本轮未运行构建或测试，验证状态为 not-run。

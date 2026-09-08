@@ -22,3 +22,8 @@
 **/Build/*
 !Build/Tools/
 !Build/Tools/**
+
+
+.agents
+.learnings
+一些问题.md

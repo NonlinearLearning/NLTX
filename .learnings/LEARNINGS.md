@@ -27,6 +27,52 @@ deliverable.
 
 ---
 
+## [LRN-20260906-003] knowledge_gap
+
+**Logged**: 2026-09-06T12:05:00+08:00
+**Priority**: low
+**Status**: pending
+**Area**: docs
+
+### Summary
+用户显式提供的外部技能路径需要先做实际存在性核验，不能仅依据当前会话列出的可用技能目录判定缺失。
+
+### Details
+本次先依据可用技能清单把 `C:\Users\shan\.agents\skills\grill-me\SKILL.md` 判断为不可用，随后只读 `Test-Path` 证实该文件存在。正确做法是：用户指定了技能路径时，优先按该路径读取；只有路径确实不可读时才使用等价技能或说明降级。
+
+### Suggested Action
+在技能触发路由中保留用户显式路径优先级，并将目录清单视为发现辅助而非存在性证明。
+
+### Metadata
+- Source: knowledge_gap
+- Related Files: C:\Users\shan\.agents\skills\grill-me\SKILL.md
+- Tags: skill-routing, path-verification, user-explicit-skill
+
+---
+
+## [LRN-20260906-001] correction
+
+**Logged**: 2026-09-06T00:00:00+08:00
+**Priority**: high
+**Status**: pending
+**Area**: docs
+
+### Summary
+The migration ledger must not introduce physical deletion as a migration requirement.
+
+### Details
+The user clarified that the JSON ledger is for mapping, authority cutover, legacy usage, evidence, and continued AI migration. It must not add physical deletion states, deletion gates, or deletion work items. Legacy source members may remain permanently represented in the ledger.
+
+### Suggested Action
+Keep physical deletion outside the ledger design. Define completion through mapping and authority/read-write closure only, while retaining explicit compatibility or legacy-use status where needed.
+
+### Metadata
+- Source: user_feedback
+- Related Files: docs/plans/2026-09-06-version4-member-migration-ledger-design.md; docs/plans/2026-09-06-version4-member-migration-ledger-implementation.md
+- Tags: scope-control, migration-ledger, no-deletion
+
+---
+
 ## [LRN-20260906-001] correction
 
 **Logged**: 2026-09-06T10:02:00+08:00
@@ -284,5 +330,32 @@ Classify every rule by whether it constrains code behavior or prescribes a concr
 ### Resolution
 - **Resolved**: 2026-09-03T00:00:00+08:00
 - **Notes**: Restored side-effect coding constraints in architecture-neutral documents and repaired the entry-point link.
+
+---
+
+## [LRN-20260907-002] correction
+
+**Logged**: 2026-09-07T21:20:00+08:00
+**Priority**: medium
+**Status**: resolved
+**Area**: tooling
+
+### Summary
+字段/属性数量必须按语法成员声明统计，不能用最后一个成员的源码行号除以平均行距估算。
+
+### Details
+核对 `Version4/Terraria/Main.cs` 时，行号约 1480 的 `OnTickForInternalCodeOnly` 是事件，不是字段或属性；该文件的字段在 1296 行结束，属性在 1472 行结束，1474-1480 行还有 4 个事件，1481 行开始进入方法。Roslyn 快照的 542 是 504 个 `Terraria.Main` 直接字段、32 个直接属性和 6 个嵌套类型字段的文件内合计；若把事件也纳入，文件内源成员为 546。
+
+### Suggested Action
+报告必须先冻结成员口径（field/property/event、是否包含嵌套类型），再按语法树声明计数；使用源码行号只能定位边界，不能推导成员数量。
+
+### Metadata
+- Source: user_feedback
+- Related Files: D:\\TRbackup\\Version4\\Terraria\\Main.cs; Build/Tools/Version4MemberMigrationScanner/Program.cs; Build/generated/version4-source-full-coverage-2026-09-07.json
+- Tags: correction, member-count, roslyn, scope-control
+
+### Resolution
+- **Resolved**: 2026-09-07T21:20:00+08:00
+- **Notes**: 已按 `field`、`property`、`event` 分离核对，并确认当前 542 的组成与源码行区间。
 
 ---

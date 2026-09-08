@@ -129,12 +129,13 @@ $baseline = Get-ChildItem -LiteralPath $Version4Root -Recurse -File -Filter '*.c
   } | Sort-Object relative_path
 
 $docs = Join-Path $RepositoryRoot 'docs'
-$tsvPath = Join-Path $docs 'Version4源码覆盖.tsv'
+$referenceDocs = Join-Path $docs '迁移参考表'
+$tsvPath = Join-Path $referenceDocs 'Version4源码覆盖.tsv'
 $header = 'relative_path','classification','primary_owner','reference_status','full_reference_path','related_subsystems','evidence_location','report_reference','note' -join "`t"
 $rows = $baseline | ForEach-Object { @($_.relative_path,$_.classification,$_.primary_owner,$_.reference_status,$_.full_reference_path,$_.related_subsystems,$_.evidence_location,$_.report_reference,$_.note) -join "`t" }
 [IO.File]::WriteAllLines($tsvPath, @($header) + @($rows), [Text.UTF8Encoding]::new($false))
 
-$indexPath = Join-Path $docs 'Version4子系统索引.json'
+$indexPath = Join-Path $referenceDocs 'Version4子系统索引.json'
 [IO.File]::WriteAllText($indexPath, (@{ schemaVersion = 1; coverageBaseline = 'D:/TRbackup/Version4 excluding bin/obj'; apiEvidence = @{ source = 'D:/TRbackup/tmodloader-api-docs-stable'; version = 'tModLoader v2026.07'; role = 'public-boundary-cross-check only' }; subsystems = $systems } | ConvertTo-Json -Depth 12), [Text.UTF8Encoding]::new($false))
 
 $byClass = $baseline | Group-Object classification | Sort-Object Name

@@ -7,8 +7,9 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $docs = Join-Path $RepositoryRoot 'docs'
-$tsvPath = Join-Path $docs 'Version4源码覆盖.tsv'
-$jsonPath = Join-Path $docs 'Version4子系统索引.json'
+$referenceDocs = Join-Path $docs '迁移参考表'
+$tsvPath = Join-Path $referenceDocs 'Version4源码覆盖.tsv'
+$jsonPath = Join-Path $referenceDocs 'Version4子系统索引.json'
 $allowedClassifications = @('subsystem-evidence','shared-runtime-mechanism','external-dependency-or-generated','excluded')
 $allowedReferenceStatuses = @('version4-confirmed','full-reference-supplemented','source-gap')
 $allowedNltxStatuses = @('confirmed','partial','missing','excluded')

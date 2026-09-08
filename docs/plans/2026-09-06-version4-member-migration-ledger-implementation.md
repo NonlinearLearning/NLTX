@@ -1,19 +1,25 @@
 # Version4 Member Migration Ledger Implementation Plan
 
+> **状态：已被当前设计和工具实现取代。** 本文保留原实施推演作为历史记录；当前执行入口是
+> `docs/plans/2026-09-06-version4-member-migration-ledger-design.md`、
+> `.agents/skills/version4-member-migration-ledger/SKILL.md` 和
+> `Build/Tools/Version4MemberMigrationScanner`。本文下方早期命令和错误码示例不得作为当前
+> contract；当前账本仍必须经过显式 memberScope、target manifest 和 fail-closed audit。
+
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
 **Goal:** 建立一份以 Version4 字段/属性为覆盖分母、供 AI 持续恢复迁移工作的成员级账本，并用 PowerShell 审计阻断漏拆、重复归属、非法目标和过期证据。
 
-**Architecture:** `docs/migrations/Version4-member-migration-map.json` 是唯一人工维护的事实源；生成器从 Version4 和 NLTX 目标组件提取候选成员，保留已有迁移决策，并生成目标反向索引与 AI 速查表。审计器只读验证三张产物和当前源码，所有不确定关系都要求显式 `disposition`、理由、证据和 `nextAction`，不修改运行时代码。
+**Architecture:** `docs/migrations/Version4-member-migration-map.json` 是唯一人工维护的事实源；Roslyn scanner 从 Version4 和显式 target manifest 提取 source/target snapshot，审计器只读验证覆盖、映射、反向目标、fingerprint 和证据，生成器输出 AI 速查表和 context packet，不修改运行时代码。
 
-**Tech Stack:** PowerShell 7、JSON、Markdown、ripgrep；不需要 dotnet restore/build/test，不新增运行时依赖。
+**Tech Stack:** .NET 10、Roslyn `Microsoft.CodeAnalysis.CSharp 4.14.0`、PowerShell 7、Python、JSON、Markdown、ripgrep；scanner 的文件读取使用有界 `Parallel.ForEachAsync`，编译使用 `WithConcurrentBuild(true)`。
 
 ---
 
 ## 执行边界
 
 - 当前根项目的 Version4 覆盖根是 `D:\TRbackup\Version4`。
-- 文件级分类继续读取 `docs/Version4源码覆盖.tsv`，不另造 967 文件分母。
+- 文件级分类继续读取 `docs/迁移参考表/Version4源码覆盖.tsv`，不另造 967 文件分母。
 - 目标组件扫描根为 `src/` 和 `dome/src/`，由目标索引配置明确限定；不扫描测试和 `Build/` 生成物。
 - `dome/docs/migrations/` 只作为历史迁移证据读取，不覆盖、不改写，也不自动当作当前账本。
 - 不修改 `src/`、`dome/src/`、测试项目或现有未提交文件；新增测试仅覆盖映射工具。
@@ -43,7 +49,7 @@ merge without mergeGroupId→ 失败
 missing target declaration → 失败
 orphan authoritative field → 失败
 fingerprint drift          → 失败并报告 needs-review
-blocked without nextAction → 失败
+blocked without nextWorkItemRef → 失败
 deferred without evidence  → 失败
 ```
 
@@ -103,7 +109,7 @@ ConvertTo-StableJson
 `New-SourceMemberId` 的格式固定为：
 
 ```text
-Version4::<relative-path>::<fully-qualified-declaring-type>::<member-signature>
+Version4::<fully-qualified-declaring-type>::<canonical-member-signature>
 ```
 
 路径统一为 `/`；索引器、显式接口属性、嵌套类型和同名声明必须在 signature 中保留足够信息，
@@ -144,15 +150,16 @@ git commit -m "feat: add stable CSharp member identity extraction"
 
 **Files:**
 
-- Create: `Build/Tools/New-Version4MemberMigrationMap.ps1`
-- Test: `Build/Tools/Tests/Test-Version4MemberMigrationMap.ps1`
+- Modify: `Build/Tools/New-Version4MemberMigrationMap.ps1`
+- Create: `Build/Tools/Version4MemberMigrationScanner/Program.cs`
+- Test: `.agents/skills/version4-member-migration-ledger/tests/test_scanner_concurrency.py`
 
 **Step 1: 写生成器输入和保留行为测试**
 
 测试生成器处理一个最小 Version4Root 和一个已有 map，断言：
 
 - 新源成员生成一条 `todo` 记录；
-- 已有 `migration` 决策按 `sourceMemberId` 保留；
+- 已有扁平 decision 按 `sourceMemberId` 保留；
 - 源声明 fingerprint 改变时不覆盖目标决策，而是标记 `needs-review`；
 - 源文件删除或重命名时报告 drift，不自动删除账本记录；
 - 同一成员不因行号变化生成第二条记录。
@@ -165,21 +172,23 @@ git commit -m "feat: add stable CSharp member identity extraction"
 .\Build\Tools\New-Version4MemberMigrationMap.ps1 `
   -Version4Root D:\TRbackup\Version4 `
   -RepositoryRoot D:\TRbackup\NLTX `
-  -MapPath .\docs\migrations\Version4-member-migration-map.json `
-  -TargetIndexPath .\docs\migrations\Version4-component-target-index.json `
-  -QuickReferencePath .\docs\migrations\Version4-member-migration-quick-reference.md
+  -TargetManifest .\docs\migrations\Version4-target-manifest.json `
+  -SourceOutput .\Build\generated\version4-source.json `
+  -TargetOutput .\Build\generated\nltx-target.json `
+  -MaxDegreeOfParallelism 4
 ```
 
 生成器必须：
 
-1. 读取并验证 `docs/Version4源码覆盖.tsv`；
+1. 读取并验证 `docs/迁移参考表/Version4源码覆盖.tsv`；
 2. 只把约定范围内的 `subsystem-evidence` 源文件加入成员候选集；其他文件通过文件级分类保留为非组件处置，不混入组件字段统计；
 3. 递归扫描 Version4 源文件中的字段和属性；
 4. 从目标根提取组件字段并生成反向目标索引；
-5. 合并已有账本时只新增源候选和更新 fingerprint，不覆盖人工填写的 disposition、target、evidence、nextAction 或 blocker；
+5. 账本只允许显式 `memberScope` 和 target manifest 提供事实范围；不从文件名、目录或历史报告推测 decision；
 6. 以 `sourceMemberId`、`targetMemberId` 和 batch 稳定排序；
 7. 生成 JSON 时使用 UTF-8、固定缩进和不依赖哈希表遍历顺序的排序；
-8. 任何解析失败都以非零退出，并把具体文件、行和原因写入 `Build/generated/` 诊断文件。
+8. 任何文件读取、语法解析或 semantic extraction 失败都以非零退出，并在目标快照中保留
+   `scan-failed`、失败文件和具体文件、行、原因；不能把失败转换为空成员集。
 
 **Step 3: 在最小夹具上验证生成器**
 
@@ -253,7 +262,7 @@ errors
 - `split` 必须有至少 2 个目标和 `splitReason`；
 - `merge` 必须有 `mergeGroupId` 和 `mergeReason`；
 - `derive`、`excluded`、`deferred` 不能拥有伪装成权威的目标；
-- `deferred`、`blocked` 必须有 evidence gap、blocker 和 `nextAction`；
+- `deferred`、`blocked` 必须有 evidence gap、blocker 和 `nextWorkItemRef`；
 - 关键权威成员的 evidence、reader/writer status 和 verification status 不能缺失；
 - fingerprint drift 让成员进入 `needs-review`，不能维持 `verified`。
 
@@ -319,11 +328,11 @@ targetMemberId(s)
 readerWriterStatus
 verificationStatus
 evidence
-nextAction
+nextWorkItemRef
 blocker
 ```
 
-排序顺序固定为 `priority`、`status`、`fileOwner`、`batchId`、`sourceMemberId`。没有 `nextAction`
+排序顺序固定为 active claim、`priority`、`fileOwner`、`batchId`、源路径、`sourceMemberId`、`workItemId`。没有 `nextWorkItemRef`
 的未完成记录在生成阶段就失败，而不是生成一个无法继续的条目。
 
 **Step 3: 验证视图无漂移**
@@ -381,12 +390,12 @@ pwsh -NoProfile -File .\Build\Tools\Test-Version4MemberMigrationMap.ps1 `
 
 Expected：审计会明确列出尚未归属的成员和目标字段，而不是把初始 `todo` 账本误报为迁移完成。
 如果当前组件目标索引尚未填入必要的 `new`/`derived`/`integration` 来源说明，命令必须失败，
-并给出具体字段和 `nextAction`。
+并给出具体字段和 `nextWorkItemRef`。
 
 **Step 3: 记录首批人工映射**
 
 只为一个已具备明确组件边界的窄批次补充 `targetMembers`、evidence、读写状态、batchId、priority
-和 `nextAction`。优先选择已有 focused verifier 的 Combat 边界，不同时回填所有子系统，避免把推测
+和 `nextWorkItemRef`。优先选择已有 focused verifier 的 Combat 边界，不同时回填所有子系统，避免把推测
 批量固化为事实。
 
 **Step 4: 重新生成速查视图并审计**
@@ -407,7 +416,7 @@ pwsh -NoProfile -File .\Build\Tools\Test-Version4MemberMigrationMap.ps1 `
   -TargetIndexPath .\docs\migrations\Version4-component-target-index.json
 ```
 
-Expected：生成和审计均成功，输出的未完成数量、阻塞数量和首个 `nextAction` 与速查表一致。
+Expected：生成和审计均成功，输出的未完成数量、阻塞数量和首个 `nextWorkItemRef` 与速查表一致。
 
 **Step 5: Commit**
 
@@ -434,7 +443,7 @@ git commit -m "docs: add Version4 member migration ledger"
 4. 只能通过显式 disposition 更新账本
 5. 运行 Test-Version4MemberMigrationMap.ps1
 6. 重新生成 quick-reference
-7. 把未完成事项留在 nextAction，不依赖聊天历史
+7. 把未完成事项留在 `nextWorkItemRef` 和结构化 work item，不依赖聊天历史
 ```
 
 同时明确禁止：依据组件数量判断完成、依据命名相似度补目标、无证据标记 verified、静默删除

@@ -22,7 +22,7 @@
 ### 2.1 范围
 
 - `D:\TRbackup\Version4` 是唯一完整覆盖基线。
-- 继续沿用 `docs/Version4源码覆盖.tsv` 的文件级分类和责任子系统口径。
+- 继续沿用 `docs/迁移参考表/Version4源码覆盖.tsv` 的文件级分类和责任子系统口径。
 - 对进入组件迁移范围的 Version4 类型，登记其所有声明字段和属性，包括 private、public、
   static、readonly、const、auto-property 和 expression-bodied property；如果成员确实不属于
   ECS 运行时，仍然必须记录处置，不能静默跳过。
@@ -73,18 +73,18 @@ Build/Tools/
 每一条源字段/属性记录使用稳定的 `sourceMemberId`：
 
 ```text
-Version4::<normalized-relative-path>::<fully-qualified-declaring-type>::<member-signature>
+Version4::<fully-qualified-declaring-type>::<canonical-member-signature>
 ```
 
 例如，格式示意如下：
 
 ```text
-Version4::Terraria/Player.cs::Terraria.Player::statLife
+Version4::Terraria.Player::statLife
 ```
 
 规范化要求：
 
-- 路径统一使用 `/`，相对于 `D:\TRbackup\Version4`；
+- 路径是证据位置，不是身份的一部分；只在 snapshot/inventory 中使用 `/` 的相对路径；
 - 类型名使用完整命名空间和类型名；嵌套类型使用明确的嵌套分隔形式；
 - 字段/属性名称不能只靠名称区分重载，索引器、显式接口实现和特殊属性必须包含签名；
 - 同一声明的证据行号不是身份的一部分，行号变化不能产生新成员；
@@ -95,7 +95,7 @@ Version4::Terraria/Player.cs::Terraria.Player::statLife
 目标成员使用 `targetMemberId`：
 
 ```text
-<target-root>::<component-relative-path>::<fully-qualified-component-type>::<member-signature>
+<target-root>::<project-or-assembly>::<fully-qualified-component-type>::<canonical-member-signature>
 ```
 
 目标组件字段必须通过实际文件和声明检查；不能只记录一个推测的组件名称。
@@ -120,73 +120,63 @@ disposition=move 时，必须恰好有一个权威 targetMember。
 | `derive` | 一个源成员 → 派生属性/Query，或无权威目标 | 不得把派生值登记成持久化/网络权威字段 |
 | `compatibility` | 一个源成员 → 兼容适配字段或投影 | 目标不能成为新的权威状态根 |
 | `excluded` | 无目标 | 必须有排除理由和证据 |
-| `deferred` | 暂无目标 | 必须有证据缺口、阻塞原因和可执行 `nextAction` |
+| `deferred` | 暂无目标 | 必须有证据缺口、阻塞原因和可执行 `nextWorkItemRef` |
 
 因此，“一一对应”真正强制的是“每个源成员有且只有一个最终处置”，而不是对合理的语义拆分
 和合并装作不存在。任何非一对一关系没有声明就视为审计失败。
 
 ## 5. 权威账本记录格式
 
-实现阶段的 JSON 记录至少包含以下字段：
+实现阶段的 JSON 记录必须遵循
+`.agents/skills/version4-member-migration-ledger/references/version4-member-migration-ledger.schema.json`。
+决策记录使用扁平 canonical schema；以下旧的嵌套示例不再是有效输入：
 
 ```json
 {
-  "sourceMemberId": "Version4::<path>::<type>::<member>",
-  "source": {
-    "path": "Terraria/SomeType.cs",
-    "declaringType": "Terraria.SomeType",
-    "member": "SomeField",
-    "kind": "field",
-    "type": "int",
-    "accessibility": "private",
-    "modifiers": ["readonly"],
-    "sourceFingerprint": "sha256:..."
-  },
+  "sourceMemberId": "Version4::<fully-qualified-type>::<member-signature>",
+  "sourceFingerprint": "sha256:...",
   "classification": {
     "fileOwner": "NpcAndTownSimulation",
     "stateKind": "authoritative",
     "lifecycle": ["spawn", "update"],
-    "scope": "entity"
+    "scope": "entity",
+    "authority": "server"
   },
-  "migration": {
-    "disposition": "move",
-    "status": "todo",
-    "targetMembers": [
+  "disposition": "move",
+  "status": "todo",
+  "targetMappings": [
       {
-        "targetMemberId": "src::Npc/NpcHealthComponent.cs::NpcHealthComponent::Current",
-        "componentType": "NpcHealthComponent",
-        "componentPath": "src/Npc/NpcHealthComponent.cs",
-        "member": "Current",
-        "role": "authoritative"
+        "mappingId": "map-npc-life",
+        "targetRef": {
+          "kind": "component-member",
+          "targetMemberId": "src::NpcAssembly::NpcHealthComponent::Current"
+        },
+        "relation": "move",
+        "role": "authoritative",
+        "mappingContract": {},
+        "evidenceRefs": ["ev-npc-life-declaration"],
+        "verificationRefs": []
       }
     ],
-    "evidence": [
-      {
-        "path": "D:/TRbackup/Version4/Terraria/SomeType.cs",
-        "line": 1234,
-        "reason": "声明和写入路径证据"
-      }
-    ],
-    "readerWriterStatus": "open",
-    "verificationStatus": "not-run",
-    "batchId": "npc-health-001",
-    "priority": 1,
-    "nextAction": "迁移旧字段的权威写入者并复查快照读取",
-    "blocker": null,
-    "notes": null
-  }
+  "evidenceRefs": ["ev-npc-life-declaration"],
+  "verificationRefs": [],
+  "readerWriterStatus": "open",
+  "verificationStatus": "not-run",
+  "batchId": "npc-health-001",
+  "priority": 1,
+  "nextWorkItemRef": "wi-npc-life-evidence",
+  "blocker": null
 }
 ```
 
 规则：
 
-- `source` 描述原始声明事实；
+- inventory 描述原始声明事实；decision 只引用 `sourceMemberId` 和 fingerprint；
 - `classification` 描述状态语义和生命周期，不等于目标归属；
-- `migration` 描述当前决定和工作进度；
-- `evidence` 至少引用声明位置，权威、持久化、网络和生命周期成员还必须引用相应读者/写者证据；
-- `targetMembers` 为空只允许用于 `derive`、`excluded` 或 `deferred`；
-- `nextAction` 对未达到 `verified` 的记录必填；
-- `notes` 不能替代结构化字段；
+- `evidenceRefs` 至少引用声明位置，权威、持久化、网络和生命周期成员还必须引用相应读者/写者证据；
+- `targetMappings` 为空只允许用于 `derive`、`excluded` 或 `deferred`；
+- 未达到 `verified` 的记录必须通过 `nextWorkItemRef` 指向结构化工作项；不再使用自由文本 `nextAction`；
+- verifier 使用结构化执行 spec，不能用自由文本 command 假装可重现；
 - `sourceFingerprint` 变化时，原记录自动进入 `needs-review`，不能继续沿用旧的 `verified`。
 
 ## 6. 状态机
@@ -204,7 +194,7 @@ todo → in-progress → migrated → verified
 
 - `excluded` 是处置，不是偷懒状态；必须有理由和证据；
 - `deferred` 表示当前不能安全决策，不表示已完成；
-- `blocked` 表示已确认有缺口，必须保留 `nextAction`；
+- `blocked` 表示已确认有缺口，必须保留 `nextWorkItemRef`；
 - `migrated` 只表示目标字段和必要消费者已建立，不能替代行为验证；
 - `verified` 必须有 verifier、结果或可复查证据；
 - `verificationStatus=not-run` 时不得把记录升级为 `verified`；
@@ -217,7 +207,7 @@ todo → in-progress → migrated → verified
 恢复工作的索引。它应按以下顺序组织：
 
 1. 当前总览：源成员总数、已处理数、未处理数、阻塞数、各处置数量；
-2. `nextAction` 可执行队列，按 `priority`、子系统、batchId 和源路径稳定排序；
+2. `nextWorkItemRef` 可执行队列，按 `priority`、子系统、batchId、源路径和 sourceMemberId 稳定排序；
 3. 每个 batch 的成员表；
 4. 当前阻塞项和证据缺口；
 5. 已完成但需要复审的 fingerprint 变化；
@@ -236,7 +226,7 @@ stateKind
 readerWriterStatus
 verificationStatus
 evidence location
-nextAction
+nextWorkItemRef
 blocker
 ```
 
@@ -244,7 +234,7 @@ AI 会话的恢复流程固定为：
 
 ```text
 读取 quick-reference
-  → 选择 priority 最高的 todo/in-progress/blocked 项
+  → 恢复 active claim；否则选择 priority 最高且 prerequisites 满足的唯一 work item
   → 阅读 Version4 声明及读写证据
   → 阅读目标组件字段和消费者
   → 更新账本记录
@@ -261,10 +251,11 @@ AI 不得从组件目录、文件数量、类名相似度或上一轮对话推�
 
 ```json
 {
-  "targetMemberId": "src::Npc/NpcHealthComponent.cs::NpcHealthComponent::Current",
+  "targetMemberId": "src::NpcAssembly::NpcHealthComponent::Current",
   "componentPath": "src/Npc/NpcHealthComponent.cs",
   "componentType": "NpcHealthComponent",
   "member": "Current",
+  "signature": "Current",
   "kind": "property",
   "authorityRole": "authoritative",
   "origin": "migrated"
@@ -304,7 +295,7 @@ target component member → source/origin  防止目标字段无来源或重复�
 - `move` 恰好一个目标；
 - `split`、`merge` 有理由和关系组；
 - `derive`、`excluded`、`deferred` 没有伪造的权威目标；
-- `deferred`、`blocked` 有证据缺口和 `nextAction`；
+- `deferred`、`blocked` 有证据缺口、重入条件和 `nextWorkItemRef`；
 - 没有未经声明的多源共享权威目标字段。
 
 ### 9.3 目标反向覆盖
@@ -316,7 +307,7 @@ target component member → source/origin  防止目标字段无来源或重复�
 
 ### 9.4 AI 续作安全
 
-- 未完成记录都有稳定排序所需的 `priority` 和 `nextAction`；
+- 未完成记录都有稳定排序所需的 `priority` 和 `nextWorkItemRef`；
 - quick-reference 可由账本重新生成，且没有手工漂移；
 - 当前 batch 的完成判断不能绕过 `verificationStatus`；
 - 审计输出明确列出下一批应处理的成员和阻塞原因。
@@ -362,7 +353,7 @@ target component member → source/origin  防止目标字段无来源或重复�
 3. 可以检测重复 `sourceMemberId`、缺失处置和非法目标基数；
 4. 可以检测目标字段不存在、目标字段无来源和未声明的权威重复；
 5. 任意一个新增或修改的源成员都会因 fingerprint 或覆盖差异进入待复审；
-6. AI 能依据 `nextAction` 从上次中断位置继续，而不需要依赖聊天历史；
+6. AI 能依据 `nextWorkItemRef`、claim 和 quick-reference 从上次中断位置继续，而不需要依赖聊天历史；
 7. 审计输出不会把 `excluded`、`derived`、`compatibility` 或 `deferred` 混入“已迁移完成”；
 8. 本阶段不修改运行时代码，且现有未提交改动保持不变。
 
