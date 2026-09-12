@@ -359,3 +359,30 @@ Classify every rule by whether it constrains code behavior or prescribes a concr
 - **Notes**: 已按 `field`、`property`、`event` 分离核对，并确认当前 542 的组成与源码行区间。
 
 ---
+
+## [LRN-20260909-003] ranking_scope_clarification
+
+**Logged**: 2026-09-09T18:45:00+08:00
+**Priority**: medium
+**Status**: resolved
+**Area**: docs
+
+### Summary
+“193 个活动细分子系统的排行榜”要求输出二次拆分后的全部活动组，前 20 只是完整榜单的前缀。
+
+### Details
+本次回复将完整活动细分榜单误缩成了前 20，且把二次拆分前的 20 个来源组与拆分后的活动组混淆。正确口径是：按字段 + 属性合计对 193 个当前活动细分组完整排序；历史来源组前 20 单独保留为追溯表。
+
+### Suggested Action
+生成器应输出全部活动细分组，验证器应检查 193 个排序行、连续排名和每组字段/属性统计；报告中同时保留前 20 前缀与历史来源组表，但明确区分两种口径。
+
+### Metadata
+- Source: user_feedback
+- Related Files: Build/Tools/Generate-Version4AuthoritativeFineSubsystemReport.ps1; Build/Tools/Test-Version4AuthoritativeFineSubsystemReport.ps1; docs/迁移参考表/Version4权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md
+- Tags: correction, ranking, subsystem-scope, documentation
+
+### Resolution
+- **Resolved**: 2026-09-09T18:45:00+08:00
+- **Notes**: 已将 3.3 摘要表改为完整 193 行，并由验证器与独立解析器复核。
+
+---

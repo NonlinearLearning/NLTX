@@ -3,8 +3,11 @@
 ## Context
 
 The authoritative Version4 member inventory contains 2,659 field and property records under
-21 formal parent subsystems. The current fine report contains 96 fine subsystems, but several
-groups still combine multiple source-type families or unrelated lifecycle responsibilities.
+21 formal parent subsystems. Before the initial refinement pass, the active fine report contained
+156 fine subsystems. That pass replaced its top 20 groups with 57 sibling groups and produced an
+intermediate 193-subsystem report. The current 193-subsystem field-plus-property leaderboard then
+still had 20 groups that combined multiple source-type families or unrelated lifecycle
+responsibilities.
 
 The existing `Generate-Version4NonAuthoritativeFineSubsystemReport.ps1` and its verifier are
 for the non-authoritative inventory. They are hard-coded for 4,542 members and must not be
@@ -12,10 +15,13 @@ reused as the authoritative generator by changing their defaults or assertions.
 
 ## Goal
 
-Split the clearly mixed, high-cardinality authoritative fine subsystems into additional sibling
-subsystems while preserving every source member, source sequence, parent assignment, declaration
-cell, and formal parent subsystem. Make the result reproducible through an authoritative-specific
-PowerShell generator and verifier.
+Reproduce the two authoritative refinement passes from deterministic evidence-based mappings:
+replace the pre-refinement field-plus-property top 20 with 57 sibling subsystems, then replace 15
+of the current 193-subsystem leaderboard top 20 with 43 additional sibling subsystems while
+retaining five groups whose evidence does not support a stronger boundary. Preserve every source
+member, source sequence, parent assignment, declaration cell, and formal parent subsystem. The
+final report has 221 active fine subsystems and is reproducible through an
+authoritative-specific PowerShell generator and verifiers.
 
 ## Non-goals
 
@@ -65,6 +71,27 @@ type family provide evidence. `MountDefinitionCatalog`, `NpcSpawnEligibilityInpu
 already separated by declaration type, such as `WorldGenerationTileActions`, remain intact unless
 the member evidence proves a stronger boundary.
 
+#### Second refinement pass
+
+The complete current active leaderboard is recorded in report section 3.3, with the top 20 as
+its leading prefix. The current 193-subsystem top-20 audit is recorded in section 3.5, while the
+frozen pre-refinement leaderboard is retained in section 3.6 as a retired-source trace. Its 20
+source groups are
+`PlayerPetAndCompanionState`, `PlayerBuffAndStatusEffects`, `MountDefinitionCatalog`,
+`NpcSpawnEligibilityInputs`, `GenVarsConfigurationAndTerrainLayers`, `WorldSecretSeedRegistryState`,
+`PlayerEquipmentAndAccessoryEffects`, `WorldGenerationModifiersAndActions`,
+`WorldHousingAndSpawnRules`, `NpcStatusEffectAndRegenState`, `PlayerAppearanceProjectionSlots`,
+`PlayerStatusAndDebuffState`, `WorldGenerationConfigurationAndOptions`,
+`WorldGenerationTileActions`, `WorldTerrainProfilesAndOreTiers`, `GenVarsBiomeStructures`,
+`NpcBossAndWorldProgressionFlags`, `WorldGenBiomeMetricsAndCounts`, `PlayerJumpVariantState`,
+and `PlayerBiomeAndZoneProperties`.
+
+Section 3.4 records the exact 57-child mapping and its field/property counts. That first-pass
+mapping replaces the 20 source groups one-for-one at the membership level, so its intermediate
+active fine-subsystem count is `156 - 20 + 57 = 193`; no child is allowed to be empty, cross a
+formal parent, or alter a source declaration cell. The follow-up mapping in section 3.5 replaces
+15 of the intermediate top-20 groups with 43 children, producing the final count of 221.
+
 ### Ownership and seams
 
 - `authoritative state/behavior` groups expose an Owner System/CommitPort seam and do not imply
@@ -89,6 +116,12 @@ Create a dedicated verifier that asserts:
    with their fine groups.
 6. The report's source hash matches the authoritative input.
 7. No ID-class source path is introduced.
+8. The report contains the complete final active leaderboard for all 221 fine subsystems
+   (including its top 20), the current 193-subsystem top-20 audit, the frozen pre-refinement top
+   20, all 57 first-pass children, and all 43 follow-up children; every retired source group is
+   retired from member ownership.
+9. The final active fine-subsystem count is exactly 221 and every child remains within its
+   expected formal parent.
 
 This is a Markdown inventory verifier, not a C# build or runtime behavior verifier.
 
@@ -102,3 +135,25 @@ This is a Markdown inventory verifier, not a C# build or runtime behavior verifi
   evidence identifies independent readers or lifecycles.
 - Existing user-created untracked artifacts may be unrelated: stage only the new authoritative
   scripts, their verifier, the design/plan documents, and the regenerated authoritative report.
+
+## Current 193-Subsystem Leaderboard Follow-Up
+
+The generated 193-subsystem report was then audited at its current field-plus-property top 20,
+not at the retired pre-193 source leaderboard. Fifteen source groups have stable type-family,
+semantic, lifecycle, or projection boundaries and are replaced by 43 non-empty sibling groups.
+The five groups below remain intact because their evidence does not reduce coupling further:
+
+- `PlayerNamedPetFlagState`: one homogeneous `Terraria.Player` pet-flag family with one reset and
+  update lifecycle.
+- `WorldSecretSeedDefinitions`: one `Terraria.WorldGen.SecretSeed` definition record family.
+- `MountRuntimeProjectionProperties`: one `Terraria.Mount` runtime projection over shared private
+  state and ability timers.
+- `NpcSpawnEnvironmentEligibilityInputs`: one `Terraria.NPC.Spawner` qualification snapshot.
+- `WorldGenerationTileMutationActions`: already separated by concrete `Actions` command types.
+
+The active report therefore grows from 193 to 221 fine subsystems while preserving all 2,659
+member records, parent assignments, declaration cells, and source sequence IDs. The report adds a
+dedicated audit section for this current top 20 and retains the earlier 20-group leaderboard as
+historical trace data. A separate focused verifier independently checks the 15-to-43 replacement,
+the five retained groups, child parent/count contracts, audit decisions, and the complete 221-row
+leaderboard.
