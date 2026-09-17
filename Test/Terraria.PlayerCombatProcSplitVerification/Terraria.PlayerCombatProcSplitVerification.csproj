@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\Player\PlayerCombatProcHitEffects.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcQuery.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcSnapshot.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcStateComponent.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcSystem.HitCommit.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcSystem.Lifecycle.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcSystem.Tick.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcSystem.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcTickInput.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcTickQuery.cs" />
+    <Compile Include="..\..\src\Player\PlayerCombatProcTickResult.cs" />
+    <Compile Include="..\..\src\Player\PlayerCommittedCombatHitEvent.cs" />
+  </ItemGroup>
+</Project>
