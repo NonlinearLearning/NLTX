@@ -37,10 +37,130 @@ public struct EncounterDamageCreditComponent
   public int Revision;
 
   public ReadOnlyMemory<DamageCreditEntry> Credits =>
-    new(_credits ?? Array.Empty<DamageCreditEntry>());
+    new((_credits ?? Array.Empty<DamageCreditEntry>()).ToArray());
 
   public bool IsEmpty => (_credits is null or { Length: 0 }) &&
     WorldDamage == 0;
 
   public long DurationTicks => Math.Max(0, LastHitAtTick - StartedAtTick);
+
+  public bool TryAddCredit(
+    CombatContributorId contributor,
+    int appliedDamage,
+    long hitTick)
+  {
+    ValidateContributor(contributor);
+    if (appliedDamage <= 0)
+    {
+      return false;
+    }
+
+    if (Lifecycle != EncounterCreditLifecycle.Active)
+    {
+      throw new InvalidOperationException(
+        "Damage credit can only be added to an active encounter.");
+    }
+
+    if (hitTick < LastHitAtTick)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(hitTick),
+        "Damage credit ticks must be monotonic.");
+    }
+
+    DamageCreditEntry[] nextCredits = (_credits ?? Array.Empty<DamageCreditEntry>()).ToArray();
+    int existingIndex = FindContributor(nextCredits, contributor);
+    if (existingIndex >= 0)
+    {
+      nextCredits[existingIndex].AppliedDamage = checked(
+        nextCredits[existingIndex].AppliedDamage + appliedDamage);
+    }
+    else
+    {
+      Array.Resize(ref nextCredits, nextCredits.Length + 1);
+      nextCredits[^1] = new DamageCreditEntry(contributor, appliedDamage);
+    }
+
+    int nextWorldDamage = WorldDamage;
+    if (contributor.Kind == CombatContributorKind.World)
+    {
+      nextWorldDamage = checked(WorldDamage + appliedDamage);
+    }
+
+    int nextRevision = checked(Revision + 1);
+    _credits = nextCredits;
+    WorldDamage = nextWorldDamage;
+    LastContributor = contributor;
+    LastHitAtTick = hitTick;
+    Revision = nextRevision;
+    return true;
+  }
+
+  public void Close()
+  {
+    if (Lifecycle != EncounterCreditLifecycle.Active)
+    {
+      throw new InvalidOperationException(
+        "Only an active encounter can be closed.");
+    }
+
+    int nextRevision = checked(Revision + 1);
+    Lifecycle = EncounterCreditLifecycle.Closed;
+    Revision = nextRevision;
+  }
+
+  public void Expire()
+  {
+    if (Lifecycle != EncounterCreditLifecycle.Closed)
+    {
+      throw new InvalidOperationException(
+        "Only a closed encounter can expire.");
+    }
+
+    int nextRevision = checked(Revision + 1);
+    Lifecycle = EncounterCreditLifecycle.Expired;
+    Revision = nextRevision;
+  }
+
+  private static int FindContributor(
+    IReadOnlyList<DamageCreditEntry> credits,
+    CombatContributorId contributor)
+  {
+    for (int index = 0; index < credits.Count; index++)
+    {
+      if (credits[index].Contributor == contributor)
+      {
+        return index;
+      }
+    }
+
+    return -1;
+  }
+
+  private static void ValidateContributor(CombatContributorId contributor)
+  {
+    if (contributor.Kind == CombatContributorKind.Player &&
+        string.IsNullOrWhiteSpace(contributor.PlayerAccountUuid))
+    {
+      throw new ArgumentException(
+        "A player contributor requires account provenance.",
+        nameof(contributor));
+    }
+
+    if (contributor.Kind == CombatContributorKind.World &&
+        contributor.PlayerAccountUuid is not null)
+    {
+      throw new ArgumentException(
+        "World credit cannot carry player account provenance.",
+        nameof(contributor));
+    }
+
+    if (contributor.Kind != CombatContributorKind.Player &&
+        contributor.Kind != CombatContributorKind.World)
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(contributor),
+        "Unknown contributor kinds cannot receive damage credit.");
+    }
+  }
 }
