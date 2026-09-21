@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param(
-    [string]$InputPath = 'docs/迁移参考表/Version4权威模拟系统字段属性逐成员源码声明-去除ID类文件.md',
-    [string]$SeedReportPath = 'docs/迁移参考表/Version4权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md',
-    [string]$OutputPath = 'docs/迁移参考表/Version4权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md'
+    [string]$InputPath = 'docs/migration/ledgers/Version4权威模拟系统字段属性逐成员源码声明-去除ID类文件.md',
+    [string]$SeedReportPath = 'docs/migration/ledgers/Version4权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md',
+    [string]$OutputPath = 'docs/migration/ledgers/Version4权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md'
 )
 
 Set-StrictMode -Version Latest
@@ -728,6 +728,29 @@ $currentTopTwentyLeaderboard = @(
     [pscustomobject]@{ Rank = 18; Name = 'NpcNetworkAndSpawnState'; Fields = 25; Properties = 0; Total = 25 }
     [pscustomobject]@{ Rank = 19; Name = 'PlayerFrameImmunityAndInteractionState'; Fields = 25; Properties = 0; Total = 25 }
     [pscustomobject]@{ Rank = 20; Name = 'PlayerSurvivalAndControlStatus'; Fields = 25; Properties = 0; Total = 25 }
+)
+
+$fourthTopTwentyLeaderboard = @(
+    [pscustomobject]@{ Rank = 1; Name = 'PlayerNamedPetFlagState'; Fields = 55; Properties = 0; Total = 55 }
+    [pscustomobject]@{ Rank = 2; Name = 'WorldSecretSeedDefinitions'; Fields = 41; Properties = 0; Total = 41 }
+    [pscustomobject]@{ Rank = 3; Name = 'MountRuntimeProjectionProperties'; Fields = 2; Properties = 27; Total = 29 }
+    [pscustomobject]@{ Rank = 4; Name = 'NpcSpawnEnvironmentEligibilityInputs'; Fields = 27; Properties = 0; Total = 27 }
+    [pscustomobject]@{ Rank = 5; Name = 'WorldGenerationTileMutationActions'; Fields = 27; Properties = 0; Total = 27 }
+    [pscustomobject]@{ Rank = 6; Name = 'PlayerMinionSummonFlags'; Fields = 25; Properties = 0; Total = 25 }
+    [pscustomobject]@{ Rank = 7; Name = 'WorldGenerationControllerState'; Fields = 15; Properties = 10; Total = 25 }
+    [pscustomobject]@{ Rank = 8; Name = 'PlayerCombatProcAndImmunityState'; Fields = 24; Properties = 0; Total = 24 }
+    [pscustomobject]@{ Rank = 9; Name = 'PlayerSpawnMovementAndTileTargeting'; Fields = 24; Properties = 0; Total = 24 }
+    [pscustomobject]@{ Rank = 10; Name = 'RevengeMarkerState'; Fields = 22; Properties = 2; Total = 24 }
+    [pscustomobject]@{ Rank = 11; Name = 'WorldLifecycleAndTransformState'; Fields = 24; Properties = 0; Total = 24 }
+    [pscustomobject]@{ Rank = 12; Name = 'MountAnimationFrameCatalog'; Fields = 23; Properties = 0; Total = 23 }
+    [pscustomobject]@{ Rank = 13; Name = 'NpcDamageAttributionAndCredits'; Fields = 14; Properties = 9; Total = 23 }
+    [pscustomobject]@{ Rank = 14; Name = 'PlayerCombatModifiersAndRanges'; Fields = 23; Properties = 0; Total = 23 }
+    [pscustomobject]@{ Rank = 15; Name = 'GenVarsCavesOresAndBiomes'; Fields = 22; Properties = 0; Total = 22 }
+    [pscustomobject]@{ Rank = 16; Name = 'LiquidFlowAndBufferState'; Fields = 22; Properties = 0; Total = 22 }
+    [pscustomobject]@{ Rank = 17; Name = 'NpcSpawnZoneAndEventEligibilityInputs'; Fields = 22; Properties = 0; Total = 22 }
+    [pscustomobject]@{ Rank = 18; Name = 'PlayerAccessoryAndCombatStatus'; Fields = 22; Properties = 0; Total = 22 }
+    [pscustomobject]@{ Rank = 19; Name = 'PlayerInformationAccessoryState'; Fields = 22; Properties = 0; Total = 22 }
+    [pscustomobject]@{ Rank = 20; Name = 'ProjectileSpecializedQueriesAndCaches'; Fields = 22; Properties = 0; Total = 22 }
 )
 
 $currentTopTwentyNoSplitReasons = [ordered]@{
@@ -1494,7 +1517,7 @@ foreach ($entry in $thirdRefinementDefinitions.GetEnumerator()) {
 $fourthRefinementDefinitions = [ordered]@{}
 $fourthRefinementDefinitions['PlayerNamedPetFlagState'] = @(
     (New-RefinementDefinition 'PlayerGameplay' 'PlayerNamedPetFlagState' 'PlayerBossPetFlags' 'authoritative state/behavior' 'Boss 宠物旗标及其宠物生成状态。' 'Pet System/CommitPort；Boss 宠物 Buff 生命周期集中写入。' { param($row) Test-MemberName $row $fourthPlayerBossPetFlagMembers }),
-    (New-RefinementDefinition 'PlayerGameplay' 'PlayerNamedPetFlagState' 'PlayerSeasonalAndEventPetFlags' 'authoritative state/behavior' '季节事件、Old One\'s Army 和事件宠物旗标。' 'Event Pet System/CommitPort；事件 Buff 生命周期集中写入。' { param($row) Test-MemberName $row $fourthPlayerSeasonalAndEventPetFlagMembers }),
+    (New-RefinementDefinition 'PlayerGameplay' 'PlayerNamedPetFlagState' 'PlayerSeasonalAndEventPetFlags' 'authoritative state/behavior' '季节事件、Old One Army 和事件宠物旗标。' 'Event Pet System/CommitPort；事件 Buff 生命周期集中写入。' { param($row) Test-MemberName $row $fourthPlayerSeasonalAndEventPetFlagMembers }),
     (New-RefinementDefinition 'PlayerGameplay' 'PlayerNamedPetFlagState' 'PlayerStandardNamedPetFlags' 'authoritative state/behavior' '常规命名宠物和常规召唤物宠物旗标。' 'Pet System/CommitPort；常规宠物效果按 Buff 事件提交。' { param($row) Test-MemberName $row $fourthPlayerStandardNamedPetFlagMembers }),
     (New-RefinementDefinition 'PlayerGameplay' 'PlayerNamedPetFlagState' 'PlayerCrossoverPetFlags' 'authoritative state/behavior' '联动内容和跨游戏宠物旗标。' 'Crossover Pet System/CommitPort；联动内容状态单向提交。' { param($row) Test-MemberName $row $fourthPlayerCrossoverPetFlagMembers }),
     (New-RefinementDefinition 'PlayerGameplay' 'PlayerNamedPetFlagState' 'PlayerWorldObjectPetFlags' 'authoritative state/behavior' '方块、巨石和特殊世界物件宠物旗标。' 'World Object Pet System/CommitPort；世界物件效果集中写入。' { param($row) Test-MemberName $row $fourthPlayerWorldObjectPetFlagMembers })
@@ -1790,6 +1813,20 @@ if ($presentLeaderboardSeeds.Count -eq $leaderboardNames.Count) {
                 if ($thirdRefinementDefinitions.Contains($definition.Name)) {
                     foreach ($grandchild in $thirdRefinementDefinitions[$definition.Name]) {
                         if ($fineOrder -notcontains $grandchild.Name) {
+                            if ($fourthRefinementDefinitions.Contains($grandchild.Name)) {
+                                foreach ($greatGrandchild in $fourthRefinementDefinitions[$grandchild.Name]) {
+                                    if ($fineOrder -notcontains $greatGrandchild.Name) {
+                                        throw "Seed report has no source group $($entry.Name) and no retained descendant $($greatGrandchild.Name)."
+                                    }
+                                }
+                            } else {
+                                throw "Seed report has no source group $($entry.Name) and no retained descendant $($grandchild.Name)."
+                            }
+                        }
+                    }
+                } elseif ($fourthRefinementDefinitions.Contains($definition.Name)) {
+                    foreach ($grandchild in $fourthRefinementDefinitions[$definition.Name]) {
+                        if ($fineOrder -notcontains $grandchild.Name) {
                             throw "Seed report has no source group $($entry.Name) and no retained descendant $($grandchild.Name)."
                         }
                     }
@@ -1821,11 +1858,58 @@ if ($presentCurrentTopTwenty.Count -eq $currentTopTwentyNames.Count) {
 
             foreach ($definition in $thirdRefinementDefinitions[$entry.Name]) {
                 if ($fineOrder -notcontains $definition.Name) {
-                    throw "Seed report has no current top-20 source group $($entry.Name) or retained sibling $($definition.Name)."
+                    if ($fourthRefinementDefinitions.Contains($definition.Name)) {
+                        foreach ($grandchild in $fourthRefinementDefinitions[$definition.Name]) {
+                            if ($fineOrder -notcontains $grandchild.Name) {
+                                throw "Seed report has no current top-20 source group $($entry.Name) or retained descendant $($grandchild.Name)."
+                            }
+                        }
+                    } else {
+                        throw "Seed report has no current top-20 source group $($entry.Name) or retained sibling $($definition.Name)."
+                    }
+                }
+            }
+        } elseif ($fourthRefinementDefinitions.Contains($entry.Name)) {
+            if ($fineOrder -contains $entry.Name) {
+                continue
+            }
+
+            foreach ($definition in $fourthRefinementDefinitions[$entry.Name]) {
+                if ($fineOrder -notcontains $definition.Name) {
+                    throw "Seed report has no current top-20 source group $($entry.Name) or fourth-round sibling $($definition.Name)."
                 }
             }
         } elseif ($fineOrder -notcontains $entry.Name) {
             throw "Seed report has no retained current top-20 group $($entry.Name)."
+        }
+    }
+}
+
+$fourthTopTwentyNames = @($fourthTopTwentyLeaderboard | ForEach-Object Name)
+$presentFourthTopTwenty = @($fourthTopTwentyNames | Where-Object { $fineOrder -contains $_ })
+if ($presentFourthTopTwenty.Count -eq $fourthTopTwentyNames.Count) {
+    foreach ($entry in $fourthTopTwentyLeaderboard) {
+        $seedRowsForEntry = @($seedRows | Where-Object Fine -eq $entry.Name)
+        $seedFields = @($seedRowsForEntry | Where-Object Kind -eq 'field').Count
+        $seedProperties = @($seedRowsForEntry | Where-Object Kind -eq 'property').Count
+        if ($seedFields -ne $entry.Fields -or $seedProperties -ne $entry.Properties -or $seedRowsForEntry.Count -ne $entry.Total) {
+            throw "Fourth-round top-20 leaderboard entry $($entry.Name) does not match the seed report."
+        }
+    }
+} else {
+    foreach ($entry in $fourthTopTwentyLeaderboard) {
+        if (-not $fourthRefinementDefinitions.Contains($entry.Name)) {
+            throw "Fourth-round top-20 source group $($entry.Name) has no refinement definition."
+        }
+
+        if ($fineOrder -contains $entry.Name) {
+            throw "Seed report contains an unrefined fourth-round top-20 source group $($entry.Name)."
+        }
+
+        foreach ($definition in $fourthRefinementDefinitions[$entry.Name]) {
+            if ($fineOrder -notcontains $definition.Name) {
+                throw "Seed report has no fourth-round top-20 source group $($entry.Name) or sibling $($definition.Name)."
+            }
         }
     }
 }
@@ -1854,8 +1938,8 @@ if (($fineNames | Sort-Object -Unique).Count -ne $fineNames.Count) {
     throw 'Fine subsystem names are not unique after refinement.'
 }
 
-if ($fineDefinitionList.Count -ne 221) {
-    throw "Expected 221 active fine subsystem definitions after current top-20 refinement; found $($fineDefinitionList.Count)."
+if ($fineDefinitionList.Count -ne 267) {
+    throw "Expected 267 active fine subsystem definitions after current top-20 refinement; found $($fineDefinitionList.Count)."
 }
 
 $crossAssignmentByKey = @{}
@@ -2026,14 +2110,14 @@ foreach ($entry in $secondRefinementLeaderboard) {
 $outputLines.Add('')
 $outputLines.Add('### 3.5 当前排行榜前 20 的再次细分审查')
 $outputLines.Add('')
-$outputLines.Add('本表针对当前活动排行榜前 20 逐组复核职责边界；有明确类型族、生命周期或访问边界的组已替换为同级子系统，其余组保留并记录不拆分理由。')
+$outputLines.Add('本表针对当前活动排行榜前 20 逐组复核职责边界；本轮 20 个来源组均已按类型族、生命周期或访问边界替换为至少两个同级子系统。')
 $outputLines.Add('')
 $outputLines.Add('| 排名 | 当前来源细分子系统 | 处理 | 子系统/结论 | 边界角色 | 字段 | 属性 | 合计 | 证据或不拆分理由 |')
 $outputLines.Add('|---:|---|---|---|---|---:|---:|---:|---|')
-foreach ($entry in $currentTopTwentyLeaderboard) {
+foreach ($entry in $fourthTopTwentyLeaderboard) {
     $sourceName = "$([char]0x60)$($entry.Name)$([char]0x60)"
-    if ($thirdRefinementDefinitions.Contains($entry.Name)) {
-        foreach ($definition in $thirdRefinementDefinitions[$entry.Name]) {
+    if ($fourthRefinementDefinitions.Contains($entry.Name)) {
+        foreach ($definition in $fourthRefinementDefinitions[$entry.Name]) {
             $definitionRows = @($assignedRows | Where-Object Fine -eq $definition.Name | ForEach-Object Row)
             $definitionFieldCount = @($definitionRows | Where-Object Kind -eq 'field').Count
             $definitionPropertyCount = @($definitionRows | Where-Object Kind -eq 'property').Count
@@ -2042,8 +2126,7 @@ foreach ($entry in $currentTopTwentyLeaderboard) {
             $outputLines.Add("| $($entry.Rank) | $sourceName | 替换 | $fineName | $($definition.Role) | $definitionFieldCount | $definitionPropertyCount | $($definitionRows.Count) | $evidence |")
         }
     } else {
-        $reason = $currentTopTwentyNoSplitReasons[$entry.Name]
-        $outputLines.Add("| $($entry.Rank) | $sourceName | 保留 | $sourceName | - | $($entry.Fields) | $($entry.Properties) | $($entry.Total) | $reason |")
+        throw "Current top-20 source group $($entry.Name) has no fourth-round refinement definition."
     }
 }
 
@@ -2057,6 +2140,27 @@ $outputLines.Add('|---:|---|---:|---:|---:|')
 foreach ($entry in $secondRefinementLeaderboard) {
     $quotedName = "$([char]0x60)$($entry.Name)$([char]0x60)"
     $outputLines.Add("| $($entry.Rank) | $quotedName | $($entry.Fields) | $($entry.Properties) | $($entry.Total) |")
+}
+
+$outputLines.Add('')
+$outputLines.Add('### 3.7 上一轮 193 组前 20 审查（历史追溯）')
+$outputLines.Add('')
+$outputLines.Add('本表保留 193 组报告生成时的前 20 审查结果，用于追溯第三轮细分决策；它不是本轮活动排行榜。')
+$outputLines.Add('')
+$outputLines.Add('| 排名 | 上一轮来源细分子系统 | 处理 | 历史子系统/结论 | 边界角色 | 原始合计 | 历史说明 |')
+$outputLines.Add('|---:|---|---|---|---|---:|---|')
+foreach ($entry in $currentTopTwentyLeaderboard) {
+    $sourceName = "$([char]0x60)$($entry.Name)$([char]0x60)"
+    if ($thirdRefinementDefinitions.Contains($entry.Name)) {
+        foreach ($definition in $thirdRefinementDefinitions[$entry.Name]) {
+            $definitionRows = @($assignedRows | Where-Object Fine -eq $definition.Name | ForEach-Object Row)
+            $fineName = "$([char]0x60)$($definition.Name)$([char]0x60)"
+            $outputLines.Add("| $($entry.Rank) | $sourceName | 替换 | $fineName | $($definition.Role) | $($definitionRows.Count) | 第三轮源码成员边界仍保留为历史映射。 |")
+        }
+    } else {
+        $reason = $currentTopTwentyNoSplitReasons[$entry.Name]
+        $outputLines.Add("| $($entry.Rank) | $sourceName | 历史保留 | $sourceName | - | $($entry.Total) | $reason |")
+    }
 }
 
 $outputLines.Add('## 4. 逐成员源码声明')

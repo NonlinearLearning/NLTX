@@ -68,7 +68,7 @@ Keep physical deletion outside the ledger design. Define completion through mapp
 
 ### Metadata
 - Source: user_feedback
-- Related Files: docs/plans/2026-09-06-version4-member-migration-ledger-design.md; docs/plans/2026-09-06-version4-member-migration-ledger-implementation.md
+- Related Files: docs/组件文档/plans/2026-09-06-version4-member-migration-ledger-design.md; docs/组件文档/plans/2026-09-06-version4-member-migration-ledger-implementation.md
 - Tags: scope-control, migration-ledger, no-deletion
 
 ---
@@ -257,7 +257,7 @@ Keep physical deletion outside the ledger design. Define completion through mapp
 
 ### Metadata
 - Source: user_feedback
-- Related Files: docs/第一轮审查/2026-09-05-version4-world-progression-and-unlocks-public-decomposition.md
+- Related Files: docs/组件文档/第一轮审查/2026-09-05-version4-world-progression-and-unlocks-public-decomposition.md
 - Tags: correction, no-subagents, docs, scope-control
 
 ---
@@ -324,7 +324,7 @@ Classify every rule by whether it constrains code behavior or prescribes a concr
 
 ### Metadata
 - Source: user_feedback
-- Related Files: 约束/项目代码规范/副作用编码约束.md; 约束/非函数式编码副作用隔离规范.md
+- Related Files: 约束/项目代码规范/副作用编码约束.md; Context/约束/非函数式编码副作用隔离规范.md
 - Tags: scope-control, documentation, side-effects, correction
 
 ### Resolution
@@ -378,7 +378,7 @@ Classify every rule by whether it constrains code behavior or prescribes a concr
 
 ### Metadata
 - Source: user_feedback
-- Related Files: Build/Tools/Generate-Version4AuthoritativeFineSubsystemReport.ps1; Build/Tools/Test-Version4AuthoritativeFineSubsystemReport.ps1; docs/迁移参考表/Version4权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md
+- Related Files: Build/Tools/Generate-Version4AuthoritativeFineSubsystemReport.ps1; Build/Tools/Test-Version4AuthoritativeFineSubsystemReport.ps1; docs/组件文档/迁移参考表/Version4权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md
 - Tags: correction, ranking, subsystem-scope, documentation
 
 ### Resolution

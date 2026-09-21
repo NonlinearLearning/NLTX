@@ -12,11 +12,10 @@ $auditScript = Join-Path $repositoryRoot '.agents\skills\version4-member-migrati
 $outputPath = if ([IO.Path]::IsPathRooted($Output)) { [IO.Path]::GetFullPath($Output) } else { [IO.Path]::GetFullPath((Join-Path $repositoryRoot $Output)) }
 $controlledRoots = @(
   [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'Build\generated')),
-  [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'docs\migrations')),
-  [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'docs\迁移参考表'))
+  [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'docs\migration\ledgers'))
 )
 if (-not ($controlledRoots | Where-Object { $outputPath -eq $_ -or $outputPath.StartsWith($_ + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) })) {
-  throw "Audit output must be under Build/generated, docs/migrations, or docs/迁移参考表: $outputPath"
+  throw "Audit output must be under Build/generated or docs/migration/ledgers: $outputPath"
 }
 if (-not (Test-Path -LiteralPath $ledgerPath)) {
   throw "Ledger does not exist: $ledgerPath"

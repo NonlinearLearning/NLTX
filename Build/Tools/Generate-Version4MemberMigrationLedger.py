@@ -24,17 +24,24 @@ SOURCE_SNAPSHOT = ROOT / "Build/generated/version4-source-scoped.json"
 TARGET_CANDIDATES = ROOT / "Build/generated/nltx-current-source-candidates.json"
 SCOPE_ANALYSIS = ROOT / "Build/generated/version4-member-scope-analysis.json"
 SCOPE_ALLOWLIST = ROOT / "Build/generated/version4-member-scope.json"
-COVERAGE = ROOT / "docs/迁移参考表/Version4源码覆盖.tsv"
+COVERAGE = ROOT / "docs/migration/ledgers/Version4源码覆盖.tsv"
 TARGET_MANIFEST = ROOT / "Build/generated/nltx-target-manifest.json"
 TARGET_SNAPSHOT = ROOT / "Build/generated/nltx-target-scoped.json"
-LEDGER = ROOT / "docs/迁移参考表/Version4-member-migration-map.json"
+LEDGER = ROOT / "docs/migration/ledgers/Version4-member-migration-map.json"
 
 def normalize_analysis(analysis: dict[str, Any]) -> dict[str, Any]:
     """Normalize renamed review paths and compound rows before generation."""
 
     def normalize_path_value(value: Any) -> Any:
         if isinstance(value, str):
-            return value.replace("docs/第一轮审查/design/", "docs/第一轮审查/设计/")
+            # Rewrite legacy review prefixes to the current component-decomposition layout.
+            return (
+                value.replace("docs/第一轮审查/design/", "docs/component-decomposition/review-round-1/design/")
+                .replace("docs/第一轮审查/设计/", "docs/component-decomposition/review-round-1/design/")
+                .replace("docs/第一轮审查/", "docs/component-decomposition/review-round-1/")
+                .replace("docs/组件文档/第一轮审查/设计/", "docs/component-decomposition/review-round-1/design/")
+                .replace("docs/组件文档/第一轮审查/", "docs/component-decomposition/review-round-1/")
+            )
         return value
 
     analysis["designDocuments"] = [normalize_path_value(item) for item in analysis.get("designDocuments", [])]
@@ -676,11 +683,11 @@ def build_ledger(analysis: dict[str, Any], sources: dict[str, dict[str, Any]], m
                 "prerequisites": [],
                 "requiredEvidenceRefs": evidence_refs,
                 "allowedChangeScope": "Only the listed member decisions, mappings, evidence, and generated ledger views.",
-                "allowedFiles": ["docs/迁移参考表/Version4-member-migration-map.json", "docs/迁移参考表/Version4-member-migration-quick-reference.json", "docs/迁移参考表/Version4-member-migration-context-packet.json"],
-                "forbiddenDomains": ["src/", "dome/src/", "Test/", "D:/TRbackup/Version4", "docs/第一轮审查/"],
+                "allowedFiles": ["docs/migration/ledgers/Version4-member-migration-map.json", "docs/migration/ledgers/Version4-member-migration-quick-reference.json", "docs/migration/ledgers/Version4-member-migration-context-packet.json"],
+                "forbiddenDomains": ["src/", "dome/src/", "Test/", "D:/TRbackup/Version4", "docs/component-decomposition/review-round-1/"],
                 "completionCriteria": ["Read the listed source and target declarations", "Close the listed evidence gaps", "Run hash-bound audit and regenerate views"],
-                "verificationSpec": {"tool": "python", "arguments": [".agents/skills/version4-member-migration-ledger/scripts/audit_ledger.py", "--ledger", "docs/迁移参考表/Version4-member-migration-map.json", "--repo-root", "."], "workingDirectory": "D:/TRbackup/NLTX", "expectedExitCode": 0},
-                "expectedArtifacts": ["docs/迁移参考表/version4-member-migration-audit.json", "docs/迁移参考表/Version4-member-migration-quick-reference.json"],
+                "verificationSpec": {"tool": "python", "arguments": [".agents/skills/version4-member-migration-ledger/scripts/audit_ledger.py", "--ledger", "docs/migration/ledgers/Version4-member-migration-map.json", "--repo-root", "."], "workingDirectory": "D:/TRbackup/NLTX", "expectedExitCode": 0},
+                "expectedArtifacts": ["docs/migration/ledgers/version4-member-migration-audit.json", "docs/migration/ledgers/Version4-member-migration-quick-reference.json"],
                 "blocker": None,
                 "checkpoint": "bootstrap: source and review evidence recorded; target/behavior closure pending",
                 "claim": None,
@@ -710,7 +717,7 @@ def build_ledger(analysis: dict[str, Any], sources: dict[str, dict[str, Any]], m
         },
         "baseline": {
             "sourceRoot": "D:/TRbackup/Version4",
-            "coverageFile": "docs/迁移参考表/Version4源码覆盖.tsv",
+            "coverageFile": "docs/migration/ledgers/Version4源码覆盖.tsv",
             "sourceFileCount": len(coverage_rows),
             "coverageSha256": sha256_file(COVERAGE),
             "referenceSupplementRoot": None,
@@ -743,10 +750,10 @@ def build_ledger(analysis: dict[str, Any], sources: dict[str, dict[str, Any]], m
 def record_views() -> None:
     ledger = load(LEDGER)
     paths = [
-        ("markdown-quick-reference", "markdown", ROOT / "docs/迁移参考表/Version4-member-migration-quick-reference.md"),
-        ("machine-quick-reference", "machine", ROOT / "docs/迁移参考表/Version4-member-migration-quick-reference.json"),
-        ("target-index", "targetIndex", ROOT / "docs/迁移参考表/Version4-component-target-index.json"),
-        ("context-packet", "contextPacket", ROOT / "docs/迁移参考表/Version4-member-migration-context-packet.json"),
+        ("markdown-quick-reference", "markdown", ROOT / "docs/migration/ledgers/Version4-member-migration-quick-reference.md"),
+        ("machine-quick-reference", "machine", ROOT / "docs/migration/ledgers/Version4-member-migration-quick-reference.json"),
+        ("target-index", "targetIndex", ROOT / "docs/migration/ledgers/Version4-component-target-index.json"),
+        ("context-packet", "contextPacket", ROOT / "docs/migration/ledgers/Version4-member-migration-context-packet.json"),
     ]
     fact_hash = ledger_fact_hash(ledger)
     ledger["metadata"]["ledgerFactSha256"] = fact_hash

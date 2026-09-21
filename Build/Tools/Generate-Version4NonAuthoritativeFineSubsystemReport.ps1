@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$InputPath = 'docs/迁移参考表/Version4非权威模拟系统字段属性逐成员源码声明-去除ID类文件.md',
-    [string]$OutputPath = 'docs/迁移参考表/Version4非权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md'
+    [string]$InputPath = 'docs/migration/ledgers/Version4非权威模拟系统字段属性逐成员源码声明-去除ID类文件.md',
+    [string]$OutputPath = 'docs/migration/ledgers/Version4非权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md'
 )
 
 Set-StrictMode -Version Latest
@@ -1062,6 +1062,31 @@ $fourthLevelBaselineIds = @(
     'EntityAuthoritativeState', 'SharedCreativePowerIconCatalogState'
 )
 
+$fifthLevelBaselineIds = @(
+    'SharedTimeLoggerPhaseMetricsState', 'TileObjectStyleAndDrawState',
+    'SharedFishingConditionCatalogState', 'SharedDropRuleSelectionAndConditionState',
+    'SharedDungeonControlAndTrapState', 'SharedSceneZoneDefinitionState',
+    'TileObjectPlacementRuleState', 'MainCageTerrestrialCritterAnimationState',
+    'SharedAudioLegacySoundCatalogInstanceState', 'SharedAudioLegacySoundDefinitionCatalogState',
+    'MapEncodingHeaderCatalogState', 'UiItemSlotCreativeCraftingAndUtilityContexts'
+)
+
+$sixthLevelBaselineIds = @(
+    'SharedTimeLoggerWorldRenderPhaseMetricsState',
+    'SharedFishingEnvironmentConditionCatalogState',
+    'SharedDropRuleSelectionAndQuantityState',
+    'TileObjectStyleCatalogState',
+    'SharedDungeonRoomGeometryState',
+    'UiItemSortingCombatAndEquipmentCatalogState',
+    'SharedDungeonStyleFurnitureAndRoomState',
+    'SharedAudioLegacyEnvironmentalInstanceState',
+    'SharedItemUseAndToolCapabilityState',
+    'SharedSceneBiomeAndEventDefinitionState',
+    'SharedTilePaintState',
+    'SharedInvasionEventState',
+    'SharedStartupAndIssueReporting'
+)
+
 function Get-ThirdLevelFineSubsystemId {
     param(
         [Parameter(Mandatory)][pscustomobject]$Row,
@@ -1302,6 +1327,218 @@ function Get-FourthLevelFineSubsystemId {
     }
 }
 
+function Get-FifthLevelFineSubsystemId {
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Row,
+        [Parameter(Mandatory)][string]$FourthLevelFineSubsystem
+    )
+
+    $member = $Row.Member
+    $type = $Row.Type
+    $path = $Row.RelativePath
+
+    switch ($FourthLevelFineSubsystem) {
+        'SharedTimeLoggerPhaseMetricsState' {
+            if ($member -match '^(PlayerChat|NPCs|Projectiles|Players|Items|Rain|Gore|Dust|Particles|LeashedEntities|Interface|DrawFPSGraph|DrawTimeLogger|Overlays|Filters|SunVisibility|MenuDrawTime|SplashDrawTime|DrawFullscreenMap|GCPause)$') {
+                return 'SharedTimeLoggerEntityAndInterfacePhaseMetricsState'
+            }
+            if ($member -match '^(TotalDrawAndUpdate|DrawSolidTiles|FlushSolidTiles|SolidDrawCalls|DrawNonSolidTiles|FlushNonSolidTiles|NonSolidDrawCalls|DrawBlackTiles|DrawWallTiles|FlushWallTiles|WallDrawCalls|DrawWaterTiles|LiquidDrawCalls|DrawBackgroundWaterTiles|LiquidBackgroundDrawCalls|DrawUndergroundBackground|DrawOldUndergroundBackground|DrawWireTiles|ClothingRacks|TileExtras|Nature|RenderSolidTiles|RenderNonSolidTiles|RenderBlacksAndWalls|RenderUndergroundBackground|RenderBackgroundLiquid|RenderLiquid|TotalDrawByRenderCount|TotalDrawRenderNow|TotalDraw|Lighting|LightingInit|LightingByPass|FindPaintedTiles|PrepareRequests|FindingWaterfalls|MapChanges|MapSectionUpdate|MapUpdate|SectionFraming|SectionRefresh|SkyBackground|SunMoonStars|SurfaceBackground|Map|Waterfalls)$') {
+                return 'SharedTimeLoggerWorldRenderPhaseMetricsState'
+            }
+        }
+        'TileObjectStyleAndDrawState' {
+            if (($member -match '^Style') -or ($member -match '^styleLineSkip') -or
+                ($member -match '^(_tileObjectStyle|_hasOwnTileObjectStyle|GetStyleOverride|RandomStyleRange|SpecificRandomStyles)$')) {
+                return 'TileObjectStyleCatalogState'
+            }
+            if ($member -match '^(_tileObjectDraw|_hasOwnTileObjectDraw|DrawYOffset|DrawXOffset|DrawFlipHorizontal|DrawFlipVertical|DrawStepDown|Width|Height|Origin|Direction|FlattenAnchors|CoordinateHeights|DrawFrameOffsets|CoordinateWidth|CoordinatePadding|CoordinatePaddingFix|CoordinateFullWidth|CoordinateFullHeight|DrawStyleOffset)$') {
+                return 'TileObjectDrawGeometryState'
+            }
+        }
+        'SharedFishingConditionCatalogState' {
+            if ($type -match '(\.Rarity|FishRarityCondition|DelegateFishingRarityCondition)$') {
+                return 'SharedFishingRarityConditionCatalogState'
+            }
+            if ($type -match 'AFishDropRulePopulator(?:$|\.DelegateFishingCondition$)') {
+                return 'SharedFishingEnvironmentConditionCatalogState'
+            }
+        }
+        'SharedDropRuleSelectionAndConditionState' {
+            if (($path -match '/Conditions\.cs$') -or ($member -match '^(condition|dummyCondition)$')) {
+                return 'SharedDropRuleConditionBranchState'
+            }
+            if ($path -match '^Terraria\.GameContent\.ItemDropRules/') {
+                return 'SharedDropRuleSelectionAndQuantityState'
+            }
+        }
+        'SharedDungeonControlAndTrapState' {
+            if ($path -match '/DeadMansChestBiome\.cs$') {
+                return 'SharedDungeonTrapPlacementState'
+            }
+            if ($path -match '/DungeonControlLine\.cs$') {
+                return 'SharedDungeonControlLineGeometryState'
+            }
+        }
+        'SharedSceneZoneDefinitionState' {
+            if ($member -match '^(AssumedConstantScreenSize|ZoneScanPadding|ZoneScanSize|TownNPCRectSize|SnowTileMax|MushroomTileThreshold|BelowSurface|ZoneSkyHeight|ZoneOverworldHeight|ZoneDirtLayerHeight|ZoneRockLayerHeight|ZoneUnderworldHeight)$') {
+                return 'SharedSceneZoneGeometryAndThresholdState'
+            }
+            if ($member -match '^(ZoneCorrupt|ZoneCrimson|ZoneHallow|ZoneJungle|ZoneSnow|ZoneDesert|ZoneGlowshroom|ZoneMeteor|ZoneGraveyard|ZoneDungeon|ZoneLihzhardTemple|ZoneGranite|ZoneMarble|ZoneHive|ZoneGemCave|ZoneBeach|ZoneUndergroundDesert|ZoneRain|ZoneSandstorm|SurfaceAtmospherics|UndergroundForShimmering|ZoneShimmer|ZoneWaterCandle|ZonePeaceCandle|ZoneShadowCandle|InTorchGodMinigame)$') {
+                return 'SharedSceneBiomeAndEventDefinitionState'
+            }
+        }
+        'TileObjectPlacementRuleState' {
+            if ($member -match '^(_usesCustomCanPlace|_useGlobalLiquidChecks|_anchor|_anchorTiles|_liquidDeath|_liquidPlacement|_hasOwnAnchor|_hasOwnAnchorTiles|_hasOwnLiquidDeath|_hasOwnLiquidPlacement)$' -or
+                $member -match '^(UsesCustomCanPlace|UsesGlobalLiquidChecks|Anchor|AnchorTop|AnchorBottom|AnchorLeft|AnchorRight|AnchorWall|AnchorValidTiles|AnchorInvalidTiles|AnchorAlternateTiles|AnchorValidWalls|WaterDeath|LavaDeath|WaterPlacement|LavaPlacement)$') {
+                return 'TileObjectAnchorAndLiquidPlacementState'
+            }
+            if ($member -match '^(_placementHooks|_subTiles|_tileObjectBase|_tileObjectCoords|_hasOwnPlacementHooks|_hasOwnSubTiles|_hasOwnTileObjectBase|_hasOwnTileObjectCoords|HookCheckIfCanPlace|HookPostPlaceEveryone|HookPostPlaceMyPlayer|HookPlaceOverride|SubTiles)$') {
+                return 'TileObjectPlacementHookAndBaseState'
+            }
+        }
+        'MainCageTerrestrialCritterAnimationState' {
+            if ($member -match '^(cageFrames|critterCage|bunnyCage|squirrelCage|snailCage|snail2Cage|mouseCage|turtleCage|ratCage)') {
+                return 'MainCageMammalAndReptileAnimationState'
+            }
+            if ($member -match '^(butterflyCage|dragonflyJar|scorpionCage|fairyJar|wormCage|maggotCage|ladybugCage|slugCage|grasshopperCage)') {
+                return 'MainCageInsectAndSmallCritterAnimationState'
+            }
+        }
+        'SharedAudioLegacySoundCatalogInstanceState' {
+            if ($member -match '^SoundInstance(PlayerHit|FemaleHit|PlayerKilled|MenuOpen|MenuClose|MenuTick|Camera|Chat|MaxMana)$') {
+                return 'SharedAudioLegacyPlayerAndInterfaceInstanceState'
+            }
+            if ($member -match '^SoundInstance') {
+                return 'SharedAudioLegacyEnvironmentalInstanceState'
+            }
+        }
+        'SharedAudioLegacySoundDefinitionCatalogState' {
+            if ($member -match '^Sound(PlayerHit|FemaleHit|PlayerKilled|MenuOpen|MenuClose|MenuTick|Camera|Chat|MaxMana)$') {
+                return 'SharedAudioLegacyInterfaceSoundDefinitionCatalogState'
+            }
+            if ($member -match '^Sound') {
+                return 'SharedAudioLegacyGameplaySoundDefinitionCatalogState'
+            }
+        }
+        'MapEncodingHeaderCatalogState' {
+            if ($member -match '^Header') {
+                return 'MapEncodingHeaderBitCatalogState'
+            }
+            if ($member -match '^(drawLoopMilliseconds|maxTileOptions|maxWallOptions|maxLiquidTypes|maxSkyGradients|maxDirtGradients|maxRockGradients|MapChunkSize)$') {
+                return 'MapEncodingOptionLimitState'
+            }
+        }
+        'UiItemSlotCreativeCraftingAndUtilityContexts' {
+            if ($member -match '^(CreativeInfinite|CreativeSacrifice|CreativeInfiniteLocked|NewCraftingUIRecipe|NewCraftingUICraftSlot|NewCraftingUIMaterial)$') {
+                return 'UiItemSlotCreativeAndCraftingContextState'
+            }
+            if ($member -match '^(Equip|Hotbar|ChatItem|DisplayDoll|HatRack|EquipMiscDye|BannerClaiming|OverdrawGlow|Count)') {
+                return 'UiItemSlotHotbarDisplayAndUtilityContextState'
+            }
+        }
+        default {
+            throw "No fifth-level fine subsystem mapping for peer '$FourthLevelFineSubsystem', path '$path', type '$type', member '$member'."
+        }
+    }
+
+    throw "No fifth-level fine subsystem mapping for peer '$FourthLevelFineSubsystem', path '$path', type '$type', member '$member'."
+}
+
+function Get-SixthLevelFineSubsystemId {
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Row,
+        [Parameter(Mandatory)][string]$FifthLevelFineSubsystem
+    )
+
+    $member = $Row.Member
+    $type = $Row.Type
+    $path = $Row.RelativePath
+
+    switch ($FifthLevelFineSubsystem) {
+        'SharedTimeLoggerWorldRenderPhaseMetricsState' {
+            if ($member -match '^(TotalDrawAndUpdate|DrawSolidTiles|FlushSolidTiles|SolidDrawCalls|DrawNonSolidTiles|FlushNonSolidTiles|NonSolidDrawCalls|DrawBlackTiles|DrawWallTiles|FlushWallTiles|WallDrawCalls|DrawWaterTiles|LiquidDrawCalls|DrawBackgroundWaterTiles|LiquidBackgroundDrawCalls|DrawWireTiles|ClothingRacks|TileExtras|Nature|RenderSolidTiles|RenderNonSolidTiles|RenderBlacksAndWalls|RenderBackgroundLiquid|RenderLiquid)$') {
+                return 'SharedTimeLoggerTileAndLiquidRenderMetricsState'
+            }
+            return 'SharedTimeLoggerLightingMapAndBackgroundMetricsState'
+        }
+        'SharedFishingEnvironmentConditionCatalogState' {
+            if ($member -in @('_condition', '_list', 'HardMode', 'EarlyMode', 'Junk', 'Crate', 'AnyEnemies', 'DidNotUseCombatBook')) {
+                return 'SharedFishingConditionCatalogPopulationState'
+            }
+            return 'SharedFishingEnvironmentPredicateState'
+        }
+        'SharedDropRuleSelectionAndQuantityState' {
+            if ($type -match '\.(CommonDrop|CommonDropWithRerolls|DropOneByOne)(\.Parameters)?$') {
+                return 'SharedDropRuleChanceAndQuantityState'
+            }
+            return 'SharedDropRuleOptionSelectionState'
+        }
+        'TileObjectStyleCatalogState' {
+            if ($member -match '^(_tileObjectStyle|_hasOwnTileObjectStyle|GetStyleOverride|RandomStyleRange|SpecificRandomStyles|styleLineSkipVisualOverride|StyleLineSkip|StyleWrapLimitVisualOverride)$') {
+                return 'TileObjectStyleSelectionAndOverrideState'
+            }
+            return 'TileObjectStyleDefinitionCatalogState'
+        }
+        'SharedDungeonRoomGeometryState' {
+            if ($member -match '^(Position|RoomInnerSize|RoomOuterSize|WallDepth|StartPosition|EndPosition|Strength|_innerBoundsSize)$') {
+                return 'SharedDungeonRoomPlacementGeometryState'
+            }
+            return 'SharedDungeonRoomShapeGeometryState'
+        }
+        'UiItemSortingCombatAndEquipmentCatalogState' {
+            if ($member -match '^(Armor|Equip)') {
+                return 'UiItemSortingArmorAndAccessoryCatalogState'
+            }
+            return 'UiItemSortingWeaponAndToolCatalogState'
+        }
+        'SharedDungeonStyleFurnitureAndRoomState' {
+            if ($member -match '^(BiomeRoomType|SubStyles)$') {
+                return 'SharedDungeonStyleRoomVariantState'
+            }
+            return 'SharedDungeonStyleFurnitureCatalogState'
+        }
+        'SharedAudioLegacyEnvironmentalInstanceState' {
+            if ($member -match '^SoundInstance(Grab|Item|NpcHit|NpcKilled|Zombie|Roar|DoubleJump|Run|Coins|Unlock)$') {
+                return 'SharedAudioLegacyEntityFeedbackInstanceState'
+            }
+            return 'SharedAudioLegacyWorldEnvironmentInstanceState'
+        }
+        'SharedItemUseAndToolCapabilityState' {
+            if ($member -match '^(pick|axe|hammer|tileBoost|createTile|createWall|placeStyle|ammo|notAmmo|useAmmo|material)$') {
+                return 'SharedItemToolPlacementCapabilityState'
+            }
+            return 'SharedItemUseTimingAndConsumptionState'
+        }
+        'SharedSceneBiomeAndEventDefinitionState' {
+            if ($member -match '^(ZoneRain|ZoneSandstorm|SurfaceAtmospherics|UndergroundForShimmering|ZoneShimmer|ZoneWaterCandle|ZonePeaceCandle|ZoneShadowCandle|InTorchGodMinigame)$') {
+                return 'SharedSceneWeatherAndEventZoneState'
+            }
+            return 'SharedSceneBiomeZoneDefinitionState'
+        }
+        'SharedTilePaintState' {
+            if ($type -match '(RenderTargetHolder|TilePaintSystemV2)$') {
+                return 'SharedTilePaintRenderTargetState'
+            }
+            return 'SharedTilePaintVariationAndColorState'
+        }
+        'SharedInvasionEventState' {
+            if (($type -match 'DamageTracker$') -or ($member -eq '_damageTracker')) {
+                return 'SharedInvasionDamageTrackingState'
+            }
+            return 'SharedInvasionWaveAndArenaState'
+        }
+        'SharedStartupAndIssueReporting' {
+            if ($path -match '(GeneralIssueReporter|IssueReport)\.cs$') {
+                return 'SharedIssueReportCatalogState'
+            }
+            return 'SharedStartupAndRuntimeHostState'
+        }
+        default {
+            throw "No sixth-level fine subsystem mapping for peer '$FifthLevelFineSubsystem', path '$path', type '$type', member '$member'."
+        }
+    }
+}
+
 function Get-FineSubsystemId {
     param([Parameter(Mandatory)][pscustomobject]$Row)
 
@@ -1315,10 +1552,18 @@ function Get-FineSubsystemId {
     } else {
         $thirdLevelFineSubsystem = $secondLevelFineSubsystem
     }
+    $fourthLevelFineSubsystem = $thirdLevelFineSubsystem
     if ($fourthLevelBaselineIds -contains $thirdLevelFineSubsystem) {
-        return Get-FourthLevelFineSubsystemId -Row $Row -ThirdLevelFineSubsystem $thirdLevelFineSubsystem
+        $fourthLevelFineSubsystem = Get-FourthLevelFineSubsystemId -Row $Row -ThirdLevelFineSubsystem $thirdLevelFineSubsystem
     }
-    return $thirdLevelFineSubsystem
+    $fifthLevelFineSubsystem = $fourthLevelFineSubsystem
+    if ($fifthLevelBaselineIds -contains $fourthLevelFineSubsystem) {
+        $fifthLevelFineSubsystem = Get-FifthLevelFineSubsystemId -Row $Row -FourthLevelFineSubsystem $fourthLevelFineSubsystem
+    }
+    if ($sixthLevelBaselineIds -contains $fifthLevelFineSubsystem) {
+        return Get-SixthLevelFineSubsystemId -Row $Row -FifthLevelFineSubsystem $fifthLevelFineSubsystem
+    }
+    return $fifthLevelFineSubsystem
 }
 
 $fineDefinitions = @(
@@ -1852,17 +2097,109 @@ $fourthLevelSplitDefinitions = @(
     [pscustomobject]@{ Id = 'SharedCreativePowerIconLayoutState'; PreviousPeer = 'SharedCreativePowerIconCatalogState'; Role = 'presentation'; Seam = 'creative power icon layout port'; Responsibility = '创意能力图标行列、布局尺寸和选中颜色状态。' }
 )
 
-$currentPeerDefinitions = @($fineDefinitions + $secondLevelSplitDefinitions + $thirdLevelSplitDefinitions)
+$fifthLevelSplitDefinitions = @(
+    [pscustomobject]@{ Id = 'SharedTimeLoggerWorldRenderPhaseMetricsState'; PreviousPeer = 'SharedTimeLoggerPhaseMetricsState'; Role = 'diagnostics state'; Seam = 'time logger world render metrics port'; Responsibility = 'TimeLogger 世界绘制、光照、地图和背景阶段指标。' }
+    [pscustomobject]@{ Id = 'SharedTimeLoggerEntityAndInterfacePhaseMetricsState'; PreviousPeer = 'SharedTimeLoggerPhaseMetricsState'; Role = 'diagnostics state'; Seam = 'time logger entity interface metrics port'; Responsibility = 'TimeLogger 实体绘制、界面、菜单和诊断阶段指标。' }
+    [pscustomobject]@{ Id = 'TileObjectStyleCatalogState'; PreviousPeer = 'TileObjectStyleAndDrawState'; Role = 'definition/catalog'; Seam = 'tile style catalog port'; Responsibility = 'TileObjectData 的样式常量、样式覆盖、样式步进和随机样式目录。' }
+    [pscustomobject]@{ Id = 'TileObjectDrawGeometryState'; PreviousPeer = 'TileObjectStyleAndDrawState'; Role = 'definition/catalog'; Seam = 'tile draw geometry port'; Responsibility = 'TileObjectData 的绘制偏移、尺寸、坐标、原点和几何布局。' }
+    [pscustomobject]@{ Id = 'SharedFishingRarityConditionCatalogState'; PreviousPeer = 'SharedFishingConditionCatalogState'; Role = 'definition/catalog'; Seam = 'fishing rarity condition port'; Responsibility = '鱼获稀有度枚举、稀有度条件 delegate 和视觉频率定义。' }
+    [pscustomobject]@{ Id = 'SharedFishingEnvironmentConditionCatalogState'; PreviousPeer = 'SharedFishingConditionCatalogState'; Role = 'definition/catalog'; Seam = 'fishing environment condition port'; Responsibility = '鱼获环境、深度、生物群落和世界状态条件 populator。' }
+    [pscustomobject]@{ Id = 'SharedDropRuleConditionBranchState'; PreviousPeer = 'SharedDropRuleSelectionAndConditionState'; Role = 'definition/query'; Seam = 'drop rule condition branch port'; Responsibility = '掉落条件类型、条件字段和模式分支资格判断。' }
+    [pscustomobject]@{ Id = 'SharedDropRuleSelectionAndQuantityState'; PreviousPeer = 'SharedDropRuleSelectionAndConditionState'; Role = 'definition/query'; Seam = 'drop rule selection quantity port'; Responsibility = '掉落选项、概率、数量、重掷和可用候选选择状态。' }
+    [pscustomobject]@{ Id = 'SharedDungeonTrapPlacementState'; PreviousPeer = 'SharedDungeonControlAndTrapState'; Role = 'definition/query'; Seam = 'dungeon trap placement port'; Responsibility = '死亡宝箱陷阱点、陷阱数量和放置尝试状态。' }
+    [pscustomobject]@{ Id = 'SharedDungeonControlLineGeometryState'; PreviousPeer = 'SharedDungeonControlAndTrapState'; Role = 'definition/query'; Seam = 'dungeon control line geometry port'; Responsibility = '地牢控制线节点、切线、半径、方向和样式几何。' }
+    [pscustomobject]@{ Id = 'SharedSceneZoneGeometryAndThresholdState'; PreviousPeer = 'SharedSceneZoneDefinitionState'; Role = 'query/input'; Seam = 'scene zone geometry threshold port'; Responsibility = '场景扫描窗口、层高、阈值和区域几何输入。' }
+    [pscustomobject]@{ Id = 'SharedSceneBiomeAndEventDefinitionState'; PreviousPeer = 'SharedSceneZoneDefinitionState'; Role = 'query/input'; Seam = 'scene biome event definition port'; Responsibility = '场景生物群落、天气、蜡烛和事件区域定义。' }
+    [pscustomobject]@{ Id = 'TileObjectAnchorAndLiquidPlacementState'; PreviousPeer = 'TileObjectPlacementRuleState'; Role = 'definition/catalog'; Seam = 'tile anchor liquid placement port'; Responsibility = 'TileObjectData 的锚点、有效瓦片、液体死亡和液体放置规则。' }
+    [pscustomobject]@{ Id = 'TileObjectPlacementHookAndBaseState'; PreviousPeer = 'TileObjectPlacementRuleState'; Role = 'definition/catalog'; Seam = 'tile placement hook base port'; Responsibility = 'TileObjectData 的放置 hook、基础对象、坐标模块和子瓦片。' }
+    [pscustomobject]@{ Id = 'MainCageMammalAndReptileAnimationState'; PreviousPeer = 'MainCageTerrestrialCritterAnimationState'; Role = 'presentation state'; Seam = 'mammal reptile cage animation port'; Responsibility = 'Main 中兔、松鼠、蜗牛、鼠、龟和大鼠捕获物动画状态。' }
+    [pscustomobject]@{ Id = 'MainCageInsectAndSmallCritterAnimationState'; PreviousPeer = 'MainCageTerrestrialCritterAnimationState'; Role = 'presentation state'; Seam = 'insect small critter cage animation port'; Responsibility = 'Main 中蝴蝶、蜻蜓、蝎、仙女、蠕虫和其他小动物动画状态。' }
+    [pscustomobject]@{ Id = 'SharedAudioLegacyEnvironmentalInstanceState'; PreviousPeer = 'SharedAudioLegacySoundCatalogInstanceState'; Role = 'presentation/adapter'; Seam = 'legacy environmental instance port'; Responsibility = '旧音效环境、世界交互和实体反馈声音实例。' }
+    [pscustomobject]@{ Id = 'SharedAudioLegacyPlayerAndInterfaceInstanceState'; PreviousPeer = 'SharedAudioLegacySoundCatalogInstanceState'; Role = 'presentation/adapter'; Seam = 'legacy player interface instance port'; Responsibility = '旧音效玩家反馈、菜单、相机和界面声音实例。' }
+    [pscustomobject]@{ Id = 'SharedAudioLegacyGameplaySoundDefinitionCatalogState'; PreviousPeer = 'SharedAudioLegacySoundDefinitionCatalogState'; Role = 'definition/catalog'; Seam = 'legacy gameplay sound definition port'; Responsibility = '旧音效环境、世界交互和实体反馈声音定义目录。' }
+    [pscustomobject]@{ Id = 'SharedAudioLegacyInterfaceSoundDefinitionCatalogState'; PreviousPeer = 'SharedAudioLegacySoundDefinitionCatalogState'; Role = 'definition/catalog'; Seam = 'legacy interface sound definition port'; Responsibility = '旧音效玩家反馈、菜单、相机和界面声音定义目录。' }
+    [pscustomobject]@{ Id = 'MapEncodingHeaderBitCatalogState'; PreviousPeer = 'MapEncodingHeaderCatalogState'; Role = 'adapter state'; Seam = 'map header bit layout port'; Responsibility = '地图编码 Header 位布局、保留位和颜色位定义。' }
+    [pscustomobject]@{ Id = 'MapEncodingOptionLimitState'; PreviousPeer = 'MapEncodingHeaderCatalogState'; Role = 'adapter state'; Seam = 'map encoding option limit port'; Responsibility = '地图编码绘制循环、选项上限、渐变上限和区块尺寸。' }
+    [pscustomobject]@{ Id = 'UiItemSlotCreativeAndCraftingContextState'; PreviousPeer = 'UiItemSlotCreativeCraftingAndUtilityContexts'; Role = 'presentation/query'; Seam = 'item slot creative crafting context port'; Responsibility = '创意无限、牺牲和新制作界面槽位上下文。' }
+    [pscustomobject]@{ Id = 'UiItemSlotHotbarDisplayAndUtilityContextState'; PreviousPeer = 'UiItemSlotCreativeCraftingAndUtilityContexts'; Role = 'presentation/query'; Seam = 'item slot hotbar display utility port'; Responsibility = '快捷栏、聊天、装备展示、旗帜和通用槽位上下文。' }
+)
+
+$sixthLevelSplitDefinitions = @(
+    [pscustomobject]@{ Id = 'SharedTimeLoggerTileAndLiquidRenderMetricsState'; PreviousPeer = 'SharedTimeLoggerWorldRenderPhaseMetricsState'; Role = 'diagnostics state'; Seam = 'time logger tile liquid render metrics port'; Responsibility = 'TimeLogger 固体、液体、墙体、线和 Tile 附加绘制阶段指标。' }
+    [pscustomobject]@{ Id = 'SharedTimeLoggerLightingMapAndBackgroundMetricsState'; PreviousPeer = 'SharedTimeLoggerWorldRenderPhaseMetricsState'; Role = 'diagnostics state'; Seam = 'time logger lighting map background metrics port'; Responsibility = 'TimeLogger 光照、地图、瀑布、天空和背景阶段指标。' }
+    [pscustomobject]@{ Id = 'SharedFishingConditionCatalogPopulationState'; PreviousPeer = 'SharedFishingEnvironmentConditionCatalogState'; Role = 'definition/catalog'; Seam = 'fishing condition catalog population port'; Responsibility = '钓鱼条件目录的注册、集合和模式/资格元数据。' }
+    [pscustomobject]@{ Id = 'SharedFishingEnvironmentPredicateState'; PreviousPeer = 'SharedFishingEnvironmentConditionCatalogState'; Role = 'definition/query'; Seam = 'fishing environment predicate port'; Responsibility = '钓鱼液体、深度、生物群落、海洋和世界事件环境条件。' }
+    [pscustomobject]@{ Id = 'SharedDropRuleChanceAndQuantityState'; PreviousPeer = 'SharedDropRuleSelectionAndQuantityState'; Role = 'definition/query'; Seam = 'drop rule chance quantity port'; Responsibility = '掉落规则的概率、重掷、最小/最大数量和逐个掉落参数。' }
+    [pscustomobject]@{ Id = 'SharedDropRuleOptionSelectionState'; PreviousPeer = 'SharedDropRuleSelectionAndQuantityState'; Role = 'definition/query'; Seam = 'drop rule option selection port'; Responsibility = '按模式、选项集合和候选规则选择掉落项的状态。' }
+    [pscustomobject]@{ Id = 'TileObjectStyleDefinitionCatalogState'; PreviousPeer = 'TileObjectStyleCatalogState'; Role = 'definition/catalog'; Seam = 'tile object style definition port'; Responsibility = 'TileObjectData 的固定样式定义、样式常量和样式布局目录。' }
+    [pscustomobject]@{ Id = 'TileObjectStyleSelectionAndOverrideState'; PreviousPeer = 'TileObjectStyleCatalogState'; Role = 'definition/query'; Seam = 'tile object style selection port'; Responsibility = 'TileObjectData 的样式覆盖、随机选择和样式步进状态。' }
+    [pscustomobject]@{ Id = 'SharedDungeonRoomShapeGeometryState'; PreviousPeer = 'SharedDungeonRoomGeometryState'; Role = 'definition/catalog'; Seam = 'dungeon room shape geometry port'; Responsibility = '地牢房间内部/外部形状数据和形状尺寸变化。' }
+    [pscustomobject]@{ Id = 'SharedDungeonRoomPlacementGeometryState'; PreviousPeer = 'SharedDungeonRoomGeometryState'; Role = 'definition/catalog'; Seam = 'dungeon room placement geometry port'; Responsibility = '地牢房间位置、边界尺寸、墙深和强度/端点布局。' }
+    [pscustomobject]@{ Id = 'UiItemSortingWeaponAndToolCatalogState'; PreviousPeer = 'UiItemSortingCombatAndEquipmentCatalogState'; Role = 'definition/catalog'; Seam = 'item sorting weapon tool catalog port'; Responsibility = '物品排序的武器与工具层目录及其通用层定义。' }
+    [pscustomobject]@{ Id = 'UiItemSortingArmorAndAccessoryCatalogState'; PreviousPeer = 'UiItemSortingCombatAndEquipmentCatalogState'; Role = 'definition/catalog'; Seam = 'item sorting armor accessory catalog port'; Responsibility = '物品排序的护甲、时装和装备层目录。' }
+    [pscustomobject]@{ Id = 'SharedDungeonStyleFurnitureCatalogState'; PreviousPeer = 'SharedDungeonStyleFurnitureAndRoomState'; Role = 'definition/catalog'; Seam = 'dungeon furniture catalog port'; Responsibility = '地牢箱体、门、平台、灯具、家具和装饰物品目录。' }
+    [pscustomobject]@{ Id = 'SharedDungeonStyleRoomVariantState'; PreviousPeer = 'SharedDungeonStyleFurnitureAndRoomState'; Role = 'definition/catalog'; Seam = 'dungeon room variant port'; Responsibility = '地牢生物群落房间类型和子样式关系。' }
+    [pscustomobject]@{ Id = 'SharedAudioLegacyWorldEnvironmentInstanceState'; PreviousPeer = 'SharedAudioLegacyEnvironmentalInstanceState'; Role = 'presentation/adapter'; Seam = 'legacy world environment instance port'; Responsibility = '旧音效液体、机械、天气、地形和世界交互声音实例。' }
+    [pscustomobject]@{ Id = 'SharedAudioLegacyEntityFeedbackInstanceState'; PreviousPeer = 'SharedAudioLegacyEnvironmentalInstanceState'; Role = 'presentation/adapter'; Seam = 'legacy entity feedback instance port'; Responsibility = '旧音效物品、NPC、移动、跳跃和交互反馈声音实例。' }
+    [pscustomobject]@{ Id = 'SharedItemUseTimingAndConsumptionState'; PreviousPeer = 'SharedItemUseAndToolCapabilityState'; Role = 'definition/state'; Seam = 'item use timing consumption port'; Responsibility = '物品使用样式、时序、消耗、复用和使用表现能力。' }
+    [pscustomobject]@{ Id = 'SharedItemToolPlacementCapabilityState'; PreviousPeer = 'SharedItemUseAndToolCapabilityState'; Role = 'definition/state'; Seam = 'item tool placement capability port'; Responsibility = '物品采掘、放置、弹药和工具能力。' }
+    [pscustomobject]@{ Id = 'SharedSceneBiomeZoneDefinitionState'; PreviousPeer = 'SharedSceneBiomeAndEventDefinitionState'; Role = 'query/input'; Seam = 'scene biome zone definition port'; Responsibility = '场景腐化、猩红、神圣、地形和生物群落区域定义。' }
+    [pscustomobject]@{ Id = 'SharedSceneWeatherAndEventZoneState'; PreviousPeer = 'SharedSceneBiomeAndEventDefinitionState'; Role = 'query/input'; Seam = 'scene weather event zone port'; Responsibility = '场景天气、微光、蜡烛和事件小游戏区域定义。' }
+    [pscustomobject]@{ Id = 'SharedTilePaintRenderTargetState'; PreviousPeer = 'SharedTilePaintState'; Role = 'presentation state'; Seam = 'tile paint render target port'; Responsibility = 'TilePaintSystemV2 的渲染目标、缓存集合和绘制请求状态。' }
+    [pscustomobject]@{ Id = 'SharedTilePaintVariationAndColorState'; PreviousPeer = 'SharedTilePaintState'; Role = 'definition/state'; Seam = 'tile paint variation color port'; Responsibility = 'Tile/墙/树/笼样式变体键与颜色缓存状态。' }
+    [pscustomobject]@{ Id = 'SharedInvasionDamageTrackingState'; PreviousPeer = 'SharedInvasionEventState'; Role = 'runtime state'; Seam = 'invasion damage tracking port'; Responsibility = 'DD2 入侵伤害跟踪器及其胜利/击杀时间投影。' }
+    [pscustomobject]@{ Id = 'SharedInvasionWaveAndArenaState'; PreviousPeer = 'SharedInvasionEventState'; Role = 'runtime state'; Seam = 'invasion wave arena port'; Responsibility = 'DD2 入侵波次、竞技场、生成暂停和掉落进度状态。' }
+    [pscustomobject]@{ Id = 'SharedIssueReportCatalogState'; PreviousPeer = 'SharedStartupAndIssueReporting'; Role = 'diagnostics/adapter'; Seam = 'issue report catalog port'; Responsibility = '问题报告集合、报告时间和报告正文。' }
+    [pscustomobject]@{ Id = 'SharedStartupAndRuntimeHostState'; PreviousPeer = 'SharedStartupAndIssueReporting'; Role = 'diagnostics/adapter'; Seam = 'startup runtime host port'; Responsibility = '启动参数、运行时宿主、平台句柄和服务依赖状态。' }
+)
+
+$currentPeerDefinitions = @($fineDefinitions + $splitFineDefinitions + $secondLevelSplitDefinitions + $thirdLevelSplitDefinitions)
 foreach ($definition in $fourthLevelSplitDefinitions) {
     $peerDefinitions = @($currentPeerDefinitions | Where-Object Id -eq $definition.PreviousPeer)
     if ($peerDefinitions.Count -ne 1) {
         throw "Fourth-level previous peer '$($definition.PreviousPeer)' is not uniquely defined."
     }
-    $definition.Baseline = $peerDefinitions[0].Baseline
-    if ([string]::IsNullOrWhiteSpace($definition.Baseline)) {
-        $definition.Baseline = $peerDefinitions[0].Id
+    $baseline = ''
+    if ($peerDefinitions[0].PSObject.Properties.Name -contains 'Baseline') {
+        $baseline = [string]$peerDefinitions[0].Baseline
     }
-    $definition.Parent = $peerDefinitions[0].Parent
+    if ([string]::IsNullOrWhiteSpace($baseline)) {
+        $baseline = $peerDefinitions[0].Id
+    }
+    $definition | Add-Member -NotePropertyName Baseline -NotePropertyValue $baseline
+    $definition | Add-Member -NotePropertyName Parent -NotePropertyValue $peerDefinitions[0].Parent
+}
+$currentPeerDefinitions = @($currentPeerDefinitions + $fourthLevelSplitDefinitions)
+foreach ($definition in $fifthLevelSplitDefinitions) {
+    $peerDefinitions = @($currentPeerDefinitions | Where-Object Id -eq $definition.PreviousPeer)
+    if ($peerDefinitions.Count -ne 1) {
+        throw "Fifth-level previous peer '$($definition.PreviousPeer)' is not uniquely defined."
+    }
+    $baseline = ''
+    if ($peerDefinitions[0].PSObject.Properties.Name -contains 'Baseline') {
+        $baseline = [string]$peerDefinitions[0].Baseline
+    }
+    if ([string]::IsNullOrWhiteSpace($baseline)) {
+        $baseline = $peerDefinitions[0].Id
+    }
+    $definition | Add-Member -NotePropertyName Baseline -NotePropertyValue $baseline
+    $definition | Add-Member -NotePropertyName Parent -NotePropertyValue $peerDefinitions[0].Parent
+}
+$currentPeerDefinitions = @($currentPeerDefinitions + $fifthLevelSplitDefinitions)
+foreach ($definition in $sixthLevelSplitDefinitions) {
+    $peerDefinitions = @($currentPeerDefinitions | Where-Object Id -eq $definition.PreviousPeer)
+    if ($peerDefinitions.Count -ne 1) {
+        throw "Sixth-level previous peer '$($definition.PreviousPeer)' is not uniquely defined."
+    }
+    $baseline = ''
+    if ($peerDefinitions[0].PSObject.Properties.Name -contains 'Baseline') {
+        $baseline = [string]$peerDefinitions[0].Baseline
+    }
+    if ([string]::IsNullOrWhiteSpace($baseline)) {
+        $baseline = $peerDefinitions[0].Id
+    }
+    $definition | Add-Member -NotePropertyName Baseline -NotePropertyValue $baseline
+    $definition | Add-Member -NotePropertyName Parent -NotePropertyValue $peerDefinitions[0].Parent
 }
 
 $baselineFineDefinitions = @($fineDefinitions | Where-Object { $retiredFineSubsystemIds -notcontains $_.Id }) + @($splitFineDefinitions)
@@ -1884,6 +2221,8 @@ foreach ($baselineId in $fourthLevelBaselineIds) {
     }
 }
 $fineDefinitions = @($thirdLevelFineDefinitions | Where-Object { $fourthLevelBaselineIds -notcontains $_.Id }) + @($fourthLevelSplitDefinitions)
+$fourthLevelFineDefinitions = @($fineDefinitions | Where-Object { $fifthLevelBaselineIds -notcontains $_.Id }) + @($fifthLevelSplitDefinitions)
+$fineDefinitions = @($fourthLevelFineDefinitions | Where-Object { $sixthLevelBaselineIds -notcontains $_.Id }) + @($sixthLevelSplitDefinitions)
 
 $definitionById = @{}
 foreach ($definition in $fineDefinitions) {
@@ -1951,9 +2290,37 @@ foreach ($row in $rows) {
     if ($secondLevelBaselineIds -contains $baseFineSubsystem) {
         $secondLevelFineSubsystem = Get-SecondLevelFineSubsystemId -Row $row -BaseFineSubsystem $baseFineSubsystem
     }
+    $thirdLevelFineSubsystem = $secondLevelFineSubsystem
+    if ($thirdLevelBaselineIds -contains $secondLevelFineSubsystem) {
+        $thirdLevelFineSubsystem = Get-ThirdLevelFineSubsystemId -Row $row -SecondLevelFineSubsystem $secondLevelFineSubsystem
+    }
+    $fourthLevelFineSubsystem = $thirdLevelFineSubsystem
+    if ($fourthLevelBaselineIds -contains $thirdLevelFineSubsystem) {
+        $fourthLevelFineSubsystem = Get-FourthLevelFineSubsystemId -Row $row -ThirdLevelFineSubsystem $thirdLevelFineSubsystem
+    }
+    $previousPeerSubsystem = $secondLevelFineSubsystem
+    if ($fourthLevelBaselineIds -contains $thirdLevelFineSubsystem) {
+        $previousPeerSubsystem = $thirdLevelFineSubsystem
+    } elseif ($thirdLevelBaselineIds -contains $secondLevelFineSubsystem) {
+        $previousPeerSubsystem = $secondLevelFineSubsystem
+    }
+    if ($fifthLevelBaselineIds -contains $fourthLevelFineSubsystem) {
+        $previousPeerSubsystem = $fourthLevelFineSubsystem
+    }
+    $fifthLevelFineSubsystem = $fourthLevelFineSubsystem
+    if ($fifthLevelBaselineIds -contains $fourthLevelFineSubsystem) {
+        $fifthLevelFineSubsystem = Get-FifthLevelFineSubsystemId -Row $row -FourthLevelFineSubsystem $fourthLevelFineSubsystem
+    }
+    if ($sixthLevelBaselineIds -contains $fifthLevelFineSubsystem) {
+        $previousPeerSubsystem = $fifthLevelFineSubsystem
+    }
+    $fineSubsystem = Get-FineSubsystemId -Row $row
     $row | Add-Member -NotePropertyName BaseFineSubsystem -NotePropertyValue $baseFineSubsystem
     $row | Add-Member -NotePropertyName SecondLevelFineSubsystem -NotePropertyValue $secondLevelFineSubsystem
-    $row | Add-Member -NotePropertyName FineSubsystem -NotePropertyValue (Get-FineSubsystemId -Row $row)
+    $row | Add-Member -NotePropertyName ThirdLevelFineSubsystem -NotePropertyValue $thirdLevelFineSubsystem
+    $row | Add-Member -NotePropertyName FourthLevelFineSubsystem -NotePropertyValue $fourthLevelFineSubsystem
+    $row | Add-Member -NotePropertyName PreviousPeerSubsystem -NotePropertyValue $previousPeerSubsystem
+    $row | Add-Member -NotePropertyName FineSubsystem -NotePropertyValue $fineSubsystem
     if (-not $definitionById.ContainsKey($row.FineSubsystem)) {
         throw "Mapped to undefined fine subsystem '$($row.FineSubsystem)'."
     }
@@ -2076,11 +2443,74 @@ foreach ($baselineId in $thirdLevelBaselineIds) {
     $thirdLevelPeerGroups[$baselineId] = $children -join '、'
 }
 
+$fourthLevelPeerGroups = @{}
+foreach ($baselineId in $fourthLevelBaselineIds) {
+    $children = @(
+        $fourthLevelSplitDefinitions |
+            Where-Object PreviousPeer -eq $baselineId |
+            Select-Object -ExpandProperty Id
+    )
+    if ($children.Count -ne 2) {
+        throw "Fourth-level peer '$baselineId' does not have exactly two child definitions."
+    }
+    $fourthLevelPeerGroups[$baselineId] = $children -join '、'
+}
+
+$fifthLevelPeerGroups = @{}
+foreach ($baselineId in $fifthLevelBaselineIds) {
+    $children = @(
+        $fifthLevelSplitDefinitions |
+            Where-Object PreviousPeer -eq $baselineId |
+            Select-Object -ExpandProperty Id
+    )
+    if ($children.Count -ne 2) {
+        throw "Fifth-level peer '$baselineId' does not have exactly two child definitions."
+    }
+    $fifthLevelPeerGroups[$baselineId] = $children -join '、'
+}
+
+$sixthLevelPeerGroups = @{}
+foreach ($baselineId in $sixthLevelBaselineIds) {
+    $children = @(
+        $sixthLevelSplitDefinitions |
+            Where-Object PreviousPeer -eq $baselineId |
+            Select-Object -ExpandProperty Id
+    )
+    if ($children.Count -ne 2) {
+        throw "Sixth-level peer '$baselineId' does not have exactly two child definitions."
+    }
+    $sixthLevelPeerGroups[$baselineId] = $children -join '、'
+}
+
 function Get-PublicDecompositionAssessment {
     param(
         [Parameter(Mandatory)][string]$FineSubsystemId,
         [string]$PreviousPeerId = ''
     )
+
+    if (-not [string]::IsNullOrWhiteSpace($PreviousPeerId) -and $sixthLevelPeerGroups.ContainsKey($PreviousPeerId)) {
+        return [pscustomobject]@{
+            Decision = 'sixth-level-peer-split-complete'
+            Boundary = "上一级 peer：$PreviousPeerId；同级边界：$($sixthLevelPeerGroups[$PreviousPeerId])"
+            Evidence = 'declaration-type/source-path/member-family-confirmed; reader/writer/lifecycle-partial'
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($PreviousPeerId) -and $fifthLevelPeerGroups.ContainsKey($PreviousPeerId)) {
+        return [pscustomobject]@{
+            Decision = 'fifth-level-peer-split-complete'
+            Boundary = "上一级 peer：$PreviousPeerId；同级边界：$($fifthLevelPeerGroups[$PreviousPeerId])"
+            Evidence = 'declaration-type/source-path/member-family-confirmed; reader/writer/lifecycle-partial'
+        }
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($PreviousPeerId) -and $fourthLevelPeerGroups.ContainsKey($PreviousPeerId)) {
+        return [pscustomobject]@{
+            Decision = 'next-level-peer-split-complete'
+            Boundary = "上一级 peer：$PreviousPeerId；同级边界：$($fourthLevelPeerGroups[$PreviousPeerId])"
+            Evidence = 'declaration-type/source-path-confirmed; reader/writer/lifecycle-partial'
+        }
+    }
 
     if (-not [string]::IsNullOrWhiteSpace($PreviousPeerId) -and $thirdLevelPeerGroups.ContainsKey($PreviousPeerId)) {
         return [pscustomobject]@{
@@ -2112,8 +2542,8 @@ function Get-PublicDecompositionAssessment {
 
 $allFineRows = @($rows | Where-Object FineSubsystem)
 $allFineIds = @($allFineRows | Select-Object -ExpandProperty FineSubsystem -Unique)
-if ($allFineIds.Count -ne 294) {
-    throw "Expected 294 final fine subsystems with members, parsed $($allFineIds.Count)."
+if ($allFineIds.Count -ne 349) {
+    throw "Expected 349 final fine subsystems with members, parsed $($allFineIds.Count)."
 }
 if ($allFineIds.Count -ne @($fineDefinitions | Where-Object { $allFineRows.FineSubsystem -contains $_.Id }).Count) {
     throw 'Fine subsystem definition and row set are inconsistent.'
@@ -2147,7 +2577,7 @@ $fineStats = @(
                 Parent = $definition.Parent
                 Fine = $definition.Id
                 Baseline = $fineRows[0].BaseFineSubsystem
-                PreviousPeer = $fineRows[0].SecondLevelFineSubsystem
+                PreviousPeer = $fineRows[0].PreviousPeerSubsystem
                 Role = $definition.Role
                 Seam = $definition.Seam
             Field = $stats.Field
@@ -2156,6 +2586,50 @@ $fineStats = @(
         }
     }
 )
+
+function Get-SplitChildIds {
+    param([Parameter(Mandatory)][string]$PeerId)
+
+    if ($sixthLevelPeerGroups.ContainsKey($PeerId)) {
+        return @($sixthLevelSplitDefinitions | Where-Object PreviousPeer -eq $PeerId | Select-Object -ExpandProperty Id)
+    }
+    if ($fifthLevelPeerGroups.ContainsKey($PeerId)) {
+        return @($fifthLevelSplitDefinitions | Where-Object PreviousPeer -eq $PeerId | Select-Object -ExpandProperty Id)
+    }
+    if ($fourthLevelPeerGroups.ContainsKey($PeerId)) {
+        return @($fourthLevelSplitDefinitions | Where-Object PreviousPeer -eq $PeerId | Select-Object -ExpandProperty Id)
+    }
+    if ($thirdLevelPeerGroups.ContainsKey($PeerId)) {
+        return @($thirdLevelSplitDefinitions | Where-Object PreviousPeer -eq $PeerId | Select-Object -ExpandProperty Id)
+    }
+    return @()
+}
+
+function Get-ActiveDescendantFineStats {
+    param([Parameter(Mandatory)][string]$PeerId)
+
+    $splitChildren = @(Get-SplitChildIds -PeerId $PeerId)
+    if ($splitChildren.Count -eq 0) {
+        return @($fineStats | Where-Object PreviousPeer -eq $PeerId | Sort-Object Fine)
+    }
+
+    $activeDescendants = [System.Collections.Generic.List[object]]::new()
+    foreach ($childId in $splitChildren) {
+        $directStats = @($fineStats | Where-Object Fine -eq $childId)
+        if ($directStats.Count -gt 1) {
+            throw "Fine subsystem '$childId' has multiple statistics rows."
+        }
+        if ($directStats.Count -eq 1) {
+            $activeDescendants.Add($directStats[0])
+            continue
+        }
+        foreach ($descendant in @(Get-ActiveDescendantFineStats -PeerId $childId)) {
+            $activeDescendants.Add($descendant)
+        }
+    }
+    return @($activeDescendants)
+}
+
 $rankedFineStats = @($fineStats | Sort-Object @{ Expression = 'Total'; Descending = $true }, @{ Expression = 'Field'; Descending = $true }, @{ Expression = 'Property'; Descending = $true }, Parent, Fine)
 $allFineRanking = @(
     $rank = 0
@@ -2225,8 +2699,8 @@ foreach ($stat in $top50BaselineStats) {
 }
 
 $inputHash = (Get-FileHash -LiteralPath $inputFullPath -Algorithm SHA256).Hash.ToLowerInvariant()
-$combinedSourcePath = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) 'docs/迁移参考表/Version4字段属性逐成员源码声明-去除ID类文件.md'))
-$splitReportPath = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) 'docs/迁移参考表/Version4字段属性按系统子系统拆分报告-去除ID类文件.md'))
+$combinedSourcePath = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) 'docs/migration/ledgers/Version4字段属性逐成员源码声明-去除ID类文件.md'))
+$splitReportPath = [System.IO.Path]::GetFullPath((Join-Path (Get-Location) 'docs/migration/ledgers/Version4字段属性按系统子系统拆分报告-去除ID类文件.md'))
 $combinedHash = (Get-FileHash -LiteralPath $combinedSourcePath -Algorithm SHA256).Hash.ToLowerInvariant()
 $splitReportHash = (Get-FileHash -LiteralPath $splitReportPath -Algorithm SHA256).Hash.ToLowerInvariant()
 $generationDate = (Get-Date).ToString('yyyy-MM-dd')
@@ -2311,7 +2785,7 @@ foreach ($definition in $fineDefinitions) {
 [void]$builder.AppendLine()
 [void]$builder.AppendLine('### 3.3 最终细分子系统字段/属性合计排行榜前 50')
 [void]$builder.AppendLine()
-[void]$builder.AppendLine('排名口径：这里展示本文最终有成员的细分子系统（当前 294 个 peer 组）的字段/属性数量，`合计 = 字段 + 属性`，按合计降序；合计相同按字段数、属性数降序，再按父级子系统名称和最终细分子系统名称升序裁决。`Baseline` 列保留原始细分基线归属；`public-decomposition` 判定描述各级 peer 边界的源码库存导航，不等于目标 ECS 组件已经实现。全部 294 个最终 peer 组见 3.4；原始细分基线前 50 及其 peer 汇总见 3.5；本轮第三层拆分的即时 peer 汇总见 3.6。')
+[void]$builder.AppendLine("排名口径：这里展示本文最终有成员的细分子系统（当前 $($allFineIds.Count) 个 peer 组）的字段/属性数量，`合计 = 字段 + 属性`，按合计降序；合计相同按字段数、属性数降序，再按父级子系统名称和最终细分子系统名称升序裁决。`Baseline` 列保留原始细分基线归属；`public-decomposition` 判定描述各级 peer 边界的源码库存导航，不等于目标 ECS 组件已经实现。全部 $($allFineIds.Count) 个最终 peer 组见 3.4；原始细分基线前 50 及其 peer 汇总见 3.5；本轮第三层拆分的即时 peer 汇总见 3.6；本轮第四层拆分的即时 peer 汇总见 3.7；本轮第五层拆分的即时 peer 汇总见 3.8；本轮第六层拆分的即时 peer 汇总见 3.9。")
 [void]$builder.AppendLine()
 [void]$builder.AppendLine('| 排名 | 父级子系统 | 最终细分子系统 | 基线细分子系统 | 字段 | 属性 | 合计 | public-decomposition 判定 | 同级边界 / 不拆分理由 | 证据状态 |')
 [void]$builder.AppendLine('|---:|---|---|---|---:|---:|---:|---|---|---|')
@@ -2321,9 +2795,9 @@ foreach ($stat in $top50FineStats) {
 [void]$builder.AppendLine()
 [void]$builder.AppendLine('3.3 是最终 peer 子系统的当前排行榜；成员已经按唯一来源序号归属到最终 peer 组。每个原始基线组的历史排名、拆分前数量和最终 peer 汇总见下表。')
 [void]$builder.AppendLine()
-[void]$builder.AppendLine('### 3.4 最终细分子系统字段/属性合计完整排行榜（294）')
+[void]$builder.AppendLine("### 3.4 最终细分子系统字段/属性合计完整排行榜（$($allFineIds.Count)）")
 [void]$builder.AppendLine()
-[void]$builder.AppendLine('本表列出全部 294 个有成员的最终 peer 细分子系统；排序规则与 3.3 相同，成员归属和统计由逐成员明细重新聚合得到。')
+[void]$builder.AppendLine("本表列出全部 $($allFineIds.Count) 个有成员的最终 peer 细分子系统；排序规则与 3.3 相同，成员归属和统计由逐成员明细重新聚合得到。")
 [void]$builder.AppendLine()
 [void]$builder.AppendLine('| 排名 | 父级子系统 | 最终细分子系统 | 基线细分子系统 | 字段 | 属性 | 合计 |')
 [void]$builder.AppendLine('|---:|---|---|---|---:|---:|---:|')
@@ -2346,18 +2820,87 @@ foreach ($stat in $top50BaselineStats) {
 [void]$builder.AppendLine()
 [void]$builder.AppendLine('### 3.6 第三层拆分前 peer 与最终 peer 汇总')
 [void]$builder.AppendLine()
-[void]$builder.AppendLine('本表记录本轮从当前 289 组中退休的即时 peer 及其十个最终 peer；原始 239 组基线仍由 3.5 和逐成员章节中的“上一级基线细分子系统”保留。')
+[void]$builder.AppendLine('本表记录五个第三层即时 peer 及其仍活动的最终后代 peer；其中若第三层子组继续进入第四层或第五层拆分，则递归展开到活动终端 peer。原始 239 组基线仍由 3.5 和逐成员章节中的“上一级基线细分子系统”保留。')
 [void]$builder.AppendLine()
 [void]$builder.AppendLine('| 原即时 peer | 原始基线细分子系统 | 最终 peer 组及统计 |')
 [void]$builder.AppendLine('|---|---|---|')
 foreach ($previousPeer in $thirdLevelBaselineIds) {
-    $peerStats = @($fineStats | Where-Object PreviousPeer -eq $previousPeer | Sort-Object Fine)
-    if ($peerStats.Count -ne 2) {
-        throw "Third-level peer '$previousPeer' does not have exactly two active children."
+    $peerStats = @(Get-ActiveDescendantFineStats -PeerId $previousPeer)
+    if ($peerStats.Count -lt 2) {
+        throw "Third-level peer '$previousPeer' does not have at least two active descendants."
     }
     $baselineId = @($peerStats | Select-Object -ExpandProperty Baseline -Unique)
     if ($baselineId.Count -ne 1) {
         throw "Third-level peer '$previousPeer' does not map to exactly one original baseline."
+    }
+    $peerSummary = @(
+        foreach ($peerStat in $peerStats) {
+            "``$($peerStat.Fine)``（字段 $($peerStat.Field)；属性 $($peerStat.Property)；合计 $($peerStat.Total)）"
+        }
+    ) -join '；'
+    [void]$builder.AppendLine("| ``$previousPeer`` | ``$($baselineId[0])`` | $peerSummary |")
+}
+[void]$builder.AppendLine()
+[void]$builder.AppendLine('### 3.7 第四层拆分前 peer 与最终 peer 汇总')
+[void]$builder.AppendLine()
+[void]$builder.AppendLine('本表记录本轮从当前排行榜前 30 中退休的 30 个即时 peer 及其最终活动后代 peer；若第四层子组又进入第五层拆分，则递归展开其第五层活动子组。每个即时 peer 至少对应两个非空最终后代，原始 239 组基线仍由 3.5 和逐成员章节中的“上一级基线细分子系统”保留。')
+[void]$builder.AppendLine()
+[void]$builder.AppendLine('| 原即时 peer | 原始基线细分子系统 | 最终 peer 组及统计 |')
+[void]$builder.AppendLine('|---|---|---|')
+foreach ($previousPeer in $fourthLevelBaselineIds) {
+    $peerStats = @(Get-ActiveDescendantFineStats -PeerId $previousPeer)
+    if ($peerStats.Count -lt 2) {
+        throw "Fourth-level peer '$previousPeer' does not have at least two active descendants."
+    }
+    $baselineId = @($peerStats | Select-Object -ExpandProperty Baseline -Unique)
+    if ($baselineId.Count -ne 1) {
+        throw "Fourth-level peer '$previousPeer' does not map to exactly one original baseline."
+    }
+    $peerSummary = @(
+        foreach ($peerStat in $peerStats) {
+            "``$($peerStat.Fine)``（字段 $($peerStat.Field)；属性 $($peerStat.Property)；合计 $($peerStat.Total)）"
+        }
+    ) -join '；'
+    [void]$builder.AppendLine("| ``$previousPeer`` | ``$($baselineId[0])`` | $peerSummary |")
+}
+[void]$builder.AppendLine()
+[void]$builder.AppendLine('### 3.8 第五层拆分前 peer 与最终 peer 汇总')
+[void]$builder.AppendLine()
+[void]$builder.AppendLine('本表记录本轮从当前排行榜前 12 中退休的 12 个即时 peer 及其最终活动后代 peer；若第五层子组又进入第六层拆分，则递归展开到活动终端 peer。每个即时 peer 至少对应两个非空最终后代。`MapEncodingHeaderCatalogState` 是嵌套在第四层 `MapEncodingCatalogAndIoState` 下的第五层 peer，仍保留完整的直接上一级映射。')
+[void]$builder.AppendLine()
+[void]$builder.AppendLine('| 原即时 peer | 原始基线细分子系统 | 最终 peer 组及统计 |')
+[void]$builder.AppendLine('|---|---|---|')
+foreach ($previousPeer in $fifthLevelBaselineIds) {
+    $peerStats = @(Get-ActiveDescendantFineStats -PeerId $previousPeer)
+    if ($peerStats.Count -lt 2) {
+        throw "Fifth-level peer '$previousPeer' does not have at least two active descendants."
+    }
+    $baselineId = @($peerStats | Select-Object -ExpandProperty Baseline -Unique)
+    if ($baselineId.Count -ne 1) {
+        throw "Fifth-level peer '$previousPeer' does not map to exactly one original baseline."
+    }
+    $peerSummary = @(
+        foreach ($peerStat in $peerStats) {
+            "``$($peerStat.Fine)``（字段 $($peerStat.Field)；属性 $($peerStat.Property)；合计 $($peerStat.Total)）"
+        }
+    ) -join '；'
+    [void]$builder.AppendLine("| ``$previousPeer`` | ``$($baselineId[0])`` | $peerSummary |")
+}
+[void]$builder.AppendLine()
+[void]$builder.AppendLine('### 3.9 第六层拆分前 peer 与最终 peer 汇总')
+[void]$builder.AppendLine()
+[void]$builder.AppendLine('本表记录本轮从当前最终排行榜前 13 中退休的 13 个即时 peer 及其 26 个最终 peer；每个即时 peer 恰好对应两个非空子组。若即时 peer 本身是第五层子组，仍保留其原始基线和直接上一级映射。')
+[void]$builder.AppendLine()
+[void]$builder.AppendLine('| 原即时 peer | 原始基线细分子系统 | 最终 peer 组及统计 |')
+[void]$builder.AppendLine('|---|---|---|')
+foreach ($previousPeer in $sixthLevelBaselineIds) {
+    $peerStats = @(Get-ActiveDescendantFineStats -PeerId $previousPeer)
+    if ($peerStats.Count -ne 2) {
+        throw "Sixth-level peer '$previousPeer' does not have exactly two active children."
+    }
+    $baselineId = @($peerStats | Select-Object -ExpandProperty Baseline -Unique)
+    if ($baselineId.Count -ne 1) {
+        throw "Sixth-level peer '$previousPeer' does not map to exactly one original baseline."
     }
     $peerSummary = @(
         foreach ($peerStat in $peerStats) {

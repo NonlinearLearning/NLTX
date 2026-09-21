@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param(
-    [string]$InputPath = 'docs/迁移参考表/Version4非权威模拟系统字段属性逐成员源码声明-去除ID类文件.md',
-    [string]$ReportPath = 'docs/迁移参考表/Version4非权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md',
-    [string]$CombinedSourcePath = 'docs/迁移参考表/Version4字段属性逐成员源码声明-去除ID类文件.md'
+    [string]$InputPath = 'docs/migration/ledgers/Version4非权威模拟系统字段属性逐成员源码声明-去除ID类文件.md',
+    [string]$ReportPath = 'docs/migration/ledgers/Version4非权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md',
+    [string]$CombinedSourcePath = 'docs/migration/ledgers/Version4字段属性逐成员源码声明-去除ID类文件.md'
 )
 
 Set-StrictMode -Version Latest
@@ -146,7 +146,7 @@ function Read-SummaryTables {
             $section = 'top50'
             continue
         }
-        if ($line -match '^### 3\.4 最终细分子系统字段/属性合计完整排行榜（294）') {
+        if ($line -match '^### 3\.4 最终细分子系统字段/属性合计完整排行榜（\d+）') {
             $section = 'fullRanking'
             continue
         }
@@ -155,6 +155,18 @@ function Read-SummaryTables {
             continue
         }
         if ($line -match '^### 3\.6 第三层拆分前 peer 与最终 peer 汇总') {
+            $section = ''
+            continue
+        }
+        if ($line -match '^### 3\.7 第四层拆分前 peer 与最终 peer 汇总') {
+            $section = ''
+            continue
+        }
+        if ($line -match '^### 3\.8 第五层拆分前 peer 与最终 peer 汇总') {
+            $section = ''
+            continue
+        }
+        if ($line -match '^### 3\.9 第六层拆分前 peer 与最终 peer 汇总') {
             $section = ''
             continue
         }
@@ -364,7 +376,7 @@ $groupStats = @($reportMembers | Group-Object Parent, Fine | ForEach-Object {
         Files = @($items | ForEach-Object { $_.Cells[3] } | Select-Object -Unique).Count
     }
 })
-Assert-Equal -Actual $groupStats.Count -Expected 294 -Message 'Active fine-subsystem count'
+Assert-Equal -Actual $groupStats.Count -Expected 349 -Message 'Active fine-subsystem count'
 $baselineStats = @($reportMembers | Group-Object Parent, Baseline | ForEach-Object {
     $items = $_.Group
     [pscustomobject]@{
@@ -396,10 +408,195 @@ $expectedThirdLevelStats = @{
     SharedDungeonHallCoreState = @{ Field = 9; Property = 1; Total = 10 }
     SharedDungeonHallSettingsState = @{ Field = 19; Property = 0; Total = 19 }
 }
+
+$expectedFourthLevelPeerMap = [ordered]@{
+    TileObjectDefinitionPlacementAndStyleState = @('TileObjectPlacementRuleState', 'TileObjectStyleAndDrawState')
+    SharedTimeLoggerRenderMetricsState = @('SharedTimeLoggerPhaseMetricsState', 'SharedTimeLoggerDisplayFormattingState')
+    SharedDropRuleSelectionAndChainState = @('SharedDropRuleSelectionAndConditionState', 'SharedDropRuleChainState')
+    SharedBiomeDungeonAndTerrainState = @('SharedBiomeTerrainPassState', 'SharedDungeonControlAndTrapState')
+    SharedFishingDropCatalogState = @('SharedFishingConditionCatalogState', 'SharedFishingDropResolutionState')
+    MainCageBirdAndTerrestrialAnimationState = @('MainCageBirdAnimationState', 'MainCageTerrestrialCritterAnimationState')
+    UiItemSortingLayerCatalogState = @('UiItemSortingCombatAndEquipmentCatalogState', 'UiItemSortingConsumableAndMiscCatalogState')
+    SharedSceneScanAndZoneState = @('SharedSceneZoneDefinitionState', 'SharedSceneScanAccumulatorState')
+    SharedCreativePowerDefinitionState = @('SharedCreativePerPlayerPowerState', 'SharedCreativeSharedPowerState')
+    SharedDungeonStyleEntryDefinitions = @('SharedDungeonStyleMaterialAndGeometryState', 'SharedDungeonStyleFurnitureAndRoomState')
+    SharedSceneAggregateAndDecorationState = @('SharedSceneTileAggregateState', 'SharedSceneDecorationAndAudioState')
+    AudioLegacySoundInstanceState = @('SharedAudioLegacySoundCatalogInstanceState', 'SharedAudioLegacyTrackedInstanceState')
+    SharedDungeonRoomShapeVariants = @('SharedDungeonRoomGeometryState', 'SharedDungeonRoomVariantCatalogState')
+    AudioLegacySoundCatalogState = @('SharedAudioLegacySoundDefinitionCatalogState', 'SharedAudioLegacySoundServicesState')
+    MapEncodingCatalogAndIoState = @('MapEncodingHeaderCatalogState', 'MapIoRuntimeState')
+    MainTileBehaviorMetadata = @('MainTileBehaviorAndInteractionMetadata', 'MainTileLightingAndFrameMetadata')
+    UiItemSlotEquipmentAndCreativeContexts = @('UiItemSlotEquipmentAndDisplayContexts', 'UiItemSlotCreativeCraftingAndUtilityContexts')
+    SharedItemStaticEconomyAndTimingRules = @('SharedItemEconomyAndValueRules', 'SharedItemUseTimingAndStackRules')
+    SharedPopupTextState = @('SharedPopupTextContentAndContextState', 'SharedPopupTextRenderLifecycleState')
+    MainBackgroundLayerState = @('MainBackgroundLayerCatalogState', 'MainBackgroundParallaxAndStyleState')
+    SharedShaderFamilyCatalogState = @('SharedShaderFamilyDataState', 'SharedShaderRegistryAndLookupState')
+    SharedDungeonStyleConstantQueries = @('SharedDungeonStyleObjectConstants', 'SharedDungeonStyleBannerAndTrapConstants')
+    SharedTilePlacementGeometryModules = @('SharedTilePlacementCoordinateAndDrawModules', 'SharedTilePlacementBaseAndStyleModules')
+    SharedWorldItemPayloadState = @('SharedWorldItemIdentityAndEconomyPayloadState', 'SharedWorldItemUseAndPresentationPayloadState')
+    NetworkRemoteClientState = @('NetworkRemoteClientConnectionAndStatusState', 'NetworkRemoteClientSectionAndRateLimitState')
+    NetworkSessionCoordinatorState = @('NetworkSessionConfigurationState', 'NetworkSessionTransportAndThreadState')
+    ItemEmergencyStackingState = @('SharedItemEmergencyStackingPolicyState', 'SharedItemEmergencyStackingTransferState')
+    BestiaryInfoElementsAndProviders = @('SharedBestiaryInfoElementState', 'SharedBestiaryCollectionProviderState')
+    EntityAuthoritativeState = @('EntityIdentityAndMotionState', 'EntityBoundsAndFluidState')
+    SharedCreativePowerIconCatalogState = @('SharedCreativePowerIconLocationCatalogState', 'SharedCreativePowerIconLayoutState')
+}
+$expectedFifthLevelPeerMap = [ordered]@{
+    SharedTimeLoggerPhaseMetricsState = @('SharedTimeLoggerWorldRenderPhaseMetricsState', 'SharedTimeLoggerEntityAndInterfacePhaseMetricsState')
+    TileObjectStyleAndDrawState = @('TileObjectStyleCatalogState', 'TileObjectDrawGeometryState')
+    SharedFishingConditionCatalogState = @('SharedFishingRarityConditionCatalogState', 'SharedFishingEnvironmentConditionCatalogState')
+    SharedDropRuleSelectionAndConditionState = @('SharedDropRuleConditionBranchState', 'SharedDropRuleSelectionAndQuantityState')
+    SharedDungeonControlAndTrapState = @('SharedDungeonTrapPlacementState', 'SharedDungeonControlLineGeometryState')
+    SharedSceneZoneDefinitionState = @('SharedSceneZoneGeometryAndThresholdState', 'SharedSceneBiomeAndEventDefinitionState')
+    TileObjectPlacementRuleState = @('TileObjectAnchorAndLiquidPlacementState', 'TileObjectPlacementHookAndBaseState')
+    MainCageTerrestrialCritterAnimationState = @('MainCageMammalAndReptileAnimationState', 'MainCageInsectAndSmallCritterAnimationState')
+    SharedAudioLegacySoundCatalogInstanceState = @('SharedAudioLegacyEnvironmentalInstanceState', 'SharedAudioLegacyPlayerAndInterfaceInstanceState')
+    SharedAudioLegacySoundDefinitionCatalogState = @('SharedAudioLegacyGameplaySoundDefinitionCatalogState', 'SharedAudioLegacyInterfaceSoundDefinitionCatalogState')
+    MapEncodingHeaderCatalogState = @('MapEncodingHeaderBitCatalogState', 'MapEncodingOptionLimitState')
+    UiItemSlotCreativeCraftingAndUtilityContexts = @('UiItemSlotCreativeAndCraftingContextState', 'UiItemSlotHotbarDisplayAndUtilityContextState')
+}
+$expectedSixthLevelPeerMap = [ordered]@{
+    SharedTimeLoggerWorldRenderPhaseMetricsState = @('SharedTimeLoggerTileAndLiquidRenderMetricsState', 'SharedTimeLoggerLightingMapAndBackgroundMetricsState')
+    SharedFishingEnvironmentConditionCatalogState = @('SharedFishingConditionCatalogPopulationState', 'SharedFishingEnvironmentPredicateState')
+    SharedDropRuleSelectionAndQuantityState = @('SharedDropRuleChanceAndQuantityState', 'SharedDropRuleOptionSelectionState')
+    TileObjectStyleCatalogState = @('TileObjectStyleDefinitionCatalogState', 'TileObjectStyleSelectionAndOverrideState')
+    SharedDungeonRoomGeometryState = @('SharedDungeonRoomShapeGeometryState', 'SharedDungeonRoomPlacementGeometryState')
+    UiItemSortingCombatAndEquipmentCatalogState = @('UiItemSortingWeaponAndToolCatalogState', 'UiItemSortingArmorAndAccessoryCatalogState')
+    SharedDungeonStyleFurnitureAndRoomState = @('SharedDungeonStyleFurnitureCatalogState', 'SharedDungeonStyleRoomVariantState')
+    SharedAudioLegacyEnvironmentalInstanceState = @('SharedAudioLegacyWorldEnvironmentInstanceState', 'SharedAudioLegacyEntityFeedbackInstanceState')
+    SharedItemUseAndToolCapabilityState = @('SharedItemUseTimingAndConsumptionState', 'SharedItemToolPlacementCapabilityState')
+    SharedSceneBiomeAndEventDefinitionState = @('SharedSceneBiomeZoneDefinitionState', 'SharedSceneWeatherAndEventZoneState')
+    SharedTilePaintState = @('SharedTilePaintRenderTargetState', 'SharedTilePaintVariationAndColorState')
+    SharedInvasionEventState = @('SharedInvasionDamageTrackingState', 'SharedInvasionWaveAndArenaState')
+    SharedStartupAndIssueReporting = @('SharedIssueReportCatalogState', 'SharedStartupAndRuntimeHostState')
+}
+$expectedFourthLevelStats = @{
+    TileObjectPlacementRuleState = @{ Field = 18; Property = 20; Total = 38 }
+    TileObjectStyleAndDrawState = @{ Field = 28; Property = 28; Total = 56 }
+    SharedTimeLoggerPhaseMetricsState = @{ Field = 66; Property = 0; Total = 66 }
+    SharedTimeLoggerDisplayFormattingState = @{ Field = 9; Property = 0; Total = 9 }
+    SharedDropRuleSelectionAndConditionState = @{ Field = 45; Property = 0; Total = 45 }
+    SharedDropRuleChainState = @{ Field = 3; Property = 18; Total = 21 }
+    SharedBiomeTerrainPassState = @{ Field = 14; Property = 2; Total = 16 }
+    SharedDungeonControlAndTrapState = @{ Field = 42; Property = 1; Total = 43 }
+    SharedFishingConditionCatalogState = @{ Field = 50; Property = 0; Total = 50 }
+    SharedFishingDropResolutionState = @{ Field = 8; Property = 0; Total = 8 }
+    MainCageBirdAnimationState = @{ Field = 20; Property = 0; Total = 20 }
+    MainCageTerrestrialCritterAnimationState = @{ Field = 37; Property = 0; Total = 37 }
+    UiItemSortingCombatAndEquipmentCatalogState = @{ Field = 29; Property = 0; Total = 29 }
+    UiItemSortingConsumableAndMiscCatalogState = @{ Field = 25; Property = 0; Total = 25 }
+    SharedSceneZoneDefinitionState = @{ Field = 38; Property = 0; Total = 38 }
+    SharedSceneScanAccumulatorState = @{ Field = 8; Property = 5; Total = 13 }
+    SharedCreativePerPlayerPowerState = @{ Field = 11; Property = 9; Total = 20 }
+    SharedCreativeSharedPowerState = @{ Field = 9; Property = 15; Total = 24 }
+    SharedDungeonStyleMaterialAndGeometryState = @{ Field = 12; Property = 0; Total = 12 }
+    SharedDungeonStyleFurnitureAndRoomState = @{ Field = 27; Property = 0; Total = 27 }
+    SharedSceneTileAggregateState = @{ Field = 0; Property = 19; Total = 19 }
+    SharedSceneDecorationAndAudioState = @{ Field = 0; Property = 20; Total = 20 }
+    SharedAudioLegacySoundCatalogInstanceState = @{ Field = 35; Property = 0; Total = 35 }
+    SharedAudioLegacyTrackedInstanceState = @{ Field = 2; Property = 0; Total = 2 }
+    SharedDungeonRoomGeometryState = @{ Field = 29; Property = 0; Total = 29 }
+    SharedDungeonRoomVariantCatalogState = @{ Field = 8; Property = 0; Total = 8 }
+    SharedAudioLegacySoundDefinitionCatalogState = @{ Field = 34; Property = 0; Total = 34 }
+    SharedAudioLegacySoundServicesState = @{ Field = 2; Property = 0; Total = 2 }
+    MapEncodingHeaderCatalogState = @{ Field = 32; Property = 0; Total = 32 }
+    MapIoRuntimeState = @{ Field = 4; Property = 0; Total = 4 }
+    MainTileBehaviorAndInteractionMetadata = @{ Field = 20; Property = 0; Total = 20 }
+    MainTileLightingAndFrameMetadata = @{ Field = 15; Property = 0; Total = 15 }
+    UiItemSlotEquipmentAndDisplayContexts = @{ Field = 2; Property = 0; Total = 2 }
+    UiItemSlotCreativeCraftingAndUtilityContexts = @{ Field = 30; Property = 0; Total = 30 }
+    SharedItemEconomyAndValueRules = @{ Field = 12; Property = 0; Total = 12 }
+    SharedItemUseTimingAndStackRules = @{ Field = 18; Property = 0; Total = 18 }
+    SharedPopupTextContentAndContextState = @{ Field = 14; Property = 0; Total = 14 }
+    SharedPopupTextRenderLifecycleState = @{ Field = 16; Property = 0; Total = 16 }
+    MainBackgroundLayerCatalogState = @{ Field = 20; Property = 0; Total = 20 }
+    MainBackgroundParallaxAndStyleState = @{ Field = 9; Property = 0; Total = 9 }
+    SharedShaderFamilyDataState = @{ Field = 19; Property = 1; Total = 20 }
+    SharedShaderRegistryAndLookupState = @{ Field = 9; Property = 0; Total = 9 }
+    SharedDungeonStyleObjectConstants = @{ Field = 21; Property = 0; Total = 21 }
+    SharedDungeonStyleBannerAndTrapConstants = @{ Field = 7; Property = 0; Total = 7 }
+    SharedTilePlacementCoordinateAndDrawModules = @{ Field = 14; Property = 0; Total = 14 }
+    SharedTilePlacementBaseAndStyleModules = @{ Field = 14; Property = 0; Total = 14 }
+    SharedWorldItemIdentityAndEconomyPayloadState = @{ Field = 0; Property = 9; Total = 9 }
+    SharedWorldItemUseAndPresentationPayloadState = @{ Field = 0; Property = 19; Total = 19 }
+    NetworkRemoteClientConnectionAndStatusState = @{ Field = 13; Property = 0; Total = 13 }
+    NetworkRemoteClientSectionAndRateLimitState = @{ Field = 13; Property = 1; Total = 14 }
+    NetworkSessionConfigurationState = @{ Field = 11; Property = 1; Total = 12 }
+    NetworkSessionTransportAndThreadState = @{ Field = 15; Property = 0; Total = 15 }
+    SharedItemEmergencyStackingPolicyState = @{ Field = 6; Property = 0; Total = 6 }
+    SharedItemEmergencyStackingTransferState = @{ Field = 19; Property = 2; Total = 21 }
+    SharedBestiaryInfoElementState = @{ Field = 14; Property = 3; Total = 17 }
+    SharedBestiaryCollectionProviderState = @{ Field = 7; Property = 3; Total = 10 }
+    EntityIdentityAndMotionState = @{ Field = 7; Property = 0; Total = 7 }
+    EntityBoundsAndFluidState = @{ Field = 7; Property = 13; Total = 20 }
+    SharedCreativePowerIconLocationCatalogState = @{ Field = 23; Property = 0; Total = 23 }
+    SharedCreativePowerIconLayoutState = @{ Field = 3; Property = 0; Total = 3 }
+}
+$expectedFifthLevelStats = @{
+    SharedTimeLoggerWorldRenderPhaseMetricsState = @{ Field = 46; Property = 0; Total = 46 }
+    SharedTimeLoggerEntityAndInterfacePhaseMetricsState = @{ Field = 20; Property = 0; Total = 20 }
+    TileObjectStyleCatalogState = @{ Field = 26; Property = 10; Total = 36 }
+    TileObjectDrawGeometryState = @{ Field = 2; Property = 18; Total = 20 }
+    SharedFishingRarityConditionCatalogState = @{ Field = 11; Property = 0; Total = 11 }
+    SharedFishingEnvironmentConditionCatalogState = @{ Field = 39; Property = 0; Total = 39 }
+    SharedDropRuleConditionBranchState = @{ Field = 9; Property = 0; Total = 9 }
+    SharedDropRuleSelectionAndQuantityState = @{ Field = 36; Property = 0; Total = 36 }
+    SharedDungeonTrapPlacementState = @{ Field = 22; Property = 0; Total = 22 }
+    SharedDungeonControlLineGeometryState = @{ Field = 20; Property = 1; Total = 21 }
+    SharedSceneZoneGeometryAndThresholdState = @{ Field = 12; Property = 0; Total = 12 }
+    SharedSceneBiomeAndEventDefinitionState = @{ Field = 26; Property = 0; Total = 26 }
+    TileObjectAnchorAndLiquidPlacementState = @{ Field = 10; Property = 15; Total = 25 }
+    TileObjectPlacementHookAndBaseState = @{ Field = 8; Property = 5; Total = 13 }
+    MainCageMammalAndReptileAnimationState = @{ Field = 18; Property = 0; Total = 18 }
+    MainCageInsectAndSmallCritterAnimationState = @{ Field = 19; Property = 0; Total = 19 }
+    SharedAudioLegacyEnvironmentalInstanceState = @{ Field = 26; Property = 0; Total = 26 }
+    SharedAudioLegacyPlayerAndInterfaceInstanceState = @{ Field = 9; Property = 0; Total = 9 }
+    SharedAudioLegacyGameplaySoundDefinitionCatalogState = @{ Field = 25; Property = 0; Total = 25 }
+    SharedAudioLegacyInterfaceSoundDefinitionCatalogState = @{ Field = 9; Property = 0; Total = 9 }
+    MapEncodingHeaderBitCatalogState = @{ Field = 24; Property = 0; Total = 24 }
+    MapEncodingOptionLimitState = @{ Field = 8; Property = 0; Total = 8 }
+    UiItemSlotCreativeAndCraftingContextState = @{ Field = 6; Property = 0; Total = 6 }
+    UiItemSlotHotbarDisplayAndUtilityContextState = @{ Field = 24; Property = 0; Total = 24 }
+}
+$expectedSixthLevelStats = @{
+    SharedTimeLoggerTileAndLiquidRenderMetricsState = @{ Field = 24; Property = 0; Total = 24 }
+    SharedTimeLoggerLightingMapAndBackgroundMetricsState = @{ Field = 22; Property = 0; Total = 22 }
+    SharedFishingConditionCatalogPopulationState = @{ Field = 8; Property = 0; Total = 8 }
+    SharedFishingEnvironmentPredicateState = @{ Field = 31; Property = 0; Total = 31 }
+    SharedDropRuleChanceAndQuantityState = @{ Field = 16; Property = 0; Total = 16 }
+    SharedDropRuleOptionSelectionState = @{ Field = 20; Property = 0; Total = 20 }
+    TileObjectStyleDefinitionCatalogState = @{ Field = 24; Property = 4; Total = 28 }
+    TileObjectStyleSelectionAndOverrideState = @{ Field = 2; Property = 6; Total = 8 }
+    SharedDungeonRoomShapeGeometryState = @{ Field = 13; Property = 0; Total = 13 }
+    SharedDungeonRoomPlacementGeometryState = @{ Field = 16; Property = 0; Total = 16 }
+    UiItemSortingWeaponAndToolCatalogState = @{ Field = 21; Property = 0; Total = 21 }
+    UiItemSortingArmorAndAccessoryCatalogState = @{ Field = 8; Property = 0; Total = 8 }
+    SharedDungeonStyleFurnitureCatalogState = @{ Field = 25; Property = 0; Total = 25 }
+    SharedDungeonStyleRoomVariantState = @{ Field = 2; Property = 0; Total = 2 }
+    SharedAudioLegacyWorldEnvironmentInstanceState = @{ Field = 16; Property = 0; Total = 16 }
+    SharedAudioLegacyEntityFeedbackInstanceState = @{ Field = 10; Property = 0; Total = 10 }
+    SharedItemUseTimingAndConsumptionState = @{ Field = 15; Property = 0; Total = 15 }
+    SharedItemToolPlacementCapabilityState = @{ Field = 11; Property = 0; Total = 11 }
+    SharedSceneBiomeZoneDefinitionState = @{ Field = 17; Property = 0; Total = 17 }
+    SharedSceneWeatherAndEventZoneState = @{ Field = 9; Property = 0; Total = 9 }
+    SharedTilePaintRenderTargetState = @{ Field = 12; Property = 0; Total = 12 }
+    SharedTilePaintVariationAndColorState = @{ Field = 14; Property = 0; Total = 14 }
+    SharedInvasionDamageTrackingState = @{ Field = 2; Property = 2; Total = 4 }
+    SharedInvasionWaveAndArenaState = @{ Field = 19; Property = 3; Total = 22 }
+    SharedIssueReportCatalogState = @{ Field = 3; Property = 0; Total = 3 }
+    SharedStartupAndRuntimeHostState = @{ Field = 12; Property = 11; Total = 23 }
+}
 $expectedThirdLevelIds = @($expectedThirdLevelPeerMap.Values | ForEach-Object { $_ })
 foreach ($entry in $expectedThirdLevelPeerMap.GetEnumerator()) {
     $children = @($entry.Value)
+    $activeDirectChildren = 0
     foreach ($child in $children) {
+        if ($expectedFourthLevelPeerMap.Contains($child)) {
+            $retiredNestedStats = @($groupStats | Where-Object Fine -eq $child)
+            Assert-Equal -Actual $retiredNestedStats.Count -Expected 0 -Message "Retired fourth-level peer '$child' active count"
+            continue
+        }
+        $activeDirectChildren++
         $childStats = @($groupStats | Where-Object Fine -eq $child)
         Assert-Equal -Actual $childStats.Count -Expected 1 -Message "Third-level child '$child' active count"
         Assert-Equal -Actual $childStats[0].PreviousPeer -Expected $entry.Key -Message "Immediate peer for third-level child '$child'"
@@ -411,14 +608,109 @@ foreach ($entry in $expectedThirdLevelPeerMap.GetEnumerator()) {
     $retiredStats = @($groupStats | Where-Object Fine -eq $entry.Key)
     Assert-Equal -Actual $retiredStats.Count -Expected 0 -Message "Retired third-level peer '$($entry.Key)' active count"
     $activeChildren = @($groupStats | Where-Object PreviousPeer -eq $entry.Key)
-    Assert-Equal -Actual $activeChildren.Count -Expected 2 -Message "Third-level peer '$($entry.Key)' child count"
+    Assert-Equal -Actual $activeChildren.Count -Expected $activeDirectChildren -Message "Third-level peer '$($entry.Key)' direct child count"
     Assert-Equal -Actual (@($activeChildren | Select-Object -ExpandProperty Baseline -Unique).Count) -Expected 1 -Message "Third-level peer '$($entry.Key)' baseline count"
 }
 Assert-Equal -Actual $expectedThirdLevelIds.Count -Expected 10 -Message 'Third-level child definition count'
+Assert-Equal -Actual $expectedFourthLevelPeerMap.Count -Expected 30 -Message 'Fourth-level retired peer definition count'
+Assert-Equal -Actual (@($expectedFourthLevelPeerMap.Values | ForEach-Object { $_ })).Count -Expected 60 -Message 'Fourth-level child definition count'
+Assert-Equal -Actual $expectedFifthLevelPeerMap.Count -Expected 12 -Message 'Fifth-level retired peer definition count'
+Assert-Equal -Actual (@($expectedFifthLevelPeerMap.Values | ForEach-Object { $_ })).Count -Expected 24 -Message 'Fifth-level child definition count'
+Assert-Equal -Actual $expectedSixthLevelPeerMap.Count -Expected 13 -Message 'Sixth-level retired peer definition count'
+Assert-Equal -Actual (@($expectedSixthLevelPeerMap.Values | ForEach-Object { $_ })).Count -Expected 26 -Message 'Sixth-level child definition count'
+
+foreach ($entry in $expectedFourthLevelPeerMap.GetEnumerator()) {
+    $retiredStats = @($groupStats | Where-Object Fine -eq $entry.Key)
+    Assert-Equal -Actual $retiredStats.Count -Expected 0 -Message "Retired fourth-level peer '$($entry.Key)' active count"
+    $activeChildren = @($groupStats | Where-Object PreviousPeer -eq $entry.Key)
+    $nestedRetiredChildren = @($entry.Value | Where-Object { $expectedFifthLevelPeerMap.Contains($_) -or $expectedSixthLevelPeerMap.Contains($_) })
+    Assert-Equal -Actual $activeChildren.Count -Expected (2 - $nestedRetiredChildren.Count) -Message "Fourth-level peer '$($entry.Key)' direct child count"
+    $baselineCandidates = @($activeChildren | Select-Object -ExpandProperty Baseline)
+    foreach ($nestedChild in $nestedRetiredChildren) {
+        $baselineCandidates += @($groupStats | Where-Object PreviousPeer -eq $nestedChild | Select-Object -ExpandProperty Baseline)
+    }
+    Assert-Equal -Actual (@($baselineCandidates | Select-Object -Unique).Count) -Expected 1 -Message "Fourth-level peer '$($entry.Key)' baseline count"
+    foreach ($child in @($entry.Value)) {
+        if ($expectedFifthLevelPeerMap.Contains($child) -or $expectedSixthLevelPeerMap.Contains($child)) {
+            $nestedRetiredStats = @($groupStats | Where-Object Fine -eq $child)
+            Assert-Equal -Actual $nestedRetiredStats.Count -Expected 0 -Message "Retired nested peer '$child' active count"
+            continue
+        }
+        $childStats = @($groupStats | Where-Object Fine -eq $child)
+        Assert-Equal -Actual $childStats.Count -Expected 1 -Message "Fourth-level child '$child' active count"
+        Assert-Equal -Actual $childStats[0].PreviousPeer -Expected $entry.Key -Message "Immediate peer for fourth-level child '$child'"
+        $expectedStats = $expectedFourthLevelStats[$child]
+        Assert-Equal -Actual $childStats[0].Field -Expected $expectedStats.Field -Message "Field count for fourth-level child '$child'"
+        Assert-Equal -Actual $childStats[0].Property -Expected $expectedStats.Property -Message "Property count for fourth-level child '$child'"
+        Assert-Equal -Actual $childStats[0].Total -Expected $expectedStats.Total -Message "Total count for fourth-level child '$child'"
+    }
+}
+
+foreach ($entry in $expectedFifthLevelPeerMap.GetEnumerator()) {
+    $retiredStats = @($groupStats | Where-Object Fine -eq $entry.Key)
+    Assert-Equal -Actual $retiredStats.Count -Expected 0 -Message "Retired fifth-level peer '$($entry.Key)' active count"
+    $activeChildren = @($groupStats | Where-Object PreviousPeer -eq $entry.Key)
+    $nestedRetiredChildren = @($entry.Value | Where-Object { $expectedSixthLevelPeerMap.Contains($_) })
+    Assert-Equal -Actual $activeChildren.Count -Expected (2 - $nestedRetiredChildren.Count) -Message "Fifth-level peer '$($entry.Key)' direct child count"
+    $baselineCandidates = @($activeChildren | Select-Object -ExpandProperty Baseline)
+    foreach ($nestedChild in $nestedRetiredChildren) {
+        $baselineCandidates += @($groupStats | Where-Object PreviousPeer -eq $nestedChild | Select-Object -ExpandProperty Baseline)
+    }
+    Assert-Equal -Actual (@($baselineCandidates | Select-Object -Unique).Count) -Expected 1 -Message "Fifth-level peer '$($entry.Key)' baseline count"
+    foreach ($child in @($entry.Value)) {
+        if ($expectedSixthLevelPeerMap.Contains($child)) {
+            $nestedRetiredStats = @($groupStats | Where-Object Fine -eq $child)
+            Assert-Equal -Actual $nestedRetiredStats.Count -Expected 0 -Message "Retired sixth-level peer '$child' active count"
+            continue
+        }
+        $childStats = @($groupStats | Where-Object Fine -eq $child)
+        Assert-Equal -Actual $childStats.Count -Expected 1 -Message "Fifth-level child '$child' active count"
+        Assert-Equal -Actual $childStats[0].PreviousPeer -Expected $entry.Key -Message "Immediate peer for fifth-level child '$child'"
+        $expectedStats = $expectedFifthLevelStats[$child]
+        Assert-Equal -Actual $childStats[0].Field -Expected $expectedStats.Field -Message "Field count for fifth-level child '$child'"
+        Assert-Equal -Actual $childStats[0].Property -Expected $expectedStats.Property -Message "Property count for fifth-level child '$child'"
+        Assert-Equal -Actual $childStats[0].Total -Expected $expectedStats.Total -Message "Total count for fifth-level child '$child'"
+    }
+    $retiredNestedTotal = 0
+    foreach ($nestedPeer in $nestedRetiredChildren) {
+        foreach ($nestedChild in $expectedSixthLevelPeerMap[$nestedPeer]) {
+            $retiredNestedTotal += $expectedSixthLevelStats[$nestedChild].Total
+        }
+    }
+    $expectedPeerTotal = 0
+    foreach ($child in $entry.Value) {
+        if ($expectedSixthLevelPeerMap.Contains($child)) {
+            foreach ($nestedChild in $expectedSixthLevelPeerMap[$child]) {
+                $expectedPeerTotal += $expectedSixthLevelStats[$nestedChild].Total
+            }
+            continue
+        }
+        $expectedPeerTotal += $expectedFifthLevelStats[$child].Total
+    }
+    Assert-Equal -Actual ((Get-CountSum -Items $activeChildren -Property Total) + $retiredNestedTotal) -Expected $expectedPeerTotal -Message "Fifth-level member rollup for $($entry.Key)"
+}
+
+foreach ($entry in $expectedSixthLevelPeerMap.GetEnumerator()) {
+    $retiredStats = @($groupStats | Where-Object Fine -eq $entry.Key)
+    Assert-Equal -Actual $retiredStats.Count -Expected 0 -Message "Retired sixth-level peer '$($entry.Key)' active count"
+    $activeChildren = @($groupStats | Where-Object PreviousPeer -eq $entry.Key)
+    Assert-Equal -Actual $activeChildren.Count -Expected 2 -Message "Sixth-level peer '$($entry.Key)' child count"
+    Assert-Equal -Actual (@($activeChildren | Select-Object -ExpandProperty Baseline -Unique).Count) -Expected 1 -Message "Sixth-level peer '$($entry.Key)' baseline count"
+    foreach ($child in @($entry.Value)) {
+        $childStats = @($groupStats | Where-Object Fine -eq $child)
+        Assert-Equal -Actual $childStats.Count -Expected 1 -Message "Sixth-level child '$child' active count"
+        Assert-Equal -Actual $childStats[0].PreviousPeer -Expected $entry.Key -Message "Immediate peer for sixth-level child '$child'"
+        $expectedStats = $expectedSixthLevelStats[$child]
+        Assert-Equal -Actual $childStats[0].Field -Expected $expectedStats.Field -Message "Field count for sixth-level child '$child'"
+        Assert-Equal -Actual $childStats[0].Property -Expected $expectedStats.Property -Message "Property count for sixth-level child '$child'"
+        Assert-Equal -Actual $childStats[0].Total -Expected $expectedStats.Total -Message "Total count for sixth-level child '$child'"
+    }
+    Assert-Equal -Actual (Get-CountSum -Items $activeChildren -Property Total) -Expected ($expectedSixthLevelStats[$entry.Value[0]].Total + $expectedSixthLevelStats[$entry.Value[1]].Total) -Message "Sixth-level member rollup for $($entry.Key)"
+}
 
 $summaryTables = Read-SummaryTables -Path $reportFullPath
-Assert-Equal -Actual $summaryTables.ReportedFineCount -Expected 294 -Message 'Reported final fine-subsystem count'
-Assert-Equal -Actual $summaryTables.FullRankingRows.Count -Expected 294 -Message 'Full ranking summary row count'
+Assert-Equal -Actual $summaryTables.ReportedFineCount -Expected 349 -Message 'Reported final fine-subsystem count'
+Assert-Equal -Actual $summaryTables.FullRankingRows.Count -Expected 349 -Message 'Full ranking summary row count'
 foreach ($stat in $groupStats) {
     Assert-Equal -Actual ($stat.Field + $stat.Property) -Expected $stat.Total -Message "field + property for $($stat.Fine)"
     $baselineIds = @($reportMembers | Where-Object { $_.Parent -eq $stat.Parent -and $_.Fine -eq $stat.Fine } | Select-Object -ExpandProperty Baseline -Unique)

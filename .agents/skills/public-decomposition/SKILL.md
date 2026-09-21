@@ -77,7 +77,7 @@ description: Use when refactoring a large class, deep inheritance tree, or ECS m
 
 - 项目详细规则：`../../../约束/公共拆分约束.md`
 - ECS 访问模式、组件粒度和系统职责：`references/ecs-decomposition-patterns.md`
-- 仓库 C# 命名与布局：`../../../约束/Google-CSharp-Style-Guide-约束.md`
+- 仓库 C# 命名与布局：`../../../Context/约束/Google-CSharp-Style-Guide-约束.md`
 - 触发评测样例：`evals/trigger_cases.json`；语义配置：`evals/semantic_config.json`
 - 输出风险档案：`reports/output-risk-profile.md`
 - ECS 证据记录模板与来源优先级：`references/ecs-evidence-protocol.md`

@@ -9,7 +9,7 @@ param(
   [string]$SourceRoot = 'D:\TRbackup\Version4',
   [string]$TargetRoot = '.',
   [string]$ProjectOrAssembly = 'unknown',
-  [string]$CoverageFile = 'docs\迁移参考表\Version4源码覆盖.tsv',
+  [string]$CoverageFile = 'docs\migration\ledgers\Version4源码覆盖.tsv',
   [string]$MemberScope,
   [ValidateRange(1, 64)]
   [int]$MaxDegreeOfParallelism = 4,
@@ -29,11 +29,11 @@ $targetRootPath = if ([IO.Path]::IsPathRooted($TargetRoot)) { [IO.Path]::GetFull
 
 $controlledRoots = @(
   [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'Build\generated')),
-  [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'docs\migrations'))
+  [IO.Path]::GetFullPath((Join-Path $repositoryRoot 'docs\migration\ledgers'))
 )
 foreach ($outputPath in @($sourceOutputPath, $targetOutputPath)) {
   if (-not ($controlledRoots | Where-Object { $outputPath -eq $_ -or $outputPath.StartsWith($_ + [IO.Path]::DirectorySeparatorChar, [StringComparison]::OrdinalIgnoreCase) })) {
-    throw "Scanner output must be under Build/generated or docs/migrations: $outputPath"
+    throw "Scanner output must be under Build/generated or docs/migration/ledgers: $outputPath"
   }
 }
 

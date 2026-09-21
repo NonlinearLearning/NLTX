@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$InputPath = 'docs/迁移参考表/Version4权威模拟系统字段属性逐成员源码声明-去除ID类文件.md',
-    [string]$ReportPath = 'docs/迁移参考表/Version4权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md'
+    [string]$InputPath = 'docs/migration/ledgers/Version4权威模拟系统字段属性逐成员源码声明-去除ID类文件.md',
+    [string]$ReportPath = 'docs/migration/ledgers/Version4权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md'
 )
 
 Set-StrictMode -Version Latest
@@ -138,101 +138,134 @@ foreach ($seq in 1..2659) {
 }
 
 $baselineTopTwenty = @(
-    [pscustomobject]@{ Rank = 1; Name = 'PlayerNamedPetFlagState'; Fields = 55; Properties = 0; Total = 55; Split = $false }
-    [pscustomobject]@{ Rank = 2; Name = 'WorldSecretSeedDefinitions'; Fields = 41; Properties = 0; Total = 41; Split = $false }
-    [pscustomobject]@{ Rank = 3; Name = 'MountGeometryAndFrameCatalog'; Fields = 32; Properties = 0; Total = 32; Split = $true }
-    [pscustomobject]@{ Rank = 4; Name = 'NpcBossDefeatProgressionState'; Fields = 31; Properties = 0; Total = 31; Split = $true }
-    [pscustomobject]@{ Rank = 5; Name = 'MountStaticAndDrillConstants'; Fields = 30; Properties = 0; Total = 30; Split = $true }
-    [pscustomobject]@{ Rank = 6; Name = 'NpcStatusEffectFlags'; Fields = 30; Properties = 0; Total = 30; Split = $true }
-    [pscustomobject]@{ Rank = 7; Name = 'PlayerCompanionAndRestState'; Fields = 28; Properties = 2; Total = 30; Split = $true }
-    [pscustomobject]@{ Rank = 8; Name = 'PlayerMinionCapacityAndSummonState'; Fields = 30; Properties = 0; Total = 30; Split = $true }
-    [pscustomobject]@{ Rank = 9; Name = 'MountRuntimeProjectionProperties'; Fields = 2; Properties = 27; Total = 29; Split = $false }
-    [pscustomobject]@{ Rank = 10; Name = 'PlayerIdentityAndLifecycleState'; Fields = 29; Properties = 0; Total = 29; Split = $true }
-    [pscustomobject]@{ Rank = 11; Name = 'GenVarsWorldLayerAndSurfaceState'; Fields = 28; Properties = 0; Total = 28; Split = $true }
-    [pscustomobject]@{ Rank = 12; Name = 'WorldGenerationDimensionsAndExecution'; Fields = 28; Properties = 0; Total = 28; Split = $true }
-    [pscustomobject]@{ Rank = 13; Name = 'NpcSpawnEnvironmentEligibilityInputs'; Fields = 27; Properties = 0; Total = 27; Split = $false }
-    [pscustomobject]@{ Rank = 14; Name = 'NpcTownRescueAndSpawnUnlocks'; Fields = 27; Properties = 0; Total = 27; Split = $true }
-    [pscustomobject]@{ Rank = 15; Name = 'PlayerAppearanceEquipmentSelection'; Fields = 27; Properties = 0; Total = 27; Split = $true }
-    [pscustomobject]@{ Rank = 16; Name = 'WorldGenerationTileMutationActions'; Fields = 27; Properties = 0; Total = 27; Split = $false }
-    [pscustomobject]@{ Rank = 17; Name = 'PlayerAppearanceEquipmentProjection'; Fields = 26; Properties = 0; Total = 26; Split = $true }
-    [pscustomobject]@{ Rank = 18; Name = 'NpcNetworkAndSpawnState'; Fields = 25; Properties = 0; Total = 25; Split = $true }
-    [pscustomobject]@{ Rank = 19; Name = 'PlayerFrameImmunityAndInteractionState'; Fields = 25; Properties = 0; Total = 25; Split = $true }
-    [pscustomobject]@{ Rank = 20; Name = 'PlayerSurvivalAndControlStatus'; Fields = 25; Properties = 0; Total = 25; Split = $true }
+    [pscustomobject]@{ Rank = 1; Name = 'PlayerNamedPetFlagState'; Fields = 55; Properties = 0; Total = 55; Split = $true }
+    [pscustomobject]@{ Rank = 2; Name = 'WorldSecretSeedDefinitions'; Fields = 41; Properties = 0; Total = 41; Split = $true }
+    [pscustomobject]@{ Rank = 3; Name = 'MountRuntimeProjectionProperties'; Fields = 2; Properties = 27; Total = 29; Split = $true }
+    [pscustomobject]@{ Rank = 4; Name = 'NpcSpawnEnvironmentEligibilityInputs'; Fields = 27; Properties = 0; Total = 27; Split = $true }
+    [pscustomobject]@{ Rank = 5; Name = 'WorldGenerationTileMutationActions'; Fields = 27; Properties = 0; Total = 27; Split = $true }
+    [pscustomobject]@{ Rank = 6; Name = 'PlayerMinionSummonFlags'; Fields = 25; Properties = 0; Total = 25; Split = $true }
+    [pscustomobject]@{ Rank = 7; Name = 'WorldGenerationControllerState'; Fields = 15; Properties = 10; Total = 25; Split = $true }
+    [pscustomobject]@{ Rank = 8; Name = 'PlayerCombatProcAndImmunityState'; Fields = 24; Properties = 0; Total = 24; Split = $true }
+    [pscustomobject]@{ Rank = 9; Name = 'PlayerSpawnMovementAndTileTargeting'; Fields = 24; Properties = 0; Total = 24; Split = $true }
+    [pscustomobject]@{ Rank = 10; Name = 'RevengeMarkerState'; Fields = 22; Properties = 2; Total = 24; Split = $true }
+    [pscustomobject]@{ Rank = 11; Name = 'WorldLifecycleAndTransformState'; Fields = 24; Properties = 0; Total = 24; Split = $true }
+    [pscustomobject]@{ Rank = 12; Name = 'MountAnimationFrameCatalog'; Fields = 23; Properties = 0; Total = 23; Split = $true }
+    [pscustomobject]@{ Rank = 13; Name = 'NpcDamageAttributionAndCredits'; Fields = 14; Properties = 9; Total = 23; Split = $true }
+    [pscustomobject]@{ Rank = 14; Name = 'PlayerCombatModifiersAndRanges'; Fields = 23; Properties = 0; Total = 23; Split = $true }
+    [pscustomobject]@{ Rank = 15; Name = 'GenVarsCavesOresAndBiomes'; Fields = 22; Properties = 0; Total = 22; Split = $true }
+    [pscustomobject]@{ Rank = 16; Name = 'LiquidFlowAndBufferState'; Fields = 22; Properties = 0; Total = 22; Split = $true }
+    [pscustomobject]@{ Rank = 17; Name = 'NpcSpawnZoneAndEventEligibilityInputs'; Fields = 22; Properties = 0; Total = 22; Split = $true }
+    [pscustomobject]@{ Rank = 18; Name = 'PlayerAccessoryAndCombatStatus'; Fields = 22; Properties = 0; Total = 22; Split = $true }
+    [pscustomobject]@{ Rank = 19; Name = 'PlayerInformationAccessoryState'; Fields = 22; Properties = 0; Total = 22; Split = $true }
+    [pscustomobject]@{ Rank = 20; Name = 'ProjectileSpecializedQueriesAndCaches'; Fields = 22; Properties = 0; Total = 22; Split = $true }
 )
 
 $expectedChildren = [ordered]@{
-    MountGeometryAndFrameCatalog = @(
-        [pscustomobject]@{ Name = 'MountGeometryAndOffsetCatalog'; Parent = 'MountAndVehicleSimulation'; Total = 9 }
-        [pscustomobject]@{ Name = 'MountAnimationFrameCatalog'; Parent = 'MountAndVehicleSimulation'; Total = 23 }
+    PlayerNamedPetFlagState = @(
+        [pscustomobject]@{ Name = 'PlayerBossPetFlags'; Parent = 'PlayerGameplay'; Total = 16 }
+        [pscustomobject]@{ Name = 'PlayerSeasonalAndEventPetFlags'; Parent = 'PlayerGameplay'; Total = 9 }
+        [pscustomobject]@{ Name = 'PlayerStandardNamedPetFlags'; Parent = 'PlayerGameplay'; Total = 13 }
+        [pscustomobject]@{ Name = 'PlayerCrossoverPetFlags'; Parent = 'PlayerGameplay'; Total = 13 }
+        [pscustomobject]@{ Name = 'PlayerWorldObjectPetFlags'; Parent = 'PlayerGameplay'; Total = 4 }
     )
-    NpcBossDefeatProgressionState = @(
-        [pscustomobject]@{ Name = 'NpcBossDefeatFlags'; Parent = 'NpcAndTownSimulation'; Total = 17 }
-        [pscustomobject]@{ Name = 'NpcEventDefeatFlags'; Parent = 'NpcAndTownSimulation'; Total = 14 }
+    WorldSecretSeedDefinitions = @(
+        [pscustomobject]@{ Name = 'WorldSecretSeedRegistryDefinitions'; Parent = 'WorldGenerationAndEcology'; Total = 6 }
+        [pscustomobject]@{ Name = 'WorldSecretSeedVisualAndSurfaceRules'; Parent = 'WorldGenerationAndEcology'; Total = 9 }
+        [pscustomobject]@{ Name = 'WorldSecretSeedTerrainAndStructureRules'; Parent = 'WorldGenerationAndEcology'; Total = 11 }
+        [pscustomobject]@{ Name = 'WorldSecretSeedProgressionAndInfectionRules'; Parent = 'WorldGenerationAndEcology'; Total = 12 }
+        [pscustomobject]@{ Name = 'WorldSecretSeedSeasonalRules'; Parent = 'WorldGenerationAndEcology'; Total = 3 }
     )
-    MountStaticAndDrillConstants = @(
-        [pscustomobject]@{ Name = 'MountFrameAndDrawCatalog'; Parent = 'MountAndVehicleSimulation'; Total = 11 }
-        [pscustomobject]@{ Name = 'MountSpecialVehicleCatalog'; Parent = 'MountAndVehicleSimulation'; Total = 5 }
-        [pscustomobject]@{ Name = 'MountDrillConstants'; Parent = 'MountAndVehicleSimulation'; Total = 9 }
-        [pscustomobject]@{ Name = 'MountSuperCartConstants'; Parent = 'MountAndVehicleSimulation'; Total = 5 }
+    MountRuntimeProjectionProperties = @(
+        [pscustomobject]@{ Name = 'MountRuntimeIdentityAndFrameProjection'; Parent = 'MountAndVehicleSimulation'; Total = 13 }
+        [pscustomobject]@{ Name = 'MountRuntimeMobilityAndAbilityProjection'; Parent = 'MountAndVehicleSimulation'; Total = 16 }
     )
-    NpcStatusEffectFlags = @(
-        [pscustomobject]@{ Name = 'NpcElementalDebuffState'; Parent = 'NpcAndTownSimulation'; Total = 17 }
-        [pscustomobject]@{ Name = 'NpcControlAndSocialEffectState'; Parent = 'NpcAndTownSimulation'; Total = 4 }
-        [pscustomobject]@{ Name = 'NpcWhipAndSpecialEffectState'; Parent = 'NpcAndTownSimulation'; Total = 9 }
+    NpcSpawnEnvironmentEligibilityInputs = @(
+        [pscustomobject]@{ Name = 'NpcSpawnSpatialEligibilityInputs'; Parent = 'NpcAndTownSimulation'; Total = 10 }
+        [pscustomobject]@{ Name = 'NpcSpawnBiomeAndDungeonEligibilityInputs'; Parent = 'NpcAndTownSimulation'; Total = 6 }
+        [pscustomobject]@{ Name = 'NpcSpawnPolicyAndEventEligibilityInputs'; Parent = 'NpcAndTownSimulation'; Total = 11 }
     )
-    PlayerCompanionAndRestState = @(
-        [pscustomobject]@{ Name = 'PlayerEyeAnimationState'; Parent = 'PlayerGameplay'; Total = 4 }
-        [pscustomobject]@{ Name = 'PlayerPettingState'; Parent = 'PlayerGameplay'; Total = 7 }
-        [pscustomobject]@{ Name = 'PlayerSittingState'; Parent = 'PlayerGameplay'; Total = 5 }
-        [pscustomobject]@{ Name = 'PlayerSleepingState'; Parent = 'PlayerGameplay'; Total = 7 }
-        [pscustomobject]@{ Name = 'PlayerRabbitOrderFrameState'; Parent = 'PlayerGameplay'; Total = 7 }
+    WorldGenerationTileMutationActions = @(
+        [pscustomobject]@{ Name = 'WorldGenerationTileSetActions'; Parent = 'WorldGenerationAndEcology'; Total = 12 }
+        [pscustomobject]@{ Name = 'WorldGenerationWallMutationActions'; Parent = 'WorldGenerationAndEcology'; Total = 7 }
+        [pscustomobject]@{ Name = 'WorldGenerationTilePlacementAndPaintActions'; Parent = 'WorldGenerationAndEcology'; Total = 5 }
+        [pscustomobject]@{ Name = 'WorldGenerationLiquidAndNeighborActions'; Parent = 'WorldGenerationAndEcology'; Total = 3 }
     )
-    PlayerMinionCapacityAndSummonState = @(
-        [pscustomobject]@{ Name = 'PlayerMinionCapacityState'; Parent = 'PlayerGameplay'; Total = 3 }
-        [pscustomobject]@{ Name = 'PlayerMinionSummonFlags'; Parent = 'PlayerGameplay'; Total = 25 }
-        [pscustomobject]@{ Name = 'PlayerMinionDamageTrackingState'; Parent = 'PlayerGameplay'; Total = 2 }
+    PlayerMinionSummonFlags = @(
+        [pscustomobject]@{ Name = 'PlayerCoreMinionSummonFlags'; Parent = 'PlayerGameplay'; Total = 22 }
+        [pscustomobject]@{ Name = 'PlayerCrossoverMinionSummonFlags'; Parent = 'PlayerGameplay'; Total = 3 }
     )
-    PlayerIdentityAndLifecycleState = @(
-        [pscustomobject]@{ Name = 'PlayerIdentityAndDeathRecordState'; Parent = 'PlayerGameplay'; Total = 10 }
-        [pscustomobject]@{ Name = 'PlayerRuntimeInteractionAndEffectState'; Parent = 'PlayerGameplay'; Total = 13 }
-        [pscustomobject]@{ Name = 'PlayerConsumedProgressionFlags'; Parent = 'PlayerGameplay'; Total = 6 }
+    WorldGenerationControllerState = @(
+        [pscustomobject]@{ Name = 'WorldGenerationControllerPassState'; Parent = 'WorldGenerationAndEcology'; Total = 7 }
+        [pscustomobject]@{ Name = 'WorldGenerationControllerPauseAndHashState'; Parent = 'WorldGenerationAndEcology'; Total = 7 }
+        [pscustomobject]@{ Name = 'WorldGenerationGeneratorExecutionState'; Parent = 'WorldGenerationAndEcology'; Total = 11 }
     )
-    GenVarsWorldLayerAndSurfaceState = @(
-        [pscustomobject]@{ Name = 'GenVarsWorldLayerMetrics'; Parent = 'WorldGenerationAndEcology'; Total = 13 }
-        [pscustomobject]@{ Name = 'GenVarsSurfaceAndBiomeState'; Parent = 'WorldGenerationAndEcology'; Total = 15 }
+    PlayerCombatProcAndImmunityState = @(
+        [pscustomobject]@{ Name = 'PlayerCombatDamageProcState'; Parent = 'PlayerGameplay'; Total = 15 }
+        [pscustomobject]@{ Name = 'PlayerCombatDodgeAndImmunityState'; Parent = 'PlayerGameplay'; Total = 5 }
+        [pscustomobject]@{ Name = 'PlayerCombatBarrierAndRegenState'; Parent = 'PlayerGameplay'; Total = 4 }
     )
-    WorldGenerationDimensionsAndExecution = @(
-        [pscustomobject]@{ Name = 'WorldGenerationDimensionsState'; Parent = 'WorldGenerationAndEcology'; Total = 8 }
-        [pscustomobject]@{ Name = 'WorldGenerationExecutionState'; Parent = 'WorldGenerationAndEcology'; Total = 6 }
-        [pscustomobject]@{ Name = 'WorldGenerationSecretSeedFlags'; Parent = 'WorldGenerationAndEcology'; Total = 10 }
-        [pscustomobject]@{ Name = 'WorldGenerationScratchState'; Parent = 'WorldGenerationAndEcology'; Total = 4 }
+    PlayerSpawnMovementAndTileTargeting = @(
+        [pscustomobject]@{ Name = 'PlayerSpawnAndReturnState'; Parent = 'PlayerGameplay'; Total = 4 }
+        [pscustomobject]@{ Name = 'PlayerTileTargetingAndRangeState'; Parent = 'PlayerGameplay'; Total = 12 }
+        [pscustomobject]@{ Name = 'PlayerMovementPhysicsState'; Parent = 'PlayerGameplay'; Total = 8 }
     )
-    NpcTownRescueAndSpawnUnlocks = @(
-        [pscustomobject]@{ Name = 'NpcTownRescueState'; Parent = 'NpcAndTownSimulation'; Total = 8 }
-        [pscustomobject]@{ Name = 'NpcTownPetAdoptionState'; Parent = 'NpcAndTownSimulation'; Total = 3 }
-        [pscustomobject]@{ Name = 'NpcTownSpawnUnlockState'; Parent = 'NpcAndTownSimulation'; Total = 16 }
+    RevengeMarkerState = @(
+        [pscustomobject]@{ Name = 'RevengeMarkerExpirationAndIdentityState'; Parent = 'DeathPenaltyAndRevenge'; Total = 9 }
+        [pscustomobject]@{ Name = 'RevengeMarkerEnemyContextState'; Parent = 'DeathPenaltyAndRevenge'; Total = 10 }
+        [pscustomobject]@{ Name = 'RevengeMarkerValueAndRespawnState'; Parent = 'DeathPenaltyAndRevenge'; Total = 5 }
     )
-    PlayerAppearanceEquipmentSelection = @(
-        [pscustomobject]@{ Name = 'PlayerEquipmentSelectionSlots'; Parent = 'PlayerGameplay'; Total = 21 }
-        [pscustomobject]@{ Name = 'PlayerAppearanceSelectionState'; Parent = 'PlayerGameplay'; Total = 6 }
+    WorldLifecycleAndTransformState = @(
+        [pscustomobject]@{ Name = 'WorldLifecycleLoadAndTransformState'; Parent = 'WorldGenerationAndEcology'; Total = 7 }
+        [pscustomobject]@{ Name = 'WorldLifecycleProgressionAndEventState'; Parent = 'WorldGenerationAndEcology'; Total = 6 }
+        [pscustomobject]@{ Name = 'WorldLifecycleHousingAndSpawnPacingState'; Parent = 'WorldGenerationAndEcology'; Total = 7 }
+        [pscustomobject]@{ Name = 'WorldLifecycleTileMergeState'; Parent = 'WorldGenerationAndEcology'; Total = 4 }
     )
-    PlayerAppearanceEquipmentProjection = @(
-        [pscustomobject]@{ Name = 'PlayerEquipmentColorProjection'; Parent = 'PlayerGameplay'; Total = 20 }
-        [pscustomobject]@{ Name = 'PlayerTraversalColorProjection'; Parent = 'PlayerGameplay'; Total = 6 }
+    MountAnimationFrameCatalog = @(
+        [pscustomobject]@{ Name = 'MountGroundAnimationFrames'; Parent = 'MountAndVehicleSimulation'; Total = 11 }
+        [pscustomobject]@{ Name = 'MountAerialAndWaterAnimationFrames'; Parent = 'MountAndVehicleSimulation'; Total = 9 }
+        [pscustomobject]@{ Name = 'MountDashAnimationFrames'; Parent = 'MountAndVehicleSimulation'; Total = 3 }
     )
-    NpcNetworkAndSpawnState = @(
-        [pscustomobject]@{ Name = 'NpcNetworkReplicationState'; Parent = 'NpcAndTownSimulation'; Total = 11 }
-        [pscustomobject]@{ Name = 'NpcSpawnBudgetAndActivityState'; Parent = 'NpcAndTownSimulation'; Total = 10 }
-        [pscustomobject]@{ Name = 'NpcIdentityAndStatusState'; Parent = 'NpcAndTownSimulation'; Total = 4 }
+    NpcDamageAttributionAndCredits = @(
+        [pscustomobject]@{ Name = 'NpcDamageDefinitionRegistry'; Parent = 'NpcAndTownSimulation'; Total = 4 }
+        [pscustomobject]@{ Name = 'NpcDamageRuntimeTracking'; Parent = 'NpcAndTownSimulation'; Total = 12 }
+        [pscustomobject]@{ Name = 'NpcDamageCreditProjection'; Parent = 'NpcAndTownSimulation'; Total = 7 }
     )
-    PlayerFrameImmunityAndInteractionState = @(
-        [pscustomobject]@{ Name = 'PlayerFrameAndImmunityState'; Parent = 'PlayerGameplay'; Total = 11 }
-        [pscustomobject]@{ Name = 'PlayerInteractionInputState'; Parent = 'PlayerGameplay'; Total = 14 }
+    PlayerCombatModifiersAndRanges = @(
+        [pscustomobject]@{ Name = 'PlayerCombatDamageAndCritModifiers'; Parent = 'PlayerGameplay'; Total = 14 }
+        [pscustomobject]@{ Name = 'PlayerCombatSpeedRangeAndPermissionState'; Parent = 'PlayerGameplay'; Total = 9 }
     )
-    PlayerSurvivalAndControlStatus = @(
-        [pscustomobject]@{ Name = 'PlayerSurvivalAndTransformationState'; Parent = 'PlayerGameplay'; Total = 15 }
-        [pscustomobject]@{ Name = 'PlayerDebuffStatusState'; Parent = 'PlayerGameplay'; Total = 8 }
-        [pscustomobject]@{ Name = 'PlayerBuilderOverlayState'; Parent = 'PlayerGameplay'; Total = 2 }
+    GenVarsCavesOresAndBiomes = @(
+        [pscustomobject]@{ Name = 'GenVarsCaveTunnelAndOrePatchState'; Parent = 'WorldGenerationAndEcology'; Total = 9 }
+        [pscustomobject]@{ Name = 'GenVarsMushroomBiomeAndLogState'; Parent = 'WorldGenerationAndEcology'; Total = 5 }
+        [pscustomobject]@{ Name = 'GenVarsLakeAndOasisState'; Parent = 'WorldGenerationAndEcology'; Total = 8 }
+    )
+    LiquidFlowAndBufferState = @(
+        [pscustomobject]@{ Name = 'LiquidFlowBudgetAndPanicState'; Parent = 'LiquidSimulation'; Total = 15 }
+        [pscustomobject]@{ Name = 'LiquidCellWorkItemState'; Parent = 'LiquidSimulation'; Total = 4 }
+        [pscustomobject]@{ Name = 'LiquidBufferQueueState'; Parent = 'LiquidSimulation'; Total = 3 }
+    )
+    NpcSpawnZoneAndEventEligibilityInputs = @(
+        [pscustomobject]@{ Name = 'NpcSpawnBiomeZoneInputs'; Parent = 'NpcAndTownSimulation'; Total = 13 }
+        [pscustomobject]@{ Name = 'NpcSpawnEventAndTowerInputs'; Parent = 'NpcAndTownSimulation'; Total = 8 }
+        [pscustomobject]@{ Name = 'NpcSpawnTargetSelectionState'; Parent = 'NpcAndTownSimulation'; Total = 1 }
+    )
+    PlayerAccessoryAndCombatStatus = @(
+        [pscustomobject]@{ Name = 'PlayerAccessoryCombatModifierState'; Parent = 'PlayerGameplay'; Total = 9 }
+        [pscustomobject]@{ Name = 'PlayerAccessoryResourceAndInvulnerabilityState'; Parent = 'PlayerGameplay'; Total = 5 }
+        [pscustomobject]@{ Name = 'PlayerAccessoryDebuffAndDropState'; Parent = 'PlayerGameplay'; Total = 8 }
+    )
+    PlayerInformationAccessoryState = @(
+        [pscustomobject]@{ Name = 'PlayerInformationWorldAndMovementState'; Parent = 'PlayerGameplay'; Total = 5 }
+        [pscustomobject]@{ Name = 'PlayerInformationNavigationAndTimeState'; Parent = 'PlayerGameplay'; Total = 7 }
+        [pscustomobject]@{ Name = 'PlayerInformationDetectionAndWiringState'; Parent = 'PlayerGameplay'; Total = 8 }
+        [pscustomobject]@{ Name = 'PlayerFootballPresentationState'; Parent = 'PlayerGameplay'; Total = 2 }
+    )
+    ProjectileSpecializedQueriesAndCaches = @(
+        [pscustomobject]@{ Name = 'ProjectileCombatScalingState'; Parent = 'ProjectileSimulation'; Total = 2 }
+        [pscustomobject]@{ Name = 'ProjectileCollisionGeometryCache'; Parent = 'ProjectileSimulation'; Total = 8 }
+        [pscustomobject]@{ Name = 'ProjectileTargetSelectionCache'; Parent = 'ProjectileSimulation'; Total = 7 }
+        [pscustomobject]@{ Name = 'ProjectileFishingAndMiningQueryState'; Parent = 'ProjectileSimulation'; Total = 3 }
+        [pscustomobject]@{ Name = 'ProjectileKiteAndLightningRules'; Parent = 'ProjectileSimulation'; Total = 2 }
     )
 }
 
@@ -250,7 +283,7 @@ foreach ($row in $reportRows) {
     $reportFineTotals[$row.Fine].Total++
 }
 
-Assert-Equal $reportFineTotals.Count 221 'Active fine subsystem count mismatch'
+Assert-Equal $reportFineTotals.Count 267 'Active fine subsystem count mismatch'
 
 foreach ($entry in $baselineTopTwenty) {
     $sourceRows = @($reportRows | Where-Object Fine -eq $entry.Name)
@@ -304,7 +337,7 @@ foreach ($entry in $baselineTopTwenty) {
     }
 }
 
-$rankingStart = [array]::IndexOf($reportLines, '### 3.3 当前活动细分子系统字段属性数量排行榜（全部 221）')
+$rankingStart = [array]::IndexOf($reportLines, '### 3.3 当前活动细分子系统字段属性数量排行榜（全部 267）')
 $rankingEnd = [array]::IndexOf($reportLines, '### 3.4 二次细分目标与新子系统')
 if ($rankingStart -lt 0 -or $rankingEnd -le $rankingStart) {
     throw 'Fine report has invalid active leaderboard boundaries.'
@@ -324,7 +357,7 @@ $rankingRows = @($reportLines[($rankingStart + 1)..($rankingEnd - 1)] |
             }
         }
     })
-Assert-Equal $rankingRows.Count 221 'Active leaderboard row count mismatch'
+Assert-Equal $rankingRows.Count 267 'Active leaderboard row count mismatch'
 
 $expectedRanking = @($reportFineTotals.Keys | ForEach-Object {
         [pscustomobject]@{
@@ -346,5 +379,5 @@ for ($index = 0; $index -lt $expectedRanking.Count; $index++) {
 }
 
 Write-Output 'PASS: current leaderboard top 20 was independently audited.'
-Write-Output 'PASS: 15 current top-20 source groups are retired into 43 non-empty children; 5 homogeneous groups are retained.'
-Write-Output 'PASS: all child parents, member totals, audit decisions, and the complete 221-row leaderboard reconcile.'
+Write-Output 'PASS: all 20 current top-20 source groups are retired into 66 non-empty children.'
+Write-Output 'PASS: all child parents, member totals, audit decisions, and the complete 267-row leaderboard reconcile.'

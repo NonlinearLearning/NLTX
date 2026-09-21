@@ -6,7 +6,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $evidenceRoot = Join-Path $RepositoryRoot 'Build\evidence\item-ecs'
-$migrationRoot = Join-Path $RepositoryRoot 'docs\migrations'
+$migrationRoot = Join-Path $RepositoryRoot 'docs\组件文档\migrations'
 New-Item -ItemType Directory -Force -Path $evidenceRoot, $migrationRoot | Out-Null
 
 function Get-RelativeFiles([string]$root) {
