@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Terraria.WorldSession</RootNamespace>
+    <AssemblyName>Terraria.WorldSession</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\WorldInteraction\Components\ManEaterProtectionIndexComponent.cs" Link="WorldInteraction\Components\ManEaterProtectionIndexComponent.cs" />
+    <Compile Include="..\WorldInteraction\Components\ManEaterProtectionSystem.cs" Link="WorldInteraction\Components\ManEaterProtectionSystem.cs" />
+  </ItemGroup>
+</Project>

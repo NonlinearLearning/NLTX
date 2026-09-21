@@ -5,7 +5,7 @@ namespace Terraria.LeashedEntity;
 
 /// <summary>
 /// Stores the entity-side relation to a leashed anchor host.
-/// status: proposed
+/// status: implemented
 /// componentOwner: LeashedEntitySimulation
 /// crossSubsystemOwner: integration-review
 /// </summary>

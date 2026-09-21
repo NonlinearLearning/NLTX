@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\DungeonBoundaryDefinition.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\DungeonLayoutControlComponent.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\DungeonLayoutSnapshot.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\DungeonRecordSnapshot.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\DungeonSpecialRewardGenerationComponent.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\DungeonSpecialRewardGenerationSnapshot.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\FloatingIslandHouseSnapshot.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\FloatingIslandPlacementSnapshot.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\FloatingIslandPlacementStateComponent.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\DungeonLayoutControlSystem.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\DungeonSelectionControlSystem.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\DungeonSpecialRewardGenerationSystem.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\FloatingIslandPlacementSystem.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\DungeonLayoutResetSystem.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\DungeonSpecialRewardGenerationResetSystem.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\FloatingIslandPlacementResetSystem.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Queries\DungeonLayoutQuery.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Queries\DungeonSpecialRewardGenerationQuery.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Queries\FloatingIslandPlacementQuery.cs" />
+  </ItemGroup>
+</Project>

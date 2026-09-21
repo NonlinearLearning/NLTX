@@ -1,3 +1,5 @@
+using System;
+
 namespace Terraria.Projectile;
 
 public struct ProjectileCollisionPolicyComponent
@@ -16,6 +18,17 @@ public struct ProjectileCollisionPolicyComponent
     float ownerHitCheckDistance = 1000.0f,
     bool manualDirectionChange = false)
   {
+    if (maximumBounces < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(maximumBounces));
+    }
+
+    ValidateNonNegativeFinite(
+      bounceVelocityMultiplier,
+      nameof(bounceVelocityMultiplier));
+    ValidateNonNegativeFinite(minimumBounceSpeed, nameof(minimumBounceSpeed));
+    ValidateNonNegativeFinite(ownerHitCheckDistance, nameof(ownerHitCheckDistance));
+
     TileCollisionEnabled = tileCollisionEnabled;
     IgnoreWater = ignoreWater;
     CorrectSlopeCollision = correctSlopeCollision;
@@ -28,6 +41,16 @@ public struct ProjectileCollisionPolicyComponent
     OwnerHitCheck = ownerHitCheck;
     OwnerHitCheckDistance = ownerHitCheckDistance;
     ManualDirectionChange = manualDirectionChange;
+  }
+
+  private static void ValidateNonNegativeFinite(
+    float value,
+    string parameterName)
+  {
+    if (!float.IsFinite(value) || value < 0.0f)
+    {
+      throw new ArgumentOutOfRangeException(parameterName);
+    }
   }
 
   public bool TileCollisionEnabled;

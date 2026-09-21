@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Player\ManaActivityPolicyDefinition.cs" Link="ManaActivityPolicyDefinition.cs" />
+    <Compile Include="..\Player\ManaStatusSystem.cs" Link="ManaStatusSystem.cs" />
+    <Compile Include="..\Player\PlayerActivityDecision.cs" Link="PlayerActivityDecision.cs" />
+    <Compile Include="..\Player\PlayerActivityInput.cs" Link="PlayerActivityInput.cs" />
+    <Compile Include="..\Player\PlayerActivityQuery.cs" Link="PlayerActivityQuery.cs" />
+    <Compile Include="..\Player\PlayerManaActivityComponent.cs" Link="PlayerManaActivityComponent.cs" />
+    <Compile Include="..\Player\PlayerManaRegenModifierComponent.cs" Link="PlayerManaRegenModifierComponent.cs" />
+    <Compile Include="..\Player\PlayerManaStatusInput.cs" Link="PlayerManaStatusInput.cs" />
+  </ItemGroup>
+</Project>

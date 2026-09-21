@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Terraria.NonAuthoritative</RootNamespace>
+    <AssemblyName>Terraria.NonAuthoritative.Persistence</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="WorldStorage\**\*.cs" />
+    <Compile Include="Player\**\*.cs" />
+    <Compile Include="WorldSession\WorldDescriptorPersistenceSnapshot.cs" />
+    <Compile Include="WorldSession\WorldLoadStatus.cs" />
+    <Compile Include="WorldSession\WorldValiditySnapshot.cs" />
+    <Compile Include="WorldSession\WorldRulesHandoff.cs" />
+    <Compile Include="WorldSession\WorldValidityQuery.cs" />
+    <Compile Include="WorldSession\Calendar\WorldResetTimePolicy.cs" />
+    <Compile Include="WorldSession\Calendar\IWorldTemporaryEventSink.cs" />
+    <Compile Include="WorldSession\Calendar\IWorldTemporaryEventSource.cs" />
+    <Compile Include="WorldSession\Calendar\WorldTemporaryEventRestoreResult.cs" />
+    <Compile Include="WorldSession\Calendar\WorldTemporaryEventContext.cs" />
+    <Compile Include="WorldSession\Calendar\WorldTemporaryEventContextSystem.cs" />
+  </ItemGroup>
+</Project>

@@ -4,24 +4,24 @@ namespace Terraria.LeashedEntity;
 
 /// <summary>
 /// Stores critter-only behavior state for one leashed entity.
-/// status: proposed
+/// status: implemented
 /// componentOwner: LeashedEntitySimulation
 /// crossSubsystemOwner: integration-review
 /// </summary>
 public struct LeashedCritterBehaviorComponent
 {
   /// <summary>
-  /// NPC content id, not an NPC runtime instance id.
+  /// NPC content id, not an NPC runtime instance id. A null value means content binding is pending.
   /// </summary>
   public int? NpcType;
 
   /// <summary>
-  /// Anchor compatibility/style candidate. Zero is not a source default claim.
+  /// Anchor compatibility/style snapshot candidate. Definition catalog ownership remains pending.
   /// </summary>
   public int AnchorStyle;
 
   /// <summary>
-  /// Critter capability candidate. The source default remains unresolved.
+  /// Critter capability snapshot candidate. The immutable definition owner remains pending.
   /// </summary>
   public bool IsAquatic;
 
@@ -31,7 +31,7 @@ public struct LeashedCritterBehaviorComponent
   public TileCoordinate? TargetPosition;
 
   /// <summary>
-  /// Wire-compatible random cursor candidate; internal random type is unresolved.
+  /// Wire-compatible random cursor candidate; the source LCG representation remains unresolved.
   /// </summary>
   public uint RandomState;
 

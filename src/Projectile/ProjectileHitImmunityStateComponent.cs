@@ -15,6 +15,16 @@ public struct ProjectileHitImmunityStateComponent
     int npcCapacity,
     int playerCapacity = 255)
   {
+    if (npcCapacity < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(npcCapacity));
+    }
+
+    if (playerCapacity < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(playerCapacity));
+    }
+
     LocalNpcImmunityTicks = new int[npcCapacity];
     PlayerImmunityTicks = new int[playerCapacity];
     RestrikeDelayTicks = 0;

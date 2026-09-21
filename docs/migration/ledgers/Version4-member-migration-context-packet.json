@@ -1,0 +1,1660 @@
+{
+  "schemaVersion": "1.0",
+  "viewKind": "context-packet",
+  "generatedFromLedgerFactSha256": "sha256:2c1d648576da379d568daafbcf45629183d2859fbc2b86ca17e5bdcc3eaa6ae2",
+  "workItem": {
+    "workItemId": "work-item-015",
+    "kind": "member-evidence",
+    "title": "First-round member evidence batch 015",
+    "status": "ready",
+    "priority": 30,
+    "sourceMemberRefs": [
+      "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic"
+    ],
+    "behaviorRefs": [],
+    "targetMappingRefs": [
+      "mapping-0116",
+      "mapping-0117",
+      "mapping-0118"
+    ],
+    "targetMemberRefs": [
+      "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::State",
+      "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::TargetPosition",
+      "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::WaitTime"
+    ],
+    "prerequisites": [],
+    "requiredEvidenceRefs": [
+      "authority-E0113",
+      "authority-E0114",
+      "authority-E0115",
+      "authority-E0116",
+      "authority-E0117",
+      "authority-E0118",
+      "authority-E0119",
+      "authority-E0120",
+      "declaration-E0113",
+      "declaration-E0114",
+      "declaration-E0115",
+      "declaration-E0116",
+      "declaration-E0117",
+      "declaration-E0118",
+      "declaration-E0119",
+      "declaration-E0120",
+      "lifecycle-E0113",
+      "lifecycle-E0114",
+      "lifecycle-E0115",
+      "lifecycle-E0116",
+      "lifecycle-E0117",
+      "lifecycle-E0118",
+      "lifecycle-E0119",
+      "lifecycle-E0120",
+      "reader-E0113",
+      "reader-E0114",
+      "reader-E0115",
+      "reader-E0116",
+      "reader-E0117",
+      "reader-E0118",
+      "reader-E0119",
+      "reader-E0120",
+      "review-E0113-001",
+      "review-E0114-001",
+      "review-E0115-001",
+      "review-E0116-001",
+      "review-E0116-002",
+      "review-E0117-001",
+      "review-E0117-002",
+      "review-E0118-001",
+      "review-E0118-002",
+      "review-E0119-001",
+      "review-E0120-001",
+      "target-declaration-E0006",
+      "target-declaration-E0007",
+      "target-declaration-E0008",
+      "writer-E0113",
+      "writer-E0114",
+      "writer-E0115",
+      "writer-E0116",
+      "writer-E0117",
+      "writer-E0118",
+      "writer-E0119",
+      "writer-E0120"
+    ],
+    "allowedChangeScope": "Only the listed member decisions, mappings, evidence, and generated ledger views.",
+    "allowedFiles": [
+      "docs/migration/ledgers/Version4-member-migration-map.json",
+      "docs/migration/ledgers/Version4-member-migration-quick-reference.json",
+      "docs/migration/ledgers/Version4-member-migration-context-packet.json"
+    ],
+    "forbiddenDomains": [
+      "src/",
+      "dome/src/",
+      "Test/",
+      "D:/TRbackup/Version4",
+      "docs/component-decomposition/review-round-1/"
+    ],
+    "completionCriteria": [
+      "Read the listed source and target declarations",
+      "Close the listed evidence gaps",
+      "Run hash-bound audit and regenerate views"
+    ],
+    "verificationSpec": {
+      "tool": "python",
+      "arguments": [
+        ".agents/skills/version4-member-migration-ledger/scripts/audit_ledger.py",
+        "--ledger",
+        "docs/migration/ledgers/Version4-member-migration-map.json",
+        "--repo-root",
+        "."
+      ],
+      "workingDirectory": "D:/TRbackup/NLTX",
+      "expectedExitCode": 0
+    },
+    "expectedArtifacts": [
+      "docs/migration/ledgers/version4-member-migration-audit.json",
+      "docs/migration/ledgers/Version4-member-migration-quick-reference.json"
+    ],
+    "blocker": null,
+    "checkpoint": "bootstrap: source and review evidence recorded; target/behavior closure pending",
+    "claim": null
+  },
+  "sourceMemberRefs": [
+    "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+    "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+    "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+    "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+    "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+    "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+    "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+    "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic"
+  ],
+  "targetMappingRefs": [
+    "mapping-0116",
+    "mapping-0117",
+    "mapping-0118"
+  ],
+  "targetMemberRefs": [
+    "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::State",
+    "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::TargetPosition",
+    "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::WaitTime"
+  ],
+  "evidenceRefs": [
+    "authority-E0113",
+    "authority-E0114",
+    "authority-E0115",
+    "authority-E0116",
+    "authority-E0117",
+    "authority-E0118",
+    "authority-E0119",
+    "authority-E0120",
+    "declaration-E0113",
+    "declaration-E0114",
+    "declaration-E0115",
+    "declaration-E0116",
+    "declaration-E0117",
+    "declaration-E0118",
+    "declaration-E0119",
+    "declaration-E0120",
+    "lifecycle-E0113",
+    "lifecycle-E0114",
+    "lifecycle-E0115",
+    "lifecycle-E0116",
+    "lifecycle-E0117",
+    "lifecycle-E0118",
+    "lifecycle-E0119",
+    "lifecycle-E0120",
+    "reader-E0113",
+    "reader-E0114",
+    "reader-E0115",
+    "reader-E0116",
+    "reader-E0117",
+    "reader-E0118",
+    "reader-E0119",
+    "reader-E0120",
+    "review-E0113-001",
+    "review-E0114-001",
+    "review-E0115-001",
+    "review-E0116-001",
+    "review-E0116-002",
+    "review-E0117-001",
+    "review-E0117-002",
+    "review-E0118-001",
+    "review-E0118-002",
+    "review-E0119-001",
+    "review-E0120-001",
+    "target-declaration-E0006",
+    "target-declaration-E0007",
+    "target-declaration-E0008",
+    "writer-E0113",
+    "writer-E0114",
+    "writer-E0115",
+    "writer-E0116",
+    "writer-E0117",
+    "writer-E0118",
+    "writer-E0119",
+    "writer-E0120"
+  ],
+  "verificationRefs": [],
+  "sourceDecisions": [
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "sourceFingerprint": "sha256:76cd92a95845de8f77323d99a96acf8182104c5307fae4c194c572489e724dfc",
+      "classification": {
+        "fileOwner": "FishingContext",
+        "stateKind": "authoritative",
+        "scope": "entity",
+        "lifecycle": [
+          "first-round review lifecycle claim: 规则判定期"
+        ],
+        "authority": "单次尝试快照与外部引用混合",
+        "persistence": "required",
+        "network": "required",
+        "accessRisks": []
+      },
+      "disposition": "deferred",
+      "status": "deferred",
+      "targetMappings": [],
+      "evidenceRefs": [
+        "review-E0113-001",
+        "declaration-E0113",
+        "reader-E0113",
+        "writer-E0113",
+        "authority-E0113",
+        "lifecycle-E0113"
+      ],
+      "verificationRefs": [],
+      "readerWriterStatus": "partial",
+      "verificationStatus": "not-run",
+      "batchId": "batch-015",
+      "priority": 30,
+      "nextWorkItemRef": "work-item-015",
+      "blocker": "first-round review does not provide one reconstructible NLTX target member; no target inferred",
+      "evidenceGap": "reader/writer/authority/lifecycle evidence and exact target binding remain open",
+      "reentryCondition": "supply a unique current target declaration and close the open evidence axes; then rerun audit and snapshot checks",
+      "legacyRetention": "active-legacy-authority"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "sourceFingerprint": "sha256:4125932ddf5a863911633572876f5dd6af44e6584f5e8ee5526f10dd208bda8e",
+      "classification": {
+        "fileOwner": "FishingContext",
+        "stateKind": "authoritative",
+        "scope": "entity",
+        "lifecycle": [
+          "first-round review lifecycle claim: 规则判定期"
+        ],
+        "authority": "单次尝试快照与外部引用混合",
+        "persistence": "required",
+        "network": "required",
+        "accessRisks": []
+      },
+      "disposition": "deferred",
+      "status": "deferred",
+      "targetMappings": [],
+      "evidenceRefs": [
+        "review-E0114-001",
+        "declaration-E0114",
+        "reader-E0114",
+        "writer-E0114",
+        "authority-E0114",
+        "lifecycle-E0114"
+      ],
+      "verificationRefs": [],
+      "readerWriterStatus": "partial",
+      "verificationStatus": "not-run",
+      "batchId": "batch-015",
+      "priority": 30,
+      "nextWorkItemRef": "work-item-015",
+      "blocker": "first-round review does not provide one reconstructible NLTX target member; no target inferred",
+      "evidenceGap": "reader/writer/authority/lifecycle evidence and exact target binding remain open",
+      "reentryCondition": "supply a unique current target declaration and close the open evidence axes; then rerun audit and snapshot checks",
+      "legacyRetention": "active-legacy-authority"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "sourceFingerprint": "sha256:87eba898c9e2e123284ba083503ab798b78a40bcb34094368b24b68a7a0993b6",
+      "classification": {
+        "fileOwner": "FishingContext",
+        "stateKind": "authoritative",
+        "scope": "entity",
+        "lifecycle": [
+          "first-round review lifecycle claim: 规则判定期"
+        ],
+        "authority": "单次尝试快照与外部引用混合",
+        "persistence": "required",
+        "network": "required",
+        "accessRisks": []
+      },
+      "disposition": "deferred",
+      "status": "deferred",
+      "targetMappings": [],
+      "evidenceRefs": [
+        "review-E0115-001",
+        "declaration-E0115",
+        "reader-E0115",
+        "writer-E0115",
+        "authority-E0115",
+        "lifecycle-E0115"
+      ],
+      "verificationRefs": [],
+      "readerWriterStatus": "partial",
+      "verificationStatus": "not-run",
+      "batchId": "batch-015",
+      "priority": 30,
+      "nextWorkItemRef": "work-item-015",
+      "blocker": "first-round review does not provide one reconstructible NLTX target member; no target inferred",
+      "evidenceGap": "reader/writer/authority/lifecycle evidence and exact target binding remain open",
+      "reentryCondition": "supply a unique current target declaration and close the open evidence axes; then rerun audit and snapshot checks",
+      "legacyRetention": "active-legacy-authority"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "sourceFingerprint": "sha256:4a9666f2399cc65d1799f2062da4881efa22cf0527f4fc01786740523112bbac",
+      "classification": {
+        "fileOwner": "LeashedCritter",
+        "stateKind": "authoritative",
+        "scope": "entity",
+        "lifecycle": [
+          "first-round review lifecycle claim: critter active 生命周期"
+        ],
+        "authority": "权威行为状态候选",
+        "persistence": "unknown",
+        "network": "unknown",
+        "accessRisks": []
+      },
+      "disposition": "move",
+      "status": "migrated",
+      "targetMappings": [
+        {
+          "mappingId": "mapping-0116",
+          "targetRef": {
+            "kind": "component-member",
+            "targetMemberId": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::State"
+          },
+          "relation": "move",
+          "role": "authoritative",
+          "mappingContract": {
+            "kind": "field-to-component-member",
+            "sourceType": "byte",
+            "targetType": "byte",
+            "conversion": "declaration type matches; runtime transfer and semantic equivalence not verified",
+            "unit": "source-defined",
+            "nullability": "as declared",
+            "defaultSemantics": "not inferred; source and target defaults require lifecycle review",
+            "rangeSemantics": "not inferred",
+            "normalization": "none asserted",
+            "lossiness": "unknown",
+            "reversible": false,
+            "invariants": [
+              "source and target declaration types and kinds were compared",
+              "reader/writer equivalence, lifecycle closure, persistence, network behavior, and cutover are not verified"
+            ],
+            "authorityTransfer": "candidate target component authority; cutover not run",
+            "dualWritePolicy": "not-run"
+          },
+          "evidenceRefs": [
+            "declaration-E0116",
+            "target-declaration-E0006",
+            "review-E0116-001",
+            "review-E0116-002"
+          ],
+          "verificationRefs": []
+        }
+      ],
+      "evidenceRefs": [
+        "review-E0116-001",
+        "review-E0116-002",
+        "declaration-E0116",
+        "reader-E0116",
+        "writer-E0116",
+        "authority-E0116",
+        "lifecycle-E0116"
+      ],
+      "verificationRefs": [],
+      "readerWriterStatus": "partial",
+      "verificationStatus": "not-run",
+      "batchId": "batch-015",
+      "priority": 10,
+      "nextWorkItemRef": "work-item-015",
+      "blocker": "reader/writer, authority, lifecycle, persistence, network, and runtime verifier closure not run",
+      "evidenceGap": "reader/writer, authority, lifecycle, persistence, network, and runtime verifier closure not run",
+      "mergeGroupId": null,
+      "mergeReason": null,
+      "reentryCondition": "close reader/writer/authority/lifecycle evidence and run a hash-bound verifier before changing status",
+      "legacyRetention": "active-legacy-authority"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "sourceFingerprint": "sha256:1a69e31a8f8283c14fae774fd4f03d07c272aa9277fc22bd4ec2acf331b171d2",
+      "classification": {
+        "fileOwner": "LeashedCritter",
+        "stateKind": "authoritative",
+        "scope": "entity",
+        "lifecycle": [
+          "first-round review lifecycle claim: critter active 生命周期"
+        ],
+        "authority": "权威行为状态候选",
+        "persistence": "unknown",
+        "network": "unknown",
+        "accessRisks": []
+      },
+      "disposition": "move",
+      "status": "migrated",
+      "targetMappings": [
+        {
+          "mappingId": "mapping-0117",
+          "targetRef": {
+            "kind": "component-member",
+            "targetMemberId": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::TargetPosition"
+          },
+          "relation": "move",
+          "role": "authoritative",
+          "mappingContract": {
+            "kind": "field-to-component-member",
+            "sourceType": "Terraria.DataStructures.Point16",
+            "targetType": "Terraria.WorldStorage.TileCoordinate?",
+            "conversion": "declared source and target types differ; conversion and semantic equivalence not verified",
+            "unit": "source-defined",
+            "nullability": "as declared",
+            "defaultSemantics": "not inferred; source and target defaults require lifecycle review",
+            "rangeSemantics": "not inferred",
+            "normalization": "none asserted",
+            "lossiness": "unknown",
+            "reversible": false,
+            "invariants": [
+              "source and target declaration types and kinds were compared",
+              "reader/writer equivalence, lifecycle closure, persistence, network behavior, and cutover are not verified"
+            ],
+            "authorityTransfer": "candidate target component authority; cutover not run",
+            "dualWritePolicy": "not-run"
+          },
+          "evidenceRefs": [
+            "declaration-E0117",
+            "target-declaration-E0007",
+            "review-E0117-001",
+            "review-E0117-002"
+          ],
+          "verificationRefs": []
+        }
+      ],
+      "evidenceRefs": [
+        "review-E0117-001",
+        "review-E0117-002",
+        "declaration-E0117",
+        "reader-E0117",
+        "writer-E0117",
+        "authority-E0117",
+        "lifecycle-E0117"
+      ],
+      "verificationRefs": [],
+      "readerWriterStatus": "partial",
+      "verificationStatus": "not-run",
+      "batchId": "batch-015",
+      "priority": 10,
+      "nextWorkItemRef": "work-item-015",
+      "blocker": "reader/writer, authority, lifecycle, persistence, network, and runtime verifier closure not run",
+      "evidenceGap": "reader/writer, authority, lifecycle, persistence, network, and runtime verifier closure not run",
+      "mergeGroupId": null,
+      "mergeReason": null,
+      "reentryCondition": "close reader/writer/authority/lifecycle evidence and run a hash-bound verifier before changing status",
+      "legacyRetention": "active-legacy-authority"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "sourceFingerprint": "sha256:730d38426fcfdd4eb0dbb65b8a7f2e68bc13855f151e04f102e12c97df6dc89c",
+      "classification": {
+        "fileOwner": "LeashedCritter",
+        "stateKind": "authoritative",
+        "scope": "entity",
+        "lifecycle": [
+          "first-round review lifecycle claim: critter active 生命周期"
+        ],
+        "authority": "权威行为状态候选",
+        "persistence": "unknown",
+        "network": "unknown",
+        "accessRisks": []
+      },
+      "disposition": "move",
+      "status": "migrated",
+      "targetMappings": [
+        {
+          "mappingId": "mapping-0118",
+          "targetRef": {
+            "kind": "component-member",
+            "targetMemberId": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::WaitTime"
+          },
+          "relation": "move",
+          "role": "authoritative",
+          "mappingContract": {
+            "kind": "field-to-component-member",
+            "sourceType": "short",
+            "targetType": "short",
+            "conversion": "declaration type matches; runtime transfer and semantic equivalence not verified",
+            "unit": "source-defined",
+            "nullability": "as declared",
+            "defaultSemantics": "not inferred; source and target defaults require lifecycle review",
+            "rangeSemantics": "not inferred",
+            "normalization": "none asserted",
+            "lossiness": "unknown",
+            "reversible": false,
+            "invariants": [
+              "source and target declaration types and kinds were compared",
+              "reader/writer equivalence, lifecycle closure, persistence, network behavior, and cutover are not verified"
+            ],
+            "authorityTransfer": "candidate target component authority; cutover not run",
+            "dualWritePolicy": "not-run"
+          },
+          "evidenceRefs": [
+            "declaration-E0118",
+            "target-declaration-E0008",
+            "review-E0118-001",
+            "review-E0118-002"
+          ],
+          "verificationRefs": []
+        }
+      ],
+      "evidenceRefs": [
+        "review-E0118-001",
+        "review-E0118-002",
+        "declaration-E0118",
+        "reader-E0118",
+        "writer-E0118",
+        "authority-E0118",
+        "lifecycle-E0118"
+      ],
+      "verificationRefs": [],
+      "readerWriterStatus": "partial",
+      "verificationStatus": "not-run",
+      "batchId": "batch-015",
+      "priority": 10,
+      "nextWorkItemRef": "work-item-015",
+      "blocker": "reader/writer, authority, lifecycle, persistence, network, and runtime verifier closure not run",
+      "evidenceGap": "reader/writer, authority, lifecycle, persistence, network, and runtime verifier closure not run",
+      "mergeGroupId": null,
+      "mergeReason": null,
+      "reentryCondition": "close reader/writer/authority/lifecycle evidence and run a hash-bound verifier before changing status",
+      "legacyRetention": "active-legacy-authority"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "sourceFingerprint": "sha256:6ba9c0396dd59c2166fe1d29b7b9240e0e4d04564b074d81271e0242f93767a4",
+      "classification": {
+        "fileOwner": "LeashedCritter",
+        "stateKind": "compatibility",
+        "scope": "entity",
+        "lifecycle": [
+          "first-round review lifecycle claim: prototype/instance 生命周期未闭合"
+        ],
+        "authority": "owner 未闭合；definition/behavior/relation 候选",
+        "persistence": "unknown",
+        "network": "unknown",
+        "accessRisks": []
+      },
+      "disposition": "deferred",
+      "status": "deferred",
+      "targetMappings": [],
+      "evidenceRefs": [
+        "review-E0119-001",
+        "declaration-E0119",
+        "reader-E0119",
+        "writer-E0119",
+        "authority-E0119",
+        "lifecycle-E0119"
+      ],
+      "verificationRefs": [],
+      "readerWriterStatus": "partial",
+      "verificationStatus": "not-run",
+      "batchId": "batch-015",
+      "priority": 30,
+      "nextWorkItemRef": "work-item-015",
+      "blocker": "first-round review does not provide one reconstructible NLTX target member; no target inferred",
+      "evidenceGap": "reader/writer/authority/lifecycle evidence and exact target binding remain open",
+      "reentryCondition": "supply a unique current target declaration and close the open evidence axes; then rerun audit and snapshot checks",
+      "legacyRetention": "active-legacy-authority"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic",
+      "sourceFingerprint": "sha256:952a229e55fb63ee5f555ca77b5899439efe019f55ad86a35a6d33cb8854792c",
+      "classification": {
+        "fileOwner": "LeashedCritter",
+        "stateKind": "compatibility",
+        "scope": "entity",
+        "lifecycle": [
+          "first-round review lifecycle claim: prototype/instance 生命周期未闭合"
+        ],
+        "authority": "owner 未闭合；definition/behavior/relation 候选",
+        "persistence": "unknown",
+        "network": "unknown",
+        "accessRisks": []
+      },
+      "disposition": "deferred",
+      "status": "deferred",
+      "targetMappings": [],
+      "evidenceRefs": [
+        "review-E0120-001",
+        "declaration-E0120",
+        "reader-E0120",
+        "writer-E0120",
+        "authority-E0120",
+        "lifecycle-E0120"
+      ],
+      "verificationRefs": [],
+      "readerWriterStatus": "partial",
+      "verificationStatus": "not-run",
+      "batchId": "batch-015",
+      "priority": 30,
+      "nextWorkItemRef": "work-item-015",
+      "blocker": "first-round review does not provide one reconstructible NLTX target member; no target inferred",
+      "evidenceGap": "reader/writer/authority/lifecycle evidence and exact target binding remain open",
+      "reentryCondition": "supply a unique current target declaration and close the open evidence axes; then rerun audit and snapshot checks",
+      "legacyRetention": "active-legacy-authority"
+    }
+  ],
+  "sourceMembers": [
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+      "declaringType": "Terraria.GameContent.FishDropRules.FishingContext",
+      "member": "Fisher",
+      "signature": "Fisher",
+      "kind": "field",
+      "type": "Terraria.DataStructures.FishingAttempt",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+          "line": 10,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:76cd92a95845de8f77323d99a96acf8182104c5307fae4c194c572489e724dfc"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+      "declaringType": "Terraria.GameContent.FishDropRules.FishingContext",
+      "member": "Player",
+      "signature": "Player",
+      "kind": "field",
+      "type": "Terraria.Player",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+          "line": 12,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:4125932ddf5a863911633572876f5dd6af44e6584f5e8ee5526f10dd208bda8e"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+      "declaringType": "Terraria.GameContent.FishDropRules.FishingContext",
+      "member": "Random",
+      "signature": "Random",
+      "kind": "field",
+      "type": "Terraria.Utilities.UnifiedRandom",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+          "line": 8,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:87eba898c9e2e123284ba083503ab798b78a40bcb34094368b24b68a7a0993b6"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "State",
+      "signature": "State",
+      "kind": "field",
+      "type": "byte",
+      "accessibility": "protected",
+      "modifiers": [
+        "protected"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 29,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:4a9666f2399cc65d1799f2062da4881efa22cf0527f4fc01786740523112bbac"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "TargetPosition",
+      "signature": "TargetPosition",
+      "kind": "field",
+      "type": "Terraria.DataStructures.Point16",
+      "accessibility": "protected",
+      "modifiers": [
+        "protected"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 31,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:1a69e31a8f8283c14fae774fd4f03d07c272aa9277fc22bd4ec2acf331b171d2"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "WaitTime",
+      "signature": "WaitTime",
+      "kind": "field",
+      "type": "short",
+      "accessibility": "protected",
+      "modifiers": [
+        "protected"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 27,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:730d38426fcfdd4eb0dbb65b8a7f2e68bc13855f151e04f102e12c97df6dc89c"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "anchorStyle",
+      "signature": "anchorStyle",
+      "kind": "field",
+      "type": "int",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 15,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:6ba9c0396dd59c2166fe1d29b7b9240e0e4d04564b074d81271e0242f93767a4"
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic",
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "isAquatic",
+      "signature": "isAquatic",
+      "kind": "field",
+      "type": "bool",
+      "accessibility": "protected",
+      "modifiers": [
+        "protected"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 39,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:952a229e55fb63ee5f555ca77b5899439efe019f55ad86a35a6d33cb8854792c"
+    }
+  ],
+  "targetMembers": [
+    {
+      "targetMemberId": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::State",
+      "projectOrAssembly": "NLTX",
+      "componentPath": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "componentType": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent",
+      "member": "State",
+      "signature": "State",
+      "kind": "field",
+      "authorityRole": "authoritative",
+      "origin": "migrated",
+      "designReason": "第一轮审查文档明确将 Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State (docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md:101) 归入 Terraria.LeashedEntity.LeashedCritterBehaviorComponent.State；该 target 仅因显式 Component.Member 声明进入 manifest。",
+      "authorityOwner": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent",
+      "structuralWriteRoot": "target write root not closed; source declaration and design ownership only",
+      "authorityScope": "target component state; scope and entity binding not closed",
+      "lifecycle": "component creation through cleanup; lifecycle evidence not closed",
+      "persistencePolicy": "not closed by first-round review",
+      "networkPolicy": "not closed by first-round review"
+    },
+    {
+      "targetMemberId": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::TargetPosition",
+      "projectOrAssembly": "NLTX",
+      "componentPath": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "componentType": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent",
+      "member": "TargetPosition",
+      "signature": "TargetPosition",
+      "kind": "field",
+      "authorityRole": "authoritative",
+      "origin": "migrated",
+      "designReason": "第一轮审查文档明确将 Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition (docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md:99) 归入 Terraria.LeashedEntity.LeashedCritterBehaviorComponent.TargetPosition；该 target 仅因显式 Component.Member 声明进入 manifest。",
+      "authorityOwner": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent",
+      "structuralWriteRoot": "target write root not closed; source declaration and design ownership only",
+      "authorityScope": "target component state; scope and entity binding not closed",
+      "lifecycle": "component creation through cleanup; lifecycle evidence not closed",
+      "persistencePolicy": "not closed by first-round review",
+      "networkPolicy": "not closed by first-round review"
+    },
+    {
+      "targetMemberId": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::WaitTime",
+      "projectOrAssembly": "NLTX",
+      "componentPath": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "componentType": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent",
+      "member": "WaitTime",
+      "signature": "WaitTime",
+      "kind": "field",
+      "authorityRole": "authoritative",
+      "origin": "migrated",
+      "designReason": "第一轮审查文档明确将 Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime (docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md:101) 归入 Terraria.LeashedEntity.LeashedCritterBehaviorComponent.WaitTime；该 target 仅因显式 Component.Member 声明进入 manifest。",
+      "authorityOwner": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent",
+      "structuralWriteRoot": "target write root not closed; source declaration and design ownership only",
+      "authorityScope": "target component state; scope and entity binding not closed",
+      "lifecycle": "component creation through cleanup; lifecycle evidence not closed",
+      "persistencePolicy": "not closed by first-round review",
+      "networkPolicy": "not closed by first-round review"
+    }
+  ],
+  "evidence": [
+    {
+      "evidenceId": "authority-E0113",
+      "kind": "authority",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "claim": "Authority cutover is not closed; the review design is recorded as a candidate ownership statement only.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "authority-E0114",
+      "kind": "authority",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "claim": "Authority cutover is not closed; the review design is recorded as a candidate ownership statement only.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "authority-E0115",
+      "kind": "authority",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "claim": "Authority cutover is not closed; the review design is recorded as a candidate ownership statement only.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "authority-E0116",
+      "kind": "authority",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "claim": "Authority cutover is not closed; the review design is recorded as a candidate ownership statement only.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "authority-E0117",
+      "kind": "authority",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 99,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "claim": "Authority cutover is not closed; the review design is recorded as a candidate ownership statement only.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "authority-E0118",
+      "kind": "authority",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "claim": "Authority cutover is not closed; the review design is recorded as a candidate ownership statement only.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "authority-E0119",
+      "kind": "authority",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "claim": "Authority cutover is not closed; the review design is recorded as a candidate ownership statement only.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "authority-E0120",
+      "kind": "authority",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic",
+      "claim": "Authority cutover is not closed; the review design is recorded as a candidate ownership statement only.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "declaration-E0113",
+      "kind": "declaration",
+      "path": "D:/TRbackup/Version4/Terraria.GameContent.FishDropRules/FishingContext.cs",
+      "line": 10,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "claim": "Version4 scoped Roslyn snapshot declaration: Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher; Terraria.GameContent.FishDropRules/FishingContext.cs:10; Terraria.GameContent.FishDropRules.FishingContext.Fisher [field] : Terraria.DataStructures.FishingAttempt; fingerprint sha256:76cd92a95845de8f77323d99a96acf8182104c5307fae4c194c572489e724dfc",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "declaration-E0114",
+      "kind": "declaration",
+      "path": "D:/TRbackup/Version4/Terraria.GameContent.FishDropRules/FishingContext.cs",
+      "line": 12,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "claim": "Version4 scoped Roslyn snapshot declaration: Version4::Terraria.GameContent.FishDropRules.FishingContext::Player; Terraria.GameContent.FishDropRules/FishingContext.cs:12; Terraria.GameContent.FishDropRules.FishingContext.Player [field] : Terraria.Player; fingerprint sha256:4125932ddf5a863911633572876f5dd6af44e6584f5e8ee5526f10dd208bda8e",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "declaration-E0115",
+      "kind": "declaration",
+      "path": "D:/TRbackup/Version4/Terraria.GameContent.FishDropRules/FishingContext.cs",
+      "line": 8,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "claim": "Version4 scoped Roslyn snapshot declaration: Version4::Terraria.GameContent.FishDropRules.FishingContext::Random; Terraria.GameContent.FishDropRules/FishingContext.cs:8; Terraria.GameContent.FishDropRules.FishingContext.Random [field] : Terraria.Utilities.UnifiedRandom; fingerprint sha256:87eba898c9e2e123284ba083503ab798b78a40bcb34094368b24b68a7a0993b6",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "declaration-E0116",
+      "kind": "declaration",
+      "path": "D:/TRbackup/Version4/Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "line": 29,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "claim": "Version4 scoped Roslyn snapshot declaration: Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State; Terraria.GameContent.LeashedEntities/LeashedCritter.cs:29; Terraria.GameContent.LeashedEntities.LeashedCritter.State [field] : byte; fingerprint sha256:4a9666f2399cc65d1799f2062da4881efa22cf0527f4fc01786740523112bbac",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "declaration-E0117",
+      "kind": "declaration",
+      "path": "D:/TRbackup/Version4/Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "line": 31,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "claim": "Version4 scoped Roslyn snapshot declaration: Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition; Terraria.GameContent.LeashedEntities/LeashedCritter.cs:31; Terraria.GameContent.LeashedEntities.LeashedCritter.TargetPosition [field] : Terraria.DataStructures.Point16; fingerprint sha256:1a69e31a8f8283c14fae774fd4f03d07c272aa9277fc22bd4ec2acf331b171d2",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "declaration-E0118",
+      "kind": "declaration",
+      "path": "D:/TRbackup/Version4/Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "line": 27,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "claim": "Version4 scoped Roslyn snapshot declaration: Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime; Terraria.GameContent.LeashedEntities/LeashedCritter.cs:27; Terraria.GameContent.LeashedEntities.LeashedCritter.WaitTime [field] : short; fingerprint sha256:730d38426fcfdd4eb0dbb65b8a7f2e68bc13855f151e04f102e12c97df6dc89c",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "declaration-E0119",
+      "kind": "declaration",
+      "path": "D:/TRbackup/Version4/Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "line": 15,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "claim": "Version4 scoped Roslyn snapshot declaration: Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle; Terraria.GameContent.LeashedEntities/LeashedCritter.cs:15; Terraria.GameContent.LeashedEntities.LeashedCritter.anchorStyle [field] : int; fingerprint sha256:6ba9c0396dd59c2166fe1d29b7b9240e0e4d04564b074d81271e0242f93767a4",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "declaration-E0120",
+      "kind": "declaration",
+      "path": "D:/TRbackup/Version4/Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "line": 39,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic",
+      "claim": "Version4 scoped Roslyn snapshot declaration: Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic; Terraria.GameContent.LeashedEntities/LeashedCritter.cs:39; Terraria.GameContent.LeashedEntities.LeashedCritter.isAquatic [field] : bool; fingerprint sha256:952a229e55fb63ee5f555ca77b5899439efe019f55ad86a35a6d33cb8854792c",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "lifecycle-E0113",
+      "kind": "lifecycle",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "claim": "Lifecycle closure is not closed; the review lifecycle column is preserved but not independently verified against runtime paths.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "lifecycle-E0114",
+      "kind": "lifecycle",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "claim": "Lifecycle closure is not closed; the review lifecycle column is preserved but not independently verified against runtime paths.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "lifecycle-E0115",
+      "kind": "lifecycle",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "claim": "Lifecycle closure is not closed; the review lifecycle column is preserved but not independently verified against runtime paths.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "lifecycle-E0116",
+      "kind": "lifecycle",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "claim": "Lifecycle closure is not closed; the review lifecycle column is preserved but not independently verified against runtime paths.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "lifecycle-E0117",
+      "kind": "lifecycle",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 99,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "claim": "Lifecycle closure is not closed; the review lifecycle column is preserved but not independently verified against runtime paths.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "lifecycle-E0118",
+      "kind": "lifecycle",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "claim": "Lifecycle closure is not closed; the review lifecycle column is preserved but not independently verified against runtime paths.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "lifecycle-E0119",
+      "kind": "lifecycle",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "claim": "Lifecycle closure is not closed; the review lifecycle column is preserved but not independently verified against runtime paths.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "lifecycle-E0120",
+      "kind": "lifecycle",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic",
+      "claim": "Lifecycle closure is not closed; the review lifecycle column is preserved but not independently verified against runtime paths.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "reader-E0113",
+      "kind": "reader",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "claim": "Reader closure has not been performed for this member; first-round review and declaration evidence do not enumerate all direct, indirect, reflection, serialization, or generated-code readers.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "reader-E0114",
+      "kind": "reader",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "claim": "Reader closure has not been performed for this member; first-round review and declaration evidence do not enumerate all direct, indirect, reflection, serialization, or generated-code readers.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "reader-E0115",
+      "kind": "reader",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "claim": "Reader closure has not been performed for this member; first-round review and declaration evidence do not enumerate all direct, indirect, reflection, serialization, or generated-code readers.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "reader-E0116",
+      "kind": "reader",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "claim": "Reader closure has not been performed for this member; first-round review and declaration evidence do not enumerate all direct, indirect, reflection, serialization, or generated-code readers.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "reader-E0117",
+      "kind": "reader",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 99,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "claim": "Reader closure has not been performed for this member; first-round review and declaration evidence do not enumerate all direct, indirect, reflection, serialization, or generated-code readers.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "reader-E0118",
+      "kind": "reader",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "claim": "Reader closure has not been performed for this member; first-round review and declaration evidence do not enumerate all direct, indirect, reflection, serialization, or generated-code readers.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "reader-E0119",
+      "kind": "reader",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "claim": "Reader closure has not been performed for this member; first-round review and declaration evidence do not enumerate all direct, indirect, reflection, serialization, or generated-code readers.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "reader-E0120",
+      "kind": "reader",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic",
+      "claim": "Reader closure has not been performed for this member; first-round review and declaration evidence do not enumerate all direct, indirect, reflection, serialization, or generated-code readers.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "review-E0113-001",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "claim": "第一轮审查原文：| `Random`、`Fisher`、`Player`、Biome 派生标志 | `FishingContext` | 规则匹配上下文 | 单次尝试快照与外部引用混合 | 规则判定期 | `FishingEligibilitySnapshotComponent` 只保存必要值；不复制对象引用 | `confirmed` / `partial` | `D:\\TRbackup\\Version4\\Terraria.GameContent.FishDropRules\\FishingContext.cs:6-26` |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0114-001",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "claim": "第一轮审查原文：| `Random`、`Fisher`、`Player`、Biome 派生标志 | `FishingContext` | 规则匹配上下文 | 单次尝试快照与外部引用混合 | 规则判定期 | `FishingEligibilitySnapshotComponent` 只保存必要值；不复制对象引用 | `confirmed` / `partial` | `D:\\TRbackup\\Version4\\Terraria.GameContent.FishDropRules\\FishingContext.cs:6-26` |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0115-001",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "claim": "第一轮审查原文：| `Random`、`Fisher`、`Player`、Biome 派生标志 | `FishingContext` | 规则匹配上下文 | 单次尝试快照与外部引用混合 | 规则判定期 | `FishingEligibilitySnapshotComponent` 只保存必要值；不复制对象引用 | `confirmed` / `partial` | `D:\\TRbackup\\Version4\\Terraria.GameContent.FishDropRules\\FishingContext.cs:6-26` |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0116-001",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "claim": "第一轮审查原文：| LeashedCritter.WaitTime/State | short、byte | 等待计时和行为阶段 | 权威行为状态候选 | critter active 生命周期 | LeashedCritterBehaviorComponent.WaitTime/State | partial | 完整参考 LeashedCritter.cs:25-31；Walker/Jumper 状态常量 |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0116-002",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 384,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "claim": "第一轮审查原文：| State | byte | 0 作为当前状态常量候选；跨 prototype 默认仍需复核 | 权威行为状态 | 状态值必须由对应 critter behavior 解释；未知状态不得静默转为另一个状态 | partial | 完整参考 LeashedCritter.cs:27-31；Walker/JumperLeashedCritter.cs 状态常量 |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0117-001",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 99,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "claim": "第一轮审查原文：| LeashedCritter.TargetPosition | Point16 | critter 锚点附近目标 Tile | 权威行为状态候选 | critter active 生命周期 | LeashedCritterBehaviorComponent.TargetPosition | partial | 完整参考 LeashedCritter.cs:27-31；协议 TerrariaPacketCodec.cs:4218-4224 |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0117-002",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 381,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "claim": "第一轮审查原文：| TargetPosition | TileCoordinate 候选；Version4 原型为 Point16 | unresolved；首次有效更新前必须有明确目标策略 | 权威行为状态候选 | 目标坐标必须在 anchor 关系允许的范围内；不能变成外部 entity reference | partial | 完整参考 LeashedCritter.cs:27-31；协议 TerrariaPacketCodec.cs:4218-4224 |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0118-001",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "claim": "第一轮审查原文：| LeashedCritter.WaitTime/State | short、byte | 等待计时和行为阶段 | 权威行为状态候选 | critter active 生命周期 | LeashedCritterBehaviorComponent.WaitTime/State | partial | 完整参考 LeashedCritter.cs:25-31；Walker/Jumper 状态常量 |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0118-002",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 383,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "claim": "第一轮审查原文：| WaitTime | short | unresolved | 权威行为状态候选 | 必须与等待状态的时间单位一致；负值策略未由 Version4 主文件闭合 | partial | 完整参考 LeashedCritter.cs:25-29；协议 TerrariaPacketCodec.cs:4218-4223 |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0119-001",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "claim": "第一轮审查原文：| LeashedCritter.anchorStyle/isAquatic | int、bool | 锚点兼容和水生行为标记 | owner 未闭合；definition/behavior/relation 候选 | prototype/instance 生命周期未闭合 | LeashedCritterBehaviorComponent 中仅保留候选字段 | partial | 完整参考 LeashedCritter.cs:13-41；当前 LeashBehaviorRefComponent |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "review-E0120-001",
+      "kind": "review",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic",
+      "claim": "第一轮审查原文：| LeashedCritter.anchorStyle/isAquatic | int、bool | 锚点兼容和水生行为标记 | owner 未闭合；definition/behavior/relation 候选 | prototype/instance 生命周期未闭合 | LeashedCritterBehaviorComponent 中仅保留候选字段 | partial | 完整参考 LeashedCritter.cs:13-41；当前 LeashBehaviorRefComponent |",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "target-declaration-E0006",
+      "kind": "declaration",
+      "path": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "line": 46,
+      "symbol": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::State",
+      "claim": "Current NLTX Roslyn candidate declaration: src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::State; src/LeashedEntity/LeashedCritterBehaviorComponent.cs:46; Terraria.LeashedEntity.LeashedCritterBehaviorComponent.State [field] : byte",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "target-declaration-E0007",
+      "kind": "declaration",
+      "path": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "line": 31,
+      "symbol": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::TargetPosition",
+      "claim": "Current NLTX Roslyn candidate declaration: src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::TargetPosition; src/LeashedEntity/LeashedCritterBehaviorComponent.cs:31; Terraria.LeashedEntity.LeashedCritterBehaviorComponent.TargetPosition [field] : Terraria.WorldStorage.TileCoordinate?",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "target-declaration-E0008",
+      "kind": "declaration",
+      "path": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "line": 41,
+      "symbol": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::WaitTime",
+      "claim": "Current NLTX Roslyn candidate declaration: src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::WaitTime; src/LeashedEntity/LeashedCritterBehaviorComponent.cs:41; Terraria.LeashedEntity.LeashedCritterBehaviorComponent.WaitTime [field] : short",
+      "status": "confirmed"
+    },
+    {
+      "evidenceId": "writer-E0113",
+      "kind": "writer",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "claim": "Writer closure has not been performed for this member; initialization, update, reset, death/despawn, reload, and cross-domain writes remain open.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "writer-E0114",
+      "kind": "writer",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "claim": "Writer closure has not been performed for this member; initialization, update, reset, death/despawn, reload, and cross-domain writes remain open.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "writer-E0115",
+      "kind": "writer",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-fishing-and-catch-simulation-component-design.md",
+      "line": 114,
+      "symbol": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "claim": "Writer closure has not been performed for this member; initialization, update, reset, death/despawn, reload, and cross-domain writes remain open.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "writer-E0116",
+      "kind": "writer",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "claim": "Writer closure has not been performed for this member; initialization, update, reset, death/despawn, reload, and cross-domain writes remain open.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "writer-E0117",
+      "kind": "writer",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 99,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "claim": "Writer closure has not been performed for this member; initialization, update, reset, death/despawn, reload, and cross-domain writes remain open.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "writer-E0118",
+      "kind": "writer",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 101,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "claim": "Writer closure has not been performed for this member; initialization, update, reset, death/despawn, reload, and cross-domain writes remain open.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "writer-E0119",
+      "kind": "writer",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "claim": "Writer closure has not been performed for this member; initialization, update, reset, death/despawn, reload, and cross-domain writes remain open.",
+      "status": "open"
+    },
+    {
+      "evidenceId": "writer-E0120",
+      "kind": "writer",
+      "path": "docs/component-decomposition/review-round-1/design/2026-09-05-version4-leashed-entity-simulation-component-design.md",
+      "line": 102,
+      "symbol": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic",
+      "claim": "Writer closure has not been performed for this member; initialization, update, reset, death/despawn, reload, and cross-domain writes remain open.",
+      "status": "open"
+    }
+  ],
+  "verifications": [],
+  "sourceSnapshotMembers": [
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+      "targetMemberId": null,
+      "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+      "declaringType": "Terraria.GameContent.FishDropRules.FishingContext",
+      "member": "Fisher",
+      "signature": "Fisher",
+      "kind": "field",
+      "type": "Terraria.DataStructures.FishingAttempt",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+          "line": 10,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:76cd92a95845de8f77323d99a96acf8182104c5307fae4c194c572489e724dfc",
+      "targetRoot": null,
+      "projectOrAssembly": null,
+      "componentPath": null,
+      "componentType": null
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+      "targetMemberId": null,
+      "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+      "declaringType": "Terraria.GameContent.FishDropRules.FishingContext",
+      "member": "Player",
+      "signature": "Player",
+      "kind": "field",
+      "type": "Terraria.Player",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+          "line": 12,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:4125932ddf5a863911633572876f5dd6af44e6584f5e8ee5526f10dd208bda8e",
+      "targetRoot": null,
+      "projectOrAssembly": null,
+      "componentPath": null,
+      "componentType": null
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+      "targetMemberId": null,
+      "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+      "declaringType": "Terraria.GameContent.FishDropRules.FishingContext",
+      "member": "Random",
+      "signature": "Random",
+      "kind": "field",
+      "type": "Terraria.Utilities.UnifiedRandom",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.FishDropRules/FishingContext.cs",
+          "line": 8,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:87eba898c9e2e123284ba083503ab798b78a40bcb34094368b24b68a7a0993b6",
+      "targetRoot": null,
+      "projectOrAssembly": null,
+      "componentPath": null,
+      "componentType": null
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+      "targetMemberId": null,
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "State",
+      "signature": "State",
+      "kind": "field",
+      "type": "byte",
+      "accessibility": "protected",
+      "modifiers": [
+        "protected"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 29,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:4a9666f2399cc65d1799f2062da4881efa22cf0527f4fc01786740523112bbac",
+      "targetRoot": null,
+      "projectOrAssembly": null,
+      "componentPath": null,
+      "componentType": null
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+      "targetMemberId": null,
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "TargetPosition",
+      "signature": "TargetPosition",
+      "kind": "field",
+      "type": "Terraria.DataStructures.Point16",
+      "accessibility": "protected",
+      "modifiers": [
+        "protected"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 31,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:1a69e31a8f8283c14fae774fd4f03d07c272aa9277fc22bd4ec2acf331b171d2",
+      "targetRoot": null,
+      "projectOrAssembly": null,
+      "componentPath": null,
+      "componentType": null
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+      "targetMemberId": null,
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "WaitTime",
+      "signature": "WaitTime",
+      "kind": "field",
+      "type": "short",
+      "accessibility": "protected",
+      "modifiers": [
+        "protected"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 27,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:730d38426fcfdd4eb0dbb65b8a7f2e68bc13855f151e04f102e12c97df6dc89c",
+      "targetRoot": null,
+      "projectOrAssembly": null,
+      "componentPath": null,
+      "componentType": null
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+      "targetMemberId": null,
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "anchorStyle",
+      "signature": "anchorStyle",
+      "kind": "field",
+      "type": "int",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 15,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:6ba9c0396dd59c2166fe1d29b7b9240e0e4d04564b074d81271e0242f93767a4",
+      "targetRoot": null,
+      "projectOrAssembly": null,
+      "componentPath": null,
+      "componentType": null
+    },
+    {
+      "sourceMemberId": "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic",
+      "targetMemberId": null,
+      "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+      "declaringType": "Terraria.GameContent.LeashedEntities.LeashedCritter",
+      "member": "isAquatic",
+      "signature": "isAquatic",
+      "kind": "field",
+      "type": "bool",
+      "accessibility": "protected",
+      "modifiers": [
+        "protected"
+      ],
+      "locations": [
+        {
+          "path": "Terraria.GameContent.LeashedEntities/LeashedCritter.cs",
+          "line": 39,
+          "column": 2
+        }
+      ],
+      "sourceFingerprint": "sha256:952a229e55fb63ee5f555ca77b5899439efe019f55ad86a35a6d33cb8854792c",
+      "targetRoot": null,
+      "projectOrAssembly": null,
+      "componentPath": null,
+      "componentType": null
+    }
+  ],
+  "targetSnapshotMembers": [
+    {
+      "sourceMemberId": null,
+      "targetMemberId": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::State",
+      "path": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "declaringType": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent",
+      "member": "State",
+      "signature": "State",
+      "kind": "field",
+      "type": "byte",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+          "line": 46,
+          "column": 3
+        }
+      ],
+      "sourceFingerprint": "sha256:c82baa78f37183a4267758da43f80bc2206b6eebcc52408bca552bbfcb6c7a22",
+      "targetRoot": "src",
+      "projectOrAssembly": "NLTX",
+      "componentPath": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "componentType": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent"
+    },
+    {
+      "sourceMemberId": null,
+      "targetMemberId": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::TargetPosition",
+      "path": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "declaringType": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent",
+      "member": "TargetPosition",
+      "signature": "TargetPosition",
+      "kind": "field",
+      "type": "TileCoordinate?",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+          "line": 31,
+          "column": 3
+        }
+      ],
+      "sourceFingerprint": "sha256:4a0cc420622cc2c9b170992a97cae5354e61620df7b740805295b91fbb77eff7",
+      "targetRoot": "src",
+      "projectOrAssembly": "NLTX",
+      "componentPath": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "componentType": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent"
+    },
+    {
+      "sourceMemberId": null,
+      "targetMemberId": "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::WaitTime",
+      "path": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "declaringType": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent",
+      "member": "WaitTime",
+      "signature": "WaitTime",
+      "kind": "field",
+      "type": "short",
+      "accessibility": "public",
+      "modifiers": [
+        "public"
+      ],
+      "locations": [
+        {
+          "path": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+          "line": 41,
+          "column": 3
+        }
+      ],
+      "sourceFingerprint": "sha256:e498a59d5017bdf96d32df640c5e8dc080e65765607994402b64189f2a1dc842",
+      "targetRoot": "src",
+      "projectOrAssembly": "NLTX",
+      "componentPath": "src/LeashedEntity/LeashedCritterBehaviorComponent.cs",
+      "componentType": "Terraria.LeashedEntity.LeashedCritterBehaviorComponent"
+    }
+  ],
+  "snapshotRefs": {
+    "source": {
+      "path": "Build/generated/version4-source-scoped.json",
+      "sha256": "sha256:f40553ab7b643f8e681155ee0b8b32b15f3a45e07e493247d21d8c4e204bbea1",
+      "kind": "source",
+      "memberScopeSha256": "sha256:02fcfe9e413aacacf0736d00dd2f043ec191052c8018e21705aaa57bc810d5fa",
+      "memberIds": [
+        "Version4::Terraria.GameContent.FishDropRules.FishingContext::Fisher",
+        "Version4::Terraria.GameContent.FishDropRules.FishingContext::Player",
+        "Version4::Terraria.GameContent.FishDropRules.FishingContext::Random",
+        "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::State",
+        "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::TargetPosition",
+        "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::WaitTime",
+        "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::anchorStyle",
+        "Version4::Terraria.GameContent.LeashedEntities.LeashedCritter::isAquatic"
+      ]
+    },
+    "target": {
+      "path": "Build/generated/nltx-target-scoped.json",
+      "sha256": "sha256:c8d70603c1e8a9613f8713a4eeda52d34edc95f726af28ba076626bc682e724c",
+      "kind": "target",
+      "targetManifestSha256": "sha256:d3b0eba677f2c345ec6e73c4afe130a620683ade2f9c4bd5aa520572fc8b3c9e",
+      "memberIds": [
+        "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::State",
+        "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::TargetPosition",
+        "src::NLTX::Terraria.LeashedEntity.LeashedCritterBehaviorComponent::WaitTime"
+      ]
+    }
+  },
+  "rules": [
+    "Read current source and target snapshots before editing facts.",
+    "Do not infer ownership from names, paths, counts, or chat history.",
+    "Run the fail-closed audit before treating a decision as verified.",
+    "Keep one active work item and do not create physical-deletion work.",
+    "Use only target members and evidence explicitly listed in this packet; do not infer replacements."
+  ]
+}

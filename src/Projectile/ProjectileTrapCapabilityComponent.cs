@@ -1,3 +1,12 @@
 namespace Terraria.Projectile;
 
-public readonly record struct ProjectileTrapCapabilityComponent;
+public struct ProjectileTrapCapabilityComponent
+{
+  public ProjectileTrapCapabilityComponent(
+    bool isTrap = false)
+  {
+    IsTrap = isTrap;
+  }
+
+  public bool IsTrap;
+}

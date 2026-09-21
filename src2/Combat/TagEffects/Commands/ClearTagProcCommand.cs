@@ -1,0 +1,5 @@
+using Terraria.EntityLifecycleAttribution;
+
+namespace Terraria.Combat.TagEffects.Commands;
+
+public readonly record struct ClearTagProcCommand(EntityReference TargetReference);

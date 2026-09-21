@@ -1,3 +1,12 @@
 namespace Terraria.Projectile;
 
-public readonly record struct ProjectileCounterweightCapabilityComponent;
+public struct ProjectileCounterweightCapabilityComponent
+{
+  public ProjectileCounterweightCapabilityComponent(
+    bool isCounterweight = false)
+  {
+    IsCounterweight = isCounterweight;
+  }
+
+  public bool IsCounterweight;
+}

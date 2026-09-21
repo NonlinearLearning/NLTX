@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Numerics;
+using System;
 
 namespace Terraria.Projectile;
 
@@ -12,6 +13,11 @@ public struct ProjectileTrailCacheComponent
 
   public ProjectileTrailCacheComponent(int historyLength)
   {
+    if (historyLength < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(historyLength));
+    }
+
     OldPositions = new Vector2[historyLength];
     OldRotations = new float[historyLength];
     OldSpriteDirections = new int[historyLength];

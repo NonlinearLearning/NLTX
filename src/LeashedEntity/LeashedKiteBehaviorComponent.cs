@@ -2,7 +2,7 @@ namespace Terraria.LeashedEntity;
 
 /// <summary>
 /// Stores kite-only behavior state for one leashed entity.
-/// status: proposed
+/// status: implemented
 /// componentOwner: LeashedEntitySimulation
 /// crossSubsystemOwner: integration-review
 /// </summary>
@@ -49,15 +49,8 @@ public struct LeashedKiteBehaviorComponent
   public int TimeWithoutWind;
 
   /// <summary>
-  /// Kite-local projectile-like AI state, not ordinary projectile authority.
+  /// The Projectile compatibility state is intentionally owned by a separate adapter.
   /// </summary>
-  public float ProjectileLocalAI0;
-
-  /// <summary>
-  /// Kite-local projectile-like AI state, not ordinary projectile authority.
-  /// </summary>
-  public float ProjectileLocalAI1;
-
   public LeashedKiteBehaviorComponent(
     int? projectileType,
     float rotation,
@@ -65,9 +58,7 @@ public struct LeashedKiteBehaviorComponent
     float windTarget,
     float windCurrent,
     float timeCounter,
-    int timeWithoutWind,
-    float projectileLocalAI0,
-    float projectileLocalAI1)
+    int timeWithoutWind)
   {
     ProjectileType = projectileType;
     Rotation = rotation;
@@ -76,7 +67,5 @@ public struct LeashedKiteBehaviorComponent
     WindCurrent = windCurrent;
     TimeCounter = timeCounter;
     TimeWithoutWind = timeWithoutWind;
-    ProjectileLocalAI0 = projectileLocalAI0;
-    ProjectileLocalAI1 = projectileLocalAI1;
   }
 }

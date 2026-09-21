@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\Combat\CombatContributorId.cs" />
+    <Compile Include="..\..\src\Combat\CombatContributorKind.cs" />
+    <Compile Include="..\..\src\Combat\DamageCreditEntry.cs" />
+    <Compile Include="..\..\src\Combat\EncounterCreditLifecycle.cs" />
+    <Compile Include="..\..\src\Combat\EncounterDamageCreditComponent.cs" />
+    <Compile Include="..\..\src\Npc\INpcDamageTrackingStrategy.cs" />
+    <Compile Include="..\..\src\Npc\NpcDamageCompositeStrategy.cs" />
+    <Compile Include="..\..\src\Npc\NpcDamageEncounterTracker.cs" />
+    <Compile Include="..\..\src\Npc\NpcDamageSingleTypeStrategy.cs" />
+    <Compile Include="..\..\src\Npc\NpcDamageTrackingSystem.cs" />
+    <Compile Include="..\..\src\Npc\NpcDamageTrackerSnapshot.cs" />
+    <Compile Include="..\..\src\Npc\NpcTypeId.cs" />
+    <Compile Include="Program.cs" />
+  </ItemGroup>
+</Project>

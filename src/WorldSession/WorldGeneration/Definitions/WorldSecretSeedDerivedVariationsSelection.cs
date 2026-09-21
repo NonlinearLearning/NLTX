@@ -1,0 +1,28 @@
+namespace Terraria.WorldGeneration.Definitions;
+
+public readonly record struct WorldSecretSeedDerivedVariationsSelection(
+  bool PaintEverythingGrayJustTheSurface,
+  bool PaintEverythingGrayJustTreasure,
+  bool PaintEverythingGrayUseWhite,
+  bool PaintEverythingNegativeJustUnderground,
+  bool PaintEverythingNegativeJustSomeThings,
+  bool CoatEverythingJustInnerBlocks,
+  bool CoatEverythingEchoJustSomeThings,
+  bool CoatEverythingIlluminantJustRandomSpots,
+  bool CoatEverythingIlluminantJustSomeThings,
+  bool NoSurfaceNoFloatingIslands,
+  bool NoSurfaceNoLivingTrees,
+  bool NoSurfaceNoPyramids,
+  bool NoSurfaceNoSwordShrines,
+  bool ExtraLivingTreesReducedAmount,
+  bool ExtraFloatingIslandsNormalAmount,
+  bool ExtraFloatingIslandsReducedAmount,
+  bool ErrorWorldBalancedChests,
+  bool NoSpiderCavesActuallyNoSpiderCaves,
+  bool NoSpiderCavesILiedMoreSpiderCaves,
+  bool ActuallyNoTrapsForRealIMeanIt,
+  bool SurfaceIsDesertNormalFunction,
+  bool SurfaceIsDesertSwapDesertAndSnowBiomes,
+  int ActiveSecretSeedCount,
+  long GenerationId,
+  ulong RuntimeVersion);

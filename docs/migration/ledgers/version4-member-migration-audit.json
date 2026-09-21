@@ -1,0 +1,30 @@
+{
+  "ok": true,
+  "schemaVersion": "1.0",
+  "ledgerFactSha256": "sha256:2c1d648576da379d568daafbcf45629183d2859fbc2b86ca17e5bdcc3eaa6ae2",
+  "snapshotHashes": {
+    "source": "sha256:f40553ab7b643f8e681155ee0b8b32b15f3a45e07e493247d21d8c4e204bbea1",
+    "target": "sha256:c8d70603c1e8a9613f8713a4eeda52d34edc95f726af28ba076626bc682e724c"
+  },
+  "summary": {
+    "sourceCandidates": 506,
+    "ledgerRows": 506,
+    "verifiedRows": 0,
+    "orphanAuthoritativeTargets": 0,
+    "referencedTargetMembers": 80,
+    "openRows": 506,
+    "errors": 0,
+    "reviewRequired": 0,
+    "informational": 0,
+    "workItems": 64,
+    "activeWorkItems": 0
+  },
+  "targetSummary": {
+    "declaredTargetMembers": 81,
+    "referencedTargetMembers": 80,
+    "orphanAuthoritativeTargets": [],
+    "scannedTargetMembers": 81
+  },
+  "findings": [],
+  "warnings": []
+}

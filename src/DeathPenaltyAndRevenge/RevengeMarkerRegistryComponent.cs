@@ -1,11 +1,14 @@
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace Terraria.DeathPenaltyAndRevenge;
 
 public sealed class RevengeMarkerRegistryComponent
 {
   private readonly HashSet<RevengeMarkerId> _markerIds;
+  private FrozenSet<RevengeMarkerId> _markerIdsView;
 
   public RevengeMarkerRegistryComponent()
     : this(Array.Empty<RevengeMarkerId>())
@@ -26,11 +29,18 @@ public sealed class RevengeMarkerRegistryComponent
           nameof(markerIds));
       }
 
-      _markerIds.Add(markerId);
+      if (!_markerIds.Add(markerId))
+      {
+        throw new ArgumentException(
+          "A marker registry cannot contain duplicate marker IDs.",
+          nameof(markerIds));
+      }
     }
+
+    _markerIdsView = _markerIds.ToFrozenSet();
   }
 
-  public IReadOnlySet<RevengeMarkerId> MarkerIds => _markerIds;
+  public IReadOnlySet<RevengeMarkerId> MarkerIds => _markerIdsView;
 
   internal bool TryRegister(RevengeMarkerId markerId)
   {
@@ -39,16 +49,34 @@ public sealed class RevengeMarkerRegistryComponent
       return false;
     }
 
-    return _markerIds.Add(markerId);
+    if (!_markerIds.Add(markerId))
+    {
+      return false;
+    }
+
+    RefreshMarkerIdView();
+    return true;
   }
 
   internal bool TryUnregister(RevengeMarkerId markerId)
   {
-    return _markerIds.Remove(markerId);
+    if (!_markerIds.Remove(markerId))
+    {
+      return false;
+    }
+
+    RefreshMarkerIdView();
+    return true;
   }
 
   internal void Clear()
   {
     _markerIds.Clear();
+    RefreshMarkerIdView();
+  }
+
+  private void RefreshMarkerIdView()
+  {
+    _markerIdsView = _markerIds.ToFrozenSet();
   }
 }

@@ -1,3 +1,5 @@
+using System;
+
 namespace Terraria.Projectile;
 
 public struct ProjectileHitImmunityPolicyComponent
@@ -11,6 +13,16 @@ public struct ProjectileHitImmunityPolicyComponent
     bool usesOwnerMeleeCooldown = false,
     bool copiesOwnerCooldownOnSpawn = false)
   {
+    if (localNpcCooldownTicks < -2)
+    {
+      throw new ArgumentOutOfRangeException(nameof(localNpcCooldownTicks));
+    }
+
+    if (staticNpcCooldownTicks < -1)
+    {
+      throw new ArgumentOutOfRangeException(nameof(staticNpcCooldownTicks));
+    }
+
     UsesLocalNpcImmunity = usesLocalNpcImmunity;
     UsesStaticNpcImmunity = usesStaticNpcImmunity;
     LocalNpcCooldownTicks = localNpcCooldownTicks;
@@ -27,4 +39,10 @@ public struct ProjectileHitImmunityPolicyComponent
   public bool AppliesOnSingleHit;
   public bool UsesOwnerMeleeCooldown;
   public bool CopiesOwnerCooldownOnSpawn;
+
+  public bool WritesLocalNpcImmunity =>
+    UsesLocalNpcImmunity && LocalNpcCooldownTicks != -2;
+
+  public bool UsesStaticNpcImmunityRegistry =>
+    UsesStaticNpcImmunity;
 }

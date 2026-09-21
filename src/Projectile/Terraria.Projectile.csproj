@@ -6,5 +6,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Relationships\Terraria.Relationships.csproj" />
+    <ProjectReference Include="..\Share\Entity\Terraria.EntityEcs.csproj" />
   </ItemGroup>
 </Project>

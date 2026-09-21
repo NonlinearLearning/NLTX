@@ -1,0 +1,10 @@
+using Terraria.WorldGeneration.Components;
+
+namespace Terraria.WorldGeneration.Definitions;
+
+public readonly record struct WorldSecretSeedDerivedVariationsInput(
+  WorldSecretSeedRuntimeRegistrySnapshot RuntimeRegistry,
+  WorldSecretSeedVisualAndSurfaceRulesDefinition VisualAndSurfaceRules,
+  WorldSecretSeedTerrainAndStructureRulesDefinition TerrainAndStructureRules,
+  WorldSecretSeedProgressionAndInfectionRulesDefinition ProgressionAndInfectionRules,
+  bool SkyblockWorld);

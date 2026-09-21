@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Content\Runtime\*.cs" />
+    <Compile Include="..\Content\Catalogs\*.cs" />
+    <Compile Include="..\Content\Factories\*.cs" />
+    <Compile Include="..\Content\Validation\*.cs" />
+    <Compile Include="..\Presentation\*.cs" />
+    <Compile Include="..\Presentation\Definitions\*.cs" />
+    <Compile Include="..\WorldInteraction\Tiles\Definitions\*.cs" />
+    <Compile Include="..\Items\Definitions\*.cs" />
+    <Compile Include="..\Items\Armor\Definitions\*.cs" />
+  </ItemGroup>
+</Project>

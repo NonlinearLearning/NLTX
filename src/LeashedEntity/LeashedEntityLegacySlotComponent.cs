@@ -2,7 +2,7 @@ namespace Terraria.LeashedEntity;
 
 /// <summary>
 /// Stores the compatibility mapping to Version4's reusable whoAmI slot.
-/// status: proposed
+/// status: implemented
 /// componentOwner: LeashedEntitySimulation compatibility boundary
 /// crossSubsystemOwner: integration-review
 /// </summary>

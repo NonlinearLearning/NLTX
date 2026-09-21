@@ -1,3 +1,5 @@
+using System;
+
 namespace Terraria.Projectile;
 
 public struct ProjectileDamagePayloadComponent
@@ -16,6 +18,16 @@ public struct ProjectileDamagePayloadComponent
     ProjectileHostileDamageScaling hostileDamageScaling =
       ProjectileHostileDamageScaling.Default)
   {
+    if (!float.IsFinite(knockback))
+    {
+      throw new ArgumentOutOfRangeException(nameof(knockback));
+    }
+
+    if (armorPenetration < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(armorPenetration));
+    }
+
     CurrentDamage = currentDamage;
     OriginalDamage = originalDamage;
     Knockback = knockback;
@@ -40,4 +52,10 @@ public struct ProjectileDamagePayloadComponent
   public bool IsColdDamage;
   public bool IsArrow;
   public ProjectileHostileDamageScaling HostileDamageScaling;
+
+  public readonly bool IsMelee => DamageClass == ProjectileDamageClass.Melee;
+
+  public readonly bool IsRanged => DamageClass == ProjectileDamageClass.Ranged;
+
+  public readonly bool IsMagic => DamageClass == ProjectileDamageClass.Magic;
 }

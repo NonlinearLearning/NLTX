@@ -1,0 +1,37 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\TilePosition.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\MountainCaveHistoryComponent.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\MountainCaveHistorySnapshot.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\SurfaceTunnelHistoryComponent.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\SurfaceTunnelHistoryDefinition.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\SurfaceTunnelHistorySnapshot.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Components\LakePlacementCapacityDefinition.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Components\LakePlacementHistoryComponent.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Components\LakePlacementHistorySnapshot.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Components\OasisHeightDefinition.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Components\OasisPlacementCapacityDefinition.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Components\OasisPlacementHistoryComponent.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Components\OasisPlacementHistorySnapshot.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Queries\LakeOasisAvoidanceQuery.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Queries\LakePlacementHistoryQuery.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Queries\MountainCaveHistoryQuery.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Queries\OasisPlacementHistoryQuery.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Queries\OasisPlacementQuery.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Queries\SurfaceTunnelHistoryQuery.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\LakeGenerationSystem.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\LakePlacementHistoryAppendResult.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\LakePlacementHistoryAppendStatus.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\OasisGenerationSystem.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\OasisPlacementHistoryAppendResult.cs" />
+    <Compile Include="..\WorldSession\WorldGeneration\Systems\OasisPlacementHistoryAppendStatus.cs" />
+  </ItemGroup>
+</Project>

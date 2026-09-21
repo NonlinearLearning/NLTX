@@ -2,7 +2,7 @@ namespace Terraria.LeashedEntity;
 
 /// <summary>
 /// Stores lifecycle state for one leashed entity.
-/// status: proposed
+/// status: implemented
 /// componentOwner: LeashedEntitySimulation
 /// crossSubsystemOwner: none for local state
 /// </summary>
@@ -19,7 +19,8 @@ public struct LeashedEntityLifecycleComponent
   public bool Spawned;
 
   /// <summary>
-  /// Candidate idempotency/revision field. Version4 does not provide this field.
+  /// Candidate idempotency/revision field. Version4 does not provide this field;
+  /// registration ownership remains unresolved.
   /// </summary>
   public ulong TransitionSequence;
 

@@ -1,3 +1,5 @@
+using System;
+
 namespace Terraria.Projectile;
 
 public struct ProjectileSourceMetadataComponent
@@ -22,6 +24,12 @@ public struct ProjectileSourceMetadataComponent
     ushort minionSpawnItemType = 0,
     int minionSpawnItemPrefix = 0)
   {
+    ArgumentNullException.ThrowIfNull(miscText);
+    if (minionSpawnItemPrefix < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(minionSpawnItemPrefix));
+    }
+
     BannerIdToRespondTo = bannerIdToRespondTo;
     MiscText = miscText;
     OriginatedFromActivableTile = originatedFromActivableTile;

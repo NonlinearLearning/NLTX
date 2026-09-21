@@ -4,4 +4,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\Content\ColorRgba.cs" Link="Content\ColorRgba.cs" />
+    <ProjectReference Include="..\Npc\Terraria.Npc.csproj" />
+  </ItemGroup>
 </Project>

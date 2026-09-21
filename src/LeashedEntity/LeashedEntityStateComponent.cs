@@ -2,7 +2,7 @@ namespace Terraria.LeashedEntity;
 
 /// <summary>
 /// Stores the definition binding for one leashed entity.
-/// status: proposed
+/// status: implemented
 /// componentOwner: LeashedEntitySimulation
 /// crossSubsystemOwner: integration-review
 /// </summary>
@@ -12,6 +12,11 @@ public struct LeashedEntityStateComponent
   /// The Version4 registry definition reference. Zero means unbound.
   /// </summary>
   public int DefinitionId;
+
+  /// <summary>
+  /// Indicates whether the entity has a validated definition binding.
+  /// </summary>
+  public bool IsBound => DefinitionId > 0;
 
   public LeashedEntityStateComponent(int definitionId)
   {

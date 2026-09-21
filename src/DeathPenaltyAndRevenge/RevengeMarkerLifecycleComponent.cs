@@ -1,17 +1,26 @@
+using System;
+
 namespace Terraria.DeathPenaltyAndRevenge;
 
 public sealed class RevengeMarkerLifecycleComponent
 {
+  private readonly RevengeRespawnAttemptComponent _respawnAttemptState = new();
+
   public RevengeMarkerLifecycleComponent(int expiresAtGameTime)
   {
+    if (expiresAtGameTime < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(expiresAtGameTime));
+    }
+
     ExpiresAtGameTime = expiresAtGameTime;
   }
 
   public int ExpiresAtGameTime { get; }
 
-  public bool ForceExpire { get; private set; }
+  public bool ForceExpire => _respawnAttemptState.ForceExpire;
 
-  public bool RespawnAttemptLocked { get; private set; }
+  public bool RespawnAttemptLocked => _respawnAttemptState.IsLocked;
 
   public bool IsExpiredAt(int currentGameTime)
   {
@@ -20,11 +29,13 @@ public sealed class RevengeMarkerLifecycleComponent
 
   internal void MarkForceExpired()
   {
-    ForceExpire = true;
+    _respawnAttemptState.MarkForceExpired();
   }
 
   internal void SetRespawnAttemptLocked(bool locked)
   {
-    RespawnAttemptLocked = locked;
+    _respawnAttemptState.SetAttemptedRespawn(locked);
   }
+
+  internal RevengeRespawnAttemptComponent RespawnAttemptState => _respawnAttemptState;
 }

@@ -12,4 +12,9 @@ public sealed class PlayerSpawnPointComponent
   public WorldPosition? ReturnOriginalUsePosition { get; set; }
 
   public WorldPosition? ReturnHomePosition { get; set; }
+
+  public bool HasSpawnCoordinates => SpawnX >= 0 && SpawnY >= 0;
+
+  public bool HasReturnRoute =>
+    ReturnOriginalUsePosition.HasValue && ReturnHomePosition.HasValue;
 }

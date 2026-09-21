@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <PropertyGroup>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="**\*.cs" />
+    <Compile Include="..\Content\StatusEffects\**\*.cs" Link="Content\StatusEffects\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Content\Items\**\*.cs" Link="Content\Items\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\EntityLifecycleAttribution\EntityReference.cs" Link="EntityLifecycleAttribution\EntityReference.cs" />
+    <Compile Include="..\Tiles\Interaction\**\*.cs" Link="Tiles\Interaction\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Input\LockOn\**\*.cs" Link="Input\LockOn\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Presentation\CombatText\**\*.cs" Link="Presentation\CombatText\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Presentation\BuffText\**\*.cs" Link="Presentation\BuffText\%(RecursiveDir)%(Filename)%(Extension)" />
+    <Compile Include="..\Transport\TagEffects\**\*.cs" Link="Transport\TagEffects\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

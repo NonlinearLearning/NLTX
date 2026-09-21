@@ -4,7 +4,7 @@ namespace Terraria.LeashedEntity;
 
 /// <summary>
 /// Stores entity-side section membership and local activity observation.
-/// status: proposed
+/// status: implemented
 /// componentOwner: LeashedEntitySimulation
 /// crossSubsystemOwner: integration-review
 /// </summary>

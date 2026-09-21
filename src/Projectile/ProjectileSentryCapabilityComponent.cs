@@ -1,3 +1,12 @@
 namespace Terraria.Projectile;
 
-public readonly record struct ProjectileSentryCapabilityComponent;
+public struct ProjectileSentryCapabilityComponent
+{
+  public ProjectileSentryCapabilityComponent(
+    bool isSentry = false)
+  {
+    IsSentry = isSentry;
+  }
+
+  public bool IsSentry;
+}

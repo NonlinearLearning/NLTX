@@ -7,9 +7,18 @@ public sealed class PlayerIdentityComponent
 
   public string CharacterName { get; set; } = string.Empty;
 
+  // Compatibility alias for the Version4 public identity name.
+  public string DisplayName
+  {
+    get => CharacterName;
+    set => CharacterName = value;
+  }
+
   public int TeamId { get; set; }
 
   public PlayerDifficulty Difficulty { get; set; }
+
+  public bool IsActive { get; set; }
 
   public bool IsHost { get; set; }
 

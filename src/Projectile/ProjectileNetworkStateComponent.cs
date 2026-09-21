@@ -1,3 +1,5 @@
+using System;
+
 namespace Terraria.Projectile;
 
 public struct ProjectileNetworkStateComponent
@@ -20,6 +22,16 @@ public struct ProjectileNetworkStateComponent
     int netSpam = 0,
     bool sendRequested = false)
   {
+    if (playerCapacity < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(playerCapacity));
+    }
+
+    if (netSpam < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(netSpam));
+    }
+
     NetworkImportant = networkImportant;
     PrimaryUpdatePending = primaryUpdatePending;
     SecondaryUpdatePending = secondaryUpdatePending;

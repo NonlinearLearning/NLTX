@@ -1,0 +1,7940 @@
+# Version4 权威模拟系统字段和属性逐成员源码声明（更细子系统拆分，去除 ID 类文件）
+
+## 1. 文档目的与边界
+
+本文档是在《Version4 权威模拟系统字段属性逐成员源码声明-去除ID类文件.md》基础上，对权威模拟系统内部继续做职责细分的派生成员库存。原文档中的 21 个正式子系统仍是父级归属；本文新增的“细分子系统”是用于字段/属性并发拆分和阅读导航的更细边界，不自动修改 `Version4子系统索引.json`、`Version4源码覆盖.tsv`，也不宣布新的正式 owner。
+
+每条字段或属性记录只进入一个父级和一个细分子系统。细分不是按行数平均切块，而是按共同声明类型、生命周期、访问模式、权威/派生性质和职责边界分组；`Terraria.Player`、`Terraria.NPC`、`Terraria.WorldGen`、`Terraria.WorldBuilding.GenVars` 等巨型类型按 Version4 声明行段和成员语义继续拆分。
+
+本文不是迁移完成、行为等价、API 兼容、网络/持久化闭合或运行时可用性证明。没有创建或修改 `src/`、参考源码、Component、System、Query、Command、Adapter、Projection 或测试实现。
+
+## 2. 证据与拆分规则
+
+- 成员事实直接继承输入成员库存；类、相对/绝对路径、行列、成员、类型、完整声明和原始声明不改写。
+- 父级系统/子系统主归属沿用输入文档；跨域关系不复制成员、不增加计数。
+- `state/behavior` 细分预留唯一 Owner System/CommitPort；`derived/query` 细分只读并保持纯计算；`definition/query` 细分作为只读定义目录；`registry/projection` 细分只负责索引或单向投影。上述是边界契约，不代表目标实现已经存在。
+- Version4 私有语义以 `D:\TRbackup\Version4` 的声明和既有源码审计为准；SS14 仅用于观察 Component/System/Query 的组织粒度，tModLoader 仅用于公开 API 边界交叉参考。
+- 参考组织证据：`C:\Users\shan\Downloads\ECS\space-station-14-master\Content.Server\Wires\WiresSystem.cs` 的事件订阅/更新 System 与 `Content.Shared\Atmos\Components\MapAtmosphereComponent.cs` 的 Map 级组件；公开 API 索引为 `D:\TRbackup\tmodloader-api-docs-stable\index.html`，版本页眉为 `tModLoader v2026.07`。这些证据不替代 Terraria 私有字段读写者和生命周期闭合。
+
+## 3. 数量封存
+
+| 指标 | 数量 |
+|---|---:|
+| 正式父级子系统（索引口径） | 21 |
+| 有成员记录的父级子系统 | 11 |
+| 本文细分子系统 | 267 |
+| field | 2397 |
+| property | 262 |
+| 合计 | 2659 |
+
+数量验收等式：2,397 个字段 + 262 个属性 = 2,659 条权威模拟系统成员记录；267 个细分子系统的合计必须再次等于该总数。
+
+### 3.1 父级系统统计
+
+| 父级子系统 | 细分数 | 字段 | 属性 | 合计 | 说明 |
+|---|---:|---:|---:|---:|---|
+| `LiquidSimulation` | 4 | 24 | 0 | 24 | 液体事实、流动和变更发布。 |
+| `DeathPenaltyAndRevenge` | 4 | 33 | 2 | 35 | 死亡惩罚和复仇标记。 |
+| `LeashedEntitySimulation` | 8 | 93 | 5 | 98 | 拴系实体注册、行为和物种定义。 |
+| `WiringAndMechanisms` | 3 | 30 | 0 | 30 | 电线传播、机关和泵/传送。 |
+| `MountAndVehicleSimulation` | 17 | 136 | 27 | 163 | 坐骑、轨道和钻头特化。 |
+| `WorldSession` | 0 | 0 | 0 | 0 | 世界会话状态；当前声明库存无主记录。 |
+| `WorldCalendarAndEventOrchestration` | 0 | 0 | 0 | 0 | 日历和事件编排；当前声明库存无主记录。 |
+| `WorldProgressionAndTransition` | 0 | 0 | 0 | 0 | 长期世界转换；当前声明库存无主记录。 |
+| `WorldProgressionAndUnlocks` | 0 | 0 | 0 | 0 | 世界解锁进度；当前声明库存无主记录。 |
+| `SimulationRuleOverrides` | 0 | 0 | 0 | 0 | 模拟规则覆写；当前声明库存无主记录。 |
+| `SpatialSimulation` | 2 | 19 | 0 | 19 | 碰撞、接触和伤害 Tile 查询。 |
+| `WorldInteractionAndStructures` | 0 | 0 | 0 | 0 | 世界交互和结构变更；当前声明库存无主记录。 |
+| `PlayerGameplay` | 109 | 1047 | 82 | 1129 | 玩家状态、能力、输入、物品和派生资格。 |
+| `NpcAndTownSimulation` | 41 | 371 | 41 | 412 | NPC 生命周期、AI、城镇和生成资格。 |
+| `ProjectileSimulation` | 17 | 118 | 8 | 126 | 投射物身份、行为、战斗和复制状态。 |
+| `TeleportationAndTraversal` | 1 | 5 | 0 | 5 | 传送水晶塔和旅行资格索引。 |
+| `FishingAndCatchSimulation` | 0 | 0 | 0 | 0 | 钓鱼与渔获；当前声明库存无主记录。 |
+| `CombatAndStatus` | 0 | 0 | 0 | 0 | 战斗与状态；当前声明库存无主记录。 |
+| `ItemContainerAndEconomy` | 0 | 0 | 0 | 0 | 物品、容器和经济；当前声明库存无主记录。 |
+| `WorldGenerationAndEcology` | 61 | 521 | 97 | 618 | 世界生成、地形、Biome 和生态支持类型。 |
+| `SpawnLifecycleAndLoot` | 0 | 0 | 0 | 0 | 生成、销毁和掉落；当前声明库存无主记录。 |
+
+### 3.2 调用方向和边界图（文字契约）
+
+```text
+输入/网络命令/世界配置
+        ↓
+意图与资格 Query → Player / NPC / Projectile / Mount / Leashed state systems
+        ↓
+Spatial / Liquid / Wiring / Teleport / WorldGeneration queries and systems
+        ↓
+显式 Command / CommitPort → 唯一权威状态写入
+        ↓
+Network / Persistence / Presentation projection（只读，不反向成为权威）
+```
+
+细分表中的相邻组不是继承树，也不由 Markdown 文件顺序决定运行顺序。实际实施仍需为必要的阶段顺序建立调度契约，并为状态转换、纯 Query、错误边界、重复命令、持久化和网络投影补充 focused verifier。
+
+### 3.3 当前活动细分子系统字段属性数量排行榜（全部 267）
+
+以下排行榜列出全部 267 个当前活动细分子系统，计数口径为字段 + 属性；按合计数量降序、同数按子系统名称升序稳定排序。已退休来源组不计入本表。
+
+| 排名 | 活动细分子系统 | 字段 | 属性 | 合计 |
+|---:|---|---:|---:|---:|
+| 1 | `PlayerCoreMinionSummonFlags` | 22 | 0 | 22 |
+| 2 | `WorldGenerationShapeModifierState` | 22 | 0 | 22 |
+| 3 | `WorldLandmassAndTreeProfiles` | 21 | 1 | 22 |
+| 4 | `WorldSecretSeedDerivedVariations` | 0 | 22 | 22 |
+| 5 | `WorldSeedOptionCatalog` | 1 | 21 | 22 |
+| 6 | `PlayerElementalAndShimmerStatus` | 21 | 0 | 21 |
+| 7 | `PlayerEquipmentSelectionSlots` | 21 | 0 | 21 |
+| 8 | `PlayerLegacyPetState` | 21 | 0 | 21 |
+| 9 | `PlayerVisualAndShaderEffects` | 21 | 0 | 21 |
+| 10 | `WorldGenBiomeBackgroundAndDistanceMetrics` | 21 | 0 | 21 |
+| 11 | `LeashedKiteBehavior` | 19 | 1 | 20 |
+| 12 | `PlayerControlAndReleaseInput` | 20 | 0 | 20 |
+| 13 | `PlayerEquipmentColorProjection` | 20 | 0 | 20 |
+| 14 | `PlayerEquipmentPresentationState` | 20 | 0 | 20 |
+| 15 | `PlayerSocialAndDefenseState` | 20 | 0 | 20 |
+| 16 | `WorldGenerationTileWallConditionState` | 20 | 0 | 20 |
+| 17 | `WorldTerrainEffectsAndCaches` | 20 | 0 | 20 |
+| 18 | `GenVarsDungeonAndIslands` | 19 | 0 | 19 |
+| 19 | `NpcCombatAndLifeState` | 19 | 0 | 19 |
+| 20 | `NpcTownHousingAndBreathState` | 19 | 0 | 19 |
+| 21 | `PlayerArmorSetAndTurretState` | 19 | 0 | 19 |
+| 22 | `WorldHousingRoomSearchState` | 19 | 0 | 19 |
+| 23 | `MountMovementAndAbilityCatalog` | 18 | 0 | 18 |
+| 24 | `NpcIdentityInteractionAndPresentationState` | 18 | 0 | 18 |
+| 25 | `PlayerJumpAvailabilityState` | 18 | 0 | 18 |
+| 26 | `NpcBossDefeatFlags` | 17 | 0 | 17 |
+| 27 | `NpcCollisionAndPresentationState` | 17 | 0 | 17 |
+| 28 | `NpcElementalDebuffState` | 17 | 0 | 17 |
+| 29 | `PlayerAccessoryProgressionEffects` | 17 | 0 | 17 |
+| 30 | `PlayerContainerAndWorldAnchorState` | 17 | 0 | 17 |
+| 31 | `MountRuntimeMobilityAndAbilityProjection` | 0 | 16 | 16 |
+| 32 | `NpcTargetAndIdentityProperties` | 0 | 16 | 16 |
+| 33 | `NpcTownSpawnUnlockState` | 16 | 0 | 16 |
+| 34 | `PlayerBiomeZoneProperties` | 0 | 16 | 16 |
+| 35 | `PlayerBossPetFlags` | 16 | 0 | 16 |
+| 36 | `PlayerCombatModifierAndImmunityState` | 16 | 0 | 16 |
+| 37 | `PlayerDebuffAndRecoveryStatus` | 16 | 0 | 16 |
+| 38 | `PlayerItemUseAndChannelIntent` | 16 | 0 | 16 |
+| 39 | `PlayerLuckAndRescanState` | 16 | 0 | 16 |
+| 40 | `ProjectileIdentityAndClassificationState` | 16 | 0 | 16 |
+| 41 | `GenVarsSurfaceAndBiomeState` | 15 | 0 | 15 |
+| 42 | `LeashedCritterCoreState` | 15 | 0 | 15 |
+| 43 | `LeashedRegistryAndSections` | 12 | 3 | 15 |
+| 44 | `LiquidFlowBudgetAndPanicState` | 15 | 0 | 15 |
+| 45 | `MountRuntimeFrameAndFlightState` | 15 | 0 | 15 |
+| 46 | `PlayerCombatDamageProcState` | 15 | 0 | 15 |
+| 47 | `PlayerDefenseLoadoutAndCloneState` | 15 | 0 | 15 |
+| 48 | `PlayerSelectionState` | 9 | 6 | 15 |
+| 49 | `PlayerSurvivalAndTransformationState` | 15 | 0 | 15 |
+| 50 | `WorldGenJungleStructureState` | 15 | 0 | 15 |
+| 51 | `WorldHousingCountersAndScoringState` | 15 | 0 | 15 |
+| 52 | `NpcEventDefeatFlags` | 14 | 0 | 14 |
+| 53 | `NpcTargetAndMovementHistoryState` | 14 | 0 | 14 |
+| 54 | `PlayerCombatDamageAndCritModifiers` | 14 | 0 | 14 |
+| 55 | `PlayerCompanionState` | 14 | 0 | 14 |
+| 56 | `PlayerDeathRespawnAndSaveState` | 14 | 0 | 14 |
+| 57 | `PlayerInputSyncAndMatch` | 13 | 1 | 14 |
+| 58 | `PlayerInteractionInputState` | 14 | 0 | 14 |
+| 59 | `PlayerPoseAndAnimationState` | 14 | 0 | 14 |
+| 60 | `PlayerStringAndAccessoryEffectState` | 14 | 0 | 14 |
+| 61 | `ProjectileCombatAndImmunity` | 14 | 0 | 14 |
+| 62 | `WorldGenTileCountMetrics` | 14 | 0 | 14 |
+| 63 | `WorldSkyblockGenerationRules` | 11 | 3 | 14 |
+| 64 | `GenVarsWorldLayerMetrics` | 13 | 0 | 13 |
+| 65 | `LeashedSpeciesPrototypes` | 13 | 0 | 13 |
+| 66 | `MountRuntimeIdentityAndFrameProjection` | 2 | 11 | 13 |
+| 67 | `NpcAiTargetAndIdentityState` | 13 | 0 | 13 |
+| 68 | `NpcSpawnAndCritterState` | 13 | 0 | 13 |
+| 69 | `NpcSpawnBiomeZoneInputs` | 13 | 0 | 13 |
+| 70 | `PlayerBuilderInteractionDefinitions` | 13 | 0 | 13 |
+| 71 | `PlayerCrossoverPetFlags` | 13 | 0 | 13 |
+| 72 | `PlayerEnvironmentDetectionAndSpawnState` | 13 | 0 | 13 |
+| 73 | `PlayerLuckAndCommerceEffects` | 13 | 0 | 13 |
+| 74 | `PlayerRuntimeInteractionAndEffectState` | 13 | 0 | 13 |
+| 75 | `PlayerShadowAndArmPresentation` | 13 | 0 | 13 |
+| 76 | `PlayerStandardNamedPetFlags` | 13 | 0 | 13 |
+| 77 | `PlayerVitalAndRegenState` | 13 | 0 | 13 |
+| 78 | `ProjectileDamageAndElementState` | 13 | 0 | 13 |
+| 79 | `ProjectileMinionAndPresentationState` | 13 | 0 | 13 |
+| 80 | `WorldGenerationProgressAndPassState` | 7 | 6 | 13 |
+| 81 | `WorldGenerationSnapshotState` | 7 | 6 | 13 |
+| 82 | `GenVarsBeachAndOceanBoundaryState` | 12 | 0 | 12 |
+| 83 | `NpcDamageRuntimeTracking` | 9 | 3 | 12 |
+| 84 | `PlayerAbilityAndPresentationProperties` | 0 | 12 | 12 |
+| 85 | `PlayerAmmoAndAccessoryEffects` | 12 | 0 | 12 |
+| 86 | `PlayerDashAndGroundTraversalState` | 12 | 0 | 12 |
+| 87 | `PlayerEnvironmentMobilityState` | 12 | 0 | 12 |
+| 88 | `PlayerGrappleAndRocketState` | 12 | 0 | 12 |
+| 89 | `PlayerItemActionTimingState` | 12 | 0 | 12 |
+| 90 | `PlayerTileTargetingAndRangeState` | 12 | 0 | 12 |
+| 91 | `WiringPropagationAndGateState` | 12 | 0 | 12 |
+| 92 | `WorldGenBeachAndOceanBiomeState` | 12 | 0 | 12 |
+| 93 | `WorldGenerationOptionBaseState` | 4 | 8 | 12 |
+| 94 | `WorldGenerationTileSetActions` | 12 | 0 | 12 |
+| 95 | `WorldSecretSeedProgressionAndInfectionRules` | 12 | 0 | 12 |
+| 96 | `LeashedFlyerBehavior` | 11 | 0 | 11 |
+| 97 | `LeashedJumperBehavior` | 11 | 0 | 11 |
+| 98 | `MountFrameAndDrawCatalog` | 11 | 0 | 11 |
+| 99 | `MountGroundAnimationFrames` | 11 | 0 | 11 |
+| 100 | `NpcInteractionAndCommerce` | 4 | 7 | 11 |
+| 101 | `NpcNetworkReplicationState` | 11 | 0 | 11 |
+| 102 | `NpcPortalAndSpecialBehaviorState` | 11 | 0 | 11 |
+| 103 | `NpcSpawnPolicyAndEventEligibilityInputs` | 11 | 0 | 11 |
+| 104 | `PlayerAppearanceCompanionAndEffectProjection` | 11 | 0 | 11 |
+| 105 | `PlayerBuffAndResourceSlots` | 11 | 0 | 11 |
+| 106 | `PlayerDetectionAndCombatStatus` | 11 | 0 | 11 |
+| 107 | `PlayerFrameAndImmunityState` | 11 | 0 | 11 |
+| 108 | `PlayerItemMountAndRuntimeProperties` | 0 | 11 | 11 |
+| 109 | `PlayerJumpExecutionState` | 11 | 0 | 11 |
+| 110 | `PlayerPortalAndTargetingState` | 11 | 0 | 11 |
+| 111 | `RevengeRegistryAndCache` | 11 | 0 | 11 |
+| 112 | `WorldGenerationConditionsAndSearches` | 11 | 0 | 11 |
+| 113 | `WorldGenerationGeneratorExecutionState` | 10 | 1 | 11 |
+| 114 | `WorldSecretSeedTerrainAndStructureRules` | 11 | 0 | 11 |
+| 115 | `WorldStructurePlanningAndMasks` | 9 | 2 | 11 |
+| 116 | `CollisionQueryCache` | 10 | 0 | 10 |
+| 117 | `GenVarsConfigurationAndOreState` | 10 | 0 | 10 |
+| 118 | `NpcBossAndInvasionGlobalState` | 10 | 0 | 10 |
+| 119 | `NpcSpawnBudgetAndActivityState` | 10 | 0 | 10 |
+| 120 | `NpcSpawnContextAndCapacityInputs` | 10 | 0 | 10 |
+| 121 | `NpcSpawnCooldownAndEnvironment` | 10 | 0 | 10 |
+| 122 | `NpcSpawnSpatialEligibilityInputs` | 10 | 0 | 10 |
+| 123 | `NpcTowerAndEventShieldState` | 10 | 0 | 10 |
+| 124 | `PlayerAppearanceCustomizationState` | 10 | 0 | 10 |
+| 125 | `PlayerBeetleArmorState` | 10 | 0 | 10 |
+| 126 | `PlayerIdentityAndDeathRecordState` | 10 | 0 | 10 |
+| 127 | `PlayerManaAndAfkStatus` | 10 | 0 | 10 |
+| 128 | `PlayerRopeAndPulleyState` | 10 | 0 | 10 |
+| 129 | `PlayerSlideAndCarpetTraversalState` | 10 | 0 | 10 |
+| 130 | `PlayerSolarAndNebulaArmorState` | 10 | 0 | 10 |
+| 131 | `RevengeMarkerEnemyContextState` | 10 | 0 | 10 |
+| 132 | `WorldGenerationSecretSeedFlags` | 10 | 0 | 10 |
+| 133 | `WorldGenerationShapeData` | 8 | 2 | 10 |
+| 134 | `CollisionContactAndHurtResults` | 9 | 0 | 9 |
+| 135 | `DrillMountRuntime` | 9 | 0 | 9 |
+| 136 | `GenVarsCaveTunnelAndOrePatchState` | 9 | 0 | 9 |
+| 137 | `GenVarsHellAndSpecialStructures` | 9 | 0 | 9 |
+| 138 | `MountAerialAndWaterAnimationFrames` | 9 | 0 | 9 |
+| 139 | `MountDrillConstants` | 9 | 0 | 9 |
+| 140 | `MountGeometryAndOffsetCatalog` | 9 | 0 | 9 |
+| 141 | `MountVehicleAndPresentationCatalog` | 9 | 0 | 9 |
+| 142 | `NpcProgressionAndEnvironmentProperties` | 0 | 9 | 9 |
+| 143 | `NpcWhipAndSpecialEffectState` | 9 | 0 | 9 |
+| 144 | `PlayerAccessoryCombatModifierState` | 9 | 0 | 9 |
+| 145 | `PlayerCombatSpeedRangeAndPermissionState` | 9 | 0 | 9 |
+| 146 | `PlayerInteractionAndSelectionProperties` | 0 | 9 | 9 |
+| 147 | `PlayerSeasonalAndEventPetFlags` | 9 | 0 | 9 |
+| 148 | `PlayerSpatialDerivedProperties` | 0 | 9 | 9 |
+| 149 | `ProjectileMovementAndCollisionState` | 9 | 0 | 9 |
+| 150 | `RevengeMarkerExpirationAndIdentityState` | 8 | 1 | 9 |
+| 151 | `WiringMechanismCooldowns` | 9 | 0 | 9 |
+| 152 | `WiringTeleportAndPumpState` | 9 | 0 | 9 |
+| 153 | `WorldGenUndergroundDesertStructureState` | 9 | 0 | 9 |
+| 154 | `WorldSecretSeedVisualAndSurfaceRules` | 9 | 0 | 9 |
+| 155 | `GenVarsLakeAndOasisState` | 8 | 0 | 8 |
+| 156 | `MountDelegateContract` | 8 | 0 | 8 |
+| 157 | `MountFatigueAndAbilityState` | 8 | 0 | 8 |
+| 158 | `NpcRegenerationAndProtectionState` | 8 | 0 | 8 |
+| 159 | `NpcSpawnEventAndTowerInputs` | 8 | 0 | 8 |
+| 160 | `NpcTownRescueState` | 8 | 0 | 8 |
+| 161 | `PlayerAccessoryDebuffAndDropState` | 8 | 0 | 8 |
+| 162 | `PlayerArmorAndCombatEffects` | 8 | 0 | 8 |
+| 163 | `PlayerDebuffStatusState` | 8 | 0 | 8 |
+| 164 | `PlayerInformationDetectionAndWiringState` | 8 | 0 | 8 |
+| 165 | `PlayerInventoryAndContainerSlots` | 8 | 0 | 8 |
+| 166 | `PlayerMagnetAndUtilityAccessoryState` | 8 | 0 | 8 |
+| 167 | `PlayerMovementPhysicsState` | 8 | 0 | 8 |
+| 168 | `PlayerPresentationMessagesAndArms` | 8 | 0 | 8 |
+| 169 | `ProjectileCollisionGeometryCache` | 8 | 0 | 8 |
+| 170 | `ProjectileDerivedProperties` | 0 | 8 | 8 |
+| 171 | `WorldGenerationDimensionsState` | 8 | 0 | 8 |
+| 172 | `WorldGenerationManifestAndPassResults` | 2 | 6 | 8 |
+| 173 | `WorldTileMergeCullState` | 8 | 0 | 8 |
+| 174 | `LeashedWalkerBehavior` | 7 | 0 | 7 |
+| 175 | `NpcDamageCreditProjection` | 1 | 6 | 7 |
+| 176 | `PlayerEventAndShoppingZoneProperties` | 0 | 7 | 7 |
+| 177 | `PlayerFishingCapabilityState` | 7 | 0 | 7 |
+| 178 | `PlayerInformationNavigationAndTimeState` | 7 | 0 | 7 |
+| 179 | `PlayerMountAndMinecartEffects` | 7 | 0 | 7 |
+| 180 | `PlayerPettingState` | 7 | 0 | 7 |
+| 181 | `PlayerRabbitOrderFrameState` | 7 | 0 | 7 |
+| 182 | `PlayerSleepingState` | 6 | 1 | 7 |
+| 183 | `PlayerZoneAndEnvironmentState` | 7 | 0 | 7 |
+| 184 | `ProjectileCollisionAndTargetingState` | 7 | 0 | 7 |
+| 185 | `ProjectileStormDefinition` | 7 | 0 | 7 |
+| 186 | `ProjectileTargetSelectionCache` | 7 | 0 | 7 |
+| 187 | `WorldGenerationControllerPassState` | 4 | 3 | 7 |
+| 188 | `WorldGenerationControllerPauseAndHashState` | 1 | 6 | 7 |
+| 189 | `WorldGenerationTileScanAndControlActions` | 7 | 0 | 7 |
+| 190 | `WorldGenerationWallMutationActions` | 7 | 0 | 7 |
+| 191 | `WorldLifecycleHousingAndSpawnPacingState` | 7 | 0 | 7 |
+| 192 | `WorldLifecycleLoadAndTransformState` | 7 | 0 | 7 |
+| 193 | `WorldSavedOreTierState` | 7 | 0 | 7 |
+| 194 | `LeashedButterflyVariants` | 5 | 1 | 6 |
+| 195 | `NpcSpawnBiomeAndDungeonEligibilityInputs` | 6 | 0 | 6 |
+| 196 | `PlayerAppearanceSelectionState` | 6 | 0 | 6 |
+| 197 | `PlayerConsumedProgressionFlags` | 6 | 0 | 6 |
+| 198 | `PlayerTraversalColorProjection` | 6 | 0 | 6 |
+| 199 | `PlayerVerticalAndWeatherZoneProperties` | 0 | 6 | 6 |
+| 200 | `PlayerWingsAndFlightState` | 6 | 0 | 6 |
+| 201 | `ProjectileLifetimeAndRuntimeState` | 6 | 0 | 6 |
+| 202 | `WorldGenerationExecutionState` | 6 | 0 | 6 |
+| 203 | `WorldLifecycleProgressionAndEventState` | 6 | 0 | 6 |
+| 204 | `WorldSecretSeedRegistryDefinitions` | 6 | 0 | 6 |
+| 205 | `GenVarsMushroomBiomeAndLogState` | 5 | 0 | 5 |
+| 206 | `MountSpecialVehicleCatalog` | 5 | 0 | 5 |
+| 207 | `MountSuperCartConstants` | 5 | 0 | 5 |
+| 208 | `MountVariantFlags` | 5 | 0 | 5 |
+| 209 | `NpcBossAndInvasionState` | 5 | 0 | 5 |
+| 210 | `PlayerAccessoryResourceAndInvulnerabilityState` | 5 | 0 | 5 |
+| 211 | `PlayerCombatDodgeAndImmunityState` | 5 | 0 | 5 |
+| 212 | `PlayerDpsTelemetryState` | 5 | 0 | 5 |
+| 213 | `PlayerGravityAndWaterTraversalState` | 5 | 0 | 5 |
+| 214 | `PlayerInformationWorldAndMovementState` | 5 | 0 | 5 |
+| 215 | `PlayerJumpMobilityModifiers` | 5 | 0 | 5 |
+| 216 | `PlayerSittingState` | 5 | 0 | 5 |
+| 217 | `RevengeMarkerValueAndRespawnState` | 4 | 1 | 5 |
+| 218 | `TeleportPylonRegistry` | 5 | 0 | 5 |
+| 219 | `WorldGenerationTilePlacementAndPaintActions` | 5 | 0 | 5 |
+| 220 | `WorldHousingRuleAndDiagnosticState` | 5 | 0 | 5 |
+| 221 | `LiquidCellWorkItemState` | 4 | 0 | 4 |
+| 222 | `NpcBuffSlotAndImmunityState` | 4 | 0 | 4 |
+| 223 | `NpcControlAndSocialEffectState` | 4 | 0 | 4 |
+| 224 | `NpcDamageDefinitionRegistry` | 4 | 0 | 4 |
+| 225 | `NpcIdentityAndStatusState` | 4 | 0 | 4 |
+| 226 | `NpcLifecycleAndCrossDomainRefs` | 4 | 0 | 4 |
+| 227 | `NpcProgressionBookAndActiveRegistryState` | 4 | 0 | 4 |
+| 228 | `PlayerCombatBarrierAndRegenState` | 4 | 0 | 4 |
+| 229 | `PlayerEquipmentAndDyeSlots` | 4 | 0 | 4 |
+| 230 | `PlayerEyeAnimationState` | 3 | 1 | 4 |
+| 231 | `PlayerItemSpaceAndSettings` | 3 | 1 | 4 |
+| 232 | `PlayerSpawnAndReturnState` | 4 | 0 | 4 |
+| 233 | `PlayerTeleportTransitionState` | 4 | 0 | 4 |
+| 234 | `PlayerUnlockProgressionState` | 4 | 0 | 4 |
+| 235 | `PlayerWorldObjectPetFlags` | 4 | 0 | 4 |
+| 236 | `ProjectileAiState` | 4 | 0 | 4 |
+| 237 | `ProjectileNetworkReplicationState` | 4 | 0 | 4 |
+| 238 | `WorldGenerationScratchState` | 4 | 0 | 4 |
+| 239 | `WorldGenerationSupportTypes` | 4 | 0 | 4 |
+| 240 | `WorldLifecycleTileMergeState` | 4 | 0 | 4 |
+| 241 | `GenVarsDungeonDerivedProperties` | 0 | 3 | 3 |
+| 242 | `LiquidBufferQueueState` | 3 | 0 | 3 |
+| 243 | `MountDashAnimationFrames` | 3 | 0 | 3 |
+| 244 | `NpcTownPetAdoptionState` | 3 | 0 | 3 |
+| 245 | `PlayerCrossoverMinionSummonFlags` | 3 | 0 | 3 |
+| 246 | `PlayerMinionCapacityState` | 3 | 0 | 3 |
+| 247 | `PlayerNetworkCameraState` | 3 | 0 | 3 |
+| 248 | `PlayerQuestAndEventCounters` | 3 | 0 | 3 |
+| 249 | `ProjectileAnimationAndDirectionState` | 3 | 0 | 3 |
+| 250 | `ProjectileFishingAndMiningQueryState` | 3 | 0 | 3 |
+| 251 | `WorldGenDerivedProperties` | 0 | 3 | 3 |
+| 252 | `WorldGenerationLiquidAndNeighborActions` | 3 | 0 | 3 |
+| 253 | `WorldGenerationOptionRegistry` | 2 | 1 | 3 |
+| 254 | `WorldGenerationTileFramingAndDebugActions` | 3 | 0 | 3 |
+| 255 | `WorldSecretSeedRuntimeRegistry` | 2 | 1 | 3 |
+| 256 | `WorldSecretSeedSeasonalRules` | 3 | 0 | 3 |
+| 257 | `LiquidChangePublication` | 2 | 0 | 2 |
+| 258 | `NpcNetworkSyncState` | 2 | 0 | 2 |
+| 259 | `PlayerBuilderOverlayState` | 2 | 0 | 2 |
+| 260 | `PlayerFootballPresentationState` | 2 | 0 | 2 |
+| 261 | `PlayerIdentityAndDerivedProperties` | 0 | 2 | 2 |
+| 262 | `PlayerMinionDamageTrackingState` | 2 | 0 | 2 |
+| 263 | `ProjectileCombatScalingState` | 2 | 0 | 2 |
+| 264 | `ProjectileKiteAndLightningRules` | 2 | 0 | 2 |
+| 265 | `WorldSecretSeedDerivedOptions` | 0 | 2 | 2 |
+| 266 | `NpcSpawnTargetSelectionState` | 1 | 0 | 1 |
+| 267 | `PlayerItemCheckContext` | 1 | 0 | 1 |
+
+### 3.4 二次细分目标与新子系统
+
+每个排行榜来源组被按声明类型、成员语义、生命周期或访问边界替换为以下同级子系统；这些边界是源码库存导航契约，不代表运行时 ECS 实现已经存在。
+
+| 来源细分子系统 | 新子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---|---:|---:|---:|
+| `PlayerPetAndCompanionState` | `PlayerLegacyPetState` | authoritative state/behavior | 21 | 0 | 21 |
+| `PlayerPetAndCompanionState` | `PlayerNamedPetFlagState` | authoritative state/behavior | 0 | 0 | 0 |
+| `PlayerPetAndCompanionState` | `PlayerCompanionState` | authoritative state/behavior | 14 | 0 | 14 |
+| `PlayerBuffAndStatusEffects` | `PlayerElementalAndShimmerStatus` | authoritative state/behavior | 21 | 0 | 21 |
+| `PlayerBuffAndStatusEffects` | `PlayerSurvivalAndControlStatus` | authoritative state/behavior | 0 | 0 | 0 |
+| `PlayerBuffAndStatusEffects` | `PlayerAccessoryAndCombatStatus` | authoritative state/behavior | 0 | 0 | 0 |
+| `MountDefinitionCatalog` | `MountGeometryAndFrameCatalog` | definition/query | 0 | 0 | 0 |
+| `MountDefinitionCatalog` | `MountMovementAndAbilityCatalog` | definition/query | 18 | 0 | 18 |
+| `MountDefinitionCatalog` | `MountVehicleAndPresentationCatalog` | definition/query | 9 | 0 | 9 |
+| `NpcSpawnEligibilityInputs` | `NpcSpawnContextAndCapacityInputs` | authoritative state/behavior | 10 | 0 | 10 |
+| `NpcSpawnEligibilityInputs` | `NpcSpawnEnvironmentEligibilityInputs` | derived/query | 0 | 0 | 0 |
+| `NpcSpawnEligibilityInputs` | `NpcSpawnZoneAndEventEligibilityInputs` | derived/query | 0 | 0 | 0 |
+| `GenVarsConfigurationAndTerrainLayers` | `GenVarsConfigurationAndOreState` | authoritative state/behavior | 10 | 0 | 10 |
+| `GenVarsConfigurationAndTerrainLayers` | `GenVarsWorldLayerAndSurfaceState` | authoritative state/behavior | 0 | 0 | 0 |
+| `GenVarsConfigurationAndTerrainLayers` | `GenVarsBeachAndOceanBoundaryState` | authoritative state/behavior | 12 | 0 | 12 |
+| `WorldSecretSeedRegistryState` | `WorldSecretSeedDefinitions` | definition/query | 0 | 0 | 0 |
+| `WorldSecretSeedRegistryState` | `WorldSecretSeedRuntimeRegistry` | authoritative state/behavior | 2 | 1 | 3 |
+| `WorldSecretSeedRegistryState` | `WorldSecretSeedDerivedOptions` | derived/query | 0 | 2 | 2 |
+| `PlayerEquipmentAndAccessoryEffects` | `PlayerStringAndAccessoryEffectState` | authoritative state/behavior | 14 | 0 | 14 |
+| `PlayerEquipmentAndAccessoryEffects` | `PlayerBeetleArmorState` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerEquipmentAndAccessoryEffects` | `PlayerSolarAndNebulaArmorState` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerEquipmentAndAccessoryEffects` | `PlayerMagnetAndUtilityAccessoryState` | authoritative state/behavior | 8 | 0 | 8 |
+| `WorldGenerationModifiersAndActions` | `WorldGenerationShapeModifierState` | definition/query | 22 | 0 | 22 |
+| `WorldGenerationModifiersAndActions` | `WorldGenerationTileWallConditionState` | derived/query | 20 | 0 | 20 |
+| `WorldHousingAndSpawnRules` | `WorldHousingCountersAndScoringState` | authoritative state/behavior | 15 | 0 | 15 |
+| `WorldHousingAndSpawnRules` | `WorldHousingRoomSearchState` | authoritative state/behavior | 19 | 0 | 19 |
+| `WorldHousingAndSpawnRules` | `WorldHousingRuleAndDiagnosticState` | definition/query | 5 | 0 | 5 |
+| `NpcStatusEffectAndRegenState` | `NpcStatusEffectFlags` | authoritative state/behavior | 0 | 0 | 0 |
+| `NpcStatusEffectAndRegenState` | `NpcRegenerationAndProtectionState` | authoritative state/behavior | 8 | 0 | 8 |
+| `PlayerAppearanceProjectionSlots` | `PlayerAppearanceEquipmentProjection` | registry/projection | 0 | 0 | 0 |
+| `PlayerAppearanceProjectionSlots` | `PlayerAppearanceCompanionAndEffectProjection` | registry/projection | 11 | 0 | 11 |
+| `PlayerStatusAndDebuffState` | `PlayerManaAndAfkStatus` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerStatusAndDebuffState` | `PlayerDebuffAndRecoveryStatus` | authoritative state/behavior | 16 | 0 | 16 |
+| `PlayerStatusAndDebuffState` | `PlayerDetectionAndCombatStatus` | authoritative state/behavior | 11 | 0 | 11 |
+| `WorldGenerationConfigurationAndOptions` | `WorldGenerationOptionBaseState` | definition/query | 4 | 8 | 12 |
+| `WorldGenerationConfigurationAndOptions` | `WorldGenerationOptionRegistry` | registry/projection | 2 | 1 | 3 |
+| `WorldGenerationConfigurationAndOptions` | `WorldSeedOptionCatalog` | definition/query | 1 | 21 | 22 |
+| `WorldGenerationTileActions` | `WorldGenerationTileMutationActions` | authoritative state/behavior | 0 | 0 | 0 |
+| `WorldGenerationTileActions` | `WorldGenerationTileScanAndControlActions` | derived/query | 7 | 0 | 7 |
+| `WorldGenerationTileActions` | `WorldGenerationTileFramingAndDebugActions` | registry/projection | 3 | 0 | 3 |
+| `WorldTerrainProfilesAndOreTiers` | `WorldLandmassAndTreeProfiles` | definition/query | 21 | 1 | 22 |
+| `WorldTerrainProfilesAndOreTiers` | `WorldSavedOreTierState` | authoritative state/behavior | 7 | 0 | 7 |
+| `WorldTerrainProfilesAndOreTiers` | `WorldTileMergeCullState` | derived/query | 8 | 0 | 8 |
+| `GenVarsBiomeStructures` | `WorldGenBeachAndOceanBiomeState` | authoritative state/behavior | 12 | 0 | 12 |
+| `GenVarsBiomeStructures` | `WorldGenUndergroundDesertStructureState` | authoritative state/behavior | 9 | 0 | 9 |
+| `GenVarsBiomeStructures` | `WorldGenJungleStructureState` | authoritative state/behavior | 15 | 0 | 15 |
+| `NpcBossAndWorldProgressionFlags` | `NpcProgressionBookAndActiveRegistryState` | authoritative state/behavior | 4 | 0 | 4 |
+| `NpcBossAndWorldProgressionFlags` | `NpcBossDefeatProgressionState` | authoritative state/behavior | 0 | 0 | 0 |
+| `WorldGenBiomeMetricsAndCounts` | `WorldGenBiomeBackgroundAndDistanceMetrics` | derived/query | 21 | 0 | 21 |
+| `WorldGenBiomeMetricsAndCounts` | `WorldGenTileCountMetrics` | derived/query | 14 | 0 | 14 |
+| `PlayerJumpVariantState` | `PlayerJumpAvailabilityState` | authoritative state/behavior | 18 | 0 | 18 |
+| `PlayerJumpVariantState` | `PlayerJumpExecutionState` | authoritative state/behavior | 11 | 0 | 11 |
+| `PlayerJumpVariantState` | `PlayerJumpMobilityModifiers` | authoritative state/behavior | 5 | 0 | 5 |
+| `PlayerBiomeAndZoneProperties` | `PlayerIdentityAndDerivedProperties` | derived/query | 0 | 2 | 2 |
+| `PlayerBiomeAndZoneProperties` | `PlayerBiomeZoneProperties` | derived/query | 0 | 16 | 16 |
+| `PlayerBiomeAndZoneProperties` | `PlayerVerticalAndWeatherZoneProperties` | derived/query | 0 | 6 | 6 |
+| `PlayerBiomeAndZoneProperties` | `PlayerEventAndShoppingZoneProperties` | derived/query | 0 | 7 | 7 |
+
+### 3.5 当前排行榜前 20 的再次细分审查
+
+本表针对当前活动排行榜前 20 逐组复核职责边界；本轮 20 个来源组均已按类型族、生命周期或访问边界替换为至少两个同级子系统。
+
+| 排名 | 当前来源细分子系统 | 处理 | 子系统/结论 | 边界角色 | 字段 | 属性 | 合计 | 证据或不拆分理由 |
+|---:|---|---|---|---|---:|---:|---:|---|
+| 1 | `PlayerNamedPetFlagState` | 替换 | `PlayerBossPetFlags` | authoritative state/behavior | 16 | 0 | 16 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 1 | `PlayerNamedPetFlagState` | 替换 | `PlayerSeasonalAndEventPetFlags` | authoritative state/behavior | 9 | 0 | 9 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 1 | `PlayerNamedPetFlagState` | 替换 | `PlayerStandardNamedPetFlags` | authoritative state/behavior | 13 | 0 | 13 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 1 | `PlayerNamedPetFlagState` | 替换 | `PlayerCrossoverPetFlags` | authoritative state/behavior | 13 | 0 | 13 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 1 | `PlayerNamedPetFlagState` | 替换 | `PlayerWorldObjectPetFlags` | authoritative state/behavior | 4 | 0 | 4 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 2 | `WorldSecretSeedDefinitions` | 替换 | `WorldSecretSeedRegistryDefinitions` | registry/projection | 6 | 0 | 6 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 2 | `WorldSecretSeedDefinitions` | 替换 | `WorldSecretSeedVisualAndSurfaceRules` | definition/query | 9 | 0 | 9 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 2 | `WorldSecretSeedDefinitions` | 替换 | `WorldSecretSeedTerrainAndStructureRules` | definition/query | 11 | 0 | 11 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 2 | `WorldSecretSeedDefinitions` | 替换 | `WorldSecretSeedProgressionAndInfectionRules` | definition/query | 12 | 0 | 12 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 2 | `WorldSecretSeedDefinitions` | 替换 | `WorldSecretSeedSeasonalRules` | definition/query | 3 | 0 | 3 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 3 | `MountRuntimeProjectionProperties` | 替换 | `MountRuntimeIdentityAndFrameProjection` | derived/query | 2 | 11 | 13 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 3 | `MountRuntimeProjectionProperties` | 替换 | `MountRuntimeMobilityAndAbilityProjection` | derived/query | 0 | 16 | 16 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 4 | `NpcSpawnEnvironmentEligibilityInputs` | 替换 | `NpcSpawnSpatialEligibilityInputs` | derived/query | 10 | 0 | 10 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 4 | `NpcSpawnEnvironmentEligibilityInputs` | 替换 | `NpcSpawnBiomeAndDungeonEligibilityInputs` | derived/query | 6 | 0 | 6 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 4 | `NpcSpawnEnvironmentEligibilityInputs` | 替换 | `NpcSpawnPolicyAndEventEligibilityInputs` | derived/query | 11 | 0 | 11 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 5 | `WorldGenerationTileMutationActions` | 替换 | `WorldGenerationTileSetActions` | authoritative state/behavior | 12 | 0 | 12 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 5 | `WorldGenerationTileMutationActions` | 替换 | `WorldGenerationWallMutationActions` | authoritative state/behavior | 7 | 0 | 7 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 5 | `WorldGenerationTileMutationActions` | 替换 | `WorldGenerationTilePlacementAndPaintActions` | authoritative state/behavior | 5 | 0 | 5 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 5 | `WorldGenerationTileMutationActions` | 替换 | `WorldGenerationLiquidAndNeighborActions` | authoritative state/behavior | 3 | 0 | 3 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 6 | `PlayerMinionSummonFlags` | 替换 | `PlayerCoreMinionSummonFlags` | authoritative state/behavior | 22 | 0 | 22 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 6 | `PlayerMinionSummonFlags` | 替换 | `PlayerCrossoverMinionSummonFlags` | authoritative state/behavior | 3 | 0 | 3 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 7 | `WorldGenerationControllerState` | 替换 | `WorldGenerationControllerPassState` | authoritative state/behavior | 4 | 3 | 7 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 7 | `WorldGenerationControllerState` | 替换 | `WorldGenerationControllerPauseAndHashState` | authoritative state/behavior | 1 | 6 | 7 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 7 | `WorldGenerationControllerState` | 替换 | `WorldGenerationGeneratorExecutionState` | authoritative state/behavior | 10 | 1 | 11 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 8 | `PlayerCombatProcAndImmunityState` | 替换 | `PlayerCombatDamageProcState` | authoritative state/behavior | 15 | 0 | 15 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 8 | `PlayerCombatProcAndImmunityState` | 替换 | `PlayerCombatDodgeAndImmunityState` | authoritative state/behavior | 5 | 0 | 5 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 8 | `PlayerCombatProcAndImmunityState` | 替换 | `PlayerCombatBarrierAndRegenState` | authoritative state/behavior | 4 | 0 | 4 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 9 | `PlayerSpawnMovementAndTileTargeting` | 替换 | `PlayerSpawnAndReturnState` | authoritative state/behavior | 4 | 0 | 4 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 9 | `PlayerSpawnMovementAndTileTargeting` | 替换 | `PlayerTileTargetingAndRangeState` | authoritative state/behavior | 12 | 0 | 12 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 9 | `PlayerSpawnMovementAndTileTargeting` | 替换 | `PlayerMovementPhysicsState` | authoritative state/behavior | 8 | 0 | 8 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 10 | `RevengeMarkerState` | 替换 | `RevengeMarkerExpirationAndIdentityState` | authoritative state/behavior | 8 | 1 | 9 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 10 | `RevengeMarkerState` | 替换 | `RevengeMarkerEnemyContextState` | authoritative state/behavior | 10 | 0 | 10 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 10 | `RevengeMarkerState` | 替换 | `RevengeMarkerValueAndRespawnState` | authoritative state/behavior | 4 | 1 | 5 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 11 | `WorldLifecycleAndTransformState` | 替换 | `WorldLifecycleLoadAndTransformState` | authoritative state/behavior | 7 | 0 | 7 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 11 | `WorldLifecycleAndTransformState` | 替换 | `WorldLifecycleProgressionAndEventState` | authoritative state/behavior | 6 | 0 | 6 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 11 | `WorldLifecycleAndTransformState` | 替换 | `WorldLifecycleHousingAndSpawnPacingState` | authoritative state/behavior | 7 | 0 | 7 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 11 | `WorldLifecycleAndTransformState` | 替换 | `WorldLifecycleTileMergeState` | authoritative state/behavior | 4 | 0 | 4 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 12 | `MountAnimationFrameCatalog` | 替换 | `MountGroundAnimationFrames` | definition/query | 11 | 0 | 11 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 12 | `MountAnimationFrameCatalog` | 替换 | `MountAerialAndWaterAnimationFrames` | definition/query | 9 | 0 | 9 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 12 | `MountAnimationFrameCatalog` | 替换 | `MountDashAnimationFrames` | definition/query | 3 | 0 | 3 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 13 | `NpcDamageAttributionAndCredits` | 替换 | `NpcDamageDefinitionRegistry` | registry/projection | 4 | 0 | 4 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 13 | `NpcDamageAttributionAndCredits` | 替换 | `NpcDamageRuntimeTracking` | authoritative state/behavior | 9 | 3 | 12 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 13 | `NpcDamageAttributionAndCredits` | 替换 | `NpcDamageCreditProjection` | derived/query | 1 | 6 | 7 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 14 | `PlayerCombatModifiersAndRanges` | 替换 | `PlayerCombatDamageAndCritModifiers` | authoritative state/behavior | 14 | 0 | 14 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 14 | `PlayerCombatModifiersAndRanges` | 替换 | `PlayerCombatSpeedRangeAndPermissionState` | authoritative state/behavior | 9 | 0 | 9 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 15 | `GenVarsCavesOresAndBiomes` | 替换 | `GenVarsCaveTunnelAndOrePatchState` | authoritative state/behavior | 9 | 0 | 9 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 15 | `GenVarsCavesOresAndBiomes` | 替换 | `GenVarsMushroomBiomeAndLogState` | authoritative state/behavior | 5 | 0 | 5 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 15 | `GenVarsCavesOresAndBiomes` | 替换 | `GenVarsLakeAndOasisState` | authoritative state/behavior | 8 | 0 | 8 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 16 | `LiquidFlowAndBufferState` | 替换 | `LiquidFlowBudgetAndPanicState` | authoritative state/behavior | 15 | 0 | 15 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 16 | `LiquidFlowAndBufferState` | 替换 | `LiquidCellWorkItemState` | authoritative state/behavior | 4 | 0 | 4 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 16 | `LiquidFlowAndBufferState` | 替换 | `LiquidBufferQueueState` | authoritative state/behavior | 3 | 0 | 3 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 17 | `NpcSpawnZoneAndEventEligibilityInputs` | 替换 | `NpcSpawnBiomeZoneInputs` | derived/query | 13 | 0 | 13 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 17 | `NpcSpawnZoneAndEventEligibilityInputs` | 替换 | `NpcSpawnEventAndTowerInputs` | derived/query | 8 | 0 | 8 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 17 | `NpcSpawnZoneAndEventEligibilityInputs` | 替换 | `NpcSpawnTargetSelectionState` | derived/query | 1 | 0 | 1 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 18 | `PlayerAccessoryAndCombatStatus` | 替换 | `PlayerAccessoryCombatModifierState` | authoritative state/behavior | 9 | 0 | 9 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 18 | `PlayerAccessoryAndCombatStatus` | 替换 | `PlayerAccessoryResourceAndInvulnerabilityState` | authoritative state/behavior | 5 | 0 | 5 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 18 | `PlayerAccessoryAndCombatStatus` | 替换 | `PlayerAccessoryDebuffAndDropState` | authoritative state/behavior | 8 | 0 | 8 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 19 | `PlayerInformationAccessoryState` | 替换 | `PlayerInformationWorldAndMovementState` | authoritative state/behavior | 5 | 0 | 5 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 19 | `PlayerInformationAccessoryState` | 替换 | `PlayerInformationNavigationAndTimeState` | authoritative state/behavior | 7 | 0 | 7 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 19 | `PlayerInformationAccessoryState` | 替换 | `PlayerInformationDetectionAndWiringState` | authoritative state/behavior | 8 | 0 | 8 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 19 | `PlayerInformationAccessoryState` | 替换 | `PlayerFootballPresentationState` | presentation state | 2 | 0 | 2 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 20 | `ProjectileSpecializedQueriesAndCaches` | 替换 | `ProjectileCombatScalingState` | authoritative state/behavior | 2 | 0 | 2 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 20 | `ProjectileSpecializedQueriesAndCaches` | 替换 | `ProjectileCollisionGeometryCache` | derived/query | 8 | 0 | 8 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 20 | `ProjectileSpecializedQueriesAndCaches` | 替换 | `ProjectileTargetSelectionCache` | derived/query | 7 | 0 | 7 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 20 | `ProjectileSpecializedQueriesAndCaches` | 替换 | `ProjectileFishingAndMiningQueryState` | derived/query | 3 | 0 | 3 | 声明类型、成员语义或生命周期已形成独立边界。 |
+| 20 | `ProjectileSpecializedQueriesAndCaches` | 替换 | `ProjectileKiteAndLightningRules` | definition/query | 2 | 0 | 2 | 声明类型、成员语义或生命周期已形成独立边界。 |
+
+### 3.6 二次细分前基线来源组排行榜（前 20，仅追溯）
+
+本表记录二次细分前的冻结来源组，仅用于追溯成员如何被重新分配；这些来源组不属于当前活动细分子系统。
+
+| 排名 | 已退休来源细分子系统 | 字段 | 属性 | 合计 |
+|---:|---|---:|---:|---:|
+| 1 | `PlayerPetAndCompanionState` | 90 | 0 | 90 |
+| 2 | `PlayerBuffAndStatusEffects` | 68 | 0 | 68 |
+| 3 | `MountDefinitionCatalog` | 59 | 0 | 59 |
+| 4 | `NpcSpawnEligibilityInputs` | 59 | 0 | 59 |
+| 5 | `GenVarsConfigurationAndTerrainLayers` | 50 | 0 | 50 |
+| 6 | `WorldSecretSeedRegistryState` | 43 | 3 | 46 |
+| 7 | `PlayerEquipmentAndAccessoryEffects` | 42 | 0 | 42 |
+| 8 | `WorldGenerationModifiersAndActions` | 42 | 0 | 42 |
+| 9 | `WorldHousingAndSpawnRules` | 39 | 0 | 39 |
+| 10 | `NpcStatusEffectAndRegenState` | 38 | 0 | 38 |
+| 11 | `PlayerAppearanceProjectionSlots` | 37 | 0 | 37 |
+| 12 | `PlayerStatusAndDebuffState` | 37 | 0 | 37 |
+| 13 | `WorldGenerationConfigurationAndOptions` | 7 | 30 | 37 |
+| 14 | `WorldGenerationTileActions` | 37 | 0 | 37 |
+| 15 | `WorldTerrainProfilesAndOreTiers` | 36 | 1 | 37 |
+| 16 | `GenVarsBiomeStructures` | 36 | 0 | 36 |
+| 17 | `NpcBossAndWorldProgressionFlags` | 35 | 0 | 35 |
+| 18 | `WorldGenBiomeMetricsAndCounts` | 35 | 0 | 35 |
+| 19 | `PlayerJumpVariantState` | 34 | 0 | 34 |
+| 20 | `PlayerBiomeAndZoneProperties` | 0 | 31 | 31 |
+
+### 3.7 上一轮 193 组前 20 审查（历史追溯）
+
+本表保留 193 组报告生成时的前 20 审查结果，用于追溯第三轮细分决策；它不是本轮活动排行榜。
+
+| 排名 | 上一轮来源细分子系统 | 处理 | 历史子系统/结论 | 边界角色 | 原始合计 | 历史说明 |
+|---:|---|---|---|---|---:|---|
+| 1 | `PlayerNamedPetFlagState` | 历史保留 | `PlayerNamedPetFlagState` | - | 55 | 全部成员是 Terraria.Player 的同一宠物旗标族；共同由宠物 Buff 生命周期重置和更新，未发现独立读写者边界。 |
+| 2 | `WorldSecretSeedDefinitions` | 历史保留 | `WorldSecretSeedDefinitions` | - | 41 | 全部成员属于 Terraria.WorldGen.SecretSeed 定义记录；注册表、选项标志和解锁元数据共享定义生命周期，拆分会制造伪独立状态。 |
+| 3 | `MountGeometryAndFrameCatalog` | 替换 | `MountGeometryAndOffsetCatalog` | definition/query | 9 | 第三轮源码成员边界仍保留为历史映射。 |
+| 3 | `MountGeometryAndFrameCatalog` | 替换 | `MountAnimationFrameCatalog` | definition/query | 0 | 第三轮源码成员边界仍保留为历史映射。 |
+| 4 | `NpcBossDefeatProgressionState` | 替换 | `NpcBossDefeatFlags` | authoritative state/behavior | 17 | 第三轮源码成员边界仍保留为历史映射。 |
+| 4 | `NpcBossDefeatProgressionState` | 替换 | `NpcEventDefeatFlags` | authoritative state/behavior | 14 | 第三轮源码成员边界仍保留为历史映射。 |
+| 5 | `MountStaticAndDrillConstants` | 替换 | `MountFrameAndDrawCatalog` | definition/query | 11 | 第三轮源码成员边界仍保留为历史映射。 |
+| 5 | `MountStaticAndDrillConstants` | 替换 | `MountSpecialVehicleCatalog` | definition/query | 5 | 第三轮源码成员边界仍保留为历史映射。 |
+| 5 | `MountStaticAndDrillConstants` | 替换 | `MountDrillConstants` | definition/query | 9 | 第三轮源码成员边界仍保留为历史映射。 |
+| 5 | `MountStaticAndDrillConstants` | 替换 | `MountSuperCartConstants` | definition/query | 5 | 第三轮源码成员边界仍保留为历史映射。 |
+| 6 | `NpcStatusEffectFlags` | 替换 | `NpcElementalDebuffState` | authoritative state/behavior | 17 | 第三轮源码成员边界仍保留为历史映射。 |
+| 6 | `NpcStatusEffectFlags` | 替换 | `NpcControlAndSocialEffectState` | authoritative state/behavior | 4 | 第三轮源码成员边界仍保留为历史映射。 |
+| 6 | `NpcStatusEffectFlags` | 替换 | `NpcWhipAndSpecialEffectState` | authoritative state/behavior | 9 | 第三轮源码成员边界仍保留为历史映射。 |
+| 7 | `PlayerCompanionAndRestState` | 替换 | `PlayerEyeAnimationState` | registry/projection | 4 | 第三轮源码成员边界仍保留为历史映射。 |
+| 7 | `PlayerCompanionAndRestState` | 替换 | `PlayerPettingState` | authoritative state/behavior | 7 | 第三轮源码成员边界仍保留为历史映射。 |
+| 7 | `PlayerCompanionAndRestState` | 替换 | `PlayerSittingState` | authoritative state/behavior | 5 | 第三轮源码成员边界仍保留为历史映射。 |
+| 7 | `PlayerCompanionAndRestState` | 替换 | `PlayerSleepingState` | authoritative state/behavior | 7 | 第三轮源码成员边界仍保留为历史映射。 |
+| 7 | `PlayerCompanionAndRestState` | 替换 | `PlayerRabbitOrderFrameState` | registry/projection | 7 | 第三轮源码成员边界仍保留为历史映射。 |
+| 8 | `PlayerMinionCapacityAndSummonState` | 替换 | `PlayerMinionCapacityState` | authoritative state/behavior | 3 | 第三轮源码成员边界仍保留为历史映射。 |
+| 8 | `PlayerMinionCapacityAndSummonState` | 替换 | `PlayerMinionSummonFlags` | authoritative state/behavior | 0 | 第三轮源码成员边界仍保留为历史映射。 |
+| 8 | `PlayerMinionCapacityAndSummonState` | 替换 | `PlayerMinionDamageTrackingState` | authoritative state/behavior | 2 | 第三轮源码成员边界仍保留为历史映射。 |
+| 9 | `MountRuntimeProjectionProperties` | 历史保留 | `MountRuntimeProjectionProperties` | - | 29 | 字段和属性都是 Terraria.Mount 同一运行时状态的派生访问器；属性共同读取 _data、_active 和能力计时，拆分会重复投影状态。 |
+| 10 | `PlayerIdentityAndLifecycleState` | 替换 | `PlayerIdentityAndDeathRecordState` | authoritative state/behavior | 10 | 第三轮源码成员边界仍保留为历史映射。 |
+| 10 | `PlayerIdentityAndLifecycleState` | 替换 | `PlayerRuntimeInteractionAndEffectState` | authoritative state/behavior | 13 | 第三轮源码成员边界仍保留为历史映射。 |
+| 10 | `PlayerIdentityAndLifecycleState` | 替换 | `PlayerConsumedProgressionFlags` | authoritative state/behavior | 6 | 第三轮源码成员边界仍保留为历史映射。 |
+| 11 | `GenVarsWorldLayerAndSurfaceState` | 替换 | `GenVarsWorldLayerMetrics` | authoritative state/behavior | 13 | 第三轮源码成员边界仍保留为历史映射。 |
+| 11 | `GenVarsWorldLayerAndSurfaceState` | 替换 | `GenVarsSurfaceAndBiomeState` | authoritative state/behavior | 15 | 第三轮源码成员边界仍保留为历史映射。 |
+| 12 | `WorldGenerationDimensionsAndExecution` | 替换 | `WorldGenerationDimensionsState` | authoritative state/behavior | 8 | 第三轮源码成员边界仍保留为历史映射。 |
+| 12 | `WorldGenerationDimensionsAndExecution` | 替换 | `WorldGenerationExecutionState` | authoritative state/behavior | 6 | 第三轮源码成员边界仍保留为历史映射。 |
+| 12 | `WorldGenerationDimensionsAndExecution` | 替换 | `WorldGenerationSecretSeedFlags` | authoritative state/behavior | 10 | 第三轮源码成员边界仍保留为历史映射。 |
+| 12 | `WorldGenerationDimensionsAndExecution` | 替换 | `WorldGenerationScratchState` | authoritative state/behavior | 4 | 第三轮源码成员边界仍保留为历史映射。 |
+| 13 | `NpcSpawnEnvironmentEligibilityInputs` | 历史保留 | `NpcSpawnEnvironmentEligibilityInputs` | - | 27 | 全部成员属于 Terraria.NPC.Spawner 的一次生成资格输入快照；同一生成评估拥有并消费这些条件，未形成稳定生命周期边界。 |
+| 14 | `NpcTownRescueAndSpawnUnlocks` | 替换 | `NpcTownRescueState` | authoritative state/behavior | 8 | 第三轮源码成员边界仍保留为历史映射。 |
+| 14 | `NpcTownRescueAndSpawnUnlocks` | 替换 | `NpcTownPetAdoptionState` | authoritative state/behavior | 3 | 第三轮源码成员边界仍保留为历史映射。 |
+| 14 | `NpcTownRescueAndSpawnUnlocks` | 替换 | `NpcTownSpawnUnlockState` | authoritative state/behavior | 16 | 第三轮源码成员边界仍保留为历史映射。 |
+| 15 | `PlayerAppearanceEquipmentSelection` | 替换 | `PlayerEquipmentSelectionSlots` | authoritative state/behavior | 21 | 第三轮源码成员边界仍保留为历史映射。 |
+| 15 | `PlayerAppearanceEquipmentSelection` | 替换 | `PlayerAppearanceSelectionState` | registry/projection | 6 | 第三轮源码成员边界仍保留为历史映射。 |
+| 16 | `WorldGenerationTileMutationActions` | 历史保留 | `WorldGenerationTileMutationActions` | - | 27 | 成员已经按 Terraria.WorldBuilding.Actions 的独立 action 类型声明；再按字段拆分会把单字段命令重新聚合为无语义碎片。 |
+| 17 | `PlayerAppearanceEquipmentProjection` | 替换 | `PlayerEquipmentColorProjection` | registry/projection | 20 | 第三轮源码成员边界仍保留为历史映射。 |
+| 17 | `PlayerAppearanceEquipmentProjection` | 替换 | `PlayerTraversalColorProjection` | registry/projection | 6 | 第三轮源码成员边界仍保留为历史映射。 |
+| 18 | `NpcNetworkAndSpawnState` | 替换 | `NpcNetworkReplicationState` | registry/projection | 11 | 第三轮源码成员边界仍保留为历史映射。 |
+| 18 | `NpcNetworkAndSpawnState` | 替换 | `NpcSpawnBudgetAndActivityState` | authoritative state/behavior | 10 | 第三轮源码成员边界仍保留为历史映射。 |
+| 18 | `NpcNetworkAndSpawnState` | 替换 | `NpcIdentityAndStatusState` | authoritative state/behavior | 4 | 第三轮源码成员边界仍保留为历史映射。 |
+| 19 | `PlayerFrameImmunityAndInteractionState` | 替换 | `PlayerFrameAndImmunityState` | authoritative state/behavior | 11 | 第三轮源码成员边界仍保留为历史映射。 |
+| 19 | `PlayerFrameImmunityAndInteractionState` | 替换 | `PlayerInteractionInputState` | authoritative state/behavior | 14 | 第三轮源码成员边界仍保留为历史映射。 |
+| 20 | `PlayerSurvivalAndControlStatus` | 替换 | `PlayerSurvivalAndTransformationState` | authoritative state/behavior | 15 | 第三轮源码成员边界仍保留为历史映射。 |
+| 20 | `PlayerSurvivalAndControlStatus` | 替换 | `PlayerDebuffStatusState` | authoritative state/behavior | 8 | 第三轮源码成员边界仍保留为历史映射。 |
+| 20 | `PlayerSurvivalAndControlStatus` | 替换 | `PlayerBuilderOverlayState` | registry/projection | 2 | 第三轮源码成员边界仍保留为历史映射。 |
+## 4. 逐成员源码声明
+
+以下按正式父级子系统展开，再按细分子系统展开。细分子系统下的字段/属性表直接复用输入表记录；“来源序号”是输入库存中的稳定序号，保证重新分组不会丢失或复制成员。
+
+### 4.1 父级子系统：`LiquidSimulation`
+
+- 父级职责：液体事实、流动和变更发布。
+- 父级统计：字段 24；属性 0；合计 24；细分数 4。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `LiquidFlowBudgetAndPanicState` | authoritative state/behavior | 15 | 0 | 15 |
+| `LiquidCellWorkItemState` | authoritative state/behavior | 4 | 0 | 4 |
+| `LiquidBufferQueueState` | authoritative state/behavior | 3 | 0 | 3 |
+| `LiquidChangePublication` | registry/projection | 2 | 0 | 2 |
+
+#### 4.1.1 细分子系统：`LiquidFlowBudgetAndPanicState`
+
+- 细分职责：液体预算、循环、停滞和 panic 流程状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Liquid Flow System/CommitPort；流动 tick 集中维护预算和 panic。
+- 成员文件数：1；声明类型数：1；字段：15；属性：0；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（15）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 14 | 2 | maxLiquidBuffer | int | `public const int maxLiquidBuffer = 50000;` | `public const int maxLiquidBuffer = 50000;` |
+| 2 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 16 | 2 | maxLiquid | int | `public static int maxLiquid = 25000;` | `public static int maxLiquid = 25000;` |
+| 3 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 18 | 2 | skipCount | int | `public static int skipCount;` | `public static int skipCount;` |
+| 4 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 20 | 2 | stuckCount | int | `public static int stuckCount;` | `public static int stuckCount;` |
+| 5 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 22 | 2 | stuckAmount | int | `public static int stuckAmount;` | `public static int stuckAmount;` |
+| 6 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 24 | 2 | cycles | int | `public static int cycles = 10;` | `public static int cycles = 10;` |
+| 7 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 26 | 2 | curMaxLiquid | int | `public static int curMaxLiquid = 0;` | `public static int curMaxLiquid = 0;` |
+| 8 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 28 | 2 | numLiquid | int | `public static int numLiquid;` | `public static int numLiquid;` |
+| 9 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 30 | 2 | stuck | bool | `public static bool stuck;` | `public static bool stuck;` |
+| 10 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 32 | 2 | quickFall | bool | `public static bool quickFall;` | `public static bool quickFall;` |
+| 11 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 34 | 2 | quickSettle | bool | `public static bool quickSettle;` | `public static bool quickSettle;` |
+| 12 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 36 | 2 | wetCounter | int | `private static int wetCounter;` | `private static int wetCounter;` |
+| 13 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 38 | 2 | panicCounter | int | `public static int panicCounter;` | `public static int panicCounter;` |
+| 14 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 40 | 2 | panicMode | bool | `public static bool panicMode;` | `public static bool panicMode;` |
+| 15 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 42 | 2 | panicY | int | `public static int panicY;` | `public static int panicY;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.1.2 细分子系统：`LiquidCellWorkItemState`
+
+- 细分职责：单个液体工作项的坐标、清除和延迟状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Liquid Work Queue/Command；工作项通过显式队列消费。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 16 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 44 | 2 | x | int | `public int x;` | `public int x;` |
+| 17 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 46 | 2 | y | int | `public int y;` | `public int y;` |
+| 18 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 48 | 2 | kill | int | `public int kill;` | `public int kill;` |
+| 19 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 50 | 2 | delay | int | `public int delay;` | `public int delay;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.1.3 细分子系统：`LiquidBufferQueueState`
+
+- 细分职责：液体缓冲队列的计数和坐标状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Liquid Buffer Queue/CommitPort；缓冲结构变化集中提交。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 22 | field | Terraria.LiquidBuffer | Terraria/LiquidBuffer.cs | D:\TRbackup\Version4\Terraria\LiquidBuffer.cs | 5 | 2 | numLiquidBuffer | int | `public static int numLiquidBuffer;` | `public static int numLiquidBuffer;` |
+| 23 | field | Terraria.LiquidBuffer | Terraria/LiquidBuffer.cs | D:\TRbackup\Version4\Terraria\LiquidBuffer.cs | 7 | 2 | x | int | `public int x;` | `public int x;` |
+| 24 | field | Terraria.LiquidBuffer | Terraria/LiquidBuffer.cs | D:\TRbackup\Version4\Terraria\LiquidBuffer.cs | 9 | 2 | y | int | `public int y;` | `public int y;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.1.4 细分子系统：`LiquidChangePublication`
+
+- 细分职责：液体网络变更集合和交换集合的提交边界。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；提交后的事实单向输出，不把网络/UI/索引反写成权威状态。
+- 成员文件数：1；声明类型数：1；字段：2；属性：0；合计：2。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 20 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 52 | 2 | _netChangeSet | System.Collections.Generic.HashSet<int> | `private static HashSet<int> _netChangeSet = new HashSet<int>();` | `private static HashSet<int> _netChangeSet = new HashSet<int>();` |
+| 21 | field | Terraria.Liquid | Terraria/Liquid.cs | D:\TRbackup\Version4\Terraria\Liquid.cs | 54 | 2 | _swapNetChangeSet | System.Collections.Generic.HashSet<int> | `private static HashSet<int> _swapNetChangeSet = new HashSet<int>();` | `private static HashSet<int> _swapNetChangeSet = new HashSet<int>();` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.2 父级子系统：`DeathPenaltyAndRevenge`
+
+- 父级职责：死亡惩罚和复仇标记。
+- 父级统计：字段 33；属性 2；合计 35；细分数 4。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `RevengeMarkerExpirationAndIdentityState` | authoritative state/behavior | 8 | 1 | 9 |
+| `RevengeMarkerEnemyContextState` | authoritative state/behavior | 10 | 0 | 10 |
+| `RevengeMarkerValueAndRespawnState` | authoritative state/behavior | 4 | 1 | 5 |
+| `RevengeRegistryAndCache` | registry/projection | 11 | 0 | 11 |
+
+#### 4.2.1 细分子系统：`RevengeMarkerExpirationAndIdentityState`
+
+- 细分职责：复仇标记的过期配置、唯一标识和标识投影。
+- 边界角色：`authoritative state/behavior`；最小 seam：Revenge Marker Lifecycle/CommitPort；过期与身份由标记生命周期拥有。
+- 成员文件数：1；声明类型数：1；字段：8；属性：1；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 25 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 18 | 3 | _uniqueIDCounter | int | `private static int _uniqueIDCounter = 0;` | `private static int _uniqueIDCounter = 0;` |
+| 26 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 20 | 3 | _expirationCompCopper | int | `private static readonly int _expirationCompCopper = Item.buyPrice(0, 0, 0, 1);` | `private static readonly int _expirationCompCopper = Item.buyPrice(0, 0, 0, 1);` |
+| 27 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 22 | 3 | _expirationCompSilver | int | `private static readonly int _expirationCompSilver = Item.buyPrice(0, 0, 1);` | `private static readonly int _expirationCompSilver = Item.buyPrice(0, 0, 1);` |
+| 28 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 24 | 3 | _expirationCompGold | int | `private static readonly int _expirationCompGold = Item.buyPrice(0, 1);` | `private static readonly int _expirationCompGold = Item.buyPrice(0, 1);` |
+| 29 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 26 | 3 | _expirationCompPlat | int | `private static readonly int _expirationCompPlat = Item.buyPrice(1);` | `private static readonly int _expirationCompPlat = Item.buyPrice(1);` |
+| 30 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 28 | 3 | ONE_MINUTE | int | `private const int ONE_MINUTE = 3600;` | `private const int ONE_MINUTE = 3600;` |
+| 42 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 52 | 3 | _expirationTime | int | `private readonly int _expirationTime;` | `private readonly int _expirationTime;` |
+| 44 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 56 | 3 | _uniqueID | int | `private readonly int _uniqueID;` | `private readonly int _uniqueID;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 59 | property | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 64 | 3 | UniqueID | int | `public int UniqueID => _uniqueID;` | `public int UniqueID => _uniqueID;` |
+
+#### 4.2.2 细分子系统：`RevengeMarkerEnemyContextState`
+
+- 细分职责：敌人位置、碰撞框、生命比例和敌人类型上下文。
+- 边界角色：`authoritative state/behavior`；最小 seam：Revenge Marker Context/Query；敌人上下文只读提供给复生资格。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 31 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 30 | 3 | ENEMY_BOX_WIDTH | int | `private const int ENEMY_BOX_WIDTH = 2160;` | `private const int ENEMY_BOX_WIDTH = 2160;` |
+| 32 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 32 | 3 | ENEMY_BOX_HEIGHT | int | `private const int ENEMY_BOX_HEIGHT = 1440;` | `private const int ENEMY_BOX_HEIGHT = 1440;` |
+| 33 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 34 | 3 | EnemyBoxSize | Vector2 | `public static readonly Vector2 EnemyBoxSize = new Vector2(2160f, 1440f);` | `public static readonly Vector2 EnemyBoxSize = new Vector2(2160f, 1440f);` |
+| 34 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 36 | 3 | _location | Vector2 | `private readonly Vector2 _location;` | `private readonly Vector2 _location;` |
+| 35 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 38 | 3 | _hitbox | Rectangle | `private readonly Rectangle _hitbox;` | `private readonly Rectangle _hitbox;` |
+| 36 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 40 | 3 | _npcNetID | int | `private readonly int _npcNetID;` | `private readonly int _npcNetID;` |
+| 37 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 42 | 3 | _npcHPPercent | float | `private readonly float _npcHPPercent;` | `private readonly float _npcHPPercent;` |
+| 40 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 48 | 3 | _npcTypeAgainstDiscouragement | int | `private readonly int _npcTypeAgainstDiscouragement;` | `private readonly int _npcTypeAgainstDiscouragement;` |
+| 41 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 50 | 3 | _npcAIStyleAgainstDiscouragement | int | `private readonly int _npcAIStyleAgainstDiscouragement;` | `private readonly int _npcAIStyleAgainstDiscouragement;` |
+| 43 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 54 | 3 | _spawnedFromStatue | bool | `private readonly bool _spawnedFromStatue;` | `private readonly bool _spawnedFromStatue;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.2.3 细分子系统：`RevengeMarkerValueAndRespawnState`
+
+- 细分职责：金币价值和过期/复生尝试控制状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Revenge Respawn System/CommitPort；复生尝试与价值结算显式交接。
+- 成员文件数：1；声明类型数：1；字段：4；属性：1；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 38 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 44 | 3 | _baseValue | float | `private readonly float _baseValue;` | `private readonly float _baseValue;` |
+| 39 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 46 | 3 | _coinsValue | int | `private readonly int _coinsValue;` | `private readonly int _coinsValue;` |
+| 45 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 58 | 3 | _forceExpire | bool | `private bool _forceExpire;` | `private bool _forceExpire;` |
+| 46 | field | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 60 | 3 | _attemptedRespawn | bool | `private bool _attemptedRespawn;` | `private bool _attemptedRespawn;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 58 | property | Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 62 | 3 | RespawnAttemptLocked | bool | `public bool RespawnAttemptLocked => _attemptedRespawn;` | `public bool RespawnAttemptLocked => _attemptedRespawn;` |
+
+#### 4.2.4 细分子系统：`RevengeRegistryAndCache`
+
+- 细分职责：复仇标记注册表、缓存阈值、锁和时间推进。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；提交后的事实单向输出，不把网络/UI/索引反写成权威状态。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 47 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 279 | 2 | DisplayCaching | bool | `public static bool DisplayCaching = false;` | `public static bool DisplayCaching = false;` |
+| 48 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 281 | 2 | MinimumCoinsForCaching | int | `public static int MinimumCoinsForCaching = Item.buyPrice(0, 0, 10);` | `public static int MinimumCoinsForCaching = Item.buyPrice(0, 0, 10);` |
+| 49 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 283 | 2 | PLAYER_BOX_WIDTH_INNER | int | `private const int PLAYER_BOX_WIDTH_INNER = 1968;` | `private const int PLAYER_BOX_WIDTH_INNER = 1968;` |
+| 50 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 285 | 2 | PLAYER_BOX_HEIGHT_INNER | int | `private const int PLAYER_BOX_HEIGHT_INNER = 1200;` | `private const int PLAYER_BOX_HEIGHT_INNER = 1200;` |
+| 51 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 287 | 2 | PLAYER_BOX_WIDTH_OUTER | int | `private const int PLAYER_BOX_WIDTH_OUTER = 2608;` | `private const int PLAYER_BOX_WIDTH_OUTER = 2608;` |
+| 52 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 289 | 2 | PLAYER_BOX_HEIGHT_OUTER | int | `private const int PLAYER_BOX_HEIGHT_OUTER = 1840;` | `private const int PLAYER_BOX_HEIGHT_OUTER = 1840;` |
+| 53 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 291 | 2 | _playerBoxSizeInner | Vector2 | `private static readonly Vector2 _playerBoxSizeInner = new Vector2(1968f, 1200f);` | `private static readonly Vector2 _playerBoxSizeInner = new Vector2(1968f, 1200f);` |
+| 54 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 293 | 2 | _playerBoxSizeOuter | Vector2 | `private static readonly Vector2 _playerBoxSizeOuter = new Vector2(2608f, 1840f);` | `private static readonly Vector2 _playerBoxSizeOuter = new Vector2(2608f, 1840f);` |
+| 55 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 295 | 2 | _markers | System.Collections.Generic.List<Terraria.GameContent.CoinLossRevengeSystem.RevengeMarker> | `private List<RevengeMarker> _markers;` | `private List<RevengeMarker> _markers;` |
+| 56 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 297 | 2 | _markersLock | object | `private readonly object _markersLock = new object();` | `private readonly object _markersLock = new object();` |
+| 57 | field | Terraria.GameContent.CoinLossRevengeSystem | Terraria.GameContent/CoinLossRevengeSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\CoinLossRevengeSystem.cs | 299 | 2 | _gameTime | int | `private int _gameTime;` | `private int _gameTime;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.3 父级子系统：`LeashedEntitySimulation`
+
+- 父级职责：拴系实体注册、行为和物种定义。
+- 父级统计：字段 93；属性 5；合计 98；细分数 8。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `LeashedRegistryAndSections` | registry/projection | 12 | 3 | 15 |
+| `LeashedCritterCoreState` | authoritative state/behavior | 15 | 0 | 15 |
+| `LeashedWalkerBehavior` | authoritative state/behavior | 7 | 0 | 7 |
+| `LeashedJumperBehavior` | authoritative state/behavior | 11 | 0 | 11 |
+| `LeashedFlyerBehavior` | authoritative state/behavior | 11 | 0 | 11 |
+| `LeashedKiteBehavior` | authoritative state/behavior | 19 | 1 | 20 |
+| `LeashedButterflyVariants` | authoritative state/behavior | 5 | 1 | 6 |
+| `LeashedSpeciesPrototypes` | authoritative state/behavior | 13 | 0 | 13 |
+
+#### 4.3.1 细分子系统：`LeashedRegistryAndSections`
+
+- 细分职责：拴系实体注册、活动区段索引和槽位生命周期。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；提交后的事实单向输出，不把网络/UI/索引反写成权威状态。
+- 成员文件数：1；声明类型数：3；字段：12；属性：3；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 141 | field | Terraria.GameContent.LeashedEntity.Registry | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 44 | 3 | Prototypes | System.Collections.Generic.List<Terraria.GameContent.LeashedEntity> | `private static readonly List<LeashedEntity> Prototypes = new List<LeashedEntity>();` | `private static readonly List<LeashedEntity> Prototypes = new List<LeashedEntity>();` |
+| 142 | field | Terraria.GameContent.LeashedEntity.SectionEntityList | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 96 | 3 | coordinates | Point | `public readonly Point coordinates;` | `public readonly Point coordinates;` |
+| 143 | field | Terraria.GameContent.LeashedEntity.SectionEntityList | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 98 | 3 | active | bool | `public bool active;` | `public bool active;` |
+| 144 | field | Terraria.GameContent.LeashedEntity.SectionEntityList | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 100 | 3 | list | Terraria.GameContent.LeashedEntity[] | `public LeashedEntity[] list = new LeashedEntity[32];` | `public LeashedEntity[] list = new LeashedEntity[32];` |
+| 145 | field | Terraria.GameContent.LeashedEntity.SectionEntityList | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 102 | 3 | count | int | `public int count;` | `public int count;` |
+| 146 | field | Terraria.GameContent.LeashedEntity.SectionEntityList | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 104 | 3 | emptySlots | int | `private int emptySlots;` | `private int emptySlots;` |
+| 147 | field | Terraria.GameContent.LeashedEntity | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 177 | 2 | BySection | Terraria.GameContent.LeashedEntity.SectionEntityList[,] | `private static readonly SectionEntityList[,] BySection;` | `private static readonly SectionEntityList[,] BySection;` |
+| 148 | field | Terraria.GameContent.LeashedEntity | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 179 | 2 | ActiveSectionList | System.Collections.Generic.List<Terraria.GameContent.LeashedEntity.SectionEntityList> | `private static readonly List<SectionEntityList> ActiveSectionList;` | `private static readonly List<SectionEntityList> ActiveSectionList;` |
+| 149 | field | Terraria.GameContent.LeashedEntity | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 181 | 2 | ByWhoAmI | System.Collections.Generic.List<Terraria.GameContent.LeashedEntity> | `private static readonly List<LeashedEntity> ByWhoAmI;` | `private static readonly List<LeashedEntity> ByWhoAmI;` |
+| 150 | field | Terraria.GameContent.LeashedEntity | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 183 | 2 | sectionSlot | int | `private int sectionSlot;` | `private int sectionSlot;` |
+| 151 | field | Terraria.GameContent.LeashedEntity | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 185 | 2 | active | bool | `public bool active;` | `public bool active;` |
+| 152 | field | Terraria.GameContent.LeashedEntity | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 187 | 2 | whoAmI | int | `public int whoAmI;` | `public int whoAmI;` |
+
+##### 属性（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 155 | property | Terraria.GameContent.LeashedEntity | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 190 | 2 | Type | int | `public int Type { get; private set; }` | `public int Type { get; private set; }` |
+| 156 | property | Terraria.GameContent.LeashedEntity | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 192 | 2 | AnchorPosition | Terraria.DataStructures.Point16 | `public Point16 AnchorPosition { get; private set; }` | `public Point16 AnchorPosition { get; private set; }` |
+| 157 | property | Terraria.GameContent.LeashedEntity | Terraria.GameContent/LeashedEntity.cs | D:\TRbackup\Version4\Terraria.GameContent\LeashedEntity.cs | 194 | 2 | SectionCoordinates | Point | `public Point SectionCoordinates => new Point(Netplay.GetSectionX(AnchorPosition.X), Netplay.GetSectionY(AnchorPosition.Y));` | `public Point SectionCoordinates => new Point(Netplay.GetSectionX(AnchorPosition.X), Netplay.GetSectionY(AnchorPosition.Y));` |
+
+#### 4.3.2 细分子系统：`LeashedCritterCoreState`
+
+- 细分职责：拴系生物通用锚点、行为状态、目标坐标和水生标记。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：15；属性：0；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（15）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 93 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 13 | 2 | _dummy | Terraria.NPC | `protected static NPC _dummy = new NPC();` | `protected static NPC _dummy = new NPC();` |
+| 94 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 15 | 2 | anchorStyle | int | `public int anchorStyle;` | `public int anchorStyle;` |
+| 95 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 17 | 2 | npcType | int | `protected int npcType;` | `protected int npcType;` |
+| 96 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 19 | 2 | spriteDirection | int | `protected int spriteDirection;` | `protected int spriteDirection;` |
+| 97 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 21 | 2 | frame | Rectangle | `protected Rectangle frame;` | `protected Rectangle frame;` |
+| 98 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 23 | 2 | frameCounter | double | `protected double frameCounter;` | `protected double frameCounter;` |
+| 99 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 25 | 2 | rand | Terraria.Utilities.LCG32Random | `protected LCG32Random rand;` | `protected LCG32Random rand;` |
+| 100 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 27 | 2 | WaitTime | short | `protected short WaitTime;` | `protected short WaitTime;` |
+| 101 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 29 | 2 | State | byte | `protected byte State;` | `protected byte State;` |
+| 102 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 31 | 2 | TargetPosition | Terraria.DataStructures.Point16 | `protected Point16 TargetPosition;` | `protected Point16 TargetPosition;` |
+| 103 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 33 | 2 | netOffset | Vector2 | `protected Vector2 netOffset;` | `protected Vector2 netOffset;` |
+| 104 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 35 | 2 | scale | float | `protected float scale = 1f;` | `protected float scale = 1f;` |
+| 105 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 37 | 2 | strayingRangeInBlocks | int | `protected int strayingRangeInBlocks;` | `protected int strayingRangeInBlocks;` |
+| 106 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 39 | 2 | isAquatic | bool | `protected bool isAquatic;` | `protected bool isAquatic;` |
+| 107 | field | Terraria.GameContent.LeashedEntities.LeashedCritter | Terraria.GameContent.LeashedEntities/LeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedCritter.cs | 41 | 2 | RecallDuration | int | `protected const int RecallDuration = 20;` | `protected const int RecallDuration = 20;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.3.3 细分子系统：`LeashedWalkerBehavior`
+
+- 细分职责：步行拴系生物的站立、选向、行走、坠落和召回状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 132 | field | Terraria.GameContent.LeashedEntities.WalkerLeashedCritter | Terraria.GameContent.LeashedEntities/WalkerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\WalkerLeashedCritter.cs | 9 | 2 | Prototype | Terraria.GameContent.LeashedEntities.WalkerLeashedCritter | `public static WalkerLeashedCritter Prototype = new WalkerLeashedCritter();` | `public static WalkerLeashedCritter Prototype = new WalkerLeashedCritter();` |
+| 133 | field | Terraria.GameContent.LeashedEntities.WalkerLeashedCritter | Terraria.GameContent.LeashedEntities/WalkerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\WalkerLeashedCritter.cs | 11 | 2 | State_Standing | int | `private const int State_Standing = 0;` | `private const int State_Standing = 0;` |
+| 134 | field | Terraria.GameContent.LeashedEntities.WalkerLeashedCritter | Terraria.GameContent.LeashedEntities/WalkerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\WalkerLeashedCritter.cs | 13 | 2 | State_PickDirection | int | `private const int State_PickDirection = 1;` | `private const int State_PickDirection = 1;` |
+| 135 | field | Terraria.GameContent.LeashedEntities.WalkerLeashedCritter | Terraria.GameContent.LeashedEntities/WalkerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\WalkerLeashedCritter.cs | 15 | 2 | State_Walking | int | `private const int State_Walking = 2;` | `private const int State_Walking = 2;` |
+| 136 | field | Terraria.GameContent.LeashedEntities.WalkerLeashedCritter | Terraria.GameContent.LeashedEntities/WalkerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\WalkerLeashedCritter.cs | 17 | 2 | State_Falling | int | `private const int State_Falling = 3;` | `private const int State_Falling = 3;` |
+| 137 | field | Terraria.GameContent.LeashedEntities.WalkerLeashedCritter | Terraria.GameContent.LeashedEntities/WalkerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\WalkerLeashedCritter.cs | 19 | 2 | State_Recalling | int | `private const int State_Recalling = 4;` | `private const int State_Recalling = 4;` |
+| 138 | field | Terraria.GameContent.LeashedEntities.WalkerLeashedCritter | Terraria.GameContent.LeashedEntities/WalkerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\WalkerLeashedCritter.cs | 21 | 2 | walkingPace | float | `protected float walkingPace;` | `protected float walkingPace;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.3.4 细分子系统：`LeashedJumperBehavior`
+
+- 细分职责：跳跃拴系生物的跳跃窗口、冷却和水面资格。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 82 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 9 | 2 | Prototype | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | `public static JumperLeashedCritter Prototype = new JumperLeashedCritter();` | `public static JumperLeashedCritter Prototype = new JumperLeashedCritter();` |
+| 83 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 11 | 2 | State_Normal | int | `private const int State_Normal = 0;` | `private const int State_Normal = 0;` |
+| 84 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 13 | 2 | State_Recalling | int | `private const int State_Recalling = 1;` | `private const int State_Recalling = 1;` |
+| 85 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 15 | 2 | minWaitTime | int | `protected int minWaitTime;` | `protected int minWaitTime;` |
+| 86 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 17 | 2 | maxWaitTime | int | `protected int maxWaitTime;` | `protected int maxWaitTime;` |
+| 87 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 19 | 2 | maxJumpWidth | float | `protected float maxJumpWidth;` | `protected float maxJumpWidth;` |
+| 88 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 21 | 2 | minJumpWidth | float | `protected float minJumpWidth;` | `protected float minJumpWidth;` |
+| 89 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 23 | 2 | maxJumpHeight | float | `protected float maxJumpHeight;` | `protected float maxJumpHeight;` |
+| 90 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 25 | 2 | maxJumpDuration | float | `protected float maxJumpDuration;` | `protected float maxJumpDuration;` |
+| 91 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 27 | 2 | jumpCooldown | int | `protected int jumpCooldown;` | `protected int jumpCooldown;` |
+| 92 | field | Terraria.GameContent.LeashedEntities.JumperLeashedCritter | Terraria.GameContent.LeashedEntities/JumperLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\JumperLeashedCritter.cs | 29 | 2 | canStandOnWater | bool | `protected bool canStandOnWater;` | `protected bool canStandOnWater;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.3.5 细分子系统：`LeashedFlyerBehavior`
+
+- 细分职责：飞行拴系生物的悬停、加速、制动和垂直速度。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 70 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 9 | 2 | Prototype | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | `public static FlyerLeashedCritter Prototype = new FlyerLeashedCritter();` | `public static FlyerLeashedCritter Prototype = new FlyerLeashedCritter();` |
+| 71 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 11 | 2 | minWaitTime | int | `protected int minWaitTime;` | `protected int minWaitTime;` |
+| 72 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 13 | 2 | maxWaitTime | int | `protected int maxWaitTime;` | `protected int maxWaitTime;` |
+| 73 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 15 | 2 | maxFlySpeed | float | `protected float maxFlySpeed;` | `protected float maxFlySpeed;` |
+| 74 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 17 | 2 | acceleration | float | `protected float acceleration;` | `protected float acceleration;` |
+| 75 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 19 | 2 | brakeDuration | int | `protected int brakeDuration;` | `protected int brakeDuration;` |
+| 76 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 21 | 2 | rotationScalar | float | `protected float rotationScalar;` | `protected float rotationScalar;` |
+| 77 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 23 | 2 | hoverAmplitude | float | `protected float hoverAmplitude;` | `protected float hoverAmplitude;` |
+| 78 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 25 | 2 | hoverPeriod | float | `protected float hoverPeriod;` | `protected float hoverPeriod;` |
+| 79 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 27 | 2 | hasGroundBias | bool | `protected bool hasGroundBias;` | `protected bool hasGroundBias;` |
+| 80 | field | Terraria.GameContent.LeashedEntities.FlyerLeashedCritter | Terraria.GameContent.LeashedEntities/FlyerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FlyerLeashedCritter.cs | 29 | 2 | HoverYVelocity | float | `private const float HoverYVelocity = 0.0001f;` | `private const float HoverYVelocity = 0.0001f;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.3.6 细分子系统：`LeashedKiteBehavior`
+
+- 细分职责：风筝实体的风场、计时、轨迹、帧和锚点派生状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：19；属性：1；合计：20。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（19）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 108 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 11 | 2 | Prototype | Terraria.GameContent.LeashedEntities.LeashedKite | `public static LeashedKite Prototype;` | `public static LeashedKite Prototype;` |
+| 109 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 13 | 2 | _dummy | Terraria.Projectile | `private static Projectile _dummy = new Projectile();` | `private static Projectile _dummy = new Projectile();` |
+| 110 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 15 | 2 | projType | int | `public int projType;` | `public int projType;` |
+| 111 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 17 | 2 | frame | int | `public int frame;` | `public int frame;` |
+| 112 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 19 | 2 | frameCounter | int | `public int frameCounter;` | `public int frameCounter;` |
+| 113 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 21 | 2 | rotation | float | `public float rotation;` | `public float rotation;` |
+| 114 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 23 | 2 | spriteDirection | int | `public int spriteDirection = 1;` | `public int spriteDirection = 1;` |
+| 115 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 25 | 2 | kiteDistance | float | `public float kiteDistance = 250f;` | `public float kiteDistance = 250f;` |
+| 116 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 27 | 2 | windTarget | float | `public float windTarget;` | `public float windTarget;` |
+| 117 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 29 | 2 | windCurrent | float | `public float windCurrent;` | `public float windCurrent;` |
+| 118 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 31 | 2 | timeCounter | float | `public float timeCounter;` | `public float timeCounter;` |
+| 119 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 33 | 2 | cloudAlpha | float | `public float cloudAlpha;` | `public float cloudAlpha;` |
+| 120 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 35 | 2 | timeWithoutWind | int | `public int timeWithoutWind;` | `public int timeWithoutWind;` |
+| 121 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 37 | 2 | projectileLocalAI0 | float | `public float projectileLocalAI0;` | `public float projectileLocalAI0;` |
+| 122 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 39 | 2 | projectileLocalAI1 | float | `public float projectileLocalAI1;` | `public float projectileLocalAI1;` |
+| 123 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 41 | 2 | oldPos | Vector2[] | `public Vector2[] oldPos;` | `public Vector2[] oldPos;` |
+| 124 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 43 | 2 | oldRot | float[] | `public float[] oldRot;` | `public float[] oldRot;` |
+| 125 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 45 | 2 | oldSpriteDirection | int[] | `public int[] oldSpriteDirection;` | `public int[] oldSpriteDirection;` |
+| 126 | field | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 47 | 2 | netOffset | Vector2 | `public Vector2 netOffset;` | `public Vector2 netOffset;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 154 | property | Terraria.GameContent.LeashedEntities.LeashedKite | Terraria.GameContent.LeashedEntities/LeashedKite.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\LeashedKite.cs | 49 | 2 | AnchorWorldPosition | Vector2 | `private Vector2 AnchorWorldPosition => base.AnchorPosition.ToWorldCoordinates();` | `private Vector2 AnchorWorldPosition => base.AnchorPosition.ToWorldCoordinates();` |
+
+#### 4.3.7 细分子系统：`LeashedButterflyVariants`
+
+- 细分职责：蝴蝶拴系实体的变体、淡出和透明度状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：2；声明类型数：2；字段：5；属性：1；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 64 | field | Terraria.GameContent.LeashedEntities.EmpressButterflyLeashedCritter | Terraria.GameContent.LeashedEntities/EmpressButterflyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\EmpressButterflyLeashedCritter.cs | 7 | 2 | Prototype | Terraria.GameContent.LeashedEntities.EmpressButterflyLeashedCritter | `public new static EmpressButterflyLeashedCritter Prototype = new EmpressButterflyLeashedCritter();` | `public new static EmpressButterflyLeashedCritter Prototype = new EmpressButterflyLeashedCritter();` |
+| 65 | field | Terraria.GameContent.LeashedEntities.EmpressButterflyLeashedCritter | Terraria.GameContent.LeashedEntities/EmpressButterflyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\EmpressButterflyLeashedCritter.cs | 9 | 2 | fadeAmount | float | `private float fadeAmount;` | `private float fadeAmount;` |
+| 66 | field | Terraria.GameContent.LeashedEntities.EmpressButterflyLeashedCritter | Terraria.GameContent.LeashedEntities/EmpressButterflyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\EmpressButterflyLeashedCritter.cs | 11 | 2 | FadeAwayCap | int | `private const int FadeAwayCap = 50;` | `private const int FadeAwayCap = 50;` |
+| 127 | field | Terraria.GameContent.LeashedEntities.NormalButterflyLeashedCritter | Terraria.GameContent.LeashedEntities/NormalButterflyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\NormalButterflyLeashedCritter.cs | 7 | 2 | Prototype | Terraria.GameContent.LeashedEntities.NormalButterflyLeashedCritter | `public new static NormalButterflyLeashedCritter Prototype = new NormalButterflyLeashedCritter();` | `public new static NormalButterflyLeashedCritter Prototype = new NormalButterflyLeashedCritter();` |
+| 128 | field | Terraria.GameContent.LeashedEntities.NormalButterflyLeashedCritter | Terraria.GameContent.LeashedEntities/NormalButterflyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\NormalButterflyLeashedCritter.cs | 9 | 2 | variant | byte | `protected byte variant;` | `protected byte variant;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 153 | property | Terraria.GameContent.LeashedEntities.EmpressButterflyLeashedCritter | Terraria.GameContent.LeashedEntities/EmpressButterflyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\EmpressButterflyLeashedCritter.cs | 13 | 2 | Opacity | float | `private float Opacity => Utils.GetLerpValue(60f, 25f, fadeAmount, clamped: true);` | `private float Opacity => Utils.GetLerpValue(60f, 25f, fadeAmount, clamped: true);` |
+
+#### 4.3.8 细分子系统：`LeashedSpeciesPrototypes`
+
+- 细分职责：物种原型引用；不承担拴系实体运行时状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：13；声明类型数：13；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 60 | field | Terraria.GameContent.LeashedEntities.BirdLeashedCritter | Terraria.GameContent.LeashedEntities/BirdLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\BirdLeashedCritter.cs | 5 | 2 | Prototype | Terraria.GameContent.LeashedEntities.BirdLeashedCritter | `public new static BirdLeashedCritter Prototype = new BirdLeashedCritter();` | `public new static BirdLeashedCritter Prototype = new BirdLeashedCritter();` |
+| 61 | field | Terraria.GameContent.LeashedEntities.CrawlerLeashedCritter | Terraria.GameContent.LeashedEntities/CrawlerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\CrawlerLeashedCritter.cs | 5 | 2 | Prototype | Terraria.GameContent.LeashedEntities.CrawlerLeashedCritter | `public new static CrawlerLeashedCritter Prototype = new CrawlerLeashedCritter();` | `public new static CrawlerLeashedCritter Prototype = new CrawlerLeashedCritter();` |
+| 62 | field | Terraria.GameContent.LeashedEntities.CrawlingFlyLeashedCritter | Terraria.GameContent.LeashedEntities/CrawlingFlyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\CrawlingFlyLeashedCritter.cs | 5 | 2 | Prototype | Terraria.GameContent.LeashedEntities.CrawlingFlyLeashedCritter | `public new static CrawlingFlyLeashedCritter Prototype = new CrawlingFlyLeashedCritter();` | `public new static CrawlingFlyLeashedCritter Prototype = new CrawlingFlyLeashedCritter();` |
+| 63 | field | Terraria.GameContent.LeashedEntities.DragonflyLeashedCritter | Terraria.GameContent.LeashedEntities/DragonflyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\DragonflyLeashedCritter.cs | 5 | 2 | Prototype | Terraria.GameContent.LeashedEntities.DragonflyLeashedCritter | `public new static DragonflyLeashedCritter Prototype = new DragonflyLeashedCritter();` | `public new static DragonflyLeashedCritter Prototype = new DragonflyLeashedCritter();` |
+| 67 | field | Terraria.GameContent.LeashedEntities.FairyLeashedCritter | Terraria.GameContent.LeashedEntities/FairyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FairyLeashedCritter.cs | 7 | 2 | Prototype | Terraria.GameContent.LeashedEntities.FairyLeashedCritter | `public new static FairyLeashedCritter Prototype = new FairyLeashedCritter();` | `public new static FairyLeashedCritter Prototype = new FairyLeashedCritter();` |
+| 68 | field | Terraria.GameContent.LeashedEntities.FireflyLeashedCritter | Terraria.GameContent.LeashedEntities/FireflyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FireflyLeashedCritter.cs | 5 | 2 | Prototype | Terraria.GameContent.LeashedEntities.FireflyLeashedCritter | `public new static FireflyLeashedCritter Prototype = new FireflyLeashedCritter();` | `public new static FireflyLeashedCritter Prototype = new FireflyLeashedCritter();` |
+| 69 | field | Terraria.GameContent.LeashedEntities.FishLeashedCritter | Terraria.GameContent.LeashedEntities/FishLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\FishLeashedCritter.cs | 7 | 2 | Prototype | Terraria.GameContent.LeashedEntities.FishLeashedCritter | `public new static FishLeashedCritter Prototype = new FishLeashedCritter();` | `public new static FishLeashedCritter Prototype = new FishLeashedCritter();` |
+| 81 | field | Terraria.GameContent.LeashedEntities.HellButterflyLeashedCritter | Terraria.GameContent.LeashedEntities/HellButterflyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\HellButterflyLeashedCritter.cs | 5 | 2 | Prototype | Terraria.GameContent.LeashedEntities.HellButterflyLeashedCritter | `public new static HellButterflyLeashedCritter Prototype = new HellButterflyLeashedCritter();` | `public new static HellButterflyLeashedCritter Prototype = new HellButterflyLeashedCritter();` |
+| 129 | field | Terraria.GameContent.LeashedEntities.RunnerLeashedCritter | Terraria.GameContent.LeashedEntities/RunnerLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\RunnerLeashedCritter.cs | 5 | 2 | Prototype | Terraria.GameContent.LeashedEntities.RunnerLeashedCritter | `public new static RunnerLeashedCritter Prototype = new RunnerLeashedCritter();` | `public new static RunnerLeashedCritter Prototype = new RunnerLeashedCritter();` |
+| 130 | field | Terraria.GameContent.LeashedEntities.ShimmerFlyLeashedCritter | Terraria.GameContent.LeashedEntities/ShimmerFlyLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\ShimmerFlyLeashedCritter.cs | 8 | 2 | Prototype | Terraria.GameContent.LeashedEntities.ShimmerFlyLeashedCritter | `public new static ShimmerFlyLeashedCritter Prototype = new ShimmerFlyLeashedCritter();` | `public new static ShimmerFlyLeashedCritter Prototype = new ShimmerFlyLeashedCritter();` |
+| 131 | field | Terraria.GameContent.LeashedEntities.SnailLeashedCritter | Terraria.GameContent.LeashedEntities/SnailLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\SnailLeashedCritter.cs | 5 | 2 | Prototype | Terraria.GameContent.LeashedEntities.SnailLeashedCritter | `public new static SnailLeashedCritter Prototype = new SnailLeashedCritter();` | `public new static SnailLeashedCritter Prototype = new SnailLeashedCritter();` |
+| 139 | field | Terraria.GameContent.LeashedEntities.WaterfowlLeashedCritter | Terraria.GameContent.LeashedEntities/WaterfowlLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\WaterfowlLeashedCritter.cs | 5 | 2 | Prototype | Terraria.GameContent.LeashedEntities.WaterfowlLeashedCritter | `public new static WaterfowlLeashedCritter Prototype = new WaterfowlLeashedCritter();` | `public new static WaterfowlLeashedCritter Prototype = new WaterfowlLeashedCritter();` |
+| 140 | field | Terraria.GameContent.LeashedEntities.WaterStriderLeashedCritter | Terraria.GameContent.LeashedEntities/WaterStriderLeashedCritter.cs | D:\TRbackup\Version4\Terraria.GameContent.LeashedEntities\WaterStriderLeashedCritter.cs | 7 | 2 | Prototype | Terraria.GameContent.LeashedEntities.WaterStriderLeashedCritter | `public new static WaterStriderLeashedCritter Prototype = new WaterStriderLeashedCritter();` | `public new static WaterStriderLeashedCritter Prototype = new WaterStriderLeashedCritter();` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.4 父级子系统：`WiringAndMechanisms`
+
+- 父级职责：电线传播、机关和泵/传送。
+- 父级统计：字段 30；属性 0；合计 30；细分数 3。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `WiringPropagationAndGateState` | authoritative state/behavior | 12 | 0 | 12 |
+| `WiringTeleportAndPumpState` | authoritative state/behavior | 9 | 0 | 9 |
+| `WiringMechanismCooldowns` | authoritative state/behavior | 9 | 0 | 9 |
+
+#### 4.4.1 细分子系统：`WiringPropagationAndGateState`
+
+- 细分职责：电线传播队列、颜色、逻辑门/灯检查和当前机制上下文。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 159 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 19 | 2 | running | bool | `public static bool running;` | `public static bool running;` |
+| 160 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 21 | 2 | _wireSkip | System.Collections.Generic.Dictionary<Terraria.DataStructures.Point16, bool> | `private static Dictionary<Point16, bool> _wireSkip;` | `private static Dictionary<Point16, bool> _wireSkip;` |
+| 161 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 23 | 2 | _wireList | Terraria.DataStructures.DoubleStack<Terraria.DataStructures.Point16> | `private static DoubleStack<Point16> _wireList;` | `private static DoubleStack<Point16> _wireList;` |
+| 162 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 25 | 2 | _wireDirectionList | Terraria.DataStructures.DoubleStack<byte> | `private static DoubleStack<byte> _wireDirectionList;` | `private static DoubleStack<byte> _wireDirectionList;` |
+| 163 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 27 | 2 | _toProcess | System.Collections.Generic.Dictionary<Terraria.DataStructures.Point16, byte> | `private static Dictionary<Point16, byte> _toProcess;` | `private static Dictionary<Point16, byte> _toProcess;` |
+| 164 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 29 | 2 | _GatesCurrent | System.Collections.Generic.Queue<Terraria.DataStructures.Point16> | `private static Queue<Point16> _GatesCurrent;` | `private static Queue<Point16> _GatesCurrent;` |
+| 165 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 31 | 2 | _LampsToCheck | System.Collections.Generic.Queue<Terraria.DataStructures.Point16> | `private static Queue<Point16> _LampsToCheck;` | `private static Queue<Point16> _LampsToCheck;` |
+| 166 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 33 | 2 | _GatesNext | System.Collections.Generic.Queue<Terraria.DataStructures.Point16> | `private static Queue<Point16> _GatesNext;` | `private static Queue<Point16> _GatesNext;` |
+| 167 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 35 | 2 | _GatesDone | System.Collections.Generic.Dictionary<Terraria.DataStructures.Point16, bool> | `private static Dictionary<Point16, bool> _GatesDone;` | `private static Dictionary<Point16, bool> _GatesDone;` |
+| 168 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 37 | 2 | _PixelBoxTriggers | System.Collections.Generic.Dictionary<Terraria.DataStructures.Point16, byte> | `private static Dictionary<Point16, byte> _PixelBoxTriggers;` | `private static Dictionary<Point16, byte> _PixelBoxTriggers;` |
+| 182 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 65 | 2 | _currentWireColor | int | `private static int _currentWireColor;` | `private static int _currentWireColor;` |
+| 183 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 67 | 2 | CurrentUser | int | `private static int CurrentUser = 255;` | `private static int CurrentUser = 255;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.4.2 细分子系统：`WiringTeleportAndPumpState`
+
+- 细分职责：电线触发传送和液体泵坐标/计数状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 158 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 17 | 2 | blockPlayerTeleportationForOneIteration | bool | `public static bool blockPlayerTeleportationForOneIteration;` | `public static bool blockPlayerTeleportationForOneIteration;` |
+| 169 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 39 | 2 | _teleport | Vector2[] | `private static Vector2[] _teleport;` | `private static Vector2[] _teleport;` |
+| 170 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 41 | 2 | MaxPump | int | `private const int MaxPump = 20;` | `private const int MaxPump = 20;` |
+| 171 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 43 | 2 | _inPumpX | int[] | `private static int[] _inPumpX;` | `private static int[] _inPumpX;` |
+| 172 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 45 | 2 | _inPumpY | int[] | `private static int[] _inPumpY;` | `private static int[] _inPumpY;` |
+| 173 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 47 | 2 | _numInPump | int | `private static int _numInPump;` | `private static int _numInPump;` |
+| 174 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 49 | 2 | _outPumpX | int[] | `private static int[] _outPumpX;` | `private static int[] _outPumpX;` |
+| 175 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 51 | 2 | _outPumpY | int[] | `private static int[] _outPumpY;` | `private static int[] _outPumpY;` |
+| 176 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 53 | 2 | _numOutPump | int | `private static int _numOutPump;` | `private static int _numOutPump;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.4.3 细分子系统：`WiringMechanismCooldowns`
+
+- 细分职责：机制队列、机制时间和炮台/漏斗冷却状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 177 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 55 | 2 | MaxMech | int | `private const int MaxMech = 1000;` | `private const int MaxMech = 1000;` |
+| 178 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 57 | 2 | _mechX | int[] | `private static int[] _mechX;` | `private static int[] _mechX;` |
+| 179 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 59 | 2 | _mechY | int[] | `private static int[] _mechY;` | `private static int[] _mechY;` |
+| 180 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 61 | 2 | _numMechs | int | `private static int _numMechs;` | `private static int _numMechs;` |
+| 181 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 63 | 2 | _mechTime | int[] | `private static int[] _mechTime;` | `private static int[] _mechTime;` |
+| 184 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 69 | 2 | cannonCoolDown | int | `private static int cannonCoolDown = 0;` | `private static int cannonCoolDown = 0;` |
+| 185 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 71 | 2 | bunnyCannonCoolDown | int | `private static int bunnyCannonCoolDown = 0;` | `private static int bunnyCannonCoolDown = 0;` |
+| 186 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 73 | 2 | snowballCannonCoolDown | int | `private static int snowballCannonCoolDown = 0;` | `private static int snowballCannonCoolDown = 0;` |
+| 187 | field | Terraria.Wiring | Terraria/Wiring.cs | D:\TRbackup\Version4\Terraria\Wiring.cs | 75 | 2 | HopperGrabHitboxSize | Vector2 | `public static readonly Vector2 HopperGrabHitboxSize = new Vector2(192f);` | `public static readonly Vector2 HopperGrabHitboxSize = new Vector2(192f);` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.5 父级子系统：`MountAndVehicleSimulation`
+
+- 父级职责：坐骑、轨道和钻头特化。
+- 父级统计：字段 136；属性 27；合计 163；细分数 17。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `MountFrameAndDrawCatalog` | definition/query | 11 | 0 | 11 |
+| `MountSpecialVehicleCatalog` | definition/query | 5 | 0 | 5 |
+| `MountDrillConstants` | definition/query | 9 | 0 | 9 |
+| `MountSuperCartConstants` | definition/query | 5 | 0 | 5 |
+| `MountRuntimeFrameAndFlightState` | authoritative state/behavior | 15 | 0 | 15 |
+| `MountFatigueAndAbilityState` | authoritative state/behavior | 8 | 0 | 8 |
+| `MountRuntimeIdentityAndFrameProjection` | derived/query | 2 | 11 | 13 |
+| `MountRuntimeMobilityAndAbilityProjection` | derived/query | 0 | 16 | 16 |
+| `MountGeometryAndOffsetCatalog` | definition/query | 9 | 0 | 9 |
+| `MountGroundAnimationFrames` | definition/query | 11 | 0 | 11 |
+| `MountAerialAndWaterAnimationFrames` | definition/query | 9 | 0 | 9 |
+| `MountDashAnimationFrames` | definition/query | 3 | 0 | 3 |
+| `MountMovementAndAbilityCatalog` | definition/query | 18 | 0 | 18 |
+| `MountVehicleAndPresentationCatalog` | definition/query | 9 | 0 | 9 |
+| `MountDelegateContract` | authoritative state/behavior | 8 | 0 | 8 |
+| `DrillMountRuntime` | authoritative state/behavior | 9 | 0 | 9 |
+| `MountVariantFlags` | authoritative state/behavior | 5 | 0 | 5 |
+
+#### 4.5.1 细分子系统：`MountFrameAndDrawCatalog`
+
+- 细分职责：坐骑通用帧状态、绘制层级和特殊老鼠帧序列常量。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；表现系统按帧定义消费。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 269 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 273 | 2 | FrameStanding | int | `public const int FrameStanding = 0;` | `public const int FrameStanding = 0;` |
+| 270 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 275 | 2 | FrameRunning | int | `public const int FrameRunning = 1;` | `public const int FrameRunning = 1;` |
+| 271 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 277 | 2 | FrameInAir | int | `public const int FrameInAir = 2;` | `public const int FrameInAir = 2;` |
+| 272 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 279 | 2 | FrameFlying | int | `public const int FrameFlying = 3;` | `public const int FrameFlying = 3;` |
+| 273 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 281 | 2 | FrameSwimming | int | `public const int FrameSwimming = 4;` | `public const int FrameSwimming = 4;` |
+| 274 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 283 | 2 | FrameDashing | int | `public const int FrameDashing = 5;` | `public const int FrameDashing = 5;` |
+| 275 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 285 | 2 | DrawBack | int | `public const int DrawBack = 0;` | `public const int DrawBack = 0;` |
+| 276 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 287 | 2 | DrawBackExtra | int | `public const int DrawBackExtra = 1;` | `public const int DrawBackExtra = 1;` |
+| 277 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 289 | 2 | DrawFront | int | `public const int DrawFront = 2;` | `public const int DrawFront = 2;` |
+| 278 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 291 | 2 | DrawFrontExtra | int | `public const int DrawFrontExtra = 3;` | `public const int DrawFrontExtra = 3;` |
+| 323 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 381 | 2 | idleFrames_Rat | int[] | `public static int[] idleFrames_Rat = new int[11]  	{  		0, 1, 3, 2, 3, 2, 3, 2, 1, 0,  		0  	};` | `public static int[] idleFrames_Rat = new int[11] { 0, 1, 3, 2, 3, 2, 3, 2, 1, 0, 0 };` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.2 细分子系统：`MountSpecialVehicleCatalog`
+
+- 细分职责：坐骑注册表、Scutlix 和 Santank 的专用车辆/战斗定义。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；车辆适配器单向读取。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 279 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 293 | 2 | mounts | Terraria.Mount.MountData[] | `private static MountData[] mounts;` | `private static MountData[] mounts;` |
+| 280 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 295 | 2 | scutlixEyePositions | Vector2[] | `private static Vector2[] scutlixEyePositions;` | `private static Vector2[] scutlixEyePositions;` |
+| 281 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 297 | 2 | scutlixTextureSize | Vector2 | `private static Vector2 scutlixTextureSize;` | `private static Vector2 scutlixTextureSize;` |
+| 282 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 299 | 2 | scutlixBaseDamage | int | `public const int scutlixBaseDamage = 50;` | `public const int scutlixBaseDamage = 50;` |
+| 292 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 319 | 2 | santankTextureSize | Vector2 | `private static Vector2 santankTextureSize;` | `private static Vector2 santankTextureSize;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.3 细分子系统：`MountDrillConstants`
+
+- 细分职责：钻头二极管、钻取长度、功率、时间和光束数量定义。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；钻头行为系统按配置读取。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 283 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 301 | 2 | drillDiodePoint1 | Vector2 | `public static Vector2 drillDiodePoint1 = new Vector2(36f, -6f);` | `public static Vector2 drillDiodePoint1 = new Vector2(36f, -6f);` |
+| 284 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 303 | 2 | drillDiodePoint2 | Vector2 | `public static Vector2 drillDiodePoint2 = new Vector2(36f, 8f);` | `public static Vector2 drillDiodePoint2 = new Vector2(36f, 8f);` |
+| 285 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 305 | 2 | drillTextureSize | Vector2 | `public static Vector2 drillTextureSize;` | `public static Vector2 drillTextureSize;` |
+| 286 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 307 | 2 | drillTextureWidth | int | `public const int drillTextureWidth = 80;` | `public const int drillTextureWidth = 80;` |
+| 287 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 309 | 2 | drillRotationChange | float | `public const float drillRotationChange = (float)Math.PI / 60f;` | `public const float drillRotationChange = (float)Math.PI / 60f;` |
+| 288 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 311 | 2 | drillPickPower | int | `public static int drillPickPower = 210;` | `public static int drillPickPower = 210;` |
+| 289 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 313 | 2 | drillPickTime | int | `public static int drillPickTime = 1;` | `public static int drillPickTime = 1;` |
+| 290 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 315 | 2 | amountOfBeamsAtOnce | int | `public static int amountOfBeamsAtOnce = 2;` | `public static int amountOfBeamsAtOnce = 2;` |
+| 291 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 317 | 2 | maxDrillLength | float | `public const float maxDrillLength = 48f;` | `public const float maxDrillLength = 48f;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.4 细分子系统：`MountSuperCartConstants`
+
+- 细分职责：超级矿车速度、加速度和跳跃能力常量。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；矿车移动系统单向读取。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 317 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 369 | 2 | SuperCartRunSpeed | float | `public static float SuperCartRunSpeed = 20f;` | `public static float SuperCartRunSpeed = 20f;` |
+| 318 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 371 | 2 | SuperCartDashSpeed | float | `public static float SuperCartDashSpeed = 20f;` | `public static float SuperCartDashSpeed = 20f;` |
+| 319 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 373 | 2 | SuperCartAcceleration | float | `public static float SuperCartAcceleration = 0.1f;` | `public static float SuperCartAcceleration = 0.1f;` |
+| 320 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 375 | 2 | SuperCartJumpHeight | int | `public static int SuperCartJumpHeight = 15;` | `public static int SuperCartJumpHeight = 15;` |
+| 321 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 377 | 2 | SuperCartJumpSpeed | float | `public static float SuperCartJumpSpeed = 5.15f;` | `public static float SuperCartJumpSpeed = 5.15f;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.5 细分子系统：`MountRuntimeFrameAndFlightState`
+
+- 细分职责：坐骑运行时类型、帧、飞行、闲置和激活状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；移动阶段集中写入运行时状态。
+- 成员文件数：1；声明类型数：1；字段：15；属性：0；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（15）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 293 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 321 | 2 | _data | Terraria.Mount.MountData | `private MountData _data;` | `private MountData _data;` |
+| 294 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 323 | 2 | _type | int | `private int _type;` | `private int _type;` |
+| 295 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 325 | 2 | _flipDraw | bool | `private bool _flipDraw;` | `private bool _flipDraw;` |
+| 296 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 327 | 2 | _frame | int | `private int _frame;` | `private int _frame;` |
+| 297 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 329 | 2 | _frameCounter | float | `private float _frameCounter;` | `private float _frameCounter;` |
+| 298 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 331 | 2 | _frameExtra | int | `private int _frameExtra;` | `private int _frameExtra;` |
+| 299 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 333 | 2 | _frameExtraCounter | float | `private float _frameExtraCounter;` | `private float _frameExtraCounter;` |
+| 300 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 335 | 2 | _frameState | int | `private int _frameState;` | `private int _frameState;` |
+| 301 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 337 | 2 | _flyTime | int | `private int _flyTime;` | `private int _flyTime;` |
+| 302 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 339 | 2 | _idleTime | int | `private int _idleTime;` | `private int _idleTime;` |
+| 303 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 341 | 2 | _idleTimeNext | int | `private int _idleTimeNext;` | `private int _idleTimeNext;` |
+| 312 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 359 | 2 | _shouldSuperCart | bool | `private bool _shouldSuperCart;` | `private bool _shouldSuperCart;` |
+| 313 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 361 | 2 | _walkingGraceTimeLeft | int | `private int _walkingGraceTimeLeft;` | `private int _walkingGraceTimeLeft;` |
+| 315 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 365 | 2 | _mountSpecificData | object | `private object _mountSpecificData;` | `private object _mountSpecificData;` |
+| 316 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 367 | 2 | _active | bool | `private bool _active;` | `private bool _active;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.6 细分子系统：`MountFatigueAndAbilityState`
+
+- 细分职责：坐骑疲劳、蓄力、冷却、持续时间和瞄准状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；能力转换按显式输入和冷却阶段更新。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 304 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 343 | 2 | _fatigue | float | `private float _fatigue;` | `private float _fatigue;` |
+| 305 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 345 | 2 | _fatigueMax | float | `private float _fatigueMax;` | `private float _fatigueMax;` |
+| 306 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 347 | 2 | _abilityCharging | bool | `private bool _abilityCharging;` | `private bool _abilityCharging;` |
+| 307 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 349 | 2 | _abilityCharge | int | `private int _abilityCharge;` | `private int _abilityCharge;` |
+| 308 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 351 | 2 | _abilityCooldown | int | `private int _abilityCooldown;` | `private int _abilityCooldown;` |
+| 309 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 353 | 2 | _abilityDuration | int | `private int _abilityDuration;` | `private int _abilityDuration;` |
+| 310 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 355 | 2 | _abilityActive | bool | `private bool _abilityActive;` | `private bool _abilityActive;` |
+| 311 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 357 | 2 | _aiming | bool | `private bool _aiming;` | `private bool _aiming;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.7 细分子系统：`MountRuntimeIdentityAndFrameProjection`
+
+- 细分职责：坐骑活动、类型、帧、玩家偏移和几何投影。
+- 边界角色：`derived/query`；最小 seam：Mount Projection/Query；只读消费 Mount 运行时快照。
+- 成员文件数：1；声明类型数：1；字段：2；属性：11；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 314 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 363 | 2 | _debugDraw | System.Collections.Generic.List<Terraria.DataStructures.DrillDebugDraw> | `public List<DrillDebugDraw> _debugDraw;` | `public List<DrillDebugDraw> _debugDraw;` |
+| 322 | field | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 379 | 2 | _defaultDelegatesData | Terraria.Mount.MountDelegatesData | `private MountDelegatesData _defaultDelegatesData = new MountDelegatesData();` | `private MountDelegatesData _defaultDelegatesData = new MountDelegatesData();` |
+
+##### 属性（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 324 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 387 | 2 | Active | bool | `public bool Active => _active;` | `public bool Active => _active;` |
+| 325 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 389 | 2 | Type | int | `public int Type => _type;` | `public int Type => _type;` |
+| 326 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 391 | 2 | Frame | int | `public int Frame => _frame;` | `public int Frame => _frame;` |
+| 327 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 393 | 2 | FlyTime | int | `public int FlyTime => _flyTime;` | `public int FlyTime => _flyTime;` |
+| 328 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 395 | 2 | BodyFrame | int | `public int BodyFrame => _data.bodyFrame;` | `public int BodyFrame => _data.bodyFrame;` |
+| 329 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 397 | 2 | RunningGraceTime | int | `public int RunningGraceTime => _walkingGraceTimeLeft;` | `public int RunningGraceTime => _walkingGraceTimeLeft;` |
+| 330 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 399 | 2 | PlayerXOFfset | int | `public int PlayerXOFfset => _data.playerXOffset;` | `public int PlayerXOFfset => _data.playerXOffset;` |
+| 331 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 401 | 2 | PlayerOffset | int | `public int PlayerOffset { get { if (!_active) { return 0; } if (_frame >= _data.totalFrames) { return 0; } return _data.playerYOffsets[_frame]; } }` | `public int PlayerOffset { get { if (!_active) { return 0; } if (_frame >= _data.totalFrames) { return 0; } return _data.playerYOffsets[_frame]; } }` |
+| 332 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 417 | 2 | PlayerOffsetHitbox | int | `public int PlayerOffsetHitbox { get { if (!_active) { return 0; } return -PlayerOffset + _data.heightBoost; } }` | `public int PlayerOffsetHitbox { get { if (!_active) { return 0; } return -PlayerOffset + _data.heightBoost; } }` |
+| 333 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 429 | 2 | PlayerHeadOffset | int | `public int PlayerHeadOffset { get { if (!_active) { return 0; } return _data.playerHeadOffset; } }` | `public int PlayerHeadOffset { get { if (!_active) { return 0; } return _data.playerHeadOffset; } }` |
+| 334 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 441 | 2 | HeightBoost | int | `public int HeightBoost => _data.heightBoost;` | `public int HeightBoost => _data.heightBoost;` |
+
+#### 4.5.8 细分子系统：`MountRuntimeMobilityAndAbilityProjection`
+
+- 细分职责：坐骑移动、轨道、翅膀和能力计时投影。
+- 边界角色：`derived/query`；最小 seam：Mount Ability Projection/Query；不复制 Mount 权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：16；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 335 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 443 | 2 | RunSpeed | float | `public float RunSpeed { get { if (_type == 4 && _frameState == 4) { return _data.swimSpeed; } if ((_type == 12 \|\| _type == 44 \|\| _type == 49) && _frameState == 4) { return _data.swimSpeed; } if (_type == 12 && _frameState == 2) { return _data.runSpeed + 13.5f; } if (_type == 44 && _frameState == 2) { return _data.runSpeed + 4f; } if (_type == 5 && _frameState == 2) { float num = _fatigue / _fatigueMax; return _data.runSpeed + 4f * (1f - num); } if (_type == 50 && _frameState == 2) { return _data.runSpeed + 2f; } if (_shouldSuperCart) { return SuperCartRunSpeed; } return _data.runSpeed; } }` | `public float RunSpeed { get { if (_type == 4 && _frameState == 4) { return _data.swimSpeed; } if ((_type == 12 \|\| _type == 44 \|\| _type == 49) && _frameState == 4) { return _data.swimSpeed; } if (_type == 12 && _frameState == 2) { return _data.runSpeed + 13.5f; } if (_type == 44 && _frameState == 2) { return _data.runSpeed + 4f; } if (_type == 5 && _frameState == 2) { float num = _fatigue / _fatigueMax; return _data.runSpeed + 4f * (1f - num); } if (_type == 50 && _frameState == 2) { return _data.runSpeed + 2f; } if (_shouldSuperCart) { return SuperCartRunSpeed; } return _data.runSpeed; } }` |
+| 336 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 480 | 2 | DashSpeed | float | `public float DashSpeed { get { if (_shouldSuperCart) { return SuperCartDashSpeed; } return _data.dashSpeed; } }` | `public float DashSpeed { get { if (_shouldSuperCart) { return SuperCartDashSpeed; } return _data.dashSpeed; } }` |
+| 337 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 492 | 2 | Acceleration | float | `public float Acceleration { get { if (_shouldSuperCart) { return SuperCartAcceleration; } return _data.acceleration; } }` | `public float Acceleration { get { if (_shouldSuperCart) { return SuperCartAcceleration; } return _data.acceleration; } }` |
+| 338 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 504 | 2 | AutoJump | bool | `public bool AutoJump => _data.constantJump;` | `public bool AutoJump => _data.constantJump;` |
+| 339 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 506 | 2 | BlockExtraJumps | bool | `public bool BlockExtraJumps => _data.blockExtraJumps;` | `public bool BlockExtraJumps => _data.blockExtraJumps;` |
+| 340 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 508 | 2 | IsConsideredASlimeMount | bool | `public bool IsConsideredASlimeMount { get { if (_type != 3) { return _type == 50; } return true; } }` | `public bool IsConsideredASlimeMount { get { if (_type != 3) { return _type == 50; } return true; } }` |
+| 341 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 520 | 2 | Cart | bool | `public bool Cart { get { if (_data == null \|\| !_active) { return false; } return _data.Minecart; } }` | `public bool Cart { get { if (_data == null \|\| !_active) { return false; } return _data.Minecart; } }` |
+| 342 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 532 | 2 | CanGrindRails | bool | `public bool CanGrindRails { get { if (_data == null \|\| !_active) { return false; } return _data.CanRideMinecartTracks; } }` | `public bool CanGrindRails { get { if (_data == null \|\| !_active) { return false; } return _data.CanRideMinecartTracks; } }` |
+| 343 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 544 | 2 | AnyTrackRider | bool | `public bool AnyTrackRider { get { if (_data == null \|\| !_active) { return false; } if (!_data.Minecart) { return _data.CanRideMinecartTracks; } return true; } }` | `public bool AnyTrackRider { get { if (_data == null \|\| !_active) { return false; } if (!_data.Minecart) { return _data.CanRideMinecartTracks; } return true; } }` |
+| 344 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 560 | 2 | CanUseWings | bool | `public bool CanUseWings { get { if (_data == null \|\| !_active) { return true; } return _data.CanUseWings; } }` | `public bool CanUseWings { get { if (_data == null \|\| !_active) { return true; } return _data.CanUseWings; } }` |
+| 345 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 572 | 2 | Delegations | Terraria.Mount.MountDelegatesData | `public MountDelegatesData Delegations { get { if (_data == null) { return _defaultDelegatesData; } return _data.delegations; } }` | `public MountDelegatesData Delegations { get { if (_data == null) { return _defaultDelegatesData; } return _data.delegations; } }` |
+| 346 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 584 | 2 | AbilityCharging | bool | `public bool AbilityCharging => _abilityCharging;` | `public bool AbilityCharging => _abilityCharging;` |
+| 347 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 586 | 2 | AbilityActive | bool | `public bool AbilityActive => _abilityActive;` | `public bool AbilityActive => _abilityActive;` |
+| 348 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 588 | 2 | AbilityCharge | float | `public float AbilityCharge => (float)_abilityCharge / (float)_data.abilityChargeMax;` | `public float AbilityCharge => (float)_abilityCharge / (float)_data.abilityChargeMax;` |
+| 349 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 590 | 2 | AllowDirectionChange | bool | `public bool AllowDirectionChange { get { int type = _type; if (type == 9) { return _abilityCooldown < _data.abilityCooldown / 2; } return true; } }` | `public bool AllowDirectionChange { get { int type = _type; if (type == 9) { return _abilityCooldown < _data.abilityCooldown / 2; } return true; } }` |
+| 350 | property | Terraria.Mount | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 603 | 2 | DismountOnItemUse | bool | `public bool DismountOnItemUse { get { if (!Active) { return false; } return _data.dismountsOnItemUse; } }` | `public bool DismountOnItemUse { get { if (!Active) { return false; } return _data.dismountsOnItemUse; } }` |
+
+#### 4.5.9 细分子系统：`MountGeometryAndOffsetCatalog`
+
+- 细分职责：坐骑纹理尺寸、玩家偏移、碰撞高度和身体定位定义。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；移动和绘制系统按几何快照消费。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 210 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 147 | 3 | textureWidth | int | `public int textureWidth;` | `public int textureWidth;` |
+| 211 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 149 | 3 | textureHeight | int | `public int textureHeight;` | `public int textureHeight;` |
+| 212 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 151 | 3 | xOffset | int | `public int xOffset;` | `public int xOffset;` |
+| 213 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 153 | 3 | yOffset | int | `public int yOffset;` | `public int yOffset;` |
+| 214 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 155 | 3 | playerYOffsets | int[] | `public int[] playerYOffsets;` | `public int[] playerYOffsets;` |
+| 215 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 157 | 3 | bodyFrame | int | `public int bodyFrame;` | `public int bodyFrame;` |
+| 216 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 159 | 3 | playerHeadOffset | int | `public int playerHeadOffset;` | `public int playerHeadOffset;` |
+| 217 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 161 | 3 | heightBoost | int | `public int heightBoost;` | `public int heightBoost;` |
+| 268 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 263 | 3 | playerXOffset | int | `public int playerXOffset;` | `public int playerXOffset;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.10 细分子系统：`MountGroundAnimationFrames`
+
+- 细分职责：站立、奔跑和地面空闲动画帧目录。
+- 边界角色：`definition/query`；最小 seam：Mount Animation Query；地面帧目录只读消费。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 239 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 205 | 3 | totalFrames | int | `public int totalFrames;` | `public int totalFrames;` |
+| 240 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 207 | 3 | standingFrameStart | int | `public int standingFrameStart;` | `public int standingFrameStart;` |
+| 241 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 209 | 3 | standingFrameCount | int | `public int standingFrameCount;` | `public int standingFrameCount;` |
+| 242 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 211 | 3 | standingFrameDelay | int | `public int standingFrameDelay;` | `public int standingFrameDelay;` |
+| 243 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 213 | 3 | runningFrameStart | int | `public int runningFrameStart;` | `public int runningFrameStart;` |
+| 244 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 215 | 3 | runningFrameCount | int | `public int runningFrameCount;` | `public int runningFrameCount;` |
+| 245 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 217 | 3 | runningFrameDelay | int | `public int runningFrameDelay;` | `public int runningFrameDelay;` |
+| 252 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 231 | 3 | idleFrameStart | int | `public int idleFrameStart;` | `public int idleFrameStart;` |
+| 253 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 233 | 3 | idleFrameCount | int | `public int idleFrameCount;` | `public int idleFrameCount;` |
+| 254 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 235 | 3 | idleFrameDelay | int | `public int idleFrameDelay;` | `public int idleFrameDelay;` |
+| 255 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 237 | 3 | idleFrameLoop | bool | `public bool idleFrameLoop;` | `public bool idleFrameLoop;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.11 细分子系统：`MountAerialAndWaterAnimationFrames`
+
+- 细分职责：飞行、空中和游泳动画帧目录。
+- 边界角色：`definition/query`；最小 seam：Mount Animation Query；空中/水中帧目录只读消费。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 246 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 219 | 3 | flyingFrameStart | int | `public int flyingFrameStart;` | `public int flyingFrameStart;` |
+| 247 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 221 | 3 | flyingFrameCount | int | `public int flyingFrameCount;` | `public int flyingFrameCount;` |
+| 248 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 223 | 3 | flyingFrameDelay | int | `public int flyingFrameDelay;` | `public int flyingFrameDelay;` |
+| 249 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 225 | 3 | inAirFrameStart | int | `public int inAirFrameStart;` | `public int inAirFrameStart;` |
+| 250 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 227 | 3 | inAirFrameCount | int | `public int inAirFrameCount;` | `public int inAirFrameCount;` |
+| 251 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 229 | 3 | inAirFrameDelay | int | `public int inAirFrameDelay;` | `public int inAirFrameDelay;` |
+| 256 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 239 | 3 | swimFrameStart | int | `public int swimFrameStart;` | `public int swimFrameStart;` |
+| 257 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 241 | 3 | swimFrameCount | int | `public int swimFrameCount;` | `public int swimFrameCount;` |
+| 258 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 243 | 3 | swimFrameDelay | int | `public int swimFrameDelay;` | `public int swimFrameDelay;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.12 细分子系统：`MountDashAnimationFrames`
+
+- 细分职责：冲刺动画帧目录。
+- 边界角色：`definition/query`；最小 seam：Mount Dash Animation Query；冲刺帧按移动状态读取。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 259 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 245 | 3 | dashingFrameStart | int | `public int dashingFrameStart;` | `public int dashingFrameStart;` |
+| 260 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 247 | 3 | dashingFrameCount | int | `public int dashingFrameCount;` | `public int dashingFrameCount;` |
+| 261 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 249 | 3 | dashingFrameDelay | int | `public int dashingFrameDelay;` | `public int dashingFrameDelay;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.13 细分子系统：`MountMovementAndAbilityCatalog`
+
+- 细分职责：坐骑速度、跳跃、飞行、疲劳和能力参数。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；能力系统不得反向修改定义。
+- 成员文件数：1；声明类型数：1；字段：18；属性：0；合计：18。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（18）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 219 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 165 | 3 | flightTimeMax | int | `public int flightTimeMax;` | `public int flightTimeMax;` |
+| 220 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 167 | 3 | usesHover | bool | `public bool usesHover;` | `public bool usesHover;` |
+| 221 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 169 | 3 | runSpeed | float | `public float runSpeed;` | `public float runSpeed;` |
+| 222 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 171 | 3 | dashSpeed | float | `public float dashSpeed;` | `public float dashSpeed;` |
+| 223 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 173 | 3 | swimSpeed | float | `public float swimSpeed;` | `public float swimSpeed;` |
+| 224 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 175 | 3 | acceleration | float | `public float acceleration;` | `public float acceleration;` |
+| 225 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 177 | 3 | jumpSpeed | float | `public float jumpSpeed;` | `public float jumpSpeed;` |
+| 226 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 179 | 3 | jumpHeight | int | `public int jumpHeight;` | `public int jumpHeight;` |
+| 227 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 181 | 3 | fallDamage | float | `public float fallDamage;` | `public float fallDamage;` |
+| 228 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 183 | 3 | extraFall | int | `public int extraFall;` | `public int extraFall;` |
+| 229 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 185 | 3 | fatigueMax | int | `public int fatigueMax;` | `public int fatigueMax;` |
+| 230 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 187 | 3 | constantJump | bool | `public bool constantJump;` | `public bool constantJump;` |
+| 231 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 189 | 3 | blockExtraJumps | bool | `public bool blockExtraJumps;` | `public bool blockExtraJumps;` |
+| 232 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 191 | 3 | abilityChargeMax | int | `public int abilityChargeMax;` | `public int abilityChargeMax;` |
+| 233 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 193 | 3 | abilityDuration | int | `public int abilityDuration;` | `public int abilityDuration;` |
+| 234 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 195 | 3 | abilityCooldown | int | `public int abilityCooldown;` | `public int abilityCooldown;` |
+| 235 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 197 | 3 | walkingGraceTimeMax | int | `public int walkingGraceTimeMax;` | `public int walkingGraceTimeMax;` |
+| 236 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 199 | 3 | dismountsOnItemUse | bool | `public bool dismountsOnItemUse;` | `public bool dismountsOnItemUse;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.14 细分子系统：`MountVehicleAndPresentationCatalog`
+
+- 细分职责：矿车轨道、坐骑增益、光照和生成表现定义。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；表现和车辆适配器单向消费。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 218 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 163 | 3 | buff | int | `public int buff;` | `public int buff;` |
+| 237 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 201 | 3 | spawnDust | int | `public int spawnDust;` | `public int spawnDust;` |
+| 238 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 203 | 3 | spawnDustNoGravity | bool | `public bool spawnDustNoGravity;` | `public bool spawnDustNoGravity;` |
+| 262 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 251 | 3 | Minecart | bool | `public bool Minecart;` | `public bool Minecart;` |
+| 263 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 253 | 3 | CanRideMinecartTracks | bool | `public bool CanRideMinecartTracks;` | `public bool CanRideMinecartTracks;` |
+| 264 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 255 | 3 | CanUseWings | bool | `public bool CanUseWings;` | `public bool CanUseWings;` |
+| 265 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 257 | 3 | lightColor | Vector3 | `public Vector3 lightColor = Vector3.One;` | `public Vector3 lightColor = Vector3.One;` |
+| 266 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 259 | 3 | emitsLight | bool | `public bool emitsLight;` | `public bool emitsLight;` |
+| 267 | field | Terraria.Mount.MountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 261 | 3 | delegations | Terraria.Mount.MountDelegatesData | `public MountDelegatesData delegations = new MountDelegatesData();` | `public MountDelegatesData delegations = new MountDelegatesData();` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.15 细分子系统：`MountDelegateContract`
+
+- 细分职责：坐骑特化的尘土、声音、手/嘴和尺寸委托数据。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 202 | field | Terraria.Mount.MountDelegatesData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 104 | 3 | MinecartDust | System.Action<Vector2> | `public Action<Vector2> MinecartDust;` | `public Action<Vector2> MinecartDust;` |
+| 203 | field | Terraria.Mount.MountDelegatesData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 106 | 3 | MinecartJumpingSound | System.Action<Terraria.Player, Vector2, int, int> | `public Action<Player, Vector2, int, int> MinecartJumpingSound;` | `public Action<Player, Vector2, int, int> MinecartJumpingSound;` |
+| 204 | field | Terraria.Mount.MountDelegatesData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 108 | 3 | MinecartLandingSound | System.Action<Terraria.Player, Vector2, int, int> | `public Action<Player, Vector2, int, int> MinecartLandingSound;` | `public Action<Player, Vector2, int, int> MinecartLandingSound;` |
+| 205 | field | Terraria.Mount.MountDelegatesData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 110 | 3 | MinecartBumperSound | System.Action<Terraria.Player, Vector2, int, int> | `public Action<Player, Vector2, int, int> MinecartBumperSound;` | `public Action<Player, Vector2, int, int> MinecartBumperSound;` |
+| 206 | field | Terraria.Mount.MountDelegatesData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 112 | 3 | MouthPosition | Terraria.Mount.MountDelegatesData.OverridePositionMethod | `public OverridePositionMethod MouthPosition;` | `public OverridePositionMethod MouthPosition;` |
+| 207 | field | Terraria.Mount.MountDelegatesData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 114 | 3 | HandPosition | Terraria.Mount.MountDelegatesData.OverridePositionMethod | `public OverridePositionMethod HandPosition;` | `public OverridePositionMethod HandPosition;` |
+| 208 | field | Terraria.Mount.MountDelegatesData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 116 | 3 | PlayerSize | Terraria.Mount.MountDelegatesData.OverrideSizeMethod | `public OverrideSizeMethod PlayerSize;` | `public OverrideSizeMethod PlayerSize;` |
+| 209 | field | Terraria.Mount.MountDelegatesData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 118 | 3 | DashDust | Terraria.Mount.MountDelegatesData.AdjustDashDustMethod | `public AdjustDashDustMethod DashDust;` | `public AdjustDashDustMethod DashDust;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.16 细分子系统：`DrillMountRuntime`
+
+- 细分职责：钻头坐骑的目标、光束、旋转和钻头冷却。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：2；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 188 | field | Terraria.Mount.DrillBeam | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 22 | 3 | curTileTarget | Terraria.DataStructures.Point16 | `public Point16 curTileTarget;` | `public Point16 curTileTarget;` |
+| 189 | field | Terraria.Mount.DrillBeam | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 24 | 3 | cooldown | int | `public int cooldown;` | `public int cooldown;` |
+| 190 | field | Terraria.Mount.DrillBeam | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 26 | 3 | lastPurpose | int | `public int lastPurpose;` | `public int lastPurpose;` |
+| 191 | field | Terraria.Mount.DrillMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 38 | 3 | diodeRotationTarget | float | `public float diodeRotationTarget;` | `public float diodeRotationTarget;` |
+| 192 | field | Terraria.Mount.DrillMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 40 | 3 | diodeRotation | float | `public float diodeRotation;` | `public float diodeRotation;` |
+| 193 | field | Terraria.Mount.DrillMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 42 | 3 | outerRingRotation | float | `public float outerRingRotation;` | `public float outerRingRotation;` |
+| 194 | field | Terraria.Mount.DrillMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 44 | 3 | beams | Terraria.Mount.DrillBeam[] | `public DrillBeam[] beams;` | `public DrillBeam[] beams;` |
+| 195 | field | Terraria.Mount.DrillMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 46 | 3 | beamCooldown | int | `public int beamCooldown;` | `public int beamCooldown;` |
+| 196 | field | Terraria.Mount.DrillMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 48 | 3 | crosshairPosition | Vector2 | `public Vector2 crosshairPosition;` | `public Vector2 crosshairPosition;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.5.17 细分子系统：`MountVariantFlags`
+
+- 细分职责：选择性飞行、额外帧和布尔特化状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：3；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 197 | field | Terraria.Mount.BooleanMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 62 | 3 | boolean | bool | `public bool boolean;` | `public bool boolean;` |
+| 198 | field | Terraria.Mount.SelectiveFlyingMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 72 | 3 | showFlyingFrames | bool | `public bool showFlyingFrames;` | `public bool showFlyingFrames;` |
+| 199 | field | Terraria.Mount.SelectiveFlyingMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 74 | 3 | allowedToFly | bool | `public bool allowedToFly;` | `public bool allowedToFly;` |
+| 200 | field | Terraria.Mount.ExtraFrameMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 85 | 3 | frame | int | `public int frame;` | `public int frame;` |
+| 201 | field | Terraria.Mount.ExtraFrameMountData | Terraria/Mount.cs | D:\TRbackup\Version4\Terraria\Mount.cs | 87 | 3 | frameCounter | float | `public float frameCounter;` | `public float frameCounter;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.6 父级子系统：`WorldSession`
+
+- 父级职责：世界会话状态；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+### 4.7 父级子系统：`WorldCalendarAndEventOrchestration`
+
+- 父级职责：日历和事件编排；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+### 4.8 父级子系统：`WorldProgressionAndTransition`
+
+- 父级职责：长期世界转换；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+### 4.9 父级子系统：`WorldProgressionAndUnlocks`
+
+- 父级职责：世界解锁进度；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+### 4.10 父级子系统：`SimulationRuleOverrides`
+
+- 父级职责：模拟规则覆写；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+### 4.11 父级子系统：`SpatialSimulation`
+
+- 父级职责：碰撞、接触和伤害 Tile 查询。
+- 父级统计：字段 19；属性 0；合计 19；细分数 2。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `CollisionQueryCache` | authoritative state/behavior | 10 | 0 | 10 |
+| `CollisionContactAndHurtResults` | authoritative state/behavior | 9 | 0 | 9 |
+
+#### 4.11.1 细分子系统：`CollisionQueryCache`
+
+- 细分职责：碰撞查询的缓存和环境接触开关。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 360 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 55 | 2 | stair | bool | `public static bool stair;` | `public static bool stair;` |
+| 361 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 57 | 2 | stairFall | bool | `public static bool stairFall;` | `public static bool stairFall;` |
+| 362 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 59 | 2 | honey | bool | `public static bool honey;` | `public static bool honey;` |
+| 363 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 61 | 2 | shimmer | bool | `public static bool shimmer;` | `public static bool shimmer;` |
+| 364 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 63 | 2 | sloping | bool | `public static bool sloping;` | `public static bool sloping;` |
+| 365 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 65 | 2 | up | bool | `public static bool up;` | `public static bool up;` |
+| 366 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 67 | 2 | down | bool | `public static bool down;` | `public static bool down;` |
+| 367 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 69 | 2 | bottomFluff | int | `private const int bottomFluff = 40;` | `private const int bottomFluff = 40;` |
+| 368 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 71 | 2 | contacts | System.Collections.Generic.List<Terraria.Collision.TileContact> | `private static List<TileContact> contacts = new List<TileContact>();` | `private static List<TileContact> contacts = new List<TileContact>();` |
+| 369 | field | Terraria.Collision | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 73 | 2 | _cacheForConveyorBelts | System.Collections.Generic.List<Point> | `private static List<Point> _cacheForConveyorBelts = new List<Point>();` | `private static List<Point> _cacheForConveyorBelts = new List<Point>();` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.11.2 细分子系统：`CollisionContactAndHurtResults`
+
+- 细分职责：碰撞接触结果和伤害 Tile 结果值对象。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：2；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 351 | field | Terraria.Collision.TileContact | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 23 | 3 | Side | Terraria.Collision.TileContactSide | `public TileContactSide Side;` | `public TileContactSide Side;` |
+| 352 | field | Terraria.Collision.TileContact | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 25 | 3 | Overlap | int | `public int Overlap;` | `public int Overlap;` |
+| 353 | field | Terraria.Collision.TileContact | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 27 | 3 | X | int | `public int X;` | `public int X;` |
+| 354 | field | Terraria.Collision.TileContact | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 29 | 3 | Y | int | `public int Y;` | `public int Y;` |
+| 355 | field | Terraria.Collision.TileContact | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 31 | 3 | Slope | int | `public int Slope;` | `public int Slope;` |
+| 356 | field | Terraria.Collision.TileContact | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 33 | 3 | Type | int | `public int Type;` | `public int Type;` |
+| 357 | field | Terraria.Collision.HurtTile | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 48 | 3 | type | int | `public int type;` | `public int type;` |
+| 358 | field | Terraria.Collision.HurtTile | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 50 | 3 | x | int | `public int x;` | `public int x;` |
+| 359 | field | Terraria.Collision.HurtTile | Terraria/Collision.cs | D:\TRbackup\Version4\Terraria\Collision.cs | 52 | 3 | y | int | `public int y;` | `public int y;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.12 父级子系统：`WorldInteractionAndStructures`
+
+- 父级职责：世界交互和结构变更；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+### 4.13 父级子系统：`PlayerGameplay`
+
+- 父级职责：玩家状态、能力、输入、物品和派生资格。
+- 父级统计：字段 1047；属性 82；合计 1129；细分数 109。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `PlayerIdentityAndDeathRecordState` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerRuntimeInteractionAndEffectState` | authoritative state/behavior | 13 | 0 | 13 |
+| `PlayerConsumedProgressionFlags` | authoritative state/behavior | 6 | 0 | 6 |
+| `PlayerStringAndAccessoryEffectState` | authoritative state/behavior | 14 | 0 | 14 |
+| `PlayerBeetleArmorState` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerSolarAndNebulaArmorState` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerMagnetAndUtilityAccessoryState` | authoritative state/behavior | 8 | 0 | 8 |
+| `PlayerTeleportTransitionState` | authoritative state/behavior | 4 | 0 | 4 |
+| `PlayerDashAndGroundTraversalState` | authoritative state/behavior | 12 | 0 | 12 |
+| `PlayerRopeAndPulleyState` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerSlideAndCarpetTraversalState` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerCombatDamageProcState` | authoritative state/behavior | 15 | 0 | 15 |
+| `PlayerCombatDodgeAndImmunityState` | authoritative state/behavior | 5 | 0 | 5 |
+| `PlayerCombatBarrierAndRegenState` | authoritative state/behavior | 4 | 0 | 4 |
+| `PlayerManaAndAfkStatus` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerDebuffAndRecoveryStatus` | authoritative state/behavior | 16 | 0 | 16 |
+| `PlayerDetectionAndCombatStatus` | authoritative state/behavior | 11 | 0 | 11 |
+| `PlayerFishingCapabilityState` | authoritative state/behavior | 7 | 0 | 7 |
+| `PlayerMinionCapacityState` | authoritative state/behavior | 3 | 0 | 3 |
+| `PlayerCoreMinionSummonFlags` | authoritative state/behavior | 22 | 0 | 22 |
+| `PlayerCrossoverMinionSummonFlags` | authoritative state/behavior | 3 | 0 | 3 |
+| `PlayerMinionDamageTrackingState` | authoritative state/behavior | 2 | 0 | 2 |
+| `PlayerWingsAndFlightState` | authoritative state/behavior | 6 | 0 | 6 |
+| `PlayerZoneAndEnvironmentState` | authoritative state/behavior | 7 | 0 | 7 |
+| `PlayerSocialAndDefenseState` | authoritative state/behavior | 20 | 0 | 20 |
+| `PlayerFrameAndImmunityState` | authoritative state/behavior | 11 | 0 | 11 |
+| `PlayerInteractionInputState` | authoritative state/behavior | 14 | 0 | 14 |
+| `PlayerInventoryAndContainerSlots` | authoritative state/behavior | 8 | 0 | 8 |
+| `PlayerEquipmentAndDyeSlots` | authoritative state/behavior | 4 | 0 | 4 |
+| `PlayerBuffAndResourceSlots` | authoritative state/behavior | 11 | 0 | 11 |
+| `PlayerEquipmentPresentationState` | registry/projection | 20 | 0 | 20 |
+| `PlayerPoseAndAnimationState` | authoritative state/behavior | 14 | 0 | 14 |
+| `PlayerNetworkCameraState` | registry/projection | 3 | 0 | 3 |
+| `PlayerDeathRespawnAndSaveState` | authoritative state/behavior | 14 | 0 | 14 |
+| `PlayerEquipmentSelectionSlots` | authoritative state/behavior | 21 | 0 | 21 |
+| `PlayerAppearanceSelectionState` | registry/projection | 6 | 0 | 6 |
+| `PlayerControlAndReleaseInput` | authoritative state/behavior | 20 | 0 | 20 |
+| `PlayerItemUseAndChannelIntent` | authoritative state/behavior | 16 | 0 | 16 |
+| `PlayerShadowAndArmPresentation` | registry/projection | 13 | 0 | 13 |
+| `PlayerQuestAndEventCounters` | authoritative state/behavior | 3 | 0 | 3 |
+| `PlayerVitalAndRegenState` | authoritative state/behavior | 13 | 0 | 13 |
+| `PlayerCombatModifierAndImmunityState` | authoritative state/behavior | 16 | 0 | 16 |
+| `PlayerAmmoAndAccessoryEffects` | authoritative state/behavior | 12 | 0 | 12 |
+| `PlayerVisualAndShaderEffects` | registry/projection | 21 | 0 | 21 |
+| `PlayerUnlockProgressionState` | authoritative state/behavior | 4 | 0 | 4 |
+| `PlayerLegacyPetState` | authoritative state/behavior | 21 | 0 | 21 |
+| `PlayerBossPetFlags` | authoritative state/behavior | 16 | 0 | 16 |
+| `PlayerSeasonalAndEventPetFlags` | authoritative state/behavior | 9 | 0 | 9 |
+| `PlayerStandardNamedPetFlags` | authoritative state/behavior | 13 | 0 | 13 |
+| `PlayerCrossoverPetFlags` | authoritative state/behavior | 13 | 0 | 13 |
+| `PlayerWorldObjectPetFlags` | authoritative state/behavior | 4 | 0 | 4 |
+| `PlayerCompanionState` | authoritative state/behavior | 14 | 0 | 14 |
+| `PlayerMountAndMinecartEffects` | authoritative state/behavior | 7 | 0 | 7 |
+| `PlayerAccessoryProgressionEffects` | authoritative state/behavior | 17 | 0 | 17 |
+| `PlayerElementalAndShimmerStatus` | authoritative state/behavior | 21 | 0 | 21 |
+| `PlayerSurvivalAndTransformationState` | authoritative state/behavior | 15 | 0 | 15 |
+| `PlayerDebuffStatusState` | authoritative state/behavior | 8 | 0 | 8 |
+| `PlayerBuilderOverlayState` | registry/projection | 2 | 0 | 2 |
+| `PlayerAccessoryCombatModifierState` | authoritative state/behavior | 9 | 0 | 9 |
+| `PlayerAccessoryResourceAndInvulnerabilityState` | authoritative state/behavior | 5 | 0 | 5 |
+| `PlayerAccessoryDebuffAndDropState` | authoritative state/behavior | 8 | 0 | 8 |
+| `PlayerCombatDamageAndCritModifiers` | authoritative state/behavior | 14 | 0 | 14 |
+| `PlayerCombatSpeedRangeAndPermissionState` | authoritative state/behavior | 9 | 0 | 9 |
+| `PlayerSpawnAndReturnState` | authoritative state/behavior | 4 | 0 | 4 |
+| `PlayerTileTargetingAndRangeState` | authoritative state/behavior | 12 | 0 | 12 |
+| `PlayerMovementPhysicsState` | authoritative state/behavior | 8 | 0 | 8 |
+| `PlayerAppearanceCustomizationState` | authoritative state/behavior | 10 | 0 | 10 |
+| `PlayerInformationWorldAndMovementState` | authoritative state/behavior | 5 | 0 | 5 |
+| `PlayerInformationNavigationAndTimeState` | authoritative state/behavior | 7 | 0 | 7 |
+| `PlayerInformationDetectionAndWiringState` | authoritative state/behavior | 8 | 0 | 8 |
+| `PlayerFootballPresentationState` | presentation state | 2 | 0 | 2 |
+| `PlayerDpsTelemetryState` | authoritative state/behavior | 5 | 0 | 5 |
+| `PlayerLuckAndCommerceEffects` | authoritative state/behavior | 13 | 0 | 13 |
+| `PlayerJumpAvailabilityState` | authoritative state/behavior | 18 | 0 | 18 |
+| `PlayerJumpExecutionState` | authoritative state/behavior | 11 | 0 | 11 |
+| `PlayerJumpMobilityModifiers` | authoritative state/behavior | 5 | 0 | 5 |
+| `PlayerGrappleAndRocketState` | authoritative state/behavior | 12 | 0 | 12 |
+| `PlayerEnvironmentMobilityState` | authoritative state/behavior | 12 | 0 | 12 |
+| `PlayerEnvironmentDetectionAndSpawnState` | authoritative state/behavior | 13 | 0 | 13 |
+| `PlayerArmorAndCombatEffects` | authoritative state/behavior | 8 | 0 | 8 |
+| `PlayerArmorSetAndTurretState` | authoritative state/behavior | 19 | 0 | 19 |
+| `PlayerGravityAndWaterTraversalState` | authoritative state/behavior | 5 | 0 | 5 |
+| `PlayerEquipmentColorProjection` | registry/projection | 20 | 0 | 20 |
+| `PlayerTraversalColorProjection` | registry/projection | 6 | 0 | 6 |
+| `PlayerAppearanceCompanionAndEffectProjection` | registry/projection | 11 | 0 | 11 |
+| `PlayerPortalAndTargetingState` | authoritative state/behavior | 11 | 0 | 11 |
+| `PlayerItemActionTimingState` | authoritative state/behavior | 12 | 0 | 12 |
+| `PlayerContainerAndWorldAnchorState` | authoritative state/behavior | 17 | 0 | 17 |
+| `PlayerLuckAndRescanState` | authoritative state/behavior | 16 | 0 | 16 |
+| `PlayerDefenseLoadoutAndCloneState` | authoritative state/behavior | 15 | 0 | 15 |
+| `PlayerSpatialDerivedProperties` | derived/query | 0 | 9 | 9 |
+| `PlayerIdentityAndDerivedProperties` | derived/query | 0 | 2 | 2 |
+| `PlayerBiomeZoneProperties` | derived/query | 0 | 16 | 16 |
+| `PlayerVerticalAndWeatherZoneProperties` | derived/query | 0 | 6 | 6 |
+| `PlayerEventAndShoppingZoneProperties` | derived/query | 0 | 7 | 7 |
+| `PlayerInteractionAndSelectionProperties` | derived/query | 0 | 9 | 9 |
+| `PlayerAbilityAndPresentationProperties` | derived/query | 0 | 12 | 12 |
+| `PlayerItemMountAndRuntimeProperties` | derived/query | 0 | 11 | 11 |
+| `PlayerBuilderInteractionDefinitions` | definition/query | 13 | 0 | 13 |
+| `PlayerSelectionState` | registry/projection | 9 | 6 | 15 |
+| `PlayerInputSyncAndMatch` | registry/projection | 13 | 1 | 14 |
+| `PlayerItemCheckContext` | authoritative state/behavior | 1 | 0 | 1 |
+| `PlayerEyeAnimationState` | registry/projection | 3 | 1 | 4 |
+| `PlayerPettingState` | authoritative state/behavior | 7 | 0 | 7 |
+| `PlayerSittingState` | authoritative state/behavior | 5 | 0 | 5 |
+| `PlayerSleepingState` | authoritative state/behavior | 6 | 1 | 7 |
+| `PlayerRabbitOrderFrameState` | registry/projection | 7 | 0 | 7 |
+| `PlayerPresentationMessagesAndArms` | authoritative state/behavior | 8 | 0 | 8 |
+| `PlayerItemSpaceAndSettings` | authoritative state/behavior | 3 | 1 | 4 |
+
+#### 4.13.1 细分子系统：`PlayerIdentityAndDeathRecordState`
+
+- 细分职责：玩家活动、主机身份、名称、死亡次数和死亡记录。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；玩家生命周期和死亡结算集中提交。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 445 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 478 | 2 | active | bool | `public bool active;` | `public bool active;` |
+| 446 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 480 | 2 | host | bool | `public bool host;` | `public bool host;` |
+| 454 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 497 | 2 | lostCoins | long | `public long lostCoins;` | `public long lostCoins;` |
+| 455 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 499 | 2 | lostCoinString | string | `public string lostCoinString = "";` | `public string lostCoinString = "";` |
+| 458 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 505 | 2 | name | string | `public string name = "";` | `public string name = "";` |
+| 459 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 507 | 2 | numberOfDeathsPVE | int | `public int numberOfDeathsPVE;` | `public int numberOfDeathsPVE;` |
+| 460 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 509 | 2 | numberOfDeathsPVP | int | `public int numberOfDeathsPVP;` | `public int numberOfDeathsPVP;` |
+| 465 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 519 | 2 | lastDeathPostion | Vector2 | `public Vector2 lastDeathPostion;` | `public Vector2 lastDeathPostion;` |
+| 466 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 521 | 2 | lastDeathTime | System.DateTime | `public DateTime lastDeathTime;` | `public DateTime lastDeathTime;` |
+| 467 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 523 | 2 | showLastDeath | bool | `public bool showLastDeath;` | `public bool showLastDeath;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.2 细分子系统：`PlayerRuntimeInteractionAndEffectState`
+
+- 细分职责：矿车、表情、建造器、抓钩、探测器和运行时效果状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；交互/效果系统通过显式命令更新。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 447 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 482 | 2 | MinecartSettings | Terraria.Minecart.Customization | `public Minecart.Customization MinecartSettings;` | `public Minecart.Customization MinecartSettings;` |
+| 448 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 484 | 2 | emoteTime | int | `public int emoteTime;` | `public int emoteTime;` |
+| 449 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 486 | 2 | creativeTracker | Terraria.GameContent.Creative.CreativeUnlocksTracker | `public CreativeUnlocksTracker creativeTracker;` | `public CreativeUnlocksTracker creativeTracker;` |
+| 450 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 488 | 2 | chatOverhead | Terraria.Player.OverheadMessage | `public OverheadMessage chatOverhead;` | `public OverheadMessage chatOverhead;` |
+| 451 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 491 | 2 | GoingDownWithGrapple | bool | `public bool GoingDownWithGrapple;` | `public bool GoingDownWithGrapple;` |
+| 452 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 493 | 2 | spelunkerTimer | byte | `public byte spelunkerTimer;` | `public byte spelunkerTimer;` |
+| 453 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 495 | 2 | builderAccStatus | int[] | `public int[] builderAccStatus = new int[BuilderAccToggleIDs.Count];` | `public int[] builderAccStatus = new int[BuilderAccToggleIDs.Count];` |
+| 456 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 501 | 2 | soulDrain | int | `public int soulDrain;` | `public int soulDrain;` |
+| 457 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 503 | 2 | dd2Accessory | bool | `public bool dd2Accessory;` | `public bool dd2Accessory;` |
+| 461 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 511 | 2 | crystalLeafDamage | int | `public static int crystalLeafDamage = 100;` | `public static int crystalLeafDamage = 100;` |
+| 462 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 513 | 2 | crystalLeafKB | int | `public static int crystalLeafKB = 10;` | `public static int crystalLeafKB = 10;` |
+| 463 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 515 | 2 | basiliskCharge | float | `public float basiliskCharge;` | `public float basiliskCharge;` |
+| 464 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 517 | 2 | PaladinsShieldRange | float | `public static float PaladinsShieldRange = 800f;` | `public static float PaladinsShieldRange = 800f;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.3 细分子系统：`PlayerConsumedProgressionFlags`
+
+- 细分职责：一次性世界物品和进度消耗旗标。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；进度命令是唯一写入方向。
+- 成员文件数：1；声明类型数：1；字段：6；属性：0；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 468 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 525 | 2 | usedAegisCrystal | bool | `public bool usedAegisCrystal;` | `public bool usedAegisCrystal;` |
+| 469 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 527 | 2 | usedAegisFruit | bool | `public bool usedAegisFruit;` | `public bool usedAegisFruit;` |
+| 470 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 529 | 2 | usedArcaneCrystal | bool | `public bool usedArcaneCrystal;` | `public bool usedArcaneCrystal;` |
+| 471 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 531 | 2 | usedGalaxyPearl | bool | `public bool usedGalaxyPearl;` | `public bool usedGalaxyPearl;` |
+| 472 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 533 | 2 | usedGummyWorm | bool | `public bool usedGummyWorm;` | `public bool usedGummyWorm;` |
+| 473 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 535 | 2 | usedAmbrosia | bool | `public bool usedAmbrosia;` | `public bool usedAmbrosia;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.4 细分子系统：`PlayerStringAndAccessoryEffectState`
+
+- 细分职责：绳索、悠悠球、额外配饰和通用配饰效果状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；装备效果通过能力提交。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 474 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 537 | 2 | extraAccessorySlots | int | `public int extraAccessorySlots = 2;` | `public int extraAccessorySlots = 2;` |
+| 475 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 539 | 2 | extraAccessory | bool | `public bool extraAccessory;` | `public bool extraAccessory;` |
+| 476 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 541 | 2 | tankPet | int | `public int tankPet = -1;` | `public int tankPet = -1;` |
+| 477 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 543 | 2 | tankPetReset | bool | `public bool tankPetReset;` | `public bool tankPetReset;` |
+| 478 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 545 | 2 | stringColor | int | `public int stringColor;` | `public int stringColor;` |
+| 479 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 547 | 2 | counterWeight | int | `public int counterWeight;` | `public int counterWeight;` |
+| 480 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 549 | 2 | vanityCounterWeight | int | `public int vanityCounterWeight;` | `public int vanityCounterWeight;` |
+| 481 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 551 | 2 | magicString | bool | `public bool magicString;` | `public bool magicString;` |
+| 482 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 553 | 2 | yoyoString | bool | `public bool yoyoString;` | `public bool yoyoString;` |
+| 483 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 555 | 2 | yoyoGlove | bool | `public bool yoyoGlove;` | `public bool yoyoGlove;` |
+| 484 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 557 | 2 | rapidAttackBonus | float | `private float rapidAttackBonus;` | `private float rapidAttackBonus;` |
+| 485 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 559 | 2 | stressBall | bool | `public bool stressBall;` | `public bool stressBall;` |
+| 486 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 561 | 2 | stressBallPrevious | bool | `public bool stressBallPrevious;` | `public bool stressBallPrevious;` |
+| 487 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 563 | 2 | staffOfRegrowthBonus | bool | `public bool staffOfRegrowthBonus;` | `public bool staffOfRegrowthBonus;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.5 细分子系统：`PlayerBeetleArmorState`
+
+- 细分职责：甲虫套装球体、计数、攻防和动画状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；甲虫套装系统集中写入。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 488 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 565 | 2 | beetleOrbs | int | `public int beetleOrbs;` | `public int beetleOrbs;` |
+| 489 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 567 | 2 | beetleCounter | float | `public float beetleCounter;` | `public float beetleCounter;` |
+| 490 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 569 | 2 | beetleCountdown | int | `public int beetleCountdown;` | `public int beetleCountdown;` |
+| 491 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 571 | 2 | beetleDefense | bool | `public bool beetleDefense;` | `public bool beetleDefense;` |
+| 492 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 573 | 2 | beetleOffense | bool | `public bool beetleOffense;` | `public bool beetleOffense;` |
+| 493 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 575 | 2 | beetleBuff | bool | `public bool beetleBuff;` | `public bool beetleBuff;` |
+| 512 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 614 | 2 | beetlePos | Vector2[] | `public Vector2[] beetlePos = new Vector2[3];` | `public Vector2[] beetlePos = new Vector2[3];` |
+| 513 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 616 | 2 | beetleVel | Vector2[] | `public Vector2[] beetleVel = new Vector2[3];` | `public Vector2[] beetleVel = new Vector2[3];` |
+| 514 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 618 | 2 | beetleFrame | int | `public int beetleFrame;` | `public int beetleFrame;` |
+| 515 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 620 | 2 | beetleFrameCounter | int | `public int beetleFrameCounter;` | `public int beetleFrameCounter;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.6 细分子系统：`PlayerSolarAndNebulaArmorState`
+
+- 细分职责：日耀护盾和星云资源层级状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；套装效果按战斗事件提交。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 494 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 577 | 2 | solarShields | int | `public int solarShields;` | `public int solarShields;` |
+| 495 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 579 | 2 | solarCounter | int | `public int solarCounter;` | `public int solarCounter;` |
+| 496 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 582 | 2 | solarShieldPos | Vector2[] | `public Vector2[] solarShieldPos = new Vector2[3];` | `public Vector2[] solarShieldPos = new Vector2[3];` |
+| 497 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 584 | 2 | solarShieldVel | Vector2[] | `public Vector2[] solarShieldVel = new Vector2[3];` | `public Vector2[] solarShieldVel = new Vector2[3];` |
+| 498 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 586 | 2 | solarDashing | bool | `public bool solarDashing;` | `public bool solarDashing;` |
+| 499 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 588 | 2 | solarDashConsumedFlare | bool | `public bool solarDashConsumedFlare;` | `public bool solarDashConsumedFlare;` |
+| 500 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 590 | 2 | nebulaLevelLife | int | `public int nebulaLevelLife;` | `public int nebulaLevelLife;` |
+| 501 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 592 | 2 | nebulaLevelMana | int | `public int nebulaLevelMana;` | `public int nebulaLevelMana;` |
+| 502 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 594 | 2 | nebulaManaCounter | int | `public int nebulaManaCounter;` | `public int nebulaManaCounter;` |
+| 503 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 596 | 2 | nebulaLevelDamage | int | `public int nebulaLevelDamage;` | `public int nebulaLevelDamage;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.7 细分子系统：`PlayerMagnetAndUtilityAccessoryState`
+
+- 细分职责：磁力、生命力、工具速度和特殊配饰效果状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；通用配饰效果集中提交。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 504 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 598 | 2 | manaMagnet | bool | `public bool manaMagnet;` | `public bool manaMagnet;` |
+| 505 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 600 | 2 | lifeMagnet | bool | `public bool lifeMagnet;` | `public bool lifeMagnet;` |
+| 506 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 602 | 2 | treasureMagnet | bool | `public bool treasureMagnet;` | `public bool treasureMagnet;` |
+| 507 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 604 | 2 | chiselSpeed | bool | `public bool chiselSpeed;` | `public bool chiselSpeed;` |
+| 508 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 606 | 2 | lifeForce | bool | `public bool lifeForce;` | `public bool lifeForce;` |
+| 509 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 608 | 2 | hasDeadCellsDownDash | bool | `public bool hasDeadCellsDownDash;` | `public bool hasDeadCellsDownDash;` |
+| 510 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 610 | 2 | calmed | bool | `public bool calmed;` | `public bool calmed;` |
+| 511 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 612 | 2 | inferno | bool | `public bool inferno;` | `public bool inferno;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.8 细分子系统：`PlayerTeleportTransitionState`
+
+- 细分职责：玩家传送过渡样式、计时和未确认传送状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；传送事务按阶段提交并等待确认。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 528 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 646 | 2 | teleporting | bool | `public bool teleporting;` | `public bool teleporting;` |
+| 529 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 648 | 2 | teleportTime | float | `public float teleportTime;` | `public float teleportTime;` |
+| 530 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 650 | 2 | teleportStyle | int | `public int teleportStyle;` | `public int teleportStyle;` |
+| 531 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 652 | 2 | unacknowledgedTeleports | int | `public int unacknowledgedTeleports;` | `public int unacknowledgedTeleports;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.9 细分子系统：`PlayerDashAndGroundTraversalState`
+
+- 细分职责：冲刺、落阶、斜坡和地表加速状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；移动转换通过显式阶段更新。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 524 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 638 | 2 | stairFall | bool | `public bool stairFall;` | `public bool stairFall;` |
+| 525 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 640 | 2 | outOfRange | bool | `public bool outOfRange;` | `public bool outOfRange;` |
+| 532 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 654 | 2 | sloping | bool | `public bool sloping;` | `public bool sloping;` |
+| 544 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 678 | 2 | dashType | int | `public int dashType;` | `public int dashType;` |
+| 545 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 680 | 2 | dash | int | `public int dash;` | `public int dash;` |
+| 546 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 682 | 2 | dashTime | int | `public int dashTime;` | `public int dashTime;` |
+| 547 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 684 | 2 | timeSinceLastDashStarted | int | `public int timeSinceLastDashStarted;` | `public int timeSinceLastDashStarted;` |
+| 548 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 686 | 2 | dashDelay | int | `public int dashDelay;` | `public int dashDelay;` |
+| 551 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 692 | 2 | accRunSpeed | float | `public float accRunSpeed;` | `public float accRunSpeed;` |
+| 582 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 755 | 2 | powerrun | bool | `public bool powerrun;` | `public bool powerrun;` |
+| 583 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 757 | 2 | runningOnSand | bool | `public bool runningOnSand;` | `public bool runningOnSand;` |
+| 584 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 759 | 2 | flapSound | bool | `public bool flapSound;` | `public bool flapSound;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.10 细分子系统：`PlayerRopeAndPulleyState`
+
+- 细分职责：绳索、宝石钩、滑轮和绳索附加效果状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；抓取和滑轮输入通过移动命令交接。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 541 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 672 | 2 | ropeCount | int | `public int ropeCount;` | `public int ropeCount;` |
+| 552 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 694 | 2 | cordage | bool | `public bool cordage;` | `public bool cordage;` |
+| 553 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 696 | 2 | gem | int | `public int gem = -1;` | `public int gem = -1;` |
+| 554 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 698 | 2 | gemCount | int | `public int gemCount;` | `public int gemCount;` |
+| 555 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 700 | 2 | ownedLargeGems | Terraria.BitsByte | `public BitsByte ownedLargeGems;` | `public BitsByte ownedLargeGems;` |
+| 556 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 702 | 2 | meleeEnchant | byte | `public byte meleeEnchant;` | `public byte meleeEnchant;` |
+| 557 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 704 | 2 | pulleyDir | byte | `public byte pulleyDir;` | `public byte pulleyDir;` |
+| 558 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 706 | 2 | pulley | bool | `public bool pulley;` | `public bool pulley;` |
+| 559 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 708 | 2 | pulleyFrame | int | `public int pulleyFrame;` | `public int pulleyFrame;` |
+| 560 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 710 | 2 | pulleyFrameCounter | float | `public float pulleyFrameCounter;` | `public float pulleyFrameCounter;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.11 细分子系统：`PlayerSlideAndCarpetTraversalState`
+
+- 细分职责：滑行、冰鞋、飞毯和地表滑移状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；滑移状态由移动阶段统一提交。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 562 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 714 | 2 | sliding | bool | `public bool sliding;` | `public bool sliding;` |
+| 563 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 716 | 2 | slideDir | int | `public int slideDir;` | `public int slideDir;` |
+| 564 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 718 | 2 | snowBallLauncherInteractionCooldown | int | `public int snowBallLauncherInteractionCooldown;` | `public int snowBallLauncherInteractionCooldown;` |
+| 565 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 720 | 2 | iceSkate | bool | `public bool iceSkate;` | `public bool iceSkate;` |
+| 566 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 722 | 2 | carpet | bool | `public bool carpet;` | `public bool carpet;` |
+| 567 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 724 | 2 | spikedBoots | int | `public int spikedBoots;` | `public int spikedBoots;` |
+| 568 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 726 | 2 | carpetFrame | int | `public int carpetFrame = -1;` | `public int carpetFrame = -1;` |
+| 569 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 728 | 2 | carpetFrameCounter | float | `public float carpetFrameCounter;` | `public float carpetFrameCounter;` |
+| 570 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 730 | 2 | canCarpet | bool | `public bool canCarpet;` | `public bool canCarpet;` |
+| 571 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 732 | 2 | carpetTime | int | `public int carpetTime;` | `public int carpetTime;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.12 细分子系统：`PlayerCombatDamageProcState`
+
+- 细分职责：生命窃取、命中触发和伤害反应计时状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Combat Proc System/CommitPort；攻击事件是唯一写入边界。
+- 成员文件数：1；声明类型数：1；字段：15；属性：0；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（15）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 526 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 642 | 2 | lifeSteal | float | `public float lifeSteal = 99999f;` | `public float lifeSteal = 99999f;` |
+| 527 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 644 | 2 | ghostDmg | float | `public float ghostDmg;` | `public float ghostDmg;` |
+| 549 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 688 | 2 | eocDash | int | `public int eocDash;` | `public int eocDash;` |
+| 550 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 690 | 2 | eocHit | int | `public int eocHit = -1;` | `public int eocHit = -1;` |
+| 573 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 736 | 2 | infernoCounter | int | `public int infernoCounter;` | `public int infernoCounter;` |
+| 574 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 739 | 2 | starCloakCooldown | int | `public int starCloakCooldown;` | `public int starCloakCooldown;` |
+| 603 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 798 | 2 | onHitDodge | bool | `public bool onHitDodge;` | `public bool onHitDodge;` |
+| 604 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 800 | 2 | onHitRegen | bool | `public bool onHitRegen;` | `public bool onHitRegen;` |
+| 605 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 802 | 2 | onHitPetal | bool | `public bool onHitPetal;` | `public bool onHitPetal;` |
+| 606 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 804 | 2 | onHitTitaniumStorm | bool | `public bool onHitTitaniumStorm;` | `public bool onHitTitaniumStorm;` |
+| 607 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 806 | 2 | titaniumStormCooldown | int | `public int titaniumStormCooldown;` | `public int titaniumStormCooldown;` |
+| 608 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 808 | 2 | hasTitaniumStormBuff | bool | `public bool hasTitaniumStormBuff;` | `public bool hasTitaniumStormBuff;` |
+| 609 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 810 | 2 | petalTimer | int | `public int petalTimer;` | `public int petalTimer;` |
+| 611 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 814 | 2 | boneGloveTimer | int | `public int boneGloveTimer;` | `public int boneGloveTimer;` |
+| 612 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 816 | 2 | phantomPhoneixCounter | int | `public int phantomPhoneixCounter;` | `public int phantomPhoneixCounter;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.13 细分子系统：`PlayerCombatDodgeAndImmunityState`
+
+- 细分职责：黑带、混乱之脑和闪避免疫状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Combat Defense System/CommitPort；闪避事件显式更新。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 561 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 712 | 2 | blackBelt | bool | `public bool blackBelt;` | `public bool blackBelt;` |
+| 597 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 785 | 2 | brainOfConfusionItem | Terraria.Item | `public Item brainOfConfusionItem;` | `public Item brainOfConfusionItem;` |
+| 598 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 787 | 2 | brainOfConfusionDodgeAnimationCounter | int | `public int brainOfConfusionDodgeAnimationCounter;` | `public int brainOfConfusionDodgeAnimationCounter;` |
+| 601 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 793 | 2 | shadowDodge | bool | `public bool shadowDodge;` | `public bool shadowDodge;` |
+| 610 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 812 | 2 | shadowDodgeTimer | int | `public int shadowDodgeTimer;` | `public int shadowDodgeTimer;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.14 细分子系统：`PlayerCombatBarrierAndRegenState`
+
+- 细分职责：冰障、冰障帧和钯金回复状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Combat Barrier System/CommitPort；护盾与回复按攻击结果提交。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 585 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 761 | 2 | iceBarrier | bool | `public bool iceBarrier;` | `public bool iceBarrier;` |
+| 599 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 789 | 2 | iceBarrierFrame | byte | `public byte iceBarrierFrame;` | `public byte iceBarrierFrame;` |
+| 600 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 791 | 2 | iceBarrierFrameCounter | byte | `public byte iceBarrierFrameCounter;` | `public byte iceBarrierFrameCounter;` |
+| 602 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 796 | 2 | palladiumRegen | bool | `public bool palladiumRegen;` | `public bool palladiumRegen;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.15 细分子系统：`PlayerManaAndAfkStatus`
+
+- 细分职责：法力疾病、法力回复和 AFK 计时状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；资源 Tick 负责唯一写入。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 516 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 622 | 2 | manaSickTime | int | `public static int manaSickTime = 300;` | `public static int manaSickTime = 300;` |
+| 517 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 624 | 2 | manaSickLessDmg | float | `public static float manaSickLessDmg = 0.25f;` | `public static float manaSickLessDmg = 0.25f;` |
+| 518 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 626 | 2 | manaSickReduction | float | `public float manaSickReduction;` | `public float manaSickReduction;` |
+| 519 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 628 | 2 | manaSick | bool | `public bool manaSick;` | `public bool manaSick;` |
+| 520 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 630 | 2 | afkCounter | int | `public int afkCounter;` | `public int afkCounter;` |
+| 521 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 632 | 2 | AFKTimeNeededForNoWormSpawns | int | `public static readonly int AFKTimeNeededForNoWormSpawns = 300;` | `public static readonly int AFKTimeNeededForNoWormSpawns = 300;` |
+| 522 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 634 | 2 | AFKTimeNeededForNoLuckyStars | int | `public static readonly int AFKTimeNeededForNoLuckyStars = 10800;` | `public static readonly int AFKTimeNeededForNoLuckyStars = 10800;` |
+| 523 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 636 | 2 | afkCounterForKiting | int | `public int afkCounterForKiting;` | `public int afkCounterForKiting;` |
+| 542 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 674 | 2 | manaRegenBonus | int | `public int manaRegenBonus;` | `public int manaRegenBonus;` |
+| 543 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 676 | 2 | manaRegenDelayBonus | float | `public float manaRegenDelayBonus;` | `public float manaRegenDelayBonus;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.16 细分子系统：`PlayerDebuffAndRecoveryStatus`
+
+- 细分职责：冻结、减益、恢复、幽灵和移动阻滞状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；状态事件和计时器显式更新。
+- 成员文件数：1；声明类型数：1；字段：16；属性：0；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 533 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 656 | 2 | chilled | bool | `public bool chilled;` | `public bool chilled;` |
+| 534 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 658 | 2 | dazed | bool | `public bool dazed;` | `public bool dazed;` |
+| 535 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 660 | 2 | frozen | bool | `public bool frozen;` | `public bool frozen;` |
+| 536 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 662 | 2 | stoned | bool | `public bool stoned;` | `public bool stoned;` |
+| 537 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 664 | 2 | ichor | bool | `public bool ichor;` | `public bool ichor;` |
+| 538 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 666 | 2 | webbed | bool | `public bool webbed;` | `public bool webbed;` |
+| 539 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 668 | 2 | tipsy | bool | `public bool tipsy;` | `public bool tipsy;` |
+| 540 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 670 | 2 | noBuilding | bool | `public bool noBuilding;` | `public bool noBuilding;` |
+| 572 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 734 | 2 | miscCounter | int | `public int miscCounter;` | `public int miscCounter;` |
+| 575 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 741 | 2 | sandStorm | bool | `public bool sandStorm;` | `public bool sandStorm;` |
+| 576 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 743 | 2 | crimsonRegen | bool | `public bool crimsonRegen;` | `public bool crimsonRegen;` |
+| 577 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 745 | 2 | ghostHeal | bool | `public bool ghostHeal;` | `public bool ghostHeal;` |
+| 578 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 747 | 2 | ghostHurt | bool | `public bool ghostHurt;` | `public bool ghostHurt;` |
+| 579 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 749 | 2 | sticky | bool | `public bool sticky;` | `public bool sticky;` |
+| 580 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 751 | 2 | slippy | bool | `public bool slippy;` | `public bool slippy;` |
+| 581 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 753 | 2 | slippy2 | bool | `public bool slippy2;` | `public bool slippy2;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.17 细分子系统：`PlayerDetectionAndCombatStatus`
+
+- 细分职责：危险感知、幸运、韧性、鞭子修正和战斗状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；战斗效果通过显式事件交接。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 586 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 763 | 2 | dangerSense | bool | `public bool dangerSense;` | `public bool dangerSense;` |
+| 587 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 765 | 2 | luckPotion | byte | `public byte luckPotion;` | `public byte luckPotion;` |
+| 588 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 767 | 2 | endurance | float | `public float endurance;` | `public float endurance;` |
+| 589 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 769 | 2 | whipRangeMultiplier | float | `public float whipRangeMultiplier;` | `public float whipRangeMultiplier;` |
+| 590 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 771 | 2 | whipUseTimeMultiplier | float | `public float whipUseTimeMultiplier;` | `public float whipUseTimeMultiplier;` |
+| 591 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 773 | 2 | loveStruck | bool | `public bool loveStruck;` | `public bool loveStruck;` |
+| 592 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 775 | 2 | stinky | bool | `public bool stinky;` | `public bool stinky;` |
+| 593 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 777 | 2 | resistCold | bool | `public bool resistCold;` | `public bool resistCold;` |
+| 594 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 779 | 2 | electrified | bool | `public bool electrified;` | `public bool electrified;` |
+| 595 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 781 | 2 | dryadWard | bool | `public bool dryadWard;` | `public bool dryadWard;` |
+| 596 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 783 | 2 | panic | bool | `public bool panic;` | `public bool panic;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.18 细分子系统：`PlayerFishingCapabilityState`
+
+- 细分职责：钓鱼能力、鱼饵辅助和特殊钓鱼配饰状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；钓鱼尝试读取能力快照并提交结果。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 613 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 818 | 2 | fishingSkill | int | `public int fishingSkill;` | `public int fishingSkill;` |
+| 614 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 820 | 2 | cratePotion | bool | `public bool cratePotion;` | `public bool cratePotion;` |
+| 615 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 822 | 2 | sonarPotion | bool | `public bool sonarPotion;` | `public bool sonarPotion;` |
+| 616 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 824 | 2 | accFishingLine | bool | `public bool accFishingLine;` | `public bool accFishingLine;` |
+| 617 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 826 | 2 | accFishingBobber | bool | `public bool accFishingBobber;` | `public bool accFishingBobber;` |
+| 618 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 828 | 2 | accTackleBox | bool | `public bool accTackleBox;` | `public bool accTackleBox;` |
+| 619 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 830 | 2 | accLavaFishing | bool | `public bool accLavaFishing;` | `public bool accLavaFishing;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.19 细分子系统：`PlayerMinionCapacityState`
+
+- 细分职责：玩家召唤栏位上限、当前召唤数和分数槽容量。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；召唤容量由装备/效果命令更新。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 620 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 832 | 2 | maxMinions | int | `public int maxMinions = 1;` | `public int maxMinions = 1;` |
+| 621 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 834 | 2 | numMinions | int | `public int numMinions;` | `public int numMinions;` |
+| 622 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 836 | 2 | slotsMinions | float | `public float slotsMinions;` | `public float slotsMinions;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.20 细分子系统：`PlayerCoreMinionSummonFlags`
+
+- 细分职责：核心 Terraria 召唤物和召唤物旗标。
+- 边界角色：`authoritative state/behavior`；最小 seam：Minion System/CommitPort；召唤物 Buff 事件集中写入。
+- 成员文件数：1；声明类型数：1；字段：22；属性：0；合计：22。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（22）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 623 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 838 | 2 | pygmy | bool | `public bool pygmy;` | `public bool pygmy;` |
+| 624 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 840 | 2 | raven | bool | `public bool raven;` | `public bool raven;` |
+| 625 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 842 | 2 | slime | bool | `public bool slime;` | `public bool slime;` |
+| 626 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 844 | 2 | hornetMinion | bool | `public bool hornetMinion;` | `public bool hornetMinion;` |
+| 627 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 846 | 2 | impMinion | bool | `public bool impMinion;` | `public bool impMinion;` |
+| 628 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 848 | 2 | twinsMinion | bool | `public bool twinsMinion;` | `public bool twinsMinion;` |
+| 629 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 850 | 2 | spiderMinion | bool | `public bool spiderMinion;` | `public bool spiderMinion;` |
+| 630 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 852 | 2 | pirateMinion | bool | `public bool pirateMinion;` | `public bool pirateMinion;` |
+| 631 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 854 | 2 | sharknadoMinion | bool | `public bool sharknadoMinion;` | `public bool sharknadoMinion;` |
+| 632 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 856 | 2 | UFOMinion | bool | `public bool UFOMinion;` | `public bool UFOMinion;` |
+| 633 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 858 | 2 | DeadlySphereMinion | bool | `public bool DeadlySphereMinion;` | `public bool DeadlySphereMinion;` |
+| 634 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 860 | 2 | stardustMinion | bool | `public bool stardustMinion;` | `public bool stardustMinion;` |
+| 635 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 862 | 2 | stardustGuardian | bool | `public bool stardustGuardian;` | `public bool stardustGuardian;` |
+| 636 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 864 | 2 | stardustDragon | bool | `public bool stardustDragon;` | `public bool stardustDragon;` |
+| 637 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 866 | 2 | batsOfLight | bool | `public bool batsOfLight;` | `public bool batsOfLight;` |
+| 638 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 868 | 2 | babyBird | bool | `public bool babyBird;` | `public bool babyBird;` |
+| 639 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 870 | 2 | vampireFrog | bool | `public bool vampireFrog;` | `public bool vampireFrog;` |
+| 640 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 872 | 2 | stormTiger | bool | `public bool stormTiger;` | `public bool stormTiger;` |
+| 642 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 876 | 2 | smolstar | bool | `public bool smolstar;` | `public bool smolstar;` |
+| 643 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 878 | 2 | empressBlade | bool | `public bool empressBlade;` | `public bool empressBlade;` |
+| 644 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 880 | 2 | flinxMinion | bool | `public bool flinxMinion;` | `public bool flinxMinion;` |
+| 645 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 882 | 2 | abigailMinion | bool | `public bool abigailMinion;` | `public bool abigailMinion;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.21 细分子系统：`PlayerCrossoverMinionSummonFlags`
+
+- 细分职责：联动召唤物旗标。
+- 边界角色：`authoritative state/behavior`；最小 seam：Crossover Minion System/CommitPort；联动召唤物状态单向提交。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 647 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 886 | 2 | deadCellsMushroomBoiMinion | bool | `public bool deadCellsMushroomBoiMinion;` | `public bool deadCellsMushroomBoiMinion;` |
+| 648 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 888 | 2 | palworldCattivaMinion | bool | `public bool palworldCattivaMinion;` | `public bool palworldCattivaMinion;` |
+| 649 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 890 | 2 | palworldFoxsparksMinion | bool | `public bool palworldFoxsparksMinion;` | `public bool palworldFoxsparksMinion;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.22 细分子系统：`PlayerMinionDamageTrackingState`
+
+- 细分职责：Storm Tiger 和 Abigail 召唤物的原始伤害追踪值。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；召唤命中事件更新追踪值。
+- 成员文件数：1；声明类型数：1；字段：2；属性：0；合计：2。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 641 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 874 | 2 | highestStormTigerGemOriginalDamage | int | `public int highestStormTigerGemOriginalDamage;` | `public int highestStormTigerGemOriginalDamage;` |
+| 646 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 884 | 2 | highestAbigailCounterOriginalDamage | int | `public int highestAbigailCounterOriginalDamage;` | `public int highestAbigailCounterOriginalDamage;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.23 细分子系统：`PlayerWingsAndFlightState`
+
+- 细分职责：翅膀飞行时间、飞行帧和飞行能力状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；飞行阶段集中提交翅膀运行状态。
+- 成员文件数：1；声明类型数：1；字段：6；属性：0；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 650 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 892 | 2 | wingTime | float | `public float wingTime;` | `public float wingTime;` |
+| 651 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 894 | 2 | wings | int | `public int wings;` | `public int wings;` |
+| 652 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 896 | 2 | wingsLogic | int | `public int wingsLogic;` | `public int wingsLogic;` |
+| 653 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 898 | 2 | wingTimeMax | int | `public int wingTimeMax;` | `public int wingTimeMax;` |
+| 654 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 900 | 2 | wingFrame | int | `public int wingFrame;` | `public int wingFrame;` |
+| 655 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 902 | 2 | wingFrameCounter | int | `public int wingFrameCounter;` | `public int wingFrameCounter;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.24 细分子系统：`PlayerZoneAndEnvironmentState`
+
+- 细分职责：区域位标、微光区域和环境免疫计时状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；区域扫描通过只读查询驱动状态提交。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 662 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 917 | 2 | environmentBuffImmunityTimer | int | `public int environmentBuffImmunityTimer;` | `public int environmentBuffImmunityTimer;` |
+| 665 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 923 | 2 | zone1 | Terraria.BitsByte | `public BitsByte zone1 = (byte)0;` | `public BitsByte zone1 = (byte)0;` |
+| 666 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 925 | 2 | zone2 | Terraria.BitsByte | `public BitsByte zone2 = (byte)0;` | `public BitsByte zone2 = (byte)0;` |
+| 667 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 927 | 2 | zone3 | Terraria.BitsByte | `public BitsByte zone3 = (byte)0;` | `public BitsByte zone3 = (byte)0;` |
+| 668 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 929 | 2 | zone4 | Terraria.BitsByte | `public BitsByte zone4 = (byte)0;` | `public BitsByte zone4 = (byte)0;` |
+| 669 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 931 | 2 | zone5 | Terraria.BitsByte | `public BitsByte zone5 = (byte)0;` | `public BitsByte zone5 = (byte)0;` |
+| 670 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 933 | 2 | _wasInShimmerZone | bool | `private bool _wasInShimmerZone;` | `private bool _wasInShimmerZone;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.25 细分子系统：`PlayerSocialAndDefenseState`
+
+- 细分职责：社交表现、PVP、护甲防御和环境保护状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；社交和防御事件分阶段提交。
+- 成员文件数：1；声明类型数：1；字段：20；属性：0；合计：20。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（20）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 656 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 904 | 2 | skinVariant | int | `public int skinVariant;` | `public int skinVariant;` |
+| 657 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 906 | 2 | voiceVariant | int | `public int voiceVariant;` | `public int voiceVariant;` |
+| 658 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 908 | 2 | voicePitchOffset | float | `public float voicePitchOffset;` | `public float voicePitchOffset;` |
+| 659 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 910 | 2 | ghost | bool | `public bool ghost;` | `public bool ghost;` |
+| 660 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 912 | 2 | ghostFrame | int | `public int ghostFrame;` | `public int ghostFrame;` |
+| 661 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 914 | 2 | ghostFrameCounter | int | `public int ghostFrameCounter;` | `public int ghostFrameCounter;` |
+| 663 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 919 | 2 | _framesLeftEligibleForDeadmansChestDeathAchievement | int | `public int _framesLeftEligibleForDeadmansChestDeathAchievement;` | `public int _framesLeftEligibleForDeadmansChestDeathAchievement;` |
+| 664 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 921 | 2 | pvpDeath | bool | `public bool pvpDeath;` | `public bool pvpDeath;` |
+| 671 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 935 | 2 | boneArmor | bool | `public bool boneArmor;` | `public bool boneArmor;` |
+| 672 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 937 | 2 | frostArmor | bool | `public bool frostArmor;` | `public bool frostArmor;` |
+| 673 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 939 | 2 | honey | bool | `public bool honey;` | `public bool honey;` |
+| 674 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 941 | 2 | crystalLeaf | bool | `public bool crystalLeaf;` | `public bool crystalLeaf;` |
+| 675 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 943 | 2 | crystalLeafCooldown | int | `public int crystalLeafCooldown;` | `public int crystalLeafCooldown;` |
+| 676 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 945 | 2 | portableStoolInfo | Terraria.DataStructures.PortableStoolUsage | `public PortableStoolUsage portableStoolInfo;` | `public PortableStoolUsage portableStoolInfo;` |
+| 677 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 947 | 2 | preventAllItemPickups | bool | `public bool preventAllItemPickups;` | `public bool preventAllItemPickups;` |
+| 678 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 949 | 2 | dontHurtCritters | bool | `public bool dontHurtCritters;` | `public bool dontHurtCritters;` |
+| 679 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 951 | 2 | hasLucyTheAxe | bool | `public bool hasLucyTheAxe;` | `public bool hasLucyTheAxe;` |
+| 680 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 953 | 2 | dontHurtNature | bool | `public bool dontHurtNature;` | `public bool dontHurtNature;` |
+| 681 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 956 | 2 | defendedByPaladin | bool | `public bool defendedByPaladin;` | `public bool defendedByPaladin;` |
+| 682 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 958 | 2 | hasPaladinShield | bool | `public bool hasPaladinShield;` | `public bool hasPaladinShield;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.26 细分子系统：`PlayerFrameAndImmunityState`
+
+- 细分职责：玩家身体帧、无敌计时、闪烁和免疫打击状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；受伤状态转换集中写入。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 683 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 961 | 2 | townNPCs | int | `public int townNPCs;` | `public int townNPCs;` |
+| 684 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 964 | 2 | bodyFrameCounter | double | `public double bodyFrameCounter;` | `public double bodyFrameCounter;` |
+| 685 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 966 | 2 | legFrameCounter | double | `public double legFrameCounter;` | `public double legFrameCounter;` |
+| 686 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 968 | 2 | immune | bool | `public bool immune;` | `public bool immune;` |
+| 687 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 970 | 2 | immuneNoBlink | bool | `public bool immuneNoBlink;` | `public bool immuneNoBlink;` |
+| 688 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 972 | 2 | immuneTime | int | `public int immuneTime;` | `public int immuneTime;` |
+| 689 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 974 | 2 | immuneAlphaDirection | int | `public int immuneAlphaDirection;` | `public int immuneAlphaDirection;` |
+| 690 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 976 | 2 | immuneAlpha | int | `public int immuneAlpha;` | `public int immuneAlpha;` |
+| 692 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 980 | 2 | _timeSinceLastImmuneGet | int | `private int _timeSinceLastImmuneGet;` | `private int _timeSinceLastImmuneGet;` |
+| 693 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 982 | 2 | _immuneStrikes | int | `private int _immuneStrikes;` | `private int _immuneStrikes;` |
+| 695 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 986 | 2 | maxRegenDelay | float | `public float maxRegenDelay;` | `public float maxRegenDelay;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.27 细分子系统：`PlayerInteractionInputState`
+
+- 细分职责：队伍、交互界面、物品复用和选中目标输入状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；输入/交互命令单向更新。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 691 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 978 | 2 | team | int | `public int team;` | `public int team;` |
+| 694 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 984 | 2 | nameLen | int | `public static int nameLen = 20;` | `public static int nameLen = 20;` |
+| 696 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 988 | 2 | sign | int | `public int sign = -1;` | `public int sign = -1;` |
+| 697 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 991 | 2 | reuseDelay | int | `public int reuseDelay;` | `public int reuseDelay;` |
+| 698 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 993 | 2 | aggro | int | `public int aggro;` | `public int aggro;` |
+| 699 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 995 | 2 | nearbyActiveNPCs | float | `public float nearbyActiveNPCs;` | `public float nearbyActiveNPCs;` |
+| 700 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 997 | 2 | creativeInterface | bool | `public bool creativeInterface;` | `public bool creativeInterface;` |
+| 701 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 999 | 2 | mouseInterface | bool | `public bool mouseInterface;` | `public bool mouseInterface;` |
+| 702 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1001 | 2 | lastMouseInterface | bool | `public bool lastMouseInterface;` | `public bool lastMouseInterface;` |
+| 703 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1003 | 2 | noThrow | int | `public int noThrow;` | `public int noThrow;` |
+| 704 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1005 | 2 | changeItem | int | `public int changeItem = -1;` | `public int changeItem = -1;` |
+| 705 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1007 | 2 | pendingItemReuse | bool | `public bool pendingItemReuse;` | `public bool pendingItemReuse;` |
+| 706 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1009 | 2 | selectedItemState | Terraria.Player.SelectedItemState | `public SelectedItemState selectedItemState;` | `public SelectedItemState selectedItemState;` |
+| 707 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1011 | 2 | selectedKite | int | `public int selectedKite;` | `public int selectedKite;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.28 细分子系统：`PlayerInventoryAndContainerSlots`
+
+- 细分职责：玩家背包、银行、垃圾栏和虚空储存槽。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；容器写入集中在物品命令边界。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 712 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1021 | 2 | trashItem | Terraria.Item | `public Item trashItem = new Item();` | `public Item trashItem = new Item();` |
+| 743 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1083 | 2 | inventory | Terraria.Item[] | `public Item[] inventory = new Item[59];` | `public Item[] inventory = new Item[59];` |
+| 744 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1085 | 2 | inventoryChestStack | bool[] | `public bool[] inventoryChestStack = new bool[59];` | `public bool[] inventoryChestStack = new bool[59];` |
+| 746 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1089 | 2 | bank | Terraria.Chest | `public readonly Chest bank = Chest.CreateBank(-2);` | `public readonly Chest bank = Chest.CreateBank(-2);` |
+| 747 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1091 | 2 | bank2 | Terraria.Chest | `public readonly Chest bank2 = Chest.CreateBank(-3);` | `public readonly Chest bank2 = Chest.CreateBank(-3);` |
+| 748 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1093 | 2 | bank3 | Terraria.Chest | `public readonly Chest bank3 = Chest.CreateBank(-4);` | `public readonly Chest bank3 = Chest.CreateBank(-4);` |
+| 749 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1095 | 2 | bank4 | Terraria.Chest | `public readonly Chest bank4 = Chest.CreateBank(-5);` | `public readonly Chest bank4 = Chest.CreateBank(-5);` |
+| 750 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1097 | 2 | voidVaultInfo | Terraria.BitsByte | `public BitsByte voidVaultInfo;` | `public BitsByte voidVaultInfo;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.29 细分子系统：`PlayerEquipmentAndDyeSlots`
+
+- 细分职责：装备、染料和杂项装备槽。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；装备变更通过显式装备命令提交。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 708 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1013 | 2 | armor | Terraria.Item[] | `public Item[] armor = new Item[20];` | `public Item[] armor = new Item[20];` |
+| 709 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1015 | 2 | dye | Terraria.Item[] | `public Item[] dye = new Item[10];` | `public Item[] dye = new Item[10];` |
+| 710 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1017 | 2 | miscEquips | Terraria.Item[] | `public Item[] miscEquips = new Item[5];` | `public Item[] miscEquips = new Item[5];` |
+| 711 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1019 | 2 | miscDyes | Terraria.Item[] | `public Item[] miscDyes = new Item[5];` | `public Item[] miscDyes = new Item[5];` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.30 细分子系统：`PlayerBuffAndResourceSlots`
+
+- 细分职责：Buff 槽、呼吸、岩浆和水体资源槽。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；资源计时由状态系统推进。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 715 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1027 | 2 | maxBuffs | int | `public static readonly int maxBuffs = 44;` | `public static readonly int maxBuffs = 44;` |
+| 716 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1029 | 2 | buffType | int[] | `public int[] buffType = new int[maxBuffs];` | `public int[] buffType = new int[maxBuffs];` |
+| 717 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1031 | 2 | buffTime | int[] | `public int[] buffTime = new int[maxBuffs];` | `public int[] buffTime = new int[maxBuffs];` |
+| 718 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1033 | 2 | buffImmune | bool[] | `public bool[] buffImmune = new bool[BuffID.Count];` | `public bool[] buffImmune = new bool[BuffID.Count];` |
+| 720 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1037 | 2 | breathMax | int | `public int breathMax = 200;` | `public int breathMax = 200;` |
+| 721 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1039 | 2 | breath | int | `public int breath = 200;` | `public int breath = 200;` |
+| 722 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1041 | 2 | lavaMax | int | `public int lavaMax;` | `public int lavaMax;` |
+| 723 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1043 | 2 | lavaTime | int | `public int lavaTime;` | `public int lavaTime;` |
+| 724 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1045 | 2 | ignoreWater | bool | `public bool ignoreWater;` | `public bool ignoreWater;` |
+| 725 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1047 | 2 | lavaVision | bool | `public bool lavaVision;` | `public bool lavaVision;` |
+| 726 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1049 | 2 | lavaOpacity | float | `public float lavaOpacity = 1f;` | `public float lavaOpacity = 1f;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.31 细分子系统：`PlayerEquipmentPresentationState`
+
+- 细分职责：装备效果表现、潜行和展示实体投影状态。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；表现读取不能反向修改装备权威状态。
+- 成员文件数：1；声明类型数：1；字段：20；属性：0；合计：20。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（20）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 713 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1023 | 2 | itemRotation | float | `public float itemRotation;` | `public float itemRotation;` |
+| 714 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1025 | 2 | itemLocation | Vector2 | `public Vector2 itemLocation;` | `public Vector2 itemLocation;` |
+| 719 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1035 | 2 | heldProj | int | `public int heldProj = -1;` | `public int heldProj = -1;` |
+| 727 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1051 | 2 | armorEffectDrawShadow | bool | `public bool armorEffectDrawShadow;` | `public bool armorEffectDrawShadow;` |
+| 728 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1053 | 2 | armorEffectDrawShadowSubtle | bool | `public bool armorEffectDrawShadowSubtle;` | `public bool armorEffectDrawShadowSubtle;` |
+| 729 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1055 | 2 | armorEffectDrawOutlines | bool | `public bool armorEffectDrawOutlines;` | `public bool armorEffectDrawOutlines;` |
+| 730 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1057 | 2 | armorEffectDrawShadowLokis | bool | `public bool armorEffectDrawShadowLokis;` | `public bool armorEffectDrawShadowLokis;` |
+| 731 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1059 | 2 | armorEffectDrawShadowBasilisk | bool | `public bool armorEffectDrawShadowBasilisk;` | `public bool armorEffectDrawShadowBasilisk;` |
+| 732 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1061 | 2 | armorEffectDrawOutlinesForbidden | bool | `public bool armorEffectDrawOutlinesForbidden;` | `public bool armorEffectDrawOutlinesForbidden;` |
+| 733 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1063 | 2 | armorEffectDrawShadowEOCShield | bool | `public bool armorEffectDrawShadowEOCShield;` | `public bool armorEffectDrawShadowEOCShield;` |
+| 734 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1065 | 2 | socialShadowRocketBoots | bool | `public bool socialShadowRocketBoots;` | `public bool socialShadowRocketBoots;` |
+| 735 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1067 | 2 | socialGhost | bool | `public bool socialGhost;` | `public bool socialGhost;` |
+| 736 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1069 | 2 | shroomiteStealth | bool | `public bool shroomiteStealth;` | `public bool shroomiteStealth;` |
+| 737 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1071 | 2 | ashWoodBonus | bool | `public bool ashWoodBonus;` | `public bool ashWoodBonus;` |
+| 738 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1073 | 2 | socialIgnoreLight | bool | `public bool socialIgnoreLight;` | `public bool socialIgnoreLight;` |
+| 739 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1075 | 2 | stealthTimer | int | `public int stealthTimer;` | `public int stealthTimer;` |
+| 740 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1077 | 2 | stealth | float | `public float stealth = 1f;` | `public float stealth = 1f;` |
+| 741 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1079 | 2 | isDisplayDollOrInanimate | bool | `public bool isDisplayDollOrInanimate;` | `public bool isDisplayDollOrInanimate;` |
+| 742 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1081 | 2 | isHatRackDoll | bool | `public bool isHatRackDoll;` | `public bool isHatRackDoll;` |
+| 745 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1087 | 2 | lastVisualizedSelectedItem | Terraria.Item | `public Item lastVisualizedSelectedItem;` | `public Item lastVisualizedSelectedItem;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.32 细分子系统：`PlayerPoseAndAnimationState`
+
+- 细分职责：身体姿态、位置速度和动画偏移状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；姿态更新由帧行为系统集中提交。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 751 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1099 | 2 | headRotation | float | `public float headRotation;` | `public float headRotation;` |
+| 752 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1101 | 2 | bodyRotation | float | `public float bodyRotation;` | `public float bodyRotation;` |
+| 753 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1103 | 2 | legRotation | float | `public float legRotation;` | `public float legRotation;` |
+| 754 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1105 | 2 | headPosition | Vector2 | `public Vector2 headPosition;` | `public Vector2 headPosition;` |
+| 755 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1107 | 2 | bodyPosition | Vector2 | `public Vector2 bodyPosition;` | `public Vector2 bodyPosition;` |
+| 756 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1109 | 2 | legPosition | Vector2 | `public Vector2 legPosition;` | `public Vector2 legPosition;` |
+| 757 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1111 | 2 | headVelocity | Vector2 | `public Vector2 headVelocity;` | `public Vector2 headVelocity;` |
+| 758 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1113 | 2 | bodyVelocity | Vector2 | `public Vector2 bodyVelocity;` | `public Vector2 bodyVelocity;` |
+| 759 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1115 | 2 | legVelocity | Vector2 | `public Vector2 legVelocity;` | `public Vector2 legVelocity;` |
+| 760 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1117 | 2 | fullRotation | float | `public float fullRotation;` | `public float fullRotation;` |
+| 761 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1119 | 2 | fullRotationOrigin | Vector2 | `public Vector2 fullRotationOrigin = Vector2.Zero;` | `public Vector2 fullRotationOrigin = Vector2.Zero;` |
+| 762 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1121 | 2 | fartKartCloudDelay | int | `public int fartKartCloudDelay;` | `public int fartKartCloudDelay;` |
+| 763 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1124 | 2 | gfxOffY | float | `public float gfxOffY;` | `public float gfxOffY;` |
+| 764 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1126 | 2 | stepSpeed | float | `public float stepSpeed = 1f;` | `public float stepSpeed = 1f;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.33 细分子系统：`PlayerNetworkCameraState`
+
+- 细分职责：网络偏移、网络摄像机目标和同步摄像机缓存。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；网络投影只消费姿态快照。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 765 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1128 | 2 | netOffset | Vector2 | `public Vector2 netOffset;` | `public Vector2 netOffset;` |
+| 766 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1130 | 2 | netCameraTarget | Vector2? | `internal Vector2? netCameraTarget;` | `internal Vector2? netCameraTarget;` |
+| 767 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1132 | 2 | lastSyncedNetCameraTarget | Vector2? | `internal Vector2? lastSyncedNetCameraTarget;` | `internal Vector2? lastSyncedNetCameraTarget;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.34 细分子系统：`PlayerDeathRespawnAndSaveState`
+
+- 细分职责：死亡、观战、复活计时、保存时间和受击辅助状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；死亡与复活事务通过显式生命周期命令提交。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 768 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1134 | 2 | dead | bool | `public bool dead;` | `public bool dead;` |
+| 769 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1136 | 2 | deadTime | int | `public int deadTime;` | `public int deadTime;` |
+| 770 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1138 | 2 | spectating | int | `public int spectating = -1;` | `public int spectating = -1;` |
+| 771 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1140 | 2 | respawnTimer | int | `public int respawnTimer;` | `public int respawnTimer;` |
+| 772 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1142 | 2 | respawnTimerMax | int | `public static readonly int respawnTimerMax = 3600;` | `public static readonly int respawnTimerMax = 3600;` |
+| 773 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1144 | 2 | DeadSpectatingLockoutTime | int | `public static readonly int DeadSpectatingLockoutTime = 60;` | `public static readonly int DeadSpectatingLockoutTime = 60;` |
+| 774 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1146 | 2 | SpectatingLingerAfterDeath | int | `public static readonly int SpectatingLingerAfterDeath = 180;` | `public static readonly int SpectatingLingerAfterDeath = 180;` |
+| 775 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1148 | 2 | lastTimePlayerWasSaved | long | `public long lastTimePlayerWasSaved;` | `public long lastTimePlayerWasSaved;` |
+| 776 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1150 | 2 | attackCD | int | `public int attackCD;` | `public int attackCD;` |
+| 777 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1152 | 2 | potionDelay | int | `public int potionDelay;` | `public int potionDelay;` |
+| 778 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1154 | 2 | difficulty | byte | `public byte difficulty;` | `public byte difficulty;` |
+| 779 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1156 | 2 | wetSlime | byte | `public byte wetSlime;` | `public byte wetSlime;` |
+| 780 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1158 | 2 | hitTile | Terraria.HitTile | `public HitTile hitTile;` | `public HitTile hitTile;` |
+| 781 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1160 | 2 | hitReplace | Terraria.HitTile | `public HitTile hitReplace;` | `public HitTile hitReplace;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.35 细分子系统：`PlayerEquipmentSelectionSlots`
+
+- 细分职责：头身手部、饰品、背部和面部装备选择槽。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；装备选择命令集中写入。
+- 成员文件数：1；声明类型数：1；字段：21；属性：0；合计：21。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（21）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 783 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1164 | 2 | head | int | `public int head = -1;` | `public int head = -1;` |
+| 784 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1166 | 2 | body | int | `public int body = -1;` | `public int body = -1;` |
+| 785 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1168 | 2 | legs | int | `public int legs = -1;` | `public int legs = -1;` |
+| 786 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1170 | 2 | coat | int | `public int coat = -1;` | `public int coat = -1;` |
+| 787 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1172 | 2 | handon | sbyte | `public sbyte handon = -1;` | `public sbyte handon = -1;` |
+| 788 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1174 | 2 | handoff | sbyte | `public sbyte handoff = -1;` | `public sbyte handoff = -1;` |
+| 789 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1176 | 2 | back | sbyte | `public sbyte back = -1;` | `public sbyte back = -1;` |
+| 790 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1178 | 2 | front | sbyte | `public sbyte front = -1;` | `public sbyte front = -1;` |
+| 791 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1180 | 2 | shoe | sbyte | `public sbyte shoe = -1;` | `public sbyte shoe = -1;` |
+| 792 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1182 | 2 | waist | sbyte | `public sbyte waist = -1;` | `public sbyte waist = -1;` |
+| 793 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1184 | 2 | shield | sbyte | `public sbyte shield = -1;` | `public sbyte shield = -1;` |
+| 794 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1186 | 2 | neck | sbyte | `public sbyte neck = -1;` | `public sbyte neck = -1;` |
+| 795 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1188 | 2 | face | sbyte | `public sbyte face = -1;` | `public sbyte face = -1;` |
+| 796 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1190 | 2 | balloon | sbyte | `public sbyte balloon = -1;` | `public sbyte balloon = -1;` |
+| 797 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1192 | 2 | backpack | sbyte | `public sbyte backpack = -1;` | `public sbyte backpack = -1;` |
+| 798 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1194 | 2 | tail | sbyte | `public sbyte tail = -1;` | `public sbyte tail = -1;` |
+| 799 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1196 | 2 | faceHead | sbyte | `public sbyte faceHead = -1;` | `public sbyte faceHead = -1;` |
+| 800 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1198 | 2 | faceFlower | sbyte | `public sbyte faceFlower = -1;` | `public sbyte faceFlower = -1;` |
+| 801 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1200 | 2 | faceMask | sbyte | `public sbyte faceMask = -1;` | `public sbyte faceMask = -1;` |
+| 802 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1202 | 2 | balloonFront | sbyte | `public sbyte balloonFront = -1;` | `public sbyte balloonFront = -1;` |
+| 803 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1204 | 2 | beard | sbyte | `public sbyte beard = -1;` | `public sbyte beard = -1;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.36 细分子系统：`PlayerAppearanceSelectionState`
+
+- 细分职责：跳跃帧、语音覆盖、隐藏配饰和身体动画帧选择状态。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；表现投影只读取选择状态。
+- 成员文件数：1；声明类型数：1；字段：6；属性：0；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 782 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1162 | 2 | jump | int | `public int jump;` | `public int jump;` |
+| 804 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1206 | 2 | voiceOverride | sbyte | `public sbyte voiceOverride;` | `public sbyte voiceOverride;` |
+| 805 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1208 | 2 | hideVisibleAccessory | bool[] | `public bool[] hideVisibleAccessory = new bool[10];` | `public bool[] hideVisibleAccessory = new bool[10];` |
+| 806 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1210 | 2 | hideMisc | Terraria.BitsByte | `public BitsByte hideMisc = (byte)0;` | `public BitsByte hideMisc = (byte)0;` |
+| 807 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1214 | 2 | bodyFrame | Rectangle | `public Rectangle bodyFrame;` | `public Rectangle bodyFrame;` |
+| 808 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1216 | 2 | legFrame | Rectangle | `public Rectangle legFrame;` | `public Rectangle legFrame;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.37 细分子系统：`PlayerControlAndReleaseInput`
+
+- 细分职责：方向、跳跃、释放、悬停和连续输入窗口。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；输入帧通过显式命令交给行为系统。
+- 成员文件数：1；声明类型数：1；字段：20；属性：0；合计：20。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（20）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 809 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1219 | 2 | controlLeft | bool | `public bool controlLeft;` | `public bool controlLeft;` |
+| 810 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1221 | 2 | controlRight | bool | `public bool controlRight;` | `public bool controlRight;` |
+| 811 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1223 | 2 | controlUp | bool | `public bool controlUp;` | `public bool controlUp;` |
+| 812 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1225 | 2 | controlDown | bool | `public bool controlDown;` | `public bool controlDown;` |
+| 813 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1227 | 2 | controlJump | bool | `public bool controlJump;` | `public bool controlJump;` |
+| 816 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1235 | 2 | controlTorch | bool | `public bool controlTorch;` | `public bool controlTorch;` |
+| 817 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1241 | 2 | controlDash | bool | `public bool controlDash;` | `public bool controlDash;` |
+| 818 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1245 | 2 | releaseJump | bool | `public bool releaseJump;` | `public bool releaseJump;` |
+| 819 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1247 | 2 | releaseUp | bool | `public bool releaseUp;` | `public bool releaseUp;` |
+| 820 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1249 | 2 | releaseUseItem | bool | `public bool releaseUseItem;` | `public bool releaseUseItem;` |
+| 821 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1251 | 2 | releaseUseTile | bool | `public bool releaseUseTile;` | `public bool releaseUseTile;` |
+| 822 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1254 | 2 | releaseLeft | bool | `public bool releaseLeft;` | `public bool releaseLeft;` |
+| 823 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1256 | 2 | releaseRight | bool | `public bool releaseRight;` | `public bool releaseRight;` |
+| 824 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1260 | 2 | releaseDown | bool | `public bool releaseDown;` | `public bool releaseDown;` |
+| 825 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1264 | 2 | releaseDash | bool | `public bool releaseDash;` | `public bool releaseDash;` |
+| 827 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1270 | 2 | controlDownHold | bool | `public bool controlDownHold;` | `public bool controlDownHold;` |
+| 831 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1280 | 2 | tryKeepingHoveringDown | bool | `public bool tryKeepingHoveringDown;` | `public bool tryKeepingHoveringDown;` |
+| 832 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1282 | 2 | tryKeepingHoveringUp | bool | `public bool tryKeepingHoveringUp;` | `public bool tryKeepingHoveringUp;` |
+| 834 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1288 | 2 | leftTimer | int | `public int leftTimer;` | `public int leftTimer;` |
+| 835 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1290 | 2 | rightTimer | int | `public int rightTimer;` | `public int rightTimer;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.38 细分子系统：`PlayerItemUseAndChannelIntent`
+
+- 细分职责：物品使用、交互、频道、法力消耗和行动意图状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；物品动作意图单向进入使用系统。
+- 成员文件数：1；声明类型数：1；字段：16；属性：0；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 814 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1229 | 2 | controlUseItem | bool | `public bool controlUseItem;` | `public bool controlUseItem;` |
+| 815 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1231 | 2 | controlUseTile | bool | `public bool controlUseTile;` | `public bool controlUseTile;` |
+| 826 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1268 | 2 | tileInteractAttempted | bool | `public bool tileInteractAttempted;` | `public bool tileInteractAttempted;` |
+| 828 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1272 | 2 | isOperatingAnotherEntity | bool | `public bool isOperatingAnotherEntity;` | `public bool isOperatingAnotherEntity;` |
+| 829 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1274 | 2 | lastItemUseAttemptSuccess | bool | `public bool lastItemUseAttemptSuccess;` | `public bool lastItemUseAttemptSuccess;` |
+| 830 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1276 | 2 | autoReuseAllWeapons | bool | `public bool autoReuseAllWeapons;` | `public bool autoReuseAllWeapons;` |
+| 833 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1284 | 2 | altFunctionUse | int | `public int altFunctionUse;` | `public int altFunctionUse;` |
+| 836 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1292 | 2 | delayUseItem | bool | `public bool delayUseItem;` | `public bool delayUseItem;` |
+| 844 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1314 | 2 | manaCost | float | `public float manaCost = 1f;` | `public float manaCost = 1f;` |
+| 845 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1316 | 2 | fireWalk | bool | `public bool fireWalk;` | `public bool fireWalk;` |
+| 846 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1318 | 2 | channel | bool | `public bool channel;` | `public bool channel;` |
+| 847 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1321 | 2 | TagEffectState | Terraria.GameContent.Items.TagEffectState | `public TagEffectState TagEffectState;` | `public TagEffectState TagEffectState;` |
+| 848 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1323 | 2 | IntentionGuesser | Terraria.DataStructures.PlayerIntentionGuesser | `public PlayerIntentionGuesser IntentionGuesser;` | `public PlayerIntentionGuesser IntentionGuesser;` |
+| 849 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1325 | 2 | _channelShotCache | Terraria.Player.ChannelCancelKey | `private ChannelCancelKey _channelShotCache;` | `private ChannelCancelKey _channelShotCache;` |
+| 851 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1329 | 2 | rabbitOrderFrame | Terraria.Player.RabbitOrderFrameHelper | `public RabbitOrderFrameHelper rabbitOrderFrame;` | `public RabbitOrderFrameHelper rabbitOrderFrame;` |
+| 852 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1331 | 2 | creativeGodMode | bool | `public bool creativeGodMode;` | `public bool creativeGodMode;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.39 细分子系统：`PlayerShadowAndArmPresentation`
+
+- 细分职责：玩家残影、手臂合成和动画表现缓存。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；表现缓存只读取输入快照，不拥有玩法状态。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 837 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1296 | 2 | cursorItemIconReversed | bool | `public bool cursorItemIconReversed;` | `public bool cursorItemIconReversed;` |
+| 838 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1300 | 2 | runSoundDelay | int | `public int runSoundDelay;` | `public int runSoundDelay;` |
+| 839 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1304 | 2 | shadowPos | Vector2[] | `public Vector2[] shadowPos = new Vector2[3];` | `public Vector2[] shadowPos = new Vector2[3];` |
+| 840 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1306 | 2 | shadowRotation | float[] | `public float[] shadowRotation = new float[3];` | `public float[] shadowRotation = new float[3];` |
+| 841 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1308 | 2 | shadowOrigin | Vector2[] | `public Vector2[] shadowOrigin = new Vector2[3];` | `public Vector2[] shadowOrigin = new Vector2[3];` |
+| 842 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1310 | 2 | shadowDirection | int[] | `public int[] shadowDirection = new int[3];` | `public int[] shadowDirection = new int[3];` |
+| 843 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1312 | 2 | shadowCount | int | `public int shadowCount;` | `public int shadowCount;` |
+| 850 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1327 | 2 | skipAnimatingValuesInPlayerFrame | bool | `public bool skipAnimatingValuesInPlayerFrame;` | `public bool skipAnimatingValuesInPlayerFrame;` |
+| 853 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1334 | 2 | availableAdvancedShadowsCount | int | `public int availableAdvancedShadowsCount;` | `public int availableAdvancedShadowsCount;` |
+| 854 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1336 | 2 | _advancedShadows | Terraria.DataStructures.EntityShadowInfo[] | `private EntityShadowInfo[] _advancedShadows = new EntityShadowInfo[60];` | `private EntityShadowInfo[] _advancedShadows = new EntityShadowInfo[60];` |
+| 855 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1338 | 2 | _lastAddedAvancedShadow | int | `private int _lastAddedAvancedShadow;` | `private int _lastAddedAvancedShadow;` |
+| 856 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1340 | 2 | compositeFrontArm | Terraria.Player.CompositeArmData | `public CompositeArmData compositeFrontArm;` | `public CompositeArmData compositeFrontArm;` |
+| 857 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1342 | 2 | compositeBackArm | Terraria.Player.CompositeArmData | `public CompositeArmData compositeBackArm;` | `public CompositeArmData compositeBackArm;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.40 细分子系统：`PlayerQuestAndEventCounters`
+
+- 细分职责：钓鱼任务、建筑者积分和事件进度计数。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；任务和事件完成通过显式事件提交。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 858 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1344 | 2 | anglerQuestsFinished | int | `public int anglerQuestsFinished;` | `public int anglerQuestsFinished;` |
+| 859 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1346 | 2 | golferScoreAccumulated | int | `public int golferScoreAccumulated;` | `public int golferScoreAccumulated;` |
+| 860 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1349 | 2 | downedDD2EventAnyDifficulty | bool | `public bool downedDD2EventAnyDifficulty;` | `public bool downedDD2EventAnyDifficulty;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.41 细分子系统：`PlayerVitalAndRegenState`
+
+- 细分职责：生命、魔力和生命/魔力回复资源状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；资源 Tick 是本组唯一权威写入路径。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 864 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1357 | 2 | statLifeMax | int | `public int statLifeMax = 100;` | `public int statLifeMax = 100;` |
+| 865 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1359 | 2 | statLifeMax2 | int | `public int statLifeMax2 = 100;` | `public int statLifeMax2 = 100;` |
+| 866 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1361 | 2 | statLife | int | `public int statLife = 100;` | `public int statLife = 100;` |
+| 867 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1363 | 2 | statMana | int | `public int statMana;` | `public int statMana;` |
+| 868 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1365 | 2 | statManaMax | int | `public int statManaMax;` | `public int statManaMax;` |
+| 869 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1367 | 2 | statManaMax2 | int | `public int statManaMax2;` | `public int statManaMax2;` |
+| 870 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1369 | 2 | lifeRegen | int | `public int lifeRegen;` | `public int lifeRegen;` |
+| 871 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1371 | 2 | lifeRegenCount | int | `public int lifeRegenCount;` | `public int lifeRegenCount;` |
+| 872 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1373 | 2 | lifeRegenTime | float | `public float lifeRegenTime;` | `public float lifeRegenTime;` |
+| 873 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1375 | 2 | manaRegen | int | `public int manaRegen;` | `public int manaRegen;` |
+| 874 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1377 | 2 | manaRegenCount | int | `public int manaRegenCount;` | `public int manaRegenCount;` |
+| 875 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1379 | 2 | manaRegenDelay | float | `public float manaRegenDelay;` | `public float manaRegenDelay;` |
+| 876 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1381 | 2 | manaRegenBuff | bool | `public bool manaRegenBuff;` | `public bool manaRegenBuff;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.42 细分子系统：`PlayerCombatModifierAndImmunityState`
+
+- 细分职责：护甲穿透、防御、免疫和战斗修正状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；战斗事件单向更新修正状态。
+- 成员文件数：1；声明类型数：1；字段：16；属性：0；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 861 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1351 | 2 | armorPenetration | int | `public int armorPenetration;` | `public int armorPenetration;` |
+| 862 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1353 | 2 | meleeArmorPenetration | int | `public int meleeArmorPenetration;` | `public int meleeArmorPenetration;` |
+| 863 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1355 | 2 | statDefense | int | `public int statDefense;` | `public int statDefense;` |
+| 877 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1383 | 2 | noKnockback | bool | `public bool noKnockback;` | `public bool noKnockback;` |
+| 878 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1385 | 2 | shimmerImmune | bool | `private bool shimmerImmune;` | `private bool shimmerImmune;` |
+| 879 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1387 | 2 | spaceGun | bool | `public bool spaceGun;` | `public bool spaceGun;` |
+| 880 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1389 | 2 | gravDir | float | `public float gravDir = 1f;` | `public float gravDir = 1f;` |
+| 893 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1415 | 2 | chaosState | bool | `public bool chaosState;` | `public bool chaosState;` |
+| 894 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1417 | 2 | strongBees | bool | `public bool strongBees;` | `public bool strongBees;` |
+| 895 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1419 | 2 | sporeSac | bool | `public bool sporeSac;` | `public bool sporeSac;` |
+| 896 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1421 | 2 | shinyStone | bool | `public bool shinyStone;` | `public bool shinyStone;` |
+| 897 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1423 | 2 | empressBrooch | bool | `public bool empressBrooch;` | `public bool empressBrooch;` |
+| 898 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1425 | 2 | volatileGelatin | bool | `public bool volatileGelatin;` | `public bool volatileGelatin;` |
+| 899 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1427 | 2 | volatileGelatinCounter | int | `public int volatileGelatinCounter;` | `public int volatileGelatinCounter;` |
+| 900 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1429 | 2 | hasMagiluminescence | bool | `public bool hasMagiluminescence;` | `public bool hasMagiluminescence;` |
+| 901 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1431 | 2 | shadowArmor | bool | `public bool shadowArmor;` | `public bool shadowArmor;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.43 细分子系统：`PlayerAmmoAndAccessoryEffects`
+
+- 细分职责：弹药消耗、箭袋、药剂和武器配饰效果状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；装备效果通过显式能力提交。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 881 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1391 | 2 | chloroAmmoCost80 | bool | `public bool chloroAmmoCost80;` | `public bool chloroAmmoCost80;` |
+| 882 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1393 | 2 | huntressAmmoCost90 | bool | `public bool huntressAmmoCost90;` | `public bool huntressAmmoCost90;` |
+| 883 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1395 | 2 | ammoCost80 | bool | `public bool ammoCost80;` | `public bool ammoCost80;` |
+| 884 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1397 | 2 | ammoCost75 | bool | `public bool ammoCost75;` | `public bool ammoCost75;` |
+| 885 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1399 | 2 | stickyBreak | int | `public int stickyBreak;` | `public int stickyBreak;` |
+| 886 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1401 | 2 | magicQuiver | bool | `public bool magicQuiver;` | `public bool magicQuiver;` |
+| 887 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1403 | 2 | magmaStone | bool | `public bool magmaStone;` | `public bool magmaStone;` |
+| 888 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1405 | 2 | lavaRose | bool | `public bool lavaRose;` | `public bool lavaRose;` |
+| 889 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1407 | 2 | hasMoltenQuiver | bool | `public bool hasMoltenQuiver;` | `public bool hasMoltenQuiver;` |
+| 890 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1409 | 2 | phantasmTime | int | `public int phantasmTime;` | `public int phantasmTime;` |
+| 891 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1411 | 2 | ammoBox | bool | `public bool ammoBox;` | `public bool ammoBox;` |
+| 892 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1413 | 2 | ammoPotion | bool | `public bool ammoPotion;` | `public bool ammoPotion;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.44 细分子系统：`PlayerVisualAndShaderEffects`
+
+- 细分职责：玩家着色器、光环、光标、音乐盒和钓鱼钩表现标志。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；表现输出单向读取，不反写玩家权威状态。
+- 成员文件数：1；声明类型数：1；字段：21；属性：0；合计：21。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（21）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 902 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1433 | 2 | dontStarveShader | bool | `public bool dontStarveShader;` | `public bool dontStarveShader;` |
+| 903 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1435 | 2 | noirShader | bool | `public bool noirShader;` | `public bool noirShader;` |
+| 904 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1437 | 2 | eyebrellaCloud | bool | `public bool eyebrellaCloud;` | `public bool eyebrellaCloud;` |
+| 905 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1439 | 2 | yoraiz0rEye | int | `public int yoraiz0rEye;` | `public int yoraiz0rEye;` |
+| 906 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1441 | 2 | yoraiz0rDarkness | bool | `public bool yoraiz0rDarkness;` | `public bool yoraiz0rDarkness;` |
+| 907 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1443 | 2 | hasUnicornHorn | bool | `public bool hasUnicornHorn;` | `public bool hasUnicornHorn;` |
+| 908 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1445 | 2 | hasAngelHalo | bool | `public bool hasAngelHalo;` | `public bool hasAngelHalo;` |
+| 909 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1447 | 2 | hasRainbowCursor | bool | `public bool hasRainbowCursor;` | `public bool hasRainbowCursor;` |
+| 910 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1449 | 2 | leinforsHair | bool | `public bool leinforsHair;` | `public bool leinforsHair;` |
+| 911 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1451 | 2 | musicBoxSilence | bool | `public bool musicBoxSilence;` | `public bool musicBoxSilence;` |
+| 912 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1453 | 2 | stardustMonolithShader | bool | `public bool stardustMonolithShader;` | `public bool stardustMonolithShader;` |
+| 913 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1455 | 2 | nebulaMonolithShader | bool | `public bool nebulaMonolithShader;` | `public bool nebulaMonolithShader;` |
+| 914 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1457 | 2 | vortexMonolithShader | bool | `public bool vortexMonolithShader;` | `public bool vortexMonolithShader;` |
+| 915 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1459 | 2 | solarMonolithShader | bool | `public bool solarMonolithShader;` | `public bool solarMonolithShader;` |
+| 916 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1461 | 2 | moonLordMonolithShader | bool | `public bool moonLordMonolithShader;` | `public bool moonLordMonolithShader;` |
+| 917 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1463 | 2 | bloodMoonMonolithShader | bool | `public bool bloodMoonMonolithShader;` | `public bool bloodMoonMonolithShader;` |
+| 918 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1465 | 2 | shimmerMonolithShader | bool | `public bool shimmerMonolithShader;` | `public bool shimmerMonolithShader;` |
+| 919 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1467 | 2 | CRTMonolithShader | bool | `public bool CRTMonolithShader;` | `public bool CRTMonolithShader;` |
+| 920 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1469 | 2 | retroMonolithShader | bool | `public bool retroMonolithShader;` | `public bool retroMonolithShader;` |
+| 921 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1471 | 2 | musicBox | int | `public int musicBox;` | `public int musicBox;` |
+| 922 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1473 | 2 | overrideFishingBobber | int | `public int overrideFishingBobber = -1;` | `public int overrideFishingBobber = -1;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.45 细分子系统：`PlayerUnlockProgressionState`
+
+- 细分职责：玩家世界解锁、配方进度和超级矿车启用状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；解锁命令只写入本组。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 923 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1475 | 2 | unlockedBiomeTorches | bool | `public bool unlockedBiomeTorches;` | `public bool unlockedBiomeTorches;` |
+| 924 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1477 | 2 | ateArtisanBread | bool | `public bool ateArtisanBread;` | `public bool ateArtisanBread;` |
+| 925 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1479 | 2 | unlockedSuperCart | bool | `public bool unlockedSuperCart;` | `public bool unlockedSuperCart;` |
+| 926 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1481 | 2 | enabledSuperCart | bool | `public bool enabledSuperCart = true;` | `public bool enabledSuperCart = true;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.46 细分子系统：`PlayerLegacyPetState`
+
+- 细分职责：传统宠物、宠物增益和早期同伴状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；宠物选择和清理通过显式生命周期命令交接。
+- 成员文件数：1；声明类型数：1；字段：21；属性：0；合计：21。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（21）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 927 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1483 | 2 | suspiciouslookingTentacle | bool | `public bool suspiciouslookingTentacle;` | `public bool suspiciouslookingTentacle;` |
+| 928 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1485 | 2 | crimsonHeart | bool | `public bool crimsonHeart;` | `public bool crimsonHeart;` |
+| 929 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1487 | 2 | lightOrb | bool | `public bool lightOrb;` | `public bool lightOrb;` |
+| 930 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1489 | 2 | blueFairy | bool | `public bool blueFairy;` | `public bool blueFairy;` |
+| 931 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1491 | 2 | redFairy | bool | `public bool redFairy;` | `public bool redFairy;` |
+| 932 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1493 | 2 | greenFairy | bool | `public bool greenFairy;` | `public bool greenFairy;` |
+| 933 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1495 | 2 | bunny | bool | `public bool bunny;` | `public bool bunny;` |
+| 934 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1497 | 2 | turtle | bool | `public bool turtle;` | `public bool turtle;` |
+| 935 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1499 | 2 | eater | bool | `public bool eater;` | `public bool eater;` |
+| 936 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1501 | 2 | penguin | bool | `public bool penguin;` | `public bool penguin;` |
+| 937 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1503 | 2 | HasGardenGnomeNearby | bool | `public bool HasGardenGnomeNearby;` | `public bool HasGardenGnomeNearby;` |
+| 939 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1508 | 2 | magicLantern | bool | `public bool magicLantern;` | `public bool magicLantern;` |
+| 940 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1510 | 2 | rabid | bool | `public bool rabid;` | `public bool rabid;` |
+| 941 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1512 | 2 | sunflower | bool | `public bool sunflower;` | `public bool sunflower;` |
+| 942 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1514 | 2 | wellFed | bool | `public bool wellFed;` | `public bool wellFed;` |
+| 943 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1516 | 2 | puppy | bool | `public bool puppy;` | `public bool puppy;` |
+| 944 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1518 | 2 | grinch | bool | `public bool grinch;` | `public bool grinch;` |
+| 945 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1520 | 2 | miniMinotaur | bool | `public bool miniMinotaur;` | `public bool miniMinotaur;` |
+| 962 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1554 | 2 | blackCat | bool | `public bool blackCat;` | `public bool blackCat;` |
+| 963 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1556 | 2 | spider | bool | `public bool spider;` | `public bool spider;` |
+| 964 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1558 | 2 | squashling | bool | `public bool squashling;` | `public bool squashling;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.47 细分子系统：`PlayerBossPetFlags`
+
+- 细分职责：Boss 宠物旗标及其宠物生成状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Pet System/CommitPort；Boss 宠物 Buff 生命周期集中写入。
+- 成员文件数：1；声明类型数：1；字段：16；属性：0；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 981 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1592 | 2 | petFlagKingSlimePet | bool | `public bool petFlagKingSlimePet;` | `public bool petFlagKingSlimePet;` |
+| 982 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1594 | 2 | petFlagEyeOfCthulhuPet | bool | `public bool petFlagEyeOfCthulhuPet;` | `public bool petFlagEyeOfCthulhuPet;` |
+| 983 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1596 | 2 | petFlagEaterOfWorldsPet | bool | `public bool petFlagEaterOfWorldsPet;` | `public bool petFlagEaterOfWorldsPet;` |
+| 984 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1598 | 2 | petFlagBrainOfCthulhuPet | bool | `public bool petFlagBrainOfCthulhuPet;` | `public bool petFlagBrainOfCthulhuPet;` |
+| 985 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1600 | 2 | petFlagSkeletronPet | bool | `public bool petFlagSkeletronPet;` | `public bool petFlagSkeletronPet;` |
+| 986 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1602 | 2 | petFlagQueenBeePet | bool | `public bool petFlagQueenBeePet;` | `public bool petFlagQueenBeePet;` |
+| 987 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1604 | 2 | petFlagDestroyerPet | bool | `public bool petFlagDestroyerPet;` | `public bool petFlagDestroyerPet;` |
+| 988 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1606 | 2 | petFlagTwinsPet | bool | `public bool petFlagTwinsPet;` | `public bool petFlagTwinsPet;` |
+| 989 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1608 | 2 | petFlagSkeletronPrimePet | bool | `public bool petFlagSkeletronPrimePet;` | `public bool petFlagSkeletronPrimePet;` |
+| 990 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1610 | 2 | petFlagPlanteraPet | bool | `public bool petFlagPlanteraPet;` | `public bool petFlagPlanteraPet;` |
+| 991 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1612 | 2 | petFlagGolemPet | bool | `public bool petFlagGolemPet;` | `public bool petFlagGolemPet;` |
+| 992 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1614 | 2 | petFlagDukeFishronPet | bool | `public bool petFlagDukeFishronPet;` | `public bool petFlagDukeFishronPet;` |
+| 993 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1616 | 2 | petFlagLunaticCultistPet | bool | `public bool petFlagLunaticCultistPet;` | `public bool petFlagLunaticCultistPet;` |
+| 994 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1618 | 2 | petFlagMoonLordPet | bool | `public bool petFlagMoonLordPet;` | `public bool petFlagMoonLordPet;` |
+| 995 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1620 | 2 | petFlagFairyQueenPet | bool | `public bool petFlagFairyQueenPet;` | `public bool petFlagFairyQueenPet;` |
+| 1002 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1634 | 2 | petFlagQueenSlimePet | bool | `public bool petFlagQueenSlimePet;` | `public bool petFlagQueenSlimePet;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.48 细分子系统：`PlayerSeasonalAndEventPetFlags`
+
+- 细分职责：季节事件、Old One Army 和事件宠物旗标。
+- 边界角色：`authoritative state/behavior`；最小 seam：Event Pet System/CommitPort；事件 Buff 生命周期集中写入。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 965 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1560 | 2 | petFlagDD2Gato | bool | `public bool petFlagDD2Gato;` | `public bool petFlagDD2Gato;` |
+| 966 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1562 | 2 | petFlagDD2Ghost | bool | `public bool petFlagDD2Ghost;` | `public bool petFlagDD2Ghost;` |
+| 967 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1564 | 2 | petFlagDD2Dragon | bool | `public bool petFlagDD2Dragon;` | `public bool petFlagDD2Dragon;` |
+| 996 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1622 | 2 | petFlagPumpkingPet | bool | `public bool petFlagPumpkingPet;` | `public bool petFlagPumpkingPet;` |
+| 997 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1624 | 2 | petFlagEverscreamPet | bool | `public bool petFlagEverscreamPet;` | `public bool petFlagEverscreamPet;` |
+| 998 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1626 | 2 | petFlagIceQueenPet | bool | `public bool petFlagIceQueenPet;` | `public bool petFlagIceQueenPet;` |
+| 999 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1628 | 2 | petFlagMartianPet | bool | `public bool petFlagMartianPet;` | `public bool petFlagMartianPet;` |
+| 1000 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1630 | 2 | petFlagDD2OgrePet | bool | `public bool petFlagDD2OgrePet;` | `public bool petFlagDD2OgrePet;` |
+| 1001 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1632 | 2 | petFlagDD2BetsyPet | bool | `public bool petFlagDD2BetsyPet;` | `public bool petFlagDD2BetsyPet;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.49 细分子系统：`PlayerStandardNamedPetFlags`
+
+- 细分职责：常规命名宠物和常规召唤物宠物旗标。
+- 边界角色：`authoritative state/behavior`；最小 seam：Pet System/CommitPort；常规宠物效果按 Buff 事件提交。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 968 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1566 | 2 | petFlagUpbeatStar | bool | `public bool petFlagUpbeatStar;` | `public bool petFlagUpbeatStar;` |
+| 969 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1568 | 2 | petFlagSugarGlider | bool | `public bool petFlagSugarGlider;` | `public bool petFlagSugarGlider;` |
+| 970 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1570 | 2 | petFlagBabyShark | bool | `public bool petFlagBabyShark;` | `public bool petFlagBabyShark;` |
+| 971 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1572 | 2 | petFlagLilHarpy | bool | `public bool petFlagLilHarpy;` | `public bool petFlagLilHarpy;` |
+| 972 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1574 | 2 | petFlagFennecFox | bool | `public bool petFlagFennecFox;` | `public bool petFlagFennecFox;` |
+| 973 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1576 | 2 | petFlagGlitteryButterfly | bool | `public bool petFlagGlitteryButterfly;` | `public bool petFlagGlitteryButterfly;` |
+| 974 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1578 | 2 | petFlagBabyImp | bool | `public bool petFlagBabyImp;` | `public bool petFlagBabyImp;` |
+| 975 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1580 | 2 | petFlagBabyRedPanda | bool | `public bool petFlagBabyRedPanda;` | `public bool petFlagBabyRedPanda;` |
+| 976 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1582 | 2 | petFlagPlantero | bool | `public bool petFlagPlantero;` | `public bool petFlagPlantero;` |
+| 977 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1584 | 2 | petFlagDynamiteKitten | bool | `public bool petFlagDynamiteKitten;` | `public bool petFlagDynamiteKitten;` |
+| 978 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1586 | 2 | petFlagBabyWerewolf | bool | `public bool petFlagBabyWerewolf;` | `public bool petFlagBabyWerewolf;` |
+| 979 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1588 | 2 | petFlagShadowMimic | bool | `public bool petFlagShadowMimic;` | `public bool petFlagShadowMimic;` |
+| 980 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1590 | 2 | petFlagVoltBunny | bool | `public bool petFlagVoltBunny;` | `public bool petFlagVoltBunny;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.50 细分子系统：`PlayerCrossoverPetFlags`
+
+- 细分职责：联动内容和跨游戏宠物旗标。
+- 边界角色：`authoritative state/behavior`；最小 seam：Crossover Pet System/CommitPort；联动内容状态单向提交。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1003 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1636 | 2 | petFlagBerniePet | bool | `public bool petFlagBerniePet;` | `public bool petFlagBerniePet;` |
+| 1004 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1638 | 2 | petFlagGlommerPet | bool | `public bool petFlagGlommerPet;` | `public bool petFlagGlommerPet;` |
+| 1005 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1640 | 2 | petFlagDeerclopsPet | bool | `public bool petFlagDeerclopsPet;` | `public bool petFlagDeerclopsPet;` |
+| 1006 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1642 | 2 | petFlagPigPet | bool | `public bool petFlagPigPet;` | `public bool petFlagPigPet;` |
+| 1007 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1644 | 2 | petFlagChesterPet | bool | `public bool petFlagChesterPet;` | `public bool petFlagChesterPet;` |
+| 1008 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1646 | 2 | petFlagJunimoPet | bool | `public bool petFlagJunimoPet;` | `public bool petFlagJunimoPet;` |
+| 1009 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1648 | 2 | petFlagBlueChickenPet | bool | `public bool petFlagBlueChickenPet;` | `public bool petFlagBlueChickenPet;` |
+| 1010 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1650 | 2 | petFlagSpiffo | bool | `public bool petFlagSpiffo;` | `public bool petFlagSpiffo;` |
+| 1011 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1652 | 2 | petFlagCaveling | bool | `public bool petFlagCaveling;` | `public bool petFlagCaveling;` |
+| 1015 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1660 | 2 | petFlagDeadCellsSwarmBiter | bool | `public bool petFlagDeadCellsSwarmBiter;` | `public bool petFlagDeadCellsSwarmBiter;` |
+| 1016 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1662 | 2 | petFlagPufferfish | bool | `public bool petFlagPufferfish;` | `public bool petFlagPufferfish;` |
+| 1018 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1666 | 2 | petFlagChillet | bool | `public bool petFlagChillet;` | `public bool petFlagChillet;` |
+| 1019 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1668 | 2 | petFlagChilletIgnis | bool | `public bool petFlagChilletIgnis;` | `public bool petFlagChilletIgnis;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.51 细分子系统：`PlayerWorldObjectPetFlags`
+
+- 细分职责：方块、巨石和特殊世界物件宠物旗标。
+- 边界角色：`authoritative state/behavior`；最小 seam：World Object Pet System/CommitPort；世界物件效果集中写入。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1012 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1654 | 2 | petFlagDirtiestBlock | bool | `public bool petFlagDirtiestBlock;` | `public bool petFlagDirtiestBlock;` |
+| 1013 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1656 | 2 | petFlagBoulderPet | bool | `public bool petFlagBoulderPet;` | `public bool petFlagBoulderPet;` |
+| 1014 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1658 | 2 | petFlagRainbowBoulderPet | bool | `public bool petFlagRainbowBoulderPet;` | `public bool petFlagRainbowBoulderPet;` |
+| 1017 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1664 | 2 | petFlagAxeFairyPet | bool | `public bool petFlagAxeFairyPet;` | `public bool petFlagAxeFairyPet;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.52 细分子系统：`PlayerCompanionState`
+
+- 细分职责：同伴、坐骑宠物和特殊陪伴实体状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；同伴生成通过显式实体命令提交。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1020 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1670 | 2 | companionCube | bool | `public bool companionCube;` | `public bool companionCube;` |
+| 1021 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1672 | 2 | babyFaceMonster | bool | `public bool babyFaceMonster;` | `public bool babyFaceMonster;` |
+| 1028 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1686 | 2 | snowman | bool | `public bool snowman;` | `public bool snowman;` |
+| 1030 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1690 | 2 | dino | bool | `public bool dino;` | `public bool dino;` |
+| 1031 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1692 | 2 | skeletron | bool | `public bool skeletron;` | `public bool skeletron;` |
+| 1032 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1694 | 2 | hornet | bool | `public bool hornet;` | `public bool hornet;` |
+| 1033 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1696 | 2 | zephyrfish | bool | `public bool zephyrfish;` | `public bool zephyrfish;` |
+| 1034 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1698 | 2 | tiki | bool | `public bool tiki;` | `public bool tiki;` |
+| 1035 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1700 | 2 | parrot | bool | `public bool parrot;` | `public bool parrot;` |
+| 1036 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1702 | 2 | truffle | bool | `public bool truffle;` | `public bool truffle;` |
+| 1037 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1704 | 2 | sapling | bool | `public bool sapling;` | `public bool sapling;` |
+| 1038 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1706 | 2 | cSapling | bool | `public bool cSapling;` | `public bool cSapling;` |
+| 1039 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1708 | 2 | wisp | bool | `public bool wisp;` | `public bool wisp;` |
+| 1040 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1710 | 2 | lizard | bool | `public bool lizard;` | `public bool lizard;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.53 细分子系统：`PlayerMountAndMinecartEffects`
+
+- 细分职责：玩家坐骑、轨道和矿车运行效果标志。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；坐骑运行输入从 Mount 查询读取。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 955 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1540 | 2 | onWrongGround | bool | `public bool onWrongGround;` | `public bool onWrongGround;` |
+| 956 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1542 | 2 | onTrack | bool | `public bool onTrack;` | `public bool onTrack;` |
+| 957 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1544 | 2 | cartRampTime | int | `public int cartRampTime;` | `public int cartRampTime;` |
+| 958 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1546 | 2 | cartFlip | bool | `public bool cartFlip;` | `public bool cartFlip;` |
+| 959 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1548 | 2 | trackBoost | float | `public float trackBoost;` | `public float trackBoost;` |
+| 960 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1550 | 2 | lastBoost | Vector2 | `public Vector2 lastBoost = Vector2.Zero;` | `public Vector2 lastBoost = Vector2.Zero;` |
+| 961 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1552 | 2 | mount | Terraria.Mount | `public Mount mount;` | `public Mount mount;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.54 细分子系统：`PlayerAccessoryProgressionEffects`
+
+- 细分职责：玩家配饰、套装前置和进度效果标志。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；效果计算与进度状态分离。
+- 成员文件数：1；声明类型数：1；字段：17；属性：0；合计：17。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（17）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 938 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1505 | 2 | brokenMirrorBadLuck | bool | `public bool brokenMirrorBadLuck;` | `public bool brokenMirrorBadLuck;` |
+| 946 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1522 | 2 | flowerBoots | bool | `public bool flowerBoots;` | `public bool flowerBoots;` |
+| 947 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1524 | 2 | fairyBoots | bool | `public bool fairyBoots;` | `public bool fairyBoots;` |
+| 948 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1526 | 2 | hellfireTreads | bool | `public bool hellfireTreads;` | `public bool hellfireTreads;` |
+| 949 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1528 | 2 | moonLordLegs | bool | `public bool moonLordLegs;` | `public bool moonLordLegs;` |
+| 950 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1530 | 2 | deadMansSweater | bool | `public bool deadMansSweater;` | `public bool deadMansSweater;` |
+| 951 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1532 | 2 | arcticDivingGear | bool | `public bool arcticDivingGear;` | `public bool arcticDivingGear;` |
+| 952 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1534 | 2 | coolWhipBuff | bool | `public bool coolWhipBuff;` | `public bool coolWhipBuff;` |
+| 953 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1536 | 2 | cobWhipBuff | bool | `public bool cobWhipBuff;` | `public bool cobWhipBuff;` |
+| 954 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1538 | 2 | wearsRobe | bool | `public bool wearsRobe;` | `public bool wearsRobe;` |
+| 1022 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1674 | 2 | magicCuffs | bool | `public bool magicCuffs;` | `public bool magicCuffs;` |
+| 1023 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1676 | 2 | coldDash | bool | `public bool coldDash;` | `public bool coldDash;` |
+| 1024 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1678 | 2 | sailDash | bool | `public bool sailDash;` | `public bool sailDash;` |
+| 1025 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1680 | 2 | desertDash | bool | `public bool desertDash;` | `public bool desertDash;` |
+| 1026 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1682 | 2 | desertBoots | bool | `public bool desertBoots;` | `public bool desertBoots;` |
+| 1027 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1684 | 2 | eyeSpring | bool | `public bool eyeSpring;` | `public bool eyeSpring;` |
+| 1029 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1688 | 2 | scope | bool | `public bool scope;` | `public bool scope;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.55 细分子系统：`PlayerElementalAndShimmerStatus`
+
+- 细分职责：元素、微光和环境持续状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；状态 Tick 负责唯一写入并维护失效时间。
+- 成员文件数：1；声明类型数：1；字段：21；属性：0；合计：21。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（21）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1041 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1712 | 2 | archery | bool | `public bool archery;` | `public bool archery;` |
+| 1042 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1714 | 2 | poisoned | bool | `public bool poisoned;` | `public bool poisoned;` |
+| 1043 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1716 | 2 | venom | bool | `public bool venom;` | `public bool venom;` |
+| 1044 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1718 | 2 | blind | bool | `public bool blind;` | `public bool blind;` |
+| 1045 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1720 | 2 | blackout | bool | `public bool blackout;` | `public bool blackout;` |
+| 1046 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1722 | 2 | headcovered | bool | `public bool headcovered;` | `public bool headcovered;` |
+| 1047 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1724 | 2 | frostBurn | bool | `public bool frostBurn;` | `public bool frostBurn;` |
+| 1048 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1726 | 2 | onFrostBurn | bool | `public bool onFrostBurn;` | `public bool onFrostBurn;` |
+| 1049 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1728 | 2 | onFrostBurn2 | bool | `public bool onFrostBurn2;` | `public bool onFrostBurn2;` |
+| 1050 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1730 | 2 | burned | bool | `public bool burned;` | `public bool burned;` |
+| 1051 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1732 | 2 | shimmering | bool | `public bool shimmering;` | `public bool shimmering;` |
+| 1052 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1734 | 2 | timeShimmering | int | `public int timeShimmering;` | `public int timeShimmering;` |
+| 1053 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1736 | 2 | shimmerTransparency | float | `public float shimmerTransparency;` | `public float shimmerTransparency;` |
+| 1054 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1738 | 2 | shimmerUnstuckHelper | Terraria.GameContent.ShimmerUnstuckHelper | `public ShimmerUnstuckHelper shimmerUnstuckHelper;` | `public ShimmerUnstuckHelper shimmerUnstuckHelper;` |
+| 1055 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1740 | 2 | suffocating | bool | `public bool suffocating;` | `public bool suffocating;` |
+| 1056 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1743 | 2 | dripping | bool | `public bool dripping;` | `public bool dripping;` |
+| 1057 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1745 | 2 | drippingSlime | bool | `public bool drippingSlime;` | `public bool drippingSlime;` |
+| 1058 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1747 | 2 | drippingSparkleSlime | bool | `public bool drippingSparkleSlime;` | `public bool drippingSparkleSlime;` |
+| 1059 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1749 | 2 | onFire | bool | `public bool onFire;` | `public bool onFire;` |
+| 1060 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1751 | 2 | onFire2 | bool | `public bool onFire2;` | `public bool onFire2;` |
+| 1061 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1753 | 2 | onFire3 | bool | `public bool onFire3;` | `public bool onFire3;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.56 细分子系统：`PlayerSurvivalAndTransformationState`
+
+- 细分职责：生存饥饿、风推、变身、鱼人和三叉戟控制状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；生存/变身效果事件集中提交。
+- 成员文件数：1；声明类型数：1；字段：15；属性：0；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（15）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1062 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1755 | 2 | noItems | bool | `public bool noItems;` | `public bool noItems;` |
+| 1064 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1759 | 2 | hungry | bool | `public bool hungry;` | `public bool hungry;` |
+| 1065 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1761 | 2 | starving | bool | `public bool starving;` | `public bool starving;` |
+| 1066 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1763 | 2 | heartyMeal | bool | `public bool heartyMeal;` | `public bool heartyMeal;` |
+| 1067 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1765 | 2 | windPushed | bool | `public bool windPushed;` | `public bool windPushed;` |
+| 1068 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1767 | 2 | wereWolf | bool | `public bool wereWolf;` | `public bool wereWolf;` |
+| 1069 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1769 | 2 | wolfAcc | bool | `public bool wolfAcc;` | `public bool wolfAcc;` |
+| 1070 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1771 | 2 | hideMerman | bool | `public bool hideMerman;` | `public bool hideMerman;` |
+| 1071 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1773 | 2 | hideWolf | bool | `public bool hideWolf;` | `public bool hideWolf;` |
+| 1072 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1775 | 2 | forceMerman | bool | `public bool forceMerman;` | `public bool forceMerman;` |
+| 1073 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1777 | 2 | forceWerewolf | bool | `public bool forceWerewolf;` | `public bool forceWerewolf;` |
+| 1074 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1779 | 2 | sunScorchCounter | int | `public int sunScorchCounter;` | `public int sunScorchCounter;` |
+| 1079 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1789 | 2 | accMerman | bool | `public bool accMerman;` | `public bool accMerman;` |
+| 1080 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1791 | 2 | merman | bool | `public bool merman;` | `public bool merman;` |
+| 1081 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1793 | 2 | trident | bool | `public bool trident;` | `public bool trident;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.57 细分子系统：`PlayerDebuffStatusState`
+
+- 细分职责：诅咒、流血、混乱、破甲、沉默、迟缓和舌头状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；减益 Tick 和命中事件单向更新。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1063 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1757 | 2 | cursed | bool | `public bool cursed;` | `public bool cursed;` |
+| 1077 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1785 | 2 | bleed | bool | `public bool bleed;` | `public bool bleed;` |
+| 1078 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1787 | 2 | confused | bool | `public bool confused;` | `public bool confused;` |
+| 1082 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1795 | 2 | brokenArmor | bool | `public bool brokenArmor;` | `public bool brokenArmor;` |
+| 1083 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1797 | 2 | silence | bool | `public bool silence;` | `public bool silence;` |
+| 1084 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1799 | 2 | slow | bool | `public bool slow;` | `public bool slow;` |
+| 1085 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1801 | 2 | gross | bool | `public bool gross;` | `public bool gross;` |
+| 1086 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1803 | 2 | tongued | bool | `public bool tongued;` | `public bool tongued;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.58 细分子系统：`PlayerBuilderOverlayState`
+
+- 细分职责：标尺网格和标尺线的建造者界面投影状态。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；建造界面只读消费。
+- 成员文件数：1；声明类型数：1；字段：2；属性：0；合计：2。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1075 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1781 | 2 | rulerGrid | bool | `public bool rulerGrid;` | `public bool rulerGrid;` |
+| 1076 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1783 | 2 | rulerLine | bool | `public bool rulerLine;` | `public bool rulerLine;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.59 细分子系统：`PlayerAccessoryCombatModifierState`
+
+- 细分职责：手套、星云/星璇披风和无人机视野等战斗配饰修正。
+- 边界角色：`authoritative state/behavior`；最小 seam：Accessory Combat System/CommitPort；装备效果集中提交。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1087 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1805 | 2 | kbGlove | bool | `public bool kbGlove;` | `public bool kbGlove;` |
+| 1088 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1807 | 2 | autoReuseGlove | bool | `public bool autoReuseGlove;` | `public bool autoReuseGlove;` |
+| 1089 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1809 | 2 | meleeScaleGlove | bool | `public bool meleeScaleGlove;` | `public bool meleeScaleGlove;` |
+| 1090 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1811 | 2 | kbBuff | bool | `public bool kbBuff;` | `public bool kbBuff;` |
+| 1091 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1813 | 2 | remoteVisionForDrone | bool | `public bool remoteVisionForDrone;` | `public bool remoteVisionForDrone;` |
+| 1092 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1815 | 2 | starCloakItem | Terraria.Item | `public Item starCloakItem;` | `public Item starCloakItem;` |
+| 1093 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1817 | 2 | starCloakItem_manaCloakOverrideItem | Terraria.Item | `public Item starCloakItem_manaCloakOverrideItem;` | `public Item starCloakItem_manaCloakOverrideItem;` |
+| 1094 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1819 | 2 | starCloakItem_starVeilOverrideItem | Terraria.Item | `public Item starCloakItem_starVeilOverrideItem;` | `public Item starCloakItem_starVeilOverrideItem;` |
+| 1095 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1821 | 2 | starCloakItem_beeCloakOverrideItem | Terraria.Item | `public Item starCloakItem_beeCloakOverrideItem;` | `public Item starCloakItem_beeCloakOverrideItem;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.60 细分子系统：`PlayerAccessoryResourceAndInvulnerabilityState`
+
+- 细分职责：长时间无敌、哲学之石和魔力花等资源/免疫效果。
+- 边界角色：`authoritative state/behavior`；最小 seam：Accessory Resource System/CommitPort；资源效果按装备快照更新。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1096 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1823 | 2 | longInvince | bool | `public bool longInvince;` | `public bool longInvince;` |
+| 1097 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1825 | 2 | pStone | bool | `public bool pStone;` | `public bool pStone;` |
+| 1098 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1827 | 2 | PhilosopherStoneDurationMultiplier | float | `public static readonly float PhilosopherStoneDurationMultiplier = 0.75f;` | `public static readonly float PhilosopherStoneDurationMultiplier = 0.75f;` |
+| 1099 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1829 | 2 | manaFlower | bool | `public bool manaFlower;` | `public bool manaFlower;` |
+| 1100 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1831 | 2 | moonLeech | bool | `public bool moonLeech;` | `public bool moonLeech;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.61 细分子系统：`PlayerAccessoryDebuffAndDropState`
+
+- 细分职责：减益来源、枯萎、招架和掉落事件状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Accessory Status System/CommitPort；战斗状态与掉落事件显式交接。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1101 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1833 | 2 | vortexDebuff | bool | `public bool vortexDebuff;` | `public bool vortexDebuff;` |
+| 1102 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1835 | 2 | trapDebuffSource | bool | `public bool trapDebuffSource;` | `public bool trapDebuffSource;` |
+| 1103 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1837 | 2 | witheredArmor | bool | `public bool witheredArmor;` | `public bool witheredArmor;` |
+| 1104 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1839 | 2 | witheredWeapon | bool | `public bool witheredWeapon;` | `public bool witheredWeapon;` |
+| 1105 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1841 | 2 | slowOgreSpit | bool | `public bool slowOgreSpit;` | `public bool slowOgreSpit;` |
+| 1106 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1843 | 2 | parryDamageBuff | bool | `public bool parryDamageBuff;` | `public bool parryDamageBuff;` |
+| 1107 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1845 | 2 | ballistaPanic | bool | `public bool ballistaPanic;` | `public bool ballistaPanic;` |
+| 1108 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1847 | 2 | JustDroppedAnItem | bool | `public bool JustDroppedAnItem;` | `public bool JustDroppedAnItem;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.62 细分子系统：`PlayerCombatDamageAndCritModifiers`
+
+- 细分职责：武器类别伤害、暴击和召唤物击退修正。
+- 边界角色：`authoritative state/behavior`；最小 seam：Combat Modifier System/CommitPort；装备计算完成后集中提交。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1110 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1851 | 2 | meleeCrit | int | `public int meleeCrit = 4;` | `public int meleeCrit = 4;` |
+| 1111 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1853 | 2 | magicCrit | int | `public int magicCrit = 4;` | `public int magicCrit = 4;` |
+| 1112 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1855 | 2 | rangedCrit | int | `public int rangedCrit = 4;` | `public int rangedCrit = 4;` |
+| 1113 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1857 | 2 | meleeDamage | float | `public float meleeDamage = 1f;` | `public float meleeDamage = 1f;` |
+| 1114 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1859 | 2 | magicDamage | float | `public float magicDamage = 1f;` | `public float magicDamage = 1f;` |
+| 1115 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1861 | 2 | rangedDamage | float | `public float rangedDamage = 1f;` | `public float rangedDamage = 1f;` |
+| 1116 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1863 | 2 | rangedMultDamage | float | `public float rangedMultDamage = 1f;` | `public float rangedMultDamage = 1f;` |
+| 1117 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1865 | 2 | arrowDamageAdditiveStack | float | `public float arrowDamageAdditiveStack;` | `public float arrowDamageAdditiveStack;` |
+| 1118 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1867 | 2 | arrowDamage | float | `public float arrowDamage = 1f;` | `public float arrowDamage = 1f;` |
+| 1119 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1869 | 2 | bulletDamage | float | `public float bulletDamage = 1f;` | `public float bulletDamage = 1f;` |
+| 1120 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1871 | 2 | rocketDamage | float | `public float rocketDamage = 1f;` | `public float rocketDamage = 1f;` |
+| 1121 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1873 | 2 | minionDamage | float | `public float minionDamage = 1f;` | `public float minionDamage = 1f;` |
+| 1122 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1875 | 2 | minionKB | float | `public float minionKB;` | `public float minionKB;` |
+| 1123 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1877 | 2 | revolverCritChanceBonus | int | `public int revolverCritChanceBonus;` | `public int revolverCritChanceBonus;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.63 细分子系统：`PlayerCombatSpeedRangeAndPermissionState`
+
+- 细分职责：攻击/移动/挖掘速度、建造自动化和持物许可修正。
+- 边界角色：`authoritative state/behavior`；最小 seam：Combat/Interaction Modifier System/CommitPort；速度和范围修正显式合并。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1109 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1849 | 2 | IsAllowedToHoldItems | bool | `public bool IsAllowedToHoldItems = true;` | `public bool IsAllowedToHoldItems = true;` |
+| 1124 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1879 | 2 | meleeSpeed | float | `public float meleeSpeed = 1f;` | `public float meleeSpeed = 1f;` |
+| 1125 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1881 | 2 | summonerWeaponSpeedBonus | float | `public float summonerWeaponSpeedBonus;` | `public float summonerWeaponSpeedBonus;` |
+| 1126 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1883 | 2 | moveSpeed | float | `public float moveSpeed = 1f;` | `public float moveSpeed = 1f;` |
+| 1127 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1885 | 2 | pickSpeed | float | `public float pickSpeed = 1f;` | `public float pickSpeed = 1f;` |
+| 1128 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1887 | 2 | wallSpeed | float | `public float wallSpeed = 1f;` | `public float wallSpeed = 1f;` |
+| 1129 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1889 | 2 | tileSpeed | float | `public float tileSpeed = 1f;` | `public float tileSpeed = 1f;` |
+| 1130 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1891 | 2 | autoPaint | bool | `public bool autoPaint;` | `public bool autoPaint;` |
+| 1131 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1893 | 2 | autoActuator | bool | `public bool autoActuator;` | `public bool autoActuator;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.64 细分子系统：`PlayerSpawnAndReturnState`
+
+- 细分职责：出生点和回城药水原始位置状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Spawn/Return System/CommitPort；出生与回城事件集中写入。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1132 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1895 | 2 | SpawnX | int | `public int SpawnX = -1;` | `public int SpawnX = -1;` |
+| 1133 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1897 | 2 | SpawnY | int | `public int SpawnY = -1;` | `public int SpawnY = -1;` |
+| 1134 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1899 | 2 | PotionOfReturnOriginalUsePosition | Vector2? | `public Vector2? PotionOfReturnOriginalUsePosition;` | `public Vector2? PotionOfReturnOriginalUsePosition;` |
+| 1135 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1901 | 2 | PotionOfReturnHomePosition | Vector2? | `public Vector2? PotionOfReturnHomePosition;` | `public Vector2? PotionOfReturnHomePosition;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.65 细分子系统：`PlayerTileTargetingAndRangeState`
+
+- 细分职责：Tile 交互范围、目标坐标、邻接标记和物品吸取范围。
+- 边界角色：`authoritative state/behavior`；最小 seam：Tile Interaction System/CommitPort；交互阶段显式提交范围。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1136 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1905 | 2 | DefaultTileRangeX | int | `public static readonly int DefaultTileRangeX = 5;` | `public static readonly int DefaultTileRangeX = 5;` |
+| 1137 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1907 | 2 | DefaultTileRangeY | int | `public static readonly int DefaultTileRangeY = 3;` | `public static readonly int DefaultTileRangeY = 3;` |
+| 1138 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1909 | 2 | tileRangeX | int | `public static int tileRangeX = DefaultTileRangeX;` | `public static int tileRangeX = DefaultTileRangeX;` |
+| 1139 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1911 | 2 | tileRangeY | int | `public static int tileRangeY = DefaultTileRangeY;` | `public static int tileRangeY = DefaultTileRangeY;` |
+| 1140 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1913 | 2 | lastTileRangeX | int | `public int lastTileRangeX;` | `public int lastTileRangeX;` |
+| 1141 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1915 | 2 | lastTileRangeY | int | `public int lastTileRangeY;` | `public int lastTileRangeY;` |
+| 1142 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1917 | 2 | tileTargetX | int | `public static int tileTargetX;` | `public static int tileTargetX;` |
+| 1143 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1919 | 2 | tileTargetY | int | `public static int tileTargetY;` | `public static int tileTargetY;` |
+| 1152 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1939 | 2 | adjTile | bool[] | `public bool[] adjTile = new bool[TileID.Count];` | `public bool[] adjTile = new bool[TileID.Count];` |
+| 1153 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1941 | 2 | defaultItemGrabRange | int | `public static int defaultItemGrabRange = 42;` | `public static int defaultItemGrabRange = 42;` |
+| 1154 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1943 | 2 | itemGrabSpeed | float | `private static float itemGrabSpeed = 0.45f;` | `private static float itemGrabSpeed = 0.45f;` |
+| 1155 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1945 | 2 | itemGrabSpeedMax | float | `private static float itemGrabSpeedMax = 4f;` | `private static float itemGrabSpeedMax = 4f;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.66 细分子系统：`PlayerMovementPhysicsState`
+
+- 细分职责：重力、跳跃、下落和奔跑物理参数。
+- 边界角色：`authoritative state/behavior`；最小 seam：Movement System/CommitPort；移动 tick 集中维护物理参数。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1144 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1921 | 2 | defaultGravity | float | `public static float defaultGravity = 0.4f;` | `public static float defaultGravity = 0.4f;` |
+| 1145 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1923 | 2 | jumpHeight | int | `public static int jumpHeight = 15;` | `public static int jumpHeight = 15;` |
+| 1146 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1925 | 2 | jumpSpeed | float | `public static float jumpSpeed = 5.01f;` | `public static float jumpSpeed = 5.01f;` |
+| 1147 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1927 | 2 | gravity | float | `public float gravity = defaultGravity;` | `public float gravity = defaultGravity;` |
+| 1148 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1929 | 2 | maxFallSpeed | float | `public float maxFallSpeed = 10f;` | `public float maxFallSpeed = 10f;` |
+| 1149 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1931 | 2 | maxRunSpeed | float | `public float maxRunSpeed = 3f;` | `public float maxRunSpeed = 3f;` |
+| 1150 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1933 | 2 | runAcceleration | float | `public float runAcceleration = 0.08f;` | `public float runAcceleration = 0.08f;` |
+| 1151 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1935 | 2 | runSlowdown | float | `public float runSlowdown = 0.2f;` | `public float runSlowdown = 0.2f;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.67 细分子系统：`PlayerAppearanceCustomizationState`
+
+- 细分职责：发型、染色和角色颜色定制状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；外观变更通过玩家配置命令提交。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1156 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1947 | 2 | hairDye | byte | `public byte hairDye;` | `public byte hairDye;` |
+| 1157 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1950 | 2 | skinDyePacked | int | `public int skinDyePacked;` | `public int skinDyePacked;` |
+| 1158 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1952 | 2 | hairColor | Color | `public Color hairColor = new Color(215, 90, 55);` | `public Color hairColor = new Color(215, 90, 55);` |
+| 1159 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1954 | 2 | skinColor | Color | `public Color skinColor = new Color(255, 125, 90);` | `public Color skinColor = new Color(255, 125, 90);` |
+| 1160 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1956 | 2 | eyeColor | Color | `public Color eyeColor = new Color(105, 90, 75);` | `public Color eyeColor = new Color(105, 90, 75);` |
+| 1161 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1958 | 2 | shirtColor | Color | `public Color shirtColor = new Color(175, 165, 140);` | `public Color shirtColor = new Color(175, 165, 140);` |
+| 1162 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1960 | 2 | underShirtColor | Color | `public Color underShirtColor = new Color(160, 180, 215);` | `public Color underShirtColor = new Color(160, 180, 215);` |
+| 1163 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1962 | 2 | pantsColor | Color | `public Color pantsColor = new Color(255, 230, 175);` | `public Color pantsColor = new Color(255, 230, 175);` |
+| 1164 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1964 | 2 | shoeColor | Color | `public Color shoeColor = new Color(160, 105, 60);` | `public Color shoeColor = new Color(160, 105, 60);` |
+| 1165 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1966 | 2 | hair | int | `public int hair;` | `public int hair;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.68 细分子系统：`PlayerInformationWorldAndMovementState`
+
+- 细分职责：敌对标志、移动声效、帧内位移和生物命中信息。
+- 边界角色：`authoritative state/behavior`；最小 seam：Player Information System/CommitPort；帧内交互状态集中更新。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1166 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1968 | 2 | hostile | bool | `public bool hostile;` | `public bool hostile;` |
+| 1167 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1970 | 2 | hermesStepSound | Terraria.DataStructures.SoundPlaySet | `public SoundPlaySet hermesStepSound = new SoundPlaySet();` | `public SoundPlaySet hermesStepSound = new SoundPlaySet();` |
+| 1168 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1972 | 2 | instantMovementAccumulatedThisFrame | Vector2 | `public Vector2 instantMovementAccumulatedThisFrame;` | `public Vector2 instantMovementAccumulatedThisFrame;` |
+| 1177 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1990 | 2 | lastCreatureHit | int | `public int lastCreatureHit = -1;` | `public int lastCreatureHit = -1;` |
+| 1186 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2012 | 2 | ActuationRodLock | bool | `public bool ActuationRodLock;` | `public bool ActuationRodLock;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.69 细分子系统：`PlayerInformationNavigationAndTimeState`
+
+- 细分职责：指南针、手表、深度计、天气和计时信息。
+- 边界角色：`authoritative state/behavior`；最小 seam：Information Accessory System/CommitPort；信息配饰按观察周期更新。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1169 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1974 | 2 | accCompass | int | `public int accCompass;` | `public int accCompass;` |
+| 1170 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1976 | 2 | accWatch | int | `public int accWatch;` | `public int accWatch;` |
+| 1171 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1978 | 2 | accWatchTime | double | `public double accWatchTime;` | `public double accWatchTime;` |
+| 1172 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1980 | 2 | accDepthMeter | int | `public int accDepthMeter;` | `public int accDepthMeter;` |
+| 1174 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1984 | 2 | accWeatherRadio | bool | `public bool accWeatherRadio;` | `public bool accWeatherRadio;` |
+| 1176 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1988 | 2 | accCalendar | bool | `public bool accCalendar;` | `public bool accCalendar;` |
+| 1180 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1998 | 2 | accStopwatch | bool | `public bool accStopwatch;` | `public bool accStopwatch;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.70 细分子系统：`PlayerInformationDetectionAndWiringState`
+
+- 细分职责：探测、鱼类、第三只眼、矿石、图鉴和机械线路信息。
+- 边界角色：`authoritative state/behavior`；最小 seam：Information Detection System/CommitPort；探测结果按扫描事件更新。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1173 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1982 | 2 | accFishFinder | bool | `public bool accFishFinder;` | `public bool accFishFinder;` |
+| 1175 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1986 | 2 | accJarOfSouls | bool | `public bool accJarOfSouls;` | `public bool accJarOfSouls;` |
+| 1178 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1992 | 2 | accThirdEye | bool | `public bool accThirdEye;` | `public bool accThirdEye;` |
+| 1179 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 1994 | 2 | accThirdEyeCounter | byte | `public byte accThirdEyeCounter;` | `public byte accThirdEyeCounter;` |
+| 1181 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2000 | 2 | accOreFinder | bool | `public bool accOreFinder;` | `public bool accOreFinder;` |
+| 1182 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2002 | 2 | accCritterGuide | bool | `public bool accCritterGuide;` | `public bool accCritterGuide;` |
+| 1183 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2006 | 2 | accDreamCatcher | bool | `public bool accDreamCatcher;` | `public bool accDreamCatcher;` |
+| 1187 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2016 | 2 | InfoAccMechShowWires | bool | `public bool InfoAccMechShowWires;` | `public bool InfoAccMechShowWires;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.71 细分子系统：`PlayerFootballPresentationState`
+
+- 细分职责：足球配饰持有和绘制表现状态。
+- 边界角色：`presentation state`；最小 seam：Player Presentation Projection；表现状态不反向拥有配饰装备。
+- 成员文件数：1；声明类型数：1；字段：2；属性：0；合计：2。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1184 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2008 | 2 | hasFootball | bool | `public bool hasFootball;` | `public bool hasFootball;` |
+| 1185 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2010 | 2 | drawingFootball | bool | `public bool drawingFootball;` | `public bool drawingFootball;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.72 细分子系统：`PlayerDpsTelemetryState`
+
+- 细分职责：伤害统计窗口、最近命中和 DPS 累积状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；战斗事件驱动统计窗口更新。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1188 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2018 | 2 | dpsStart | System.DateTime | `public DateTime dpsStart;` | `public DateTime dpsStart;` |
+| 1189 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2020 | 2 | dpsEnd | System.DateTime | `public DateTime dpsEnd;` | `public DateTime dpsEnd;` |
+| 1190 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2022 | 2 | dpsLastHit | System.DateTime | `public DateTime dpsLastHit;` | `public DateTime dpsLastHit;` |
+| 1191 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2024 | 2 | dpsDamage | int | `public int dpsDamage;` | `public int dpsDamage;` |
+| 1192 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2026 | 2 | dpsStarted | bool | `public bool dpsStarted;` | `public bool dpsStarted;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.73 细分子系统：`PlayerLuckAndCommerceEffects`
+
+- 细分职责：幸运、折扣、金钱配饰和相关效果状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；经济和幸运效果由显式效果提交。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1193 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2030 | 2 | discountEquipped | bool | `public bool discountEquipped;` | `public bool discountEquipped;` |
+| 1194 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2032 | 2 | discountAvailable | bool | `public bool discountAvailable;` | `public bool discountAvailable;` |
+| 1195 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2034 | 2 | hasLuckyCoin | bool | `public bool hasLuckyCoin;` | `public bool hasLuckyCoin;` |
+| 1196 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2036 | 2 | boneGloveItem | Terraria.Item | `public Item boneGloveItem;` | `public Item boneGloveItem;` |
+| 1197 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2038 | 2 | goldRing | bool | `public bool goldRing;` | `public bool goldRing;` |
+| 1198 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2040 | 2 | accDivingHelm | bool | `public bool accDivingHelm;` | `public bool accDivingHelm;` |
+| 1199 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2042 | 2 | accFlipper | bool | `public bool accFlipper;` | `public bool accFlipper;` |
+| 1200 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2044 | 2 | deadCellsPotionStation | bool | `public bool deadCellsPotionStation;` | `public bool deadCellsPotionStation;` |
+| 1201 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2046 | 2 | hasLuck_LuckyCoin | bool | `public bool hasLuck_LuckyCoin;` | `public bool hasLuck_LuckyCoin;` |
+| 1202 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2048 | 2 | hasLuck_LuckyHorseshoe | bool | `public bool hasLuck_LuckyHorseshoe;` | `public bool hasLuck_LuckyHorseshoe;` |
+| 1203 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2050 | 2 | hasLuck_LuckyClover | bool | `public bool hasLuck_LuckyClover;` | `public bool hasLuck_LuckyClover;` |
+| 1204 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2052 | 2 | hasLuck_WiltedClover | bool | `public bool hasLuck_WiltedClover;` | `public bool hasLuck_WiltedClover;` |
+| 1205 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2054 | 2 | hasLuck_RavenFeather | bool | `public bool hasLuck_RavenFeather;` | `public bool hasLuck_RavenFeather;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.74 细分子系统：`PlayerJumpAvailabilityState`
+
+- 细分职责：各类额外跳跃的资格和可再次跳跃窗口。
+- 边界角色：`authoritative state/behavior`；最小 seam：Jump System/CommitPort；资格 Query 只读消费。
+- 成员文件数：1；声明类型数：1；字段：18；属性：0；合计：18。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（18）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1208 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2060 | 2 | hasJumpOption_Cloud | bool | `public bool hasJumpOption_Cloud;` | `public bool hasJumpOption_Cloud;` |
+| 1209 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2062 | 2 | canJumpAgain_Cloud | bool | `public bool canJumpAgain_Cloud;` | `public bool canJumpAgain_Cloud;` |
+| 1211 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2066 | 2 | hasJumpOption_Sandstorm | bool | `public bool hasJumpOption_Sandstorm;` | `public bool hasJumpOption_Sandstorm;` |
+| 1212 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2068 | 2 | canJumpAgain_Sandstorm | bool | `public bool canJumpAgain_Sandstorm;` | `public bool canJumpAgain_Sandstorm;` |
+| 1214 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2072 | 2 | hasJumpOption_Blizzard | bool | `public bool hasJumpOption_Blizzard;` | `public bool hasJumpOption_Blizzard;` |
+| 1215 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2074 | 2 | canJumpAgain_Blizzard | bool | `public bool canJumpAgain_Blizzard;` | `public bool canJumpAgain_Blizzard;` |
+| 1217 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2078 | 2 | hasJumpOption_Fart | bool | `public bool hasJumpOption_Fart;` | `public bool hasJumpOption_Fart;` |
+| 1218 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2080 | 2 | canJumpAgain_Fart | bool | `public bool canJumpAgain_Fart;` | `public bool canJumpAgain_Fart;` |
+| 1220 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2084 | 2 | hasJumpOption_Sail | bool | `public bool hasJumpOption_Sail;` | `public bool hasJumpOption_Sail;` |
+| 1221 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2086 | 2 | canJumpAgain_Sail | bool | `public bool canJumpAgain_Sail;` | `public bool canJumpAgain_Sail;` |
+| 1223 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2090 | 2 | hasJumpOption_Unicorn | bool | `public bool hasJumpOption_Unicorn;` | `public bool hasJumpOption_Unicorn;` |
+| 1224 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2092 | 2 | canJumpAgain_Unicorn | bool | `public bool canJumpAgain_Unicorn;` | `public bool canJumpAgain_Unicorn;` |
+| 1226 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2096 | 2 | hasJumpOption_Santank | bool | `public bool hasJumpOption_Santank;` | `public bool hasJumpOption_Santank;` |
+| 1227 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2098 | 2 | canJumpAgain_Santank | bool | `public bool canJumpAgain_Santank;` | `public bool canJumpAgain_Santank;` |
+| 1229 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2102 | 2 | hasJumpOption_WallOfFleshGoat | bool | `public bool hasJumpOption_WallOfFleshGoat;` | `public bool hasJumpOption_WallOfFleshGoat;` |
+| 1230 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2104 | 2 | canJumpAgain_WallOfFleshGoat | bool | `public bool canJumpAgain_WallOfFleshGoat;` | `public bool canJumpAgain_WallOfFleshGoat;` |
+| 1232 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2108 | 2 | hasJumpOption_Basilisk | bool | `public bool hasJumpOption_Basilisk;` | `public bool hasJumpOption_Basilisk;` |
+| 1233 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2110 | 2 | canJumpAgain_Basilisk | bool | `public bool canJumpAgain_Basilisk;` | `public bool canJumpAgain_Basilisk;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.75 细分子系统：`PlayerJumpExecutionState`
+
+- 细分职责：额外跳跃、下冲和弹簧跳跃的执行状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Jump System/CommitPort；跳跃阶段按显式顺序提交。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1206 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2056 | 2 | isPerformingJump_DownDash | bool | `public bool isPerformingJump_DownDash;` | `public bool isPerformingJump_DownDash;` |
+| 1210 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2064 | 2 | isPerformingJump_Cloud | bool | `public bool isPerformingJump_Cloud;` | `public bool isPerformingJump_Cloud;` |
+| 1213 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2070 | 2 | isPerformingJump_Sandstorm | bool | `public bool isPerformingJump_Sandstorm;` | `public bool isPerformingJump_Sandstorm;` |
+| 1216 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2076 | 2 | isPerformingJump_Blizzard | bool | `public bool isPerformingJump_Blizzard;` | `public bool isPerformingJump_Blizzard;` |
+| 1219 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2082 | 2 | isPerformingJump_Fart | bool | `public bool isPerformingJump_Fart;` | `public bool isPerformingJump_Fart;` |
+| 1222 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2088 | 2 | isPerformingJump_Sail | bool | `public bool isPerformingJump_Sail;` | `public bool isPerformingJump_Sail;` |
+| 1225 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2094 | 2 | isPerformingJump_Unicorn | bool | `public bool isPerformingJump_Unicorn;` | `public bool isPerformingJump_Unicorn;` |
+| 1228 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2100 | 2 | isPerformingJump_Santank | bool | `public bool isPerformingJump_Santank;` | `public bool isPerformingJump_Santank;` |
+| 1231 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2106 | 2 | isPerformingJump_WallOfFleshGoat | bool | `public bool isPerformingJump_WallOfFleshGoat;` | `public bool isPerformingJump_WallOfFleshGoat;` |
+| 1234 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2112 | 2 | isPerformingJump_Basilisk | bool | `public bool isPerformingJump_Basilisk;` | `public bool isPerformingJump_Basilisk;` |
+| 1235 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2114 | 2 | isPerformingPogostickTricks | bool | `public bool isPerformingPogostickTricks;` | `public bool isPerformingPogostickTricks;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.76 细分子系统：`PlayerJumpMobilityModifiers`
+
+- 细分职责：自动跳跃、最近跳跃、速度加成、额外下落和下冲计时。
+- 边界角色：`authoritative state/behavior`；最小 seam：Movement System/CommitPort；移动阶段集中写入修正。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1207 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2058 | 2 | downDashTime | int | `public int downDashTime;` | `public int downDashTime;` |
+| 1236 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2116 | 2 | autoJump | bool | `public bool autoJump;` | `public bool autoJump;` |
+| 1237 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2118 | 2 | justJumped | bool | `public bool justJumped;` | `public bool justJumped;` |
+| 1238 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2120 | 2 | jumpSpeedBoost | float | `public float jumpSpeedBoost;` | `public float jumpSpeedBoost;` |
+| 1239 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2122 | 2 | extraFall | int | `public int extraFall;` | `public int extraFall;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.77 细分子系统：`PlayerGrappleAndRocketState`
+
+- 细分职责：抓钩索引、火箭靴计时和火箭释放状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；装备输入通过显式命令进入。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1246 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2136 | 2 | grappling | int[] | `public int[] grappling = new int[20];` | `public int[] grappling = new int[20];` |
+| 1247 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2138 | 2 | grapCount | int | `public int grapCount;` | `public int grapCount;` |
+| 1248 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2140 | 2 | rocketTime | int | `public int rocketTime;` | `public int rocketTime;` |
+| 1249 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2142 | 2 | rocketTimeMax | int | `public int rocketTimeMax = 7;` | `public int rocketTimeMax = 7;` |
+| 1250 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2144 | 2 | rocketDelay | int | `public int rocketDelay;` | `public int rocketDelay;` |
+| 1251 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2146 | 2 | rocketDelay2 | int | `public int rocketDelay2;` | `public int rocketDelay2;` |
+| 1252 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2148 | 2 | rocketSoundDelay | int | `public int rocketSoundDelay;` | `public int rocketSoundDelay;` |
+| 1253 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2150 | 2 | rocketRelease | bool | `public bool rocketRelease;` | `public bool rocketRelease;` |
+| 1254 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2152 | 2 | rocketFrame | bool | `public bool rocketFrame;` | `public bool rocketFrame;` |
+| 1255 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2154 | 2 | rocketBoots | int | `public int rocketBoots;` | `public int rocketBoots;` |
+| 1256 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2156 | 2 | vanityRocketBoots | int | `public int vanityRocketBoots;` | `public int vanityRocketBoots;` |
+| 1257 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2158 | 2 | canRocket | bool | `public bool canRocket;` | `public bool canRocket;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.78 细分子系统：`PlayerEnvironmentMobilityState`
+
+- 细分职责：水体、跳跃、移动能力和环境移动约束。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；环境查询作为只读输入，能力状态集中提交。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1240 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2124 | 2 | canFloatInWater | bool | `public bool canFloatInWater;` | `public bool canFloatInWater;` |
+| 1241 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2126 | 2 | hasFloatingTube | bool | `public bool hasFloatingTube;` | `public bool hasFloatingTube;` |
+| 1242 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2128 | 2 | frogLegJumpBoost | bool | `public bool frogLegJumpBoost;` | `public bool frogLegJumpBoost;` |
+| 1243 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2130 | 2 | skyStoneEffects | bool | `public bool skyStoneEffects;` | `public bool skyStoneEffects;` |
+| 1244 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2132 | 2 | spawnMax | bool | `public bool spawnMax;` | `public bool spawnMax;` |
+| 1245 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2134 | 2 | blockRange | int | `public int blockRange;` | `public int blockRange;` |
+| 1258 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2160 | 2 | jumpBoost | bool | `public bool jumpBoost;` | `public bool jumpBoost;` |
+| 1259 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2162 | 2 | noFallDmg | bool | `public bool noFallDmg;` | `public bool noFallDmg;` |
+| 1260 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2164 | 2 | swimTime | int | `public int swimTime;` | `public int swimTime;` |
+| 1266 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2176 | 2 | lavaImmune | bool | `public bool lavaImmune;` | `public bool lavaImmune;` |
+| 1267 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2178 | 2 | gills | bool | `public bool gills;` | `public bool gills;` |
+| 1268 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2180 | 2 | slowFall | bool | `public bool slowFall;` | `public bool slowFall;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.79 细分子系统：`PlayerEnvironmentDetectionAndSpawnState`
+
+- 细分职责：环境感知、生成规则和环境交互效果状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；环境扫描结果通过显式快照输入。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1261 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2166 | 2 | killGuide | bool | `public bool killGuide;` | `public bool killGuide;` |
+| 1262 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2168 | 2 | killClothier | bool | `public bool killClothier;` | `public bool killClothier;` |
+| 1263 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2170 | 2 | equipmentBasedLuckBonus | float | `public float equipmentBasedLuckBonus;` | `public float equipmentBasedLuckBonus;` |
+| 1264 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2172 | 2 | lastEquipmentBasedLuckBonus | float | `public float lastEquipmentBasedLuckBonus;` | `public float lastEquipmentBasedLuckBonus;` |
+| 1265 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2174 | 2 | hasCreditsSceneMusicBox | bool | `public bool hasCreditsSceneMusicBox;` | `public bool hasCreditsSceneMusicBox;` |
+| 1269 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2182 | 2 | findTreasure | bool | `public bool findTreasure;` | `public bool findTreasure;` |
+| 1270 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2184 | 2 | biomeSight | bool | `public bool biomeSight;` | `public bool biomeSight;` |
+| 1271 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2186 | 2 | invis | bool | `public bool invis;` | `public bool invis;` |
+| 1272 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2188 | 2 | detectCreature | bool | `public bool detectCreature;` | `public bool detectCreature;` |
+| 1273 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2190 | 2 | nightVision | bool | `public bool nightVision;` | `public bool nightVision;` |
+| 1274 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2192 | 2 | enemySpawns | bool | `public bool enemySpawns;` | `public bool enemySpawns;` |
+| 1282 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2208 | 2 | insideUnbreakableWalls | bool | `public bool insideUnbreakableWalls;` | `public bool insideUnbreakableWalls;` |
+| 1283 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2210 | 2 | CanSeeInvisibleBlocks | bool | `public bool CanSeeInvisibleBlocks;` | `public bool CanSeeInvisibleBlocks;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.80 细分子系统：`PlayerArmorAndCombatEffects`
+
+- 细分职责：护甲反伤、日照、荆棘和战斗效果状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；受击与装备事件单向驱动效果更新。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1275 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2194 | 2 | thorns | float | `public float thorns;` | `public float thorns;` |
+| 1276 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2196 | 2 | turtleArmor | bool | `public bool turtleArmor;` | `public bool turtleArmor;` |
+| 1277 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2198 | 2 | turtleThorns | bool | `public bool turtleThorns;` | `public bool turtleThorns;` |
+| 1278 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2200 | 2 | cactusThorns | bool | `public bool cactusThorns;` | `public bool cactusThorns;` |
+| 1279 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2202 | 2 | spiderArmor | bool | `public bool spiderArmor;` | `public bool spiderArmor;` |
+| 1280 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2204 | 2 | anglerSetSpawnReduction | bool | `public bool anglerSetSpawnReduction;` | `public bool anglerSetSpawnReduction;` |
+| 1281 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2206 | 2 | vampireBurningInSunlight | bool | `public bool vampireBurningInSunlight;` | `public bool vampireBurningInSunlight;` |
+| 1308 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2260 | 2 | honeyCombItem | Terraria.Item | `public Item honeyCombItem;` | `public Item honeyCombItem;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.81 细分子系统：`PlayerArmorSetAndTurretState`
+
+- 细分职责：套装效果、炮塔容量和 Vortex 隐身状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；套装效果按能力阶段提交。
+- 成员文件数：1；声明类型数：1；字段：19；属性：0；合计：19。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（19）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1284 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2212 | 2 | setSolar | bool | `public bool setSolar;` | `public bool setSolar;` |
+| 1285 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2214 | 2 | setVortex | bool | `public bool setVortex;` | `public bool setVortex;` |
+| 1286 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2216 | 2 | setNebula | bool | `public bool setNebula;` | `public bool setNebula;` |
+| 1287 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2218 | 2 | nebulaCD | int | `public int nebulaCD;` | `public int nebulaCD;` |
+| 1288 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2220 | 2 | setStardust | bool | `public bool setStardust;` | `public bool setStardust;` |
+| 1289 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2222 | 2 | setForbidden | bool | `public bool setForbidden;` | `public bool setForbidden;` |
+| 1290 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2224 | 2 | setForbiddenCooldownLocked | bool | `public bool setForbiddenCooldownLocked;` | `public bool setForbiddenCooldownLocked;` |
+| 1291 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2226 | 2 | setChlorophyte | bool | `public bool setChlorophyte;` | `public bool setChlorophyte;` |
+| 1292 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2228 | 2 | setSquireT3 | bool | `public bool setSquireT3;` | `public bool setSquireT3;` |
+| 1293 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2230 | 2 | setHuntressT3 | bool | `public bool setHuntressT3;` | `public bool setHuntressT3;` |
+| 1294 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2232 | 2 | setApprenticeT3 | bool | `public bool setApprenticeT3;` | `public bool setApprenticeT3;` |
+| 1295 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2234 | 2 | setMonkT3 | bool | `public bool setMonkT3;` | `public bool setMonkT3;` |
+| 1296 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2236 | 2 | setSquireT2 | bool | `public bool setSquireT2;` | `public bool setSquireT2;` |
+| 1297 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2238 | 2 | setHuntressT2 | bool | `public bool setHuntressT2;` | `public bool setHuntressT2;` |
+| 1298 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2240 | 2 | setApprenticeT2 | bool | `public bool setApprenticeT2;` | `public bool setApprenticeT2;` |
+| 1299 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2242 | 2 | setMonkT2 | bool | `public bool setMonkT2;` | `public bool setMonkT2;` |
+| 1300 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2244 | 2 | maxTurrets | int | `public int maxTurrets = 1;` | `public int maxTurrets = 1;` |
+| 1301 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2246 | 2 | maxTurretsOld | int | `public int maxTurretsOld = 1;` | `public int maxTurretsOld = 1;` |
+| 1302 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2248 | 2 | vortexStealthActive | bool | `public bool vortexStealthActive;` | `public bool vortexStealthActive;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.82 细分子系统：`PlayerGravityAndWaterTraversalState`
+
+- 细分职责：水面行走、重力方向和重力控制状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；移动系统通过 Query 读取，不跨组隐式写入。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1303 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2250 | 2 | waterWalk | bool | `public bool waterWalk;` | `public bool waterWalk;` |
+| 1304 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2252 | 2 | waterWalk2 | bool | `public bool waterWalk2;` | `public bool waterWalk2;` |
+| 1305 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2254 | 2 | forcedGravity | int | `public int forcedGravity;` | `public int forcedGravity;` |
+| 1306 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2256 | 2 | gravControl | bool | `public bool gravControl;` | `public bool gravControl;` |
+| 1307 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2258 | 2 | gravControl2 | bool | `public bool gravControl2;` | `public bool gravControl2;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.83 细分子系统：`PlayerEquipmentColorProjection`
+
+- 细分职责：头身手部、饰品和面部装备的颜色投影槽。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；颜色快照不反向修改装备状态。
+- 成员文件数：1；声明类型数：1；字段：20；属性：0；合计：20。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（20）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1326 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2298 | 2 | cHead | int | `public int cHead;` | `public int cHead;` |
+| 1327 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2300 | 2 | cBody | int | `public int cBody;` | `public int cBody;` |
+| 1328 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2302 | 2 | cLegs | int | `public int cLegs;` | `public int cLegs;` |
+| 1329 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2304 | 2 | cHandOn | int | `public int cHandOn;` | `public int cHandOn;` |
+| 1330 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2306 | 2 | cHandOff | int | `public int cHandOff;` | `public int cHandOff;` |
+| 1331 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2308 | 2 | cBack | int | `public int cBack;` | `public int cBack;` |
+| 1332 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2310 | 2 | cFront | int | `public int cFront;` | `public int cFront;` |
+| 1333 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2312 | 2 | cShoe | int | `public int cShoe;` | `public int cShoe;` |
+| 1334 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2314 | 2 | cWaist | int | `public int cWaist;` | `public int cWaist;` |
+| 1335 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2316 | 2 | cShield | int | `public int cShield;` | `public int cShield;` |
+| 1336 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2318 | 2 | cNeck | int | `public int cNeck;` | `public int cNeck;` |
+| 1337 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2320 | 2 | cFace | int | `public int cFace;` | `public int cFace;` |
+| 1338 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2322 | 2 | cFaceHead | int | `public int cFaceHead;` | `public int cFaceHead;` |
+| 1339 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2324 | 2 | cFaceFlower | int | `public int cFaceFlower;` | `public int cFaceFlower;` |
+| 1340 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2326 | 2 | cFaceMask | int | `public int cFaceMask;` | `public int cFaceMask;` |
+| 1341 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2328 | 2 | cBalloon | int | `public int cBalloon;` | `public int cBalloon;` |
+| 1342 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2330 | 2 | cBalloonFront | int | `public int cBalloonFront;` | `public int cBalloonFront;` |
+| 1346 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2338 | 2 | cBackpack | int | `public int cBackpack;` | `public int cBackpack;` |
+| 1347 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2340 | 2 | cTail | int | `public int cTail;` | `public int cTail;` |
+| 1348 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2342 | 2 | cShieldFallback | int | `public int cShieldFallback;` | `public int cShieldFallback;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.84 细分子系统：`PlayerTraversalColorProjection`
+
+- 细分职责：翅膀、飞毯、浮筒、抓钩、坐骑和矿车颜色投影槽。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；移动表现只读消费颜色快照。
+- 成员文件数：1；声明类型数：1；字段：6；属性：0；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1343 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2332 | 2 | cWings | int | `public int cWings;` | `public int cWings;` |
+| 1344 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2334 | 2 | cCarpet | int | `public int cCarpet;` | `public int cCarpet;` |
+| 1345 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2336 | 2 | cFloatingTube | int | `public int cFloatingTube;` | `public int cFloatingTube;` |
+| 1349 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2344 | 2 | cGrapple | int | `public int cGrapple;` | `public int cGrapple;` |
+| 1350 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2346 | 2 | cMount | int | `public int cMount;` | `public int cMount;` |
+| 1351 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2348 | 2 | cMinecart | int | `public int cMinecart;` | `public int cMinecart;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.85 细分子系统：`PlayerAppearanceCompanionAndEffectProjection`
+
+- 细分职责：宠物、光源、配饰特效和特殊外观投影槽。
+- 边界角色：`registry/projection`；最小 seam：Projection seam；表现输出单向生成。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1352 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2350 | 2 | cPet | int | `public int cPet;` | `public int cPet;` |
+| 1353 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2352 | 2 | cLight | int | `public int cLight;` | `public int cLight;` |
+| 1354 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2354 | 2 | cYorai | int | `public int cYorai;` | `public int cYorai;` |
+| 1355 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2356 | 2 | cPortableStool | int | `public int cPortableStool;` | `public int cPortableStool;` |
+| 1356 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2358 | 2 | cUnicornHorn | int | `public int cUnicornHorn;` | `public int cUnicornHorn;` |
+| 1357 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2360 | 2 | cAngelHalo | int | `public int cAngelHalo;` | `public int cAngelHalo;` |
+| 1358 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2362 | 2 | cBeard | int | `public int cBeard;` | `public int cBeard;` |
+| 1359 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2364 | 2 | cMinion | int | `public int cMinion;` | `public int cMinion;` |
+| 1360 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2366 | 2 | cLeinShampoo | int | `public int cLeinShampoo;` | `public int cLeinShampoo;` |
+| 1361 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2368 | 2 | cFlameWaker | int | `public int cFlameWaker;` | `public int cFlameWaker;` |
+| 1362 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2370 | 2 | cCoat | int | `public int cCoat;` | `public int cCoat;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.86 细分子系统：`PlayerPortalAndTargetingState`
+
+- 细分职责：传送门物理、传送塔样式、召唤物目标和跨实体目标索引。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；目标选择通过 Query/Command 交接。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1363 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2372 | 2 | ownedProjectileCounts | int[] | `public int[] ownedProjectileCounts = new int[ProjectileID.Count];` | `public int[] ownedProjectileCounts = new int[ProjectileID.Count];` |
+| 1364 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2374 | 2 | npcTypeNoAggro | bool[] | `public bool[] npcTypeNoAggro = new bool[NPCID.Count];` | `public bool[] npcTypeNoAggro = new bool[NPCID.Count];` |
+| 1365 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2376 | 2 | lastPortalColorIndex | int | `public int lastPortalColorIndex;` | `public int lastPortalColorIndex;` |
+| 1366 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2378 | 2 | _portalPhysicsTime | int | `public int _portalPhysicsTime;` | `public int _portalPhysicsTime;` |
+| 1367 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2380 | 2 | portalPhysicsFlag | bool | `public bool portalPhysicsFlag;` | `public bool portalPhysicsFlag;` |
+| 1368 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2382 | 2 | lastTeleportPylonStyleUsed | int | `public int lastTeleportPylonStyleUsed;` | `public int lastTeleportPylonStyleUsed;` |
+| 1369 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2384 | 2 | MountFishronSpecialCounter | float | `public float MountFishronSpecialCounter;` | `public float MountFishronSpecialCounter;` |
+| 1370 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2386 | 2 | MinionRestTargetPoint | Vector2 | `public Vector2 MinionRestTargetPoint = Vector2.Zero;` | `public Vector2 MinionRestTargetPoint = Vector2.Zero;` |
+| 1371 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2388 | 2 | MinionAttackTargetNPC | int | `public int MinionAttackTargetNPC = -1;` | `public int MinionAttackTargetNPC = -1;` |
+| 1379 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2406 | 2 | _blackListedTileCoordsForGrappling | System.Collections.Generic.HashSet<Point> | `private HashSet<Point> _blackListedTileCoordsForGrappling = new HashSet<Point>();` | `private HashSet<Point> _blackListedTileCoordsForGrappling = new HashSet<Point>();` |
+| 1380 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2408 | 2 | makeStrongBee | bool | `private bool makeStrongBee;` | `private bool makeStrongBee;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.87 细分子系统：`PlayerItemActionTimingState`
+
+- 细分职责：掉落、药水、工具、物品动作和机关交互计时。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；时间推进由显式 Tick 输入驱动。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1309 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2262 | 2 | wireOperationsCooldown | int | `public int wireOperationsCooldown;` | `public int wireOperationsCooldown;` |
+| 1314 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2273 | 2 | fallStart | int | `public int fallStart;` | `public int fallStart;` |
+| 1315 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2275 | 2 | fallStart2 | int | `public int fallStart2;` | `public int fallStart2;` |
+| 1316 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2277 | 2 | potionDelayTime | int | `public int potionDelayTime = Item.potionDelay;` | `public int potionDelayTime = Item.potionDelay;` |
+| 1317 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2279 | 2 | restorationDelayTime | int | `public int restorationDelayTime = Item.restorationDelay;` | `public int restorationDelayTime = Item.restorationDelay;` |
+| 1318 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2282 | 2 | mushroomDelayTime | int | `public int mushroomDelayTime = Item.mushroomDelay;` | `public int mushroomDelayTime = Item.mushroomDelay;` |
+| 1373 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2393 | 2 | itemAnimation | int | `public int itemAnimation;` | `public int itemAnimation;` |
+| 1374 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2395 | 2 | itemAnimationMax | int | `public int itemAnimationMax;` | `public int itemAnimationMax;` |
+| 1375 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2397 | 2 | itemTime | int | `public int itemTime;` | `public int itemTime;` |
+| 1376 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2399 | 2 | itemTimeMax | int | `public int itemTimeMax;` | `public int itemTimeMax;` |
+| 1377 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2401 | 2 | toolTime | int | `public int toolTime;` | `public int toolTime;` |
+| 1378 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2403 | 2 | BlockInteractionWithProjectiles | int | `public static int BlockInteractionWithProjectiles = 3;` | `public static int BlockInteractionWithProjectiles = 3;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.88 细分子系统：`PlayerContainerAndWorldAnchorState`
+
+- 细分职责：箱体、TileEntity、住房交互、坐卧辅助和世界锚点状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；容器和世界交互通过命令提交。
+- 成员文件数：1；声明类型数：1；字段：17；属性：0；合计：17。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（17）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1310 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2264 | 2 | lastChest | int | `public int lastChest;` | `public int lastChest;` |
+| 1311 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2266 | 2 | piggyBankProjTracker | Terraria.DataStructures.TrackedProjectileReference | `public TrackedProjectileReference piggyBankProjTracker;` | `public TrackedProjectileReference piggyBankProjTracker;` |
+| 1312 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2268 | 2 | voidLensChest | Terraria.DataStructures.TrackedProjectileReference | `public TrackedProjectileReference voidLensChest;` | `public TrackedProjectileReference voidLensChest;` |
+| 1313 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2270 | 2 | chest | int | `public int chest = -1;` | `public int chest = -1;` |
+| 1319 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2284 | 2 | petting | Terraria.GameContent.PlayerPettingInfo | `public PlayerPettingInfo petting;` | `public PlayerPettingInfo petting;` |
+| 1320 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2286 | 2 | sitting | Terraria.GameContent.PlayerSittingHelper | `public PlayerSittingHelper sitting;` | `public PlayerSittingHelper sitting;` |
+| 1321 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2288 | 2 | sleeping | Terraria.GameContent.PlayerSleepingHelper | `public PlayerSleepingHelper sleeping;` | `public PlayerSleepingHelper sleeping;` |
+| 1322 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2290 | 2 | eyeHelper | Terraria.GameContent.PlayerEyeHelper | `public PlayerEyeHelper eyeHelper;` | `public PlayerEyeHelper eyeHelper;` |
+| 1323 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2292 | 2 | tileEntityAnchor | Terraria.DataStructures.PlayerInteractionAnchor | `public PlayerInteractionAnchor tileEntityAnchor;` | `public PlayerInteractionAnchor tileEntityAnchor;` |
+| 1324 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2294 | 2 | doorHelper | Terraria.GameContent.DoorOpeningHelper | `public DoorOpeningHelper doorHelper;` | `public DoorOpeningHelper doorHelper;` |
+| 1325 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2296 | 2 | currentShoppingSettings | Terraria.ShoppingSettings | `public ShoppingSettings currentShoppingSettings = ShoppingSettings.NotInShop;` | `public ShoppingSettings currentShoppingSettings = ShoppingSettings.NotInShop;` |
+| 1372 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2391 | 2 | TouchedTiles | System.Collections.Generic.List<Point> | `public List<Point> TouchedTiles = new List<Point>();` | `public List<Point> TouchedTiles = new List<Point>();` |
+| 1381 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2410 | 2 | equippedAnyTileRangeAcc | bool | `public bool equippedAnyTileRangeAcc;` | `public bool equippedAnyTileRangeAcc;` |
+| 1382 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2412 | 2 | equippedAnyTileSpeedAcc | bool | `public bool equippedAnyTileSpeedAcc;` | `public bool equippedAnyTileSpeedAcc;` |
+| 1383 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2414 | 2 | equippedAnyWallSpeedAcc | bool | `public bool equippedAnyWallSpeedAcc;` | `public bool equippedAnyWallSpeedAcc;` |
+| 1384 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2417 | 2 | behindBackWall | bool | `public bool behindBackWall;` | `public bool behindBackWall;` |
+| 1385 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2419 | 2 | _funkytownAchievementCheckCooldown | int | `public int _funkytownAchievementCheckCooldown;` | `public int _funkytownAchievementCheckCooldown;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.89 细分子系统：`PlayerLuckAndRescanState`
+
+- 细分职责：幸运状态、墙体扫描缓存和相关音效/重扫描状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：16；属性：0；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1386 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2423 | 2 | torchLuck | float | `public float torchLuck;` | `public float torchLuck;` |
+| 1387 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2425 | 2 | happyFunTorchTime | bool | `public bool happyFunTorchTime;` | `public bool happyFunTorchTime;` |
+| 1388 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2429 | 2 | ladyBugLuckTimeLeft | int | `public int ladyBugLuckTimeLeft;` | `public int ladyBugLuckTimeLeft;` |
+| 1389 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2431 | 2 | luck | float | `public float luck;` | `public float luck;` |
+| 1390 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2433 | 2 | luckMinimumCap | float | `public float luckMinimumCap = -0.7f;` | `public float luckMinimumCap = -0.7f;` |
+| 1391 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2435 | 2 | luckMaximumCap | float | `public float luckMaximumCap = 1f;` | `public float luckMaximumCap = 1f;` |
+| 1392 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2437 | 2 | coinLuck | float | `public float coinLuck;` | `public float coinLuck;` |
+| 1393 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2439 | 2 | kiteLuckLevel | byte | `public byte kiteLuckLevel;` | `public byte kiteLuckLevel;` |
+| 1394 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2441 | 2 | luckNeedsSync | bool | `public bool luckNeedsSync;` | `public bool luckNeedsSync;` |
+| 1395 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2443 | 2 | disableVoidBag | int | `public int disableVoidBag = -1;` | `public int disableVoidBag = -1;` |
+| 1396 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2445 | 2 | movementAbilitiesCache | Terraria.DataStructures.PlayerMovementAccsCache | `public PlayerMovementAccsCache movementAbilitiesCache;` | `public PlayerMovementAccsCache movementAbilitiesCache;` |
+| 1397 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2449 | 2 | UnbreakableWallRescanPeriod | int | `private static readonly int UnbreakableWallRescanPeriod = 20;` | `private static readonly int UnbreakableWallRescanPeriod = 20;` |
+| 1398 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2451 | 2 | UnbreakableWallRescanDistance | int | `private static readonly int UnbreakableWallRescanDistance = 256;` | `private static readonly int UnbreakableWallRescanDistance = 256;` |
+| 1399 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2453 | 2 | _unbreakableWallScanCooldown | int | `private int _unbreakableWallScanCooldown;` | `private int _unbreakableWallScanCooldown;` |
+| 1400 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2455 | 2 | _unbreakableWallScanLastPosition | Vector2 | `private Vector2 _unbreakableWallScanLastPosition;` | `private Vector2 _unbreakableWallScanLastPosition;` |
+| 1401 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2457 | 2 | _sizzleAudioHandle | SlotId | `private SlotId _sizzleAudioHandle;` | `private SlotId _sizzleAudioHandle;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.90 细分子系统：`PlayerDefenseLoadoutAndCloneState`
+
+- 细分职责：盾牌招架、伤害冷却、装备方案和视觉克隆适配资源。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：15；属性：0；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（15）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1402 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2461 | 2 | hasRaisableShield | bool | `public bool hasRaisableShield;` | `public bool hasRaisableShield;` |
+| 1403 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2463 | 2 | shieldRaised | bool | `public bool shieldRaised;` | `public bool shieldRaised;` |
+| 1404 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2465 | 2 | shieldParryTimeLeft | int | `public int shieldParryTimeLeft;` | `public int shieldParryTimeLeft;` |
+| 1405 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2467 | 2 | shield_parry_cooldown | int | `public int shield_parry_cooldown;` | `public int shield_parry_cooldown;` |
+| 1406 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2471 | 2 | _lockTileInteractionsTimer | int | `private int _lockTileInteractionsTimer;` | `private int _lockTileInteractionsTimer;` |
+| 1407 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2473 | 2 | hoveredChestIndex | int | `public int hoveredChestIndex = -1;` | `public int hoveredChestIndex = -1;` |
+| 1408 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2475 | 2 | hurtCooldowns | int[] | `public int[] hurtCooldowns = new int[ImmunityCooldownID.Count];` | `public int[] hurtCooldowns = new int[ImmunityCooldownID.Count];` |
+| 1409 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2477 | 2 | GetItemLogger | Terraria.DataStructures.PlayerGetItemLogger | `public static PlayerGetItemLogger GetItemLogger = new PlayerGetItemLogger();` | `public static PlayerGetItemLogger GetItemLogger = new PlayerGetItemLogger();` |
+| 1410 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2481 | 2 | meleeNPCHitCooldown | int[] | `public int[] meleeNPCHitCooldown = new int[Main.maxNPCs];` | `public int[] meleeNPCHitCooldown = new int[Main.maxNPCs];` |
+| 1411 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2484 | 2 | Loadouts | Terraria.EquipmentLoadout[] | `public EquipmentLoadout[] Loadouts = new EquipmentLoadout[3]  	{  		new EquipmentLoadout(),  		new EquipmentLoadout(),  		new EquipmentLoadout()  	};` | `public EquipmentLoadout[] Loadouts = new EquipmentLoadout[3] { new EquipmentLoadout(), new EquipmentLoadout(), new EquipmentLoadout() };` |
+| 1412 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2491 | 2 | CurrentLoadoutIndex | int | `public int CurrentLoadoutIndex;` | `public int CurrentLoadoutIndex;` |
+| 1413 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2495 | 2 | _visualCloneDummyData | Terraria.IO.PlayerFileData | `private static readonly PlayerFileData _visualCloneDummyData = new PlayerFileData();` | `private static readonly PlayerFileData _visualCloneDummyData = new PlayerFileData();` |
+| 1414 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2497 | 2 | _visualCloneStream | System.IO.MemoryStream | `private static readonly MemoryStream _visualCloneStream = new MemoryStream();` | `private static readonly MemoryStream _visualCloneStream = new MemoryStream();` |
+| 1415 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2499 | 2 | _visualCloneWriter | System.IO.BinaryWriter | `private static readonly BinaryWriter _visualCloneWriter = new BinaryWriter(_visualCloneStream);` | `private static readonly BinaryWriter _visualCloneWriter = new BinaryWriter(_visualCloneStream);` |
+| 1416 | field | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2501 | 2 | _visualCloneReader | System.IO.BinaryReader | `private static readonly BinaryReader _visualCloneReader = new BinaryReader(_visualCloneStream);` | `private static readonly BinaryReader _visualCloneReader = new BinaryReader(_visualCloneStream);` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.91 细分子系统：`PlayerSpatialDerivedProperties`
+
+- 细分职责：位置、碰撞盒、站立和视觉位置派生属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不得写入该分组或相邻权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：9；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1427 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2503 | 2 | BlehOldPositionFixer | Vector2 | `public Vector2 BlehOldPositionFixer => -Vector2.UnitY;` | `public Vector2 BlehOldPositionFixer => -Vector2.UnitY;` |
+| 1428 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2507 | 2 | HeightOffsetHitboxCenter | float | `public float HeightOffsetHitboxCenter { get { if (mount.Active) { return mount.PlayerOffsetHitbox; } if (portableStoolInfo.IsInUse) { return portableStoolInfo.HeightBoost - portableStoolInfo.VisualYOffset; } return 0f; } }` | `public float HeightOffsetHitboxCenter { get { if (mount.Active) { return mount.PlayerOffsetHitbox; } if (portableStoolInfo.IsInUse) { return portableStoolInfo.HeightBoost - portableStoolInfo.VisualYOffset; } return 0f; } }` |
+| 1429 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2525 | 2 | HeightOffsetBoost | int | `public int HeightOffsetBoost { get { if (mount.Active) { return mount.HeightBoost; } if (portableStoolInfo.IsInUse) { return portableStoolInfo.HeightBoost; } return 0; } }` | `public int HeightOffsetBoost { get { if (mount.Active) { return mount.HeightBoost; } if (portableStoolInfo.IsInUse) { return portableStoolInfo.HeightBoost; } return 0; } }` |
+| 1430 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2542 | 2 | HitboxForBestiaryNearbyCheck | Rectangle | `public Rectangle HitboxForBestiaryNearbyCheck { get { Rectangle result = new Rectangle((int)position.X, (int)position.Y, width, height); result.Inflate(300, 200); return result; } }` | `public Rectangle HitboxForBestiaryNearbyCheck { get { Rectangle result = new Rectangle((int)position.X, (int)position.Y, width, height); result.Inflate(300, 200); return result; } }` |
+| 1431 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2552 | 2 | IsConsideredStandingStill | bool | `public bool IsConsideredStandingStill { get { if ((double)Math.Abs(velocity.X) < 0.05) { return (double)Math.Abs(velocity.Y) < 0.05; } return false; } }` | `public bool IsConsideredStandingStill { get { if ((double)Math.Abs(velocity.X) < 0.05) { return (double)Math.Abs(velocity.Y) < 0.05; } return false; } }` |
+| 1432 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2564 | 2 | BaseHeight | float | `public float BaseHeight => height - HeightOffsetBoost;` | `public float BaseHeight => height - HeightOffsetBoost;` |
+| 1433 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2566 | 2 | MountedCenter | Vector2 | `public Vector2 MountedCenter { get { return new Vector2(position.X + (float)(width / 2), position.Y + BaseHeight / 2f + HeightOffsetHitboxCenter); } set { position = new Vector2(value.X - (float)(width / 2), value.Y - BaseHeight / 2f - HeightOffsetHitboxCenter); } }` | `public Vector2 MountedCenter { get { return new Vector2(position.X + (float)(width / 2), position.Y + BaseHeight / 2f + HeightOffsetHitboxCenter); } set { position = new Vector2(value.X - (float)(width / 2), value.Y - BaseHeight / 2f - HeightOffsetHitboxCenter); } }` |
+| 1434 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2579 | 2 | VisualPosition | Vector2 | `public override Vector2 VisualPosition => position + new Vector2(0f, gfxOffY);` | `public override Vector2 VisualPosition => position + new Vector2(0f, gfxOffY);` |
+| 1435 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2581 | 2 | CCed | bool | `public bool CCed { get { if (!frozen && !webbed) { return stoned; } return true; } }` | `public bool CCed { get { if (!frozen && !webbed) { return stoned; } return true; } }` |
+
+#### 4.13.92 细分子系统：`PlayerIdentityAndDerivedProperties`
+
+- 细分职责：性别投影和计数归一化派生属性。
+- 边界角色：`derived/query`；最小 seam：纯派生 Query；属性不得形成第二份权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：2；合计：2。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1436 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2593 | 2 | miscCounterNormalized | float | `public float miscCounterNormalized => (float)miscCounter / 300f;` | `public float miscCounterNormalized => (float)miscCounter / 300f;` |
+| 1437 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2595 | 2 | Male | bool | `public bool Male { get { return PlayerVariantID.Sets.Male[skinVariant]; } set { if (value) { if (!Male) { skinVariant = PlayerVariantID.Sets.AltGenderReference[skinVariant]; } } else if (Male) { skinVariant = PlayerVariantID.Sets.AltGenderReference[skinVariant]; } } }` | `public bool Male { get { return PlayerVariantID.Sets.Male[skinVariant]; } set { if (value) { if (!Male) { skinVariant = PlayerVariantID.Sets.AltGenderReference[skinVariant]; } } else if (Male) { skinVariant = PlayerVariantID.Sets.AltGenderReference[skinVariant]; } } }` |
+
+#### 4.13.93 细分子系统：`PlayerBiomeZoneProperties`
+
+- 细分职责：地牢、邪恶、神圣、丛林、雪地和地下沙漠区域属性。
+- 边界角色：`derived/query`；最小 seam：纯资格 Query；从区域快照读取并返回只读结果。
+- 成员文件数：1；声明类型数：1；字段：0；属性：16；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1438 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2617 | 2 | ZoneDungeon | bool | `public bool ZoneDungeon { get { return zone1[0]; } set { zone1[0] = value; } }` | `public bool ZoneDungeon { get { return zone1[0]; } set { zone1[0] = value; } }` |
+| 1439 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2629 | 2 | ZoneCorrupt | bool | `public bool ZoneCorrupt { get { return zone1[1]; } set { zone1[1] = value; } }` | `public bool ZoneCorrupt { get { return zone1[1]; } set { zone1[1] = value; } }` |
+| 1440 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2641 | 2 | ZoneHallow | bool | `public bool ZoneHallow { get { return zone1[2]; } set { zone1[2] = value; } }` | `public bool ZoneHallow { get { return zone1[2]; } set { zone1[2] = value; } }` |
+| 1441 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2653 | 2 | ZoneMeteor | bool | `public bool ZoneMeteor { get { return zone1[3]; } set { zone1[3] = value; } }` | `public bool ZoneMeteor { get { return zone1[3]; } set { zone1[3] = value; } }` |
+| 1442 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2665 | 2 | ZoneJungle | bool | `public bool ZoneJungle { get { return zone1[4]; } set { zone1[4] = value; } }` | `public bool ZoneJungle { get { return zone1[4]; } set { zone1[4] = value; } }` |
+| 1443 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2677 | 2 | ZoneSnow | bool | `public bool ZoneSnow { get { return zone1[5]; } set { zone1[5] = value; } }` | `public bool ZoneSnow { get { return zone1[5]; } set { zone1[5] = value; } }` |
+| 1444 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2689 | 2 | ZoneCrimson | bool | `public bool ZoneCrimson { get { return zone1[6]; } set { zone1[6] = value; } }` | `public bool ZoneCrimson { get { return zone1[6]; } set { zone1[6] = value; } }` |
+| 1445 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2701 | 2 | ZoneWaterCandle | bool | `public bool ZoneWaterCandle { get { return zone1[7]; } set { zone1[7] = value; } }` | `public bool ZoneWaterCandle { get { return zone1[7]; } set { zone1[7] = value; } }` |
+| 1446 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2713 | 2 | ZonePeaceCandle | bool | `public bool ZonePeaceCandle { get { return zone2[0]; } set { zone2[0] = value; } }` | `public bool ZonePeaceCandle { get { return zone2[0]; } set { zone2[0] = value; } }` |
+| 1447 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2725 | 2 | ZoneTowerSolar | bool | `public bool ZoneTowerSolar { get { return zone2[1]; } set { zone2[1] = value; } }` | `public bool ZoneTowerSolar { get { return zone2[1]; } set { zone2[1] = value; } }` |
+| 1448 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2737 | 2 | ZoneTowerVortex | bool | `public bool ZoneTowerVortex { get { return zone2[2]; } set { zone2[2] = value; } }` | `public bool ZoneTowerVortex { get { return zone2[2]; } set { zone2[2] = value; } }` |
+| 1449 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2749 | 2 | ZoneTowerNebula | bool | `public bool ZoneTowerNebula { get { return zone2[3]; } set { zone2[3] = value; } }` | `public bool ZoneTowerNebula { get { return zone2[3]; } set { zone2[3] = value; } }` |
+| 1450 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2761 | 2 | ZoneTowerStardust | bool | `public bool ZoneTowerStardust { get { return zone2[4]; } set { zone2[4] = value; } }` | `public bool ZoneTowerStardust { get { return zone2[4]; } set { zone2[4] = value; } }` |
+| 1451 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2773 | 2 | ZoneDesert | bool | `public bool ZoneDesert { get { return zone2[5]; } set { zone2[5] = value; } }` | `public bool ZoneDesert { get { return zone2[5]; } set { zone2[5] = value; } }` |
+| 1452 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2785 | 2 | ZoneGlowshroom | bool | `public bool ZoneGlowshroom { get { return zone2[6]; } set { zone2[6] = value; } }` | `public bool ZoneGlowshroom { get { return zone2[6]; } set { zone2[6] = value; } }` |
+| 1453 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2797 | 2 | ZoneUndergroundDesert | bool | `public bool ZoneUndergroundDesert { get { return zone2[7]; } set { zone2[7] = value; } }` | `public bool ZoneUndergroundDesert { get { return zone2[7]; } set { zone2[7] = value; } }` |
+
+#### 4.13.94 细分子系统：`PlayerVerticalAndWeatherZoneProperties`
+
+- 细分职责：高度、海滩、降雨和沙尘暴区域属性。
+- 边界角色：`derived/query`；最小 seam：纯资格 Query；不直接修改世界或玩家状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：6；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1454 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2809 | 2 | ZoneSkyHeight | bool | `public bool ZoneSkyHeight { get { return zone3[0]; } set { zone3[0] = value; } }` | `public bool ZoneSkyHeight { get { return zone3[0]; } set { zone3[0] = value; } }` |
+| 1455 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2821 | 2 | ZoneOverworldHeight | bool | `public bool ZoneOverworldHeight { get { return zone3[1]; } set { zone3[1] = value; } }` | `public bool ZoneOverworldHeight { get { return zone3[1]; } set { zone3[1] = value; } }` |
+| 1456 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2834 | 2 | ZoneUnderworldHeight | bool | `public bool ZoneUnderworldHeight { get { return zone3[4]; } set { zone3[4] = value; } }` | `public bool ZoneUnderworldHeight { get { return zone3[4]; } set { zone3[4] = value; } }` |
+| 1457 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2846 | 2 | ZoneBeach | bool | `public bool ZoneBeach { get { return zone3[5]; } set { zone3[5] = value; } }` | `public bool ZoneBeach { get { return zone3[5]; } set { zone3[5] = value; } }` |
+| 1458 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2858 | 2 | ZoneRain | bool | `public bool ZoneRain { get { return zone3[6]; } set { zone3[6] = value; } }` | `public bool ZoneRain { get { return zone3[6]; } set { zone3[6] = value; } }` |
+| 1459 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2870 | 2 | ZoneSandstorm | bool | `public bool ZoneSandstorm { get { return zone3[7]; } set { zone3[7] = value; } }` | `public bool ZoneSandstorm { get { return zone3[7]; } set { zone3[7] = value; } }` |
+
+#### 4.13.95 细分子系统：`PlayerEventAndShoppingZoneProperties`
+
+- 细分职责：事件区域、微光区域和商店区域派生属性。
+- 边界角色：`derived/query`；最小 seam：纯资格 Query；经济系统只消费结果。
+- 成员文件数：1；声明类型数：1；字段：0；属性：7；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1460 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2882 | 2 | ZoneOldOneArmy | bool | `public bool ZoneOldOneArmy { get { return zone4[0]; } set { zone4[0] = value; } }` | `public bool ZoneOldOneArmy { get { return zone4[0]; } set { zone4[0] = value; } }` |
+| 1461 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2895 | 2 | ZoneLihzhardTemple | bool | `public bool ZoneLihzhardTemple { get { return zone4[5]; } set { zone4[5] = value; } }` | `public bool ZoneLihzhardTemple { get { return zone4[5]; } set { zone4[5] = value; } }` |
+| 1462 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2907 | 2 | ZoneGraveyard | bool | `public bool ZoneGraveyard { get { return zone4[6]; } set { zone4[6] = value; } }` | `public bool ZoneGraveyard { get { return zone4[6]; } set { zone4[6] = value; } }` |
+| 1463 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2919 | 2 | ZoneShadowCandle | bool | `public bool ZoneShadowCandle { get { return zone4[7]; } set { zone4[7] = value; } }` | `public bool ZoneShadowCandle { get { return zone4[7]; } set { zone4[7] = value; } }` |
+| 1464 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2931 | 2 | ZoneShimmer | bool | `public bool ZoneShimmer { get { return zone5[0]; } set { zone5[0] = value; } }` | `public bool ZoneShimmer { get { return zone5[0]; } set { zone5[0] = value; } }` |
+| 1465 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2943 | 2 | ShoppingZone_AnyBiome | bool | `public bool ShoppingZone_AnyBiome { get { if (!ZoneDungeon && !ZoneCorrupt && !ZoneCrimson && !ZoneGlowshroom && !ZoneHallow && !ZoneJungle && !ZoneSnow && !ZoneBeach) { return ZoneDesert; } return true; } }` | `public bool ShoppingZone_AnyBiome { get { if (!ZoneDungeon && !ZoneCorrupt && !ZoneCrimson && !ZoneGlowshroom && !ZoneHallow && !ZoneJungle && !ZoneSnow && !ZoneBeach) { return ZoneDesert; } return true; } }` |
+| 1466 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2955 | 2 | ShoppingZone_BelowSurface | bool | `public bool ShoppingZone_BelowSurface => (double)position.Y > Main.worldSurface * 16.0;` | `public bool ShoppingZone_BelowSurface => (double)position.Y > Main.worldSurface * 16.0;` |
+
+#### 4.13.96 细分子系统：`PlayerInteractionAndSelectionProperties`
+
+- 细分职责：选中物品、持有物品、交谈、浮水和交互资格派生属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不得写入该分组或相邻权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：9；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1467 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2958 | 2 | Directions | Vector2 | `public Vector2 Directions => new Vector2(direction, gravDir);` | `public Vector2 Directions => new Vector2(direction, gravDir);` |
+| 1468 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2960 | 2 | selectedItem | int | `public int selectedItem => selectedItemState.Selected;` | `public int selectedItem => selectedItemState.Selected;` |
+| 1469 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2962 | 2 | HeldItem | Terraria.Item | `public Item HeldItem => inventory[selectedItem];` | `public Item HeldItem => inventory[selectedItem];` |
+| 1470 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2965 | 2 | ShouldFloatInWater | bool | `public bool ShouldFloatInWater { get { if (canFloatInWater && !controlDown) { if (mount.Active) { return mount.Type == 37; } return true; } return false; } }` | `public bool ShouldFloatInWater { get { if (canFloatInWater && !controlDown) { if (mount.Active) { return mount.Type == 37; } return true; } return false; } }` |
+| 1471 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2981 | 2 | CanBeTalkedTo | bool | `public bool CanBeTalkedTo { get { if (active && !dead && !ShouldNotDraw) { return stealth == 1f; } return false; } }` | `public bool CanBeTalkedTo { get { if (active && !dead && !ShouldNotDraw) { return stealth == 1f; } return false; } }` |
+| 1472 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 2993 | 2 | IsVoidVaultEnabled | bool | `public bool IsVoidVaultEnabled { get { return voidVaultInfo[0]; } set { voidVaultInfo[0] = value; } }` | `public bool IsVoidVaultEnabled { get { return voidVaultInfo[0]; } set { voidVaultInfo[0] = value; } }` |
+| 1473 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3005 | 2 | ReportedCameraPosition | Vector2 | `public Vector2 ReportedCameraPosition { get { if (!netCameraTarget.HasValue) { return position; } return netCameraTarget.Value; } }` | `public Vector2 ReportedCameraPosition { get { if (!netCameraTarget.HasValue) { return position; } return netCameraTarget.Value; } }` |
+| 1474 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3017 | 2 | TryingToHoverUp | bool | `public bool TryingToHoverUp { get { if (!controlUp) { return tryKeepingHoveringUp; } return true; } }` | `public bool TryingToHoverUp { get { if (!controlUp) { return tryKeepingHoveringUp; } return true; } }` |
+| 1475 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3029 | 2 | TryingToHoverDown | bool | `public bool TryingToHoverDown { get { if (!controlDown) { return tryKeepingHoveringDown; } return true; } }` | `public bool TryingToHoverDown { get { if (!controlDown) { return tryKeepingHoveringDown; } return true; } }` |
+
+#### 4.13.97 细分子系统：`PlayerAbilityAndPresentationProperties`
+
+- 细分职责：坐骑车、有效伤害、飞行能力和表现层可见性派生属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不得写入该分组或相邻权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：12；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1476 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3042 | 2 | UsingBiomeTorches | bool | `public bool UsingBiomeTorches { get { if (!unlockedBiomeTorches) { return false; } return builderAccStatus[11] == 0; } set { builderAccStatus[11] = ((!value) ? 1 : 0); } }` | `public bool UsingBiomeTorches { get { if (!unlockedBiomeTorches) { return false; } return builderAccStatus[11] == 0; } set { builderAccStatus[11] = ((!value) ? 1 : 0); } }` |
+| 1477 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3058 | 2 | UsingSuperCart | bool | `public bool UsingSuperCart { get { if (!unlockedSuperCart) { return false; } return enabledSuperCart; } set { enabledSuperCart = value; } }` | `public bool UsingSuperCart { get { if (!unlockedSuperCart) { return false; } return enabledSuperCart; } set { enabledSuperCart = value; } }` |
+| 1478 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3074 | 2 | bowEffectiveDamage | float | `public float bowEffectiveDamage => (rangedDamage / rangedMultDamage + arrowDamageAdditiveStack) * rangedMultDamage * arrowDamage;` | `public float bowEffectiveDamage => (rangedDamage / rangedMultDamage + arrowDamageAdditiveStack) * rangedMultDamage * arrowDamage;` |
+| 1479 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3076 | 2 | gunEffectiveDamage | float | `public float gunEffectiveDamage => rangedDamage * bulletDamage;` | `public float gunEffectiveDamage => rangedDamage * bulletDamage;` |
+| 1480 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3078 | 2 | specialistEffectiveDamage | float | `public float specialistEffectiveDamage => rangedDamage * rocketDamage;` | `public float specialistEffectiveDamage => rangedDamage * rocketDamage;` |
+| 1481 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3080 | 2 | CanUseBootFlyingAbilities | bool | `public bool CanUseBootFlyingAbilities => !isPerformingJump_DownDash;` | `public bool CanUseBootFlyingAbilities => !isPerformingJump_DownDash;` |
+| 1482 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3082 | 2 | CanUseWingAbilities | bool | `public bool CanUseWingAbilities { get { if (!merman) { return !isPerformingJump_DownDash; } return false; } }` | `public bool CanUseWingAbilities { get { if (!merman) { return !isPerformingJump_DownDash; } return false; } }` |
+| 1483 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3094 | 2 | ShouldNotDraw | bool | `public bool ShouldNotDraw { get { if (invis && itemAnimation == 0) { if (!isDisplayDollOrInanimate) { return !isHatRackDoll; } return false; } return false; } }` | `public bool ShouldNotDraw { get { if (invis && itemAnimation == 0) { if (!isDisplayDollOrInanimate) { return !isHatRackDoll; } return false; } return false; } }` |
+| 1484 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3110 | 2 | talkNPC | int | `public int talkNPC { get; private set; }` | `public int talkNPC { get; private set; }` |
+| 1485 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3112 | 2 | isLockedToATile | bool | `public bool isLockedToATile { get { if (!sitting.isSitting) { return sleeping.isSleeping; } return true; } }` | `public bool isLockedToATile { get { if (!sitting.isSitting) { return sleeping.isSleeping; } return true; } }` |
+| 1486 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3124 | 2 | PortalPhysicsEnabled | bool | `public bool PortalPhysicsEnabled { get { if (_portalPhysicsTime > 0) { return !mount.Active; } return false; } }` | `public bool PortalPhysicsEnabled { get { if (_portalPhysicsTime > 0) { return !mount.Active; } return false; } }` |
+| 1487 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3136 | 2 | MountFishronSpecial | bool | `public bool MountFishronSpecial { get { if (statLife >= statLifeMax2 / 2 && (!wet \|\| lavaWet \|\| honeyWet) && !dripping && !(MountFishronSpecialCounter > 0f)) { if (Main.raining) { return WorldGen.InAPlaceWithWind(position, width, height); } return false; } return true; } }` | `public bool MountFishronSpecial { get { if (statLife >= statLifeMax2 / 2 && (!wet \|\| lavaWet \|\| honeyWet) && !dripping && !(MountFishronSpecialCounter > 0f)) { if (Main.raining) { return WorldGen.InAPlaceWithWind(position, width, height); } return false; } return true; } }` |
+
+#### 4.13.98 细分子系统：`PlayerItemMountAndRuntimeProperties`
+
+- 细分职责：物品时序、坐骑/轨道、场景指标和运行时表现派生属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不得写入该分组或相邻权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：11；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1488 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3152 | 2 | HasMinionRestTarget | bool | `public bool HasMinionRestTarget => MinionRestTargetPoint != Vector2.Zero;` | `public bool HasMinionRestTarget => MinionRestTargetPoint != Vector2.Zero;` |
+| 1489 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3155 | 2 | ItemTimeIsZero | bool | `public bool ItemTimeIsZero => itemTime == 0;` | `public bool ItemTimeIsZero => itemTime == 0;` |
+| 1490 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3157 | 2 | ItemAnimationJustStarted | bool | `public bool ItemAnimationJustStarted => itemAnimation == itemAnimationMax - 1;` | `public bool ItemAnimationJustStarted => itemAnimation == itemAnimationMax - 1;` |
+| 1491 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3159 | 2 | UsingOrReusingItem | bool | `public bool UsingOrReusingItem { get { if (itemAnimation <= 0 && reuseDelay <= 0 && !channel) { return pendingItemReuse; } return true; } }` | `public bool UsingOrReusingItem { get { if (itemAnimation <= 0 && reuseDelay <= 0 && !channel) { return pendingItemReuse; } return true; } }` |
+| 1492 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3171 | 2 | SceneMetrics | Terraria.SceneMetrics | `public static SceneMetrics SceneMetrics => Main.PlayerSceneMetrics;` | `public static SceneMetrics SceneMetrics => Main.PlayerSceneMetrics;` |
+| 1493 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3173 | 2 | SpectatingCameraPosition | Vector2 | `public Vector2 SpectatingCameraPosition { get { if (spectating < 0) { return position; } Player player = Main.player[spectating]; return player.Bottom + new Vector2(0f, player.gfxOffY - 21f) + player.netOffset; } }` | `public Vector2 SpectatingCameraPosition { get { if (spectating < 0) { return position; } Player player = Main.player[spectating]; return player.Bottom + new Vector2(0f, player.gfxOffY - 21f) + player.netOffset; } }` |
+| 1494 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3187 | 2 | SlimeDontHyperJump | bool | `public bool SlimeDontHyperJump { get { if (mount.Active && mount.IsConsideredASlimeMount && wetSlime > 0) { return !controlJump; } return false; } }` | `public bool SlimeDontHyperJump { get { if (mount.Active && mount.IsConsideredASlimeMount && wetSlime > 0) { return !controlJump; } return false; } }` |
+| 1495 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3199 | 2 | hasBreathingReed | bool | `private bool hasBreathingReed { get { if (inventory[selectedItem].type == 186) { if (mount.Active) { return !MountID.Sets.DontHoldItems[mount.Type]; } return true; } return false; } }` | `private bool hasBreathingReed { get { if (inventory[selectedItem].type == 186) { if (mount.Active) { return !MountID.Sets.DontHoldItems[mount.Type]; } return true; } return false; } }` |
+| 1496 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3215 | 2 | IsRidingTracks | bool | `public bool IsRidingTracks { get { if (!mount.Active) { return false; } if (mount.Cart) { return true; } if (mount.CanGrindRails && onTrack) { return true; } return false; } }` | `public bool IsRidingTracks { get { if (!mount.Active) { return false; } if (mount.Cart) { return true; } if (mount.CanGrindRails && onTrack) { return true; } return false; } }` |
+| 1497 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3235 | 2 | MouthPosition | Vector2? | `public Vector2? MouthPosition { get { if (mount.Active) { Mount.MountDelegatesData.OverridePositionMethod mouthPosition = mount.Delegations.MouthPosition; if (mouthPosition != null && mouthPosition(this, out var result)) { return result; } } Vector2 spinningpoint = new Vector2(direction * 8, gravDir * -4f); return RotatedRelativePoint(MountedCenter, reverseRotation: false, addGfxOffY: false) + spinningpoint.RotatedBy(fullRotation); } }` | `public Vector2? MouthPosition { get { if (mount.Active) { Mount.MountDelegatesData.OverridePositionMethod mouthPosition = mount.Delegations.MouthPosition; if (mouthPosition != null && mouthPosition(this, out var result)) { return result; } } Vector2 spinningpoint = new Vector2(direction * 8, gravDir * -4f); return RotatedRelativePoint(MountedCenter, reverseRotation: false, addGfxOffY: false) + spinningpoint.RotatedBy(fullRotation); } }` |
+| 1498 | property | Terraria.Player | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 3252 | 2 | HandPosition | Vector2? | `public Vector2? HandPosition { get { if (mount.Active) { Mount.MountDelegatesData.OverridePositionMethod handPosition = mount.Delegations.HandPosition; if (handPosition != null && handPosition(this, out var result)) { return result; } } Vector2 vector = Main.OffsetsPlayerOnhand[bodyFrame.Y / 56] * 2f; if (direction != 1) { vector.X = (float)bodyFrame.Width - vector.X; } if (gravDir != 1f) { vector.Y = (float)bodyFrame.Height - vector.Y; } vector -= new Vector2(bodyFrame.Width - width, bodyFrame.Height - 42) / 2f; Vector2 vector2 = -new Vector2(20f, 42f) / 2f + vector; Vector2 pos = MountedCenter + vector2; ApplyItemPositionOffsetFromMount(ref pos); return RotatedRelativePoint(pos); } }` | `public Vector2? HandPosition { get { if (mount.Active) { Mount.MountDelegatesData.OverridePositionMethod handPosition = mount.Delegations.HandPosition; if (handPosition != null && handPosition(this, out var result)) { return result; } } Vector2 vector = Main.OffsetsPlayerOnhand[bodyFrame.Y / 56] * 2f; if (direction != 1) { vector.X = (float)bodyFrame.Width - vector.X; } if (gravDir != 1f) { vector.Y = (float)bodyFrame.Height - vector.Y; } vector -= new Vector2(bodyFrame.Width - width, bodyFrame.Height - 42) / 2f; Vector2 vector2 = -new Vector2(20f, 42f) / 2f + vector; Vector2 pos = MountedCenter + vector2; ApplyItemPositionOffsetFromMount(ref pos); return RotatedRelativePoint(pos); } }` |
+
+#### 4.13.99 细分子系统：`PlayerBuilderInteractionDefinitions`
+
+- 细分职责：建筑工具切换项的静态定义。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；规则 System 消费，外部配置通过 Adapter 转换。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 391 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 47 | 3 | RulerLine | int | `public const int RulerLine = 0;` | `public const int RulerLine = 0;` |
+| 392 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 49 | 3 | RulerGrid | int | `public const int RulerGrid = 1;` | `public const int RulerGrid = 1;` |
+| 393 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 51 | 3 | AutoActuate | int | `public const int AutoActuate = 2;` | `public const int AutoActuate = 2;` |
+| 394 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 53 | 3 | AutoPaint | int | `public const int AutoPaint = 3;` | `public const int AutoPaint = 3;` |
+| 395 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 55 | 3 | WireVisibility_Red | int | `public const int WireVisibility_Red = 4;` | `public const int WireVisibility_Red = 4;` |
+| 396 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 57 | 3 | WireVisibility_Green | int | `public const int WireVisibility_Green = 5;` | `public const int WireVisibility_Green = 5;` |
+| 397 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 59 | 3 | WireVisibility_Blue | int | `public const int WireVisibility_Blue = 6;` | `public const int WireVisibility_Blue = 6;` |
+| 398 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 61 | 3 | WireVisibility_Yellow | int | `public const int WireVisibility_Yellow = 7;` | `public const int WireVisibility_Yellow = 7;` |
+| 399 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 63 | 3 | HideAllWires | int | `public const int HideAllWires = 8;` | `public const int HideAllWires = 8;` |
+| 400 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 65 | 3 | WireVisibility_Actuators | int | `public const int WireVisibility_Actuators = 9;` | `public const int WireVisibility_Actuators = 9;` |
+| 401 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 67 | 3 | BlockSwap | int | `public const int BlockSwap = 10;` | `public const int BlockSwap = 10;` |
+| 402 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 69 | 3 | TorchBiome | int | `public const int TorchBiome = 11;` | `public const int TorchBiome = 11;` |
+| 403 | field | Terraria.Player.BuilderAccToggleIDs | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 71 | 3 | Count | int | `public static readonly int Count = 12;` | `public static readonly int Count = 12;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.100 细分子系统：`PlayerSelectionState`
+
+- 细分职责：热键/径向和选中物品的选择状态。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；提交后的事实单向输出，不把网络/UI/索引反写成权威状态。
+- 成员文件数：1；声明类型数：2；字段：9；属性：6；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 431 | field | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 321 | 3 | player | Terraria.Player | `private readonly Player player;` | `private readonly Player player;` |
+| 432 | field | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 323 | 3 | selected | int | `private int selected;` | `private int selected;` |
+| 433 | field | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 325 | 3 | hotbar | int | `private int hotbar;` | `private int hotbar;` |
+| 434 | field | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 327 | 3 | buffered | int | `private int buffered;` | `private int buffered;` |
+| 435 | field | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 329 | 3 | overridden | int | `private int overridden;` | `private int overridden;` |
+| 436 | field | Terraria.Player.SelectionRadial | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 422 | 3 | _SelectedBinding | int | `private int _SelectedBinding = -1;` | `private int _SelectedBinding = -1;` |
+| 437 | field | Terraria.Player.SelectionRadial | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 424 | 3 | RadialCount | int | `public int RadialCount;` | `public int RadialCount;` |
+| 438 | field | Terraria.Player.SelectionRadial | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 426 | 3 | Bindings | int[] | `public int[] Bindings;` | `public int[] Bindings;` |
+| 439 | field | Terraria.Player.SelectionRadial | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 428 | 3 | Mode | Terraria.Player.SelectionRadial.SelectionMode | `public SelectionMode Mode;` | `public SelectionMode Mode;` |
+
+##### 属性（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1421 | property | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 331 | 3 | CanChangeSelectedItemImmediately | bool | `public bool CanChangeSelectedItemImmediately { get { if (!player.UsingOrReusingItem) { return player.ItemTimeIsZero; } return false; } }` | `public bool CanChangeSelectedItemImmediately { get { if (!player.UsingOrReusingItem) { return player.ItemTimeIsZero; } return false; } }` |
+| 1422 | property | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 343 | 3 | Selected | int | `public int Selected => selected;` | `public int Selected => selected;` |
+| 1423 | property | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 345 | 3 | Hotbar | int | `public int Hotbar => hotbar;` | `public int Hotbar => hotbar;` |
+| 1424 | property | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 347 | 3 | HasActiveOverride | bool | `public bool HasActiveOverride => overridden >= 0;` | `public bool HasActiveOverride => overridden >= 0;` |
+| 1425 | property | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 349 | 3 | HasBufferedChange | bool | `public bool HasBufferedChange => buffered >= 0;` | `public bool HasBufferedChange => buffered >= 0;` |
+| 1426 | property | Terraria.Player.SelectedItemState | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 351 | 3 | LastNonOverridenSelection | int | `public int LastNonOverridenSelection { get { if (!HasBufferedChange) { if (HasActiveOverride) { return -1; } return selected; } return buffered; } }` | `public int LastNonOverridenSelection { get { if (!HasBufferedChange) { if (HasActiveOverride) { return -1; } return selected; } return buffered; } }` |
+
+#### 4.13.101 细分子系统：`PlayerInputSyncAndMatch`
+
+- 细分职责：输入同步快照、联机匹配外观请求和频道取消期望。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；提交后的事实单向输出，不把网络/UI/索引反写成权威状态。
+- 成员文件数：1；声明类型数：3；字段：13；属性：1；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 404 | field | Terraria.Player.PlayerInputSyncCache | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 76 | 3 | controlLeft | bool | `public bool controlLeft;` | `public bool controlLeft;` |
+| 405 | field | Terraria.Player.PlayerInputSyncCache | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 78 | 3 | controlRight | bool | `public bool controlRight;` | `public bool controlRight;` |
+| 406 | field | Terraria.Player.PlayerInputSyncCache | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 80 | 3 | controlUp | bool | `public bool controlUp;` | `public bool controlUp;` |
+| 407 | field | Terraria.Player.PlayerInputSyncCache | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 82 | 3 | controlDown | bool | `public bool controlDown;` | `public bool controlDown;` |
+| 408 | field | Terraria.Player.PlayerInputSyncCache | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 84 | 3 | controlJump | bool | `public bool controlJump;` | `public bool controlJump;` |
+| 409 | field | Terraria.Player.ChannelCancelKey | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 110 | 3 | ProjectileTypeExpected | int | `public int ProjectileTypeExpected;` | `public int ProjectileTypeExpected;` |
+| 410 | field | Terraria.Player.ChannelCancelKey | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 112 | 3 | ProjectileIndexExpected | int | `public int ProjectileIndexExpected;` | `public int ProjectileIndexExpected;` |
+| 421 | field | Terraria.Player.SetMatchRequest | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 244 | 3 | Player | Terraria.Player | `public Player Player;` | `public Player Player;` |
+| 422 | field | Terraria.Player.SetMatchRequest | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 246 | 3 | Head | int | `public int Head;` | `public int Head;` |
+| 423 | field | Terraria.Player.SetMatchRequest | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 248 | 3 | Body | int | `public int Body;` | `public int Body;` |
+| 424 | field | Terraria.Player.SetMatchRequest | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 250 | 3 | Legs | int | `public int Legs;` | `public int Legs;` |
+| 425 | field | Terraria.Player.SetMatchRequest | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 252 | 3 | ArmorSlotRequested | int | `public int ArmorSlotRequested;` | `public int ArmorSlotRequested;` |
+| 426 | field | Terraria.Player.SetMatchRequest | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 254 | 3 | Male | bool | `public bool Male;` | `public bool Male;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1419 | property | Terraria.Player.PlayerInputSyncCache | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 86 | 3 | PressingAnyInput | bool | `public bool PressingAnyInput { get { if (!controlLeft && !controlRight && !controlUp && !controlDown) { return controlJump; } return true; } }` | `public bool PressingAnyInput { get { if (!controlLeft && !controlRight && !controlUp && !controlDown) { return controlJump; } return true; } }` |
+
+#### 4.13.102 细分子系统：`PlayerItemCheckContext`
+
+- 细分职责：物品检查阶段的消费跳过上下文。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：1；属性：0；合计：1。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 429 | field | Terraria.Player.ItemCheckContext | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 284 | 3 | SkipItemConsumption | bool | `public bool SkipItemConsumption;` | `public bool SkipItemConsumption;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.103 细分子系统：`PlayerEyeAnimationState`
+
+- 细分职责：眼睛状态和受伤/中毒/睡眠驱动的眼部动画投影。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；表现状态只读取玩家事实。
+- 成员文件数：1；声明类型数：1；字段：3；属性：1；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 370 | field | Terraria.GameContent.PlayerEyeHelper | Terraria.GameContent/PlayerEyeHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerEyeHelper.cs | 24 | 2 | _state | Terraria.GameContent.PlayerEyeHelper.EyeState | `private EyeState _state;` | `private EyeState _state;` |
+| 371 | field | Terraria.GameContent.PlayerEyeHelper | Terraria.GameContent/PlayerEyeHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerEyeHelper.cs | 26 | 2 | _timeInState | int | `private int _timeInState;` | `private int _timeInState;` |
+| 372 | field | Terraria.GameContent.PlayerEyeHelper | Terraria.GameContent/PlayerEyeHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerEyeHelper.cs | 28 | 2 | TimeToActDamaged | int | `private const int TimeToActDamaged = 20;` | `private const int TimeToActDamaged = 20;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1417 | property | Terraria.GameContent.PlayerEyeHelper | Terraria.GameContent/PlayerEyeHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerEyeHelper.cs | 30 | 2 | EyeFrameToShow | int | `public int EyeFrameToShow { get; private set; }` | `public int EyeFrameToShow { get; private set; }` |
+
+#### 4.13.104 细分子系统：`PlayerPettingState`
+
+- 细分职责：玩家抚摸 NPC、投射物或坐骑目标的交互状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；交互命令维护目标引用和生命周期。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 373 | field | Terraria.GameContent.PlayerPettingInfo | Terraria.GameContent/PlayerPettingInfo.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerPettingInfo.cs | 7 | 2 | isPetting | bool | `public bool isPetting;` | `public bool isPetting;` |
+| 374 | field | Terraria.GameContent.PlayerPettingInfo | Terraria.GameContent/PlayerPettingInfo.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerPettingInfo.cs | 9 | 2 | npc | int | `public int npc;` | `public int npc;` |
+| 375 | field | Terraria.GameContent.PlayerPettingInfo | Terraria.GameContent/PlayerPettingInfo.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerPettingInfo.cs | 11 | 2 | proj | int | `public int proj;` | `public int proj;` |
+| 376 | field | Terraria.GameContent.PlayerPettingInfo | Terraria.GameContent/PlayerPettingInfo.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerPettingInfo.cs | 13 | 2 | type | int | `public int type;` | `public int type;` |
+| 377 | field | Terraria.GameContent.PlayerPettingInfo | Terraria.GameContent/PlayerPettingInfo.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerPettingInfo.cs | 15 | 2 | mount | bool | `public bool mount;` | `public bool mount;` |
+| 378 | field | Terraria.GameContent.PlayerPettingInfo | Terraria.GameContent/PlayerPettingInfo.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerPettingInfo.cs | 17 | 2 | offsetFromPet | Vector2 | `public Vector2 offsetFromPet;` | `public Vector2 offsetFromPet;` |
+| 379 | field | Terraria.GameContent.PlayerPettingInfo | Terraria.GameContent/PlayerPettingInfo.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerPettingInfo.cs | 19 | 2 | isPetSmall | bool | `public bool isPetSmall;` | `public bool isPetSmall;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.105 细分子系统：`PlayerSittingState`
+
+- 细分职责：玩家椅子坐姿、座位偏移和堆叠索引状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；座椅交互事件单向提交。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 380 | field | Terraria.GameContent.PlayerSittingHelper | Terraria.GameContent/PlayerSittingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSittingHelper.cs | 8 | 2 | ChairSittingMaxDistance | int | `public const int ChairSittingMaxDistance = 40;` | `public const int ChairSittingMaxDistance = 40;` |
+| 381 | field | Terraria.GameContent.PlayerSittingHelper | Terraria.GameContent/PlayerSittingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSittingHelper.cs | 10 | 2 | isSitting | bool | `public bool isSitting;` | `public bool isSitting;` |
+| 382 | field | Terraria.GameContent.PlayerSittingHelper | Terraria.GameContent/PlayerSittingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSittingHelper.cs | 12 | 2 | details | Terraria.GameContent.ExtraSeatInfo | `public ExtraSeatInfo details;` | `public ExtraSeatInfo details;` |
+| 383 | field | Terraria.GameContent.PlayerSittingHelper | Terraria.GameContent/PlayerSittingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSittingHelper.cs | 14 | 2 | offsetForSeat | Vector2 | `public Vector2 offsetForSeat;` | `public Vector2 offsetForSeat;` |
+| 384 | field | Terraria.GameContent.PlayerSittingHelper | Terraria.GameContent/PlayerSittingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSittingHelper.cs | 16 | 2 | sittingIndex | int | `public int sittingIndex;` | `public int sittingIndex;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.106 细分子系统：`PlayerSleepingState`
+
+- 细分职责：玩家睡眠、入睡计时和床面投影状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；睡眠生命周期事件集中写入。
+- 成员文件数：1；声明类型数：1；字段：6；属性：1；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 385 | field | Terraria.GameContent.PlayerSleepingHelper | Terraria.GameContent/PlayerSleepingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSleepingHelper.cs | 9 | 2 | BedSleepingMaxDistance | int | `public const int BedSleepingMaxDistance = 96;` | `public const int BedSleepingMaxDistance = 96;` |
+| 386 | field | Terraria.GameContent.PlayerSleepingHelper | Terraria.GameContent/PlayerSleepingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSleepingHelper.cs | 11 | 2 | TimeToFullyFallAsleep | int | `public const int TimeToFullyFallAsleep = 120;` | `public const int TimeToFullyFallAsleep = 120;` |
+| 387 | field | Terraria.GameContent.PlayerSleepingHelper | Terraria.GameContent/PlayerSleepingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSleepingHelper.cs | 13 | 2 | isSleeping | bool | `public bool isSleeping;` | `public bool isSleeping;` |
+| 388 | field | Terraria.GameContent.PlayerSleepingHelper | Terraria.GameContent/PlayerSleepingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSleepingHelper.cs | 15 | 2 | sleepingIndex | int | `public int sleepingIndex;` | `public int sleepingIndex;` |
+| 389 | field | Terraria.GameContent.PlayerSleepingHelper | Terraria.GameContent/PlayerSleepingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSleepingHelper.cs | 17 | 2 | timeSleeping | int | `public int timeSleeping;` | `public int timeSleeping;` |
+| 390 | field | Terraria.GameContent.PlayerSleepingHelper | Terraria.GameContent/PlayerSleepingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSleepingHelper.cs | 19 | 2 | visualOffsetOfBedBase | Vector2 | `public Vector2 visualOffsetOfBedBase;` | `public Vector2 visualOffsetOfBedBase;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1418 | property | Terraria.GameContent.PlayerSleepingHelper | Terraria.GameContent/PlayerSleepingHelper.cs | D:\TRbackup\Version4\Terraria.GameContent\PlayerSleepingHelper.cs | 21 | 2 | FullyFallenAsleep | bool | `public bool FullyFallenAsleep { get { if (isSleeping) { return timeSleeping >= 120; } return false; } }` | `public bool FullyFallenAsleep { get { if (isSleeping) { return timeSleeping >= 120; } return false; } }` |
+
+#### 4.13.107 细分子系统：`PlayerRabbitOrderFrameState`
+
+- 细分职责：兔子指令帧状态机及其表现帧计数。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；帧状态由表现更新消费。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 411 | field | Terraria.Player.RabbitOrderFrameHelper | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 142 | 3 | DisplayFrame | int | `public int DisplayFrame;` | `public int DisplayFrame;` |
+| 412 | field | Terraria.Player.RabbitOrderFrameHelper | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 144 | 3 | _frameCounter | int | `private int _frameCounter;` | `private int _frameCounter;` |
+| 413 | field | Terraria.Player.RabbitOrderFrameHelper | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 146 | 3 | _aiState | int | `private int _aiState;` | `private int _aiState;` |
+| 414 | field | Terraria.Player.RabbitOrderFrameHelper | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 148 | 3 | AIState_Idle | int | `private const int AIState_Idle = 0;` | `private const int AIState_Idle = 0;` |
+| 415 | field | Terraria.Player.RabbitOrderFrameHelper | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 150 | 3 | AIState_LookingAtCamera | int | `private const int AIState_LookingAtCamera = 1;` | `private const int AIState_LookingAtCamera = 1;` |
+| 416 | field | Terraria.Player.RabbitOrderFrameHelper | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 152 | 3 | AIState_Resting | int | `private const int AIState_Resting = 2;` | `private const int AIState_Resting = 2;` |
+| 417 | field | Terraria.Player.RabbitOrderFrameHelper | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 154 | 3 | AIState_EatingCarrot | int | `private const int AIState_EatingCarrot = 3;` | `private const int AIState_EatingCarrot = 3;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.108 细分子系统：`PlayerPresentationMessagesAndArms`
+
+- 细分职责：头顶消息和复合手臂表现参数。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：2；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 418 | field | Terraria.Player.CompositeArmData | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 226 | 3 | enabled | bool | `public bool enabled;` | `public bool enabled;` |
+| 419 | field | Terraria.Player.CompositeArmData | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 228 | 3 | stretch | Terraria.Player.CompositeArmStretchAmount | `public CompositeArmStretchAmount stretch;` | `public CompositeArmStretchAmount stretch;` |
+| 420 | field | Terraria.Player.CompositeArmData | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 230 | 3 | rotation | float | `public float rotation;` | `public float rotation;` |
+| 440 | field | Terraria.Player.OverheadMessage | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 457 | 3 | chatText | string | `public string chatText;` | `public string chatText;` |
+| 441 | field | Terraria.Player.OverheadMessage | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 459 | 3 | snippets | Terraria.UI.Chat.TextSnippet[] | `public TextSnippet[] snippets;` | `public TextSnippet[] snippets;` |
+| 442 | field | Terraria.Player.OverheadMessage | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 461 | 3 | messageSize | Vector2 | `public Vector2 messageSize;` | `public Vector2 messageSize;` |
+| 443 | field | Terraria.Player.OverheadMessage | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 463 | 3 | timeLeft | int | `public int timeLeft;` | `public int timeLeft;` |
+| 444 | field | Terraria.Player.OverheadMessage | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 465 | 3 | color | Color | `public Color color;` | `public Color color;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.13.109 细分子系统：`PlayerItemSpaceAndSettings`
+
+- 细分职责：物品接纳/虚空袋资格和玩家设置。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：2；字段：3；属性：1；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 427 | field | Terraria.Player.ItemSpaceStatus | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 259 | 3 | CanTakeItem | bool | `public readonly bool CanTakeItem;` | `public readonly bool CanTakeItem;` |
+| 428 | field | Terraria.Player.ItemSpaceStatus | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 261 | 3 | ItemIsGoingToVoidVault | bool | `public readonly bool ItemIsGoingToVoidVault;` | `public readonly bool ItemIsGoingToVoidVault;` |
+| 430 | field | Terraria.Player.Settings | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 316 | 3 | DashControl | Terraria.Player.Settings.DashPreference | `public static DashPreference DashControl = DashPreference.AllowDoubleTap;` | `public static DashPreference DashControl = DashPreference.AllowDoubleTap;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1420 | property | Terraria.Player.ItemSpaceStatus | Terraria/Player.cs | D:\TRbackup\Version4\Terraria\Player.cs | 263 | 3 | CanTakeItemToPersonalInventory | bool | `public bool CanTakeItemToPersonalInventory { get { if (CanTakeItem) { return !ItemIsGoingToVoidVault; } return false; } }` | `public bool CanTakeItemToPersonalInventory { get { if (CanTakeItem) { return !ItemIsGoingToVoidVault; } return false; } }` |
+
+### 4.14 父级子系统：`NpcAndTownSimulation`
+
+- 父级职责：NPC 生命周期、AI、城镇和生成资格。
+- 父级统计：字段 371；属性 41；合计 412；细分数 41。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `NpcIdentityInteractionAndPresentationState` | authoritative state/behavior | 18 | 0 | 18 |
+| `NpcTargetAndMovementHistoryState` | authoritative state/behavior | 14 | 0 | 14 |
+| `NpcBossAndInvasionGlobalState` | authoritative state/behavior | 10 | 0 | 10 |
+| `NpcSpawnAndCritterState` | authoritative state/behavior | 13 | 0 | 13 |
+| `NpcBossAndInvasionState` | authoritative state/behavior | 5 | 0 | 5 |
+| `NpcNetworkReplicationState` | registry/projection | 11 | 0 | 11 |
+| `NpcSpawnBudgetAndActivityState` | authoritative state/behavior | 10 | 0 | 10 |
+| `NpcIdentityAndStatusState` | authoritative state/behavior | 4 | 0 | 4 |
+| `NpcBuffSlotAndImmunityState` | authoritative state/behavior | 4 | 0 | 4 |
+| `NpcElementalDebuffState` | authoritative state/behavior | 17 | 0 | 17 |
+| `NpcControlAndSocialEffectState` | authoritative state/behavior | 4 | 0 | 4 |
+| `NpcWhipAndSpecialEffectState` | authoritative state/behavior | 9 | 0 | 9 |
+| `NpcRegenerationAndProtectionState` | authoritative state/behavior | 8 | 0 | 8 |
+| `NpcTownRescueState` | authoritative state/behavior | 8 | 0 | 8 |
+| `NpcTownPetAdoptionState` | authoritative state/behavior | 3 | 0 | 3 |
+| `NpcTownSpawnUnlockState` | authoritative state/behavior | 16 | 0 | 16 |
+| `NpcTowerAndEventShieldState` | authoritative state/behavior | 10 | 0 | 10 |
+| `NpcProgressionBookAndActiveRegistryState` | authoritative state/behavior | 4 | 0 | 4 |
+| `NpcBossDefeatFlags` | authoritative state/behavior | 17 | 0 | 17 |
+| `NpcEventDefeatFlags` | authoritative state/behavior | 14 | 0 | 14 |
+| `NpcLifecycleAndCrossDomainRefs` | authoritative state/behavior | 4 | 0 | 4 |
+| `NpcAiTargetAndIdentityState` | authoritative state/behavior | 13 | 0 | 13 |
+| `NpcCombatAndLifeState` | authoritative state/behavior | 19 | 0 | 19 |
+| `NpcCollisionAndPresentationState` | authoritative state/behavior | 17 | 0 | 17 |
+| `NpcTownHousingAndBreathState` | authoritative state/behavior | 19 | 0 | 19 |
+| `NpcPortalAndSpecialBehaviorState` | authoritative state/behavior | 11 | 0 | 11 |
+| `NpcSpawnCooldownAndEnvironment` | authoritative state/behavior | 10 | 0 | 10 |
+| `NpcTargetAndIdentityProperties` | derived/query | 0 | 16 | 16 |
+| `NpcProgressionAndEnvironmentProperties` | derived/query | 0 | 9 | 9 |
+| `NpcSpawnContextAndCapacityInputs` | authoritative state/behavior | 10 | 0 | 10 |
+| `NpcSpawnSpatialEligibilityInputs` | derived/query | 10 | 0 | 10 |
+| `NpcSpawnBiomeAndDungeonEligibilityInputs` | derived/query | 6 | 0 | 6 |
+| `NpcSpawnPolicyAndEventEligibilityInputs` | derived/query | 11 | 0 | 11 |
+| `NpcSpawnBiomeZoneInputs` | derived/query | 13 | 0 | 13 |
+| `NpcSpawnEventAndTowerInputs` | derived/query | 8 | 0 | 8 |
+| `NpcSpawnTargetSelectionState` | derived/query | 1 | 0 | 1 |
+| `NpcDamageDefinitionRegistry` | registry/projection | 4 | 0 | 4 |
+| `NpcDamageRuntimeTracking` | authoritative state/behavior | 9 | 3 | 12 |
+| `NpcDamageCreditProjection` | derived/query | 1 | 6 | 7 |
+| `NpcInteractionAndCommerce` | authoritative state/behavior | 4 | 7 | 11 |
+| `NpcNetworkSyncState` | registry/projection | 2 | 0 | 2 |
+
+#### 4.14.1 细分子系统：`NpcIdentityInteractionAndPresentationState`
+
+- 细分职责：NPC 身份、交互、名字表现和玩家交互历史状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；交互命令只写入 NPC 身份与交互边界。
+- 成员文件数：1；声明类型数：1；字段：18；属性：0；合计：18。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（18）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1578 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5897 | 2 | active | bool | `public bool active;` | `public bool active;` |
+| 1579 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5899 | 2 | NPC_TARGETS_START | int | `private const int NPC_TARGETS_START = 300;` | `private const int NPC_TARGETS_START = 300;` |
+| 1580 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5901 | 2 | IsABestiaryIconDummy | bool | `public bool IsABestiaryIconDummy;` | `public bool IsABestiaryIconDummy;` |
+| 1581 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5903 | 2 | IsAPortraitDummy | bool | `public bool IsAPortraitDummy;` | `public bool IsAPortraitDummy;` |
+| 1582 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5905 | 2 | ForcePartyHatOn | bool | `public bool ForcePartyHatOn;` | `public bool ForcePartyHatOn;` |
+| 1601 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5943 | 2 | nameOverIncrement | float | `public const float nameOverIncrement = 0.025f;` | `public const float nameOverIncrement = 0.025f;` |
+| 1602 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5945 | 2 | nameOverDistance | float | `public const float nameOverDistance = 350f;` | `public const float nameOverDistance = 350f;` |
+| 1603 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5947 | 2 | nameOver | float | `public float nameOver;` | `public float nameOver;` |
+| 1610 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5961 | 2 | altTexture | int | `public int altTexture;` | `public int altTexture;` |
+| 1611 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5963 | 2 | townNpcVariationIndex | int | `public int townNpcVariationIndex;` | `public int townNpcVariationIndex;` |
+| 1612 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5965 | 2 | catchItem | short | `public short catchItem;` | `public short catchItem;` |
+| 1613 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5967 | 2 | releaseOwner | short | `public short releaseOwner = 255;` | `public short releaseOwner = 255;` |
+| 1614 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5969 | 2 | rarity | int | `public int rarity;` | `public int rarity;` |
+| 1615 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5971 | 2 | taxCollector | bool | `public static bool taxCollector = false;` | `public static bool taxCollector = false;` |
+| 1616 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5973 | 2 | playerInteraction | bool[] | `public bool[] playerInteraction = new bool[256];` | `public bool[] playerInteraction = new bool[256];` |
+| 1617 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5975 | 2 | lastInteraction | int | `public int lastInteraction = 255;` | `public int lastInteraction = 255;` |
+| 1618 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5977 | 2 | takenDamageMultiplier | float | `public float takenDamageMultiplier = 1f;` | `public float takenDamageMultiplier = 1f;` |
+| 1619 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5979 | 2 | freeCake | bool | `public static bool freeCake = false;` | `public static bool freeCake = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.2 细分子系统：`NpcTargetAndMovementHistoryState`
+
+- 细分职责：NPC 目标移动参数、传送、重力和移动历史缓存。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；移动系统通过显式阶段提交历史状态。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1583 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5907 | 2 | waterMovementSpeed | float | `public float waterMovementSpeed = 0.5f;` | `public float waterMovementSpeed = 0.5f;` |
+| 1584 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5909 | 2 | lavaMovementSpeed | float | `public float lavaMovementSpeed = 0.5f;` | `public float lavaMovementSpeed = 0.5f;` |
+| 1585 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5911 | 2 | honeyMovementSpeed | float | `public float honeyMovementSpeed = 0.25f;` | `public float honeyMovementSpeed = 0.25f;` |
+| 1586 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5913 | 2 | shimmerMovementSpeed | float | `public float shimmerMovementSpeed = 0.375f;` | `public float shimmerMovementSpeed = 0.375f;` |
+| 1594 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5929 | 2 | teleportStyle | int | `public int teleportStyle;` | `public int teleportStyle;` |
+| 1595 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5931 | 2 | teleportTime | float | `public float teleportTime;` | `public float teleportTime;` |
+| 1620 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5981 | 2 | gfxOffY | float | `public float gfxOffY;` | `public float gfxOffY;` |
+| 1621 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5983 | 2 | stepSpeed | float | `public float stepSpeed;` | `public float stepSpeed;` |
+| 1622 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5985 | 2 | gravity | float | `private static float gravity = 0.3f;` | `private static float gravity = 0.3f;` |
+| 1623 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5987 | 2 | teleporting | bool | `public bool teleporting;` | `public bool teleporting;` |
+| 1624 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5989 | 2 | stairFall | bool | `public bool stairFall;` | `public bool stairFall;` |
+| 1630 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6001 | 2 | oldPos | Vector2[] | `public Vector2[] oldPos = new Vector2[10];` | `public Vector2[] oldPos = new Vector2[10];` |
+| 1631 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6003 | 2 | oldRot | float[] | `public float[] oldRot = new float[10];` | `public float[] oldRot = new float[10];` |
+| 1632 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6005 | 2 | setFrameSize | bool | `public bool setFrameSize;` | `public bool setFrameSize;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.3 细分子系统：`NpcBossAndInvasionGlobalState`
+
+- 细分职责：Boss 战斗距离、倒计时和入侵波次全局状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；Boss/入侵阶段通过世界事件提交。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1587 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5915 | 2 | MoonLordAttacksArray | int[,,,] | `public static readonly int[,,,] MoonLordAttacksArray = InitializeMoonLordAttacks();` | `public static readonly int[,,,] MoonLordAttacksArray = InitializeMoonLordAttacks();` |
+| 1588 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5917 | 2 | MoonLordAttacksArray2 | int[,] | `public static readonly int[,] MoonLordAttacksArray2 = InitializeMoonLordAttacks2();` | `public static readonly int[,] MoonLordAttacksArray2 = InitializeMoonLordAttacks2();` |
+| 1589 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5919 | 2 | MoonLordFightingDistance | int | `public static int MoonLordFightingDistance = 4500;` | `public static int MoonLordFightingDistance = 4500;` |
+| 1590 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5921 | 2 | MoonLordCountdown | int | `public static int MoonLordCountdown = 0;` | `public static int MoonLordCountdown = 0;` |
+| 1591 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5923 | 2 | MaxMoonLordCountdown | int | `public static int MaxMoonLordCountdown = 3600;` | `public static int MaxMoonLordCountdown = 3600;` |
+| 1592 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5925 | 2 | NaturalMoonlordCountdownTime | int | `public const int NaturalMoonlordCountdownTime = 3600;` | `public const int NaturalMoonlordCountdownTime = 3600;` |
+| 1593 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5927 | 2 | ItemMoonlordCountdownTime | int | `public const int ItemMoonlordCountdownTime = 720;` | `public const int ItemMoonlordCountdownTime = 720;` |
+| 1598 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5937 | 2 | totalInvasionPoints | float | `public static float totalInvasionPoints = 0f;` | `public static float totalInvasionPoints = 0f;` |
+| 1599 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5939 | 2 | waveKills | float | `public static float waveKills = 0f;` | `public static float waveKills = 0f;` |
+| 1600 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5941 | 2 | waveNumber | int | `public static int waveNumber = 0;` | `public static int waveNumber = 0;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.4 细分子系统：`NpcSpawnAndCritterState`
+
+- 细分职责：生成来源、替换资格、昆虫概率和城镇微光变体状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；生成资格由生成系统统一提交。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1596 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5933 | 2 | maxAI | int | `public static int maxAI = 4;` | `public static int maxAI = 4;` |
+| 1597 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5935 | 2 | goldCritterChance | int | `public static int goldCritterChance = 400;` | `public static int goldCritterChance = 400;` |
+| 1604 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5949 | 2 | SpawnedFromStatue | bool | `public bool SpawnedFromStatue;` | `public bool SpawnedFromStatue;` |
+| 1605 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5951 | 2 | CanBeReplacedByOtherNPCs | bool | `public bool CanBeReplacedByOtherNPCs;` | `public bool CanBeReplacedByOtherNPCs;` |
+| 1606 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5953 | 2 | dripping | bool | `public bool dripping;` | `public bool dripping;` |
+| 1607 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5955 | 2 | drippingSlime | bool | `public bool drippingSlime;` | `public bool drippingSlime;` |
+| 1608 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5957 | 2 | drippingSparkleSlime | bool | `public bool drippingSparkleSlime;` | `public bool drippingSparkleSlime;` |
+| 1609 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5959 | 2 | ShimmeredTownNPCs | bool[] | `public static bool[] ShimmeredTownNPCs = new bool[NPCID.Count];` | `public static bool[] ShimmeredTownNPCs = new bool[NPCID.Count];` |
+| 1625 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5991 | 2 | fireFlyFriendly | int | `public static int fireFlyFriendly = 0;` | `public static int fireFlyFriendly = 0;` |
+| 1626 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5993 | 2 | fireFlyChance | int | `public static int fireFlyChance = 0;` | `public static int fireFlyChance = 0;` |
+| 1627 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5995 | 2 | fireFlyMultiple | int | `public static int fireFlyMultiple = 0;` | `public static int fireFlyMultiple = 0;` |
+| 1628 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5997 | 2 | butterflyChance | int | `public static int butterflyChance = 0;` | `public static int butterflyChance = 0;` |
+| 1629 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 5999 | 2 | stinkBugChance | int | `public static int stinkBugChance = 0;` | `public static int stinkBugChance = 0;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.5 细分子系统：`NpcBossAndInvasionState`
+
+- 细分职责：Boss 计数、入侵积分/波次及相关 Boss 进度。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1633 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6007 | 2 | golemBoss | int | `public static int golemBoss = -1;` | `public static int golemBoss = -1;` |
+| 1634 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6009 | 2 | plantBoss | int | `public static int plantBoss = -1;` | `public static int plantBoss = -1;` |
+| 1635 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6011 | 2 | crimsonBoss | int | `public static int crimsonBoss = -1;` | `public static int crimsonBoss = -1;` |
+| 1636 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6013 | 2 | deerclopsBoss | int | `public static int deerclopsBoss = -1;` | `public static int deerclopsBoss = -1;` |
+| 1637 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6015 | 2 | netUpdate | bool | `public bool netUpdate;` | `public bool netUpdate;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.6 细分子系统：`NpcNetworkReplicationState`
+
+- 细分职责：NPC 网络更新节流、同步流和玩家同步状态。
+- 边界角色：`registry/projection`；最小 seam：Network Projection seam；网络投影只读取 NPC 权威状态。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1638 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6017 | 2 | netUpdatePendingSpamCooldown | bool | `internal bool netUpdatePendingSpamCooldown;` | `internal bool netUpdatePendingSpamCooldown;` |
+| 1639 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6019 | 2 | netUpdatePendingFullSpamCooldown | bool | `internal bool netUpdatePendingFullSpamCooldown;` | `internal bool netUpdatePendingFullSpamCooldown;` |
+| 1640 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6021 | 2 | netSpamPacketLimit | int | `public readonly int netSpamPacketLimit = 3;` | `public readonly int netSpamPacketLimit = 3;` |
+| 1641 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6023 | 2 | netSpamTicksPerPacket | int | `public readonly int netSpamTicksPerPacket = 30;` | `public readonly int netSpamTicksPerPacket = 30;` |
+| 1642 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6025 | 2 | netSpamTicksPerPacketForBosses | int | `public readonly int netSpamTicksPerPacketForBosses = 5;` | `public readonly int netSpamTicksPerPacketForBosses = 5;` |
+| 1643 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6027 | 2 | netSpam | int | `public int netSpam;` | `public int netSpam;` |
+| 1644 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6029 | 2 | netAlways | bool | `public bool netAlways;` | `public bool netAlways;` |
+| 1645 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6031 | 2 | spawnNeedsSyncing | bool | `public bool spawnNeedsSyncing;` | `public bool spawnNeedsSyncing;` |
+| 1646 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6033 | 2 | netStream | int | `internal int netStream;` | `internal int netStream;` |
+| 1647 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6035 | 2 | playerNetSyncState | Terraria.NPC.PlayerNetSyncState[] | `internal PlayerNetSyncState[] playerNetSyncState = new PlayerNetSyncState[255];` | `internal PlayerNetSyncState[] playerNetSyncState = new PlayerNetSyncState[255];` |
+| 1648 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6037 | 2 | netOffset | Vector2 | `public Vector2 netOffset = Vector2.Zero;` | `public Vector2 netOffset = Vector2.Zero;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.7 细分子系统：`NpcSpawnBudgetAndActivityState`
+
+- 细分职责：NPC 活跃范围、生成频率、生成容量和计数预算状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；生成调度阶段集中写入。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1651 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6043 | 2 | safeRangeX | int | `public static int safeRangeX = (int)((double)(sWidth / 16) * 0.52);` | `public static int safeRangeX = (int)((double)(sWidth / 16) * 0.52);` |
+| 1652 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6045 | 2 | safeRangeY | int | `public static int safeRangeY = (int)((double)(sHeight / 16) * 0.52);` | `public static int safeRangeY = (int)((double)(sHeight / 16) * 0.52);` |
+| 1653 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6047 | 2 | activeRangeX | int | `private static int activeRangeX = (int)((double)sWidth * 2.1);` | `private static int activeRangeX = (int)((double)sWidth * 2.1);` |
+| 1654 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6049 | 2 | activeRangeY | int | `private static int activeRangeY = (int)((double)sHeight * 2.1);` | `private static int activeRangeY = (int)((double)sHeight * 2.1);` |
+| 1655 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6051 | 2 | npcSlots | float | `public float npcSlots = 1f;` | `public float npcSlots = 1f;` |
+| 1656 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6053 | 2 | noSpawnCycle | bool | `private static bool noSpawnCycle = false;` | `private static bool noSpawnCycle = false;` |
+| 1657 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6055 | 2 | activeTime | int | `private static int activeTime = 750;` | `private static int activeTime = 750;` |
+| 1658 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6057 | 2 | defaultSpawnRate | int | `private static int defaultSpawnRate = 600;` | `private static int defaultSpawnRate = 600;` |
+| 1659 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6059 | 2 | defaultMaxSpawns | int | `private static int defaultMaxSpawns = 5;` | `private static int defaultMaxSpawns = 5;` |
+| 1661 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6063 | 2 | dontCountMe | bool | `public bool dontCountMe;` | `public bool dontCountMe;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.8 细分子系统：`NpcIdentityAndStatusState`
+
+- 细分职责：NPC 关联实体、名称、微光透明度和 Buff 容量状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；实体生命周期系统维护身份和容量。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1649 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6039 | 2 | realLife | int | `public int realLife = -1;` | `public int realLife = -1;` |
+| 1650 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6041 | 2 | _givenName | string | `private string _givenName = "";` | `private string _givenName = "";` |
+| 1660 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6061 | 2 | shimmerTransparency | float | `public float shimmerTransparency;` | `public float shimmerTransparency;` |
+| 1662 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6065 | 2 | maxBuffs | int | `public static readonly int maxBuffs = 20;` | `public static readonly int maxBuffs = 20;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.9 细分子系统：`NpcBuffSlotAndImmunityState`
+
+- 细分职责：NPC Buff 槽、Buff 时间、免疫和 Buff 展示开关。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；Buff 施加与清理集中于本组。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1663 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6067 | 2 | buffType | int[] | `public int[] buffType = new int[maxBuffs];` | `public int[] buffType = new int[maxBuffs];` |
+| 1664 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6069 | 2 | buffTime | int[] | `public int[] buffTime = new int[maxBuffs];` | `public int[] buffTime = new int[maxBuffs];` |
+| 1665 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6071 | 2 | buffImmune | bool[] | `public bool[] buffImmune = new bool[BuffID.Count];` | `public bool[] buffImmune = new bool[BuffID.Count];` |
+| 1666 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6073 | 2 | canDisplayBuffs | bool | `public bool canDisplayBuffs = true;` | `public bool canDisplayBuffs = true;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.10 细分子系统：`NpcElementalDebuffState`
+
+- 细分职责：元素、伤害、火焰、毒性和微光效果标志。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；状态 Tick 和命中事件通过显式提交更新。
+- 成员文件数：1；声明类型数：1；字段：17；属性：0；合计：17。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（17）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1667 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6075 | 2 | midas | bool | `public bool midas;` | `public bool midas;` |
+| 1668 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6077 | 2 | ichor | bool | `public bool ichor;` | `public bool ichor;` |
+| 1669 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6079 | 2 | brokenArmor | bool | `public bool brokenArmor;` | `public bool brokenArmor;` |
+| 1670 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6081 | 2 | onFire | bool | `public bool onFire;` | `public bool onFire;` |
+| 1671 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6083 | 2 | onFire2 | bool | `public bool onFire2;` | `public bool onFire2;` |
+| 1672 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6085 | 2 | onFire3 | bool | `public bool onFire3;` | `public bool onFire3;` |
+| 1673 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6087 | 2 | onFrostBurn | bool | `public bool onFrostBurn;` | `public bool onFrostBurn;` |
+| 1674 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6089 | 2 | onFrostBurn2 | bool | `public bool onFrostBurn2;` | `public bool onFrostBurn2;` |
+| 1675 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6091 | 2 | poisoned | bool | `public bool poisoned;` | `public bool poisoned;` |
+| 1676 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6093 | 2 | venom | bool | `public bool venom;` | `public bool venom;` |
+| 1677 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6095 | 2 | tipsy | bool | `public bool tipsy;` | `public bool tipsy;` |
+| 1678 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6097 | 2 | bleeding | bool | `public bool bleeding;` | `public bool bleeding;` |
+| 1679 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6099 | 2 | hemorrhage | bool | `public bool hemorrhage;` | `public bool hemorrhage;` |
+| 1682 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6105 | 2 | shadowFlame | bool | `public bool shadowFlame;` | `public bool shadowFlame;` |
+| 1683 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6107 | 2 | soulDrain | bool | `public bool soulDrain;` | `public bool soulDrain;` |
+| 1684 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6109 | 2 | shimmering | bool | `public bool shimmering;` | `public bool shimmering;` |
+| 1703 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6147 | 2 | oiled | bool | `public bool oiled;` | `public bool oiled;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.11 细分子系统：`NpcControlAndSocialEffectState`
+
+- 细分职责：混乱、魅惑、气味和 Dryad Ward 控制/社交效果标志。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；控制效果事件单向写入。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1688 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6117 | 2 | confused | bool | `public bool confused;` | `public bool confused;` |
+| 1689 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6119 | 2 | loveStruck | bool | `public bool loveStruck;` | `public bool loveStruck;` |
+| 1690 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6121 | 2 | stinky | bool | `public bool stinky;` | `public bool stinky;` |
+| 1691 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6123 | 2 | dryadWard | bool | `public bool dryadWard;` | `public bool dryadWard;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.12 细分子系统：`NpcWhipAndSpecialEffectState`
+
+- 细分职责：鞭类标记、特殊武器标记和 Betsy/Daybreak 效果标志。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；特殊命中事件单向更新。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1680 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6101 | 2 | markedByScytheWhip | bool | `public bool markedByScytheWhip;` | `public bool markedByScytheWhip;` |
+| 1681 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6103 | 2 | markedByEelWhip | bool | `public bool markedByEelWhip;` | `public bool markedByEelWhip;` |
+| 1695 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6131 | 2 | javelined | bool | `public bool javelined;` | `public bool javelined;` |
+| 1696 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6133 | 2 | tentacleSpiked | bool | `public bool tentacleSpiked;` | `public bool tentacleSpiked;` |
+| 1697 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6135 | 2 | bloodButchered | bool | `public bool bloodButchered;` | `public bool bloodButchered;` |
+| 1698 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6137 | 2 | celled | bool | `public bool celled;` | `public bool celled;` |
+| 1699 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6139 | 2 | dryadBane | bool | `public bool dryadBane;` | `public bool dryadBane;` |
+| 1700 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6141 | 2 | daybreak | bool | `public bool daybreak;` | `public bool daybreak;` |
+| 1702 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6145 | 2 | betsysCurse | bool | `public bool betsysCurse;` | `public bool betsysCurse;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.13 细分子系统：`NpcRegenerationAndProtectionState`
+
+- 细分职责：生命回复、不可受伤、可追击和特殊保护状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；回复和保护规则显式排序。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1685 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6111 | 2 | lifeRegen | int | `public int lifeRegen;` | `public int lifeRegen;` |
+| 1686 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6113 | 2 | lifeRegenCount | int | `public int lifeRegenCount;` | `public int lifeRegenCount;` |
+| 1687 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6115 | 2 | lifeRegenExpectedLossPerSecond | int | `public int lifeRegenExpectedLossPerSecond = -1;` | `public int lifeRegenExpectedLossPerSecond = -1;` |
+| 1692 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6125 | 2 | immortal | bool | `public bool immortal;` | `public bool immortal;` |
+| 1693 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6127 | 2 | chaseable | bool | `public bool chaseable = true;` | `public bool chaseable = true;` |
+| 1694 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6129 | 2 | canGhostHeal | bool | `public bool canGhostHeal = true;` | `public bool canGhostHeal = true;` |
+| 1701 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6143 | 2 | dontTakeDamageFromHostiles | bool | `public bool dontTakeDamageFromHostiles;` | `public bool dontTakeDamageFromHostiles;` |
+| 1704 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6149 | 2 | electricEelCounter | int | `public int electricEelCounter;` | `public int electricEelCounter;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.14 细分子系统：`NpcTownRescueState`
+
+- 细分职责：已救援城镇 NPC 的持久进度旗标。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；救援事件集中更新。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1705 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6151 | 2 | savedTaxCollector | bool | `public static bool savedTaxCollector = false;` | `public static bool savedTaxCollector = false;` |
+| 1706 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6153 | 2 | savedGoblin | bool | `public static bool savedGoblin = false;` | `public static bool savedGoblin = false;` |
+| 1707 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6155 | 2 | savedWizard | bool | `public static bool savedWizard = false;` | `public static bool savedWizard = false;` |
+| 1708 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6157 | 2 | savedMech | bool | `public static bool savedMech = false;` | `public static bool savedMech = false;` |
+| 1709 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6159 | 2 | savedAngler | bool | `public static bool savedAngler = false;` | `public static bool savedAngler = false;` |
+| 1710 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6161 | 2 | savedStylist | bool | `public static bool savedStylist = false;` | `public static bool savedStylist = false;` |
+| 1711 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6163 | 2 | savedBartender | bool | `public static bool savedBartender = false;` | `public static bool savedBartender = false;` |
+| 1712 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6165 | 2 | savedGolfer | bool | `public static bool savedGolfer = false;` | `public static bool savedGolfer = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.15 细分子系统：`NpcTownPetAdoptionState`
+
+- 细分职责：城镇宠物购买和领养解锁状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；购买事件单向提交。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1713 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6167 | 2 | boughtCat | bool | `public static bool boughtCat = false;` | `public static bool boughtCat = false;` |
+| 1714 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6169 | 2 | boughtDog | bool | `public static bool boughtDog = false;` | `public static bool boughtDog = false;` |
+| 1715 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6171 | 2 | boughtBunny | bool | `public static bool boughtBunny = false;` | `public static bool boughtBunny = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.16 细分子系统：`NpcTownSpawnUnlockState`
+
+- 细分职责：城镇 NPC 与特殊史莱姆生成解锁状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；生成资格 Query 只读消费解锁事实。
+- 成员文件数：1；声明类型数：1；字段：16；属性：0；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1716 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6173 | 2 | unlockedSlimeBlueSpawn | bool | `public static bool unlockedSlimeBlueSpawn = false;` | `public static bool unlockedSlimeBlueSpawn = false;` |
+| 1717 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6175 | 2 | unlockedSlimeGreenSpawn | bool | `public static bool unlockedSlimeGreenSpawn = false;` | `public static bool unlockedSlimeGreenSpawn = false;` |
+| 1718 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6177 | 2 | unlockedSlimeOldSpawn | bool | `public static bool unlockedSlimeOldSpawn = false;` | `public static bool unlockedSlimeOldSpawn = false;` |
+| 1719 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6179 | 2 | unlockedSlimePurpleSpawn | bool | `public static bool unlockedSlimePurpleSpawn = false;` | `public static bool unlockedSlimePurpleSpawn = false;` |
+| 1720 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6181 | 2 | unlockedSlimeRainbowSpawn | bool | `public static bool unlockedSlimeRainbowSpawn = false;` | `public static bool unlockedSlimeRainbowSpawn = false;` |
+| 1721 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6183 | 2 | unlockedSlimeRedSpawn | bool | `public static bool unlockedSlimeRedSpawn = false;` | `public static bool unlockedSlimeRedSpawn = false;` |
+| 1722 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6185 | 2 | unlockedSlimeYellowSpawn | bool | `public static bool unlockedSlimeYellowSpawn = false;` | `public static bool unlockedSlimeYellowSpawn = false;` |
+| 1723 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6187 | 2 | unlockedSlimeCopperSpawn | bool | `public static bool unlockedSlimeCopperSpawn = false;` | `public static bool unlockedSlimeCopperSpawn = false;` |
+| 1724 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6189 | 2 | unlockedMerchantSpawn | bool | `public static bool unlockedMerchantSpawn = false;` | `public static bool unlockedMerchantSpawn = false;` |
+| 1725 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6191 | 2 | unlockedDemolitionistSpawn | bool | `public static bool unlockedDemolitionistSpawn = false;` | `public static bool unlockedDemolitionistSpawn = false;` |
+| 1726 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6193 | 2 | unlockedPartyGirlSpawn | bool | `public static bool unlockedPartyGirlSpawn = false;` | `public static bool unlockedPartyGirlSpawn = false;` |
+| 1727 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6195 | 2 | unlockedDyeTraderSpawn | bool | `public static bool unlockedDyeTraderSpawn = false;` | `public static bool unlockedDyeTraderSpawn = false;` |
+| 1728 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6197 | 2 | unlockedTruffleSpawn | bool | `public static bool unlockedTruffleSpawn = false;` | `public static bool unlockedTruffleSpawn = false;` |
+| 1729 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6199 | 2 | unlockedArmsDealerSpawn | bool | `public static bool unlockedArmsDealerSpawn = false;` | `public static bool unlockedArmsDealerSpawn = false;` |
+| 1730 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6201 | 2 | unlockedNurseSpawn | bool | `public static bool unlockedNurseSpawn = false;` | `public static bool unlockedNurseSpawn = false;` |
+| 1731 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6203 | 2 | unlockedPrincessSpawn | bool | `public static bool unlockedPrincessSpawn = false;` | `public static bool unlockedPrincessSpawn = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.17 细分子系统：`NpcTowerAndEventShieldState`
+
+- 细分职责：天界塔活动、护盾和事件阶段状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；事件阶段由世界进度命令提交。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1762 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6265 | 2 | ShieldStrengthTowerSolar | int | `public static int ShieldStrengthTowerSolar = 0;` | `public static int ShieldStrengthTowerSolar = 0;` |
+| 1763 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6267 | 2 | ShieldStrengthTowerVortex | int | `public static int ShieldStrengthTowerVortex = 0;` | `public static int ShieldStrengthTowerVortex = 0;` |
+| 1764 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6269 | 2 | ShieldStrengthTowerNebula | int | `public static int ShieldStrengthTowerNebula = 0;` | `public static int ShieldStrengthTowerNebula = 0;` |
+| 1765 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6271 | 2 | ShieldStrengthTowerStardust | int | `public static int ShieldStrengthTowerStardust = 0;` | `public static int ShieldStrengthTowerStardust = 0;` |
+| 1766 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6273 | 2 | LunarShieldPowerNormal | int | `public static int LunarShieldPowerNormal = 100;` | `public static int LunarShieldPowerNormal = 100;` |
+| 1767 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6275 | 2 | TowerActiveSolar | bool | `public static bool TowerActiveSolar = false;` | `public static bool TowerActiveSolar = false;` |
+| 1768 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6277 | 2 | TowerActiveVortex | bool | `public static bool TowerActiveVortex = false;` | `public static bool TowerActiveVortex = false;` |
+| 1769 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6279 | 2 | TowerActiveNebula | bool | `public static bool TowerActiveNebula = false;` | `public static bool TowerActiveNebula = false;` |
+| 1770 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6281 | 2 | TowerActiveStardust | bool | `public static bool TowerActiveStardust = false;` | `public static bool TowerActiveStardust = false;` |
+| 1771 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6283 | 2 | LunarApocalypseIsUp | bool | `public static bool LunarApocalypseIsUp = false;` | `public static bool LunarApocalypseIsUp = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.18 细分子系统：`NpcProgressionBookAndActiveRegistryState`
+
+- 细分职责：战斗手册、商贩背包和活动检查登记状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldEvent/Registry seam；进度事件单向提交。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1732 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6205 | 2 | combatBookWasUsed | bool | `public static bool combatBookWasUsed = false;` | `public static bool combatBookWasUsed = false;` |
+| 1733 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6207 | 2 | combatBookVolumeTwoWasUsed | bool | `public static bool combatBookVolumeTwoWasUsed = false;` | `public static bool combatBookVolumeTwoWasUsed = false;` |
+| 1734 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6209 | 2 | peddlersSatchelWasUsed | bool | `public static bool peddlersSatchelWasUsed = false;` | `public static bool peddlersSatchelWasUsed = false;` |
+| 1776 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6293 | 2 | npcsFoundForCheckActive | bool[] | `public static bool[] npcsFoundForCheckActive = new bool[NPCID.Count];` | `public static bool[] npcsFoundForCheckActive = new bool[NPCID.Count];` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.19 细分子系统：`NpcBossDefeatFlags`
+
+- 细分职责：主要 Boss、机械 Boss 和事件后 Boss 的击败进度标志。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；Boss 结算事件是唯一进度写入方向。
+- 成员文件数：1；声明类型数：1；字段：17；属性：0；合计：17。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（17）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1735 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6211 | 2 | downedBoss1 | bool | `public static bool downedBoss1 = false;` | `public static bool downedBoss1 = false;` |
+| 1736 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6213 | 2 | downedBoss2 | bool | `public static bool downedBoss2 = false;` | `public static bool downedBoss2 = false;` |
+| 1737 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6215 | 2 | downedBoss3 | bool | `public static bool downedBoss3 = false;` | `public static bool downedBoss3 = false;` |
+| 1738 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6217 | 2 | downedQueenBee | bool | `public static bool downedQueenBee = false;` | `public static bool downedQueenBee = false;` |
+| 1739 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6219 | 2 | downedSlimeKing | bool | `public static bool downedSlimeKing = false;` | `public static bool downedSlimeKing = false;` |
+| 1744 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6229 | 2 | downedPlantBoss | bool | `public static bool downedPlantBoss = false;` | `public static bool downedPlantBoss = false;` |
+| 1745 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6231 | 2 | downedGolemBoss | bool | `public static bool downedGolemBoss = false;` | `public static bool downedGolemBoss = false;` |
+| 1747 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6235 | 2 | downedFishron | bool | `public static bool downedFishron = false;` | `public static bool downedFishron = false;` |
+| 1753 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6247 | 2 | downedAncientCultist | bool | `public static bool downedAncientCultist = false;` | `public static bool downedAncientCultist = false;` |
+| 1754 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6249 | 2 | downedMoonlord | bool | `public static bool downedMoonlord = false;` | `public static bool downedMoonlord = false;` |
+| 1759 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6259 | 2 | downedEmpressOfLight | bool | `public static bool downedEmpressOfLight = false;` | `public static bool downedEmpressOfLight = false;` |
+| 1760 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6261 | 2 | downedQueenSlime | bool | `public static bool downedQueenSlime = false;` | `public static bool downedQueenSlime = false;` |
+| 1761 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6263 | 2 | downedDeerclops | bool | `public static bool downedDeerclops = false;` | `public static bool downedDeerclops = false;` |
+| 1772 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6285 | 2 | downedMechBossAny | bool | `public static bool downedMechBossAny = false;` | `public static bool downedMechBossAny = false;` |
+| 1773 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6287 | 2 | downedMechBoss1 | bool | `public static bool downedMechBoss1 = false;` | `public static bool downedMechBoss1 = false;` |
+| 1774 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6289 | 2 | downedMechBoss2 | bool | `public static bool downedMechBoss2 = false;` | `public static bool downedMechBoss2 = false;` |
+| 1775 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6291 | 2 | downedMechBoss3 | bool | `public static bool downedMechBoss3 = false;` | `public static bool downedMechBoss3 = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.20 细分子系统：`NpcEventDefeatFlags`
+
+- 细分职责：入侵、节日和天界塔事件击败进度标志。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；事件结算与世界事件查询单向交接。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1740 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6221 | 2 | downedGoblins | bool | `public static bool downedGoblins = false;` | `public static bool downedGoblins = false;` |
+| 1741 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6223 | 2 | downedFrost | bool | `public static bool downedFrost = false;` | `public static bool downedFrost = false;` |
+| 1742 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6225 | 2 | downedPirates | bool | `public static bool downedPirates = false;` | `public static bool downedPirates = false;` |
+| 1743 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6227 | 2 | downedClown | bool | `public static bool downedClown = false;` | `public static bool downedClown = false;` |
+| 1746 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6233 | 2 | downedMartians | bool | `public static bool downedMartians = false;` | `public static bool downedMartians = false;` |
+| 1748 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6237 | 2 | downedHalloweenTree | bool | `public static bool downedHalloweenTree = false;` | `public static bool downedHalloweenTree = false;` |
+| 1749 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6239 | 2 | downedHalloweenKing | bool | `public static bool downedHalloweenKing = false;` | `public static bool downedHalloweenKing = false;` |
+| 1750 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6241 | 2 | downedChristmasIceQueen | bool | `public static bool downedChristmasIceQueen = false;` | `public static bool downedChristmasIceQueen = false;` |
+| 1751 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6243 | 2 | downedChristmasTree | bool | `public static bool downedChristmasTree = false;` | `public static bool downedChristmasTree = false;` |
+| 1752 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6245 | 2 | downedChristmasSantank | bool | `public static bool downedChristmasSantank = false;` | `public static bool downedChristmasSantank = false;` |
+| 1755 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6251 | 2 | downedTowerSolar | bool | `public static bool downedTowerSolar = false;` | `public static bool downedTowerSolar = false;` |
+| 1756 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6253 | 2 | downedTowerVortex | bool | `public static bool downedTowerVortex = false;` | `public static bool downedTowerVortex = false;` |
+| 1757 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6255 | 2 | downedTowerNebula | bool | `public static bool downedTowerNebula = false;` | `public static bool downedTowerNebula = false;` |
+| 1758 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6257 | 2 | downedTowerStardust | bool | `public static bool downedTowerStardust = false;` | `public static bool downedTowerStardust = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.21 细分子系统：`NpcLifecycleAndCrossDomainRefs`
+
+- 细分职责：NPC 发现/拥有对象缓存和复仇管理器引用。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1777 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6295 | 2 | lazyNPCOwnedProjectileSearchArray | int[] | `public static int[] lazyNPCOwnedProjectileSearchArray = new int[InitData.MaxNPCs];` | `public static int[] lazyNPCOwnedProjectileSearchArray = new int[InitData.MaxNPCs];` |
+| 1778 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6297 | 2 | spawnSlotProtected | int[] | `public static int[] spawnSlotProtected = new int[InitData.MaxNPCs];` | `public static int[] spawnSlotProtected = new int[InitData.MaxNPCs];` |
+| 1779 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6299 | 2 | soundDelay | int | `public int soundDelay;` | `public int soundDelay;` |
+| 1780 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6301 | 2 | RevengeManager | Terraria.GameContent.CoinLossRevengeSystem | `public static CoinLossRevengeSystem RevengeManager = new CoinLossRevengeSystem();` | `public static CoinLossRevengeSystem RevengeManager = new CoinLossRevengeSystem();` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.22 细分子系统：`NpcAiTargetAndIdentityState`
+
+- 细分职责：NPC 类型、网络身份、AI、目标和生命期行为状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；AI 只通过查询读取战斗和世界输入。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1781 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6303 | 2 | immune | int[] | `public int[] immune = new int[256];` | `public int[] immune = new int[256];` |
+| 1782 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6305 | 2 | directionY | int | `public int directionY = 1;` | `public int directionY = 1;` |
+| 1783 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6307 | 2 | type | int | `public int type;` | `public int type;` |
+| 1784 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6309 | 2 | ai | float[] | `public float[] ai = new float[maxAI];` | `public float[] ai = new float[maxAI];` |
+| 1785 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6311 | 2 | localAI | float[] | `public float[] localAI = new float[maxAI];` | `public float[] localAI = new float[maxAI];` |
+| 1786 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6313 | 2 | aiAction | int | `public int aiAction;` | `public int aiAction;` |
+| 1787 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6315 | 2 | aiStyle | int | `public int aiStyle;` | `public int aiStyle;` |
+| 1788 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6317 | 2 | justHit | bool | `public bool justHit;` | `public bool justHit;` |
+| 1789 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6319 | 2 | timeLeft | int | `public int timeLeft;` | `public int timeLeft;` |
+| 1790 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6321 | 2 | target | int | `public int target = -1;` | `public int target = -1;` |
+| 1810 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6361 | 2 | oldDirectionY | int | `public int oldDirectionY;` | `public int oldDirectionY;` |
+| 1811 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6363 | 2 | oldTarget | int | `public int oldTarget;` | `public int oldTarget;` |
+| 1825 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6391 | 2 | netID | int | `public int netID;` | `public int netID;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.23 细分子系统：`NpcCombatAndLifeState`
+
+- 细分职责：NPC 伤害、防御、生命、友敌、抗性和受击状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；战斗提交集中于本组。
+- 成员文件数：1；声明类型数：1；字段：19；属性：0；合计：19。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（19）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1791 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6323 | 2 | damage | int | `public int damage;` | `public int damage;` |
+| 1792 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6325 | 2 | defense | int | `public int defense;` | `public int defense;` |
+| 1793 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6327 | 2 | defDamage | int | `public int defDamage;` | `public int defDamage;` |
+| 1794 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6329 | 2 | defDefense | int | `public int defDefense;` | `public int defDefense;` |
+| 1795 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6331 | 2 | defLifeMax | int | `public int defLifeMax;` | `public int defLifeMax;` |
+| 1796 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6333 | 2 | coldDamage | bool | `public bool coldDamage;` | `public bool coldDamage;` |
+| 1797 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6335 | 2 | trapImmune | bool | `public bool trapImmune;` | `public bool trapImmune;` |
+| 1817 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6375 | 2 | boss | bool | `public bool boss;` | `public bool boss;` |
+| 1820 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6381 | 2 | lavaImmune | bool | `public bool lavaImmune;` | `public bool lavaImmune;` |
+| 1821 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6383 | 2 | value | float | `public float value;` | `public float value;` |
+| 1822 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6385 | 2 | extraValue | int | `public int extraValue;` | `public int extraValue;` |
+| 1823 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6387 | 2 | dontTakeDamage | bool | `public bool dontTakeDamage;` | `public bool dontTakeDamage;` |
+| 1824 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6389 | 2 | catchableNPCTempImmunityCounter | int | `private int catchableNPCTempImmunityCounter;` | `private int catchableNPCTempImmunityCounter;` |
+| 1826 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6393 | 2 | statsAreScaledForThisManyPlayers | int | `public int statsAreScaledForThisManyPlayers;` | `public int statsAreScaledForThisManyPlayers;` |
+| 1827 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6395 | 2 | difficulty | float | `public float difficulty = 1f;` | `public float difficulty = 1f;` |
+| 1841 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6423 | 2 | friendly | bool | `public bool friendly;` | `public bool friendly;` |
+| 1845 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6431 | 2 | friendlyRegen | int | `public int friendlyRegen;` | `public int friendlyRegen;` |
+| 1849 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6439 | 2 | reflectsProjectiles | bool | `public bool reflectsProjectiles;` | `public bool reflectsProjectiles;` |
+| 1853 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6447 | 2 | CommonMasterBossLifeReduction | double | `public static readonly double CommonMasterBossLifeReduction = 0.85;` | `public static readonly double CommonMasterBossLifeReduction = 0.85;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.24 细分子系统：`NpcCollisionAndPresentationState`
+
+- 细分职责：NPC 碰撞、帧、朝向、缩放和显示状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；碰撞和表现读取共享只读快照。
+- 成员文件数：1；声明类型数：1；字段：17；属性：0；合计：17。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（17）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1800 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6341 | 2 | life | int | `public int life;` | `public int life;` |
+| 1801 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6343 | 2 | lifeMax | int | `public int lifeMax;` | `public int lifeMax;` |
+| 1802 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6345 | 2 | targetRect | Rectangle | `public Rectangle targetRect;` | `public Rectangle targetRect;` |
+| 1803 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6347 | 2 | frameCounter | double | `public double frameCounter;` | `public double frameCounter;` |
+| 1804 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6349 | 2 | frame | Rectangle | `public Rectangle frame;` | `public Rectangle frame;` |
+| 1805 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6351 | 2 | color | Color | `public Color color;` | `public Color color;` |
+| 1806 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6353 | 2 | alpha | int | `public int alpha;` | `public int alpha;` |
+| 1807 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6355 | 2 | hide | bool | `public bool hide;` | `public bool hide;` |
+| 1808 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6357 | 2 | scale | float | `public float scale = 1f;` | `public float scale = 1f;` |
+| 1809 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6359 | 2 | knockBackResist | float | `public float knockBackResist = 1f;` | `public float knockBackResist = 1f;` |
+| 1812 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6365 | 2 | rotation | float | `public float rotation;` | `public float rotation;` |
+| 1813 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6367 | 2 | noGravity | bool | `public bool noGravity;` | `public bool noGravity;` |
+| 1814 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6369 | 2 | noTileCollide | bool | `public bool noTileCollide;` | `public bool noTileCollide;` |
+| 1815 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6371 | 2 | collideX | bool | `public bool collideX;` | `public bool collideX;` |
+| 1816 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6373 | 2 | collideY | bool | `public bool collideY;` | `public bool collideY;` |
+| 1818 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6377 | 2 | spriteDirection | int | `public int spriteDirection = -1;` | `public int spriteDirection = -1;` |
+| 1819 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6379 | 2 | behindTiles | bool | `public bool behindTiles;` | `public bool behindTiles;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.25 细分子系统：`NpcTownHousingAndBreathState`
+
+- 细分职责：NPC 城镇住房、门交互和呼吸状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；城镇和环境生命周期单向更新。
+- 成员文件数：1；声明类型数：1；字段：19；属性：0；合计：19。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（19）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1828 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6397 | 2 | townNPC | bool | `public bool townNPC;` | `public bool townNPC;` |
+| 1829 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6399 | 2 | nextDialogue | Terraria.GameContent.ConditionalDialogue | `public ConditionalDialogue nextDialogue;` | `public ConditionalDialogue nextDialogue;` |
+| 1830 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6401 | 2 | travelNPC | bool | `public static bool travelNPC = false;` | `public static bool travelNPC = false;` |
+| 1831 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6403 | 2 | homeless | bool | `public bool homeless;` | `public bool homeless;` |
+| 1832 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6405 | 2 | homelessDespawn | bool | `public bool homelessDespawn;` | `public bool homelessDespawn;` |
+| 1833 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6407 | 2 | lookForHomeTimeout | int | `public int lookForHomeTimeout;` | `public int lookForHomeTimeout;` |
+| 1834 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6409 | 2 | KickOutLookForHomeTimeout | int | `public static readonly int KickOutLookForHomeTimeout = 3600;` | `public static readonly int KickOutLookForHomeTimeout = 3600;` |
+| 1835 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6411 | 2 | homeTileX | int | `public int homeTileX = -1;` | `public int homeTileX = -1;` |
+| 1836 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6413 | 2 | homeTileY | int | `public int homeTileY = -1;` | `public int homeTileY = -1;` |
+| 1837 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6415 | 2 | housingCategory | int | `public int housingCategory;` | `public int housingCategory;` |
+| 1838 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6417 | 2 | oldHomeless | bool | `public bool oldHomeless;` | `public bool oldHomeless;` |
+| 1839 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6419 | 2 | oldHomeTileX | int | `public int oldHomeTileX = -1;` | `public int oldHomeTileX = -1;` |
+| 1840 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6421 | 2 | oldHomeTileY | int | `public int oldHomeTileY = -1;` | `public int oldHomeTileY = -1;` |
+| 1842 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6425 | 2 | closeDoor | bool | `public bool closeDoor;` | `public bool closeDoor;` |
+| 1843 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6427 | 2 | doorX | int | `public int doorX;` | `public int doorX;` |
+| 1844 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6429 | 2 | doorY | int | `public int doorY;` | `public int doorY;` |
+| 1846 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6433 | 2 | breath | int | `public int breath;` | `public int breath;` |
+| 1847 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6435 | 2 | breathMax | int | `public const int breathMax = 200;` | `public const int breathMax = 200;` |
+| 1848 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6437 | 2 | breathCounter | int | `public int breathCounter;` | `public int breathCounter;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.26 细分子系统：`NpcPortalAndSpecialBehaviorState`
+
+- 细分职责：NPC 传送、事件特化、洞穴类型和 Boss 特殊行为状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；特殊行为由事件命令驱动。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1798 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6337 | 2 | HitSound | Terraria.Audio.LegacySoundStyle | `public LegacySoundStyle HitSound;` | `public LegacySoundStyle HitSound;` |
+| 1799 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6339 | 2 | DeathSound | Terraria.Audio.LegacySoundStyle | `public LegacySoundStyle DeathSound;` | `public LegacySoundStyle DeathSound;` |
+| 1850 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6441 | 2 | lastPortalColorIndex | int | `public int lastPortalColorIndex;` | `public int lastPortalColorIndex;` |
+| 1851 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6443 | 2 | despawnEncouraged | bool | `public bool despawnEncouraged;` | `public bool despawnEncouraged;` |
+| 1852 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6445 | 2 | cavernMonsterType | int[,] | `public static int[,] cavernMonsterType = new int[2, 3];` | `public static int[,] cavernMonsterType = new int[2, 3];` |
+| 1854 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6449 | 2 | mechQueen | int | `public static int mechQueen = -1;` | `public static int mechQueen = -1;` |
+| 1855 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6451 | 2 | brainOfGravity | int | `public static int brainOfGravity = -1;` | `public static int brainOfGravity = -1;` |
+| 1856 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6453 | 2 | kingSlimePointCacheSize | int | `private static int kingSlimePointCacheSize = 0;` | `private static int kingSlimePointCacheSize = 0;` |
+| 1857 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6455 | 2 | kingSlimePointCacheSizeMax | int | `private static int kingSlimePointCacheSizeMax = 50;` | `private static int kingSlimePointCacheSizeMax = 50;` |
+| 1858 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6457 | 2 | kingSlimePointCache | Point[] | `private static Point[] kingSlimePointCache = new Point[kingSlimePointCacheSizeMax];` | `private static Point[] kingSlimePointCache = new Point[kingSlimePointCacheSizeMax];` |
+| 1859 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6459 | 2 | empressRageMode | bool | `public static bool empressRageMode = false;` | `public static bool empressRageMode = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.27 细分子系统：`NpcSpawnCooldownAndEnvironment`
+
+- 细分职责：事件波次所需分数、每日击杀和生成保护/冷却。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1860 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6461 | 2 | MoonEventRequiredPointsPerWaveLookup | int[] | `public static int[] MoonEventRequiredPointsPerWaveLookup = new int[21]  	{  		0, 25, 40, 50, 80, 100, 160, 180, 200, 250,  		300, 375, 450, 525, 675, 850, 1025, 1325, 1550, 2000,  		0  	};` | `public static int[] MoonEventRequiredPointsPerWaveLookup = new int[21] { 0, 25, 40, 50, 80, 100, 160, 180, 200, 250, 300, 375, 450, 525, 675, 850, 1025, 1325, 1550, 2000, 0 };` |
+| 1861 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6468 | 2 | EoCKilledToday | bool | `private static bool EoCKilledToday;` | `private static bool EoCKilledToday;` |
+| 1862 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6470 | 2 | WoFKilledToday | bool | `private static bool WoFKilledToday;` | `private static bool WoFKilledToday;` |
+| 1863 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6472 | 2 | SPAWN_SLOT_PROTECTION_TIME | int | `public const int SPAWN_SLOT_PROTECTION_TIME = 2;` | `public const int SPAWN_SLOT_PROTECTION_TIME = 2;` |
+| 1864 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6474 | 2 | ignorePlayerInteractions | int | `private static int ignorePlayerInteractions = 0;` | `private static int ignorePlayerInteractions = 0;` |
+| 1865 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6476 | 2 | ladyBugGoodLuckTime | int | `public static int ladyBugGoodLuckTime = 43200;` | `public static int ladyBugGoodLuckTime = 43200;` |
+| 1866 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6478 | 2 | ladyBugBadLuckTime | int | `public static int ladyBugBadLuckTime = -10800;` | `public static int ladyBugBadLuckTime = -10800;` |
+| 1867 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6480 | 2 | ladyBugRainTime | int | `private static int ladyBugRainTime = 1800;` | `private static int ladyBugRainTime = 1800;` |
+| 1868 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6482 | 2 | maximumAmountOfTimesLadyBugRainCanStack | int | `private static int maximumAmountOfTimesLadyBugRainCanStack = 10 * ladyBugRainTime;` | `private static int maximumAmountOfTimesLadyBugRainCanStack = 10 * ladyBugRainTime;` |
+| 1869 | field | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6484 | 2 | offSetDelayTime | int | `public static int offSetDelayTime = 60;` | `public static int offSetDelayTime = 60;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.28 细分子系统：`NpcTargetAndIdentityProperties`
+
+- 细分职责：NPC 目标资格、名称、类型和可交谈资格派生属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不得写入该分组或相邻权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：16；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1886 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6486 | 2 | CanTalk | bool | `public bool CanTalk { get { if (isLikeATownNPC && aiStyle == 7 && velocity.Y == 0f) { return !NPCID.Sets.IsTownPet[type]; } return false; } }` | `public bool CanTalk { get { if (isLikeATownNPC && aiStyle == 7 && velocity.Y == 0f) { return !NPCID.Sets.IsTownPet[type]; } return false; } }` |
+| 1887 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6498 | 2 | CanBeTalkedTo | bool | `public bool CanBeTalkedTo { get { if (isLikeATownNPC && aiStyle == 7) { return velocity.Y == 0f; } return false; } }` | `public bool CanBeTalkedTo { get { if (isLikeATownNPC && aiStyle == 7) { return velocity.Y == 0f; } return false; } }` |
+| 1888 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6510 | 2 | HasValidTarget | bool | `public bool HasValidTarget { get { if (!HasPlayerTarget \|\| !Main.player[target].active \|\| Main.player[target].dead \|\| Main.player[target].ghost) { if (SupportsNPCTargets && HasNPCTarget) { return Main.npc[TranslatedTargetIndex].active; } return false; } return true; } }` | `public bool HasValidTarget { get { if (!HasPlayerTarget \|\| !Main.player[target].active \|\| Main.player[target].dead \|\| Main.player[target].ghost) { if (SupportsNPCTargets && HasNPCTarget) { return Main.npc[TranslatedTargetIndex].active; } return false; } return true; } }` |
+| 1889 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6526 | 2 | HasPlayerTarget | bool | `public bool HasPlayerTarget { get { if (target >= 0) { return target < 255; } return false; } }` | `public bool HasPlayerTarget { get { if (target >= 0) { return target < 255; } return false; } }` |
+| 1890 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6538 | 2 | HasNPCTarget | bool | `public bool HasNPCTarget { get { if (target >= 300) { return target < 300 + Main.maxNPCs; } return false; } }` | `public bool HasNPCTarget { get { if (target >= 300) { return target < 300 + Main.maxNPCs; } return false; } }` |
+| 1891 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6550 | 2 | SupportsNPCTargets | bool | `public bool SupportsNPCTargets => NPCID.Sets.UsesNewTargeting[type];` | `public bool SupportsNPCTargets => NPCID.Sets.UsesNewTargeting[type];` |
+| 1892 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6552 | 2 | TranslatedTargetIndex | int | `public int TranslatedTargetIndex { get { if (HasNPCTarget) { return target - 300; } return target; } }` | `public int TranslatedTargetIndex { get { if (HasNPCTarget) { return target - 300; } return target; } }` |
+| 1893 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6564 | 2 | WhoAmIToTargetingIndex | int | `public int WhoAmIToTargetingIndex => whoAmI + 300;` | `public int WhoAmIToTargetingIndex => whoAmI + 300;` |
+| 1894 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6566 | 2 | IsShimmerVariant | bool | `public bool IsShimmerVariant { get { if (townNpcVariationIndex == 1) { return NPCID.Sets.ShimmerTownTransform[type]; } return false; } }` | `public bool IsShimmerVariant { get { if (townNpcVariationIndex == 1) { return NPCID.Sets.ShimmerTownTransform[type]; } return false; } }` |
+| 1895 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6578 | 2 | TypeName | string | `public string TypeName => Lang.GetNPCNameValue(netID);` | `public string TypeName => Lang.GetNPCNameValue(netID);` |
+| 1896 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6580 | 2 | FullName | string | `public string FullName { get { if (!HasGivenName) { return TypeName; } return Language.GetTextValue("Game.NPCTitle", _givenName, TypeName); } }` | `public string FullName { get { if (!HasGivenName) { return TypeName; } return Language.GetTextValue("Game.NPCTitle", _givenName, TypeName); } }` |
+| 1897 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6592 | 2 | HasGivenName | bool | `public bool HasGivenName => _givenName.Length != 0;` | `public bool HasGivenName => _givenName.Length != 0;` |
+| 1898 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6594 | 2 | GivenOrTypeName | string | `public string GivenOrTypeName { get { if (!HasGivenName) { return TypeName; } return _givenName; } }` | `public string GivenOrTypeName { get { if (!HasGivenName) { return TypeName; } return _givenName; } }` |
+| 1899 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6606 | 2 | GivenName | string | `public string GivenName { get { return _givenName; } set { _givenName = value ?? ""; } }` | `public string GivenName { get { return _givenName; } set { _givenName = value ?? ""; } }` |
+| 1900 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6618 | 2 | sWidth | int | `public static int sWidth => 1920;` | `public static int sWidth => 1920;` |
+| 1901 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6620 | 2 | sHeight | int | `public static int sHeight => 1200;` | `public static int sHeight => 1200;` |
+
+#### 4.14.29 细分子系统：`NpcProgressionAndEnvironmentProperties`
+
+- 细分职责：NPC Boss/环境/网络区段的派生属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不得写入该分组或相邻权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：9；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1902 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6622 | 2 | DownedAnyPreHardmodeBoss | bool | `public static bool DownedAnyPreHardmodeBoss { get { if (!downedSlimeKing && !downedBoss1 && !downedBoss2 && !downedBoss3 && !downedQueenBee && !downedDeerclops) { return Main.hardMode; } return true; } }` | `public static bool DownedAnyPreHardmodeBoss { get { if (!downedSlimeKing && !downedBoss1 && !downedBoss2 && !downedBoss3 && !downedQueenBee && !downedDeerclops) { return Main.hardMode; } return true; } }` |
+| 1903 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6634 | 2 | ShieldStrengthTowerMax | int | `public static int ShieldStrengthTowerMax { get { int num = LunarShieldPowerNormal; if (downedMoonlord) { num /= 2; } return num; } }` | `public static int ShieldStrengthTowerMax { get { int num = LunarShieldPowerNormal; if (downedMoonlord) { num /= 2; } return num; } }` |
+| 1904 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6647 | 2 | Opacity | float | `public float Opacity { get { return 1f - (float)alpha / 255f; } set { alpha = (int)MathHelper.Clamp((1f - value) * 255f, 0f, 255f); } }` | `public float Opacity { get { return 1f - (float)alpha / 255f; } set { alpha = (int)MathHelper.Clamp((1f - value) * 255f, 0f, 255f); } }` |
+| 1905 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6659 | 2 | TreatedAsABossForRainbowBoulders | bool | `public bool TreatedAsABossForRainbowBoulders { get { if (!boss) { return NPCID.Sets.ShouldBeCountedAsBossForRainbowBoulders[type]; } return true; } }` | `public bool TreatedAsABossForRainbowBoulders { get { if (!boss) { return NPCID.Sets.ShouldBeCountedAsBossForRainbowBoulders[type]; } return true; } }` |
+| 1906 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6671 | 2 | isLikeATownNPC | bool | `public bool isLikeATownNPC { get { if (type == 453) { return true; } return townNPC; } }` | `public bool isLikeATownNPC { get { if (type == 453) { return true; } return townNPC; } }` |
+| 1907 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6683 | 2 | IsMechQueenUp | bool | `public static bool IsMechQueenUp { get { if (mechQueen >= 0 && mechQueen < Main.maxNPCs) { if (Main.npc[mechQueen].active && Main.npc[mechQueen].type == 127) { return true; } mechQueen = -1; return false; } return false; } }` | `public static bool IsMechQueenUp { get { if (mechQueen >= 0 && mechQueen < Main.maxNPCs) { if (Main.npc[mechQueen].active && Main.npc[mechQueen].type == 127) { return true; } mechQueen = -1; return false; } return false; } }` |
+| 1908 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6700 | 2 | TooWindyForButterflies | bool | `public static bool TooWindyForButterflies => Math.Abs(Main.windSpeedTarget) >= 0.4f;` | `public static bool TooWindyForButterflies => Math.Abs(Main.windSpeedTarget) >= 0.4f;` |
+| 1909 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6702 | 2 | CountsAsACritter | bool | `public bool CountsAsACritter { get { if (lifeMax <= 5 && damage == 0 && type != 594) { return type != 686; } return false; } }` | `public bool CountsAsACritter { get { if (lifeMax <= 5 && damage == 0 && type != 594) { return type != 686; } return false; } }` |
+| 1910 | property | Terraria.NPC | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 6714 | 2 | NetSectionCoordinates | Point | `public Point NetSectionCoordinates => new Point(Netplay.GetSectionX((int)position.X >> 4), Netplay.GetSectionY((int)position.Y >> 4));` | `public Point NetSectionCoordinates => new Point(Netplay.GetSectionX((int)position.X >> 4), Netplay.GetSectionY((int)position.Y >> 4));` |
+
+#### 4.14.30 细分子系统：`NpcSpawnContextAndCapacityInputs`
+
+- 细分职责：生成位置、时间、天气、玩家数量和入侵容量输入。
+- 边界角色：`authoritative state/behavior`；最小 seam：Spawn System/Query seam；输入快照只读，资格结果通过命令提交。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1519 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 41 | 3 | spawnSpaceX | int | `public static int spawnSpaceX = 2;` | `public static int spawnSpaceX = 2;` |
+| 1520 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 43 | 3 | spawnSpaceY | int | `public static int spawnSpaceY = 3;` | `public static int spawnSpaceY = 3;` |
+| 1521 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 45 | 3 | fairyLog | bool | `public static bool fairyLog = false;` | `public static bool fairyLog = false;` |
+| 1522 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 47 | 3 | numberOfActivePlayers | int | `public int numberOfActivePlayers;` | `public int numberOfActivePlayers;` |
+| 1523 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 49 | 3 | reachedInvasionBossCap | bool | `public bool reachedInvasionBossCap;` | `public bool reachedInvasionBossCap;` |
+| 1524 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 51 | 3 | pX | int | `public int pX;` | `public int pX;` |
+| 1525 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 53 | 3 | pY | int | `public int pY;` | `public int pY;` |
+| 1526 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 55 | 3 | luck | float | `public float luck;` | `public float luck;` |
+| 1527 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 57 | 3 | dayTime | bool | `public bool dayTime;` | `public bool dayTime;` |
+| 1528 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 59 | 3 | raining | bool | `public bool raining;` | `public bool raining;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.31 细分子系统：`NpcSpawnSpatialEligibilityInputs`
+
+- 细分职责：地表、深度、海滩、天空和树木空间资格输入。
+- 边界角色：`derived/query`；最小 seam：Spawn Eligibility Query；从位置快照纯计算资格。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1540 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 83 | 3 | surfaceSpawn | bool | `public bool surfaceSpawn;` | `public bool surfaceSpawn;` |
+| 1541 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 85 | 3 | spawnUndergroundDesert | bool | `public bool spawnUndergroundDesert;` | `public bool spawnUndergroundDesert;` |
+| 1542 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 87 | 3 | hardDungeon | bool | `public bool hardDungeon;` | `public bool hardDungeon;` |
+| 1543 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 89 | 3 | deeperThanRockLayer | bool | `public bool deeperThanRockLayer;` | `public bool deeperThanRockLayer;` |
+| 1544 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 91 | 3 | underGround | bool | `public bool underGround;` | `public bool underGround;` |
+| 1545 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 93 | 3 | isOcean | bool | `public bool isOcean;` | `public bool isOcean;` |
+| 1546 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 95 | 3 | isBeach | bool | `public bool isBeach;` | `public bool isBeach;` |
+| 1548 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 99 | 3 | skyBehindPlayer | bool | `public bool skyBehindPlayer;` | `public bool skyBehindPlayer;` |
+| 1549 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 101 | 3 | livingTree | bool | `public bool livingTree;` | `public bool livingTree;` |
+| 1553 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 109 | 3 | inRemixStartingArea | bool | `public bool inRemixStartingArea;` | `public bool inRemixStartingArea;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.32 细分子系统：`NpcSpawnBiomeAndDungeonEligibilityInputs`
+
+- 细分职责：水体、特殊生物群系和双地牢资格输入。
+- 边界角色：`derived/query`；最小 seam：Spawn Eligibility Query；区域和地牢条件只读合并。
+- 成员文件数：1；声明类型数：1；字段：6；属性：0；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1536 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 75 | 3 | waterTile | bool | `public bool waterTile;` | `public bool waterTile;` |
+| 1537 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 77 | 3 | nearGranite | bool | `public bool nearGranite;` | `public bool nearGranite;` |
+| 1538 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 79 | 3 | nearMarble | bool | `public bool nearMarble;` | `public bool nearMarble;` |
+| 1550 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 103 | 3 | dualDungeonsSpawnRules | bool | `public bool dualDungeonsSpawnRules;` | `public bool dualDungeonsSpawnRules;` |
+| 1551 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 105 | 3 | inDualDungeon | bool | `public bool inDualDungeon;` | `public bool inDualDungeon;` |
+| 1552 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 107 | 3 | tresspassingDualDungeon | bool | `public bool tresspassingDualDungeon;` | `public bool tresspassingDualDungeon;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.33 细分子系统：`NpcSpawnPolicyAndEventEligibilityInputs`
+
+- 细分职责：城镇、入侵、蠕虫、墙体和特殊事件政策输入。
+- 边界角色：`derived/query`；最小 seam：Spawn Policy Query；政策条件不直接写入生成结果。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1529 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 61 | 3 | townNPCs | int | `public int townNPCs;` | `public int townNPCs;` |
+| 1530 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 63 | 3 | skyMob | bool | `public bool skyMob;` | `public bool skyMob;` |
+| 1531 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 65 | 3 | noWorms | bool | `public bool noWorms;` | `public bool noWorms;` |
+| 1532 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 67 | 3 | noGroundWorms | bool | `public bool noGroundWorms;` | `public bool noGroundWorms;` |
+| 1533 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 69 | 3 | invaders | bool | `public bool invaders;` | `public bool invaders;` |
+| 1534 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 71 | 3 | spawnFriendly | bool | `public bool spawnFriendly;` | `public bool spawnFriendly;` |
+| 1535 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 73 | 3 | ignoreSafeWalls | bool | `public bool ignoreSafeWalls;` | `public bool ignoreSafeWalls;` |
+| 1539 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 81 | 3 | spawnSpider | bool | `public bool spawnSpider;` | `public bool spawnSpider;` |
+| 1547 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 97 | 3 | isSpawningInWindDirection | bool | `public bool isSpawningInWindDirection;` | `public bool isSpawningInWindDirection;` |
+| 1554 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 111 | 3 | offensiveToTim | bool | `public bool offensiveToTim;` | `public bool offensiveToTim;` |
+| 1555 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 113 | 3 | playerHasStartingHealth | bool | `public bool playerHasStartingHealth;` | `public bool playerHasStartingHealth;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.34 细分子系统：`NpcSpawnBiomeZoneInputs`
+
+- 细分职责：生物群系、地形和天气区域生成资格输入。
+- 边界角色：`derived/query`；最小 seam：Spawn Zone Query；区域快照纯计算资格。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1556 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 115 | 3 | ZoneCorrupt | bool | `public bool ZoneCorrupt;` | `public bool ZoneCorrupt;` |
+| 1557 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 117 | 3 | ZoneCrimson | bool | `public bool ZoneCrimson;` | `public bool ZoneCrimson;` |
+| 1558 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 119 | 3 | ZoneHallow | bool | `public bool ZoneHallow;` | `public bool ZoneHallow;` |
+| 1559 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 121 | 3 | ZoneJungle | bool | `public bool ZoneJungle;` | `public bool ZoneJungle;` |
+| 1560 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 123 | 3 | ZoneSnow | bool | `public bool ZoneSnow;` | `public bool ZoneSnow;` |
+| 1561 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 125 | 3 | ZoneGlowshroom | bool | `public bool ZoneGlowshroom;` | `public bool ZoneGlowshroom;` |
+| 1562 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 127 | 3 | ZoneMeteor | bool | `public bool ZoneMeteor;` | `public bool ZoneMeteor;` |
+| 1563 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 129 | 3 | ZoneGraveyard | bool | `public bool ZoneGraveyard;` | `public bool ZoneGraveyard;` |
+| 1564 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 131 | 3 | ZoneDungeon | bool | `public bool ZoneDungeon;` | `public bool ZoneDungeon;` |
+| 1565 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 133 | 3 | ZoneLihzhardTemple | bool | `public bool ZoneLihzhardTemple;` | `public bool ZoneLihzhardTemple;` |
+| 1566 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 135 | 3 | ZoneGranite | bool | `public bool ZoneGranite;` | `public bool ZoneGranite;` |
+| 1567 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 137 | 3 | ZoneMarble | bool | `public bool ZoneMarble;` | `public bool ZoneMarble;` |
+| 1568 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 139 | 3 | ZoneSandstorm | bool | `public bool ZoneSandstorm;` | `public bool ZoneSandstorm;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.35 细分子系统：`NpcSpawnEventAndTowerInputs`
+
+- 细分职责：塔、旧日军、蜡烛和事件区域生成资格输入。
+- 边界角色：`derived/query`；最小 seam：Spawn Event Query；事件区域只读提供资格。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1569 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 141 | 3 | ZoneTowerSolar | bool | `public bool ZoneTowerSolar;` | `public bool ZoneTowerSolar;` |
+| 1570 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 143 | 3 | ZoneTowerVortex | bool | `public bool ZoneTowerVortex;` | `public bool ZoneTowerVortex;` |
+| 1571 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 145 | 3 | ZoneTowerNebula | bool | `public bool ZoneTowerNebula;` | `public bool ZoneTowerNebula;` |
+| 1572 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 147 | 3 | ZoneTowerStardust | bool | `public bool ZoneTowerStardust;` | `public bool ZoneTowerStardust;` |
+| 1573 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 149 | 3 | ZoneOldOneArmy | bool | `public bool ZoneOldOneArmy;` | `public bool ZoneOldOneArmy;` |
+| 1574 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 151 | 3 | ZoneWaterCandle | bool | `public bool ZoneWaterCandle;` | `public bool ZoneWaterCandle;` |
+| 1575 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 153 | 3 | ZonePeaceCandle | bool | `public bool ZonePeaceCandle;` | `public bool ZonePeaceCandle;` |
+| 1576 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 155 | 3 | ZoneShadowCandle | bool | `public bool ZoneShadowCandle;` | `public bool ZoneShadowCandle;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.36 细分子系统：`NpcSpawnTargetSelectionState`
+
+- 细分职责：生成目标 NPC 选择状态。
+- 边界角色：`derived/query`；最小 seam：Spawn Target Query；目标选择不修改生成上下文。
+- 成员文件数：1；声明类型数：1；字段：1；属性：0；合计：1。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1577 | field | Terraria.NPC.Spawner | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 157 | 3 | defaultTarget | int | `public int defaultTarget = 255;` | `public int defaultTarget = 255;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.37 细分子系统：`NpcDamageDefinitionRegistry`
+
+- 细分职责：Boss 类型和复合 NPC 定义注册表。
+- 边界角色：`registry/projection`；最小 seam：Damage Definition Registry；注册结果只读提供给追踪系统。
+- 成员文件数：1；声明类型数：2；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1499 | field | Terraria.GameContent.NPCDamageTracker.CustomDefinition | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 14 | 3 | NPCTypes | System.Collections.Generic.List<int> | `public List<int> NPCTypes;` | `public List<int> NPCTypes;` |
+| 1500 | field | Terraria.GameContent.NPCDamageTracker.CustomDefinition | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 16 | 3 | Name | Terraria.Localization.LocalizedText | `public LocalizedText Name;` | `public LocalizedText Name;` |
+| 1502 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 46 | 2 | CustomBossDefinitions | Terraria.GameContent.NPCDamageTracker.CustomDefinition[] | `public static CustomDefinition[] CustomBossDefinitions;` | `public static CustomDefinition[] CustomBossDefinitions;` |
+| 1503 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 48 | 2 | BossTypeForMob | int[] | `public static int[] BossTypeForMob;` | `public static int[] BossTypeForMob;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.14.38 细分子系统：`NpcDamageRuntimeTracking`
+
+- 细分职责：活动/已完成追踪器、攻击者和命中时间运行时状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Damage Tracker System/CommitPort；命中事件顺序化更新追踪状态。
+- 成员文件数：1；声明类型数：1；字段：9；属性：3；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1504 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 50 | 2 | _activeTrackers | System.Collections.Generic.List<Terraria.GameContent.NPCDamageTracker> | `private static List<NPCDamageTracker> _activeTrackers;` | `private static List<NPCDamageTracker> _activeTrackers;` |
+| 1505 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 52 | 2 | _recentFinishedTrackers | System.Collections.Generic.List<Terraria.GameContent.NPCDamageTracker> | `private static List<NPCDamageTracker> _recentFinishedTrackers;` | `private static List<NPCDamageTracker> _recentFinishedTrackers;` |
+| 1506 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 54 | 2 | MAX_RECENT_TRACKERS | int | `private static readonly int MAX_RECENT_TRACKERS;` | `private static readonly int MAX_RECENT_TRACKERS;` |
+| 1507 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 56 | 2 | EXTRA_RECENT_TRACKER_EXPIRY_TIME | int | `private static readonly int EXTRA_RECENT_TRACKER_EXPIRY_TIME;` | `private static readonly int EXTRA_RECENT_TRACKER_EXPIRY_TIME;` |
+| 1508 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 58 | 2 | _list | System.Collections.Generic.List<Terraria.GameContent.NPCDamageTracker.CreditEntry> | `private readonly List<CreditEntry> _list = new List<CreditEntry>(255);` | `private readonly List<CreditEntry> _list = new List<CreditEntry>(255);` |
+| 1509 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 60 | 2 | _worldCredit | Terraria.GameContent.NPCDamageTracker.WorldCreditEntry | `private WorldCreditEntry _worldCredit;` | `private WorldCreditEntry _worldCredit;` |
+| 1510 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 62 | 2 | _lastAttacker | Terraria.GameContent.NPCDamageTracker.CreditEntry | `private CreditEntry _lastAttacker;` | `private CreditEntry _lastAttacker;` |
+| 1511 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 64 | 2 | _ticks | int | `private int _ticks;` | `private int _ticks;` |
+| 1512 | field | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 66 | 2 | _lastHitTime | int | `private int _lastHitTime;` | `private int _lastHitTime;` |
+
+##### 属性（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1874 | property | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 68 | 2 | IsEmpty | bool | `public bool IsEmpty => _list.Count == 0;` | `public bool IsEmpty => _list.Count == 0;` |
+| 1875 | property | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 70 | 2 | Duration | int | `public int Duration => _lastHitTime;` | `public int Duration => _lastHitTime;` |
+| 1876 | property | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 72 | 2 | TimeSinceLastHit | int | `public int TimeSinceLastHit => _ticks - _lastHitTime;` | `public int TimeSinceLastHit => _ticks - _lastHitTime;` |
+
+#### 4.14.39 细分子系统：`NpcDamageCreditProjection`
+
+- 细分职责：玩家、世界和击杀时间的伤害 credit 投影。
+- 边界角色：`derived/query`；最小 seam：Credit Projection/Query；投影只读消费追踪快照。
+- 成员文件数：1；声明类型数：4；字段：1；属性：6；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1501 | field | Terraria.GameContent.NPCDamageTracker.PlayerCreditEntry | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 31 | 3 | PlayerName | string | `public readonly string PlayerName;` | `public readonly string PlayerName;` |
+
+##### 属性（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1870 | property | Terraria.GameContent.NPCDamageTracker.CreditEntry | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 21 | 3 | Damage | int | `public int Damage { get; set; }` | `public int Damage { get; set; }` |
+| 1871 | property | Terraria.GameContent.NPCDamageTracker.CreditEntry | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 23 | 3 | Name | Terraria.Localization.NetworkText | `public abstract NetworkText Name { get; }` | `public abstract NetworkText Name { get; }` |
+| 1872 | property | Terraria.GameContent.NPCDamageTracker.PlayerCreditEntry | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 33 | 3 | Name | Terraria.Localization.NetworkText | `public override NetworkText Name => NetworkText.FromLiteral(PlayerName);` | `public override NetworkText Name => NetworkText.FromLiteral(PlayerName);` |
+| 1873 | property | Terraria.GameContent.NPCDamageTracker.WorldCreditEntry | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 43 | 3 | Name | Terraria.Localization.NetworkText | `public override NetworkText Name => NetworkText.FromKey("BossDamageCommand.WorldCreditName");` | `public override NetworkText Name => NetworkText.FromKey("BossDamageCommand.WorldCreditName");` |
+| 1877 | property | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 74 | 2 | Name | Terraria.Localization.LocalizedText | `public abstract LocalizedText Name { get; }` | `public abstract LocalizedText Name { get; }` |
+| 1878 | property | Terraria.GameContent.NPCDamageTracker | Terraria.GameContent/NPCDamageTracker.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCDamageTracker.cs | 76 | 2 | KillTimeMessage | Terraria.Localization.LocalizedText | `public abstract LocalizedText KillTimeMessage { get; }` | `public abstract LocalizedText KillTimeMessage { get; }` |
+
+#### 4.14.40 细分子系统：`NpcInteractionAndCommerce`
+
+- 细分职责：NPC 对话、回家、商店和 Angler 任务交互数据。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：2；声明类型数：6；字段：4；属性：7；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1513 | field | Terraria.GameContent.NPCInteractions.Actions.OpenShop | Terraria.GameContent/NPCInteractions.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteractions.cs | 27 | 4 | _shopIndex | int | `private int _shopIndex;` | `private int _shopIndex;` |
+| 1514 | field | Terraria.GameContent.NPCInteractions.Actions.OpenShop | Terraria.GameContent/NPCInteractions.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteractions.cs | 29 | 4 | _npcType | int | `private int _npcType;` | `private int _npcType;` |
+| 1515 | field | Terraria.GameContent.NPCInteractions.Actions.OpenShop | Terraria.GameContent/NPCInteractions.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteractions.cs | 31 | 4 | _customTextKey | string | `private string _customTextKey;` | `private string _customTextKey;` |
+| 1516 | field | Terraria.GameContent.NPCInteractions | Terraria.GameContent/NPCInteractions.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteractions.cs | 233 | 2 | All | System.Collections.Generic.List<Terraria.GameContent.NPCInteraction> | `public static List<NPCInteraction> All = new List<NPCInteraction>();` | `public static List<NPCInteraction> All = new List<NPCInteraction>();` |
+
+##### 属性（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1879 | property | Terraria.GameContent.NPCInteraction | Terraria.GameContent/NPCInteraction.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteraction.cs | 7 | 2 | ShowExcalmation | bool | `public virtual bool ShowExcalmation => false;` | `public virtual bool ShowExcalmation => false;` |
+| 1880 | property | Terraria.GameContent.NPCInteraction | Terraria.GameContent/NPCInteraction.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteraction.cs | 9 | 2 | LocalPlayer | Terraria.Player | `public Player LocalPlayer => Main.LocalPlayer;` | `public Player LocalPlayer => Main.LocalPlayer;` |
+| 1881 | property | Terraria.GameContent.NPCInteraction | Terraria.GameContent/NPCInteraction.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteraction.cs | 11 | 2 | TalkNPC | Terraria.NPC | `public NPC TalkNPC => Main.npc[LocalPlayer.talkNPC];` | `public NPC TalkNPC => Main.npc[LocalPlayer.talkNPC];` |
+| 1882 | property | Terraria.GameContent.NPCInteraction | Terraria.GameContent/NPCInteraction.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteraction.cs | 13 | 2 | TalkNPCType | int | `public int TalkNPCType { get { if (LocalPlayer.talkNPC == -1) { return 0; } return TalkNPC.type; } }` | `public int TalkNPCType { get { if (LocalPlayer.talkNPC == -1) { return 0; } return TalkNPC.type; } }` |
+| 1883 | property | Terraria.GameContent.NPCInteractions.Actions.StardewValleyBit | Terraria.GameContent/NPCInteractions.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteractions.cs | 50 | 4 | ShowExcalmation | bool | `public override bool ShowExcalmation => true;` | `public override bool ShowExcalmation => true;` |
+| 1884 | property | Terraria.GameContent.NPCInteractions.Actions.AnglerQuest | Terraria.GameContent/NPCInteractions.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteractions.cs | 72 | 4 | ShowExcalmation | bool | `public override bool ShowExcalmation => !Main.anglerQuestFinished;` | `public override bool ShowExcalmation => !Main.anglerQuestFinished;` |
+| 1885 | property | Terraria.GameContent.NPCInteractions.Actions.RequestHome | Terraria.GameContent/NPCInteractions.cs | D:\TRbackup\Version4\Terraria.GameContent\NPCInteractions.cs | 162 | 4 | ShowExcalmation | bool | `public override bool ShowExcalmation => true;` | `public override bool ShowExcalmation => true;` |
+
+#### 4.14.41 细分子系统：`NpcNetworkSyncState`
+
+- 细分职责：玩家对 NPC 同步流的节流状态。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；提交后的事实单向输出，不把网络/UI/索引反写成权威状态。
+- 成员文件数：1；声明类型数：1；字段：2；属性：0；合计：2。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1517 | field | Terraria.NPC.PlayerNetSyncState | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 34 | 3 | skippedSyncs | byte | `public byte skippedSyncs;` | `public byte skippedSyncs;` |
+| 1518 | field | Terraria.NPC.PlayerNetSyncState | Terraria/NPC.cs | D:\TRbackup\Version4\Terraria\NPC.cs | 36 | 3 | streamCounter | byte | `public byte streamCounter;` | `public byte streamCounter;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.15 父级子系统：`ProjectileSimulation`
+
+- 父级职责：投射物身份、行为、战斗和复制状态。
+- 父级统计：字段 118；属性 8；合计 126；细分数 17。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `ProjectileIdentityAndClassificationState` | authoritative state/behavior | 16 | 0 | 16 |
+| `ProjectileAiState` | authoritative state/behavior | 4 | 0 | 4 |
+| `ProjectileLifetimeAndRuntimeState` | authoritative state/behavior | 6 | 0 | 6 |
+| `ProjectileCombatAndImmunity` | authoritative state/behavior | 14 | 0 | 14 |
+| `ProjectileMovementAndCollisionState` | authoritative state/behavior | 9 | 0 | 9 |
+| `ProjectileNetworkReplicationState` | registry/projection | 4 | 0 | 4 |
+| `ProjectileMinionAndPresentationState` | authoritative state/behavior | 13 | 0 | 13 |
+| `ProjectileDamageAndElementState` | authoritative state/behavior | 13 | 0 | 13 |
+| `ProjectileAnimationAndDirectionState` | authoritative state/behavior | 3 | 0 | 3 |
+| `ProjectileCollisionAndTargetingState` | authoritative state/behavior | 7 | 0 | 7 |
+| `ProjectileCombatScalingState` | authoritative state/behavior | 2 | 0 | 2 |
+| `ProjectileCollisionGeometryCache` | derived/query | 8 | 0 | 8 |
+| `ProjectileTargetSelectionCache` | derived/query | 7 | 0 | 7 |
+| `ProjectileFishingAndMiningQueryState` | derived/query | 3 | 0 | 3 |
+| `ProjectileKiteAndLightningRules` | definition/query | 2 | 0 | 2 |
+| `ProjectileDerivedProperties` | derived/query | 0 | 8 | 8 |
+| `ProjectileStormDefinition` | definition/query | 7 | 0 | 7 |
+
+#### 4.15.1 细分子系统：`ProjectileIdentityAndClassificationState`
+
+- 细分职责：投射物激活、所有者、类型、分类和静态身份相关状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；生成命令建立并提交身份状态。
+- 成员文件数：1；声明类型数：1；字段：16；属性：0；合计：16。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（16）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1918 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 90 | 2 | active | bool | `public bool active;` | `public bool active;` |
+| 1919 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 92 | 2 | perIDStaticNPCImmunity | uint[][] | `public static uint[][] perIDStaticNPCImmunity = new uint[ProjectileID.Count][];` | `public static uint[][] perIDStaticNPCImmunity = new uint[ProjectileID.Count][];` |
+| 1922 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 98 | 2 | ownerHitCheckDistance | float | `public float ownerHitCheckDistance = 1000f;` | `public float ownerHitCheckDistance = 1000f;` |
+| 1923 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 100 | 2 | arrow | bool | `public bool arrow;` | `public bool arrow;` |
+| 1924 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 102 | 2 | numHits | int | `public int numHits;` | `public int numHits;` |
+| 1925 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 104 | 2 | bobber | bool | `public bool bobber;` | `public bool bobber;` |
+| 1926 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 106 | 2 | netImportant | bool | `public bool netImportant;` | `public bool netImportant;` |
+| 1927 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 108 | 2 | noDropItem | bool | `public bool noDropItem;` | `public bool noDropItem;` |
+| 1929 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 112 | 2 | counterweight | bool | `public bool counterweight;` | `public bool counterweight;` |
+| 1930 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 114 | 2 | scale | float | `public float scale = 1f;` | `public float scale = 1f;` |
+| 1931 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 116 | 2 | rotation | float | `public float rotation;` | `public float rotation;` |
+| 1932 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 118 | 2 | type | int | `public int type;` | `public int type;` |
+| 1933 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 120 | 2 | alpha | int | `public int alpha;` | `public int alpha;` |
+| 1934 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 122 | 2 | sentry | bool | `public bool sentry;` | `public bool sentry;` |
+| 1935 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 124 | 2 | glowMask | short | `public short glowMask;` | `public short glowMask;` |
+| 1936 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 126 | 2 | owner | int | `public int owner = 255;` | `public int owner = 255;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.2 细分子系统：`ProjectileAiState`
+
+- 细分职责：投射物 AI 数组、局部 AI 和 AI 风格状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；AI 系统是本组唯一行为写入者。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1928 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 110 | 2 | maxAI | int | `public static int maxAI = 3;` | `public static int maxAI = 3;` |
+| 1937 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 128 | 2 | ai | float[] | `public float[] ai = new float[maxAI];` | `public float[] ai = new float[maxAI];` |
+| 1938 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 130 | 2 | localAI | float[] | `public float[] localAI = new float[maxAI];` | `public float[] localAI = new float[maxAI];` |
+| 1941 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 136 | 2 | aiStyle | int | `public int aiStyle;` | `public int aiStyle;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.3 细分子系统：`ProjectileLifetimeAndRuntimeState`
+
+- 细分职责：投射物生命周期计时、运行步进、偏移和声音延迟状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；生命周期系统按 Tick 提交运行状态。
+- 成员文件数：1；声明类型数：1；字段：6；属性：0；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1920 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 94 | 2 | SentryLifeTime | int | `public const int SentryLifeTime = 36000;` | `public const int SentryLifeTime = 36000;` |
+| 1921 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 96 | 2 | ArrowLifeTime | int | `public const int ArrowLifeTime = 1200;` | `public const int ArrowLifeTime = 1200;` |
+| 1939 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 132 | 2 | gfxOffY | float | `public float gfxOffY;` | `public float gfxOffY;` |
+| 1940 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 134 | 2 | stepSpeed | float | `public float stepSpeed = 1f;` | `public float stepSpeed = 1f;` |
+| 1942 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 138 | 2 | timeLeft | int | `public int timeLeft;` | `public int timeLeft;` |
+| 1943 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 140 | 2 | soundDelay | int | `public int soundDelay;` | `public int soundDelay;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.4 细分子系统：`ProjectileCombatAndImmunity`
+
+- 细分职责：伤害、友敌、穿透和 NPC/玩家免疫。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1944 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 142 | 2 | damage | int | `public int damage;` | `public int damage;` |
+| 1945 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 144 | 2 | originalDamage | int | `public int originalDamage;` | `public int originalDamage;` |
+| 1946 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 146 | 2 | spriteDirection | int | `public int spriteDirection = 1;` | `public int spriteDirection = 1;` |
+| 1947 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 148 | 2 | hostile | bool | `public bool hostile;` | `public bool hostile;` |
+| 1948 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 150 | 2 | reflected | bool | `public bool reflected;` | `public bool reflected;` |
+| 1949 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 152 | 2 | knockBack | float | `public float knockBack;` | `public float knockBack;` |
+| 1950 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 154 | 2 | friendly | bool | `public bool friendly;` | `public bool friendly;` |
+| 1951 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 156 | 2 | penetrate | int | `public int penetrate = 1;` | `public int penetrate = 1;` |
+| 1952 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 158 | 2 | localNPCImmunity | int[] | `public int[] localNPCImmunity = new int[Main.maxNPCs];` | `public int[] localNPCImmunity = new int[Main.maxNPCs];` |
+| 1953 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 160 | 2 | usesLocalNPCImmunity | bool | `public bool usesLocalNPCImmunity;` | `public bool usesLocalNPCImmunity;` |
+| 1954 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 162 | 2 | usesIDStaticNPCImmunity | bool | `public bool usesIDStaticNPCImmunity;` | `public bool usesIDStaticNPCImmunity;` |
+| 1955 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 164 | 2 | appliesImmunityTimeOnSingleHits | bool | `public bool appliesImmunityTimeOnSingleHits;` | `public bool appliesImmunityTimeOnSingleHits;` |
+| 1956 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 166 | 2 | maxPenetrate | int | `public int maxPenetrate = 1;` | `public int maxPenetrate = 1;` |
+| 1957 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 168 | 2 | identity | int | `public int identity;` | `public int identity;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.5 细分子系统：`ProjectileMovementAndCollisionState`
+
+- 细分职责：投射物运动历史、碰撞、更新步数和水体交互状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；运动系统集中提交碰撞与历史状态。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1963 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 180 | 2 | oldPos | Vector2[] | `public Vector2[] oldPos = new Vector2[10];` | `public Vector2[] oldPos = new Vector2[10];` |
+| 1964 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 182 | 2 | oldRot | float[] | `public float[] oldRot = new float[10];` | `public float[] oldRot = new float[10];` |
+| 1965 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 184 | 2 | oldSpriteDirection | int[] | `public int[] oldSpriteDirection = new int[10];` | `public int[] oldSpriteDirection = new int[10];` |
+| 1969 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 192 | 2 | restrikeDelay | int | `public int restrikeDelay;` | `public int restrikeDelay;` |
+| 1970 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 194 | 2 | tileCollide | bool | `public bool tileCollide;` | `public bool tileCollide;` |
+| 1971 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 196 | 2 | extraUpdates | int | `public int extraUpdates;` | `public int extraUpdates;` |
+| 1972 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 198 | 2 | stopsDealingDamageAfterPenetrateHits | bool | `public bool stopsDealingDamageAfterPenetrateHits;` | `public bool stopsDealingDamageAfterPenetrateHits;` |
+| 1973 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 200 | 2 | numUpdates | int | `public int numUpdates;` | `public int numUpdates;` |
+| 1974 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 202 | 2 | ignoreWater | bool | `public bool ignoreWater;` | `public bool ignoreWater;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.6 细分子系统：`ProjectileNetworkReplicationState`
+
+- 细分职责：投射物网络更新、网络节流和按玩家同步跳过状态。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；复制层只读取投射物权威快照。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1959 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 172 | 2 | netUpdate | bool | `public bool netUpdate;` | `public bool netUpdate;` |
+| 1960 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 174 | 2 | netUpdate2 | bool | `public bool netUpdate2;` | `public bool netUpdate2;` |
+| 1961 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 176 | 2 | netSpam | int | `public int netSpam;` | `public int netSpam;` |
+| 1962 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 178 | 2 | netSyncSkippedForPlayer | bool[] | `internal bool[] netSyncSkippedForPlayer = new bool[255];` | `internal bool[] netSyncSkippedForPlayer = new bool[255];` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.7 细分子系统：`ProjectileMinionAndPresentationState`
+
+- 细分职责：召唤物槽位、预览实体、绘制层和玩家免疫缓存。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；召唤物与表现适配器通过显式快照交接。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1958 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 170 | 2 | light | float | `public float light;` | `public float light;` |
+| 1966 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 186 | 2 | minion | bool | `public bool minion;` | `public bool minion;` |
+| 1967 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 188 | 2 | minionSlots | float | `public float minionSlots;` | `public float minionSlots;` |
+| 1968 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 190 | 2 | minionPos | int | `public int minionPos;` | `public int minionPos;` |
+| 1975 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 204 | 2 | isAPreviewDummy | bool | `public bool isAPreviewDummy;` | `public bool isAPreviewDummy;` |
+| 1976 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 206 | 2 | isAPreviewDisplayDoll | bool | `public bool isAPreviewDisplayDoll;` | `public bool isAPreviewDisplayDoll;` |
+| 1977 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 208 | 2 | MinionSpawnInfo | Terraria.DataStructures.MinionSpawnInfo | `public MinionSpawnInfo MinionSpawnInfo;` | `public MinionSpawnInfo MinionSpawnInfo;` |
+| 1978 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 210 | 2 | drawLayer | int | `public int drawLayer;` | `public int drawLayer;` |
+| 1979 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 212 | 2 | usesOwnerLight | bool | `public bool usesOwnerLight;` | `public bool usesOwnerLight;` |
+| 1980 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 214 | 2 | hide | bool | `public bool hide;` | `public bool hide;` |
+| 1981 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 216 | 2 | ownerHitCheck | bool | `public bool ownerHitCheck;` | `public bool ownerHitCheck;` |
+| 1982 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 218 | 2 | usesOwnerMeleeHitCD | bool | `public bool usesOwnerMeleeHitCD;` | `public bool usesOwnerMeleeHitCD;` |
+| 1983 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 220 | 2 | playerImmune | int[] | `public int[] playerImmune = new int[255];` | `public int[] playerImmune = new int[255];` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.8 细分子系统：`ProjectileDamageAndElementState`
+
+- 细分职责：伤害类型、附魔限制、陷阱来源和 Tag 效果状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；战斗事件集中提交伤害标签与元素状态。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1984 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 222 | 2 | miscText | string | `public string miscText = "";` | `public string miscText = "";` |
+| 1985 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 224 | 2 | melee | bool | `public bool melee;` | `public bool melee;` |
+| 1986 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 226 | 2 | ranged | bool | `public bool ranged;` | `public bool ranged;` |
+| 1987 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 228 | 2 | magic | bool | `public bool magic;` | `public bool magic;` |
+| 1988 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 230 | 2 | coldDamage | bool | `public bool coldDamage;` | `public bool coldDamage;` |
+| 1989 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 232 | 2 | noEnchantments | bool | `public bool noEnchantments;` | `public bool noEnchantments;` |
+| 1990 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 234 | 2 | noEnchantmentVisuals | bool | `public bool noEnchantmentVisuals;` | `public bool noEnchantmentVisuals;` |
+| 1991 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 236 | 2 | trap | bool | `public bool trap;` | `public bool trap;` |
+| 1992 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 238 | 2 | npcProj | bool | `public bool npcProj;` | `public bool npcProj;` |
+| 1993 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 240 | 2 | originatedFromActivableTile | bool | `public bool originatedFromActivableTile;` | `public bool originatedFromActivableTile;` |
+| 2004 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 262 | 2 | tagEffectType | int | `public int tagEffectType;` | `public int tagEffectType;` |
+| 2005 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 264 | 2 | bonusTagDamage | int | `public int bonusTagDamage;` | `public int bonusTagDamage;` |
+| 2006 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 266 | 2 | armorPenetration | int | `public int armorPenetration;` | `public int armorPenetration;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.9 细分子系统：`ProjectileAnimationAndDirectionState`
+
+- 细分职责：投射物帧计数、帧索引和手动方向切换状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；表现行为消费并提交帧状态。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1994 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 242 | 2 | frameCounter | int | `public int frameCounter;` | `public int frameCounter;` |
+| 1995 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 244 | 2 | frame | int | `public int frame;` | `public int frame;` |
+| 1996 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 246 | 2 | manualDirectionChange | bool | `public bool manualDirectionChange;` | `public bool manualDirectionChange;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.10 细分子系统：`ProjectileCollisionAndTargetingState`
+
+- 细分职责：斜坡碰撞、穿透方向、目标命中冷却和 Banner/UUID 目标状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；目标选择与碰撞命令显式提交。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1997 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 248 | 2 | projUUID | int | `public int projUUID = -1;` | `public int projUUID = -1;` |
+| 1998 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 250 | 2 | correctSlopeCollision | bool | `public bool correctSlopeCollision;` | `public bool correctSlopeCollision;` |
+| 1999 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 252 | 2 | decidesManualFallThrough | bool | `public bool decidesManualFallThrough;` | `public bool decidesManualFallThrough;` |
+| 2000 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 254 | 2 | shouldFallThrough | bool | `public bool shouldFallThrough;` | `public bool shouldFallThrough;` |
+| 2001 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 256 | 2 | localNPCHitCooldown | int | `public int localNPCHitCooldown = -2;` | `public int localNPCHitCooldown = -2;` |
+| 2002 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 258 | 2 | idStaticNPCHitCooldown | int | `public int idStaticNPCHitCooldown = -1;` | `public int idStaticNPCHitCooldown = -1;` |
+| 2003 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 260 | 2 | bannerIdToRespondTo | int | `public int bannerIdToRespondTo;` | `public int bannerIdToRespondTo;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.11 细分子系统：`ProjectileCombatScalingState`
+
+- 细分职责：投射物暴击和敌对伤害缩放修正。
+- 边界角色：`authoritative state/behavior`；最小 seam：Projectile Combat System/CommitPort；难度和战斗事件集中提交。
+- 成员文件数：1；声明类型数：1；字段：2；属性：0；合计：2。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2007 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 268 | 2 | bonusCritChance | int | `public int bonusCritChance;` | `public int bonusCritChance;` |
+| 2008 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 270 | 2 | hostileDamageScaling | Terraria.DataStructures.GameDifficultyData.LinearCurve | `public GameDifficultyData.LinearCurve hostileDamageScaling = GameDifficultyData.HostileProjectileDamageMultiplier;` | `public GameDifficultyData.LinearCurve hostileDamageScaling = GameDifficultyData.HostileProjectileDamageMultiplier;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.12 细分子系统：`ProjectileCollisionGeometryCache`
+
+- 细分职责：投射物碰撞条件、长矛/鞭子/闪电几何缓存。
+- 边界角色：`derived/query`；最小 seam：Projectile Collision Query/Cache；缓存失效由碰撞系统管理。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2009 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 272 | 2 | _cachedConditions_solid | Terraria.WorldBuilding.Conditions.IsSolid | `private static Conditions.IsSolid _cachedConditions_solid = new Conditions.IsSolid();` | `private static Conditions.IsSolid _cachedConditions_solid = new Conditions.IsSolid();` |
+| 2010 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 274 | 2 | _cachedConditions_notNull | Terraria.WorldBuilding.Conditions.NotNull | `private static Conditions.NotNull _cachedConditions_notNull = new Conditions.NotNull();` | `private static Conditions.NotNull _cachedConditions_notNull = new Conditions.NotNull();` |
+| 2011 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 276 | 2 | _javelinsMax6 | Point[] | `private static Point[] _javelinsMax6 = new Point[6];` | `private static Point[] _javelinsMax6 = new Point[6];` |
+| 2012 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 278 | 2 | _javelinsMax8 | Point[] | `private static Point[] _javelinsMax8 = new Point[8];` | `private static Point[] _javelinsMax8 = new Point[8];` |
+| 2013 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 280 | 2 | _javelinsMax10 | Point[] | `private static Point[] _javelinsMax10 = new Point[10];` | `private static Point[] _javelinsMax10 = new Point[10];` |
+| 2014 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 282 | 2 | WhipPointsForCollision | System.Collections.Generic.List<Vector2> | `public List<Vector2> WhipPointsForCollision = new List<Vector2>();` | `public List<Vector2> WhipPointsForCollision = new List<Vector2>();` |
+| 2015 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 284 | 2 | _lanceHitboxBounds | Rectangle | `private static Rectangle _lanceHitboxBounds = new Rectangle(0, 0, 300, 300);` | `private static Rectangle _lanceHitboxBounds = new Rectangle(0, 0, 300, 300);` |
+| 2016 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 286 | 2 | _lightningCollisionBounds | Terraria.DataStructures.MultiPointHitbox | `private static MultiPointHitbox _lightningCollisionBounds;` | `private static MultiPointHitbox _lightningCollisionBounds;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.13 细分子系统：`ProjectileTargetSelectionCache`
+
+- 细分职责：彩虹巨石、Medusa 和 AI 黑名单目标缓存。
+- 边界角色：`derived/query`；最小 seam：Projectile Target Query/Cache；目标缓存只读服务选择查询。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2017 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 288 | 2 | _rainbowBoulderTargetsAny | System.Collections.Generic.List<Terraria.NPC> | `private static List<NPC> _rainbowBoulderTargetsAny = new List<NPC>();` | `private static List<NPC> _rainbowBoulderTargetsAny = new List<NPC>();` |
+| 2018 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 290 | 2 | _rainbowBoulderTargetsFar | System.Collections.Generic.List<Terraria.NPC> | `private static List<NPC> _rainbowBoulderTargetsFar = new List<NPC>();` | `private static List<NPC> _rainbowBoulderTargetsFar = new List<NPC>();` |
+| 2022 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 298 | 2 | _medusaHeadTargetList | System.Collections.Generic.List<System.Tuple<int, float>> | `private static List<Tuple<int, float>> _medusaHeadTargetList = new List<Tuple<int, float>>();` | `private static List<Tuple<int, float>> _medusaHeadTargetList = new List<Tuple<int, float>>();` |
+| 2023 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 300 | 2 | _medusaTargetComparer | Terraria.Projectile.NPCDistanceByIndexComparator | `private static NPCDistanceByIndexComparator _medusaTargetComparer = new NPCDistanceByIndexComparator();` | `private static NPCDistanceByIndexComparator _medusaTargetComparer = new NPCDistanceByIndexComparator();` |
+| 2024 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 302 | 2 | _ai164_blacklistedTargets | System.Collections.Generic.List<int> | `private static List<int> _ai164_blacklistedTargets = new List<int>();` | `private static List<int> _ai164_blacklistedTargets = new List<int>();` |
+| 2026 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 306 | 2 | _ai158_blacklistedTargets | System.Collections.Generic.List<int> | `private static List<int> _ai158_blacklistedTargets = new List<int>();` | `private static List<int> _ai158_blacklistedTargets = new List<int>();` |
+| 2028 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 310 | 2 | _ai156_blacklistedTargets | System.Collections.Generic.List<int> | `private static List<int> _ai156_blacklistedTargets = new List<int>();` | `private static List<int> _ai156_blacklistedTargets = new List<int>();` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.14 细分子系统：`ProjectileFishingAndMiningQueryState`
+
+- 细分职责：钓鱼上下文、鱼类展示和采矿跳过点查询缓存。
+- 边界角色：`derived/query`；最小 seam：Projectile Tool Query/Cache；工具查询结果按调用周期失效。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2019 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 292 | 2 | _availableFishTypesToShow | System.Collections.Generic.List<Terraria.GameContent.FishDropRules.FishPossibilityEntry> | `private static List<FishPossibilityEntry> _availableFishTypesToShow = new List<FishPossibilityEntry>();` | `private static List<FishPossibilityEntry> _availableFishTypesToShow = new List<FishPossibilityEntry>();` |
+| 2020 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 294 | 2 | _context | Terraria.GameContent.FishDropRules.FishingContext | `private static FishingContext _context = new FishingContext();` | `private static FishingContext _context = new FishingContext();` |
+| 2027 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 308 | 2 | _miningHelperPointsToSkip | System.Collections.Generic.List<Point> | `private static List<Point> _miningHelperPointsToSkip = new List<Point>();` | `private static List<Point> _miningHelperPointsToSkip = new List<Point>();` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.15 细分子系统：`ProjectileKiteAndLightningRules`
+
+- 细分职责：风筝飞行阈值和闪电液体伤害半径规则。
+- 边界角色：`definition/query`；最小 seam：Projectile Specialized Definition/Query；规则只读提供给专用行为。
+- 成员文件数：1；声明类型数：1；字段：2；属性：0；合计：2。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2021 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 296 | 2 | StormLightningLiquidDamageRadius | int | `public const int StormLightningLiquidDamageRadius = 500;` | `public const int StormLightningLiquidDamageRadius = 500;` |
+| 2025 | field | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 304 | 2 | MinimumWindStrengthToFlyKite | float | `public const float MinimumWindStrengthToFlyKite = 0.2f;` | `public const float MinimumWindStrengthToFlyKite = 0.2f;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.15.16 细分子系统：`ProjectileDerivedProperties`
+
+- 细分职责：名称、更新次数、归属和网络区段的只读属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不得写入该分组或相邻权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：8；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2029 | property | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 312 | 2 | Name | string | `public string Name => Lang.GetProjectileName(type).Value;` | `public string Name => Lang.GetProjectileName(type).Value;` |
+| 2030 | property | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 314 | 2 | WipableTurret | bool | `public bool WipableTurret { get { if (owner == Main.myPlayer && sentry) { return !TurretShouldPersist(); } return false; } }` | `public bool WipableTurret { get { if (owner == Main.myPlayer && sentry) { return !TurretShouldPersist(); } return false; } }` |
+| 2031 | property | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 326 | 2 | Opacity | float | `public float Opacity { get { return 1f - (float)alpha / 255f; } set { alpha = (int)MathHelper.Clamp((1f - value) * 255f, 0f, 255f); } }` | `public float Opacity { get { return 1f - (float)alpha / 255f; } set { alpha = (int)MathHelper.Clamp((1f - value) * 255f, 0f, 255f); } }` |
+| 2032 | property | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 338 | 2 | MaxUpdates | int | `public int MaxUpdates { get { return extraUpdates + 1; } set { extraUpdates = value - 1; } }` | `public int MaxUpdates { get { return extraUpdates + 1; } set { extraUpdates = value - 1; } }` |
+| 2033 | property | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 350 | 2 | OwnerMinionAttackTargetNPC | Terraria.NPC | `public NPC OwnerMinionAttackTargetNPC { get { if (Main.player[owner].MinionAttackTargetNPC < 0) { return null; } return Main.npc[Main.player[owner].MinionAttackTargetNPC]; } }` | `public NPC OwnerMinionAttackTargetNPC { get { if (Main.player[owner].MinionAttackTargetNPC < 0) { return null; } return Main.npc[Main.player[owner].MinionAttackTargetNPC]; } }` |
+| 2034 | property | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 362 | 2 | OwnedBySomeone | bool | `public bool OwnedBySomeone { get { if (!npcProj) { return !trap; } return false; } }` | `public bool OwnedBySomeone { get { if (!npcProj) { return !trap; } return false; } }` |
+| 2035 | property | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 374 | 2 | CareForAttackCD | bool | `public bool CareForAttackCD { get { if (usesOwnerMeleeHitCD && OwnedBySomeone) { return owner < 255; } return false; } }` | `public bool CareForAttackCD { get { if (usesOwnerMeleeHitCD && OwnedBySomeone) { return owner < 255; } return false; } }` |
+| 2036 | property | Terraria.Projectile | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 386 | 2 | NetSectionCoordinates | Point | `public Point NetSectionCoordinates => new Point(Netplay.GetSectionX((int)position.X >> 4), Netplay.GetSectionY((int)position.Y >> 4));` | `public Point NetSectionCoordinates => new Point(Netplay.GetSectionX((int)position.X >> 4), Netplay.GetSectionY((int)position.Y >> 4));` |
+
+#### 4.15.17 细分子系统：`ProjectileStormDefinition`
+
+- 细分职责：Hallow Boss pellet storm 的静态弹幕定义。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；规则 System 消费，外部配置通过 Adapter 转换。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 1911 | field | Terraria.Projectile.HallowBossPelletStormInfo | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 42 | 3 | StartAngle | float | `public float StartAngle;` | `public float StartAngle;` |
+| 1912 | field | Terraria.Projectile.HallowBossPelletStormInfo | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 44 | 3 | AnglePerBullet | float | `public float AnglePerBullet;` | `public float AnglePerBullet;` |
+| 1913 | field | Terraria.Projectile.HallowBossPelletStormInfo | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 46 | 3 | BulletsInStorm | int | `public int BulletsInStorm;` | `public int BulletsInStorm;` |
+| 1914 | field | Terraria.Projectile.HallowBossPelletStormInfo | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 48 | 3 | BulletsProgressInStormStartNormalized | float | `public float BulletsProgressInStormStartNormalized;` | `public float BulletsProgressInStormStartNormalized;` |
+| 1915 | field | Terraria.Projectile.HallowBossPelletStormInfo | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 50 | 3 | BulletsProgressInStormBonusByIndexNormalized | float | `public float BulletsProgressInStormBonusByIndexNormalized;` | `public float BulletsProgressInStormBonusByIndexNormalized;` |
+| 1916 | field | Terraria.Projectile.HallowBossPelletStormInfo | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 52 | 3 | StormTotalRange | float | `public float StormTotalRange;` | `public float StormTotalRange;` |
+| 1917 | field | Terraria.Projectile.HallowBossPelletStormInfo | Terraria/Projectile.cs | D:\TRbackup\Version4\Terraria\Projectile.cs | 54 | 3 | BulletSize | Vector2 | `public Vector2 BulletSize;` | `public Vector2 BulletSize;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.16 父级子系统：`TeleportationAndTraversal`
+
+- 父级职责：传送水晶塔和旅行资格索引。
+- 父级统计：字段 5；属性 0；合计 5；细分数 1。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `TeleportPylonRegistry` | registry/projection | 5 | 0 | 5 |
+
+#### 4.16.1 细分子系统：`TeleportPylonRegistry`
+
+- 细分职责：传送水晶塔注册、刷新冷却和场景指标快照。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；提交后的事实单向输出，不把网络/UI/索引反写成权威状态。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2037 | field | Terraria.GameContent.TeleportPylonsSystem | Terraria.GameContent/TeleportPylonsSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\TeleportPylonsSystem.cs | 15 | 2 | _pylons | System.Collections.Generic.List<Terraria.GameContent.TeleportPylonInfo> | `private List<TeleportPylonInfo> _pylons = new List<TeleportPylonInfo>();` | `private List<TeleportPylonInfo> _pylons = new List<TeleportPylonInfo>();` |
+| 2038 | field | Terraria.GameContent.TeleportPylonsSystem | Terraria.GameContent/TeleportPylonsSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\TeleportPylonsSystem.cs | 17 | 2 | _pylonsOld | System.Collections.Generic.List<Terraria.GameContent.TeleportPylonInfo> | `private List<TeleportPylonInfo> _pylonsOld = new List<TeleportPylonInfo>();` | `private List<TeleportPylonInfo> _pylonsOld = new List<TeleportPylonInfo>();` |
+| 2039 | field | Terraria.GameContent.TeleportPylonsSystem | Terraria.GameContent/TeleportPylonsSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\TeleportPylonsSystem.cs | 19 | 2 | _cooldownForUpdatingPylonsList | int | `private int _cooldownForUpdatingPylonsList;` | `private int _cooldownForUpdatingPylonsList;` |
+| 2040 | field | Terraria.GameContent.TeleportPylonsSystem | Terraria.GameContent/TeleportPylonsSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\TeleportPylonsSystem.cs | 21 | 2 | CooldownTimePerPylonsListUpdate | int | `private const int CooldownTimePerPylonsListUpdate = int.MaxValue;` | `private const int CooldownTimePerPylonsListUpdate = int.MaxValue;` |
+| 2041 | field | Terraria.GameContent.TeleportPylonsSystem | Terraria.GameContent/TeleportPylonsSystem.cs | D:\TRbackup\Version4\Terraria.GameContent\TeleportPylonsSystem.cs | 23 | 2 | _sceneMetrics | Terraria.SceneMetrics | `private SceneMetrics _sceneMetrics = new SceneMetrics();` | `private SceneMetrics _sceneMetrics = new SceneMetrics();` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.17 父级子系统：`FishingAndCatchSimulation`
+
+- 父级职责：钓鱼与渔获；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+### 4.18 父级子系统：`CombatAndStatus`
+
+- 父级职责：战斗与状态；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+### 4.19 父级子系统：`ItemContainerAndEconomy`
+
+- 父级职责：物品、容器和经济；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+### 4.20 父级子系统：`WorldGenerationAndEcology`
+
+- 父级职责：世界生成、地形、Biome 和生态支持类型。
+- 父级统计：字段 521；属性 97；合计 618；细分数 61。
+
+| 细分子系统 | 边界角色 | 字段 | 属性 | 合计 |
+|---|---|---:|---:|---:|
+| `WorldGenBiomeBackgroundAndDistanceMetrics` | derived/query | 21 | 0 | 21 |
+| `WorldGenTileCountMetrics` | derived/query | 14 | 0 | 14 |
+| `WorldLifecycleLoadAndTransformState` | authoritative state/behavior | 7 | 0 | 7 |
+| `WorldLifecycleProgressionAndEventState` | authoritative state/behavior | 6 | 0 | 6 |
+| `WorldLifecycleHousingAndSpawnPacingState` | authoritative state/behavior | 7 | 0 | 7 |
+| `WorldLifecycleTileMergeState` | authoritative state/behavior | 4 | 0 | 4 |
+| `WorldHousingCountersAndScoringState` | authoritative state/behavior | 15 | 0 | 15 |
+| `WorldHousingRoomSearchState` | authoritative state/behavior | 19 | 0 | 19 |
+| `WorldHousingRuleAndDiagnosticState` | definition/query | 5 | 0 | 5 |
+| `WorldGenerationDimensionsState` | authoritative state/behavior | 8 | 0 | 8 |
+| `WorldGenerationExecutionState` | authoritative state/behavior | 6 | 0 | 6 |
+| `WorldGenerationSecretSeedFlags` | authoritative state/behavior | 10 | 0 | 10 |
+| `WorldGenerationScratchState` | authoritative state/behavior | 4 | 0 | 4 |
+| `WorldTerrainEffectsAndCaches` | authoritative state/behavior | 20 | 0 | 20 |
+| `WorldGenDerivedProperties` | derived/query | 0 | 3 | 3 |
+| `GenVarsConfigurationAndOreState` | authoritative state/behavior | 10 | 0 | 10 |
+| `GenVarsWorldLayerMetrics` | authoritative state/behavior | 13 | 0 | 13 |
+| `GenVarsSurfaceAndBiomeState` | authoritative state/behavior | 15 | 0 | 15 |
+| `GenVarsBeachAndOceanBoundaryState` | authoritative state/behavior | 12 | 0 | 12 |
+| `WorldGenBeachAndOceanBiomeState` | authoritative state/behavior | 12 | 0 | 12 |
+| `WorldGenUndergroundDesertStructureState` | authoritative state/behavior | 9 | 0 | 9 |
+| `WorldGenJungleStructureState` | authoritative state/behavior | 15 | 0 | 15 |
+| `GenVarsDungeonAndIslands` | authoritative state/behavior | 19 | 0 | 19 |
+| `GenVarsCaveTunnelAndOrePatchState` | authoritative state/behavior | 9 | 0 | 9 |
+| `GenVarsMushroomBiomeAndLogState` | authoritative state/behavior | 5 | 0 | 5 |
+| `GenVarsLakeAndOasisState` | authoritative state/behavior | 8 | 0 | 8 |
+| `GenVarsHellAndSpecialStructures` | authoritative state/behavior | 9 | 0 | 9 |
+| `GenVarsDungeonDerivedProperties` | derived/query | 0 | 3 | 3 |
+| `WorldSecretSeedRegistryDefinitions` | registry/projection | 6 | 0 | 6 |
+| `WorldSecretSeedVisualAndSurfaceRules` | definition/query | 9 | 0 | 9 |
+| `WorldSecretSeedTerrainAndStructureRules` | definition/query | 11 | 0 | 11 |
+| `WorldSecretSeedProgressionAndInfectionRules` | definition/query | 12 | 0 | 12 |
+| `WorldSecretSeedSeasonalRules` | definition/query | 3 | 0 | 3 |
+| `WorldSecretSeedRuntimeRegistry` | authoritative state/behavior | 2 | 1 | 3 |
+| `WorldSecretSeedDerivedOptions` | derived/query | 0 | 2 | 2 |
+| `WorldSecretSeedDerivedVariations` | derived/query | 0 | 22 | 22 |
+| `WorldSkyblockGenerationRules` | definition/query | 11 | 3 | 14 |
+| `WorldGenerationProgressAndPassState` | authoritative state/behavior | 7 | 6 | 13 |
+| `WorldGenerationControllerPassState` | authoritative state/behavior | 4 | 3 | 7 |
+| `WorldGenerationControllerPauseAndHashState` | authoritative state/behavior | 1 | 6 | 7 |
+| `WorldGenerationGeneratorExecutionState` | authoritative state/behavior | 10 | 1 | 11 |
+| `WorldGenerationSnapshotState` | registry/projection | 7 | 6 | 13 |
+| `WorldGenerationManifestAndPassResults` | registry/projection | 2 | 6 | 8 |
+| `WorldGenerationOptionBaseState` | definition/query | 4 | 8 | 12 |
+| `WorldGenerationOptionRegistry` | registry/projection | 2 | 1 | 3 |
+| `WorldSeedOptionCatalog` | definition/query | 1 | 21 | 22 |
+| `WorldLandmassAndTreeProfiles` | definition/query | 21 | 1 | 22 |
+| `WorldSavedOreTierState` | authoritative state/behavior | 7 | 0 | 7 |
+| `WorldTileMergeCullState` | derived/query | 8 | 0 | 8 |
+| `WorldGenerationTileSetActions` | authoritative state/behavior | 12 | 0 | 12 |
+| `WorldGenerationWallMutationActions` | authoritative state/behavior | 7 | 0 | 7 |
+| `WorldGenerationTilePlacementAndPaintActions` | authoritative state/behavior | 5 | 0 | 5 |
+| `WorldGenerationLiquidAndNeighborActions` | authoritative state/behavior | 3 | 0 | 3 |
+| `WorldGenerationTileScanAndControlActions` | derived/query | 7 | 0 | 7 |
+| `WorldGenerationTileFramingAndDebugActions` | registry/projection | 3 | 0 | 3 |
+| `WorldGenerationConditionsAndSearches` | derived/query | 11 | 0 | 11 |
+| `WorldGenerationShapeData` | definition/query | 8 | 2 | 10 |
+| `WorldGenerationShapeModifierState` | definition/query | 22 | 0 | 22 |
+| `WorldGenerationTileWallConditionState` | derived/query | 20 | 0 | 20 |
+| `WorldStructurePlanningAndMasks` | authoritative state/behavior | 9 | 2 | 11 |
+| `WorldGenerationSupportTypes` | definition/query | 4 | 0 | 4 |
+
+#### 4.20.1 细分子系统：`WorldGenBiomeBackgroundAndDistanceMetrics`
+
+- 细分职责：Biome 背景、距离、安全边界和生成随机性指标。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯 Query；指标不反向成为生成权威状态。
+- 成员文件数：1；声明类型数：1；字段：21；属性：0；合计：21。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（21）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2417 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4075 | 2 | TownManager | Terraria.GameContent.TownRoomManager | `public static TownRoomManager TownManager = new TownRoomManager();` | `public static TownRoomManager TownManager = new TownRoomManager();` |
+| 2418 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4077 | 2 | Manifest | Terraria.WorldBuilding.WorldManifest | `public static WorldManifest Manifest;` | `public static WorldManifest Manifest;` |
+| 2419 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4079 | 2 | tileReframeCount | int | `public static int tileReframeCount;` | `public static int tileReframeCount;` |
+| 2420 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4081 | 2 | treeBG1 | int | `public static int treeBG1;` | `public static int treeBG1;` |
+| 2421 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4083 | 2 | treeBG2 | int | `public static int treeBG2;` | `public static int treeBG2;` |
+| 2422 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4085 | 2 | treeBG3 | int | `public static int treeBG3;` | `public static int treeBG3;` |
+| 2423 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4087 | 2 | treeBG4 | int | `public static int treeBG4;` | `public static int treeBG4;` |
+| 2424 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4089 | 2 | corruptBG | int | `public static int corruptBG;` | `public static int corruptBG;` |
+| 2425 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4091 | 2 | jungleBG | int | `public static int jungleBG;` | `public static int jungleBG;` |
+| 2426 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4093 | 2 | snowBG | int | `public static int snowBG;` | `public static int snowBG;` |
+| 2427 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4095 | 2 | hallowBG | int | `public static int hallowBG;` | `public static int hallowBG;` |
+| 2428 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4097 | 2 | crimsonBG | int | `public static int crimsonBG;` | `public static int crimsonBG;` |
+| 2429 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4099 | 2 | desertBG | int | `public static int desertBG;` | `public static int desertBG;` |
+| 2430 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4101 | 2 | oceanBG | int | `public static int oceanBG;` | `public static int oceanBG;` |
+| 2431 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4103 | 2 | mushroomBG | int | `public static int mushroomBG;` | `public static int mushroomBG;` |
+| 2432 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4105 | 2 | underworldBG | int | `public static int underworldBG;` | `public static int underworldBG;` |
+| 2433 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4107 | 2 | oceanDistance | int | `public static readonly int oceanDistance = 250;` | `public static readonly int oceanDistance = 250;` |
+| 2434 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4109 | 2 | beachDistance | int | `public static readonly int beachDistance = 380;` | `public static readonly int beachDistance = 380;` |
+| 2435 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4111 | 2 | shimmerSafetyDistance | int | `public static readonly int shimmerSafetyDistance = 150;` | `public static readonly int shimmerSafetyDistance = 150;` |
+| 2436 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4113 | 2 | crimson | bool | `public static bool crimson;` | `public static bool crimson;` |
+| 2437 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4115 | 2 | generatingRandomEvil | bool | `public static bool generatingRandomEvil;` | `public static bool generatingRandomEvil;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.2 细分子系统：`WorldGenTileCountMetrics`
+
+- 细分职责：Tile、邪恶、血腥、善良和固体数量统计指标。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯 Query；统计窗口由生成阶段显式刷新。
+- 成员文件数：1；声明类型数：1；字段：14；属性：0；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（14）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2438 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4117 | 2 | tileCounts | int[] | `public static int[] tileCounts = new int[TileID.Count];` | `public static int[] tileCounts = new int[TileID.Count];` |
+| 2439 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4119 | 2 | totalEvil | int | `public static int totalEvil;` | `public static int totalEvil;` |
+| 2440 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4121 | 2 | totalBlood | int | `public static int totalBlood;` | `public static int totalBlood;` |
+| 2441 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4123 | 2 | totalGood | int | `public static int totalGood;` | `public static int totalGood;` |
+| 2442 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4125 | 2 | totalSolid | int | `public static int totalSolid;` | `public static int totalSolid;` |
+| 2443 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4127 | 2 | totalEvil2 | int | `public static int totalEvil2;` | `public static int totalEvil2;` |
+| 2444 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4129 | 2 | totalBlood2 | int | `public static int totalBlood2;` | `public static int totalBlood2;` |
+| 2445 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4131 | 2 | totalGood2 | int | `public static int totalGood2;` | `public static int totalGood2;` |
+| 2446 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4133 | 2 | totalSolid2 | int | `public static int totalSolid2;` | `public static int totalSolid2;` |
+| 2447 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4135 | 2 | tEvil | byte | `public static byte tEvil;` | `public static byte tEvil;` |
+| 2448 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4137 | 2 | tBlood | byte | `public static byte tBlood;` | `public static byte tBlood;` |
+| 2449 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4139 | 2 | tGood | byte | `public static byte tGood;` | `public static byte tGood;` |
+| 2450 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4141 | 2 | totalX | int | `public static int totalX;` | `public static int totalX;` |
+| 2451 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4143 | 2 | totalD | int | `public static int totalD;` | `public static int totalD;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.3 细分子系统：`WorldLifecycleLoadAndTransformState`
+
+- 细分职责：世界加载、变换、失败和备份生命周期状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：World Lifecycle System/CommitPort；加载和变换阶段集中提交。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2452 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4145 | 2 | _transformingWorld | int | `private static int _transformingWorld;` | `private static int _transformingWorld;` |
+| 2455 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4151 | 2 | isGeneratingOrLoadingWorld | bool | `public static volatile bool isGeneratingOrLoadingWorld;` | `public static volatile bool isGeneratingOrLoadingWorld;` |
+| 2462 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4165 | 2 | loadFailed | bool | `public static bool loadFailed = false;` | `public static bool loadFailed = false;` |
+| 2463 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4167 | 2 | worldCleared | bool | `public static bool worldCleared;` | `public static bool worldCleared;` |
+| 2464 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4169 | 2 | worldBackup | bool | `public static bool worldBackup;` | `public static bool worldBackup;` |
+| 2465 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4171 | 2 | lastMaxTilesX | int | `private static int lastMaxTilesX;` | `private static int lastMaxTilesX;` |
+| 2466 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4173 | 2 | lastMaxTilesY | int | `private static int lastMaxTilesY;` | `private static int lastMaxTilesY;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.4 细分子系统：`WorldLifecycleProgressionAndEventState`
+
+- 细分职责：Boss、祭坛、暗影球和陨石等世界进度事件状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：World Progression System/CommitPort；进度事件单向写入。
+- 成员文件数：1；声明类型数：1；字段：6；属性：0；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2453 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4147 | 2 | spawnEye | bool | `public static bool spawnEye;` | `public static bool spawnEye;` |
+| 2454 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4149 | 2 | spawnHardBoss | int | `public static int spawnHardBoss;` | `public static int spawnHardBoss;` |
+| 2456 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4153 | 2 | shadowOrbSmashed | bool | `public static bool shadowOrbSmashed;` | `public static bool shadowOrbSmashed;` |
+| 2457 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4155 | 2 | shadowOrbCount | int | `public static int shadowOrbCount;` | `public static int shadowOrbCount;` |
+| 2458 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4157 | 2 | altarCount | int | `public static int altarCount;` | `public static int altarCount;` |
+| 2461 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4163 | 2 | spawnMeteor | bool | `public static bool spawnMeteor;` | `public static bool spawnMeteor;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.5 细分子系统：`WorldLifecycleHousingAndSpawnPacingState`
+
+- 细分职责：住房诊断、掉落许可、感染传播和 NPC 生成节奏状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：World Rules System/CommitPort；世界规则按生命周期阶段更新。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2459 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4159 | 2 | builtHouseWithNoFurniture | bool | `public static bool builtHouseWithNoFurniture;` | `public static bool builtHouseWithNoFurniture;` |
+| 2460 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4161 | 2 | builtHouseWithNoLight | bool | `public static bool builtHouseWithNoLight;` | `public static bool builtHouseWithNoLight;` |
+| 2471 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4183 | 2 | stopDrops | bool | `private static bool stopDrops;` | `private static bool stopDrops;` |
+| 2472 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4185 | 2 | AllowedToSpreadInfections | bool | `public static bool AllowedToSpreadInfections = true;` | `public static bool AllowedToSpreadInfections = true;` |
+| 2473 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4187 | 2 | destroyObject | bool | `public static bool destroyObject;` | `public static bool destroyObject;` |
+| 2474 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4189 | 2 | npcSpawnDelay | int | `public static int npcSpawnDelay;` | `public static int npcSpawnDelay;` |
+| 2475 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4191 | 2 | npcSpawnPeriod | int | `public static int npcSpawnPeriod;` | `public static int npcSpawnPeriod;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.6 细分子系统：`WorldLifecycleTileMergeState`
+
+- 细分职责：Tile 合并方向和合并过程状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Tile Merge System/CommitPort；合并方向由 Tile 系统集中维护。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2467 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4175 | 2 | mergeUp | bool | `private static bool mergeUp;` | `private static bool mergeUp;` |
+| 2468 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4177 | 2 | mergeDown | bool | `private static bool mergeDown;` | `private static bool mergeDown;` |
+| 2469 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4179 | 2 | mergeLeft | bool | `private static bool mergeLeft;` | `private static bool mergeLeft;` |
+| 2470 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4181 | 2 | mergeRight | bool | `private static bool mergeRight;` | `private static bool mergeRight;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.7 细分子系统：`WorldHousingCountersAndScoringState`
+
+- 细分职责：住房扫描计数、容量阈值和房间评分状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Housing System/CommitPort；扫描阶段集中更新计数和评分。
+- 成员文件数：1；声明类型数：1；字段：15；属性：0；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（15）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2476 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4193 | 2 | prioritizedTownNPCType | int | `public static int prioritizedTownNPCType;` | `public static int prioritizedTownNPCType;` |
+| 2477 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4195 | 2 | numTileCount | int | `public static int numTileCount;` | `public static int numTileCount;` |
+| 2478 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4197 | 2 | maxTileCount | int | `public static int maxTileCount = 3500;` | `public static int maxTileCount = 3500;` |
+| 2479 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4199 | 2 | maxWallOut2 | int | `public static int maxWallOut2 = 5000;` | `public static int maxWallOut2 = 5000;` |
+| 2480 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4201 | 2 | CountedTiles | System.Collections.Generic.Dictionary<Point, bool> | `public static Dictionary<Point, bool> CountedTiles = new Dictionary<Point, bool>(maxTileCount);` | `public static Dictionary<Point, bool> CountedTiles = new Dictionary<Point, bool>(maxTileCount);` |
+| 2481 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4203 | 2 | lavaCount | int | `public static int lavaCount;` | `public static int lavaCount;` |
+| 2482 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4205 | 2 | iceCount | int | `public static int iceCount;` | `public static int iceCount;` |
+| 2483 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4207 | 2 | sandCount | int | `public static int sandCount;` | `public static int sandCount;` |
+| 2484 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4209 | 2 | rockCount | int | `public static int rockCount;` | `public static int rockCount;` |
+| 2485 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4211 | 2 | shroomCount | int | `public static int shroomCount;` | `public static int shroomCount;` |
+| 2486 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4213 | 2 | maxRoomTiles | int | `public static int maxRoomTiles = 750;` | `public static int maxRoomTiles = 750;` |
+| 2487 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4215 | 2 | maxRoomSize | int | `public static int maxRoomSize = 100;` | `public static int maxRoomSize = 100;` |
+| 2488 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4217 | 2 | roomTiles | Terraria.Utilities.BitSet2D | `public static BitSet2D roomTiles = new BitSet2D();` | `public static BitSet2D roomTiles = new BitSet2D();` |
+| 2489 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4219 | 2 | numRoomTiles | int | `public static int numRoomTiles;` | `public static int numRoomTiles;` |
+| 2498 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4237 | 2 | hiScore | int | `public static int hiScore;` | `public static int hiScore;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.8 细分子系统：`WorldHousingRoomSearchState`
+
+- 细分职责：房间坐标、门桌椅、候选点和搜索失败状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Housing Query/System seam；搜索过程通过显式快照和结果提交。
+- 成员文件数：1；声明类型数：1；字段：19；属性：0；合计：19。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（19）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2490 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4221 | 2 | roomX1 | int | `public static int roomX1;` | `public static int roomX1;` |
+| 2491 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4223 | 2 | roomX2 | int | `public static int roomX2;` | `public static int roomX2;` |
+| 2492 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4225 | 2 | roomY1 | int | `public static int roomY1;` | `public static int roomY1;` |
+| 2493 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4227 | 2 | roomY2 | int | `public static int roomY2;` | `public static int roomY2;` |
+| 2494 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4229 | 2 | canSpawn | bool | `public static bool canSpawn;` | `public static bool canSpawn;` |
+| 2495 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4231 | 2 | houseTile | bool[] | `public static bool[] houseTile = new bool[TileID.Count];` | `public static bool[] houseTile = new bool[TileID.Count];` |
+| 2496 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4233 | 2 | bestX | int | `public static int bestX;` | `public static int bestX;` |
+| 2497 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4235 | 2 | bestY | int | `public static int bestY;` | `public static int bestY;` |
+| 2499 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4239 | 2 | roomTorch | bool | `private static bool roomTorch;` | `private static bool roomTorch;` |
+| 2500 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4241 | 2 | roomDoor | bool | `private static bool roomDoor;` | `private static bool roomDoor;` |
+| 2501 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4243 | 2 | roomChair | bool | `private static bool roomChair;` | `private static bool roomChair;` |
+| 2502 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4245 | 2 | roomTable | bool | `private static bool roomTable;` | `private static bool roomTable;` |
+| 2503 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4247 | 2 | roomHasStinkbug | bool | `private static bool roomHasStinkbug;` | `private static bool roomHasStinkbug;` |
+| 2504 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4249 | 2 | roomHasEchoStinkbug | bool | `private static bool roomHasEchoStinkbug;` | `private static bool roomHasEchoStinkbug;` |
+| 2510 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4261 | 2 | LastFoundHouse | Point | `private static Point LastFoundHouse;` | `private static Point LastFoundHouse;` |
+| 2511 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4263 | 2 | currentlyTryingToUseAlternateHousingSpot | bool | `private static bool currentlyTryingToUseAlternateHousingSpot;` | `private static bool currentlyTryingToUseAlternateHousingSpot;` |
+| 2512 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4265 | 2 | sharedRoomX | int | `private static int sharedRoomX;` | `private static int sharedRoomX;` |
+| 2513 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4267 | 2 | _roomCheckStack | System.Collections.Generic.Stack<Point> | `private static Stack<Point> _roomCheckStack = new Stack<Point>();` | `private static Stack<Point> _roomCheckStack = new Stack<Point>();` |
+| 2514 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4269 | 2 | roomCheckFailureReason | Terraria.Enums.TownNPCRoomCheckFailureReason | `public static TownNPCRoomCheckFailureReason roomCheckFailureReason = TownNPCRoomCheckFailureReason.None;` | `public static TownNPCRoomCheckFailureReason roomCheckFailureReason = TownNPCRoomCheckFailureReason.None;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.9 细分子系统：`WorldHousingRuleAndDiagnosticState`
+
+- 细分职责：世界邪恶规则、仙人掌水体约束和诊断事件边界。
+- 边界角色：`definition/query`；最小 seam：Definition/Diagnostics seam；日志事件不反向驱动住房权威状态。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2505 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4251 | 2 | WorldGenParam_Evil | int | `public static int WorldGenParam_Evil = -1;` | `public static int WorldGenParam_Evil = -1;` |
+| 2506 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4253 | 2 | cactusWaterWidth | int | `public static readonly int cactusWaterWidth = 50;` | `public static readonly int cactusWaterWidth = 50;` |
+| 2507 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4255 | 2 | cactusWaterHeight | int | `public static readonly int cactusWaterHeight = 25;` | `public static readonly int cactusWaterHeight = 25;` |
+| 2508 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4257 | 2 | cactusWaterLimit | int | `public static readonly int cactusWaterLimit = 25;` | `public static readonly int cactusWaterLimit = 25;` |
+| 2509 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4259 | 2 | mysticLogsEvent | Terraria.GameContent.Events.MysticLogFairiesEvent | `public static MysticLogFairiesEvent mysticLogsEvent = new MysticLogFairiesEvent();` | `public static MysticLogFairiesEvent mysticLogsEvent = new MysticLogFairiesEvent();` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.10 细分子系统：`WorldGenerationDimensionsState`
+
+- 细分职责：世界尺寸、扩散边界和流星生成计数配置。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen System/CommitPort；世界配置阶段集中提交。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2515 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4271 | 2 | meteorShowerCount | int | `public static int meteorShowerCount;` | `public static int meteorShowerCount;` |
+| 2516 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4273 | 2 | WorldSizeSmallX | int | `public const int WorldSizeSmallX = 4200;` | `public const int WorldSizeSmallX = 4200;` |
+| 2517 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4275 | 2 | WorldSizeSmallY | int | `public const int WorldSizeSmallY = 1200;` | `public const int WorldSizeSmallY = 1200;` |
+| 2518 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4277 | 2 | WorldSizeMediumX | int | `public const int WorldSizeMediumX = 6400;` | `public const int WorldSizeMediumX = 6400;` |
+| 2519 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4279 | 2 | WorldSizeMediumY | int | `public const int WorldSizeMediumY = 1800;` | `public const int WorldSizeMediumY = 1800;` |
+| 2520 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4281 | 2 | WorldSizeLargeX | int | `public const int WorldSizeLargeX = 8400;` | `public const int WorldSizeLargeX = 8400;` |
+| 2521 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4283 | 2 | WorldSizeLargeY | int | `public const int WorldSizeLargeY = 2400;` | `public const int WorldSizeLargeY = 2400;` |
+| 2522 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4285 | 2 | InfectionAndGrassSpreadOuterWorldBuffer | int | `public const int InfectionAndGrassSpreadOuterWorldBuffer = 10;` | `public const int InfectionAndGrassSpreadOuterWorldBuffer = 10;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.11 细分子系统：`WorldGenerationExecutionState`
+
+- 细分职责：生成线程、生成器实例、连续地形统计和陷阱放置阶段状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen System/CommitPort；生成调度阶段唯一写入。
+- 成员文件数：1；声明类型数：1；字段：6；属性：0；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2523 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4287 | 2 | generatingWorld | bool | `public static bool generatingWorld = false;` | `public static bool generatingWorld = false;` |
+| 2524 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4289 | 2 | generatingWorldOnThisThread | bool | `[ThreadStatic] public static bool generatingWorldOnThisThread;` | `[ThreadStatic] public static bool generatingWorldOnThisThread;` |
+| 2529 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4300 | 2 | _generator | Terraria.WorldBuilding.WorldGenerator | `private static WorldGenerator _generator;` | `private static WorldGenerator _generator;` |
+| 2530 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4302 | 2 | SmallConsecutivesFound | int | `public static int SmallConsecutivesFound = 0;` | `public static int SmallConsecutivesFound = 0;` |
+| 2531 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4304 | 2 | SmallConsecutivesEliminated | int | `public static int SmallConsecutivesEliminated = 0;` | `public static int SmallConsecutivesEliminated = 0;` |
+| 2542 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4326 | 2 | placingTraps | bool | `public static bool placingTraps = false;` | `public static bool placingTraps = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.12 细分子系统：`WorldGenerationSecretSeedFlags`
+
+- 细分职责：特殊世界种子和生成模式启用旗标。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；世界规则命令提交模式状态。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2532 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4306 | 2 | remixWorldGen | bool | `public static bool remixWorldGen = false;` | `public static bool remixWorldGen = false;` |
+| 2533 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4308 | 2 | everythingWorldGen | bool | `public static bool everythingWorldGen = false;` | `public static bool everythingWorldGen = false;` |
+| 2534 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4310 | 2 | noTrapsWorldGen | bool | `public static bool noTrapsWorldGen = false;` | `public static bool noTrapsWorldGen = false;` |
+| 2535 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4312 | 2 | drunkWorldGen | bool | `public static bool drunkWorldGen = false;` | `public static bool drunkWorldGen = false;` |
+| 2536 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4314 | 2 | getGoodWorldGen | bool | `public static bool getGoodWorldGen = false;` | `public static bool getGoodWorldGen = false;` |
+| 2537 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4316 | 2 | tenthAnniversaryWorldGen | bool | `public static bool tenthAnniversaryWorldGen = false;` | `public static bool tenthAnniversaryWorldGen = false;` |
+| 2538 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4318 | 2 | dontStarveWorldGen | bool | `public static bool dontStarveWorldGen = false;` | `public static bool dontStarveWorldGen = false;` |
+| 2539 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4320 | 2 | notTheBees | bool | `public static bool notTheBees = false;` | `public static bool notTheBees = false;` |
+| 2540 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4322 | 2 | skyblockWorldGen | bool | `public static bool skyblockWorldGen = false;` | `public static bool skyblockWorldGen = false;` |
+| 2541 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4324 | 2 | drunkWorldGenText | bool | `public static bool drunkWorldGenText = false;` | `public static bool drunkWorldGenText = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.13 细分子系统：`WorldGenerationScratchState`
+
+- 细分职责：陷阱、宝石和苔藓生成过程的临时工作数组与类型缓存。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；生成 pass 内部拥有并清理临时状态。
+- 成员文件数：1；声明类型数：1；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2525 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4292 | 2 | trapDiag | int[,] | `private static int[,] trapDiag = new int[4, 2];` | `private static int[,] trapDiag = new int[4, 2];` |
+| 2526 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4294 | 2 | gem | bool[] | `private static bool[] gem = new bool[6];` | `private static bool[] gem = new bool[6];` |
+| 2527 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4296 | 2 | mossType | int[] | `private static int[] mossType = new int[3];` | `private static int[] mossType = new int[3];` |
+| 2528 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4298 | 2 | neonMossType | ushort | `private static ushort neonMossType;` | `private static ushort neonMossType;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.14 细分子系统：`WorldTerrainEffectsAndCaches`
+
+- 细分职责：地形覆盖、树冠/背景缓存、草扩散和结构性生成队列。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：20；属性：0；合计：20。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（20）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2543 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4328 | 2 | tileSolidBackup | bool[] | `private static bool[] tileSolidBackup;` | `private static bool[] tileSolidBackup;` |
+| 2544 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4330 | 2 | ItemSpawnProtectionTime | int | `private const int ItemSpawnProtectionTime = 18000;` | `private const int ItemSpawnProtectionTime = 18000;` |
+| 2545 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4332 | 2 | _coatingColors | System.Collections.Generic.List<Color> | `private static List<Color> _coatingColors = new List<Color>();` | `private static List<Color> _coatingColors = new List<Color>();` |
+| 2546 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4334 | 2 | catTailDistance | int | `private static int catTailDistance = 8;` | `private static int catTailDistance = 8;` |
+| 2547 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4336 | 2 | TreeTops | Terraria.GameContent.TreeTopsInfo | `public static TreeTopsInfo TreeTops = new TreeTopsInfo();` | `public static TreeTopsInfo TreeTops = new TreeTopsInfo();` |
+| 2548 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4338 | 2 | BackgroundsCache | Terraria.GameContent.BackgroundChangeFlashInfo | `public static BackgroundChangeFlashInfo BackgroundsCache = new BackgroundChangeFlashInfo();` | `public static BackgroundChangeFlashInfo BackgroundsCache = new BackgroundChangeFlashInfo();` |
+| 2549 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4340 | 2 | fossilBreak | bool | `private static bool fossilBreak = false;` | `private static bool fossilBreak = false;` |
+| 2550 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4342 | 2 | ExploitDestroyQueue | System.Collections.Generic.Queue<Point> | `public static Queue<Point> ExploitDestroyQueue = new Queue<Point>();` | `public static Queue<Point> ExploitDestroyQueue = new Queue<Point>();` |
+| 2551 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4344 | 2 | hardModeWorldUpdates | bool | `private static bool hardModeWorldUpdates = false;` | `private static bool hardModeWorldUpdates = false;` |
+| 2552 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4346 | 2 | growGrassUnderground | bool | `private static bool growGrassUnderground = false;` | `private static bool growGrassUnderground = false;` |
+| 2553 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4348 | 2 | _isRainingBoulders | bool | `private static bool _isRainingBoulders = false;` | `private static bool _isRainingBoulders = false;` |
+| 2554 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4350 | 2 | _SpawnThunderStorm_SafeSpots | System.Collections.Generic.List<Rectangle> | `private static List<Rectangle> _SpawnThunderStorm_SafeSpots = new List<Rectangle>();` | `private static List<Rectangle> _SpawnThunderStorm_SafeSpots = new List<Rectangle>();` |
+| 2555 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4352 | 2 | BUBBLES_SOLID_STATE_FOR_HOUSING | bool | `public const bool BUBBLES_SOLID_STATE_FOR_HOUSING = true;` | `public const bool BUBBLES_SOLID_STATE_FOR_HOUSING = true;` |
+| 2556 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4354 | 2 | grassSpread | int | `public static int grassSpread;` | `public static int grassSpread;` |
+| 2557 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4356 | 2 | heartPos | Point[] | `private static Point[] heartPos = new Point[100];` | `private static Point[] heartPos = new Point[100];` |
+| 2558 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4358 | 2 | heartCount | int | `private static int heartCount;` | `private static int heartCount;` |
+| 2559 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4360 | 2 | strip_w | int | `private const int strip_w = 200;` | `private const int strip_w = 200;` |
+| 2560 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4362 | 2 | strip_h | int | `private const int strip_h = 50;` | `private const int strip_h = 50;` |
+| 2561 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4364 | 2 | bitStrip | Terraria.Utilities.Vertical64BitStrips | `private static readonly Vertical64BitStrips bitStrip = new Vertical64BitStrips(202);` | `private static readonly Vertical64BitStrips bitStrip = new Vertical64BitStrips(202);` |
+| 2562 | field | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4366 | 2 | _preventInfiniteRopeFraming | bool | `public static bool _preventInfiniteRopeFraming = false;` | `public static bool _preventInfiniteRopeFraming = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.15 细分子系统：`WorldGenDerivedProperties`
+
+- 细分职责：世界生成随机源、转换状态和海平面派生属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不得写入该分组或相邻权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：3；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2657 | property | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4368 | 2 | TransformingWorld | bool | `public static bool TransformingWorld => _transformingWorld > 0;` | `public static bool TransformingWorld => _transformingWorld > 0;` |
+| 2658 | property | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4370 | 2 | genRand | Terraria.Utilities.UnifiedRandom | `public static UnifiedRandom genRand => Main.rand;` | `public static UnifiedRandom genRand => Main.rand;` |
+| 2659 | property | Terraria.WorldGen | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4372 | 2 | oceanLevel | double | `public static double oceanLevel => (Main.worldSurface + Main.rockLayer) / 2.0 + 40.0;` | `public static double oceanLevel => (Main.worldSurface + Main.rockLayer) / 2.0 + 40.0;` |
+
+#### 4.20.16 细分子系统：`GenVarsConfigurationAndOreState`
+
+- 细分职责：生成配置、结构注册和矿石层级状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen System/CommitPort；生成阶段按 pass 顺序写入。
+- 成员文件数：1；声明类型数：1；字段：10；属性：0；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2099 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 13 | 2 | configuration | Terraria.WorldBuilding.WorldGenConfiguration | `[JsonIgnore] public static WorldGenConfiguration configuration;` | `[JsonIgnore] public static WorldGenConfiguration configuration;` |
+| 2100 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 16 | 2 | structures | Terraria.WorldBuilding.StructureMap | `public static StructureMap structures;` | `public static StructureMap structures;` |
+| 2101 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 18 | 2 | copper | int | `public static int copper;` | `public static int copper;` |
+| 2102 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 20 | 2 | iron | int | `public static int iron;` | `public static int iron;` |
+| 2103 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 22 | 2 | silver | int | `public static int silver;` | `public static int silver;` |
+| 2104 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 24 | 2 | gold | int | `public static int gold;` | `public static int gold;` |
+| 2105 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 26 | 2 | copperBar | int | `public static int copperBar = 20;` | `public static int copperBar = 20;` |
+| 2106 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 28 | 2 | ironBar | int | `public static int ironBar = 22;` | `public static int ironBar = 22;` |
+| 2107 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 30 | 2 | silverBar | int | `public static int silverBar = 21;` | `public static int silverBar = 21;` |
+| 2108 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 32 | 2 | goldBar | int | `public static int goldBar = 19;` | `public static int goldBar = 19;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.17 细分子系统：`GenVarsWorldLayerMetrics`
+
+- 细分职责：云层、世界表面、岩层和积雪边界测量值。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen System/CommitPort；地层 pass 计算后提交。
+- 成员文件数：1；声明类型数：1；字段：13；属性：0；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（13）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2115 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 46 | 2 | lowestCloud | int | `public static int lowestCloud = -1;` | `public static int lowestCloud = -1;` |
+| 2125 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 66 | 2 | worldSurfaceLow | double | `public static double worldSurfaceLow;` | `public static double worldSurfaceLow;` |
+| 2126 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 68 | 2 | worldSurface | double | `public static double worldSurface;` | `public static double worldSurface;` |
+| 2127 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 70 | 2 | worldSurfaceHigh | double | `public static double worldSurfaceHigh;` | `public static double worldSurfaceHigh;` |
+| 2128 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 72 | 2 | rockLayerLow | double | `public static double rockLayerLow;` | `public static double rockLayerLow;` |
+| 2129 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 74 | 2 | rockLayer | double | `public static double rockLayer;` | `public static double rockLayer;` |
+| 2130 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 76 | 2 | rockLayerHigh | double | `public static double rockLayerHigh;` | `public static double rockLayerHigh;` |
+| 2131 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 78 | 2 | snowTop | int | `public static int snowTop;` | `public static int snowTop;` |
+| 2132 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 80 | 2 | snowBottom | int | `public static int snowBottom;` | `public static int snowBottom;` |
+| 2133 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 82 | 2 | snowOriginLeft | int | `public static int snowOriginLeft;` | `public static int snowOriginLeft;` |
+| 2134 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 84 | 2 | snowOriginRight | int | `public static int snowOriginRight;` | `public static int snowOriginRight;` |
+| 2135 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 86 | 2 | snowMinX | int[] | `public static int[] snowMinX;` | `public static int[] snowMinX;` |
+| 2136 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 88 | 2 | snowMaxX | int[] | `public static int[] snowMaxX;` | `public static int[] snowMaxX;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.18 细分子系统：`GenVarsSurfaceAndBiomeState`
+
+- 细分职责：出生点、地貌、感染、苔藓和液体线等表面/生态状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen System/CommitPort；表面与生态 pass 按阶段写入。
+- 成员文件数：1；声明类型数：1；字段：15；属性：0；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（15）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2109 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 34 | 2 | worldSpawnHasBeenRandomized | bool | `public static bool worldSpawnHasBeenRandomized = false;` | `public static bool worldSpawnHasBeenRandomized = false;` |
+| 2110 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 36 | 2 | landmassData | System.Collections.Generic.List<Terraria.WorldBuilding.LandmassData> | `public static List<LandmassData> landmassData = new List<LandmassData>();` | `public static List<LandmassData> landmassData = new List<LandmassData>();` |
+| 2111 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 38 | 2 | remixSurfaceLayerLow | int | `public static int remixSurfaceLayerLow;` | `public static int remixSurfaceLayerLow;` |
+| 2112 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 40 | 2 | remixSurfaceLayerHigh | int | `public static int remixSurfaceLayerHigh;` | `public static int remixSurfaceLayerHigh;` |
+| 2113 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 42 | 2 | remixMushroomLayerLow | int | `public static int remixMushroomLayerLow;` | `public static int remixMushroomLayerLow;` |
+| 2114 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 44 | 2 | remixMushroomLayerHigh | int | `public static int remixMushroomLayerHigh;` | `public static int remixMushroomLayerHigh;` |
+| 2116 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 48 | 2 | boulderPetsPlaced | int | `public static int boulderPetsPlaced = 0;` | `public static int boulderPetsPlaced = 0;` |
+| 2117 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 50 | 2 | crimStoneWall | ushort | `public static ushort crimStoneWall = 83;` | `public static ushort crimStoneWall = 83;` |
+| 2118 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 52 | 2 | crimStone | ushort | `public static ushort crimStone = 203;` | `public static ushort crimStone = 203;` |
+| 2119 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 54 | 2 | ebonStoneWall | ushort | `public static ushort ebonStoneWall = 3;` | `public static ushort ebonStoneWall = 3;` |
+| 2120 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 56 | 2 | ebonStone | ushort | `public static ushort ebonStone = 25;` | `public static ushort ebonStone = 25;` |
+| 2121 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 58 | 2 | mossTile | ushort | `public static ushort mossTile = 179;` | `public static ushort mossTile = 179;` |
+| 2122 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 60 | 2 | mossWall | ushort | `public static ushort mossWall = 54;` | `public static ushort mossWall = 54;` |
+| 2123 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 62 | 2 | lavaLine | int | `public static int lavaLine;` | `public static int lavaLine;` |
+| 2124 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 64 | 2 | waterLine | int | `public static int waterLine;` | `public static int waterLine;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.19 细分子系统：`GenVarsBeachAndOceanBoundaryState`
+
+- 细分职责：海滩、贝壳起点和海洋边界随机参数。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen System/CommitPort；海岸线 pass 是唯一写入者。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2137 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 90 | 2 | leftBeachEnd | int | `public static int leftBeachEnd;` | `public static int leftBeachEnd;` |
+| 2138 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 92 | 2 | rightBeachStart | int | `public static int rightBeachStart;` | `public static int rightBeachStart;` |
+| 2139 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 94 | 2 | beachBordersWidth | int | `public static int beachBordersWidth;` | `public static int beachBordersWidth;` |
+| 2140 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 96 | 2 | beachSandRandomCenter | int | `public static int beachSandRandomCenter;` | `public static int beachSandRandomCenter;` |
+| 2141 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 98 | 2 | beachSandRandomWidthRange | int | `public static int beachSandRandomWidthRange;` | `public static int beachSandRandomWidthRange;` |
+| 2142 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 100 | 2 | beachSandDungeonExtraWidth | int | `public static int beachSandDungeonExtraWidth;` | `public static int beachSandDungeonExtraWidth;` |
+| 2143 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 102 | 2 | beachSandJungleExtraWidth | int | `public static int beachSandJungleExtraWidth;` | `public static int beachSandJungleExtraWidth;` |
+| 2144 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 104 | 2 | shellStartXLeft | int | `public static int shellStartXLeft;` | `public static int shellStartXLeft;` |
+| 2145 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 106 | 2 | shellStartYLeft | int | `public static int shellStartYLeft;` | `public static int shellStartYLeft;` |
+| 2146 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 108 | 2 | shellStartXRight | int | `public static int shellStartXRight;` | `public static int shellStartXRight;` |
+| 2147 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 110 | 2 | shellStartYRight | int | `public static int shellStartYRight;` | `public static int shellStartYRight;` |
+| 2148 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 112 | 2 | oceanWaterStartRandomMin | int | `public static int oceanWaterStartRandomMin;` | `public static int oceanWaterStartRandomMin;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.20 细分子系统：`WorldGenBeachAndOceanBiomeState`
+
+- 细分职责：海滩、海洋洞穴和沿岸生物群系生成状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen System/CommitPort；海岸 pass 集中写入。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2149 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 114 | 2 | oceanWaterStartRandomMax | int | `public static int oceanWaterStartRandomMax;` | `public static int oceanWaterStartRandomMax;` |
+| 2150 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 116 | 2 | oceanWaterForcedJungleLength | int | `public static int oceanWaterForcedJungleLength;` | `public static int oceanWaterForcedJungleLength;` |
+| 2151 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 118 | 2 | evilBiomeBeachAvoidance | int | `public static int evilBiomeBeachAvoidance;` | `public static int evilBiomeBeachAvoidance;` |
+| 2152 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 120 | 2 | evilBiomeAvoidanceMidFixer | int | `public static int evilBiomeAvoidanceMidFixer;` | `public static int evilBiomeAvoidanceMidFixer;` |
+| 2153 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 122 | 2 | lakesBeachAvoidance | int | `public static int lakesBeachAvoidance;` | `public static int lakesBeachAvoidance;` |
+| 2154 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 124 | 2 | smallHolesBeachAvoidance | int | `public static int smallHolesBeachAvoidance;` | `public static int smallHolesBeachAvoidance;` |
+| 2155 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 126 | 2 | surfaceCavesBeachAvoidance | int | `public static int surfaceCavesBeachAvoidance;` | `public static int surfaceCavesBeachAvoidance;` |
+| 2156 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 128 | 2 | surfaceCavesBeachAvoidance2 | int | `public static int surfaceCavesBeachAvoidance2;` | `public static int surfaceCavesBeachAvoidance2;` |
+| 2157 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 130 | 2 | maxOceanCaveTreasure | int | `public static readonly int maxOceanCaveTreasure = 2;` | `public static readonly int maxOceanCaveTreasure = 2;` |
+| 2158 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 132 | 2 | numOceanCaveTreasure | int | `public static int numOceanCaveTreasure = 0;` | `public static int numOceanCaveTreasure = 0;` |
+| 2159 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 134 | 2 | oceanCaveTreasure | Point[] | `public static Point[] oceanCaveTreasure = new Point[maxOceanCaveTreasure];` | `public static Point[] oceanCaveTreasure = new Point[maxOceanCaveTreasure];` |
+| 2160 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 136 | 2 | skipDesertTileCheck | bool | `public static bool skipDesertTileCheck = false;` | `public static bool skipDesertTileCheck = false;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.21 细分子系统：`WorldGenUndergroundDesertStructureState`
+
+- 细分职责：地下沙漠、蜂巢和幼虫结构生成状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen System/CommitPort；地下沙漠 pass 负责唯一写入。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2161 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 138 | 2 | UndergroundDesertLocation | Rectangle | `public static Rectangle UndergroundDesertLocation = Rectangle.Empty;` | `public static Rectangle UndergroundDesertLocation = Rectangle.Empty;` |
+| 2162 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 140 | 2 | UndergroundDesertHiveLocation | Rectangle | `public static Rectangle UndergroundDesertHiveLocation = Rectangle.Empty;` | `public static Rectangle UndergroundDesertHiveLocation = Rectangle.Empty;` |
+| 2163 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 142 | 2 | desertHiveHigh | int | `public static int desertHiveHigh;` | `public static int desertHiveHigh;` |
+| 2164 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 144 | 2 | desertHiveLow | int | `public static int desertHiveLow;` | `public static int desertHiveLow;` |
+| 2165 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 146 | 2 | desertHiveLeft | int | `public static int desertHiveLeft;` | `public static int desertHiveLeft;` |
+| 2166 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 148 | 2 | desertHiveRight | int | `public static int desertHiveRight;` | `public static int desertHiveRight;` |
+| 2167 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 150 | 2 | numLarva | int | `public static int numLarva;` | `public static int numLarva;` |
+| 2168 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 152 | 2 | larvaY | int[] | `public static int[] larvaY = new int[100];` | `public static int[] larvaY = new int[100];` |
+| 2169 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 154 | 2 | larvaX | int[] | `public static int[] larvaX = new int[100];` | `public static int[] larvaX = new int[100];` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.22 细分子系统：`WorldGenJungleStructureState`
+
+- 细分职责：丛林神庙、生命红木和丛林宝箱结构状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen System/CommitPort；丛林结构 pass 负责唯一写入。
+- 成员文件数：1；声明类型数：1；字段：15；属性：0；合计：15。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（15）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2170 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 156 | 2 | numPyr | int | `public static int numPyr;` | `public static int numPyr;` |
+| 2171 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 158 | 2 | PyrX | int[] | `public static int[] PyrX;` | `public static int[] PyrX;` |
+| 2172 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 160 | 2 | PyrY | int[] | `public static int[] PyrY;` | `public static int[] PyrY;` |
+| 2173 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 162 | 2 | extraBastStatueCount | int | `public static int extraBastStatueCount;` | `public static int extraBastStatueCount;` |
+| 2174 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 164 | 2 | extraBastStatueCountMax | int | `public static int extraBastStatueCountMax;` | `public static int extraBastStatueCountMax;` |
+| 2175 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 166 | 2 | jungleOriginX | int | `public static int jungleOriginX;` | `public static int jungleOriginX;` |
+| 2176 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 168 | 2 | jungleMinX | int | `public static int jungleMinX;` | `public static int jungleMinX;` |
+| 2177 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 170 | 2 | jungleMaxX | int | `public static int jungleMaxX;` | `public static int jungleMaxX;` |
+| 2178 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 172 | 2 | jungleHut | ushort | `public static ushort jungleHut;` | `public static ushort jungleHut;` |
+| 2179 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 174 | 2 | mudWall | bool | `public static bool mudWall;` | `public static bool mudWall;` |
+| 2180 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 176 | 2 | JungleItemCount | int | `public static int JungleItemCount;` | `public static int JungleItemCount;` |
+| 2181 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 178 | 2 | gennedLivingMahoganyWands | bool | `public static bool gennedLivingMahoganyWands;` | `public static bool gennedLivingMahoganyWands;` |
+| 2182 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 180 | 2 | JChestX | int[] | `public static int[] JChestX = new int[100];` | `public static int[] JChestX = new int[100];` |
+| 2183 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 182 | 2 | JChestY | int[] | `public static int[] JChestY = new int[100];` | `public static int[] JChestY = new int[100];` |
+| 2184 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 184 | 2 | numJChests | int | `public static int numJChests;` | `public static int numJChests;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.23 细分子系统：`GenVarsDungeonAndIslands`
+
+- 细分职责：地牢、天空湖、浮空岛和岛屋布局参数。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：19；属性：0；合计：19。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（19）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2185 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 186 | 2 | tLeft | int | `public static int tLeft;` | `public static int tLeft;` |
+| 2186 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 188 | 2 | tRight | int | `public static int tRight;` | `public static int tRight;` |
+| 2187 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 190 | 2 | tTop | int | `public static int tTop;` | `public static int tTop;` |
+| 2188 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 192 | 2 | tBottom | int | `public static int tBottom;` | `public static int tBottom;` |
+| 2189 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 194 | 2 | tRooms | int | `public static int tRooms;` | `public static int tRooms;` |
+| 2190 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 196 | 2 | lAltarX | int | `public static int lAltarX;` | `public static int lAltarX;` |
+| 2191 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 198 | 2 | lAltarY | int | `public static int lAltarY;` | `public static int lAltarY;` |
+| 2192 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 200 | 2 | dungeonGenVars | System.Collections.Generic.List<Terraria.GameContent.Generation.Dungeon.DungeonGenVars> | `public static List<DungeonGenVars> dungeonGenVars = new List<DungeonGenVars>();` | `public static List<DungeonGenVars> dungeonGenVars = new List<DungeonGenVars>();` |
+| 2193 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 202 | 2 | _currentDungeon | int | `private static int _currentDungeon;` | `private static int _currentDungeon;` |
+| 2194 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 204 | 2 | dungeonBeachPadding | int | `public static readonly int dungeonBeachPadding = 50;` | `public static readonly int dungeonBeachPadding = 50;` |
+| 2195 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 206 | 2 | skyLakes | int | `public static int skyLakes;` | `public static int skyLakes;` |
+| 2196 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 208 | 2 | generatedShadowKey | bool | `public static bool generatedShadowKey;` | `public static bool generatedShadowKey;` |
+| 2197 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 210 | 2 | generatedRamRune | bool | `public static bool generatedRamRune;` | `public static bool generatedRamRune;` |
+| 2198 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 212 | 2 | numIslandHouses | int | `public static int numIslandHouses;` | `public static int numIslandHouses;` |
+| 2199 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 214 | 2 | skyIslandHouseCount | int | `public static int skyIslandHouseCount;` | `public static int skyIslandHouseCount;` |
+| 2200 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 216 | 2 | skyLake | bool[] | `public static bool[] skyLake = new bool[300];` | `public static bool[] skyLake = new bool[300];` |
+| 2201 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 218 | 2 | floatingIslandHouseX | int[] | `public static int[] floatingIslandHouseX = new int[300];` | `public static int[] floatingIslandHouseX = new int[300];` |
+| 2202 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 220 | 2 | floatingIslandHouseY | int[] | `public static int[] floatingIslandHouseY = new int[300];` | `public static int[] floatingIslandHouseY = new int[300];` |
+| 2203 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 222 | 2 | floatingIslandStyle | int[] | `public static int[] floatingIslandStyle = new int[300];` | `public static int[] floatingIslandStyle = new int[300];` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.24 细分子系统：`GenVarsCaveTunnelAndOrePatchState`
+
+- 细分职责：微型洞穴、隧道和矿脉 patch 生成计数与坐标。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen Cave/Ore System/CommitPort；生成 pass 集中更新。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2204 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 224 | 2 | numMCaves | int | `public static int numMCaves;` | `public static int numMCaves;` |
+| 2205 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 226 | 2 | mCaveX | int[] | `public static int[] mCaveX = new int[30];` | `public static int[] mCaveX = new int[30];` |
+| 2206 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 228 | 2 | mCaveY | int[] | `public static int[] mCaveY = new int[30];` | `public static int[] mCaveY = new int[30];` |
+| 2207 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 230 | 2 | maxTunnels | int | `public static readonly int maxTunnels = 50;` | `public static readonly int maxTunnels = 50;` |
+| 2208 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 232 | 2 | numTunnels | int | `public static int numTunnels;` | `public static int numTunnels;` |
+| 2209 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 234 | 2 | tunnelX | int[] | `public static int[] tunnelX = new int[maxTunnels];` | `public static int[] tunnelX = new int[maxTunnels];` |
+| 2210 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 236 | 2 | maxOrePatch | int | `public static readonly int maxOrePatch = 50;` | `public static readonly int maxOrePatch = 50;` |
+| 2211 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 238 | 2 | numOrePatch | int | `public static int numOrePatch;` | `public static int numOrePatch;` |
+| 2212 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 240 | 2 | orePatchX | int[] | `public static int[] orePatchX = new int[maxOrePatch];` | `public static int[] orePatchX = new int[maxOrePatch];` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.25 细分子系统：`GenVarsMushroomBiomeAndLogState`
+
+- 细分职责：蘑菇生物群系和树木日志生成状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen Biome System/CommitPort；蘑菇/树木 pass 集中更新。
+- 成员文件数：1；声明类型数：1；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2213 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 242 | 2 | maxMushroomBiomes | int | `public static readonly int maxMushroomBiomes = 50;` | `public static readonly int maxMushroomBiomes = 50;` |
+| 2214 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 244 | 2 | numMushroomBiomes | int | `public static int numMushroomBiomes = 0;` | `public static int numMushroomBiomes = 0;` |
+| 2215 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 246 | 2 | mushroomBiomesPosition | Point[] | `public static Point[] mushroomBiomesPosition = new Point[maxMushroomBiomes];` | `public static Point[] mushroomBiomesPosition = new Point[maxMushroomBiomes];` |
+| 2216 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 248 | 2 | logX | int | `public static int logX;` | `public static int logX;` |
+| 2217 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 250 | 2 | logY | int | `public static int logY;` | `public static int logY;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.26 细分子系统：`GenVarsLakeAndOasisState`
+
+- 细分职责：湖泊和绿洲生成计数、坐标及尺寸。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen Water/Biome System/CommitPort；水体 pass 集中更新。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2218 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 252 | 2 | maxLakes | int | `public static readonly int maxLakes = 50;` | `public static readonly int maxLakes = 50;` |
+| 2219 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 254 | 2 | numLakes | int | `public static int numLakes = 0;` | `public static int numLakes = 0;` |
+| 2220 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 256 | 2 | LakeX | int[] | `public static int[] LakeX = new int[maxLakes];` | `public static int[] LakeX = new int[maxLakes];` |
+| 2221 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 258 | 2 | maxOasis | int | `public static readonly int maxOasis = 20;` | `public static readonly int maxOasis = 20;` |
+| 2222 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 260 | 2 | numOasis | int | `public static int numOasis = 0;` | `public static int numOasis = 0;` |
+| 2223 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 262 | 2 | oasisPosition | Point[] | `public static Point[] oasisPosition = new Point[maxOasis];` | `public static Point[] oasisPosition = new Point[maxOasis];` |
+| 2224 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 264 | 2 | oasisWidth | int[] | `public static int[] oasisWidth = new int[maxOasis];` | `public static int[] oasisWidth = new int[maxOasis];` |
+| 2225 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 266 | 2 | oasisHeight | int | `public static readonly int oasisHeight = 20;` | `public static readonly int oasisHeight = 20;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.27 细分子系统：`GenVarsHellAndSpecialStructures`
+
+- 细分职责：地狱宝箱、雕像、Shimmer 和特殊种子结构标志。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2226 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 268 | 2 | hellChest | int | `public static int hellChest;` | `public static int hellChest;` |
+| 2227 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 270 | 2 | hellChestItem | int[] | `public static int[] hellChestItem;` | `public static int[] hellChestItem;` |
+| 2228 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 272 | 2 | statueList | Terraria.DataStructures.Point16[] | `public static Point16[] statueList;` | `public static Point16[] statueList;` |
+| 2229 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 274 | 2 | StatuesWithTraps | System.Collections.Generic.List<int> | `public static List<int> StatuesWithTraps = new List<int>(new int[4] { 4, 7, 10, 18 });` | `public static List<int> StatuesWithTraps = new List<int>(new int[4] { 4, 7, 10, 18 });` |
+| 2230 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 276 | 2 | crimsonLeft | bool | `public static bool crimsonLeft = true;` | `public static bool crimsonLeft = true;` |
+| 2231 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 278 | 2 | shimmerPosition | Vector2D | `public static Vector2D shimmerPosition;` | `public static Vector2D shimmerPosition;` |
+| 2232 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 280 | 2 | notTheBeesAndForTheWorthyNoCelebration | bool | `public static bool notTheBeesAndForTheWorthyNoCelebration;` | `public static bool notTheBeesAndForTheWorthyNoCelebration;` |
+| 2233 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 282 | 2 | noTrapsAndForTheWorthyNoCelebration | bool | `public static bool noTrapsAndForTheWorthyNoCelebration;` | `public static bool noTrapsAndForTheWorthyNoCelebration;` |
+| 2234 | field | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 284 | 2 | flipInfections | bool | `public static bool flipInfections;` | `public static bool flipInfections;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.28 细分子系统：`GenVarsDungeonDerivedProperties`
+
+- 细分职责：当前地牢及双地牢距离的只读派生属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不得写入该分组或相邻权威状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：3；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2581 | property | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 286 | 2 | CurrentDungeon | int | `public static int CurrentDungeon { get { return _currentDungeon; } set { _currentDungeon = (int)MathHelper.Max(0f, value); } }` | `public static int CurrentDungeon { get { return _currentDungeon; } set { _currentDungeon = (int)MathHelper.Max(0f, value); } }` |
+| 2582 | property | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 298 | 2 | CurrentDungeonGenVars | Terraria.GameContent.Generation.Dungeon.DungeonGenVars | `public static DungeonGenVars CurrentDungeonGenVars => dungeonGenVars[CurrentDungeon];` | `public static DungeonGenVars CurrentDungeonGenVars => dungeonGenVars[CurrentDungeon];` |
+| 2583 | property | Terraria.WorldBuilding.GenVars | Terraria.WorldBuilding/GenVars.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenVars.cs | 300 | 2 | DualDungeon_NormalizedDistanceSafeFromDither | double | `public static double DualDungeon_NormalizedDistanceSafeFromDither { get { return DungeonControlLine.NormalizedDistanceSafeFromDither; } set { DungeonControlLine.NormalizedDistanceSafeFromDither = value; } }` | `public static double DualDungeon_NormalizedDistanceSafeFromDither { get { return DungeonControlLine.NormalizedDistanceSafeFromDither; } set { DungeonControlLine.NormalizedDistanceSafeFromDither = value; } }` |
+
+#### 4.20.29 细分子系统：`WorldSecretSeedRegistryDefinitions`
+
+- 细分职责：秘密种子注册集合、文本元数据和解锁输入。
+- 边界角色：`registry/projection`；最小 seam：SecretSeed Registry/Definition view；注册表只读枚举定义。
+- 成员文件数：1；声明类型数：1；字段：6；属性：0；合计：6。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2330 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 340 | 3 | AllSecretSeeds | System.Collections.Generic.List<Terraria.WorldGen.SecretSeed> | `public static List<SecretSeed> AllSecretSeeds = new List<SecretSeed>();` | `public static List<SecretSeed> AllSecretSeeds = new List<SecretSeed>();` |
+| 2366 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 412 | 3 | Localization | string | `public readonly string Localization;` | `public readonly string Localization;` |
+| 2367 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 414 | 3 | _code | string | `private readonly string _code;` | `private readonly string _code;` |
+| 2368 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 416 | 3 | _sound | Terraria.Audio.LegacySoundStyle | `private readonly LegacySoundStyle _sound;` | `private readonly LegacySoundStyle _sound;` |
+| 2369 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 418 | 3 | _plaintext | string | `private string _plaintext;` | `private string _plaintext;` |
+| 2370 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 420 | 3 | TextThatWasUsedToUnlock | string | `public string TextThatWasUsedToUnlock;` | `public string TextThatWasUsedToUnlock;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.30 细分子系统：`WorldSecretSeedVisualAndSurfaceRules`
+
+- 细分职责：涂色、表面、空间、降雨和冻结世界规则。
+- 边界角色：`definition/query`；最小 seam：WorldGen Definition/Query；规则输入不持有运行时启用状态。
+- 成员文件数：1；声明类型数：1；字段：9；属性：0；合计：9。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2331 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 342 | 3 | paintEverythingGray | Terraria.WorldGen.SecretSeed | `public static SecretSeed paintEverythingGray = Register("SecretSeedDescription.paintEverythingGray", SoundID.MenuAccept, "2htOIVagY/7JFx7acMpyUR6D3qJDr/u+");` | `public static SecretSeed paintEverythingGray = Register("SecretSeedDescription.paintEverythingGray", SoundID.MenuAccept, "2htOIVagY/7JFx7acMpyUR6D3qJDr/u+");` |
+| 2332 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 344 | 3 | paintEverythingNegative | Terraria.WorldGen.SecretSeed | `public static SecretSeed paintEverythingNegative = Register("SecretSeedDescription.paintEverythingNegative", SoundID.MenuAccept, "YJayFFSdWEl66+rlFoWJRNvBHJi8gHnx");` | `public static SecretSeed paintEverythingNegative = Register("SecretSeedDescription.paintEverythingNegative", SoundID.MenuAccept, "YJayFFSdWEl66+rlFoWJRNvBHJi8gHnx");` |
+| 2333 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 346 | 3 | coatEverythingEcho | Terraria.WorldGen.SecretSeed | `public static SecretSeed coatEverythingEcho = Register("SecretSeedDescription.coatEverythingEcho", SoundID.MenuAccept, "5Czr2vSNyB9hJd1yob+TYo0qqH/5U2P9");` | `public static SecretSeed coatEverythingEcho = Register("SecretSeedDescription.coatEverythingEcho", SoundID.MenuAccept, "5Czr2vSNyB9hJd1yob+TYo0qqH/5U2P9");` |
+| 2334 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 348 | 3 | coatEverythingIlluminant | Terraria.WorldGen.SecretSeed | `public static SecretSeed coatEverythingIlluminant = Register("SecretSeedDescription.coatEverythingIlluminant", SoundID.MenuAccept, "5YXhKErRZovhjJkrP9fptrVHbNc1oSSn");` | `public static SecretSeed coatEverythingIlluminant = Register("SecretSeedDescription.coatEverythingIlluminant", SoundID.MenuAccept, "5YXhKErRZovhjJkrP9fptrVHbNc1oSSn");` |
+| 2335 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 350 | 3 | noSurface | Terraria.WorldGen.SecretSeed | `public static SecretSeed noSurface = Register("SecretSeedDescription.noSurface", SoundID.MenuAccept, "cptECrPRxYeNTULJULs4gVoKdRsf3c3n");` | `public static SecretSeed noSurface = Register("SecretSeedDescription.noSurface", SoundID.MenuAccept, "cptECrPRxYeNTULJULs4gVoKdRsf3c3n");` |
+| 2340 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 360 | 3 | surfaceIsInSpace | Terraria.WorldGen.SecretSeed | `public static SecretSeed surfaceIsInSpace = Register("SecretSeedDescription.surfaceIsInSpace", SoundID.MenuAccept, "io2s6kMi4L7ZCDYZGP1Hc8nEWuYW4gp5");` | `public static SecretSeed surfaceIsInSpace = Register("SecretSeedDescription.surfaceIsInSpace", SoundID.MenuAccept, "io2s6kMi4L7ZCDYZGP1Hc8nEWuYW4gp5");` |
+| 2341 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 362 | 3 | rainsForAYear | Terraria.WorldGen.SecretSeed | `public static SecretSeed rainsForAYear = Register("SecretSeedDescription.rainsForAYear", SoundID.MenuAccept, "xYBNU5Soje9VhQHNQXETDKbwlc+7XZau");` | `public static SecretSeed rainsForAYear = Register("SecretSeedDescription.rainsForAYear", SoundID.MenuAccept, "xYBNU5Soje9VhQHNQXETDKbwlc+7XZau");` |
+| 2354 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 388 | 3 | rainbowStuff | Terraria.WorldGen.SecretSeed | `public static SecretSeed rainbowStuff = Register("SecretSeedDescription.rainbowStuff", SoundID.MenuAccept, "6lK0Tn4t2UlklesGiJ94617yKvk01ICB");` | `public static SecretSeed rainbowStuff = Register("SecretSeedDescription.rainbowStuff", SoundID.MenuAccept, "6lK0Tn4t2UlklesGiJ94617yKvk01ICB");` |
+| 2359 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 398 | 3 | worldIsFrozen | Terraria.WorldGen.SecretSeed | `public static SecretSeed worldIsFrozen = Register("SecretSeedDescription.worldIsFrozen", SoundID.MenuAccept, "eH2IYQwQyOud0hyoTPaeVsqYlAP7MvbS");` | `public static SecretSeed worldIsFrozen = Register("SecretSeedDescription.worldIsFrozen", SoundID.MenuAccept, "eH2IYQwQyOud0hyoTPaeVsqYlAP7MvbS");` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.31 细分子系统：`WorldSecretSeedTerrainAndStructureRules`
+
+- 细分职责：地形、洞穴、结构、液体和传送器世界规则。
+- 边界角色：`definition/query`；最小 seam：WorldGen Definition/Query；生成 pass 只读消费规则。
+- 成员文件数：1；声明类型数：1；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2336 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 352 | 3 | extraLivingTrees | Terraria.WorldGen.SecretSeed | `public static SecretSeed extraLivingTrees = Register("SecretSeedDescription.extraLivingTrees", SoundID.MenuAccept, "QQN1FbxlHeUCXPZc51GYvn8G5GXOJcny");` | `public static SecretSeed extraLivingTrees = Register("SecretSeedDescription.extraLivingTrees", SoundID.MenuAccept, "QQN1FbxlHeUCXPZc51GYvn8G5GXOJcny");` |
+| 2337 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 354 | 3 | extraFloatingIslands | Terraria.WorldGen.SecretSeed | `public static SecretSeed extraFloatingIslands = Register("SecretSeedDescription.extraFloatingIslands", SoundID.MenuAccept, "0ebq4RCzI3PVaUPOT0f6/+vkXEaoLz2U");` | `public static SecretSeed extraFloatingIslands = Register("SecretSeedDescription.extraFloatingIslands", SoundID.MenuAccept, "0ebq4RCzI3PVaUPOT0f6/+vkXEaoLz2U");` |
+| 2342 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 364 | 3 | biggerAbandonedHouses | Terraria.WorldGen.SecretSeed | `public static SecretSeed biggerAbandonedHouses = Register("SecretSeedDescription.biggerAbandonedHouses", SoundID.MenuAccept, "vWb/t7nNF+tnjgr5VgY2hi0HcT1j3kvC");` | `public static SecretSeed biggerAbandonedHouses = Register("SecretSeedDescription.biggerAbandonedHouses", SoundID.MenuAccept, "vWb/t7nNF+tnjgr5VgY2hi0HcT1j3kvC");` |
+| 2344 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 368 | 3 | addTeleporters | Terraria.WorldGen.SecretSeed | `public static SecretSeed addTeleporters = Register("SecretSeedDescription.addTeleporters", SoundID.MenuAccept, "+URq9gxzcyHxAXVqdwl1fz8wgPYYu0Wx");` | `public static SecretSeed addTeleporters = Register("SecretSeedDescription.addTeleporters", SoundID.MenuAccept, "+URq9gxzcyHxAXVqdwl1fz8wgPYYu0Wx");` |
+| 2352 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 384 | 3 | noSpiderCaves | Terraria.WorldGen.SecretSeed | `public static SecretSeed noSpiderCaves = Register("SecretSeedDescription.noSpiderCaves", SoundID.MenuAccept, "SPlOdka0fv8wUovao6u3VB7ZS+IbcPDu");` | `public static SecretSeed noSpiderCaves = Register("SecretSeedDescription.noSpiderCaves", SoundID.MenuAccept, "SPlOdka0fv8wUovao6u3VB7ZS+IbcPDu");` |
+| 2353 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 386 | 3 | actuallyNoTraps | Terraria.WorldGen.SecretSeed | `public static SecretSeed actuallyNoTraps = Register("SecretSeedDescription.actuallyNoTraps", SoundID.MenuAccept, "AoEz0g1XX0V/nJwcaN2RWwUf/6ghr9pT");` | `public static SecretSeed actuallyNoTraps = Register("SecretSeedDescription.actuallyNoTraps", SoundID.MenuAccept, "AoEz0g1XX0V/nJwcaN2RWwUf/6ghr9pT");` |
+| 2355 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 390 | 3 | digExtraHoles | Terraria.WorldGen.SecretSeed | `public static SecretSeed digExtraHoles = Register("SecretSeedDescription.digExtraHoles", SoundID.MenuAccept, "MucLvCERZix3rfcwUH68HDtuFYukiTv9");` | `public static SecretSeed digExtraHoles = Register("SecretSeedDescription.digExtraHoles", SoundID.MenuAccept, "MucLvCERZix3rfcwUH68HDtuFYukiTv9");` |
+| 2356 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 392 | 3 | roundLandmasses | Terraria.WorldGen.SecretSeed | `public static SecretSeed roundLandmasses = Register("SecretSeedDescription.roundLandmasses", SoundID.MenuAccept, "VSN8nV180t6PgabWDl4Uf55I1vu97JRD");` | `public static SecretSeed roundLandmasses = Register("SecretSeedDescription.roundLandmasses", SoundID.MenuAccept, "VSN8nV180t6PgabWDl4Uf55I1vu97JRD");` |
+| 2357 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 394 | 3 | extraLiquid | Terraria.WorldGen.SecretSeed | `public static SecretSeed extraLiquid = Register("SecretSeedDescription.extraLiquid", SoundID.MenuAccept, "ZYO3rUjSeCaaBrCE8Bv0FBtkjigLMz90");` | `public static SecretSeed extraLiquid = Register("SecretSeedDescription.extraLiquid", SoundID.MenuAccept, "ZYO3rUjSeCaaBrCE8Bv0FBtkjigLMz90");` |
+| 2358 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 396 | 3 | portalGunInChests | Terraria.WorldGen.SecretSeed | `public static SecretSeed portalGunInChests = Register("SecretSeedDescription.portalGunInChests", SoundID.MenuAccept, "ALdQZ+bxQA4VdfjVfdhO/sm9q3sZD9dJ");` | `public static SecretSeed portalGunInChests = Register("SecretSeedDescription.portalGunInChests", SoundID.MenuAccept, "ALdQZ+bxQA4VdfjVfdhO/sm9q3sZD9dJ");` |
+| 2365 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 410 | 3 | dualDungeons | Terraria.WorldGen.SecretSeed | `public static SecretSeed dualDungeons = Register("SecretSeedDescription.dualDungeons", SoundID.MenuAccept, "ypBuvKpqKay//OvhG2COriSpGT7f4YY3");` | `public static SecretSeed dualDungeons = Register("SecretSeedDescription.dualDungeons", SoundID.MenuAccept, "ypBuvKpqKay//OvhG2COriSpGT7f4YY3");` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.32 细分子系统：`WorldSecretSeedProgressionAndInfectionRules`
+
+- 细分职责：进度、感染、出生点、难度和队伍生成规则。
+- 边界角色：`definition/query`；最小 seam：WorldGen Definition/Query；进度规则不反向拥有世界结果。
+- 成员文件数：1；声明类型数：1；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2338 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 356 | 3 | errorWorld | Terraria.WorldGen.SecretSeed | `public static SecretSeed errorWorld = Register("SecretSeedDescription.errorWorld", SoundID.MenuAccept, "GkviuS3QN0pyESRJdjIs6oC8s8hOhUXw");` | `public static SecretSeed errorWorld = Register("SecretSeedDescription.errorWorld", SoundID.MenuAccept, "GkviuS3QN0pyESRJdjIs6oC8s8hOhUXw");` |
+| 2339 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 358 | 3 | graveyardBloodmoonStart | Terraria.WorldGen.SecretSeed | `public static SecretSeed graveyardBloodmoonStart = Register("SecretSeedDescription.graveyardBloodmoonStart", SoundID.MenuAccept, "N8G20sWOkIa7ZP0rS/jopLpe9180N6Tx");` | `public static SecretSeed graveyardBloodmoonStart = Register("SecretSeedDescription.graveyardBloodmoonStart", SoundID.MenuAccept, "N8G20sWOkIa7ZP0rS/jopLpe9180N6Tx");` |
+| 2343 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 366 | 3 | randomSpawn | Terraria.WorldGen.SecretSeed | `public static SecretSeed randomSpawn = Register("SecretSeedDescription.randomSpawn", SoundID.MenuAccept, "zSwnCH9E121+S6VQdB0k20E7IPdtobls");` | `public static SecretSeed randomSpawn = Register("SecretSeedDescription.randomSpawn", SoundID.MenuAccept, "zSwnCH9E121+S6VQdB0k20E7IPdtobls");` |
+| 2345 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 370 | 3 | startInHardmode | Terraria.WorldGen.SecretSeed | `public static SecretSeed startInHardmode = Register("SecretSeedDescription.startInHardmode", SoundID.MenuAccept, "6kX2PJe0FWt3i0fp0tVBh5jt84ozLXBo");` | `public static SecretSeed startInHardmode = Register("SecretSeedDescription.startInHardmode", SoundID.MenuAccept, "6kX2PJe0FWt3i0fp0tVBh5jt84ozLXBo");` |
+| 2346 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 372 | 3 | noInfection | Terraria.WorldGen.SecretSeed | `public static SecretSeed noInfection = Register("SecretSeedDescription.noInfection", SoundID.MenuAccept, "m1gQVuUnIRW083pnfFdnN3DPsg1qFYHZ");` | `public static SecretSeed noInfection = Register("SecretSeedDescription.noInfection", SoundID.MenuAccept, "m1gQVuUnIRW083pnfFdnN3DPsg1qFYHZ");` |
+| 2347 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 374 | 3 | hallowOnTheSurface | Terraria.WorldGen.SecretSeed | `public static SecretSeed hallowOnTheSurface = Register("SecretSeedDescription.hallowOnTheSurface", SoundID.MenuAccept, "KYvKIk2LK0oyNY86m+uPhKQ7QbzFmDsR");` | `public static SecretSeed hallowOnTheSurface = Register("SecretSeedDescription.hallowOnTheSurface", SoundID.MenuAccept, "KYvKIk2LK0oyNY86m+uPhKQ7QbzFmDsR");` |
+| 2348 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 376 | 3 | worldIsInfected | Terraria.WorldGen.SecretSeed | `public static SecretSeed worldIsInfected = Register("SecretSeedDescription.worldIsInfected", SoundID.MenuAccept, "kbxnychxHNDcoyFHhxM9OJHRxis6mFF/");` | `public static SecretSeed worldIsInfected = Register("SecretSeedDescription.worldIsInfected", SoundID.MenuAccept, "kbxnychxHNDcoyFHhxM9OJHRxis6mFF/");` |
+| 2349 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 378 | 3 | surfaceIsMushrooms | Terraria.WorldGen.SecretSeed | `public static SecretSeed surfaceIsMushrooms = Register("SecretSeedDescription.surfaceIsMushrooms", SoundID.MenuAccept, "e48+tRi5DqzRkBPk3yq9udBG/kaYOQaB");` | `public static SecretSeed surfaceIsMushrooms = Register("SecretSeedDescription.surfaceIsMushrooms", SoundID.MenuAccept, "e48+tRi5DqzRkBPk3yq9udBG/kaYOQaB");` |
+| 2350 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 380 | 3 | surfaceIsDesert | Terraria.WorldGen.SecretSeed | `public static SecretSeed surfaceIsDesert = Register("SecretSeedDescription.surfaceIsDesert", SoundID.MenuAccept, "eyGmBQhQ9QnE7UsIib1QmnNRVBNmQtMi");` | `public static SecretSeed surfaceIsDesert = Register("SecretSeedDescription.surfaceIsDesert", SoundID.MenuAccept, "eyGmBQhQ9QnE7UsIib1QmnNRVBNmQtMi");` |
+| 2351 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 382 | 3 | pooEverywhere | Terraria.WorldGen.SecretSeed | `public static SecretSeed pooEverywhere = Register("SecretSeedDescription.pooEverywhere", SoundID.MenuAccept, "Iubz1XcBvsfPjSZucIJ3hCDFFEpjG57w");` | `public static SecretSeed pooEverywhere = Register("SecretSeedDescription.pooEverywhere", SoundID.MenuAccept, "Iubz1XcBvsfPjSZucIJ3hCDFFEpjG57w");` |
+| 2363 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 406 | 3 | vampirism | Terraria.WorldGen.SecretSeed | `public static SecretSeed vampirism = Register("SecretSeedDescription.vampirism", SoundID.MenuAccept, "4eijvDtfcSl66CDifYSVP3WBZm9OLBoW");` | `public static SecretSeed vampirism = Register("SecretSeedDescription.vampirism", SoundID.MenuAccept, "4eijvDtfcSl66CDifYSVP3WBZm9OLBoW");` |
+| 2364 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 408 | 3 | teamBasedSpawns | Terraria.WorldGen.SecretSeed | `public static SecretSeed teamBasedSpawns = Register("SecretSeedDescription.teamBasedSpawns", SoundID.MenuAccept, "HnTdmrZ5OT1ldA3r0w3dCgrdLnJBtBSD");` | `public static SecretSeed teamBasedSpawns = Register("SecretSeedDescription.teamBasedSpawns", SoundID.MenuAccept, "HnTdmrZ5OT1ldA3r0w3dCgrdLnJBtBSD");` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.33 细分子系统：`WorldSecretSeedSeasonalRules`
+
+- 细分职责：万圣节和圣诞节季节生成规则。
+- 边界角色：`definition/query`；最小 seam：WorldGen Definition/Query；季节规则按生成阶段读取。
+- 成员文件数：1；声明类型数：1；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2360 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 400 | 3 | halloweenGen | Terraria.WorldGen.SecretSeed | `public static SecretSeed halloweenGen = Register("SecretSeedDescription.halloweenGen", SoundID.MenuAccept, "Z4Odmvd5lScy/KGXHUO2nvqA9l3KRvm8");` | `public static SecretSeed halloweenGen = Register("SecretSeedDescription.halloweenGen", SoundID.MenuAccept, "Z4Odmvd5lScy/KGXHUO2nvqA9l3KRvm8");` |
+| 2361 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 402 | 3 | endlessHalloween | Terraria.WorldGen.SecretSeed | `public static SecretSeed endlessHalloween = Register("SecretSeedDescription.endlessHalloween", SoundID.MenuAccept, "KNSxbK83ZXH41aUhWLti9OFMxoMrCV1s");` | `public static SecretSeed endlessHalloween = Register("SecretSeedDescription.endlessHalloween", SoundID.MenuAccept, "KNSxbK83ZXH41aUhWLti9OFMxoMrCV1s");` |
+| 2362 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 404 | 3 | endlessChristmas | Terraria.WorldGen.SecretSeed | `public static SecretSeed endlessChristmas = Register("SecretSeedDescription.endlessChristmas", SoundID.MenuAccept, "gkN386qfe3u1qqQDpGsUu3DsRkEBpD1R");` | `public static SecretSeed endlessChristmas = Register("SecretSeedDescription.endlessChristmas", SoundID.MenuAccept, "gkN386qfe3u1qqQDpGsUu3DsRkEBpD1R");` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.34 细分子系统：`WorldSecretSeedRuntimeRegistry`
+
+- 细分职责：秘密种子启用计数和运行时启用状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；启用状态由种子注册系统集中维护。
+- 成员文件数：1；声明类型数：1；字段：2；属性：1；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2371 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 422 | 3 | activeSecretSeedCount | int | `private static int activeSecretSeedCount = 0;` | `private static int activeSecretSeedCount = 0;` |
+| 2372 | field | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 424 | 3 | _enabled | bool | `private bool _enabled;` | `private bool _enabled;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2651 | property | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 426 | 3 | Enabled | bool | `public bool Enabled => _enabled;` | `public bool Enabled => _enabled;` |
+
+#### 4.20.35 细分子系统：`WorldSecretSeedDerivedOptions`
+
+- 细分职责：由秘密种子与世界规则派生的生成选项属性。
+- 边界角色：`derived/query`；最小 seam：纯资格 Query；派生属性不得写回注册状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：2；合计：2。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2652 | property | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 428 | 3 | GenerateBiggerAbandonedHouses | bool | `public static bool GenerateBiggerAbandonedHouses { get { if (!biggerAbandonedHouses.Enabled) { if (errorWorld.Enabled) { return genRand.Next(3) == 0; } return false; } return true; } }` | `public static bool GenerateBiggerAbandonedHouses { get { if (!biggerAbandonedHouses.Enabled) { if (errorWorld.Enabled) { return genRand.Next(3) == 0; } return false; } return true; } }` |
+| 2653 | property | Terraria.WorldGen.SecretSeed | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 444 | 3 | GenerateRainbowGlowsticks | bool | `public static bool GenerateRainbowGlowsticks { get { if (!rainbowStuff.Enabled) { return Main.tenthAnniversaryWorld; } return true; } }` | `public static bool GenerateRainbowGlowsticks { get { if (!rainbowStuff.Enabled) { return Main.tenthAnniversaryWorld; } return true; } }` |
+
+#### 4.20.36 细分子系统：`WorldSecretSeedDerivedVariations`
+
+- 细分职责：由秘密种子组合派生的变体和规则资格属性。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；不直接修改 SecretSeed 注册状态。
+- 成员文件数：1；声明类型数：1；字段：0；属性：22；合计：22。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（0）
+
+无该类型成员记录。
+
+##### 属性（22）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2629 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 44 | 4 | paintEverythingGrayJustTheSurface | bool | `public static bool paintEverythingGrayJustTheSurface { get { if (paintEverythingGray.Enabled && !paintEverythingGrayJustTreasure) { if (!paintEverythingNegative.Enabled && !coatEverythingEcho.Enabled) { return coatEverythingIlluminant.Enabled; } return true; } return false; } }` | `public static bool paintEverythingGrayJustTheSurface { get { if (paintEverythingGray.Enabled && !paintEverythingGrayJustTreasure) { if (!paintEverythingNegative.Enabled && !coatEverythingEcho.Enabled) { return coatEverythingIlluminant.Enabled; } return true; } return false; } }` |
+| 2630 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 60 | 4 | paintEverythingGrayJustTreasure | bool | `public static bool paintEverythingGrayJustTreasure { get { if (paintEverythingGray.Enabled) { return activeSecretSeedCount >= 4; } return false; } }` | `public static bool paintEverythingGrayJustTreasure { get { if (paintEverythingGray.Enabled) { return activeSecretSeedCount >= 4; } return false; } }` |
+| 2631 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 72 | 4 | paintEverythingGrayUseWhite | bool | `public static bool paintEverythingGrayUseWhite { get { if (paintEverythingGray.Enabled) { return worldIsFrozen.Enabled; } return false; } }` | `public static bool paintEverythingGrayUseWhite { get { if (paintEverythingGray.Enabled) { return worldIsFrozen.Enabled; } return false; } }` |
+| 2632 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 84 | 4 | paintEverythingNegativeJustUnderground | bool | `public static bool paintEverythingNegativeJustUnderground { get { if (paintEverythingNegative.Enabled && !paintEverythingNegativeJustSomeThings) { if (!paintEverythingGray.Enabled && !coatEverythingEcho.Enabled) { return coatEverythingIlluminant.Enabled; } return true; } return false; } }` | `public static bool paintEverythingNegativeJustUnderground { get { if (paintEverythingNegative.Enabled && !paintEverythingNegativeJustSomeThings) { if (!paintEverythingGray.Enabled && !coatEverythingEcho.Enabled) { return coatEverythingIlluminant.Enabled; } return true; } return false; } }` |
+| 2633 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 100 | 4 | paintEverythingNegativeJustSomeThings | bool | `public static bool paintEverythingNegativeJustSomeThings { get { if (paintEverythingNegative.Enabled) { return activeSecretSeedCount >= 4; } return false; } }` | `public static bool paintEverythingNegativeJustSomeThings { get { if (paintEverythingNegative.Enabled) { return activeSecretSeedCount >= 4; } return false; } }` |
+| 2634 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 112 | 4 | coatEverythingJustInnerBlocks | bool | `public static bool coatEverythingJustInnerBlocks { get { if (coatEverythingEcho.Enabled && !coatEverythingEchoJustSomeThings) { if (!paintEverythingGray.Enabled && !paintEverythingNegative.Enabled) { return activeSecretSeedCount >= 3; } return true; } return false; } }` | `public static bool coatEverythingJustInnerBlocks { get { if (coatEverythingEcho.Enabled && !coatEverythingEchoJustSomeThings) { if (!paintEverythingGray.Enabled && !paintEverythingNegative.Enabled) { return activeSecretSeedCount >= 3; } return true; } return false; } }` |
+| 2635 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 128 | 4 | coatEverythingEchoJustSomeThings | bool | `public static bool coatEverythingEchoJustSomeThings { get { if (coatEverythingEcho.Enabled) { return activeSecretSeedCount >= 4; } return false; } }` | `public static bool coatEverythingEchoJustSomeThings { get { if (coatEverythingEcho.Enabled) { return activeSecretSeedCount >= 4; } return false; } }` |
+| 2636 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 140 | 4 | coatEverythingIlluminantJustRandomSpots | bool | `public static bool coatEverythingIlluminantJustRandomSpots { get { if (!coatEverythingIlluminantJustSomeThings) { return coatEverythingEcho.Enabled; } return false; } }` | `public static bool coatEverythingIlluminantJustRandomSpots { get { if (!coatEverythingIlluminantJustSomeThings) { return coatEverythingEcho.Enabled; } return false; } }` |
+| 2637 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 152 | 4 | coatEverythingIlluminantJustSomeThings | bool | `public static bool coatEverythingIlluminantJustSomeThings { get { if (coatEverythingEcho.Enabled) { if (activeSecretSeedCount < 3 && !paintEverythingGray.Enabled) { return paintEverythingNegative.Enabled; } return true; } return false; } }` | `public static bool coatEverythingIlluminantJustSomeThings { get { if (coatEverythingEcho.Enabled) { if (activeSecretSeedCount < 3 && !paintEverythingGray.Enabled) { return paintEverythingNegative.Enabled; } return true; } return false; } }` |
+| 2638 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 168 | 4 | noSurfaceNoFloatingIslands | bool | `public static bool noSurfaceNoFloatingIslands { get { if (noSurface.Enabled && !errorWorld.Enabled) { return !extraFloatingIslands.Enabled; } return false; } }` | `public static bool noSurfaceNoFloatingIslands { get { if (noSurface.Enabled && !errorWorld.Enabled) { return !extraFloatingIslands.Enabled; } return false; } }` |
+| 2639 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 180 | 4 | noSurfaceNoLivingTrees | bool | `public static bool noSurfaceNoLivingTrees { get { if (noSurface.Enabled && !errorWorld.Enabled) { return !extraLivingTrees.Enabled; } return false; } }` | `public static bool noSurfaceNoLivingTrees { get { if (noSurface.Enabled && !errorWorld.Enabled) { return !extraLivingTrees.Enabled; } return false; } }` |
+| 2640 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 192 | 4 | noSurfaceNoPyramids | bool | `public static bool noSurfaceNoPyramids { get { if (noSurface.Enabled) { return !errorWorld.Enabled; } return false; } }` | `public static bool noSurfaceNoPyramids { get { if (noSurface.Enabled) { return !errorWorld.Enabled; } return false; } }` |
+| 2641 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 204 | 4 | noSurfaceNoSwordShrines | bool | `public static bool noSurfaceNoSwordShrines { get { if (noSurface.Enabled) { return !errorWorld.Enabled; } return false; } }` | `public static bool noSurfaceNoSwordShrines { get { if (noSurface.Enabled) { return !errorWorld.Enabled; } return false; } }` |
+| 2642 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 216 | 4 | extraLivingTreesReducedAmount | bool | `public static bool extraLivingTreesReducedAmount { get { if (extraLivingTrees.Enabled) { if (activeSecretSeedCount < 6) { return noSurface.Enabled; } return true; } return false; } }` | `public static bool extraLivingTreesReducedAmount { get { if (extraLivingTrees.Enabled) { if (activeSecretSeedCount < 6) { return noSurface.Enabled; } return true; } return false; } }` |
+| 2643 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 232 | 4 | extraFloatingIslandsNormalAmount | bool | `public static bool extraFloatingIslandsNormalAmount { get { if (extraFloatingIslands.Enabled) { return Main.skyblockWorld; } return false; } }` | `public static bool extraFloatingIslandsNormalAmount { get { if (extraFloatingIslands.Enabled) { return Main.skyblockWorld; } return false; } }` |
+| 2644 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 244 | 4 | extraFloatingIslandsReducedAmount | bool | `public static bool extraFloatingIslandsReducedAmount { get { if (!extraFloatingIslands.Enabled \|\| activeSecretSeedCount < 6) { return noSurface.Enabled; } return true; } }` | `public static bool extraFloatingIslandsReducedAmount { get { if (!extraFloatingIslands.Enabled \|\| activeSecretSeedCount < 6) { return noSurface.Enabled; } return true; } }` |
+| 2645 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 256 | 4 | errorWorldBalancedChests | bool | `public static bool errorWorldBalancedChests { get { if (errorWorld.Enabled) { return activeSecretSeedCount >= 6; } return false; } }` | `public static bool errorWorldBalancedChests { get { if (errorWorld.Enabled) { return activeSecretSeedCount >= 6; } return false; } }` |
+| 2646 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 268 | 4 | noSpiderCavesActuallyNoSpiderCaves | bool | `public static bool noSpiderCavesActuallyNoSpiderCaves { get { if (noSpiderCaves.Enabled) { return activeSecretSeedCount < 4; } return false; } }` | `public static bool noSpiderCavesActuallyNoSpiderCaves { get { if (noSpiderCaves.Enabled) { return activeSecretSeedCount < 4; } return false; } }` |
+| 2647 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 280 | 4 | noSpiderCavesILiedMoreSpiderCaves | bool | `public static bool noSpiderCavesILiedMoreSpiderCaves { get { if (noSpiderCaves.Enabled) { return activeSecretSeedCount >= 4; } return false; } }` | `public static bool noSpiderCavesILiedMoreSpiderCaves { get { if (noSpiderCaves.Enabled) { return activeSecretSeedCount >= 4; } return false; } }` |
+| 2648 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 292 | 4 | actuallyNoTrapsForRealIMeanIt | bool | `public static bool actuallyNoTrapsForRealIMeanIt { get { if (actuallyNoTraps.Enabled) { return activeSecretSeedCount < 4; } return false; } }` | `public static bool actuallyNoTrapsForRealIMeanIt { get { if (actuallyNoTraps.Enabled) { return activeSecretSeedCount < 4; } return false; } }` |
+| 2649 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 304 | 4 | surfaceIsDesertNormalFunction | bool | `public static bool surfaceIsDesertNormalFunction { get { if (surfaceIsDesert.Enabled) { return !surfaceIsDesertSwapDesertAndSnowBiomes; } return false; } }` | `public static bool surfaceIsDesertNormalFunction { get { if (surfaceIsDesert.Enabled) { return !surfaceIsDesertSwapDesertAndSnowBiomes; } return false; } }` |
+| 2650 | property | Terraria.WorldGen.SecretSeed.Variations | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 316 | 4 | surfaceIsDesertSwapDesertAndSnowBiomes | bool | `public static bool surfaceIsDesertSwapDesertAndSnowBiomes { get { if (surfaceIsDesert.Enabled) { return noSurface.Enabled; } return false; } }` | `public static bool surfaceIsDesertSwapDesertAndSnowBiomes { get { if (surfaceIsDesert.Enabled) { return noSurface.Enabled; } return false; } }` |
+
+#### 4.20.37 细分子系统：`WorldSkyblockGenerationRules`
+
+- 细分职责：Skyblock 世界生成限制、Tile/Wall 规则和生成拒绝属性。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Rule view；生成 System 通过 Query 消费。
+- 成员文件数：1；声明类型数：1；字段：11；属性：3；合计：14。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2373 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3143 | 3 | noAltars | bool | `public static bool noAltars = false;` | `public static bool noAltars = false;` |
+| 2374 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3145 | 3 | noDungeon | bool | `public static bool noDungeon = false;` | `public static bool noDungeon = false;` |
+| 2375 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3147 | 3 | noTemple | bool | `public static bool noTemple = false;` | `public static bool noTemple = false;` |
+| 2376 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3149 | 3 | noHellstone | bool | `public static bool noHellstone = false;` | `public static bool noHellstone = false;` |
+| 2377 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3151 | 3 | noFossils | bool | `public static bool noFossils = false;` | `public static bool noFossils = false;` |
+| 2378 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3153 | 3 | noLifeCrystals | bool | `public static bool noLifeCrystals = false;` | `public static bool noLifeCrystals = false;` |
+| 2379 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3155 | 3 | noHellforge | bool | `public static bool noHellforge = false;` | `public static bool noHellforge = false;` |
+| 2380 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3157 | 3 | lowTiles | bool | `public static bool lowTiles = false;` | `public static bool lowTiles = false;` |
+| 2381 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3159 | 3 | hasTile | bool[] | `public static bool[] hasTile = new bool[TileID.Count];` | `public static bool[] hasTile = new bool[TileID.Count];` |
+| 2382 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3161 | 3 | hasWall | bool[] | `public static bool[] hasWall = new bool[WallID.Count];` | `public static bool[] hasWall = new bool[WallID.Count];` |
+| 2383 | field | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3163 | 3 | currentActiveTiles | int | `public static int currentActiveTiles = 0;` | `public static int currentActiveTiles = 0;` |
+
+##### 属性（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2654 | property | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3165 | 3 | denyFloatingIslands | bool | `public static bool denyFloatingIslands { get { if (skyblockWorldGen) { return !SecretSeed.extraFloatingIslands.Enabled; } return false; } }` | `public static bool denyFloatingIslands { get { if (skyblockWorldGen) { return !SecretSeed.extraFloatingIslands.Enabled; } return false; } }` |
+| 2655 | property | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3177 | 3 | denyAllGeneration | bool | `public static bool denyAllGeneration => skyblockWorldGen;` | `public static bool denyAllGeneration => skyblockWorldGen;` |
+| 2656 | property | Terraria.WorldGen.Skyblock | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3179 | 3 | denySomeGeneration | bool | `public static bool denySomeGeneration { get { if (skyblockWorldGen) { if (!SecretSeed.worldIsFrozen.Enabled && !SecretSeed.surfaceIsDesert.Enabled && !SecretSeed.surfaceIsMushrooms.Enabled && !SecretSeed.worldIsInfected.Enabled && !SecretSeed.hallowOnTheSurface.Enabled && !SecretSeed.noInfection.Enabled && !SecretSeed.extraFloatingIslands.Enabled && !SecretSeed.extraLiquid.Enabled) { return !SecretSeed.extraLivingTrees.Enabled; } return false; } return false; } }` | `public static bool denySomeGeneration { get { if (skyblockWorldGen) { if (!SecretSeed.worldIsFrozen.Enabled && !SecretSeed.surfaceIsDesert.Enabled && !SecretSeed.surfaceIsMushrooms.Enabled && !SecretSeed.worldIsInfected.Enabled && !SecretSeed.hallowOnTheSurface.Enabled && !SecretSeed.noInfection.Enabled && !SecretSeed.extraFloatingIslands.Enabled && !SecretSeed.extraLiquid.Enabled) { return !SecretSeed.extraLivingTrees.Enabled; } return false; } return false; } }` |
+
+#### 4.20.38 细分子系统：`WorldGenerationProgressAndPassState`
+
+- 细分职责：生成进度、Pass 定义和当前 Pass 权重状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；生成阶段按显式 Pass 调度更新。
+- 成员文件数：2；声明类型数：2；字段：7；属性：6；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2088 | field | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 5 | 2 | _message | string | `private string _message = "";` | `private string _message = "";` |
+| 2089 | field | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 7 | 2 | _value | double | `private double _value;` | `private double _value;` |
+| 2090 | field | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 9 | 2 | _totalWeightedProgress | double | `private double _totalWeightedProgress;` | `private double _totalWeightedProgress;` |
+| 2091 | field | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 11 | 2 | TotalWeight | double | `public double TotalWeight;` | `public double TotalWeight;` |
+| 2092 | field | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 13 | 2 | CurrentPassWeight | double | `public double CurrentPassWeight = 1.0;` | `public double CurrentPassWeight = 1.0;` |
+| 2094 | field | Terraria.WorldBuilding.GenPass | Terraria.WorldBuilding/GenPass.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenPass.cs | 7 | 2 | Name | string | `public string Name;` | `public string Name;` |
+| 2095 | field | Terraria.WorldBuilding.GenPass | Terraria.WorldBuilding/GenPass.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenPass.cs | 9 | 2 | Weight | double | `public double Weight;` | `public double Weight;` |
+
+##### 属性（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2572 | property | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 15 | 2 | Message | string | `public string Message { get { return string.Format(_message, Value); } set { _message = value.Replace("%", "{0:0.0%}"); } }` | `public string Message { get { return string.Format(_message, Value); } set { _message = value.Replace("%", "{0:0.0%}"); } }` |
+| 2573 | property | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 27 | 2 | MessageNoFormatting | string | `public string MessageNoFormatting { get { return _message; } set { _message = value; } }` | `public string MessageNoFormatting { get { return _message; } set { _message = value; } }` |
+| 2574 | property | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 39 | 2 | Value | double | `public double Value { get { return _value; } set { _value = Utils.Clamp(value, 0.0, 1.0); } }` | `public double Value { get { return _value; } set { _value = Utils.Clamp(value, 0.0, 1.0); } }` |
+| 2575 | property | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 51 | 2 | TotalWeightedProgress | double | `public double TotalWeightedProgress { set { _totalWeightedProgress = value; } }` | `public double TotalWeightedProgress { set { _totalWeightedProgress = value; } }` |
+| 2576 | property | Terraria.WorldBuilding.GenerationProgress | Terraria.WorldBuilding/GenerationProgress.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenerationProgress.cs | 59 | 2 | TotalProgress | double | `public double TotalProgress { get { if (TotalWeight == 0.0) { return 0.0; } return (Value * CurrentPassWeight + _totalWeightedProgress) / TotalWeight; } }` | `public double TotalProgress { get { if (TotalWeight == 0.0) { return 0.0; } return (Value * CurrentPassWeight + _totalWeightedProgress) / TotalWeight; } }` |
+| 2577 | property | Terraria.WorldBuilding.GenPass | Terraria.WorldBuilding/GenPass.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenPass.cs | 11 | 2 | Enabled | bool | `public bool Enabled { get; private set; }` | `public bool Enabled { get; private set; }` |
+
+#### 4.20.39 细分子系统：`WorldGenerationControllerPassState`
+
+- 细分职责：生成 pass、当前 pass 和已完成 pass 的控制投影。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen Controller/PassPort；pass 生命周期集中维护。
+- 成员文件数：1；声明类型数：1；字段：4；属性：3；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2301 | field | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 26 | 3 | _previousManifest | Terraria.WorldBuilding.WorldManifest | `private WorldManifest _previousManifest;` | `private WorldManifest _previousManifest;` |
+| 2302 | field | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 28 | 3 | _snapshots | System.Collections.Generic.Dictionary<Terraria.WorldBuilding.GenPass, Terraria.WorldBuilding.WorldGenSnapshot> | `private Dictionary<GenPass, WorldGenSnapshot> _snapshots;` | `private Dictionary<GenPass, WorldGenSnapshot> _snapshots;` |
+| 2303 | field | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 30 | 3 | OnPassesLoaded | System.Action<Terraria.WorldBuilding.WorldGenerator.Controller> | `public Action<Controller> OnPassesLoaded;` | `public Action<Controller> OnPassesLoaded;` |
+| 2304 | field | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 32 | 3 | _generator | Terraria.WorldBuilding.WorldGenerator | `private WorldGenerator _generator;` | `private WorldGenerator _generator;` |
+
+##### 属性（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2587 | property | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 36 | 3 | Passes | System.Collections.Generic.List<Terraria.WorldBuilding.GenPass> | `public List<GenPass> Passes => _generator._passes;` | `public List<GenPass> Passes => _generator._passes;` |
+| 2588 | property | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 38 | 3 | CurrentPass | Terraria.WorldBuilding.GenPass | `public GenPass CurrentPass => _generator._currentPass;` | `public GenPass CurrentPass => _generator._currentPass;` |
+| 2589 | property | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 40 | 3 | LastCompletedPass | Terraria.WorldBuilding.GenPass | `public GenPass LastCompletedPass { get { if (PassResults.Count != 0) { return Passes[PassResults.Count - 1]; } return null; } }` | `public GenPass LastCompletedPass { get { if (PassResults.Count != 0) { return Passes[PassResults.Count - 1]; } return null; } }` |
+
+#### 4.20.40 细分子系统：`WorldGenerationControllerPauseAndHashState`
+
+- 细分职责：暂停、哈希不一致和中止控制状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen Controller/ControlPort；控制命令通过锁定边界提交。
+- 成员文件数：1；声明类型数：1；字段：1；属性：6；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2305 | field | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 34 | 3 | _paused | bool | `private bool _paused;` | `private bool _paused;` |
+
+##### 属性（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2590 | property | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 52 | 3 | PauseAfterPass | Terraria.WorldBuilding.GenPass | `public GenPass PauseAfterPass { get; set; }` | `public GenPass PauseAfterPass { get; set; }` |
+| 2591 | property | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 54 | 3 | PauseOnHashMismatch | bool | `public bool PauseOnHashMismatch { get; set; }` | `public bool PauseOnHashMismatch { get; set; }` |
+| 2592 | property | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 56 | 3 | PausedDueToHashMismatch | bool | `public bool PausedDueToHashMismatch { get; set; }` | `public bool PausedDueToHashMismatch { get; set; }` |
+| 2593 | property | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 58 | 3 | SnapshotFrequency | Terraria.WorldBuilding.WorldGenerator.SnapshotFrequency | `public SnapshotFrequency SnapshotFrequency { get; set; }` | `public SnapshotFrequency SnapshotFrequency { get; set; }` |
+| 2594 | property | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 60 | 3 | Paused | bool | `public bool Paused { get { return _paused; } set { _paused = value; if (value) { PauseAfterPass = null; } else { PausedDueToHashMismatch = false; } } }` | `public bool Paused { get { return _paused; } set { _paused = value; if (value) { PauseAfterPass = null; } else { PausedDueToHashMismatch = false; } } }` |
+| 2595 | property | Terraria.WorldBuilding.WorldGenerator.Controller | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 80 | 3 | QueuedAbort | bool | `public bool QueuedAbort { get; set; }` | `public bool QueuedAbort { get; set; }` |
+
+#### 4.20.41 细分子系统：`WorldGenerationGeneratorExecutionState`
+
+- 细分职责：生成器配置、进度、锁、种子和结果执行状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：WorldGen Execution System/CommitPort；执行状态按生成阶段更新。
+- 成员文件数：1；声明类型数：1；字段：10；属性：1；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（10）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2306 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 262 | 2 | _passes | System.Collections.Generic.List<Terraria.WorldBuilding.GenPass> | `internal readonly List<GenPass> _passes = new List<GenPass>();` | `internal readonly List<GenPass> _passes = new List<GenPass>();` |
+| 2307 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 264 | 2 | _seed | int | `private readonly int _seed;` | `private readonly int _seed;` |
+| 2308 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 266 | 2 | _configuration | Terraria.WorldBuilding.WorldGenConfiguration | `private readonly WorldGenConfiguration _configuration;` | `private readonly WorldGenConfiguration _configuration;` |
+| 2309 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 268 | 2 | _progress | Terraria.WorldBuilding.GenerationProgress | `private readonly GenerationProgress _progress;` | `private readonly GenerationProgress _progress;` |
+| 2310 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 270 | 2 | _controller | Terraria.WorldBuilding.WorldGenerator.Controller | `private readonly Controller _controller;` | `private readonly Controller _controller;` |
+| 2311 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 272 | 2 | _controlLock | object | `private readonly object _controlLock = new object();` | `private readonly object _controlLock = new object();` |
+| 2312 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 274 | 2 | _currentPass | Terraria.WorldBuilding.GenPass | `private GenPass _currentPass;` | `private GenPass _currentPass;` |
+| 2313 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 276 | 2 | CurrentGenerationProgress | Terraria.WorldBuilding.GenerationProgress | `public static GenerationProgress CurrentGenerationProgress;` | `public static GenerationProgress CurrentGenerationProgress;` |
+| 2314 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 278 | 2 | CurrentController | Terraria.WorldBuilding.WorldGenerator.Controller | `public static Controller CurrentController;` | `public static Controller CurrentController;` |
+| 2315 | field | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 280 | 2 | _hashTime | System.Diagnostics.Stopwatch | `private static Stopwatch _hashTime = new Stopwatch();` | `private static Stopwatch _hashTime = new Stopwatch();` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2596 | property | Terraria.WorldBuilding.WorldGenerator | Terraria.WorldBuilding/WorldGenerator.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerator.cs | 282 | 2 | PassResults | System.Collections.Generic.List<Terraria.WorldBuilding.GenPassResult> | `public static List<GenPassResult> PassResults => WorldGen.Manifest.GenPassResults;` | `public static List<GenPassResult> PassResults => WorldGen.Manifest.GenPassResults;` |
+
+#### 4.20.42 细分子系统：`WorldGenerationSnapshotState`
+
+- 细分职责：WorldGenSnapshot 数据、序列化配置和恢复索引。
+- 边界角色：`registry/projection`；最小 seam：Snapshot/Projection seam；快照只输出可恢复视图，不成为实时权威状态。
+- 成员文件数：1；声明类型数：2；字段：7；属性：6；合计：13。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2320 | field | Terraria.WorldBuilding.WorldGenSnapshot.SnapshotGenVars | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 20 | 3 | SerializerSettings | JsonSerializerSettings | `public static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings  		{  			ContractResolver = new EasyDeserializationJsonContractResolver(),  			PreserveReferencesHandling = PreserveReferencesHandling.Objects,  			ReferenceLoopHandling = ReferenceLoopHandling.Serialize,  			TypeNameHandling = TypeNameHandling.Auto  		};` | `public static JsonSerializerSettings SerializerSettings = new JsonSerializerSettings { ContractResolver = new EasyDeserializationJsonContractResolver(), PreserveReferencesHandling = PreserveReferencesHandling.Objects, ReferenceLoopHandling = ReferenceLoopHandling.Serialize, TypeNameHandling = TypeNameHandling.Auto };` |
+| 2321 | field | Terraria.WorldBuilding.WorldGenSnapshot.SnapshotGenVars | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 28 | 3 | fieldsAndProperties | System.Collections.Generic.Dictionary<string, System.Reflection.MemberInfo> | `private static Dictionary<string, MemberInfo> fieldsAndProperties = (from m in ((IEnumerable<MemberInfo>)typeof(GenVars).GetFields(BindingFlags.Static \| BindingFlags.Public)).Concat((IEnumerable<MemberInfo>)typeof(GenVars).GetProperties(BindingFlags.Static \| BindingFlags.Public))  			where !(m is PropertyInfo) \|\| ((PropertyInfo)m).CanWrite  			where !(m is FieldInfo) \|\| !((FieldInfo)m).IsInitOnly  			where !m.GetCustomAttributes(typeof(JsonIgnoreAttribute), inherit: true).Any()  			select m).ToDictionary((MemberInfo m) => m.Name);` | `private static Dictionary<string, MemberInfo> fieldsAndProperties = (from m in ((IEnumerable<MemberInfo>)typeof(GenVars).GetFields(BindingFlags.Static \| BindingFlags.Public)).Concat((IEnumerable<MemberInfo>)typeof(GenVars).GetProperties(BindingFlags.Static \| BindingFlags.Public)) where !(m is PropertyInfo) \|\| ((PropertyInfo)m).CanWrite where !(m is FieldInfo) \|\| !((FieldInfo)m).IsInitOnly where !m.GetCustomAttributes(typeof(JsonIgnoreAttribute), inherit: true).Any() select m).ToDictionary((MemberInfo m) => m.Name);` |
+| 2322 | field | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 58 | 2 | _dataOffset | int | `private int _dataOffset;` | `private int _dataOffset;` |
+| 2323 | field | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 60 | 2 | _matchingPasses | System.Collections.Generic.List<Terraria.WorldBuilding.GenPass> | `private List<GenPass> _matchingPasses;` | `private List<GenPass> _matchingPasses;` |
+| 2324 | field | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 62 | 2 | SnapshotFolderSuffix | string | `private static string SnapshotFolderSuffix = "_gensnapshots";` | `private static string SnapshotFolderSuffix = "_gensnapshots";` |
+| 2325 | field | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 64 | 2 | Extension | string | `private static string Extension = ".gensnapshot";` | `private static string Extension = ".gensnapshot";` |
+| 2326 | field | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 66 | 2 | _snapshotSizeCache | System.Collections.Generic.IDictionary<string, long> | `private static IDictionary<string, long> _snapshotSizeCache = new Dictionary<string, long>();` | `private static IDictionary<string, long> _snapshotSizeCache = new Dictionary<string, long>();` |
+
+##### 属性（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2599 | property | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 68 | 2 | Manifest | Terraria.WorldBuilding.WorldManifest | `public WorldManifest Manifest { get; private set; }` | `public WorldManifest Manifest { get; private set; }` |
+| 2600 | property | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 70 | 2 | Path | string | `private string Path { get; set; }` | `private string Path { get; set; }` |
+| 2601 | property | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 72 | 2 | GenVarsJson | string | `private string GenVarsJson { get; set; }` | `private string GenVarsJson { get; set; }` |
+| 2602 | property | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 74 | 2 | GenPassResults | System.Collections.Generic.List<Terraria.WorldBuilding.GenPassResult> | `public List<GenPassResult> GenPassResults => Manifest.GenPassResults;` | `public List<GenPassResult> GenPassResults => Manifest.GenPassResults;` |
+| 2603 | property | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 76 | 2 | Outdated | bool | `public bool Outdated { get { if (!(Manifest.GitSHA != GitStatus.GitSHA) && !(Manifest.Version != Main.versionNumber)) { return !_matchingPasses.Zip(GenPassResults, (GenPass p, GenPassResult r) => p.Enabled == !r.Skipped).All((bool x) => x); } return true; } }` | `public bool Outdated { get { if (!(Manifest.GitSHA != GitStatus.GitSHA) && !(Manifest.Version != Main.versionNumber)) { return !_matchingPasses.Zip(GenPassResults, (GenPass p, GenPassResult r) => p.Enabled == !r.Skipped).All((bool x) => x); } return true; } }` |
+| 2604 | property | Terraria.WorldBuilding.WorldGenSnapshot | Terraria.WorldBuilding/WorldGenSnapshot.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenSnapshot.cs | 88 | 2 | PathForActiveWorld | string | `private static string PathForActiveWorld => System.IO.Path.ChangeExtension(Main.ActiveWorldFileData.Path, null) + SnapshotFolderSuffix;` | `private static string PathForActiveWorld => System.IO.Path.ChangeExtension(Main.ActiveWorldFileData.Path, null) + SnapshotFolderSuffix;` |
+
+#### 4.20.43 细分子系统：`WorldGenerationManifestAndPassResults`
+
+- 细分职责：生成 Manifest、Pass 结果、哈希和耗时结果。
+- 边界角色：`registry/projection`；最小 seam：Manifest/Projection seam；结果单向发布到持久化或诊断边界。
+- 成员文件数：2；声明类型数：2；字段：2；属性：6；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2327 | field | Terraria.WorldBuilding.WorldManifest | Terraria.WorldBuilding/WorldManifest.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldManifest.cs | 11 | 2 | GenPassResults | System.Collections.Generic.List<Terraria.WorldBuilding.GenPassResult> | `public List<GenPassResult> GenPassResults = new List<GenPassResult>();` | `public List<GenPassResult> GenPassResults = new List<GenPassResult>();` |
+| 2328 | field | Terraria.WorldBuilding.WorldManifest | Terraria.WorldBuilding/WorldManifest.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldManifest.cs | 13 | 2 | SerializerSettings | JsonSerializerSettings | `public static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings  	{  		TypeNameHandling = TypeNameHandling.Auto  	};` | `public static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.Auto };` |
+
+##### 属性（6）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2578 | property | Terraria.WorldBuilding.GenPassResult | Terraria.WorldBuilding/GenPassResult.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenPassResult.cs | 6 | 2 | DurationMs | int | `public int DurationMs { get; set; }` | `public int DurationMs { get; set; }` |
+| 2579 | property | Terraria.WorldBuilding.GenPassResult | Terraria.WorldBuilding/GenPassResult.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenPassResult.cs | 8 | 2 | Hash | uint? | `public uint? Hash { get; set; }` | `public uint? Hash { get; set; }` |
+| 2580 | property | Terraria.WorldBuilding.GenPassResult | Terraria.WorldBuilding/GenPassResult.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenPassResult.cs | 10 | 2 | Skipped | bool | `public bool Skipped { get; set; }` | `public bool Skipped { get; set; }` |
+| 2605 | property | Terraria.WorldBuilding.WorldManifest | Terraria.WorldBuilding/WorldManifest.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldManifest.cs | 18 | 2 | Version | string | `public string Version { get; set; }` | `public string Version { get; set; }` |
+| 2606 | property | Terraria.WorldBuilding.WorldManifest | Terraria.WorldBuilding/WorldManifest.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldManifest.cs | 20 | 2 | GitSHA | string | `public string GitSHA { get; set; }` | `public string GitSHA { get; set; }` |
+| 2607 | property | Terraria.WorldBuilding.WorldManifest | Terraria.WorldBuilding/WorldManifest.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldManifest.cs | 22 | 2 | FinalHash | uint? | `public uint? FinalHash { get { if (GenPassResults.Count <= 0) { return null; } return GenPassResults[GenPassResults.Count - 1].Hash; } }` | `public uint? FinalHash { get { if (GenPassResults.Count <= 0) { return null; } return GenPassResults[GenPassResults.Count - 1].Hash; } }` |
+
+#### 4.20.44 细分子系统：`WorldGenerationOptionBaseState`
+
+- 细分职责：世界生成选项基类、配置根和启用、名称、描述、展示定义。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；选项系统负责生命周期。
+- 成员文件数：2；声明类型数：2；字段：4；属性：8；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2079 | field | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 12 | 2 | _enabled | bool | `private bool _enabled;` | `private bool _enabled;` |
+| 2080 | field | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 14 | 2 | AutoGenEnabled | bool | `public bool AutoGenEnabled;` | `public bool AutoGenEnabled;` |
+| 2296 | field | Terraria.WorldBuilding.WorldGenConfiguration | Terraria.WorldBuilding/WorldGenConfiguration.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenConfiguration.cs | 11 | 2 | _biomeRoot | JObject | `private readonly JObject _biomeRoot;` | `private readonly JObject _biomeRoot;` |
+| 2297 | field | Terraria.WorldBuilding.WorldGenConfiguration | Terraria.WorldBuilding/WorldGenConfiguration.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenConfiguration.cs | 13 | 2 | _passRoot | JObject | `private readonly JObject _passRoot;` | `private readonly JObject _passRoot;` |
+
+##### 属性（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2563 | property | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 16 | 2 | Enabled | bool | `public bool Enabled { get { return _enabled; } set { if (_enabled != value) { _enabled = value; OnEnabledStateChanged(); AWorldGenerationOption.OnOptionStateChanged(this); } } }` | `public bool Enabled { get { return _enabled; } set { if (_enabled != value) { _enabled = value; OnEnabledStateChanged(); AWorldGenerationOption.OnOptionStateChanged(this); } } }` |
+| 2564 | property | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 33 | 2 | KeyName | string | `protected abstract string KeyName { get; }` | `protected abstract string KeyName { get; }` |
+| 2565 | property | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 35 | 2 | ServerConfigName | string | `public abstract string ServerConfigName { get; }` | `public abstract string ServerConfigName { get; }` |
+| 2566 | property | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 37 | 2 | SpecialSeedNames | string[] | `public string[] SpecialSeedNames { get; protected set; }` | `public string[] SpecialSeedNames { get; protected set; }` |
+| 2567 | property | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 39 | 2 | SpecialSeedValues | int[] | `public int[] SpecialSeedValues { get; protected set; }` | `public int[] SpecialSeedValues { get; protected set; }` |
+| 2568 | property | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 41 | 2 | Description | Terraria.Localization.LocalizedText | `public LocalizedText Description { get; private set; }` | `public LocalizedText Description { get; private set; }` |
+| 2569 | property | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 43 | 2 | Title | Terraria.Localization.LocalizedText | `public LocalizedText Title { get; private set; }` | `public LocalizedText Title { get; private set; }` |
+| 2570 | property | Terraria.WorldBuilding.AWorldGenerationOption | Terraria.WorldBuilding/AWorldGenerationOption.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\AWorldGenerationOption.cs | 45 | 2 | Texture | Asset<Texture2D> | `protected Asset<Texture2D> Texture { get; private set; }` | `protected Asset<Texture2D> Texture { get; private set; }` |
+
+#### 4.20.45 细分子系统：`WorldGenerationOptionRegistry`
+
+- 细分职责：世界生成选项列表和选项注册表投影。
+- 边界角色：`registry/projection`；最小 seam：Registry/Projection seam；注册表只提供只读枚举。
+- 成员文件数：1；声明类型数：1；字段：2；属性：1；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2299 | field | Terraria.WorldBuilding.WorldGenerationOptions | Terraria.WorldBuilding/WorldGenerationOptions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerationOptions.cs | 16 | 2 | _options | System.Collections.Generic.List<Terraria.WorldBuilding.AWorldGenerationOption> | `private static List<AWorldGenerationOption> _options;` | `private static List<AWorldGenerationOption> _options;` |
+| 2300 | field | Terraria.WorldBuilding.WorldGenerationOptions | Terraria.WorldBuilding/WorldGenerationOptions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerationOptions.cs | 18 | 2 | _powerPermissionsLineHeader | string | `private const string _powerPermissionsLineHeader = "seed_";` | `private const string _powerPermissionsLineHeader = "seed_";` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2586 | property | Terraria.WorldBuilding.WorldGenerationOptions | Terraria.WorldBuilding/WorldGenerationOptions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerationOptions.cs | 20 | 2 | Options | System.Collections.Generic.IEnumerable<Terraria.WorldBuilding.AWorldGenerationOption> | `public static IEnumerable<AWorldGenerationOption> Options => _options;` | `public static IEnumerable<AWorldGenerationOption> Options => _options;` |
+
+#### 4.20.46 细分子系统：`WorldSeedOptionCatalog`
+
+- 细分职责：各类世界种子选项及其依赖定义。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；生成阶段通过资格 Query 消费。
+- 成员文件数：10；声明类型数：10；字段：1；属性：21；合计：22。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2329 | field | Terraria.WorldBuilding.WorldSeedOption_Everything | Terraria.WorldBuilding/WorldSeedOption_Everything.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Everything.cs | 10 | 2 | _dependencies | System.Collections.Generic.List<Terraria.WorldBuilding.AWorldGenerationOption> | `protected List<AWorldGenerationOption> _dependencies;` | `protected List<AWorldGenerationOption> _dependencies;` |
+
+##### 属性（21）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2608 | property | Terraria.WorldBuilding.WorldSeedOption_Anniversary | Terraria.WorldBuilding/WorldSeedOption_Anniversary.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Anniversary.cs | 5 | 2 | KeyName | string | `protected override string KeyName => "Seed_Celebration";` | `protected override string KeyName => "Seed_Celebration";` |
+| 2609 | property | Terraria.WorldBuilding.WorldSeedOption_Anniversary | Terraria.WorldBuilding/WorldSeedOption_Anniversary.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Anniversary.cs | 7 | 2 | ServerConfigName | string | `public override string ServerConfigName => "celebration";` | `public override string ServerConfigName => "celebration";` |
+| 2610 | property | Terraria.WorldBuilding.WorldSeedOption_DontStarve | Terraria.WorldBuilding/WorldSeedOption_DontStarve.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_DontStarve.cs | 5 | 2 | KeyName | string | `protected override string KeyName => "Seed_TheConstant";` | `protected override string KeyName => "Seed_TheConstant";` |
+| 2611 | property | Terraria.WorldBuilding.WorldSeedOption_DontStarve | Terraria.WorldBuilding/WorldSeedOption_DontStarve.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_DontStarve.cs | 7 | 2 | ServerConfigName | string | `public override string ServerConfigName => "theconstant";` | `public override string ServerConfigName => "theconstant";` |
+| 2612 | property | Terraria.WorldBuilding.WorldSeedOption_Drunk | Terraria.WorldBuilding/WorldSeedOption_Drunk.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Drunk.cs | 5 | 2 | KeyName | string | `protected override string KeyName => "Seed_Drunk";` | `protected override string KeyName => "Seed_Drunk";` |
+| 2613 | property | Terraria.WorldBuilding.WorldSeedOption_Drunk | Terraria.WorldBuilding/WorldSeedOption_Drunk.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Drunk.cs | 7 | 2 | ServerConfigName | string | `public override string ServerConfigName => "drunk";` | `public override string ServerConfigName => "drunk";` |
+| 2614 | property | Terraria.WorldBuilding.WorldSeedOption_Everything | Terraria.WorldBuilding/WorldSeedOption_Everything.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Everything.cs | 12 | 2 | KeyName | string | `protected override string KeyName => "Seed_Everything";` | `protected override string KeyName => "Seed_Everything";` |
+| 2615 | property | Terraria.WorldBuilding.WorldSeedOption_Everything | Terraria.WorldBuilding/WorldSeedOption_Everything.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Everything.cs | 14 | 2 | ServerConfigName | string | `public override string ServerConfigName => "zenith";` | `public override string ServerConfigName => "zenith";` |
+| 2616 | property | Terraria.WorldBuilding.WorldSeedOption_Everything | Terraria.WorldBuilding/WorldSeedOption_Everything.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Everything.cs | 16 | 2 | Dependencies | System.Collections.Generic.List<Terraria.WorldBuilding.AWorldGenerationOption> | `public List<AWorldGenerationOption> Dependencies { get { if (_dependencies == null) { _dependencies = new List<AWorldGenerationOption> { WorldGenerationOptions.Get<WorldSeedOption_Remix>(), WorldGenerationOptions.Get<WorldSeedOption_Drunk>(), WorldGenerationOptions.Get<WorldSeedOption_NotTheBees>(), WorldGenerationOptions.Get<WorldSeedOption_NoTraps>(), WorldGenerationOptions.Get<WorldSeedOption_DontStarve>(), WorldGenerationOptions.Get<WorldSeedOption_Anniversary>(), WorldGenerationOptions.Get<WorldSeedOption_ForTheWorthy>() }; } return _dependencies; } }` | `public List<AWorldGenerationOption> Dependencies { get { if (_dependencies == null) { _dependencies = new List<AWorldGenerationOption> { WorldGenerationOptions.Get<WorldSeedOption_Remix>(), WorldGenerationOptions.Get<WorldSeedOption_Drunk>(), WorldGenerationOptions.Get<WorldSeedOption_NotTheBees>(), WorldGenerationOptions.Get<WorldSeedOption_NoTraps>(), WorldGenerationOptions.Get<WorldSeedOption_DontStarve>(), WorldGenerationOptions.Get<WorldSeedOption_Anniversary>(), WorldGenerationOptions.Get<WorldSeedOption_ForTheWorthy>() }; } return _dependencies; } }` |
+| 2617 | property | Terraria.WorldBuilding.WorldSeedOption_ForTheWorthy | Terraria.WorldBuilding/WorldSeedOption_ForTheWorthy.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_ForTheWorthy.cs | 5 | 2 | KeyName | string | `protected override string KeyName => "Seed_ForTheWorthy";` | `protected override string KeyName => "Seed_ForTheWorthy";` |
+| 2618 | property | Terraria.WorldBuilding.WorldSeedOption_ForTheWorthy | Terraria.WorldBuilding/WorldSeedOption_ForTheWorthy.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_ForTheWorthy.cs | 7 | 2 | ServerConfigName | string | `public override string ServerConfigName => "fortheworthy";` | `public override string ServerConfigName => "fortheworthy";` |
+| 2619 | property | Terraria.WorldBuilding.WorldSeedOption_Normal | Terraria.WorldBuilding/WorldSeedOption_Normal.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Normal.cs | 7 | 2 | KeyName | string | `protected override string KeyName => "Seed_Normal";` | `protected override string KeyName => "Seed_Normal";` |
+| 2620 | property | Terraria.WorldBuilding.WorldSeedOption_Normal | Terraria.WorldBuilding/WorldSeedOption_Normal.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Normal.cs | 9 | 2 | ServerConfigName | string | `public override string ServerConfigName => null;` | `public override string ServerConfigName => null;` |
+| 2621 | property | Terraria.WorldBuilding.WorldSeedOption_NoTraps | Terraria.WorldBuilding/WorldSeedOption_NoTraps.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_NoTraps.cs | 5 | 2 | KeyName | string | `protected override string KeyName => "Seed_NoTraps";` | `protected override string KeyName => "Seed_NoTraps";` |
+| 2622 | property | Terraria.WorldBuilding.WorldSeedOption_NoTraps | Terraria.WorldBuilding/WorldSeedOption_NoTraps.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_NoTraps.cs | 7 | 2 | ServerConfigName | string | `public override string ServerConfigName => "notraps";` | `public override string ServerConfigName => "notraps";` |
+| 2623 | property | Terraria.WorldBuilding.WorldSeedOption_NotTheBees | Terraria.WorldBuilding/WorldSeedOption_NotTheBees.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_NotTheBees.cs | 5 | 2 | KeyName | string | `protected override string KeyName => "Seed_NotTheBees";` | `protected override string KeyName => "Seed_NotTheBees";` |
+| 2624 | property | Terraria.WorldBuilding.WorldSeedOption_NotTheBees | Terraria.WorldBuilding/WorldSeedOption_NotTheBees.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_NotTheBees.cs | 7 | 2 | ServerConfigName | string | `public override string ServerConfigName => "notthebees";` | `public override string ServerConfigName => "notthebees";` |
+| 2625 | property | Terraria.WorldBuilding.WorldSeedOption_Remix | Terraria.WorldBuilding/WorldSeedOption_Remix.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Remix.cs | 5 | 2 | KeyName | string | `protected override string KeyName => "Seed_Remix";` | `protected override string KeyName => "Seed_Remix";` |
+| 2626 | property | Terraria.WorldBuilding.WorldSeedOption_Remix | Terraria.WorldBuilding/WorldSeedOption_Remix.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Remix.cs | 7 | 2 | ServerConfigName | string | `public override string ServerConfigName => "remix";` | `public override string ServerConfigName => "remix";` |
+| 2627 | property | Terraria.WorldBuilding.WorldSeedOption_Skyblock | Terraria.WorldBuilding/WorldSeedOption_Skyblock.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Skyblock.cs | 5 | 2 | KeyName | string | `protected override string KeyName => "Seed_Skyblock";` | `protected override string KeyName => "Seed_Skyblock";` |
+| 2628 | property | Terraria.WorldBuilding.WorldSeedOption_Skyblock | Terraria.WorldBuilding/WorldSeedOption_Skyblock.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldSeedOption_Skyblock.cs | 7 | 2 | ServerConfigName | string | `public override string ServerConfigName => "skyblock";` | `public override string ServerConfigName => "skyblock";` |
+
+#### 4.20.47 细分子系统：`WorldLandmassAndTreeProfiles`
+
+- 细分职责：地貌形状、树木生长配置和树木 profile 定义。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Profile view；生成 pass 通过值读取。
+- 成员文件数：2；声明类型数：3；字段：21；属性：1；合计：22。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（21）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2235 | field | Terraria.WorldBuilding.LandmassData | Terraria.WorldBuilding/LandmassData.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\LandmassData.cs | 7 | 2 | DataType | Terraria.WorldBuilding.LandmassDataType | `public LandmassDataType DataType;` | `public LandmassDataType DataType;` |
+| 2236 | field | Terraria.WorldBuilding.LandmassData | Terraria.WorldBuilding/LandmassData.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\LandmassData.cs | 9 | 2 | Position | Vector2 | `public Vector2 Position;` | `public Vector2 Position;` |
+| 2237 | field | Terraria.WorldBuilding.LandmassData | Terraria.WorldBuilding/LandmassData.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\LandmassData.cs | 11 | 2 | RadiusOrHalfSize | int | `public int RadiusOrHalfSize;` | `public int RadiusOrHalfSize;` |
+| 2238 | field | Terraria.WorldBuilding.LandmassData | Terraria.WorldBuilding/LandmassData.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\LandmassData.cs | 13 | 2 | Style | int | `public int Style;` | `public int Style;` |
+| 2391 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3842 | 4 | GemTree_Ruby | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings GemTree_Ruby = new GrowTreeSettings  			{  				GroundTest = GemTreeGroundTest,  				WallTest = GemTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 587,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 590  			};` | `public static GrowTreeSettings GemTree_Ruby = new GrowTreeSettings { GroundTest = GemTreeGroundTest, WallTest = GemTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 587, TreeTopPaddingNeeded = 4, SaplingTileType = 590 };` |
+| 2392 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3853 | 4 | GemTree_Diamond | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings GemTree_Diamond = new GrowTreeSettings  			{  				GroundTest = GemTreeGroundTest,  				WallTest = GemTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 588,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 590  			};` | `public static GrowTreeSettings GemTree_Diamond = new GrowTreeSettings { GroundTest = GemTreeGroundTest, WallTest = GemTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 588, TreeTopPaddingNeeded = 4, SaplingTileType = 590 };` |
+| 2393 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3864 | 4 | GemTree_Topaz | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings GemTree_Topaz = new GrowTreeSettings  			{  				GroundTest = GemTreeGroundTest,  				WallTest = GemTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 583,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 590  			};` | `public static GrowTreeSettings GemTree_Topaz = new GrowTreeSettings { GroundTest = GemTreeGroundTest, WallTest = GemTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 583, TreeTopPaddingNeeded = 4, SaplingTileType = 590 };` |
+| 2394 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3875 | 4 | GemTree_Amethyst | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings GemTree_Amethyst = new GrowTreeSettings  			{  				GroundTest = GemTreeGroundTest,  				WallTest = GemTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 584,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 590  			};` | `public static GrowTreeSettings GemTree_Amethyst = new GrowTreeSettings { GroundTest = GemTreeGroundTest, WallTest = GemTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 584, TreeTopPaddingNeeded = 4, SaplingTileType = 590 };` |
+| 2395 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3886 | 4 | GemTree_Sapphire | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings GemTree_Sapphire = new GrowTreeSettings  			{  				GroundTest = GemTreeGroundTest,  				WallTest = GemTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 585,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 590  			};` | `public static GrowTreeSettings GemTree_Sapphire = new GrowTreeSettings { GroundTest = GemTreeGroundTest, WallTest = GemTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 585, TreeTopPaddingNeeded = 4, SaplingTileType = 590 };` |
+| 2396 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3897 | 4 | GemTree_Emerald | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings GemTree_Emerald = new GrowTreeSettings  			{  				GroundTest = GemTreeGroundTest,  				WallTest = GemTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 586,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 590  			};` | `public static GrowTreeSettings GemTree_Emerald = new GrowTreeSettings { GroundTest = GemTreeGroundTest, WallTest = GemTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 586, TreeTopPaddingNeeded = 4, SaplingTileType = 590 };` |
+| 2397 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3908 | 4 | GemTree_Amber | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings GemTree_Amber = new GrowTreeSettings  			{  				GroundTest = GemTreeGroundTest,  				WallTest = GemTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 589,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 590  			};` | `public static GrowTreeSettings GemTree_Amber = new GrowTreeSettings { GroundTest = GemTreeGroundTest, WallTest = GemTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 589, TreeTopPaddingNeeded = 4, SaplingTileType = 590 };` |
+| 2398 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3919 | 4 | VanityTree_Sakura | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings VanityTree_Sakura = new GrowTreeSettings  			{  				GroundTest = VanityTreeGroundTest,  				WallTest = DefaultTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 596,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 595  			};` | `public static GrowTreeSettings VanityTree_Sakura = new GrowTreeSettings { GroundTest = VanityTreeGroundTest, WallTest = DefaultTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 596, TreeTopPaddingNeeded = 4, SaplingTileType = 595 };` |
+| 2399 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3930 | 4 | VanityTree_Willow | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings VanityTree_Willow = new GrowTreeSettings  			{  				GroundTest = VanityTreeGroundTest,  				WallTest = DefaultTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 616,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 615  			};` | `public static GrowTreeSettings VanityTree_Willow = new GrowTreeSettings { GroundTest = VanityTreeGroundTest, WallTest = DefaultTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 616, TreeTopPaddingNeeded = 4, SaplingTileType = 615 };` |
+| 2400 | field | Terraria.WorldGen.GrowTreeSettings.Profiles | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3941 | 4 | Tree_Ash | Terraria.WorldGen.GrowTreeSettings | `public static GrowTreeSettings Tree_Ash = new GrowTreeSettings  			{  				GroundTest = AshTreeGroundTest,  				WallTest = DefaultTreeWallTest,  				TreeHeightMax = 12,  				TreeHeightMin = 7,  				TreeTileType = 634,  				TreeTopPaddingNeeded = 4,  				SaplingTileType = 20  			};` | `public static GrowTreeSettings Tree_Ash = new GrowTreeSettings { GroundTest = AshTreeGroundTest, WallTest = DefaultTreeWallTest, TreeHeightMax = 12, TreeHeightMin = 7, TreeTileType = 634, TreeTopPaddingNeeded = 4, SaplingTileType = 20 };` |
+| 2401 | field | Terraria.WorldGen.GrowTreeSettings | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3994 | 3 | TreeTileType | ushort | `public ushort TreeTileType;` | `public ushort TreeTileType;` |
+| 2402 | field | Terraria.WorldGen.GrowTreeSettings | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3996 | 3 | TreeHeightMin | int | `public int TreeHeightMin;` | `public int TreeHeightMin;` |
+| 2403 | field | Terraria.WorldGen.GrowTreeSettings | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3998 | 3 | TreeHeightMax | int | `public int TreeHeightMax;` | `public int TreeHeightMax;` |
+| 2404 | field | Terraria.WorldGen.GrowTreeSettings | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4000 | 3 | TreeTopPaddingNeeded | int | `public int TreeTopPaddingNeeded;` | `public int TreeTopPaddingNeeded;` |
+| 2405 | field | Terraria.WorldGen.GrowTreeSettings | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4002 | 3 | GroundTest | Terraria.WorldGen.GrowTreeSettings.IsTileFitForTreeGroundTest | `public IsTileFitForTreeGroundTest GroundTest;` | `public IsTileFitForTreeGroundTest GroundTest;` |
+| 2406 | field | Terraria.WorldGen.GrowTreeSettings | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4004 | 3 | WallTest | Terraria.WorldGen.GrowTreeSettings.IsWallTypeFitForTreeBack | `public IsWallTypeFitForTreeBack WallTest;` | `public IsWallTypeFitForTreeBack WallTest;` |
+| 2407 | field | Terraria.WorldGen.GrowTreeSettings | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4006 | 3 | SaplingTileType | ushort | `public ushort SaplingTileType;` | `public ushort SaplingTileType;` |
+
+##### 属性（1）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2584 | property | Terraria.WorldBuilding.LandmassData | Terraria.WorldBuilding/LandmassData.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\LandmassData.cs | 15 | 2 | Top | Vector2 | `public Vector2 Top { get { return Position - new Vector2(0f, RadiusOrHalfSize); } set { Position = value + new Vector2(0f, RadiusOrHalfSize); } }` | `public Vector2 Top { get { return Position - new Vector2(0f, RadiusOrHalfSize); } set { Position = value + new Vector2(0f, RadiusOrHalfSize); } }` |
+
+#### 4.20.48 细分子系统：`WorldSavedOreTierState`
+
+- 细分职责：存档矿石层级和矿石替换状态。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System/CommitPort；矿石层级在生成/加载边界集中写入。
+- 成员文件数：1；声明类型数：1；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2384 | field | Terraria.WorldGen.SavedOreTiers | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3320 | 3 | Copper | int | `public static int Copper = 7;` | `public static int Copper = 7;` |
+| 2385 | field | Terraria.WorldGen.SavedOreTiers | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3322 | 3 | Iron | int | `public static int Iron = 6;` | `public static int Iron = 6;` |
+| 2386 | field | Terraria.WorldGen.SavedOreTiers | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3324 | 3 | Silver | int | `public static int Silver = 9;` | `public static int Silver = 9;` |
+| 2387 | field | Terraria.WorldGen.SavedOreTiers | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3326 | 3 | Gold | int | `public static int Gold = 8;` | `public static int Gold = 8;` |
+| 2388 | field | Terraria.WorldGen.SavedOreTiers | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3328 | 3 | Cobalt | int | `public static int Cobalt = 107;` | `public static int Cobalt = 107;` |
+| 2389 | field | Terraria.WorldGen.SavedOreTiers | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3330 | 3 | Mythril | int | `public static int Mythril = 108;` | `public static int Mythril = 108;` |
+| 2390 | field | Terraria.WorldGen.SavedOreTiers | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 3332 | 3 | Adamantite | int | `public static int Adamantite = 111;` | `public static int Adamantite = 111;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.49 细分子系统：`WorldTileMergeCullState`
+
+- 细分职责：Tile 合并剔除方向和边界缓存。
+- 边界角色：`derived/query`；最小 seam：纯查询/缓存 seam；失效条件由 framing 系统显式管理。
+- 成员文件数：1；声明类型数：1；字段：8；属性：0；合计：8。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2409 | field | Terraria.WorldGen.TileMergeCullCache | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4020 | 3 | CullTop | bool | `public bool CullTop;` | `public bool CullTop;` |
+| 2410 | field | Terraria.WorldGen.TileMergeCullCache | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4022 | 3 | CullBottom | bool | `public bool CullBottom;` | `public bool CullBottom;` |
+| 2411 | field | Terraria.WorldGen.TileMergeCullCache | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4024 | 3 | CullLeft | bool | `public bool CullLeft;` | `public bool CullLeft;` |
+| 2412 | field | Terraria.WorldGen.TileMergeCullCache | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4026 | 3 | CullRight | bool | `public bool CullRight;` | `public bool CullRight;` |
+| 2413 | field | Terraria.WorldGen.TileMergeCullCache | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4028 | 3 | CullTopLeft | bool | `public bool CullTopLeft;` | `public bool CullTopLeft;` |
+| 2414 | field | Terraria.WorldGen.TileMergeCullCache | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4030 | 3 | CullTopRight | bool | `public bool CullTopRight;` | `public bool CullTopRight;` |
+| 2415 | field | Terraria.WorldGen.TileMergeCullCache | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4032 | 3 | CullBottomLeft | bool | `public bool CullBottomLeft;` | `public bool CullBottomLeft;` |
+| 2416 | field | Terraria.WorldGen.TileMergeCullCache | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4034 | 3 | CullBottomRight | bool | `public bool CullBottomRight;` | `public bool CullBottomRight;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.50 细分子系统：`WorldGenerationTileSetActions`
+
+- 细分职责：Tile 设置、清除、形状和固体替换动作参数。
+- 边界角色：`authoritative state/behavior`；最小 seam：Tile Change Command/CommitPort；Tile 变更统一排序提交。
+- 成员文件数：1；声明类型数：7；字段：12；属性：0；合计：12。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（12）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2048 | field | Terraria.WorldBuilding.Actions.ClearTile | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 105 | 3 | _frameNeighbors | bool | `private bool _frameNeighbors;` | `private bool _frameNeighbors;` |
+| 2050 | field | Terraria.WorldBuilding.Actions.HalfBlock | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 131 | 3 | _value | bool | `private bool _value;` | `private bool _value;` |
+| 2051 | field | Terraria.WorldBuilding.Actions.SetTile | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 144 | 3 | _type | ushort | `private ushort _type;` | `private ushort _type;` |
+| 2052 | field | Terraria.WorldBuilding.Actions.SetTile | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 146 | 3 | _doFraming | bool | `private bool _doFraming;` | `private bool _doFraming;` |
+| 2053 | field | Terraria.WorldBuilding.Actions.SetTile | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 148 | 3 | _doNeighborFraming | bool | `private bool _doNeighborFraming;` | `private bool _doNeighborFraming;` |
+| 2054 | field | Terraria.WorldBuilding.Actions.SetTile | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 150 | 3 | _clearTile | bool | `private bool _clearTile;` | `private bool _clearTile;` |
+| 2059 | field | Terraria.WorldBuilding.Actions.SetTileKeepWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 188 | 3 | _type | ushort | `private ushort _type;` | `private ushort _type;` |
+| 2060 | field | Terraria.WorldBuilding.Actions.SetTileKeepWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 190 | 3 | _doFraming | bool | `private bool _doFraming;` | `private bool _doFraming;` |
+| 2061 | field | Terraria.WorldBuilding.Actions.SetTileKeepWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 192 | 3 | _doNeighborFraming | bool | `private bool _doNeighborFraming;` | `private bool _doNeighborFraming;` |
+| 2065 | field | Terraria.WorldBuilding.Actions.SetSlope | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 236 | 3 | _slope | int | `private int _slope;` | `private int _slope;` |
+| 2066 | field | Terraria.WorldBuilding.Actions.SetHalfTile | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 249 | 3 | _halfTile | bool | `private bool _halfTile;` | `private bool _halfTile;` |
+| 2076 | field | Terraria.WorldBuilding.Actions.SwapSolidTile | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 379 | 3 | _type | ushort | `private ushort _type;` | `private ushort _type;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.51 细分子系统：`WorldGenerationWallMutationActions`
+
+- 细分职责：Wall 清除、设置和放置动作参数。
+- 边界角色：`authoritative state/behavior`；最小 seam：Wall Change Command/CommitPort；Wall 变更显式提交。
+- 成员文件数：1；声明类型数：3；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2049 | field | Terraria.WorldBuilding.Actions.ClearWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 118 | 3 | _frameNeighbors | bool | `private bool _frameNeighbors;` | `private bool _frameNeighbors;` |
+| 2055 | field | Terraria.WorldBuilding.Actions.SetWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 166 | 3 | _type | ushort | `private ushort _type;` | `private ushort _type;` |
+| 2056 | field | Terraria.WorldBuilding.Actions.SetWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 168 | 3 | _doFraming | bool | `private bool _doFraming;` | `private bool _doFraming;` |
+| 2057 | field | Terraria.WorldBuilding.Actions.SetWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 170 | 3 | _doNeighborFraming | bool | `private bool _doNeighborFraming;` | `private bool _doNeighborFraming;` |
+| 2058 | field | Terraria.WorldBuilding.Actions.SetWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 172 | 3 | _clearTile | bool | `private bool _clearTile;` | `private bool _clearTile;` |
+| 2072 | field | Terraria.WorldBuilding.Actions.PlaceWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 347 | 3 | _type | ushort | `private ushort _type;` | `private ushort _type;` |
+| 2073 | field | Terraria.WorldBuilding.Actions.PlaceWall | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 349 | 3 | _neighbors | bool | `private bool _neighbors;` | `private bool _neighbors;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.52 细分子系统：`WorldGenerationTilePlacementAndPaintActions`
+
+- 细分职责：Tile 放置与 Tile/Wall 涂料动作参数。
+- 边界角色：`authoritative state/behavior`；最小 seam：Tile Presentation Command/CommitPort；绘制与放置保持可追踪顺序。
+- 成员文件数：1；声明类型数：4；字段：5；属性：0；合计：5。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（5）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2067 | field | Terraria.WorldBuilding.Actions.SetTilePaint | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 262 | 3 | paintID | byte | `private byte paintID;` | `private byte paintID;` |
+| 2068 | field | Terraria.WorldBuilding.Actions.SetWallPaint | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 281 | 3 | paintID | byte | `private byte paintID;` | `private byte paintID;` |
+| 2069 | field | Terraria.WorldBuilding.Actions.SetTileAndWallPaint | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 300 | 3 | paintID | byte | `private byte paintID;` | `private byte paintID;` |
+| 2070 | field | Terraria.WorldBuilding.Actions.PlaceTile | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 325 | 3 | _type | ushort | `private ushort _type;` | `private ushort _type;` |
+| 2071 | field | Terraria.WorldBuilding.Actions.PlaceTile | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 327 | 3 | _style | int | `private int _style;` | `private int _style;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.53 细分子系统：`WorldGenerationLiquidAndNeighborActions`
+
+- 细分职责：液体设置和邻接平滑动作参数。
+- 边界角色：`authoritative state/behavior`；最小 seam：Liquid/Framing Command/CommitPort；邻接处理顺序显式维护。
+- 成员文件数：1；声明类型数：2；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2074 | field | Terraria.WorldBuilding.Actions.SetLiquid | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 363 | 3 | _type | int | `private int _type;` | `private int _type;` |
+| 2075 | field | Terraria.WorldBuilding.Actions.SetLiquid | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 365 | 3 | _value | byte | `private byte _value;` | `private byte _value;` |
+| 2078 | field | Terraria.WorldBuilding.Actions.Smooth | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 405 | 3 | _applyToNeighbors | bool | `private bool _applyToNeighbors;` | `private bool _applyToNeighbors;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.54 细分子系统：`WorldGenerationTileScanAndControlActions`
+
+- 细分职责：扫描、计数、自定义动作和执行边界控制状态。
+- 边界角色：`derived/query`；最小 seam：纯查询或显式执行命令 seam；不直接持有世界权威状态。
+- 成员文件数：1；声明类型数：6；字段：7；属性：0；合计：7。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（7）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2042 | field | Terraria.WorldBuilding.Actions.ContinueWrapper | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 14 | 3 | _action | Terraria.WorldBuilding.GenAction | `private GenAction _action;` | `private GenAction _action;` |
+| 2043 | field | Terraria.WorldBuilding.Actions.Count | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 27 | 3 | _count | Terraria.Ref<int> | `private Ref<int> _count;` | `private Ref<int> _count;` |
+| 2044 | field | Terraria.WorldBuilding.Actions.Scanner | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 40 | 3 | _count | Terraria.Ref<int> | `private Ref<int> _count;` | `private Ref<int> _count;` |
+| 2045 | field | Terraria.WorldBuilding.Actions.TileScanner | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 53 | 3 | _tileIds | ushort[] | `private ushort[] _tileIds;` | `private ushort[] _tileIds;` |
+| 2046 | field | Terraria.WorldBuilding.Actions.TileScanner | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 55 | 3 | _tileCounts | System.Collections.Generic.Dictionary<ushort, int> | `private Dictionary<ushort, int> _tileCounts;` | `private Dictionary<ushort, int> _tileCounts;` |
+| 2047 | field | Terraria.WorldBuilding.Actions.Custom | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 80 | 3 | _perUnit | Terraria.WorldBuilding.GenBase.CustomPerUnitAction | `private CustomPerUnitAction _perUnit;` | `private CustomPerUnitAction _perUnit;` |
+| 2062 | field | Terraria.WorldBuilding.Actions.UpdateBounds | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 207 | 3 | _bounds | Terraria.GameContent.Generation.Dungeon.DungeonBounds | `private DungeonBounds _bounds;` | `private DungeonBounds _bounds;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.55 细分子系统：`WorldGenerationTileFramingAndDebugActions`
+
+- 细分职责：Tile framing、调试绘制和表现辅助参数。
+- 边界角色：`registry/projection`；最小 seam：Projection/diagnostics seam；调试输出不反向修改生成结果。
+- 成员文件数：1；声明类型数：2；字段：3；属性：0；合计：3。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（3）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2063 | field | Terraria.WorldBuilding.Actions.DebugDraw | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 220 | 3 | _color | Color | `private Color _color;` | `private Color _color;` |
+| 2064 | field | Terraria.WorldBuilding.Actions.DebugDraw | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 222 | 3 | _spriteBatch | SpriteBatch | `private SpriteBatch _spriteBatch;` | `private SpriteBatch _spriteBatch;` |
+| 2077 | field | Terraria.WorldBuilding.Actions.SetFrames | Terraria.WorldBuilding/Actions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Actions.cs | 392 | 3 | _frameNeighbors | bool | `private bool _frameNeighbors;` | `private bool _frameNeighbors;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.56 细分子系统：`WorldGenerationConditionsAndSearches`
+
+- 细分职责：世界生成条件、搜索方向和搜索约束。
+- 边界角色：`derived/query`；最小 seam：只读快照/纯资格 Query；条件和搜索不持有跨阶段可变状态。
+- 成员文件数：3；声明类型数：9；字段：11；属性：0；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（11）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2081 | field | Terraria.WorldBuilding.Conditions.IsTile | Terraria.WorldBuilding/Conditions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Conditions.cs | 7 | 3 | _types | ushort[] | `private ushort[] _types;` | `private ushort[] _types;` |
+| 2082 | field | Terraria.WorldBuilding.Conditions.BoolCheck | Terraria.WorldBuilding/Conditions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Conditions.cs | 26 | 3 | _theBool | bool | `private bool _theBool;` | `private bool _theBool;` |
+| 2083 | field | Terraria.WorldBuilding.Conditions.InWorld | Terraria.WorldBuilding/Conditions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Conditions.cs | 45 | 3 | _fluff | int | `private int _fluff;` | `private int _fluff;` |
+| 2096 | field | Terraria.WorldBuilding.GenSearch | Terraria.WorldBuilding/GenSearch.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenSearch.cs | 7 | 2 | NOT_FOUND | Point | `public static Point NOT_FOUND = new Point(int.MaxValue, int.MaxValue);` | `public static Point NOT_FOUND = new Point(int.MaxValue, int.MaxValue);` |
+| 2097 | field | Terraria.WorldBuilding.GenSearch | Terraria.WorldBuilding/GenSearch.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenSearch.cs | 9 | 2 | _conditions | Terraria.WorldBuilding.GenCondition[] | `private GenCondition[] _conditions;` | `private GenCondition[] _conditions;` |
+| 2286 | field | Terraria.WorldBuilding.Searches.Left | Terraria.WorldBuilding/Searches.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Searches.cs | 9 | 3 | _maxDistance | int | `private int _maxDistance;` | `private int _maxDistance;` |
+| 2287 | field | Terraria.WorldBuilding.Searches.Right | Terraria.WorldBuilding/Searches.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Searches.cs | 22 | 3 | _maxDistance | int | `private int _maxDistance;` | `private int _maxDistance;` |
+| 2288 | field | Terraria.WorldBuilding.Searches.Down | Terraria.WorldBuilding/Searches.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Searches.cs | 35 | 3 | _maxDistance | int | `private int _maxDistance;` | `private int _maxDistance;` |
+| 2289 | field | Terraria.WorldBuilding.Searches.Up | Terraria.WorldBuilding/Searches.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Searches.cs | 48 | 3 | _maxDistance | int | `private int _maxDistance;` | `private int _maxDistance;` |
+| 2290 | field | Terraria.WorldBuilding.Searches.Rectangle | Terraria.WorldBuilding/Searches.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Searches.cs | 61 | 3 | _width | int | `private int _width;` | `private int _width;` |
+| 2291 | field | Terraria.WorldBuilding.Searches.Rectangle | Terraria.WorldBuilding/Searches.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Searches.cs | 63 | 3 | _height | int | `private int _height;` | `private int _height;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.57 细分子系统：`WorldGenerationShapeData`
+
+- 细分职责：生成形状、ShapeData 和形状轮廓输入。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Shape view；形状查询通过值对象交接。
+- 成员文件数：5；声明类型数：6；字段：8；属性：2；合计：10。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（8）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2093 | field | Terraria.WorldBuilding.GenModShape | Terraria.WorldBuilding/GenModShape.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenModShape.cs | 5 | 2 | _data | Terraria.WorldBuilding.ShapeData | `protected ShapeData _data;` | `protected ShapeData _data;` |
+| 2098 | field | Terraria.WorldBuilding.GenShape | Terraria.WorldBuilding/GenShape.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenShape.cs | 8 | 2 | _quitOnFail | bool | `protected bool _quitOnFail;` | `protected bool _quitOnFail;` |
+| 2281 | field | Terraria.WorldBuilding.ModShapes.OuterOutline | Terraria.WorldBuilding/ModShapes.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\ModShapes.cs | 21 | 3 | POINT_OFFSETS | int[] | `private static readonly int[] POINT_OFFSETS = new int[16]  		{  			1, 0, -1, 0, 0, 1, 0, -1, 1, 1,  			1, -1, -1, 1, -1, -1  		};` | `private static readonly int[] POINT_OFFSETS = new int[16] { 1, 0, -1, 0, 0, 1, 0, -1, 1, 1, 1, -1, -1, 1, -1, -1 };` |
+| 2282 | field | Terraria.WorldBuilding.ModShapes.OuterOutline | Terraria.WorldBuilding/ModShapes.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\ModShapes.cs | 27 | 3 | _useDiagonals | bool | `private bool _useDiagonals;` | `private bool _useDiagonals;` |
+| 2283 | field | Terraria.WorldBuilding.ModShapes.OuterOutline | Terraria.WorldBuilding/ModShapes.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\ModShapes.cs | 29 | 3 | _useInterior | bool | `private bool _useInterior;` | `private bool _useInterior;` |
+| 2284 | field | Terraria.WorldBuilding.ModShapes.InnerOutline | Terraria.WorldBuilding/ModShapes.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\ModShapes.cs | 44 | 3 | POINT_OFFSETS | int[] | `private static readonly int[] POINT_OFFSETS = new int[16]  		{  			1, 0, -1, 0, 0, 1, 0, -1, 1, 1,  			1, -1, -1, 1, -1, -1  		};` | `private static readonly int[] POINT_OFFSETS = new int[16] { 1, 0, -1, 0, 0, 1, 0, -1, 1, 1, 1, -1, -1, 1, -1, -1 };` |
+| 2285 | field | Terraria.WorldBuilding.ModShapes.InnerOutline | Terraria.WorldBuilding/ModShapes.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\ModShapes.cs | 50 | 3 | _useDiagonals | bool | `private bool _useDiagonals;` | `private bool _useDiagonals;` |
+| 2292 | field | Terraria.WorldBuilding.ShapeData | Terraria.WorldBuilding/ShapeData.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\ShapeData.cs | 11 | 2 | _points | System.Collections.Generic.HashSet<Terraria.DataStructures.Point16> | `private HashSet<Point16> _points;` | `private HashSet<Point16> _points;` |
+
+##### 属性（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2571 | property | Terraria.WorldBuilding.GenBase | Terraria.WorldBuilding/GenBase.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenBase.cs | 9 | 2 | _tiles | Terraria.Tile[,] | `protected static Tile[,] _tiles => Main.tile;` | `protected static Tile[,] _tiles => Main.tile;` |
+| 2585 | property | Terraria.WorldBuilding.ShapeData | Terraria.WorldBuilding/ShapeData.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\ShapeData.cs | 13 | 2 | Count | int | `public int Count => _points.Count;` | `public int Count => _points.Count;` |
+
+#### 4.20.58 细分子系统：`WorldGenerationShapeModifierState`
+
+- 细分职责：几何形状、膨胀、翻转、抖动和形状遮罩 Modifier 参数。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Shape view；执行由 WorldGen System 控制。
+- 成员文件数：1；声明类型数：11；字段：22；属性：0；合计：22。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（22）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2239 | field | Terraria.WorldBuilding.Modifiers.ShapeScale | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 11 | 3 | _scale | int | `private int _scale;` | `private int _scale;` |
+| 2240 | field | Terraria.WorldBuilding.Modifiers.Expand | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 24 | 3 | _xExpansion | int | `private int _xExpansion;` | `private int _xExpansion;` |
+| 2241 | field | Terraria.WorldBuilding.Modifiers.Expand | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 26 | 3 | _yExpansion | int | `private int _yExpansion;` | `private int _yExpansion;` |
+| 2242 | field | Terraria.WorldBuilding.Modifiers.RadialDither | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 46 | 3 | _innerRadius | double | `private double _innerRadius;` | `private double _innerRadius;` |
+| 2243 | field | Terraria.WorldBuilding.Modifiers.RadialDither | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 48 | 3 | _outerRadius | double | `private double _outerRadius;` | `private double _outerRadius;` |
+| 2244 | field | Terraria.WorldBuilding.Modifiers.Blotches | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 62 | 3 | _minX | int | `private int _minX;` | `private int _minX;` |
+| 2245 | field | Terraria.WorldBuilding.Modifiers.Blotches | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 64 | 3 | _minY | int | `private int _minY;` | `private int _minY;` |
+| 2246 | field | Terraria.WorldBuilding.Modifiers.Blotches | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 66 | 3 | _maxX | int | `private int _maxX;` | `private int _maxX;` |
+| 2247 | field | Terraria.WorldBuilding.Modifiers.Blotches | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 68 | 3 | _maxY | int | `private int _maxY;` | `private int _maxY;` |
+| 2248 | field | Terraria.WorldBuilding.Modifiers.Blotches | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 70 | 3 | _chance | double | `private double _chance;` | `private double _chance;` |
+| 2249 | field | Terraria.WorldBuilding.Modifiers.InShape | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 105 | 3 | _shapeData | Terraria.WorldBuilding.ShapeData | `private readonly ShapeData _shapeData;` | `private readonly ShapeData _shapeData;` |
+| 2250 | field | Terraria.WorldBuilding.Modifiers.NotInShape | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 118 | 3 | _shapeData | Terraria.WorldBuilding.ShapeData | `private readonly ShapeData _shapeData;` | `private readonly ShapeData _shapeData;` |
+| 2254 | field | Terraria.WorldBuilding.Modifiers.Checkerboard | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 170 | 3 | _percentile | int | `private int _percentile;` | `private int _percentile;` |
+| 2272 | field | Terraria.WorldBuilding.Modifiers.RectangleMask | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 357 | 3 | _xMin | int | `private int _xMin;` | `private int _xMin;` |
+| 2273 | field | Terraria.WorldBuilding.Modifiers.RectangleMask | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 359 | 3 | _yMin | int | `private int _yMin;` | `private int _yMin;` |
+| 2274 | field | Terraria.WorldBuilding.Modifiers.RectangleMask | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 361 | 3 | _xMax | int | `private int _xMax;` | `private int _xMax;` |
+| 2275 | field | Terraria.WorldBuilding.Modifiers.RectangleMask | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 363 | 3 | _yMax | int | `private int _yMax;` | `private int _yMax;` |
+| 2276 | field | Terraria.WorldBuilding.Modifiers.Offset | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 379 | 3 | _xOffset | int | `private int _xOffset;` | `private int _xOffset;` |
+| 2277 | field | Terraria.WorldBuilding.Modifiers.Offset | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 381 | 3 | _yOffset | int | `private int _yOffset;` | `private int _yOffset;` |
+| 2278 | field | Terraria.WorldBuilding.Modifiers.Dither | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 395 | 3 | _failureChance | double | `private double _failureChance;` | `private double _failureChance;` |
+| 2279 | field | Terraria.WorldBuilding.Modifiers.Flip | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 408 | 3 | _flipX | bool | `private bool _flipX;` | `private bool _flipX;` |
+| 2280 | field | Terraria.WorldBuilding.Modifiers.Flip | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 410 | 3 | _flipY | bool | `private bool _flipY;` | `private bool _flipY;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.59 细分子系统：`WorldGenerationTileWallConditionState`
+
+- 细分职责：Tile、Wall、液体、高度和接触条件 Modifier 参数。
+- 边界角色：`derived/query`；最小 seam：纯资格 Query；条件不持有跨阶段可变状态。
+- 成员文件数：1；声明类型数：12；字段：20；属性：0；合计：20。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（20）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2251 | field | Terraria.WorldBuilding.Modifiers.Conditions | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 131 | 3 | _conditions | Terraria.WorldBuilding.GenCondition[] | `private readonly GenCondition[] _conditions;` | `private readonly GenCondition[] _conditions;` |
+| 2252 | field | Terraria.WorldBuilding.Modifiers.OnlyWalls | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 144 | 3 | _types | ushort[] | `private ushort[] _types;` | `private ushort[] _types;` |
+| 2253 | field | Terraria.WorldBuilding.Modifiers.OnlyTiles | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 157 | 3 | _types | ushort[] | `private ushort[] _types;` | `private ushort[] _types;` |
+| 2255 | field | Terraria.WorldBuilding.Modifiers.IsTouching | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 183 | 3 | DIRECTIONS | int[] | `private static readonly int[] DIRECTIONS = new int[16]  		{  			0, -1, 1, 0, -1, 0, 0, 1, -1, -1,  			1, -1, -1, 1, 1, 1  		};` | `private static readonly int[] DIRECTIONS = new int[16] { 0, -1, 1, 0, -1, 0, 0, 1, -1, -1, 1, -1, -1, 1, 1, 1 };` |
+| 2256 | field | Terraria.WorldBuilding.Modifiers.IsTouching | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 189 | 3 | _useDiagonals | bool | `private bool _useDiagonals;` | `private bool _useDiagonals;` |
+| 2257 | field | Terraria.WorldBuilding.Modifiers.IsTouching | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 191 | 3 | _tileIds | ushort[] | `private ushort[] _tileIds;` | `private ushort[] _tileIds;` |
+| 2258 | field | Terraria.WorldBuilding.Modifiers.NotTouching | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 205 | 3 | DIRECTIONS | int[] | `private static readonly int[] DIRECTIONS = new int[16]  		{  			0, -1, 1, 0, -1, 0, 0, 1, -1, -1,  			1, -1, -1, 1, 1, 1  		};` | `private static readonly int[] DIRECTIONS = new int[16] { 0, -1, 1, 0, -1, 0, 0, 1, -1, -1, 1, -1, -1, 1, 1, 1 };` |
+| 2259 | field | Terraria.WorldBuilding.Modifiers.NotTouching | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 211 | 3 | _useDiagonals | bool | `private bool _useDiagonals;` | `private bool _useDiagonals;` |
+| 2260 | field | Terraria.WorldBuilding.Modifiers.NotTouching | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 213 | 3 | _tileIds | ushort[] | `private ushort[] _tileIds;` | `private ushort[] _tileIds;` |
+| 2261 | field | Terraria.WorldBuilding.Modifiers.IsTouchingAir | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 227 | 3 | DIRECTIONS | int[] | `private static readonly int[] DIRECTIONS = new int[16]  		{  			0, -1, 1, 0, -1, 0, 0, 1, -1, -1,  			1, -1, -1, 1, 1, 1  		};` | `private static readonly int[] DIRECTIONS = new int[16] { 0, -1, 1, 0, -1, 0, 0, 1, -1, -1, 1, -1, -1, 1, 1, 1 };` |
+| 2262 | field | Terraria.WorldBuilding.Modifiers.IsTouchingAir | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 233 | 3 | _useDiagonals | bool | `private bool _useDiagonals;` | `private bool _useDiagonals;` |
+| 2263 | field | Terraria.WorldBuilding.Modifiers.SkipTiles | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 246 | 3 | _types | ushort[] | `private ushort[] _types;` | `private ushort[] _types;` |
+| 2264 | field | Terraria.WorldBuilding.Modifiers.HasLiquid | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 259 | 3 | _liquidType | int | `private int _liquidType;` | `private int _liquidType;` |
+| 2265 | field | Terraria.WorldBuilding.Modifiers.HasLiquid | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 261 | 3 | _liquidLevel | int | `private int _liquidLevel;` | `private int _liquidLevel;` |
+| 2266 | field | Terraria.WorldBuilding.Modifiers.NoLiquid | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 275 | 3 | _liquidType | int | `private int _liquidType;` | `private int _liquidType;` |
+| 2267 | field | Terraria.WorldBuilding.Modifiers.SkipWalls | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 288 | 3 | _types | ushort[] | `private ushort[] _types;` | `private ushort[] _types;` |
+| 2268 | field | Terraria.WorldBuilding.Modifiers.IsAboveHeight | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 307 | 3 | _y | int | `private int _y;` | `private int _y;` |
+| 2269 | field | Terraria.WorldBuilding.Modifiers.IsAboveHeight | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 309 | 3 | _inclusive | bool | `private bool _inclusive;` | `private bool _inclusive;` |
+| 2270 | field | Terraria.WorldBuilding.Modifiers.IsBelowHeight | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 323 | 3 | _y | int | `private int _y;` | `private int _y;` |
+| 2271 | field | Terraria.WorldBuilding.Modifiers.IsBelowHeight | Terraria.WorldBuilding/Modifiers.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\Modifiers.cs | 325 | 3 | _inclusive | bool | `private bool _inclusive;` | `private bool _inclusive;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+#### 4.20.60 细分子系统：`WorldStructurePlanningAndMasks`
+
+- 细分职责：结构注册、地形遮罩、范围和 Dungeon 侧信息。
+- 边界角色：`authoritative state/behavior`；最小 seam：Owner System 读取输入并通过显式 Command/CommitPort 写入；跨组只用事件、Query 或命令交接。
+- 成员文件数：3；声明类型数：3；字段：9；属性：2；合计：11。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（9）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2084 | field | Terraria.WorldBuilding.DungeonSide | Terraria.WorldBuilding/DungeonSide.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\DungeonSide.cs | 5 | 2 | Left | short | `public static short Left = -1;` | `public static short Left = -1;` |
+| 2085 | field | Terraria.WorldBuilding.DungeonSide | Terraria.WorldBuilding/DungeonSide.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\DungeonSide.cs | 7 | 2 | Right | short | `public static short Right = 1;` | `public static short Right = 1;` |
+| 2293 | field | Terraria.WorldBuilding.StructureMap | Terraria.WorldBuilding/StructureMap.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\StructureMap.cs | 11 | 2 | _structures | System.Collections.Generic.List<Rectangle> | `[JsonProperty] private readonly List<Rectangle> _structures = new List<Rectangle>(2048);` | `[JsonProperty] private readonly List<Rectangle> _structures = new List<Rectangle>(2048);` |
+| 2294 | field | Terraria.WorldBuilding.StructureMap | Terraria.WorldBuilding/StructureMap.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\StructureMap.cs | 14 | 2 | _protectedStructures | System.Collections.Generic.List<Rectangle> | `[JsonProperty] private readonly List<Rectangle> _protectedStructures = new List<Rectangle>(2048);` | `[JsonProperty] private readonly List<Rectangle> _protectedStructures = new List<Rectangle>(2048);` |
+| 2295 | field | Terraria.WorldBuilding.StructureMap | Terraria.WorldBuilding/StructureMap.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\StructureMap.cs | 17 | 2 | _lock | object | `private readonly object _lock = new object();` | `private readonly object _lock = new object();` |
+| 2316 | field | Terraria.WorldBuilding.WorldGenRange | Terraria.WorldBuilding/WorldGenRange.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenRange.cs | 16 | 2 | Empty | Terraria.WorldBuilding.WorldGenRange | `public static readonly WorldGenRange Empty = new WorldGenRange(0, 0);` | `public static readonly WorldGenRange Empty = new WorldGenRange(0, 0);` |
+| 2317 | field | Terraria.WorldBuilding.WorldGenRange | Terraria.WorldBuilding/WorldGenRange.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenRange.cs | 18 | 2 | Minimum | int | `[JsonProperty("Min")] public readonly int Minimum;` | `[JsonProperty("Min")] public readonly int Minimum;` |
+| 2318 | field | Terraria.WorldBuilding.WorldGenRange | Terraria.WorldBuilding/WorldGenRange.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenRange.cs | 21 | 2 | Maximum | int | `[JsonProperty("Max")] public readonly int Maximum;` | `[JsonProperty("Max")] public readonly int Maximum;` |
+| 2319 | field | Terraria.WorldBuilding.WorldGenRange | Terraria.WorldBuilding/WorldGenRange.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenRange.cs | 24 | 2 | ScaleWith | Terraria.WorldBuilding.WorldGenRange.ScalingMode | `[JsonProperty] [JsonConverter(typeof(StringEnumConverter))] public readonly ScalingMode ScaleWith;` | `[JsonProperty] [JsonConverter(typeof(StringEnumConverter))] public readonly ScalingMode ScaleWith;` |
+
+##### 属性（2）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2597 | property | Terraria.WorldBuilding.WorldGenRange | Terraria.WorldBuilding/WorldGenRange.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenRange.cs | 28 | 2 | ScaledMinimum | int | `public int ScaledMinimum => ScaleValue(Minimum);` | `public int ScaledMinimum => ScaleValue(Minimum);` |
+| 2598 | property | Terraria.WorldBuilding.WorldGenRange | Terraria.WorldBuilding/WorldGenRange.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenRange.cs | 30 | 2 | ScaledMaximum | int | `public int ScaledMaximum => ScaleValue(Maximum);` | `public int ScaledMaximum => ScaleValue(Maximum);` |
+
+#### 4.20.61 细分子系统：`WorldGenerationSupportTypes`
+
+- 细分职责：生成流水线的通用 Action、Shape 和 Tree 检查辅助状态。
+- 边界角色：`definition/query`；最小 seam：只读 Definition/Catalog view；规则 System 消费，外部配置通过 Adapter 转换。
+- 成员文件数：3；声明类型数：3；字段：4；属性：0；合计：4。
+- 归属证据状态：``source-inventory-confirmed``；完整读者/写者、生命周期、持久化、网络和运行时调度仍需单独闭合。
+
+##### 字段（4）
+
+| 来源序号 | 成员类型 | 类 | 相对路径 | 绝对路径 | 行 | 列 | 成员 | C# 类型 | 成员声明 | 原始声明 |
+|---:|---|---|---|---|---:|---:|---|---|---|---|
+| 2086 | field | Terraria.WorldBuilding.GenAction | Terraria.WorldBuilding/GenAction.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenAction.cs | 7 | 2 | NextAction | Terraria.WorldBuilding.GenAction | `public GenAction NextAction;` | `public GenAction NextAction;` |
+| 2087 | field | Terraria.WorldBuilding.GenAction | Terraria.WorldBuilding/GenAction.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\GenAction.cs | 9 | 2 | OutputData | Terraria.WorldBuilding.ShapeData | `public ShapeData OutputData;` | `public ShapeData OutputData;` |
+| 2298 | field | Terraria.WorldBuilding.WorldGenerationOptions.OptionStorage<T> | Terraria.WorldBuilding/WorldGenerationOptions.cs | D:\TRbackup\Version4\Terraria.WorldBuilding\WorldGenerationOptions.cs | 13 | 3 | Instance | T | `public static T Instance;` | `public static T Instance;` |
+| 2408 | field | Terraria.WorldGen.CheckTreeSettings | Terraria/WorldGen.cs | D:\TRbackup\Version4\Terraria\WorldGen.cs | 4013 | 3 | IsGroundValid | Terraria.WorldGen.CheckTreeSettings.GroundValidTest | `public GroundValidTest IsGroundValid;` | `public GroundValidTest IsGroundValid;` |
+
+##### 属性（0）
+
+无该类型成员记录。
+
+### 4.21 父级子系统：`SpawnLifecycleAndLoot`
+
+- 父级职责：生成、销毁和掉落；当前声明库存无主记录。
+- 父级统计：字段 0；属性 0；合计 0；细分数 0。
+
+## 5. 追溯哈希
+
+生成时绑定以下输入文件的 SHA-256；任一输入发生变化，都应重新生成并重新验收本文档。
+
+| 输入 | SHA-256 |
+|---|---|
+| 权威成员库存输入 | 557d0fa64e4c7dd84f2658587a7055132e54e68c5022691be20ef3efe24e5702 |
