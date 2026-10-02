@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerWorldObjectPetCapabilityComponent.cs" Link="PlayerWorldObjectPetCapabilityComponent.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerWorldObjectPetCapabilityRebuildInput.cs" Link="PlayerWorldObjectPetCapabilityRebuildInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerWorldObjectPetCapabilityRebuildSystem.cs" Link="PlayerWorldObjectPetCapabilityRebuildSystem.cs" />
+  </ItemGroup>
+</Project>

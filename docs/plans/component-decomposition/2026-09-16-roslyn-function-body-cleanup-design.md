@@ -54,7 +54,7 @@ The rewriter preserves source encoding and surrounding trivia where possible, do
 Each invocation creates a unique run directory below:
 
 ```text
-.agents/skills/ecs-system-domain-splitting/managed/function-body-cleanup/<run-id>/
+.agents/skills/ecs-system/managed/function-body-cleanup/<run-id>/
   original/Version4/     # immutable source snapshot
   cleaned/Version4/      # rewritten project copy
   manifest.json           # counts, diagnostics, options, and paths

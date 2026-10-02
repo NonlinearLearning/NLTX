@@ -20,7 +20,7 @@
 | 生产代码状态 | `not-started` |
 | 验证状态 | `not-run` |
 | 当前文档任务是否运行 build/test | 否；本次没有修改 C# 或工具实现 |
-| 目标代码边界 | `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog` 与配套 fixture/verifier |
+| 目标代码边界 | `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog` 与配套 fixture/verifier |
 | 生成物边界 | `Build/bin/`、`Build/obj/`、`Build/generated/ecs-system-domain-splitting/` 或 `%TEMP%`；不写入 `src/` 或源 artifact |
 
 本计划是后续实现计划，不是当前实现报告。目标路径是拟议路径，执行第一项时必须确认不存在冲突的用户修改、项目文件或已存在的同名类型。
@@ -73,7 +73,7 @@ pwsh -NoProfile -File .\Build\Tools\Invoke-SerialDotnet.ps1 `
 以下是实现阶段的拟议文件路径；文件创建前先检查用户现有变更和同名内容。
 
 ```text
-.agents/skills/ecs-system-domain-splitting/
+.agents/skills/ecs-system/
   tools/AnalysisEvidenceCatalog/
     AnalysisEvidenceCatalog.csproj
     AnalysisEvidenceCatalog.cs
@@ -130,14 +130,14 @@ pwsh -NoProfile -File .\Build\Tools\Invoke-SerialDotnet.ps1 `
 
 **Files:**
 
- Read: `.agents/skills/ecs-system-domain-splitting/tools/scripts/CalledFunctionsAnalyzer/Program.cs`
- Read: `.agents/skills/ecs-system-domain-splitting/tools/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs`
- Read: `.agents/skills/ecs-system-domain-splitting/tools/scripts/ProjectDataflowAnalyzer/ReportWriter.cs`
-- Read: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs`
-- Read: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/SourceFileCleanup.cs`
-- Read: `.agents/skills/ecs-system-domain-splitting/reports/data-flow-analysis/Version4/manifest.json`
-- Read: `.agents/skills/ecs-system-domain-splitting/managed/function-body-cleanup/version4-20260916-001/manifest.json`
-- Read: `.agents/skills/ecs-system-domain-splitting/managed/function-body-cleanup/version4-20260916-002/manifest.json`
+ Read: `.agents/skills/ecs-system/tools/scripts/CalledFunctionsAnalyzer/Program.cs`
+ Read: `.agents/skills/ecs-system/tools/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs`
+ Read: `.agents/skills/ecs-system/tools/scripts/ProjectDataflowAnalyzer/ReportWriter.cs`
+- Read: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs`
+- Read: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/SourceFileCleanup.cs`
+- Read: `.agents/skills/ecs-system/reports/data-flow-analysis/Version4/manifest.json`
+- Read: `.agents/skills/ecs-system/managed/function-body-cleanup/version4-20260916-001/manifest.json`
+- Read: `.agents/skills/ecs-system/managed/function-body-cleanup/version4-20260916-002/manifest.json`
 - Modify: this execution document, only to record the completed inventory and unresolved items
 
 **Step 1: Confirm workspace state**
@@ -192,17 +192,17 @@ Select minimal fixtures for overloads, partial declarations, lambda/local functi
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/AnalysisEvidenceCatalog.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/AnalysisRunId.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/SourceSnapshotId.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/ArtifactId.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/ArtifactRef.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/ArtifactEnvelope.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/EvidenceStatus.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/Diagnostics.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/ArtifactRegistry.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog.Verification/AnalysisEvidenceCatalog.Verification.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog.Verification/Program.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/AnalysisEvidenceCatalog.csproj`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/AnalysisRunId.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/SourceSnapshotId.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/ArtifactId.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/ArtifactRef.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/ArtifactEnvelope.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/EvidenceStatus.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/Diagnostics.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/ArtifactRegistry.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog.Verification/AnalysisEvidenceCatalog.Verification.csproj`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog.Verification/Program.cs`
 
 **Step 1: Write failing verification**
 
@@ -440,8 +440,8 @@ Map each design acceptance case to one focused assertion. For K4/K5/K11, explici
 
 **Files:**
 
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs` only if the map can be added without changing current cleanup semantics
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/SourceFileCleanup.cs` only if function-level anchors are available without unsafe rewriting
+- Modify: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs` only if the map can be added without changing current cleanup semantics
+- Modify: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/SourceFileCleanup.cs` only if function-level anchors are available without unsafe rewriting
 - Create: `tools/AnalysisEvidenceCatalog/Artifacts/CleanupTransformationMap.cs`
 - Create: `tools/AnalysisEvidenceCatalog/Storage/AtomicCatalogWriter.cs`
 - Modify: `tools/AnalysisEvidenceCatalog.Verification/Program.cs`
@@ -468,9 +468,9 @@ Inject a failed write or invalid hash and assert the previous catalog remains qu
 
 **Files:**
 
- Create: `.agents/skills/ecs-system-domain-splitting/tools/scripts/tests/Test-AnalysisEvidenceCatalog.ps1`
- Create: `.agents/skills/ecs-system-domain-splitting/tools/scripts/tests/Test-AnalysisEvidenceIntegration.ps1`
-- Modify: `.agents/skills/ecs-system-domain-splitting/README.md` if user-facing usage is added
+ Create: `.agents/skills/ecs-system/tools/scripts/tests/Test-AnalysisEvidenceCatalog.ps1`
+ Create: `.agents/skills/ecs-system/tools/scripts/tests/Test-AnalysisEvidenceIntegration.ps1`
+- Modify: `.agents/skills/ecs-system/README.md` if user-facing usage is added
 - Modify: this execution document with actual commands and results
 - Do not delete existing analyzer fields, launchers, manifests or cleanup outputs in this task
 
@@ -521,9 +521,9 @@ All `dotnet` invocations below were issued from the repository root through `Bui
 | --- | --- | --- | --- | ---: | --- | --- | --- |
 | 2026-09-16 | Task 8/9 build | `Invoke-SerialDotnet.ps1 -- build <verification csproj> '-maxcpucount:1' '-nodeReuse:false' '-p:UseSharedCompilation=false' '-p:MSBuildNodeReuse=false' '-p:BuildInParallel=false'` | `tools/AnalysisEvidenceCatalog.Verification` (pulls in `tools/AnalysisEvidenceCatalog`) | 0 | 0 warnings / 0 errors | `Build/bin/AnalysisEvidenceCatalog.Verification/Debug/net10.0/AnalysisEvidenceCatalog.Verification.dll` | `pass` |
 | 2026-09-16 | Task 8/9 catalog fixture suite | `Invoke-SerialDotnet.ps1 -- run --project <verification csproj> '--no-build' '--no-restore'` | `scripts/tests/fixtures/AnalysisEvidenceFixture` | 0 | n/a (no compile) | stdout `DEFERRED: K10 recursive fact closure (deferred:FactClosureNotImplemented) is not implemented; no convergence or derivation query is claimed.` then `PASS: analysis evidence envelope, registry, readers, binding, execution DAG, relation multigraph, bounded API and isolated cleanup commit path` | `pass` (K1–K9, K11, K12; K7 and K10 deferred and reported) |
-| 2026-09-16 | Task 10 Step 2 | `pwsh -NoProfile -File .agents/skills/ecs-system-domain-splitting/tools/scripts/tests/Test-AnalysisEvidenceCatalog.ps1` | catalog fixture suite; temp root `Build/tmp/analysis-evidence-catalog` | 0 | n/a | stdout `PASS: analysis evidence catalog fixture suite (K1-K9, K11, K12; K7 and K10 deferred and reported)`; the script asserts the K10 `DEFERRED` line exists; 0 temporary items left behind | `pass` |
+| 2026-09-16 | Task 10 Step 2 | `pwsh -NoProfile -File .agents/skills/ecs-system/tools/scripts/tests/Test-AnalysisEvidenceCatalog.ps1` | catalog fixture suite; temp root `Build/tmp/analysis-evidence-catalog` | 0 | n/a | stdout `PASS: analysis evidence catalog fixture suite (K1-K9, K11, K12; K7 and K10 deferred and reported)`; the script asserts the K10 `DEFERRED` line exists; 0 temporary items left behind | `pass` |
 | 2026-09-16 | Task 10 Step 3/4 | `Invoke-SerialDotnet.ps1 -- run --project <verification csproj> '--no-build' '--no-restore' '--' '--integration'` | real Version4 dataflow manifest + both cleanup manifests | 0 | n/a (no compile) | stdout `PASS: read-only integration over current Version4 artifacts matches the research baseline without modifying any source or report file` | `pass` |
-| 2026-09-16 | Task 10 Step 3/4 | `pwsh -NoProfile -File .agents/skills/ecs-system-domain-splitting/tools/scripts/tests/Test-AnalysisEvidenceIntegration.ps1` | same three manifests; SHA-256 compared before and after | 0 | n/a | stdout `PASS: read-only integration over current Version4 artifacts (no file modified)` | `pass` |
+| 2026-09-16 | Task 10 Step 3/4 | `pwsh -NoProfile -File .agents/skills/ecs-system/tools/scripts/tests/Test-AnalysisEvidenceIntegration.ps1` | same three manifests; SHA-256 compared before and after | 0 | n/a | stdout `PASS: read-only integration over current Version4 artifacts (no file modified)` | `pass` |
 | 2026-09-16 | Task 10 Step 1 build | serial wrapper `build` | `scripts/CalledFunctionsAnalyzer` | 0 | 0 warnings / 0 errors | `Build/bin/CalledFunctionsAnalyzer/Debug/net10.0/CalledFunctionsAnalyzer.dll` | `pass` |
 | 2026-09-16 | Task 10 Step 1 build | serial wrapper `build` | `scripts/ProjectDataflowAnalyzer` | 0 | 0 warnings / 0 errors | `Build/bin/ProjectDataflowAnalyzer/Debug/net10.0/ProjectDataflowAnalyzer.dll` | `pass` |
 | 2026-09-16 | Task 10 Step 1 build | serial wrapper `build` | `tools/FunctionBodyCleanup.Verification` | 0 | 0 warnings / 0 errors | `Build/bin/FunctionBodyCleanup.Verification/Debug/net10.0/FunctionBodyCleanup.Verification.dll` | `pass` |
@@ -583,8 +583,8 @@ The execution work is complete only when:
 
 - [统一证据 API 与三层图模型设计](2026-09-16-ecs-system-domain-splitting-unified-evidence-api-dag-design.md)
 - [联合证据 API/DAG 研究报告](2026-09-16-ecs-system-domain-splitting-unified-evidence-api-dag-research.md)
-- [ECS System 领域拆分技能](../../.agents/skills/ecs-system-domain-splitting/SKILL.md)
- [系统拆分规则](../../.agents/skills/ecs-system-domain-splitting/system-splitting/references/system-decomposition-rules.md)
- [证据循环与迁移协议](../../.agents/skills/ecs-system-domain-splitting/system-splitting/references/evidence-and-migration-protocol.md)
+- [ECS System 领域拆分技能](../../.agents/skills/ecs-system/SKILL.md)
+ [系统拆分规则](../../.agents/skills/ecs-system/system-splitting/references/system-decomposition-rules.md)
+ [证据循环与迁移协议](../../.agents/skills/ecs-system/system-splitting/references/evidence-and-migration-protocol.md)
 - [构建与验证约束](../../Context/约束/构建与验证约束.md)
-- [输出风险约束](../../.agents/skills/ecs-system-domain-splitting/reports/output-risk-profile.md)
+- [输出风险约束](../../.agents/skills/ecs-system/reports/output-risk-profile.md)

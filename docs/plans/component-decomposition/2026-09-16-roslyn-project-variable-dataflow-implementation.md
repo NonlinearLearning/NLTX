@@ -14,10 +14,10 @@
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/tests/fixtures/ProjectDataflowFixture/ProjectDataflowFixture.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/tests/fixtures/ProjectDataflowFixture/Sample.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/tests/fixtures/ProjectDataflowFixture/Support.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/tests/Test-ProjectDataflowAnalyzer.ps1`
+- Create: `.agents/skills/ecs-system/scripts/tests/fixtures/ProjectDataflowFixture/ProjectDataflowFixture.csproj`
+- Create: `.agents/skills/ecs-system/scripts/tests/fixtures/ProjectDataflowFixture/Sample.cs`
+- Create: `.agents/skills/ecs-system/scripts/tests/fixtures/ProjectDataflowFixture/Support.cs`
+- Create: `.agents/skills/ecs-system/scripts/tests/Test-ProjectDataflowAnalyzer.ps1`
 
 **Step 1: Create a fixture project with representative callable regions**
 
@@ -38,7 +38,7 @@ Invoke that DLL with `--project <fixture.csproj>`, `--output <temporary-json>`, 
 Run from `D:\TRbackup\NLTX`:
 
 ```powershell
-pwsh -NoProfile -File .\.agents\skills\ecs-system-domain-splitting\scripts\tests\Test-ProjectDataflowAnalyzer.ps1
+pwsh -NoProfile -File .\.agents\skills\ecs-system\scripts\tests\Test-ProjectDataflowAnalyzer.ps1
 ```
 
 Expected: failure because `ProjectDataflowAnalyzer.dll` does not exist. Do not create a production project or implementation source before recording this failure.
@@ -47,9 +47,9 @@ Expected: failure because `ProjectDataflowAnalyzer.dll` does not exist. Do not c
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/Program.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/AnalysisOptions.cs`
+- Create: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.csproj`
+- Create: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/Program.cs`
+- Create: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/AnalysisOptions.cs`
 
 **Step 1: Add the net10.0 package contract**
 
@@ -67,8 +67,8 @@ Register `MSBuildLocator` once, create `MSBuildWorkspace` with the requested con
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs`
+- Create: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs`
 
 **Step 1: Load the real project compilation**
 
@@ -86,8 +86,8 @@ Use one result slot per syntax tree or target index during parallel indexing. Do
 
 **Files:**
 
-- Modify: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs`
+- Modify: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs`
+- Modify: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs`
 
 **Step 1: Analyze each callable region in bounded parallel**
 
@@ -105,8 +105,8 @@ For each symbol record its kind, name, containing symbol, fully qualified displa
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/ReportWriter.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/Program.cs`
+- Create: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/ReportWriter.cs`
+- Modify: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/Program.cs`
 
 **Step 1: Implement the versioned report schema**
 
@@ -121,7 +121,7 @@ Create the output directory, serialize UTF-8 JSON to a same-directory temporary 
 After creating the production implementation, restore/build the analyzer serially, verify the expected DLL under `Build/bin`, and rerun:
 
 ```powershell
-pwsh -NoProfile -File .\.agents\skills\ecs-system-domain-splitting\scripts\tests\Test-ProjectDataflowAnalyzer.ps1
+pwsh -NoProfile -File .\.agents\skills\ecs-system\scripts\tests\Test-ProjectDataflowAnalyzer.ps1
 ```
 
 Expected: all fixture assertions pass, including exact deterministic output and diagnostics for no-body/invalid cases.
@@ -130,12 +130,12 @@ Expected: all fixture assertions pass, including exact deterministic output and 
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/Run-ProjectDataflowAnalyzer.ps1`
-- Modify: `.agents/skills/ecs-system-domain-splitting/SKILL.md`
-- Modify: `.agents/skills/ecs-system-domain-splitting/README.md`
-- Modify: `.agents/skills/ecs-system-domain-splitting/manifest.json`
-- Modify: `.agents/skills/ecs-system-domain-splitting/security/permission_policy.json`
-- Modify: `.agents/skills/ecs-system-domain-splitting/security/permission_policy.md`
+- Create: `.agents/skills/ecs-system/scripts/Run-ProjectDataflowAnalyzer.ps1`
+- Modify: `.agents/skills/ecs-system/SKILL.md`
+- Modify: `.agents/skills/ecs-system/README.md`
+- Modify: `.agents/skills/ecs-system/manifest.json`
+- Modify: `.agents/skills/ecs-system/security/permission_policy.json`
+- Modify: `.agents/skills/ecs-system/security/permission_policy.md`
 
 **Step 1: Implement a no-build launcher**
 
@@ -153,7 +153,7 @@ Remove the stale “no executable scripts” claim. Declare only local subproces
 
 **Files:**
 
-- Generated, local-only: `.agents/skills/ecs-system-domain-splitting/reports/data-flow-analysis/Version4.json`
+- Generated, local-only: `.agents/skills/ecs-system/reports/data-flow-analysis/Version4.json`
 
 **Step 1: Check the repository build lock before compilation**
 
@@ -164,8 +164,8 @@ Run the exact `dotnet.exe`/`csc.exe` process discovery from `AGENTS.md`. If an a
 From `D:\TRbackup\NLTX`, use the wrapper for the analyzer project only:
 
 ```powershell
-pwsh -NoProfile -File .\Build\Tools\Invoke-SerialDotnet.ps1 restore .\.agents\skills\ecs-system-domain-splitting\scripts\ProjectDataflowAnalyzer\ProjectDataflowAnalyzer.csproj -m:1 -nr:false -p:UseSharedCompilation=false -p:MSBuildNodeReuse=false -p:BuildInParallel=false
-pwsh -NoProfile -File .\Build\Tools\Invoke-SerialDotnet.ps1 build .\.agents\skills\ecs-system-domain-splitting\scripts\ProjectDataflowAnalyzer\ProjectDataflowAnalyzer.csproj --no-restore -m:1 -nr:false -p:UseSharedCompilation=false -p:MSBuildNodeReuse=false -p:BuildInParallel=false
+pwsh -NoProfile -File .\Build\Tools\Invoke-SerialDotnet.ps1 restore .\.agents\skills\ecs-system\scripts\ProjectDataflowAnalyzer\ProjectDataflowAnalyzer.csproj -m:1 -nr:false -p:UseSharedCompilation=false -p:MSBuildNodeReuse=false -p:BuildInParallel=false
+pwsh -NoProfile -File .\Build\Tools\Invoke-SerialDotnet.ps1 build .\.agents\skills\ecs-system\scripts\ProjectDataflowAnalyzer\ProjectDataflowAnalyzer.csproj --no-restore -m:1 -nr:false -p:UseSharedCompilation=false -p:MSBuildNodeReuse=false -p:BuildInParallel=false
 ```
 
 Record each command, exit code, warning/error counts, and verify `Build/bin/ProjectDataflowAnalyzer/Debug/net10.0/ProjectDataflowAnalyzer.dll` exists.
@@ -179,7 +179,7 @@ Run the fixture verifier after the build using its already-built DLL. Record its
 Execute:
 
 ```powershell
-pwsh -NoProfile -File .\.agents\skills\ecs-system-domain-splitting\scripts\Run-ProjectDataflowAnalyzer.ps1
+pwsh -NoProfile -File .\.agents\skills\ecs-system\scripts\Run-ProjectDataflowAnalyzer.ps1
 ```
 
 Read the generated JSON, record document/callable/success/failure/diagnostic counts, and inspect representative records from `Terraria/Player.cs`, `Terraria/Projectile.cs`, and `Terraria/WorldGen.cs`. Do not compile the Version4 project as part of analyzer verification.
@@ -192,7 +192,7 @@ Hash the Version4 source files before and after the run, compare hashes, and rer
 
 **Files:**
 
-- Review only: `.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/**`, launcher, docs, metadata, and generated report.
+- Review only: `.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/**`, launcher, docs, metadata, and generated report.
 
 **Step 1: Run static and metadata checks**
 

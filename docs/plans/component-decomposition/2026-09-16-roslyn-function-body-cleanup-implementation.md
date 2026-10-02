@@ -13,10 +13,10 @@
 ### Task 1: Create the tool and verification project skeleton
 
 **Files:**
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/FunctionBodyCleanup.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup.Cli/FunctionBodyCleanup.Cli.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup.Verification/FunctionBodyCleanup.Verification.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup.Verification/Program.cs`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/FunctionBodyCleanup.csproj`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup.Cli/FunctionBodyCleanup.Cli.csproj`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup.Verification/FunctionBodyCleanup.Verification.csproj`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup.Verification/Program.cs`
 
 **Step 1: Write the failing verification fixture and API calls**
 
@@ -27,7 +27,7 @@ Create a console verifier that references the empty library project and calls th
 Before any production implementation, inspect active `dotnet.exe`/`csc.exe` processes, then run from `D:\TRbackup\NLTX`:
 
 ```powershell
-pwsh -NoProfile -File .\Build\Tools\Invoke-SerialDotnet.ps1 build .\.agents\skills\ecs-system-domain-splitting\tools\FunctionBodyCleanup.Verification\FunctionBodyCleanup.Verification.csproj -m:1 -nr:false -p:UseSharedCompilation=false -p:MSBuildNodeReuse=false -p:BuildInParallel=false
+pwsh -NoProfile -File .\Build\Tools\Invoke-SerialDotnet.ps1 build .\.agents\skills\ecs-system\tools\FunctionBodyCleanup.Verification\FunctionBodyCleanup.Verification.csproj -m:1 -nr:false -p:UseSharedCompilation=false -p:MSBuildNodeReuse=false -p:BuildInParallel=false
 ```
 
 Expected: compilation fails because the production runner and rewrite contract do not exist yet. This is the TDD red state, not a package or restore failure.
@@ -35,16 +35,16 @@ Expected: compilation fails because the production runner and rewrite contract d
 **Step 3: Commit the test-first skeleton**
 
 ```powershell
-git add -- .agents/skills/ecs-system-domain-splitting/tools docs/plans/component-decomposition/2026-09-16-roslyn-function-body-cleanup-implementation.md
+git add -- .agents/skills/ecs-system/tools docs/plans/component-decomposition/2026-09-16-roslyn-function-body-cleanup-implementation.md
 git commit -m "test: define function body cleanup contract"
 ```
 
 ### Task 2: Implement the pure Roslyn syntax rewriter
 
 **Files:**
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/CSharpFunctionBodyRewriter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/RewriteStatistics.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/FunctionBodyCleanupOptions.cs`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/CSharpFunctionBodyRewriter.cs`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/RewriteStatistics.cs`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/FunctionBodyCleanupOptions.cs`
 
 **Step 1: Implement named declaration rewriting**
 
@@ -61,12 +61,12 @@ Build and run the verifier serially through `Invoke-SerialDotnet.ps1`; confirm a
 ### Task 3: Implement encoding-safe file transformation and snapshot ownership
 
 **Files:**
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/ProjectSnapshotCopier.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/SourceFileCleanup.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/CleanupRunResult.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/FileCleanupResult.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup.Verification/Program.cs`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/ProjectSnapshotCopier.cs`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/SourceFileCleanup.cs`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/CleanupRunResult.cs`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup/FileCleanupResult.cs`
+- Modify: `.agents/skills/ecs-system/tools/FunctionBodyCleanup.Verification/Program.cs`
 
 **Step 1: Add the immutable original snapshot**
 
@@ -87,8 +87,8 @@ Run the verifier with `--no-build --no-restore` after its serial build. Expected
 ### Task 4: Add CLI and skill launcher
 
 **Files:**
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup.Cli/Program.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/Run-FunctionBodyCleanup.ps1`
+- Create: `.agents/skills/ecs-system/tools/FunctionBodyCleanup.Cli/Program.cs`
+- Create: `.agents/skills/ecs-system/tools/Run-FunctionBodyCleanup.ps1`
 
 **Step 1: Implement explicit CLI options**
 
@@ -105,12 +105,12 @@ Build the CLI through `Invoke-SerialDotnet.ps1`, run help, and execute the CLI a
 ### Task 5: Update skill contract and package metadata
 
 **Files:**
-- Modify: `.agents/skills/ecs-system-domain-splitting/SKILL.md`
-- Modify: `.agents/skills/ecs-system-domain-splitting/README.md`
-- Modify: `.agents/skills/ecs-system-domain-splitting/manifest.json`
-- Modify: `.agents/skills/ecs-system-domain-splitting/security/permission_policy.json`
-- Modify: `.agents/skills/ecs-system-domain-splitting/security/permission_policy.md`
-- Modify: `.agents/skills/ecs-system-domain-splitting/registry/packages/ecs-system-domain-splitting.json`
+- Modify: `.agents/skills/ecs-system/SKILL.md`
+- Modify: `.agents/skills/ecs-system/README.md`
+- Modify: `.agents/skills/ecs-system/manifest.json`
+- Modify: `.agents/skills/ecs-system/security/permission_policy.json`
+- Modify: `.agents/skills/ecs-system/security/permission_policy.md`
+- Modify: `.agents/skills/ecs-system/registry/packages/ecs-system-domain-splitting.json`
 
 **Step 1: Document the execution asset**
 
@@ -127,7 +127,7 @@ Verify JSON parsing, version/name agreement, and that no managed run data is inc
 ### Task 6: Build the tool and run the full Version4 cleanup
 
 **Files:**
-- Generated but intentionally untracked: `.agents/skills/ecs-system-domain-splitting/managed/function-body-cleanup/<run-id>/`
+- Generated but intentionally untracked: `.agents/skills/ecs-system/managed/function-body-cleanup/<run-id>/`
 
 **Step 1: Inspect the shared build lock and active compiler processes**
 
@@ -152,7 +152,7 @@ Read `manifest.json`, verify the expected file count and diagnostics, inspect re
 ### Task 7: Package and final verification
 
 **Files:**
-- Modify generated distribution metadata only if the repository's existing package tooling supports a reproducible rebuild: `.agents/skills/ecs-system-domain-splitting/dist/**`, `reports/package_verification.*`, and registry checksums.
+- Modify generated distribution metadata only if the repository's existing package tooling supports a reproducible rebuild: `.agents/skills/ecs-system/dist/**`, `reports/package_verification.*`, and registry checksums.
 
 **Step 1: Run the existing package verifier or equivalent local checks**
 

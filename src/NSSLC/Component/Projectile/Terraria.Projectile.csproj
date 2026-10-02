@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Content\Terraria.Content.csproj" />
+    <ProjectReference Include="..\Relationships\Terraria.Relationships.csproj" />
+    <ProjectReference Include="..\Share\Entity\Terraria.EntityEcs.csproj" />
+    <ProjectReference Include="..\WorldStorage\Terraria.WorldStorage.csproj" />
+  </ItemGroup>
+</Project>

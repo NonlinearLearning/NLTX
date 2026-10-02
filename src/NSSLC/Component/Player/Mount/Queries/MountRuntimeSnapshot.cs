@@ -1,0 +1,25 @@
+namespace Terraria.Player.Mount;
+
+public readonly record struct MountRuntimeSnapshot(
+  bool IsActive,
+  ContentId<MountDefinition>? MountType,
+  int Frame,
+  MountRuntimeFrameAndFlightStateComponent.MountFrameStateKind FrameState,
+  int FlightTimeRemainingTicks,
+  float Fatigue,
+  float MaximumFatigue,
+  bool IsAbilityCharging,
+  int AbilityCharge,
+  int AbilityCooldownRemainingTicks,
+  int AbilityDurationRemainingTicks,
+  bool IsAbilityActive,
+  bool IsAimingAbility,
+  float RunSpeed,
+  float DashSpeed,
+  float Acceleration,
+  bool IsMinecart,
+  bool CanRideMinecartTracks,
+  bool CanUseWings,
+  bool CanFly,
+  bool CanHover,
+  bool CanUseAbility);

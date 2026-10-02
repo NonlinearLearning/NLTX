@@ -15,7 +15,7 @@
 
 | 源路径 | 目标路径 | 操作 |
 | --- | --- | --- |
-| `.agents/skills/ecs-system-domain-splitting/managed/function-body-cleanup/version4-20260916-002/cleaned/Version4/docs/plans/2026-09-02-system-split-markdown-writing-guide.md` | `docs/system-decomposition/2026-09-02-system-split-markdown-writing-guide.md` | move |
+| `.agents/skills/ecs-system/managed/function-body-cleanup/version4-20260916-002/cleaned/Version4/docs/plans/2026-09-02-system-split-markdown-writing-guide.md` | `docs/system-decomposition/2026-09-02-system-split-markdown-writing-guide.md` | move |
 | `docs/plans/system-decomposition/2026-09-18-system-decomposition-authoritative-20-partition-tasks.md` | `docs/system-decomposition/authoritative/2026-09-18-system-decomposition-authoritative-20-partition-tasks.md` | move |
 | `docs/plans/system-decomposition/2026-09-18-system-decomposition-non-authoritative-20-partition-tasks.md` | `docs/system-decomposition/non-authoritative/2026-09-18-system-decomposition-non-authoritative-20-partition-tasks.md` | move |
 

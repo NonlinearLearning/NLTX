@@ -1,9 +1,0 @@
-family,status,typed_owner,evidence,deferred_boundary
-ordinary_ground_chase,Complete,NpcBehaviorRegistry/NpcBehaviorSystem,Build/diagnostics/npc-complete/task-4-behavior-registry/20260824-073000,full legacy AI family parity
-flying_hover,FloatingEye partial,NpcBehaviorRegistry/NpcBehaviorSystem,Build/diagnostics/npc-complete/task-4-behavior-registry/20260824-073000,legacy timers LOS collision flags presentation
-ranged_attack,Partial,NpcRangedAttackSystem/NpcRangedAttackCommitSystem/NpcProjectileSpawnSystem/NpcProjectileReplicationSystem,Build/diagnostics/npc-complete/task-5-ranged/20260824-113000,npc projectile protocol persistence and complete tables
-escape_despawn,Partial,NpcEscapeSystem,Build/diagnostics/npc-complete/task-5-escape/20260824-030151,complete legacy escape rules
-town_home,Partial,NpcHomeSystem/NpcInteractionSystem,Build/diagnostics/npc-complete/task-10-interaction/20260824-030459,shops dialogue and full services
-segment_follow,Partial,NpcSegmentFollowSystem/NpcSegmentLifecycleSystem,Build/diagnostics/npc-complete/task-7-segment-follow/20260824-083000,Arch parent wiring worm movement shared-life parity
-boss_phase,Deferred,,,
-invasion_event,Partial,NpcEventSpawnSystem,Build/diagnostics/npc-complete/task-9-event-spawn/20260824-033535,complete event tables and presentation

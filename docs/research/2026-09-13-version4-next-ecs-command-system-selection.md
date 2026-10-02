@@ -1,5 +1,7 @@
 # Version4 下一步 ECS Command/System 候选筛选调研
 
+> 历史调研快照：本报告形成于 2026-09-13。P20 已于 2026-10-02 退出当前非权威分区范围，其组件设计/执行资料已移除；本报告涉及 P20 的判断只描述当时调研，不构成当前工作项。
+
 日期：2026-09-13  
 范围：只读代码、账本、既有报告和参考资料；本报告未实施迁移。  
 证据标签：`confirmed` 表示单一源码或账本直接证明；`corroborated` 表示多个来源相互印证；`inferred` 表示基于证据的架构判断；`proposed` 表示尚未实施的设计；`unknown` 表示当前材料无法证明。
@@ -37,13 +39,13 @@
 | `AmbientWindStateComponent` | 已有 `src2` 组件文件，但它表达的是天气风速、目标速度和两个风计时器，不等同于 `AmbientWindSystem._updatesCounter` | `D:\TRbackup\NLTX\src2\WorldSession\Calendar\AmbientWindStateComponent.cs:5-41`；P02 对 `_updatesCounter` 另行提出 `AmbientWindWorkBuffer.UpdateCounter`，见 `D:\TRbackup\NLTX\docs\component-decomposition\review-round-2\non-authoritative\2026-09-11-version4-non-authoritative-P02-world-environment-events-component-design.md:1019-1034` |
 | `AmbientWindSystem` 拆分 | 已被既有报告覆盖，尚无生产运行时迁移 | 第一轮 `D:\TRbackup\NLTX\docs\component-decomposition\baseline\Version4权威游戏模拟系统拆分设计报告.md:4927-4947` 已提出资格 Query、工作区 Query、生成 Query、节拍 System 和 Projection；第二轮 P02 execution `:1223-1257,2038-2069` 仍把这些非 Component 边界列为 proposed |
 | Chat/Console/ChatCommand | 已审查并归入外部输入适配，不升格为独立一级 System | `D:\TRbackup\NLTX\docs\component-decomposition\review-round-2\2026-09-07-version4-second-round-review-merged.md:904-915`；当前状态是已有审查结论，不是 rejected 运行时实现 |
-| Debug command protocol | 已有 proposed 设计，非 Component 边界 deferred；历史 verifier 记录为失败 | `D:\TRbackup\NLTX\docs\component-decomposition\review-round-2\non-authoritative\2026-09-11-version4-non-authoritative-P20-diagnostics-tools-shared-component-design.md:155-161`；execution `D:\TRbackup\NLTX\docs\component-decomposition\review-round-2\non-authoritative\2026-09-11-version4-non-authoritative-P20-diagnostics-tools-shared-component-execution.md:8-17,40-48` |
+| Debug command protocol | 当时有 proposed 设计，非 Component 边界 deferred；历史 verifier 记录为失败 | P20 组件设计/执行资料已于 2026-10-02 从当前范围移除；此项仅作历史调研记录 |
 | Smart interaction | 只有注册和候选接口的 partial 边界，尚未证明实际扫描/选择生命周期 | `D:\TRbackup\NLTX\docs\component-decomposition\baseline\Version4权威游戏模拟系统拆分设计报告.md:4073-4143`；P08 字段记录为 proposed Query/buffer，不能当作已实现迁移 |
 | Teleportation、Town、PressurePlate、Currency | 已有第一轮或第二轮方向覆盖，分别存在网络/TileEntity、NPC/存档/锁、全局数组/Tile/存档或交易/容器依赖 | 代表性证据见本报告第 8 节；这些方向不能因类名短或包含 `System`/`Manager` 就重新推荐 |
 
 本次没有把任何方向标为 `rejected`，因为现有材料通常记录为 `deferred`、`partial`、`proposed` 或“归入已有子系统”，而不是统一的 rejected 枚举。明确的实际结论是：**未完成的方向仍有 active work item 语义风险，但账本当前 `activeWorkItems=0`；既有报告中的 proposed/partial 不能写成已实现。**
 
-状态归类：当前 NLTX 中可见的 P02/P20 组件切片是历史执行记录所称的“已保存组件”，不能扩展为已实现 System；P02 的非 Component 边界属于“仅有设计/执行计划”；Chat、SmartInteract 等属于“已审查但未实现或行为未闭合”；账本中的 `deferred` 仍是 deferred；没有找到正式标为 `rejected` 的本批候选；当前审计没有 active work item，64 个 work item 记录为 `ready`。这些分类只描述资料状态，不描述运行时行为。
+状态归类：本报告当时记录的 P02/P20 组件切片不能扩展为已实现 System；P20 已于 2026-10-02 从当前范围和源码移除。P02 的非 Component 边界属于“仅有设计/执行计划”；Chat、SmartInteract 等属于“已审查但未实现或行为未闭合”；账本中的 `deferred` 仍是 deferred；没有找到正式标为 `rejected` 的本批候选；该次审计没有 active work item，64 个 work item 记录为 `ready`。这些分类只描述 2026-09-13 的资料状态，不描述当前运行时行为。
 
 ## 3. 候选清单和评分表
 

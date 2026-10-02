@@ -26,8 +26,8 @@
 每个会话在领取后必须读取：
 
 1. [仓库入口](../../../AGENTS.md) 和 [当前进度](../../../Context/progress.md)；
-2. [System 拆分规则](../../../.agents/skills/ecs-system-domain-splitting/system-splitting/SKILL.md)；
-3. [权威分区会话规则](../../../.agents/skills/version4-authoritative-partition-session/SKILL.md)；
+2. [System 拆分规则](../../../.agents/skills/ecs-system/system-splitting/SKILL.md)；
+3. [权威分区会话规则](../../../.agents/skills/version4-partition-session-runner/sessions/version4-authoritative-partition-session/SKILL.md)；
 4. [ECS 文件组织约束](../../../Context/架构设计/ECS文件组织设计约束.md)；
 5. 本文档对应的 P01-P20 专属 prompt；
 6. runner 返回的当前分区输入报告；
@@ -214,4 +214,4 @@ P11、P13、P14、P17、P18、P20 的历史文件名中分区编号使用小写 
 | `abandoned` | 会话中断或主动放弃，可经确认后用 `-Retry` 重新领取 |
 
 runner 的 JSON 状态和 lock 位于
-`.agents/skills/version4-authoritative-partition-session/tasks/<TaskSetName>/`，不应加入源码控制，也不应手工编辑。
+`.agents/skills/version4-partition-session-runner/sessions/version4-authoritative-partition-session/tasks/<TaskSetName>/`，不应加入源码控制，也不应手工编辑。

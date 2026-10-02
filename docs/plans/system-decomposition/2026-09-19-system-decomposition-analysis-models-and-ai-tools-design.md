@@ -12,9 +12,9 @@ AI 工具和统一 CLI 已落地到 skill-owned tools 目录，但本轮未运�
 - [`项目最终验收与迁移门禁`](../../system-decomposition/2026-09-19-project-final-acceptance-and-migration-gates.md)
 - [`证据导入与关系物化 API 计划`](../2026-09-19-evidence-import-relation-materialization-api.md)
 - [`System 拆分静态分析模型与 AI 工具实现计划`](2026-09-19-system-decomposition-analysis-models-and-ai-tools-implementation-plan.md)
-- [`ecs-system-domain-splitting/SKILL.md`](../../../.agents/skills/ecs-system-domain-splitting/SKILL.md)
-- [`system-decomposition-toolchain.md`](../../../.agents/skills/ecs-system-domain-splitting/references/system-decomposition-toolchain.md)
-- [`ai-synthesis-contract.md`](../../../.agents/skills/ecs-system-domain-splitting/references/ai-synthesis-contract.md)
+- [`ecs-system-domain-splitting/SKILL.md`](../../../.agents/skills/ecs-system/SKILL.md)
+- [`system-decomposition-toolchain.md`](../../../.agents/skills/ecs-system/references/system-decomposition-toolchain.md)
+- [`ai-synthesis-contract.md`](../../../.agents/skills/ecs-system/references/ai-synthesis-contract.md)
 
 ## 1. 设计原则
 
@@ -104,7 +104,7 @@ Source root / project / partition manifest
 建议新增以下工具程序集，保持现有程序集职责清晰：
 
 ```text
-.agents/skills/ecs-system-domain-splitting/tools/
+.agents/skills/ecs-system/tools/
   AnalysisEvidenceCatalog/              # 现有：共享模型、artifact、关系和查询
   SourceAnalysisInfrastructure/          # 现有：Roslyn/MSBuild 基础设施
   SystemDecomposition.Analysis/          # 新增：静态分析、闭包、覆盖和候选事实

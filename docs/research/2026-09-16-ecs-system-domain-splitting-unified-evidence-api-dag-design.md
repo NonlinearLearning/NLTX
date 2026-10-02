@@ -5,8 +5,8 @@
 | 文档状态 | `accepted` |
 | 研究基线 | [联合证据 API/DAG 研究报告](2026-09-16-ecs-system-domain-splitting-unified-evidence-api-dag-research.md) |
 | 研究日期 | 2026-09-16 |
-| 目标范围 | `.agents/skills/ecs-system-domain-splitting` 的三个分析/变换工具及其上层查询能力 |
-| 当前实现状态 | 部分实现：`AnalysisEvidenceCatalog`、`AnalysisEvidenceApi`、`ExecutionDag` 与 `RelationMultigraph` 已落地，验收用例 K1–K9、K11、K12 通过；`FactClosure`（设计 Task 7）未实现，因此 K10（递归闭包收敛）与 callable 级精确 cleanup 绑定（K7）为显式 `deferred`，不建空类型、不宣称精确绑定，见[决策记录](../../.agents/skills/ecs-system-domain-splitting/system-splitting/references/cleanup-transformation-map-decision.md) |
+| 目标范围 | `.agents/skills/ecs-system` 的三个分析/变换工具及其上层查询能力 |
+| 当前实现状态 | 部分实现：`AnalysisEvidenceCatalog`、`AnalysisEvidenceApi`、`ExecutionDag` 与 `RelationMultigraph` 已落地，验收用例 K1–K9、K11、K12 通过；`FactClosure`（设计 Task 7）未实现，因此 K10（递归闭包收敛）与 callable 级精确 cleanup 绑定（K7）为显式 `deferred`，不建空类型、不宣称精确绑定，见[决策记录](../../.agents/skills/ecs-system/system-splitting/references/cleanup-transformation-map-decision.md) |
 | 当前验证状态 | 已执行：catalog 与 verifier 串行构建 `0 警告 0 错误`；fixture 套件使 K1–K9、K11、K12 通过，并打印 `DEFERRED: K10 recursive fact closure (deferred:FactClosureNotImplemented)`，测试脚本断言该行存在，K7/K10 不得计入通过；只读集成对照当前 Version4 产物基线且未修改任何源文件或既有报告。命令、退出码与产物路径见[执行计划 §5 台账](2026-09-16-ecs-system-domain-splitting-unified-evidence-api-dag-execution.md) |
 
 ## 1. 决策摘要
@@ -481,8 +481,8 @@ StageSnapshotResult {
 ## 16. 参考
 
 - [联合证据 API/DAG 研究报告](2026-09-16-ecs-system-domain-splitting-unified-evidence-api-dag-research.md)
-- [ECS System 领域拆分技能](../../.agents/skills/ecs-system-domain-splitting/SKILL.md)
-- [系统拆分规则](../../.agents/skills/ecs-system-domain-splitting/system-splitting/references/system-decomposition-rules.md)
-- [证据循环与迁移协议](../../.agents/skills/ecs-system-domain-splitting/system-splitting/references/evidence-and-migration-protocol.md)
-- [输出风险约束](../../.agents/skills/ecs-system-domain-splitting/reports/output-risk-profile.md)
+- [ECS System 领域拆分技能](../../.agents/skills/ecs-system/SKILL.md)
+- [系统拆分规则](../../.agents/skills/ecs-system/system-splitting/references/system-decomposition-rules.md)
+- [证据循环与迁移协议](../../.agents/skills/ecs-system/system-splitting/references/evidence-and-migration-protocol.md)
+- [输出风险约束](../../.agents/skills/ecs-system/reports/output-risk-profile.md)
 - [构建与验证约束](../../Context/约束/构建与验证约束.md)

@@ -26,7 +26,7 @@
 每个会话在领取后必须读取：
 
 1. [仓库入口](../../AGENTS.md) 和 [当前进度](../../Context/progress.md)；
-2. [System 拆分规则](../../.agents/skills/ecs-system-domain-splitting/system-splitting/SKILL.md)；
+2. [System 拆分规则](../../.agents/skills/ecs-system/system-splitting/SKILL.md)；
 3. [权威分区会话规则](../../.agents/skills/version4-authoritative-partition-session/SKILL.md)；
 4. [ECS 文件组织约束](../../Context/架构设计/ECS文件组织设计约束.md)；
 5. 本文档对应的 P01-P20 专属 prompt；

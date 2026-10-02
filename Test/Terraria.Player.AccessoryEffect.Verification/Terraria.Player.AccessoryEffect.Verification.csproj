@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerAccessoryEffectSnapshotComponent.cs" Link="PlayerAccessoryEffectSnapshotComponent.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerAccessoryEffectSnapshotRebuildInput.cs" Link="PlayerAccessoryEffectSnapshotRebuildInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerAccessoryEffectSnapshotRebuildSystem.cs" Link="PlayerAccessoryEffectSnapshotRebuildSystem.cs" />
+  </ItemGroup>
+</Project>

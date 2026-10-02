@@ -36,7 +36,7 @@
 | `4.9.101` | `SharedRuntimeMechanisms` | `WorldSeedAndExploitRules` | state/query | 1 | 12 | 13 | 待按成员访问模式拆分 |
 | `4.9.223` | `SharedRuntimeMechanisms` | `SharedStartupAndRuntimeHostState` | diagnostics/adapter | 12 | 11 | 23 | 待按成员访问模式拆分 |
 
-### 2.1 20 个并行分区总览
+### 2.1 当前保留的 16 个并行分区
 
 | 分区 | 领域 | 细分组 | 字段 | 属性 | 合计 | 文件 |
 |---:|---|---:|---:|---:|---:|---|
@@ -55,11 +55,7 @@
 | 13 | `网络协议与会话` | 18 | 238 | 15 | 253 | [13-network-protocol-session.md](13-network-protocol-session.md) |
 | 14 | `持久化、恢复与配置` | 11 | 146 | 14 | 160 | [14-persistence-recovery-configuration.md](14-persistence-recovery-configuration.md) |
 | 15 | `外部平台与协议边界` | 7 | 51 | 8 | 59 | [15-external-platform-boundaries.md](15-external-platform-boundaries.md) |
-| 16 | `UI 核心与交互` | 11 | 154 | 22 | 176 | [16-ui-core-interaction.md](16-ui-core-interaction.md) |
-| 17 | `UI 物品、排序与本地化` | 22 | 279 | 17 | 296 | [17-ui-item-localization.md](17-ui-item-localization.md) |
 | 18 | `地图、相机与绘制` | 29 | 274 | 57 | 331 | [18-map-camera-rendering.md](18-map-camera-rendering.md) |
-| 19 | `音频、粒子与演出` | 32 | 354 | 51 | 405 | [19-audio-particles-cinematics.md](19-audio-particles-cinematics.md) |
-| 20 | `诊断、工具与共享机制` | 22 | 226 | 24 | 250 | [20-diagnostics-tools-shared.md](20-diagnostics-tools-shared.md) |
 
 零成员父级 `ContentLifecycleAndRegistration` 和 `IntentAndInteraction` 保留在来源报告的父级统计中，不生成伪造成员分区；对应边界说明分别放在内容目录分区和玩家输入与玩法分区。
 
@@ -498,6 +494,6 @@
 > 来源报告 SHA-256：`b944441d92d5103f218b766a3e354200794528a19e65a862e44c2b40a36f1196`
 - 本分区细分组数：12；成员数：149；字段：104；属性：45。
 - 预期不变量：本文件只出现完整细分子系统；不跨分区复制成员；所有成员的来源序号、原始声明、路径、行列和 C# 类型必须与来源报告一致。
-- 验证方式：重新读取 20 个文件，检查文件数、细分组唯一性、来源序号恰好覆盖 `1..4542`、字段/属性合计和逐成员行文本一致；本次分区生成不运行 `dotnet`，因为没有修改 C# 或项目文件。
+- 历史全量生成校验：当时读取原始 20 个分区文件，检查细分组唯一性、来源序号恰好覆盖 `1..4542`、字段/属性合计和逐成员行文本一致。该校验针对完整来源基线；当前工作范围保留 P01-P15、P18，共 16 个分区。
 
 生成器：`Build/Tools/Generate-Version4NonAuthoritativeComponentPartitionReports.ps1`。

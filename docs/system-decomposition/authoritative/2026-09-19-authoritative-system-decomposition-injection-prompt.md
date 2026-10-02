@@ -2,11 +2,11 @@
 
 本提示词只补充“单分区会话编排、读取范围、输出和结算”规则，不重定义领域判断。关于 System 边界、Component/System/Query/Command/Adapter/Projection、证据等级、API 组合和迁移成功状态，必须服从下列实际 skill 和 contract；如果本提示词与它们措辞不一致，以它们为准，并在报告中记录冲突：
 
-- `.agents/skills/ecs-system-domain-splitting/SKILL.md`
-- `.agents/skills/ecs-system-domain-splitting/system-splitting/SKILL.md`
-- `.agents/skills/ecs-system-domain-splitting/system-api-splitting/SKILL.md`
-- `.agents/skills/version4-system-decomposition-session/references/system-decomposition-session-contract.md`
-- `.agents/skills/version4-authoritative-partition-session/references/authoritative-contract.md`
+- `.agents/skills/ecs-system/SKILL.md`
+- `.agents/skills/ecs-system/system-splitting/SKILL.md`
+- `.agents/skills/ecs-system/system-api-splitting/SKILL.md`
+- `.agents/skills/version4-partition-session-runner/sessions/version4-system-decomposition-session/references/system-decomposition-session-contract.md`
+- `.agents/skills/version4-partition-session-runner/sessions/version4-authoritative-partition-session/references/authoritative-contract.md`
 - `.agents/skills/version4-partition-session-runner/references/runner-contract.md`
 
 按 `C:\Users\shan\.agents\skills\pua\SKILL.md` 执行质量纪律：先查后问，遇到缺口主动搜索，使用 `unknown`/`partial`/`evidence-gap`，不得用命名、框架惯例或“应该如此”填空；交付前检查上下游和边界，不得无证据声称完成。PUA 不改变领域 skill、runner 或仓库权限。

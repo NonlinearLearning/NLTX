@@ -20,9 +20,9 @@ compiled DLL and keeps output assertions independent of the production code.
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/tests/fixtures/CallGraphFixture/Target.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/tests/fixtures/CallGraphFixture/Dependencies.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/tests/Test-CalledFunctions.ps1`
+- Create: `.agents/skills/ecs-system/scripts/tests/fixtures/CallGraphFixture/Target.cs`
+- Create: `.agents/skills/ecs-system/scripts/tests/fixtures/CallGraphFixture/Dependencies.cs`
+- Create: `.agents/skills/ecs-system/scripts/tests/Test-CalledFunctions.ps1`
 
 Write assertions for cross-file calls, constructors, direct versus transitive
 results, parallel statistics, and ambiguous/missing target diagnostics. Run the
@@ -33,8 +33,8 @@ artifact is unavailable.
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/CalledFunctionsAnalyzer/CalledFunctionsAnalyzer.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/scripts/CalledFunctionsAnalyzer/Program.cs`
+- Create: `.agents/skills/ecs-system/scripts/CalledFunctionsAnalyzer/CalledFunctionsAnalyzer.csproj`
+- Create: `.agents/skills/ecs-system/scripts/CalledFunctionsAnalyzer/Program.cs`
 
 Implement project discovery, excluded-directory filtering, source parsing with
 `Parallel.ForEachAsync`, concurrent Roslyn compilation, target selection, call
@@ -52,8 +52,8 @@ counts without rewriting generated reports or unrelated source files.
 
 **Files:**
 
-- Modify: `.agents/skills/ecs-system-domain-splitting/SKILL.md`
-- Modify: `.agents/skills/ecs-system-domain-splitting/README.md`
+- Modify: `.agents/skills/ecs-system/SKILL.md`
+- Modify: `.agents/skills/ecs-system/README.md`
 
 Add the tool's purpose, invocation shape, project-root example, output contract,
 and limitations. Keep detailed flags discoverable through `--help`.

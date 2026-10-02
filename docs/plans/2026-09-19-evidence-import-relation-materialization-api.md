@@ -125,7 +125,7 @@ Stable ordinals are assigned from normalized fact order within one artifact, not
 ### Task 1: Add the failing core verification
 
 **Files:**
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog.Verification/Program.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog.Verification/Program.cs`
 
 Add one focused verifier routine for the import pipeline. It must construct an explicit index and descriptors over existing fixtures, register a structured fixture reader, invoke the pipeline, and assert all of the following:
 
@@ -144,7 +144,7 @@ location under `tools/scripts/tests/fixtures` and retain compatibility with the 
 Run the verifier through the serial wrapper and confirm that it fails because the new import API does not yet exist. Do not weaken the assertions to make the pre-implementation run pass.
 
 ```powershell
-pwsh -File Build/Tools/Invoke-SerialDotnet.ps1 -- run --project .agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog.Verification/AnalysisEvidenceCatalog.Verification.csproj
+pwsh -File Build/Tools/Invoke-SerialDotnet.ps1 -- run --project .agents/skills/ecs-system/tools/AnalysisEvidenceCatalog.Verification/AnalysisEvidenceCatalog.Verification.csproj
 ```
 
 Expected result: compilation failure naming the missing import API, with no production implementation added yet.
@@ -152,10 +152,10 @@ Expected result: compilation failure naming the missing import API, with no prod
 ### Task 2: Add descriptor and reader-dispatch models
 
 **Files:**
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactDescriptor.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceImportRequest.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactReaderRegistry.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Storage/AtomicCatalogWriter.cs` only if a small index lookup helper is needed
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactDescriptor.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceImportRequest.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactReaderRegistry.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Storage/AtomicCatalogWriter.cs` only if a small index lookup helper is needed
 
 Implement immutable descriptor/request records and a registry that maps producer plus artifact kind to a reader delegate. Validate non-empty identifiers, reject duplicate registration keys, normalize path comparison with full paths, and expose no fallback directory search. Keep reader construction outside the catalog so the read model does not reference analyzer-specific assemblies.
 
@@ -164,17 +164,17 @@ Add index validation that matches `(RunId, StageId, ArtifactPath, ContentHash)` 
 ### Task 3: Implement fact parsing and candidate normalization
 
 **Files:**
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/RelationCandidate.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/RelationMaterializer.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/CalledFunctionsArtifactReader.cs` only if the existing payload needs a backward-compatible structured caller/callee representation
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/ProjectDataflowArtifactReader.cs` only if the existing fact payload needs a backward-compatible structured read/write/capture representation
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/RelationCandidate.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/RelationMaterializer.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/CalledFunctionsArtifactReader.cs` only if the existing payload needs a backward-compatible structured caller/callee representation
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/ProjectDataflowArtifactReader.cs` only if the existing fact payload needs a backward-compatible structured read/write/capture representation
 
 Parse JSON payloads using `JsonDocument` or the existing support helpers. Do not infer a caller from a selected-call summary, do not treat a file path as a callable key when a canonical key is required, and preserve the existing legacy and non-static dispatch gaps. Convert accepted facts to candidates, sort them deterministically, then merge identical candidate identities while unioning evidence references and diagnostics and applying `EvidenceStatusAggregation.Weakest`.
 
 ### Task 4: Make relation insertion idempotent for materialization
 
 **Files:**
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Graphs/RelationMultigraph.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Graphs/RelationMultigraph.cs`
 
 Add the public `AddOrMergeEdge` operation suitable for the materializer. It must preserve the current edge identity contract, update an existing edge with the weakest status plus the union of evidence references and diagnostics, and update all adjacency indexes exactly once. Existing direct `AddEdge` behavior for callers that accidentally register an identical edge remains strict.
 
@@ -183,9 +183,9 @@ The implementation must invalidate the immutable graph snapshot and invoke the c
 ### Task 5: Implement the import pipeline and DAG attachment
 
 **Files:**
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceImportResult.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceImportPipeline.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/AnalysisEvidenceCatalog.cs` only for a narrow atomic registration/materialization helper if required
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceImportResult.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceImportPipeline.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/AnalysisEvidenceCatalog.cs` only for a narrow atomic registration/materialization helper if required
 
 Implement the ordered transaction:
 
@@ -203,14 +203,14 @@ If a later step fails, the pipeline must not leave a half-imported catalog. Use 
 ### Task 6: Run the core 10% verification
 
 **Files:**
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog.Verification/Program.cs` only as needed to integrate the focused routine into the existing verifier entry point
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog.Verification/Program.cs` only as needed to integrate the focused routine into the existing verifier entry point
 
 Before any build or run, verify `dotnet.exe` and `csc.exe` are discoverable. Then run only the affected verification project through the serial wrapper; do not build the full solution and do not run unrelated migration test suites.
 
 ```powershell
 Get-Command dotnet -ErrorAction Stop
 & 'C:\Program Files\dotnet\sdk\10.0.400\Roslyn\bincore\csc.exe' -help *> $null
-$project = '.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog.Verification/AnalysisEvidenceCatalog.Verification.csproj'
+$project = '.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog.Verification/AnalysisEvidenceCatalog.Verification.csproj'
 pwsh -NoProfile -Command "& '.\Build\Tools\Invoke-SerialDotnet.ps1' -DotnetArguments @('build', '$project', '--no-restore', '/m:1', '/nr:false', '/p:UseSharedCompilation=false', '/p:MSBuildNodeReuse=false', '/p:BuildInParallel=false')"
 pwsh -NoProfile -Command "& '.\Build\Tools\Invoke-SerialDotnet.ps1' -DotnetArguments @('run', '--project', '$project', '--no-build', '--no-restore')"
 git diff --check

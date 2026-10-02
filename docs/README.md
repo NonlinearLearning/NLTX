@@ -26,7 +26,7 @@ docs/
 │   ├── 2026-09-02-system-split-markdown-writing-guide.md # System 拆分 Markdown 编写指南
 │   ├── 2026-09-18-system-decomposition-authoritative-20-partition-tasks.md # 权威任务只读便利副本
 │   ├── 2026-09-18-system-decomposition-non-authoritative-20-partition-tasks.md # 非权威任务只读便利副本
-│   ├── authoritative/              # 权威 P01-P20 可领取任务
+│   ├── authoritative/              # 权威 P01-P20 任务与 System 拆分注入提示词
 │   ├── non-authoritative/          # 非权威 P01-P20 可领取任务
 │   └── reports/                   # System 拆分实验、优化和复盘证据
 ├── component-decomposition/
@@ -56,6 +56,7 @@ docs/
 | System 边界、API、调度和迁移实验 | `system-decomposition/`、`plans/system-decomposition/`、`research/` | 先查边界/API，再查执行和行为证据 |
 | System 拆分 Markdown 编写和预处理 | [子系统 Markdown 编写指南](system-decomposition/2026-09-02-system-split-markdown-writing-guide.md) | 用于组织类拆分索引、子系统卡和执行文档 |
 | AI 可领取的 20 分区 System 任务 | [权威任务副本](system-decomposition/2026-09-18-system-decomposition-authoritative-20-partition-tasks.md)、[非权威任务副本](system-decomposition/2026-09-18-system-decomposition-non-authoritative-20-partition-tasks.md)；canonical 版本位于 `authoritative/` 和 `non-authoritative/` | 根目录副本只读；领取仍使用 canonical 任务表，输出写入 `system-decomposition/reports/` |
+| 权威分区 System 拆分注入提示词 | [权威注入提示词](system-decomposition/authoritative/2026-09-30-authoritative-system-decomposition-injection-prompt.md) | 组合 `ecs-system`、System 会话 profile、权威证据 profile 和 runner 流程 |
 | Component 边界和字段归属 | `component-decomposition/` | 设计与执行成对查阅，审计报告作为结论而不是设计替代物 |
 | 20 分区成员和迁移映射 | `component-decomposition/review-round-2/`、`migration/ledgers/` | 先查分区执行文档，再查成员/字段 ledger 和源码声明 |
 | 外部资料、源码证据和边界调查 | `research/` | 研究材料不直接等同于 owner 或迁移完成证明 |

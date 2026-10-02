@@ -2,7 +2,7 @@
 
 研究日期：2026-09-16
 
-研究对象：`D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting`
+研究对象：`D:\TRbackup\NLTX\.agents\skills\ecs-system`
 
 对照对象：`D:\ProjectItem\SourceCode\Net\NL`
 
@@ -76,48 +76,48 @@ Explain(BindingId or RelationEdgeId) -> EvidenceTrace
 
 ### 3.1 skill 的交付约束
 
-当前 skill 要求以可验证的领域行为切片为迁移单位，按 owner、不变量、读写集、生命周期、调用闭包、调度、验证和回滚取证；它明确要求分析器输出不能代替入站调用和动态入口搜索，并要求 `partial`/`unknown` 保持为证据缺口。[`SKILL.md:23-31`](../../.agents/skills/ecs-system-domain-splitting/SKILL.md#L23-L31)
+当前 skill 要求以可验证的领域行为切片为迁移单位，按 owner、不变量、读写集、生命周期、调用闭包、调度、验证和回滚取证；它明确要求分析器输出不能代替入站调用和动态入口搜索，并要求 `partial`/`unknown` 保持为证据缺口。[`SKILL.md:23-31`](../../.agents/skills/ecs-system/SKILL.md#L23-L31)
 
 这直接决定联合 API 不能只做“把三个工具的结果合并为一份 JSON”：它必须能表达缺口和反证，且不能因为某个 analyzer 没返回记录就把事实升级为“没有调用者”或“没有写入者”。
 
 ### 3.2 CalledFunctionsAnalyzer 的绑定限制
 
-`CalledFunctionsAnalyzer` 选择目标后建立调用闭包；只有在 `--transitive` 开启且调用已解析、目标 symbol 存在并且能在 source callable index 中找到时，才会继续入队下一个 callable。[`Program.cs:338-378`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/CalledFunctionsAnalyzer/Program.cs#L338-L378)
+`CalledFunctionsAnalyzer` 选择目标后建立调用闭包；只有在 `--transitive` 开启且调用已解析、目标 symbol 存在并且能在 source callable index 中找到时，才会继续入队下一个 callable。[`Program.cs:338-378`](../../.agents/skills/ecs-system/tools/scripts/CalledFunctionsAnalyzer/Program.cs#L338-L378)
 
-每条 call record 当前保存 kind、syntax、symbol、resolved、containing type、调用位置、depth、source declaration、候选和 resolution；target 主要以 path、line、column 和 Roslyn display symbol 表示。[`Program.cs:454-486`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/CalledFunctionsAnalyzer/Program.cs#L454-L486) `CallableRecord` 内部虽然持有 Roslyn symbol、declaration、path、line 和 column，但当前结构化输出没有与 dataflow 相同的正式 callable key。[`Program.cs:1023-1056`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/CalledFunctionsAnalyzer/Program.cs#L1023-L1056)
+每条 call record 当前保存 kind、syntax、symbol、resolved、containing type、调用位置、depth、source declaration、候选和 resolution；target 主要以 path、line、column 和 Roslyn display symbol 表示。[`Program.cs:454-486`](../../.agents/skills/ecs-system/tools/scripts/CalledFunctionsAnalyzer/Program.cs#L454-L486) `CallableRecord` 内部虽然持有 Roslyn symbol、declaration、path、line 和 column，但当前结构化输出没有与 dataflow 相同的正式 callable key。[`Program.cs:1023-1056`](../../.agents/skills/ecs-system/tools/scripts/CalledFunctionsAnalyzer/Program.cs#L1023-L1056)
 
-工具可以写 summary JSON，也可以写每个 callable 的结构化报告和根级 `call-graph-index.json`。[`Program.cs:489-577`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/CalledFunctionsAnalyzer/Program.cs#L489-L577) 当前 `reports` 目录没有发现现成的 `call-graph-index.json`，所以本报告不把调用图 artifact 当作当前已存在的完整报告。
+工具可以写 summary JSON，也可以写每个 callable 的结构化报告和根级 `call-graph-index.json`。[`Program.cs:489-577`](../../.agents/skills/ecs-system/tools/scripts/CalledFunctionsAnalyzer/Program.cs#L489-L577) 当前 `reports` 目录没有发现现成的 `call-graph-index.json`，所以本报告不把调用图 artifact 当作当前已存在的完整报告。
 
 这个边界意味着：联合 API 必须保留 `resolved=false`、候选和 resolution；不能用 `calls=[]` 表示“没有调用”，除非该查询明确表明完整扫描成功且没有匹配。
 
 ### 3.3 ProjectDataflowAnalyzer 的身份和 partial 状态
 
-数据流分析通过 `MSBuildWorkspace` 打开项目并建立 CSharp compilation，再索引 syntax tree 中的 callable。[`ProjectDataflowAnalyzer.cs:16-98`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs#L16-L98) callable ID 当前由 `file|declaration.SpanStart|kind|symbolText` 组成。[`ProjectDataflowAnalyzer.cs:357-393`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs#L357-L393)
+数据流分析通过 `MSBuildWorkspace` 打开项目并建立 CSharp compilation，再索引 syntax tree 中的 callable。[`ProjectDataflowAnalyzer.cs:16-98`](../../.agents/skills/ecs-system/tools/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs#L16-L98) callable ID 当前由 `file|declaration.SpanStart|kind|symbolText` 组成。[`ProjectDataflowAnalyzer.cs:357-393`](../../.agents/skills/ecs-system/tools/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs#L357-L393)
 
-输出模型的 callable 包括 `ReadVariables`、`WrittenVariables`、`DataFlowsIn`、`DataFlowsOut`、`VariablesDeclared`、`Captured` 和 diagnostics；manifest 还记录 project、configuration、workspace/compilation/analysis diagnostics 和按源文件的 shard index。[`AnalysisModels.cs:144-159`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs#L144-L159)、[`AnalysisModels.cs:204-228`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs#L204-L228)
+输出模型的 callable 包括 `ReadVariables`、`WrittenVariables`、`DataFlowsIn`、`DataFlowsOut`、`VariablesDeclared`、`Captured` 和 diagnostics；manifest 还记录 project、configuration、workspace/compilation/analysis diagnostics 和按源文件的 shard index。[`AnalysisModels.cs:144-159`](../../.agents/skills/ecs-system/tools/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs#L144-L159)、[`AnalysisModels.cs:204-228`](../../.agents/skills/ecs-system/tools/scripts/ProjectDataflowAnalyzer/AnalysisModels.cs#L204-L228)
 
-分析状态在存在诊断或 failed callable 时为 `partial`，不是把失败吞掉后返回 `complete`。[`ProjectDataflowAnalyzer.cs:100-162`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs#L100-L162)
+分析状态在存在诊断或 failed callable 时为 `partial`，不是把失败吞掉后返回 `complete`。[`ProjectDataflowAnalyzer.cs:100-162`](../../.agents/skills/ecs-system/tools/scripts/ProjectDataflowAnalyzer/ProjectDataflowAnalyzer.cs#L100-L162)
 
 当前 manifest：
 
 | 项目 | 当前事实 |
 | --- | --- |
-| 输出 | `.agents/skills/ecs-system-domain-splitting/reports/data-flow-analysis/Version4/manifest.json` |
+| 输出 | `.agents/skills/ecs-system/reports/data-flow-analysis/Version4/manifest.json` |
 | 状态 | `partial` |
 | 源文件 / syntax tree | 967 / 967 |
 | callable indexed / analyzed | 7855 / 7157 |
 | no-body / failed | 698 / 0 |
 | diagnostics | 184 |
 
-ReportWriter 按项目相对源路径写 `.dataflow.json` shard，并先写临时目录再替换输出目录，避免旧 shard 混入新报告。[`ReportWriter.cs:6-71`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/ProjectDataflowAnalyzer/ReportWriter.cs#L6-L71)、[`ReportWriter.cs:74-123`](../../.agents/skills/ecs-system-domain-splitting/tools/scripts/ProjectDataflowAnalyzer/ReportWriter.cs#L74-L123)
+ReportWriter 按项目相对源路径写 `.dataflow.json` shard，并先写临时目录再替换输出目录，避免旧 shard 混入新报告。[`ReportWriter.cs:6-71`](../../.agents/skills/ecs-system/tools/scripts/ProjectDataflowAnalyzer/ReportWriter.cs#L6-L71)、[`ReportWriter.cs:74-123`](../../.agents/skills/ecs-system/tools/scripts/ProjectDataflowAnalyzer/ReportWriter.cs#L74-L123)
 
 因此联合 API 必须支持按 callable lazy load dataflow shard，并把 manifest 的 `partial` 传播到 stage/result；不能将 `7157 analyzed` 包装成“项目全部 callable 都有完整读写集”。
 
 ### 3.4 FunctionBodyCleanup 的 snapshot lineage
 
-Cleanup runner 为每次运行创建唯一 run directory，先复制 `original`，再复制出 `cleaned` 工作副本；清理在副本中并行执行，最后把输入/输出 hash、计数、诊断和每个文件状态写入 manifest。[`ProjectCleanupRunner.cs:15-72`](../../.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs#L15-L72)、[`ProjectCleanupRunner.cs:75-115`](../../.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs#L75-L115)
+Cleanup runner 为每次运行创建唯一 run directory，先复制 `original`，再复制出 `cleaned` 工作副本；清理在副本中并行执行，最后把输入/输出 hash、计数、诊断和每个文件状态写入 manifest。[`ProjectCleanupRunner.cs:15-72`](../../.agents/skills/ecs-system/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs#L15-L72)、[`ProjectCleanupRunner.cs:75-115`](../../.agents/skills/ecs-system/tools/FunctionBodyCleanup/ProjectCleanupRunner.cs#L75-L115)
 
-函数体清理会保留声明外壳但可能使清理副本无法编译；它不是语义 analyzer，也不应被当作调用图或 dataflow 图节点。[`function-body-cleanup.md:16-21`](../../.agents/skills/ecs-system-domain-splitting/system-splitting/references/function-body-cleanup.md#L16-L21) `SourceFileCleanup` 对 parse error 标记 `skipped`，成功改写则记录输入和输出 hash。[`SourceFileCleanup.cs:16-74`](../../.agents/skills/ecs-system-domain-splitting/tools/FunctionBodyCleanup/SourceFileCleanup.cs#L16-L74)
+函数体清理会保留声明外壳但可能使清理副本无法编译；它不是语义 analyzer，也不应被当作调用图或 dataflow 图节点。[`function-body-cleanup.md:16-21`](../../.agents/skills/ecs-system/system-splitting/references/function-body-cleanup.md#L16-L21) `SourceFileCleanup` 对 parse error 标记 `skipped`，成功改写则记录输入和输出 hash。[`SourceFileCleanup.cs:16-74`](../../.agents/skills/ecs-system/tools/FunctionBodyCleanup/SourceFileCleanup.cs#L16-L74)
 
 当前两次 manifest 的摘要如下：
 
@@ -518,16 +518,16 @@ Supersedes
 
 ### 本地一手代码和生成物
 
-- `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\SKILL.md`
-+ `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\tools\scripts\CalledFunctionsAnalyzer\Program.cs`
-+ `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\tools\scripts\ProjectDataflowAnalyzer\AnalysisModels.cs`
-+ `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\tools\scripts\ProjectDataflowAnalyzer\ProjectDataflowAnalyzer.cs`
-+ `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\tools\scripts\ProjectDataflowAnalyzer\ReportWriter.cs`
-- `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\tools\FunctionBodyCleanup\ProjectCleanupRunner.cs`
-- `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\tools\FunctionBodyCleanup\SourceFileCleanup.cs`
-- `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\reports\data-flow-analysis\Version4\manifest.json`
-- `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\managed\function-body-cleanup\version4-20260916-001\manifest.json`
-- `D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\managed\function-body-cleanup\version4-20260916-002\manifest.json`
+- `D:\TRbackup\NLTX\.agents\skills\ecs-system\SKILL.md`
++ `D:\TRbackup\NLTX\.agents\skills\ecs-system\tools\scripts\CalledFunctionsAnalyzer\Program.cs`
++ `D:\TRbackup\NLTX\.agents\skills\ecs-system\tools\scripts\ProjectDataflowAnalyzer\AnalysisModels.cs`
++ `D:\TRbackup\NLTX\.agents\skills\ecs-system\tools\scripts\ProjectDataflowAnalyzer\ProjectDataflowAnalyzer.cs`
++ `D:\TRbackup\NLTX\.agents\skills\ecs-system\tools\scripts\ProjectDataflowAnalyzer\ReportWriter.cs`
+- `D:\TRbackup\NLTX\.agents\skills\ecs-system\tools\FunctionBodyCleanup\ProjectCleanupRunner.cs`
+- `D:\TRbackup\NLTX\.agents\skills\ecs-system\tools\FunctionBodyCleanup\SourceFileCleanup.cs`
+- `D:\TRbackup\NLTX\.agents\skills\ecs-system\reports\data-flow-analysis\Version4\manifest.json`
+- `D:\TRbackup\NLTX\.agents\skills\ecs-system\managed\function-body-cleanup\version4-20260916-001\manifest.json`
+- `D:\TRbackup\NLTX\.agents\skills\ecs-system\managed\function-body-cleanup\version4-20260916-002\manifest.json`
 
 ### NL 一手代码和设计记录
 

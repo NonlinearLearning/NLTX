@@ -17,7 +17,7 @@
 The new capability lives under:
 
 ```text
-.agents/skills/ecs-system-domain-splitting/scripts/ProjectDataflowAnalyzer/
+.agents/skills/ecs-system/scripts/ProjectDataflowAnalyzer/
 ```
 
 Responsibilities are separated as follows:
@@ -80,7 +80,7 @@ Each callable record contains:
 The launcher default is:
 
 ```text
-D:\TRbackup\NLTX\.agents\skills\ecs-system-domain-splitting\reports\data-flow-analysis\Version4.json
+D:\TRbackup\NLTX\.agents\skills\ecs-system\reports\data-flow-analysis\Version4.json
 ```
 
 The report includes schema/tool/Roslyn versions, normalized project path, project name, configuration, platform, target framework, project file hash, source-tree counts, parallel settings, workspace and compilation diagnostics, callable records, and a completeness summary. Arrays and diagnostics are sorted deterministically. The writer creates a same-directory temporary file and atomically replaces the requested report only after serialization succeeds.

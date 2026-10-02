@@ -1,16 +1,16 @@
-# Version4 非权威 20 分区 System 拆分可领取任务
+# Version4 非权威 16 分区 System 拆分可领取任务
 
-文档 ID：PLAN-2026-09-18-system-decomposition-non-authoritative-20-partitions
+文档 ID：PLAN-2026-09-18-system-decomposition-non-authoritative-16-partitions
 逻辑域：system-decomposition
 产物类型：claimable-task
 状态：active
-任务类型：20 个可并行领取的 System 拆分分析任务
-输入总量：20 个分区，4,542 条成员记录
+任务类型：16 个可并行领取的 System 拆分分析任务
+输入总量：16 个分区，3,415 条成员记录
 输出区域：`docs/system-decomposition/reports/`
 
 ## 1. 任务目的
 
-本任务把 Version4 非权威模拟和运行时支撑范围的 P01-P20 分区转换为可独立领取的
+本任务把 Version4 非权威模拟和运行时支撑范围的 P01-P15、P18 分区转换为可独立领取的
 System 拆分分析任务。每个分区由一个会话领取，读取本分区成员报告、之前已经完成的
 子系统/Component 拆分文档和必要的源码证据，产出一个 System 拆分报告。
 
@@ -26,11 +26,11 @@ System 拆分分析任务。每个分区由一个会话领取，读取本分区�
 
 每个会话在领取后必须读取：
 
-1. [仓库入口](../../AGENTS.md) 和 [当前进度](../../Context/progress.md)；
-2. [System 拆分规则](../../.agents/skills/ecs-system-domain-splitting/system-splitting/SKILL.md)；
-3. [非权威分区会话规则](../../.agents/skills/version4-non-authoritative-partition-session/SKILL.md)；
-4. [ECS 文件组织约束](../../Context/架构设计/ECS文件组织设计约束.md)；
-5. 本文档对应的 P01-P20 专属 prompt；
+1. [仓库入口](../../../AGENTS.md) 和 [当前进度](../../../Context/progress.md)；
+2. [System 拆分规则](../../../.agents/skills/ecs-system/system-splitting/SKILL.md)；
+3. [非权威分区会话规则](../../../.agents/skills/version4-partition-session-runner/sessions/version4-non-authoritative-partition-session/SKILL.md)；
+4. [ECS 文件组织约束](../../../Context/架构设计/ECS文件组织设计约束.md)；
+5. 本文档对应的 P01-P15、P18 专属 prompt；
 6. runner 返回的当前分区输入报告；
 7. 对应分区已经存在的 Component 设计/执行文档和第一轮 public-decomposition 文档；
 8. 为解决具体争议所需的 Version4 源码、调用证据、读写证据和生命周期证据。
@@ -46,7 +46,7 @@ System 拆分分析任务。每个分区由一个会话领取，读取本分区�
 
 ```powershell
 $runner = '.\Build\Tools\Invoke-Version4NonAuthoritativePartitionSession.ps1'
-$taskSetName = 'non-authoritative-system-decomposition'
+$taskSetName = 'non-authoritative-system-decomposition-16'
 $taskTablePath = '.\docs\system-decomposition\non-authoritative\2026-09-18-system-decomposition-non-authoritative-20-partition-tasks.md'
 
 pwsh -NoProfile -File $runner `
@@ -101,7 +101,7 @@ pwsh -NoProfile -File $runner `
 初始化后恢复任务只需再次传入 `-TaskSetName $taskSetName`；若任务表内容改变，应创建新的
 任务集名称。
 
-## 4. 二十个可领取分区
+## 4. 当前纳入的十六个可领取分区
 
 状态不在本文档中手工维护，以 runner 的共享 ledger 为准。表中 `outputReport` 是该分区
 唯一允许新建的 System 拆分输出。
@@ -123,11 +123,7 @@ pwsh -NoProfile -File $runner `
 | NONAUTH-SYS-P13 | P13 | 253 | `docs/migration/ledgers/non-authoritative-component-partitions/13-network-protocol-session.md` | `docs/component-decomposition/review-round-1/design/2026-09-11-version4-non-authoritative-20-partition-prompts/2026-09-11-version4-non-authoritative-P13-network-protocol-session-public-decomposition.md` | `docs/system-decomposition/reports/2026-09-18-system-decomposition-non-authoritative-P13-network-protocol-session.md` |
 | NONAUTH-SYS-P14 | P14 | 160 | `docs/migration/ledgers/non-authoritative-component-partitions/14-persistence-recovery-configuration.md` | `docs/component-decomposition/review-round-1/design/2026-09-11-version4-non-authoritative-20-partition-prompts/2026-09-11-version4-non-authoritative-P14-persistence-recovery-configuration-public-decomposition.md` | `docs/system-decomposition/reports/2026-09-18-system-decomposition-non-authoritative-P14-persistence-recovery-configuration.md` |
 | NONAUTH-SYS-P15 | P15 | 59 | `docs/migration/ledgers/non-authoritative-component-partitions/15-external-platform-boundaries.md` | `docs/component-decomposition/review-round-1/design/2026-09-11-version4-non-authoritative-20-partition-prompts/2026-09-11-version4-non-authoritative-P15-external-platform-boundaries-public-decomposition.md` | `docs/system-decomposition/reports/2026-09-18-system-decomposition-non-authoritative-P15-external-platform-boundaries.md` |
-| NONAUTH-SYS-P16 | P16 | 176 | `docs/migration/ledgers/non-authoritative-component-partitions/16-ui-core-interaction.md` | `docs/component-decomposition/review-round-1/design/2026-09-11-version4-non-authoritative-20-partition-prompts/2026-09-11-version4-non-authoritative-P16-ui-core-interaction-public-decomposition.md` | `docs/system-decomposition/reports/2026-09-18-system-decomposition-non-authoritative-P16-ui-core-interaction.md` |
-| NONAUTH-SYS-P17 | P17 | 296 | `docs/migration/ledgers/non-authoritative-component-partitions/17-ui-item-localization.md` | `docs/component-decomposition/review-round-1/design/2026-09-11-version4-non-authoritative-20-partition-prompts/2026-09-11-version4-non-authoritative-P17-ui-item-localization-public-decomposition.md` | `docs/system-decomposition/reports/2026-09-18-system-decomposition-non-authoritative-P17-ui-item-localization.md` |
 | NONAUTH-SYS-P18 | P18 | 331 | `docs/migration/ledgers/non-authoritative-component-partitions/18-map-camera-rendering.md` | `docs/component-decomposition/review-round-1/design/2026-09-11-version4-non-authoritative-20-partition-prompts/2026-09-11-version4-non-authoritative-P18-map-camera-rendering-public-decomposition.md` | `docs/system-decomposition/reports/2026-09-18-system-decomposition-non-authoritative-P18-map-camera-rendering.md` |
-| NONAUTH-SYS-P19 | P19 | 405 | `docs/migration/ledgers/non-authoritative-component-partitions/19-audio-particles-cinematics.md` | `docs/component-decomposition/review-round-1/design/2026-09-11-version4-non-authoritative-20-partition-prompts/2026-09-11-version4-non-authoritative-P19-audio-particles-cinematics-public-decomposition.md` | `docs/system-decomposition/reports/2026-09-18-system-decomposition-non-authoritative-P19-audio-particles-cinematics.md` |
-| NONAUTH-SYS-P20 | P20 | 250 | `docs/migration/ledgers/non-authoritative-component-partitions/20-diagnostics-tools-shared.md` | `docs/component-decomposition/review-round-1/design/2026-09-11-version4-non-authoritative-20-partition-prompts/2026-09-11-version4-non-authoritative-P20-diagnostics-tools-shared-public-decomposition.md` | `docs/system-decomposition/reports/2026-09-18-system-decomposition-non-authoritative-P20-diagnostics-tools-shared.md` |
 
 ## 5. 之前拆分资料的读取顺序
 
@@ -218,4 +214,4 @@ System owner。网络、存档、UI、表现和外部平台文档尤其要区分
 | `abandoned` | 会话中断或主动放弃，可经确认后用 `-Retry` 重新领取 |
 
 runner 的 JSON 状态和 lock 位于
-`.agents/skills/version4-non-authoritative-partition-session/tasks/<TaskSetName>/`，不应加入源码控制，也不应手工编辑。
+`.agents/skills/version4-partition-session-runner/sessions/version4-non-authoritative-partition-session/tasks/<TaskSetName>/`，不应加入源码控制，也不应手工编辑。

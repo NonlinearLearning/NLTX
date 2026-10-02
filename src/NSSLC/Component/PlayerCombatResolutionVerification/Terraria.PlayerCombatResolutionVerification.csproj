@@ -1,0 +1,67 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Program.cs" />
+    <Compile Include="..\Player\PlayerValueTypes.cs" Link="PlayerValueTypes.cs" />
+    <Compile Include="..\Player\PlayerVitalStateComponent.cs" Link="PlayerVitalStateComponent.cs" />
+    <Compile Include="..\Player\PlayerCombatDefenseModifierComponent.cs" Link="PlayerCombatDefenseModifierComponent.cs" />
+    <Compile Include="..\Player\PlayerDamageMitigationInputComponent.cs" Link="PlayerDamageMitigationInputComponent.cs" />
+    <Compile Include="..\Player\PlayerDodgeAndImmunityStateComponent.cs" Link="PlayerDodgeAndImmunityStateComponent.cs" />
+    <Compile Include="..\Player\PlayerDodgeCapabilityInput.cs" Link="PlayerDodgeCapabilityInput.cs" />
+    <Compile Include="..\Player\PlayerDodgeActivationCommand.cs" Link="PlayerDodgeActivationCommand.cs" />
+    <Compile Include="..\Player\PlayerDodgeCommitCommand.cs" Link="PlayerDodgeCommitCommand.cs" />
+    <Compile Include="..\Player\PlayerDodgeCommitSystem.cs" Link="PlayerDodgeCommitSystem.cs" />
+    <Compile Include="..\Player\PlayerBuffSlotsComponent.cs" Link="PlayerBuffSlotsComponent.cs" />
+    <Compile Include="..\Player\PlayerBuffImmunityComponent.cs" Link="PlayerBuffImmunityComponent.cs" />
+    <Compile Include="..\Player\PlayerDamageEligibilityInput.cs" Link="PlayerDamageEligibilityInput.cs" />
+    <Compile Include="..\Player\PlayerDamageEligibilityQuery.cs" Link="PlayerDamageEligibilityQuery.cs" />
+    <Compile Include="..\Player\PlayerDamageEligibilityRejectionReason.cs" Link="PlayerDamageEligibilityRejectionReason.cs" />
+    <Compile Include="..\Player\PlayerDamageEligibilityResult.cs" Link="PlayerDamageEligibilityResult.cs" />
+    <Compile Include="..\Player\PlayerDamageMitigationInput.cs" Link="PlayerDamageMitigationInput.cs" />
+    <Compile Include="..\Player\PlayerDamageMitigationQuery.cs" Link="PlayerDamageMitigationQuery.cs" />
+    <Compile Include="..\Player\PlayerCombatResolutionCommand.cs" Link="PlayerCombatResolutionCommand.cs" />
+    <Compile Include="..\Player\PlayerCombatResolutionResult.cs" Link="PlayerCombatResolutionResult.cs" />
+    <Compile Include="..\Player\PlayerCombatResolutionSystem.cs" Link="PlayerCombatResolutionSystem.cs" />
+    <Compile Include="..\Player\PlayerCombatProcHitEffects.cs" Link="PlayerCombatProcHitEffects.cs" />
+    <Compile Include="..\Player\PlayerCombatProcStateComponent.cs" Link="PlayerCombatProcStateComponent.cs" />
+    <Compile Include="..\Player\PlayerCombatProcSystem.cs" Link="PlayerCombatProcSystem.cs" />
+    <Compile Include="..\Player\PlayerCombatProcSystem.HitCommit.cs" Link="PlayerCombatProcSystem.HitCommit.cs" />
+    <Compile Include="..\Player\PlayerCombatProcSystem.Lifecycle.cs" Link="PlayerCombatProcSystem.Lifecycle.cs" />
+    <Compile Include="..\Player\PlayerCombatProcSystem.Tick.cs" Link="PlayerCombatProcSystem.Tick.cs" />
+    <Compile Include="..\Player\PlayerCombatProcTickInput.cs" Link="PlayerCombatProcTickInput.cs" />
+    <Compile Include="..\Player\PlayerCombatProcTickQuery.cs" Link="PlayerCombatProcTickQuery.cs" />
+    <Compile Include="..\Player\PlayerCombatProcTickResult.cs" Link="PlayerCombatProcTickResult.cs" />
+    <Compile Include="..\Player\PlayerCommittedCombatHitEvent.cs" Link="PlayerCommittedCombatHitEvent.cs" />
+    <Compile Include="..\Player\IPlayerDpsTelemetryCommitPort.cs" Link="IPlayerDpsTelemetryCommitPort.cs" />
+    <Compile Include="..\Player\IPlayerTelemetryClock.cs" Link="IPlayerTelemetryClock.cs" />
+    <Compile Include="..\Player\PlayerCommittedDamageEvent.cs" Link="PlayerCommittedDamageEvent.cs" />
+    <Compile Include="..\Player\PlayerDpsTelemetryComponent.cs" Link="PlayerDpsTelemetryComponent.cs" />
+    <Compile Include="..\Player\PlayerDpsTelemetrySystem.cs" Link="PlayerDpsTelemetrySystem.cs" />
+    <Compile Include="..\Player\PlayerStatusEffectDefinition.cs" Link="PlayerStatusEffectDefinition.cs" />
+    <Compile Include="..\Player\PlayerStatusEffectCatalog.cs" Link="PlayerStatusEffectCatalog.cs" />
+    <Compile Include="..\Player\PlayerStatusEffectApplyCommand.cs" Link="PlayerStatusEffectApplyCommand.cs" />
+    <Compile Include="..\Player\PlayerStatusEffectTickInput.cs" Link="PlayerStatusEffectTickInput.cs" />
+    <Compile Include="..\Player\PlayerStatusEffectRejectionReason.cs" Link="PlayerStatusEffectRejectionReason.cs" />
+    <Compile Include="..\Player\PlayerStatusEffectResult.cs" Link="PlayerStatusEffectResult.cs" />
+    <Compile Include="..\Player\PlayerStatusEffectSnapshot.cs" Link="PlayerStatusEffectSnapshot.cs" />
+    <Compile Include="..\Player\PlayerStatusEffectTickResult.cs" Link="PlayerStatusEffectTickResult.cs" />
+    <Compile Include="..\Player\PlayerStatusEffectSystem.cs" Link="PlayerStatusEffectSystem.cs" />
+    <Compile Include="..\Player\PlayerManaRegenInput.cs" Link="PlayerManaRegenInput.cs" />
+    <Compile Include="..\Player\PlayerManaRegenFailureReason.cs" Link="PlayerManaRegenFailureReason.cs" />
+    <Compile Include="..\Player\PlayerManaRegenResult.cs" Link="PlayerManaRegenResult.cs" />
+    <Compile Include="..\Player\PlayerManaRegenSystem.cs" Link="PlayerManaRegenSystem.cs" />
+    <Compile Include="..\Player\PlayerManaRegenStateComponent.cs" Link="PlayerManaRegenStateComponent.cs" />
+    <Compile Include="..\Player\PlayerManaRegenModifierComponent.cs" Link="PlayerManaRegenModifierComponent.cs" />
+    <Compile Include="..\Player\PlayerLifeRegenStatusFlags.cs" Link="PlayerLifeRegenStatusFlags.cs" />
+    <Compile Include="..\Player\PlayerLifeRegenInput.cs" Link="PlayerLifeRegenInput.cs" />
+    <Compile Include="..\Player\PlayerLifeRegenFailureReason.cs" Link="PlayerLifeRegenFailureReason.cs" />
+    <Compile Include="..\Player\PlayerLifeRegenResult.cs" Link="PlayerLifeRegenResult.cs" />
+    <Compile Include="..\Player\PlayerLifeRegenQuery.cs" Link="PlayerLifeRegenQuery.cs" />
+  </ItemGroup>
+</Project>

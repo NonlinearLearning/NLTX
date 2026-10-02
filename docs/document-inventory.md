@@ -1,6 +1,6 @@
 # 文档库存快照
 
-盘点时间：2026-09-19。范围：仓库根目录 `docs/` 的当前工作树。
+盘点时间：2026-09-19。范围：仓库根目录 `docs/` 在该日的工作树快照；文件计数不代表本次删除后的实时数量。
 
 当前工作树共有 390 个文件：380 个 Markdown、7 个 JSON、3 个 TSV。Markdown 文档已经
 按领域重新归档；JSON/TSV 与迁移 ledger 保持相邻，避免结构化事实源和说明文档分离。
@@ -10,7 +10,7 @@
 | 当前路径 | 文件数 | Markdown | JSON | TSV | 主要内容 |
 | --- | ---: | ---: | ---: | ---: | --- |
 | `docs/architecture/` | 2 | 2 | 0 | 0 | ADR 和实体身份上下文 |
-| `docs/system-decomposition/` | 5 | 5 | 0 | 0 | System 拆分指南、权威/非权威 P01-P20 canonical 任务及根目录便利副本 |
+| `docs/system-decomposition/` | 5 | 5 | 0 | 0 | 快照时权威/非权威 P01-P20 任务；当前非权威范围为 P01-P15、P18 |
 | `docs/component-decomposition/` | 249 | 249 | 0 | 0 | 初代基线、第一/二轮组件设计、执行和审计 |
 | `docs/migration/` | 63 | 55 | 7 | 1 | 项目能力评估、成员/字段 ledger、分区表和索引 |
 | `docs/reviews/` | 2 | 2 | 0 | 0 | 项目审计和人工审查 |
@@ -51,8 +51,8 @@ docs/
 `non-authoritative` 和分区目录只承担导航职责，不改变文档结论。
 
 System 分区任务的 canonical 入口位于 `system-decomposition/authoritative/` 和
-`system-decomposition/non-authoritative/`：权威和非权威各一份 P01-P20 任务文档；根目录另
-有两份相同内容的只读便利副本。副本不参与 runner 初始化、领取或状态判断。
+`system-decomposition/non-authoritative/`：权威任务覆盖 P01-P20，非权威当前任务覆盖
+P01-P15、P18；根目录另有两份只读便利副本。副本不参与 runner 初始化、领取或状态判断。
 `plans/system-decomposition/` 只保留实验设计和实施计划。任务状态以对应 runner 的共享
 ledger 为准；任务文档中的表格是范围和输出路径索引，不是人工维护的领取状态表。
 
@@ -69,7 +69,7 @@ ledger 为准；任务文档中的表格是范围和输出路径索引，不是�
 
 Markdown 链接门禁结果：共扫描 676 个链接；153 个仓库内相对链接直接有效，9 个带行号的
 报告链接在去除行号后指向现有文件，另有 17 个链接指向当前仓库之外的
-`.agents/skills/ecs-system-domain-splitting` 参考资料。后 17 个是外部技能依赖，不纳入
+`.agents/skills/ecs-system` 参考资料。后 17 个是外部技能依赖，不纳入
 仓库内路径迁移，也没有被伪造为本地目标；除此之外没有发现迁移造成的仓库内失链。
 
 ## 4. 重复检查

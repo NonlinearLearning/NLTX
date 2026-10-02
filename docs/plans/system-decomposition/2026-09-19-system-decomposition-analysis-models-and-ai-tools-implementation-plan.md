@@ -15,12 +15,12 @@
 ## 执行约束
 
 - 模型、静态 analyzer、AI 工具和统一 CLI 已按本计划落地到
-  `.agents/skills/ecs-system-domain-splitting/tools/`；本文件现在同时作为实现状态和后续验证计划。
+  `.agents/skills/ecs-system/tools/`；本文件现在同时作为实现状态和后续验证计划。
 - 用户已经确定的边界保持不变：System 拆分阶段不编写测试代码、不创建行为 fixture/verifier、
   不运行测试或构建；项目最终验收仍由 [项目最终验收与迁移门禁](../../system-decomposition/2026-09-19-project-final-acceptance-and-migration-gates.md) 负责。
 - 本轮只做源码级静态检查、文档链接检查和 diff 检查；没有声明 CLI、Roslyn analyzer、
   artifact reader 或 catalog revision 已编译或运行通过。
-- 工具只能写入 `.agents/skills/ecs-system-domain-splitting/tools/` 及 skill-owned artifact output root，
+- 工具只能写入 `.agents/skills/ecs-system/tools/` 及 skill-owned artifact output root，
   不修改 `src/`、`Test/`、Version4 源项目、分区任务表或锁文件。
 - 不为 `FinalOwnerDecider`、`FinalBoundaryDecider`、`BehaviorEquivalenceDecider`、
   `MigrationSuccessDecider` 或 `LegacyDeletionDecider` 建立自动决策器。
@@ -32,7 +32,7 @@
 实现和后续验证使用以下目录：
 
 ```text
-.agents/skills/ecs-system-domain-splitting/tools/
+.agents/skills/ecs-system/tools/
   AnalysisEvidenceCatalog/Model/              # 共享模型扩展
   AnalysisEvidenceCatalog/Artifacts/           # artifact readers / facts
   AnalysisEvidenceCatalog/Graphs/              # relation kinds / graph diagnostics
@@ -65,12 +65,12 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/AnalysisContext.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/EvidenceProvenance.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/SystemDecompositionScopeManifest.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/CoverageModels.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/StaticDesignStatus.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/ImplementationStatus.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/AnalysisContext.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/EvidenceProvenance.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/SystemDecompositionScopeManifest.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/CoverageModels.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/StaticDesignStatus.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/ImplementationStatus.cs`
 
 **Steps:**
 
@@ -89,17 +89,17 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/SourceLocation.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/QueryScope.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/AnalysisFact.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/ArtifactCapability.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Graphs/RelationKind.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/EvidenceFact.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactDescriptor.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactStatusConstraint.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceImportPipeline.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactReaderRegistry.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/RelationMaterializer.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/SourceLocation.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/QueryScope.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/AnalysisFact.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/ArtifactCapability.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Graphs/RelationKind.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/EvidenceFact.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactDescriptor.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactStatusConstraint.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceImportPipeline.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactReaderRegistry.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/RelationMaterializer.cs`
 
 **Steps:**
 
@@ -118,13 +118,13 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/SystemDecomposition.Analysis.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Scope/ScopeManifestBuilder.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Scope/ScopeManifestValidator.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Symbols/ProjectSymbolIndex.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Symbols/SymbolIndexBuilder.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Symbols/SymbolIndexArtifactWriter.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/SourceAnalysisInfrastructure/SourceAnalysisSymbolKey.cs` only when a narrow shared helper is required
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/SystemDecomposition.Analysis.csproj`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Scope/ScopeManifestBuilder.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Scope/ScopeManifestValidator.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Symbols/ProjectSymbolIndex.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Symbols/SymbolIndexBuilder.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Symbols/SymbolIndexArtifactWriter.cs`
+- Modify: `.agents/skills/ecs-system/tools/SourceAnalysisInfrastructure/SourceAnalysisSymbolKey.cs` only when a narrow shared helper is required
 
 **Steps:**
 
@@ -143,12 +143,12 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/EntryPoints/LegacyEntryPointInventory.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/EntryPoints/InboundEntryPointAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/EntryPoints/EventAndDelegateRegistrationAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/EntryPoints/EntryPointArtifactWriter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/EntryPointArtifactReader.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactReaderRegistry.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/EntryPoints/LegacyEntryPointInventory.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/EntryPoints/InboundEntryPointAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/EntryPoints/EventAndDelegateRegistrationAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/EntryPoints/EntryPointArtifactWriter.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/EntryPointArtifactReader.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Import/EvidenceArtifactReaderRegistry.cs`
 
 **Steps:**
 
@@ -167,11 +167,11 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Behavior/BehaviorSurfaceAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Behavior/ApiPreconditionAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Behavior/ApiFailurePathAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Behavior/BehaviorSurfaceArtifactWriter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/BehaviorSurfaceArtifactReader.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Behavior/BehaviorSurfaceAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Behavior/ApiPreconditionAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Behavior/ApiFailurePathAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Behavior/BehaviorSurfaceArtifactWriter.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/BehaviorSurfaceArtifactReader.cs`
 
 **Steps:**
 
@@ -188,16 +188,16 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Dynamic/DynamicBoundaryScanner.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Dynamic/RegistrationPatternCatalog.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Analysis/SerializationContractAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Analysis/EffectBoundaryAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Artifacts/DynamicRiskArtifactWriter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Artifacts/SerializationArtifactWriter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Artifacts/EffectArtifactWriter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/DynamicRiskArtifactReader.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/SerializationArtifactReader.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/EffectArtifactReader.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Dynamic/DynamicBoundaryScanner.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Dynamic/RegistrationPatternCatalog.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Analysis/SerializationContractAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Analysis/EffectBoundaryAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Artifacts/DynamicRiskArtifactWriter.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Artifacts/SerializationArtifactWriter.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Artifacts/EffectArtifactWriter.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/DynamicRiskArtifactReader.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/SerializationArtifactReader.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/EffectArtifactReader.cs`
 
 **Steps:**
 
@@ -214,11 +214,11 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Lifecycle/LifecycleGraphAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Lifecycle/LifecyclePatternCatalog.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Lifecycle/LifecycleTransitionExtractor.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Artifacts/LifecycleArtifactWriter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/LifecycleArtifactReader.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Lifecycle/LifecycleGraphAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Lifecycle/LifecyclePatternCatalog.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Lifecycle/LifecycleTransitionExtractor.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Artifacts/LifecycleArtifactWriter.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/LifecycleArtifactReader.cs`
 
 **Steps:**
 
@@ -235,14 +235,14 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Closure/WriteClosureAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Closure/CallAndWriteClosureResolver.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Closure/StateRoleClassifier.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Ownership/InvariantCandidateAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Ownership/OwnerCandidateAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Ownership/CommitPointCandidateExtractor.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Artifacts/WriteClosureArtifactWriter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/WriteClosureArtifactReader.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Closure/WriteClosureAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Closure/CallAndWriteClosureResolver.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Closure/StateRoleClassifier.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Ownership/InvariantCandidateAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Ownership/OwnerCandidateAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Ownership/CommitPointCandidateExtractor.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Artifacts/WriteClosureArtifactWriter.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/WriteClosureArtifactReader.cs`
 
 **Steps:**
 
@@ -264,14 +264,14 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Scheduling/ScheduleCandidateExtractor.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Graphs/RelationCycleAndSccAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/CrossPartition/CrossPartitionSeamAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/CrossPartition/IntegrationHandoffBuilder.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/GraphDiagnostic.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/ScheduleArtifactReader.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Artifacts/IntegrationHandoffArtifactReader.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Execution/AnalysisPipelineRunner.cs` for partition manifest identity checks and bundle handoff wiring
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Scheduling/ScheduleCandidateExtractor.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Graphs/RelationCycleAndSccAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/CrossPartition/CrossPartitionSeamAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/CrossPartition/IntegrationHandoffBuilder.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/GraphDiagnostic.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/ScheduleArtifactReader.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Artifacts/IntegrationHandoffArtifactReader.cs`
+- Modify: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Execution/AnalysisPipelineRunner.cs` for partition manifest identity checks and bundle handoff wiring
 
 **Steps:**
 
@@ -288,14 +288,14 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Api/LegacyApiInventoryAnalyzer.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Api/RetryAndIdempotencyScanner.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Api/ConceptBehaviorCandidateExtractor.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Api/LegacyNewCompositionMapper.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Api/ObservationVectorBuilder.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Closure/BoundedSourceClosurePackager.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/ApiBehaviorModels.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/SourceClosureModels.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Api/LegacyApiInventoryAnalyzer.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Api/RetryAndIdempotencyScanner.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Api/ConceptBehaviorCandidateExtractor.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Api/LegacyNewCompositionMapper.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Api/ObservationVectorBuilder.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Closure/BoundedSourceClosurePackager.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/ApiBehaviorModels.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/SourceClosureModels.cs`
 
 **Steps:**
 
@@ -312,11 +312,11 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Coverage/CoverageAndGapAuditor.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Coverage/NegativeConclusionAuditor.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Analysis/Bundle/StaticEvidenceBundleAssembler.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/SystemStaticEvidenceBundle.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Query/AnalysisEvidenceApi.cs` only for required bounded query fields
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Coverage/CoverageAndGapAuditor.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Coverage/NegativeConclusionAuditor.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Analysis/Bundle/StaticEvidenceBundleAssembler.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/SystemStaticEvidenceBundle.cs`
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Query/AnalysisEvidenceApi.cs` only for required bounded query fields
 
 **Steps:**
 
@@ -333,12 +333,12 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/SystemDecomposition.Ai.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Context/SemanticEvidenceContextBuilder.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Context/EvidenceTracePackager.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Context/CounterEvidenceCollector.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Validation/SemanticSynthesisInputValidator.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/AiSynthesisModels.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/SystemDecomposition.Ai.csproj`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Context/SemanticEvidenceContextBuilder.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Context/EvidenceTracePackager.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Context/CounterEvidenceCollector.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Validation/SemanticSynthesisInputValidator.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/AiSynthesisModels.cs`
 
 **Steps:**
 
@@ -356,11 +356,11 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Synthesis/AiSemanticSynthesisGateway.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Synthesis/SemanticClaimValidator.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Synthesis/BoundaryCandidateGenerator.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Synthesis/IntegrationHandoffCandidateGenerator.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Model/BoundaryDecisionModels.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Synthesis/AiSemanticSynthesisGateway.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Synthesis/SemanticClaimValidator.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Synthesis/BoundaryCandidateGenerator.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Synthesis/IntegrationHandoffCandidateGenerator.cs`
+- Create: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Model/BoundaryDecisionModels.cs`
 
 **Steps:**
 
@@ -377,12 +377,12 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Output/StaticReportEmitter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Output/IntegrationHandoffEmitter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Output/ReportStatusGuard.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Output/ReportLinkAndEvidenceAuditor.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Output/EvidenceProvenanceExporter.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Ai/Output/PartitionReportConsistencyChecker.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Output/StaticReportEmitter.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Output/IntegrationHandoffEmitter.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Output/ReportStatusGuard.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Output/ReportLinkAndEvidenceAuditor.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Output/EvidenceProvenanceExporter.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Ai/Output/PartitionReportConsistencyChecker.cs`
 
 **Steps:**
 
@@ -401,21 +401,21 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 
 **Files:**
 
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/SystemDecomposition.Cli.csproj`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Program.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Commands/BuildScopeCommand.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Commands/RunStaticAnalysisCommand.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Commands/ImportEvidenceCommand.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Commands/BuildAiContextCommand.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Commands/ValidateAiResultCommand.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Commands/EmitReportCommand.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Execution/AnalysisPipelineRunner.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Execution/StageRunnerRegistry.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Execution/ExternalAnalyzerProcessRunner.cs`
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Execution/AnalysisPipelineRunner.cs` for external analyzer identity, status, gap and DAG propagation
-- Modify: `.agents/skills/ecs-system-domain-splitting/tools/AnalysisEvidenceCatalog/Graphs/ExecutionDag.cs` for dependency/barrier start guards
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/SystemDecomposition.Cli/Commands/CommandSupport.cs`
-- Create: `.agents/skills/ecs-system-domain-splitting/tools/Run-SystemDecomposition.ps1`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/SystemDecomposition.Cli.csproj`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Program.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Commands/BuildScopeCommand.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Commands/RunStaticAnalysisCommand.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Commands/ImportEvidenceCommand.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Commands/BuildAiContextCommand.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Commands/ValidateAiResultCommand.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Commands/EmitReportCommand.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Execution/AnalysisPipelineRunner.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Execution/StageRunnerRegistry.cs`
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Execution/ExternalAnalyzerProcessRunner.cs`
+- Modify: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Execution/AnalysisPipelineRunner.cs` for external analyzer identity, status, gap and DAG propagation
+- Modify: `.agents/skills/ecs-system/tools/AnalysisEvidenceCatalog/Graphs/ExecutionDag.cs` for dependency/barrier start guards
+- Create: `.agents/skills/ecs-system/tools/SystemDecomposition.Cli/Commands/CommandSupport.cs`
+- Create: `.agents/skills/ecs-system/tools/Run-SystemDecomposition.ps1`
 
 **Steps:**
 
@@ -436,10 +436,10 @@ M2 内部可以并行实现，但所有工具必须先依赖 M0 的身份、状�
 **Files:**
 
 - Modify: `docs/system-decomposition/2026-09-19-system-decomposition-static-analysis-and-boundary-design.md`
-- Modify: `.agents/skills/ecs-system-domain-splitting/system-splitting/SKILL.md`
-- Modify: `.agents/skills/ecs-system-domain-splitting/SKILL.md`
-- Create: `.agents/skills/ecs-system-domain-splitting/references/system-decomposition-toolchain.md`
-- Create: `.agents/skills/ecs-system-domain-splitting/references/ai-synthesis-contract.md`
+- Modify: `.agents/skills/ecs-system/system-splitting/SKILL.md`
+- Modify: `.agents/skills/ecs-system/SKILL.md`
+- Create: `.agents/skills/ecs-system/references/system-decomposition-toolchain.md`
+- Create: `.agents/skills/ecs-system/references/ai-synthesis-contract.md`
 
 **Steps:**
 

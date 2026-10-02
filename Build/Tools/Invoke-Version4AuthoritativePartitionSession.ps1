@@ -9,11 +9,13 @@
     returns. JSON is written to stdout and the process exit code carries the operation result.
 
     Use version4-partition-session-runner for the shared operating contract and
-    version4-authoritative-partition-session for the authoritative evidence and write boundary.
+    sessions/version4-authoritative-partition-session for the authoritative evidence and write
+    boundary.
     This tool does not analyze a partition, implement ECS code, or prove behavior equivalence.
 
 .PARAMETER Action
-    Initialize, List, Claim, ClaimNext, Run, RunNext, Complete, Fail, Abandon, Cleanup, or Handoff.
+    Initialize, List, Claim, ClaimNext, Run, RunNext, Heartbeat, Complete, Fail, Abandon,
+    CloseSession, Cleanup, or Handoff.
 
 .PARAMETER TaskSetName
     Isolated task-set name. Required for Initialize and for actions using named task-set state.
@@ -51,6 +53,10 @@
 .PARAMETER LockWaitSeconds
     Maximum seconds to wait for the short ledger lock. It does not hold the lock during analysis.
 
+.PARAMETER OwnerProcessId
+    Optional stable Codex host process ID. When supplied, the lease host releases the lease when
+    this process exits or its start time changes. VERSION4_CODEX_SESSION_PID is used when omitted.
+
 .EXAMPLE
     pwsh -NoProfile -File .\Build\Tools\Invoke-Version4AuthoritativePartitionSession.ps1 `
         -Action Initialize -TaskSetName authoritative-system-decomposition `
@@ -71,7 +77,7 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
-    [ValidateSet('Initialize', 'List', 'Claim', 'ClaimNext', 'Run', 'RunNext', 'Complete', 'Fail', 'Abandon', 'Cleanup', 'Handoff')]
+    [ValidateSet('Initialize', 'List', 'Claim', 'ClaimNext', 'Run', 'RunNext', 'Heartbeat', 'Complete', 'Fail', 'Abandon', 'CloseSession', 'Cleanup', 'Handoff')]
     [string] $Action,
 
     [string] $TaskSetName,
@@ -94,6 +100,8 @@ param(
 
     [Nullable[int]] $ResultExitCode,
 
+    [Nullable[int]] $OwnerProcessId,
+
     [switch] $Retry,
 
     [ValidateRange(0, 86400)]
@@ -111,8 +119,9 @@ Set-Variable -Option Constant -Name ExitChildFailure -Value 5
 Set-Variable -Option Constant -Name ExitInternal -Value 6
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..\..')).Path
-$taskRoot = Join-Path $repoRoot '.agents\skills\version4-authoritative-partition-session\tasks'
+$taskRoot = Join-Path $repoRoot '.agents\skills\version4-partition-session-runner\sessions\version4-authoritative-partition-session\tasks'
 $activeTaskSetContext = $null
+Import-Module (Join-Path $PSScriptRoot 'Version4PartitionSessionLease.psm1') -Force
 
 function New-PartitionDefinition {
     param(
@@ -443,6 +452,18 @@ function New-SessionState {
                 handedOffAtUtc = $null
                 ownerProcessId = $null
                 ownerProcessStartTime = $null
+                ownerKind = $null
+                leaseName = $null
+                leaseFilePath = $null
+                leaseStopFilePath = $null
+                leaseHostProcessId = $null
+                leaseHostProcessStartTime = $null
+                leaseState = $null
+                leaseHeartbeatSeconds = $null
+                lastHeartbeatUtc = $null
+                leaseExpiresAtUtc = $null
+                releaseReason = $null
+                codexSessionId = $null
                 claimedAtUtc = $null
                 startedAtUtc = $null
                 completedAtUtc = $null
@@ -457,7 +478,7 @@ function New-SessionState {
     }
 
     $state = [pscustomobject]@{
-        schemaVersion = 3
+        schemaVersion = 4
         checkoutRoot = $repoRoot
         updatedAtUtc = [DateTime]::UtcNow.ToString('o')
         taskSetName = $activeTaskSetContext.name
@@ -482,7 +503,7 @@ function Load-SessionState {
         throw "Session state file is empty: $Path"
     }
 
-    $state = $raw | ConvertFrom-Json
+    $state = $raw | ConvertFrom-Json -DateKind String
     if ($null -eq $state.partitions) {
         throw "Session state has no partitions array: $Path"
     }
@@ -493,8 +514,8 @@ function Load-SessionState {
         throw "Session state partition set does not match the active task table: $Path"
     }
 
-    if ($null -eq $state.PSObject.Properties['schemaVersion'] -or [int]$state.schemaVersion -ne 3) {
-        throw "Task state must use schemaVersion 3: $Path"
+    if ($null -eq $state.PSObject.Properties['schemaVersion'] -or ([int]$state.schemaVersion -ne 3 -and [int]$state.schemaVersion -ne 4)) {
+        throw "Task state must use schemaVersion 3 or 4: $Path"
     }
     foreach ($record in @($state.partitions)) {
         if ($null -eq $record.PSObject.Properties['claimMode']) {
@@ -508,6 +529,24 @@ function Load-SessionState {
         }
         if ($null -eq $record.PSObject.Properties['handedOffAtUtc']) {
             $record | Add-Member -MemberType NoteProperty -Name handedOffAtUtc -Value $null
+        }
+        foreach ($property in @(
+                @{ Name = 'ownerKind'; Value = $null },
+                @{ Name = 'leaseName'; Value = $null },
+                @{ Name = 'leaseFilePath'; Value = $null },
+                @{ Name = 'leaseStopFilePath'; Value = $null },
+                @{ Name = 'leaseHostProcessId'; Value = $null },
+                @{ Name = 'leaseHostProcessStartTime'; Value = $null },
+                @{ Name = 'leaseState'; Value = $null },
+                @{ Name = 'leaseHeartbeatSeconds'; Value = $null },
+                @{ Name = 'lastHeartbeatUtc'; Value = $null },
+                @{ Name = 'leaseExpiresAtUtc'; Value = $null },
+                @{ Name = 'releaseReason'; Value = $null }
+                @{ Name = 'codexSessionId'; Value = $null }
+            )) {
+            if ($null -eq $record.PSObject.Properties[$property.Name]) {
+                $record | Add-Member -MemberType NoteProperty -Name $property.Name -Value $property.Value
+            }
         }
     }
     if ($null -eq $state.PSObject.Properties['taskSetName'] -or [string]$state.taskSetName -ne $activeTaskSetContext.name) {
@@ -528,6 +567,7 @@ function Save-SessionState {
 
     Ensure-ParentDirectory -Path $Path
     $State.updatedAtUtc = [DateTime]::UtcNow.ToString('o')
+    $State.schemaVersion = 4
     $temporaryPath = "$Path.$([guid]::NewGuid().ToString('N')).tmp"
     $json = $State | ConvertTo-Json -Depth 20
     $utf8 = [System.Text.UTF8Encoding]::new($false)
@@ -578,12 +618,159 @@ function Test-OwnerProcessAlive {
     }
 }
 
+function Get-CodexOwnerProcessInfo {
+    param([AllowNull()][Nullable[int]] $RequestedProcessId)
+
+    $effectiveId = $RequestedProcessId
+    if ($null -eq $effectiveId -or $effectiveId -le 0) {
+        $environmentId = 0
+        if ([int]::TryParse([string]$env:VERSION4_CODEX_SESSION_PID, [ref]$environmentId) -and $environmentId -gt 0) {
+            $effectiveId = $environmentId
+        }
+    }
+    if (($null -eq $effectiveId -or $effectiveId -le 0) -and -not [string]::IsNullOrWhiteSpace([string]$env:CODEX_SESSION_ID)) {
+        try {
+            $candidateId = $PID
+            for ($depth = 0; $depth -lt 16; $depth++) {
+                $processInfo = Get-CimInstance Win32_Process -Filter "ProcessId=$candidateId" -ErrorAction Stop
+                if ($null -eq $processInfo) { break }
+                if ([string]$processInfo.Name -match '(?i)^codex(?:\.exe)?$') {
+                    $effectiveId = [int]$processInfo.ProcessId
+                    break
+                }
+                if ($null -eq $processInfo.ParentProcessId -or [int]$processInfo.ParentProcessId -le 0 -or [int]$processInfo.ParentProcessId -eq $candidateId) { break }
+                $candidateId = [int]$processInfo.ParentProcessId
+            }
+        }
+        catch {
+            $effectiveId = $null
+        }
+    }
+    if ($null -eq $effectiveId -or $effectiveId -le 0) {
+        return [pscustomobject]@{ processId = $null; processStartTime = $null }
+    }
+    try {
+        return [pscustomobject]@{
+            processId = [int]$effectiveId
+            processStartTime = Get-Version4ProcessStartTime -ProcessId ([int]$effectiveId)
+        }
+    }
+    catch {
+        throw "Owner process is not available: $effectiveId"
+    }
+}
+
+function Get-RecordLeaseStatus {
+    param([Parameter(Mandatory)] $Record)
+
+    if ([string]::IsNullOrWhiteSpace([string]$Record.leaseName) -or
+        [string]::IsNullOrWhiteSpace([string]$Record.leaseFilePath) -or
+        [string]::IsNullOrWhiteSpace([string]$Record.sessionId)) {
+        return [pscustomobject]@{ active = $false; reason = 'legacy-record'; lease = $null }
+    }
+    return Get-Version4LeaseStatus -LeaseName ([string]$Record.leaseName) -LeaseFilePath ([string]$Record.leaseFilePath) -SessionToken ([string]$Record.sessionId)
+}
+
+function Sync-RecordLease {
+    param(
+        [Parameter(Mandatory)] $Record,
+        [Parameter(Mandatory)] $LeaseStatus
+    )
+
+    if ($null -ne $LeaseStatus.lease) {
+        $Record.lastHeartbeatUtc = $LeaseStatus.lease.lastHeartbeatUtc
+        $Record.leaseExpiresAtUtc = $LeaseStatus.lease.leaseExpiresAtUtc
+        $Record.leaseHostProcessId = $LeaseStatus.lease.hostProcessId
+        $Record.leaseHostProcessStartTime = $LeaseStatus.lease.hostProcessStartTime
+        $Record.ownerProcessId = $LeaseStatus.lease.hostProcessId
+        $Record.ownerProcessStartTime = $LeaseStatus.lease.hostProcessStartTime
+    }
+}
+
+function Stop-RecordLease {
+    param(
+        [Parameter(Mandatory)] $Record,
+        [Parameter(Mandatory)][string] $Reason
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace([string]$Record.leaseFilePath) -and
+        -not [string]::IsNullOrWhiteSpace([string]$Record.leaseStopFilePath) -and
+        -not [string]::IsNullOrWhiteSpace([string]$Record.sessionId)) {
+        Stop-Version4SessionLeaseHost -LeaseFilePath ([string]$Record.leaseFilePath) -StopFilePath ([string]$Record.leaseStopFilePath) -SessionToken ([string]$Record.sessionId)
+    }
+    $Record.leaseState = 'released'
+    $Record.releaseReason = $Reason
+    $Record.leaseExpiresAtUtc = [DateTime]::UtcNow.ToString('o')
+}
+
+function Start-RecordLease {
+    param(
+        [Parameter(Mandatory)][string] $PartitionId,
+        [Parameter(Mandatory)][string] $SessionToken
+    )
+
+    $leaseName = Get-Version4LeaseName -TaskSetName "authoritative|$($activeTaskSetContext.name)" -PartitionId $PartitionId
+    $leaseFilePath = Join-Path $activeTaskSetContext.directory "session-lease-$PartitionId.json"
+    $owner = Get-CodexOwnerProcessInfo -RequestedProcessId $OwnerProcessId
+    $heartbeatSeconds = 15
+    $codexSessionId = [string]$env:CODEX_SESSION_ID
+    $started = Start-Version4SessionLeaseHost -LeaseName $leaseName -LeaseFilePath $leaseFilePath -SessionToken $SessionToken -CodexSessionId $(if ([string]::IsNullOrWhiteSpace($codexSessionId)) { $null } else { $codexSessionId }) -HeartbeatSeconds $heartbeatSeconds -OwnerProcessId $owner.processId -OwnerProcessStartTime $owner.processStartTime
+    $started | Add-Member -MemberType NoteProperty -Name heartbeatSeconds -Value $heartbeatSeconds
+    $started | Add-Member -MemberType NoteProperty -Name codexSessionId -Value $(if ([string]::IsNullOrWhiteSpace($codexSessionId)) { $null } else { $codexSessionId })
+    return $started
+}
+
+function Assert-ManualSessionLease {
+    param(
+        [Parameter(Mandatory)] $Record,
+        [Parameter(Mandatory)][string] $ClaimSessionId
+    )
+
+    if ($record.status -ne 'running') {
+        throw "Partition is not running: $($Record.id)"
+    }
+    if ([string]$record.sessionId -ne $ClaimSessionId) {
+        throw "Session id does not own partition: $($Record.id)"
+    }
+    if ($record.claimMode -ne 'manual') {
+        throw "Partition was not claimed through Claim: $($Record.id)"
+    }
+    if (-not [string]::IsNullOrWhiteSpace([string]$record.codexSessionId) -and
+        -not [string]::IsNullOrWhiteSpace([string]$env:CODEX_SESSION_ID) -and
+        [string]$record.codexSessionId -ne [string]$env:CODEX_SESSION_ID) {
+        throw "Owner Codex session does not own partition: $($Record.id)"
+    }
+    $leaseStatus = Get-RecordLeaseStatus -Record $Record
+    if ($leaseStatus.reason -eq 'legacy-record') {
+        return $null
+    }
+    if (-not $leaseStatus.active) {
+        throw "Session lease is not active for partition: $($Record.id) ($($leaseStatus.reason))"
+    }
+    Sync-RecordLease -Record $Record -LeaseStatus $leaseStatus
+    return $leaseStatus
+}
+
 function Reconcile-AbandonedRecords {
     param([Parameter(Mandatory)] $State)
 
     $changed = $false
     foreach ($record in @($State.partitions)) {
-        if ($record.status -eq 'running' -and $record.claimMode -ne 'manual' -and -not (Test-OwnerProcessAlive -Record $record)) {
+        if ($record.status -ne 'running') { continue }
+        if (-not [string]::IsNullOrWhiteSpace([string]$record.leaseName)) {
+            $leaseStatus = Get-RecordLeaseStatus -Record $record
+            if ($leaseStatus.active) {
+                Sync-RecordLease -Record $record -LeaseStatus $leaseStatus
+                continue
+            }
+            Stop-RecordLease -Record $record -Reason $leaseStatus.reason
+            $record.status = 'abandoned'
+            $record.abandonedAtUtc = [DateTime]::UtcNow.ToString('o')
+            $record.error = "Session lease is no longer active: $($leaseStatus.reason)."
+            $changed = $true
+            continue
+        }
+        if ($record.claimMode -ne 'manual' -and -not (Test-OwnerProcessAlive -Record $record)) {
             $record.status = 'abandoned'
             $record.abandonedAtUtc = [DateTime]::UtcNow.ToString('o')
             $record.error = "Owner process $($record.ownerProcessId) is no longer alive."
@@ -772,6 +959,18 @@ function Reset-RecordToAvailable {
     $Record.handedOffAtUtc = $null
     $Record.ownerProcessId = $null
     $Record.ownerProcessStartTime = $null
+    $Record.ownerKind = $null
+    $Record.leaseName = $null
+    $Record.leaseFilePath = $null
+    $Record.leaseStopFilePath = $null
+    $Record.leaseHostProcessId = $null
+    $Record.leaseHostProcessStartTime = $null
+    $Record.leaseState = $null
+    $Record.leaseHeartbeatSeconds = $null
+    $Record.lastHeartbeatUtc = $null
+    $Record.leaseExpiresAtUtc = $null
+    $Record.releaseReason = $null
+    $Record.codexSessionId = $null
     $Record.claimedAtUtc = $null
     $Record.startedAtUtc = $null
     $Record.completedAtUtc = $null
@@ -791,7 +990,8 @@ function Set-ClaimRecord {
         [Parameter(Mandatory)][string] $SessionId,
         [Parameter(Mandatory)][ValidateSet('manual', 'managed')][string] $ClaimMode,
         [AllowNull()][string] $CommandPath,
-        [AllowNull()][string[]] $CommandArguments
+        [AllowNull()][string[]] $CommandArguments,
+        [AllowNull()] $LeaseInfo
     )
 
     $now = [DateTime]::UtcNow.ToString('o')
@@ -814,7 +1014,24 @@ function Set-ClaimRecord {
     $Record.stderr = $null
     $Record.error = $null
 
-    if ($ClaimMode -eq 'managed') {
+    $Record.ownerKind = if ($null -ne $LeaseInfo) { 'session-lease-host' } elseif ($ClaimMode -eq 'managed') { 'managed-worker' } else { $null }
+    $Record.leaseName = if ($null -ne $LeaseInfo) { $LeaseInfo.leaseName } else { $null }
+    $Record.leaseFilePath = if ($null -ne $LeaseInfo) { $LeaseInfo.leaseFilePath } else { $null }
+    $Record.leaseStopFilePath = if ($null -ne $LeaseInfo) { $LeaseInfo.stopFilePath } else { $null }
+    $Record.leaseHostProcessId = if ($null -ne $LeaseInfo) { $LeaseInfo.hostProcessId } else { $null }
+    $Record.leaseHostProcessStartTime = if ($null -ne $LeaseInfo) { $LeaseInfo.hostProcessStartTime } else { $null }
+    $Record.leaseState = if ($null -ne $LeaseInfo) { 'active' } else { $null }
+    $Record.leaseHeartbeatSeconds = if ($null -ne $LeaseInfo) { $LeaseInfo.heartbeatSeconds } else { $null }
+    $Record.lastHeartbeatUtc = if ($null -ne $LeaseInfo) { $LeaseInfo.lastHeartbeatUtc } else { $null }
+    $Record.leaseExpiresAtUtc = if ($null -ne $LeaseInfo) { $LeaseInfo.leaseExpiresAtUtc } else { $null }
+    $Record.releaseReason = $null
+    $Record.codexSessionId = if ($null -ne $LeaseInfo) { $LeaseInfo.codexSessionId } else { $null }
+
+    if ($null -ne $LeaseInfo) {
+        $Record.ownerProcessId = $LeaseInfo.hostProcessId
+        $Record.ownerProcessStartTime = $LeaseInfo.hostProcessStartTime
+    }
+    elseif ($ClaimMode -eq 'managed') {
         $ownerProcess = Get-Process -Id $PID
         $Record.ownerProcessId = $PID
         $Record.ownerProcessStartTime = $ownerProcess.StartTime.ToUniversalTime().ToString('o')
@@ -844,6 +1061,28 @@ function New-ClaimedResult {
         lockReleased = $true
         expectedMemberCount = $ReportInfo.expectedMemberCount
         observedMemberCount = $ReportInfo.observedMemberCount
+    }
+}
+
+function Assert-CodexSessionHasNoOtherClaim {
+    param(
+        [Parameter(Mandatory)] $State,
+        [Parameter(Mandatory)][string] $PartitionId
+    )
+
+    $codexSessionId = [string]$env:CODEX_SESSION_ID
+    if ([string]::IsNullOrWhiteSpace($codexSessionId)) {
+        return
+    }
+
+    foreach ($record in @($State.partitions)) {
+        if ([string]$record.id -eq $PartitionId -or $record.status -ne 'running' -or
+            $record.claimMode -ne 'manual') {
+            continue
+        }
+        if ([string]$record.codexSessionId -eq $codexSessionId) {
+            throw "Codex session already owns partition: $($record.id)"
+        }
     }
 }
 
@@ -927,7 +1166,8 @@ function Handoff-ManualRecord {
         [Parameter(Mandatory)][string] $PartitionId,
         [Parameter(Mandatory)][string] $OldSessionId,
         [Parameter(Mandatory)][string] $HandoffId,
-        [Parameter(Mandatory)][string] $NewSessionId
+        [Parameter(Mandatory)][string] $NewSessionId,
+        [AllowNull()] $LeaseInfo
     )
 
     $record = Get-PartitionRecord -State $State -Id $PartitionId
@@ -958,11 +1198,27 @@ function Handoff-ManualRecord {
     $record.exitCode = $null
     $record.ownerProcessId = $null
     $record.ownerProcessStartTime = $null
+    $record.ownerKind = if ($null -ne $LeaseInfo) { 'session-lease-host' } else { $null }
+    $record.leaseName = if ($null -ne $LeaseInfo) { $LeaseInfo.leaseName } else { $null }
+    $record.leaseFilePath = if ($null -ne $LeaseInfo) { $LeaseInfo.leaseFilePath } else { $null }
+    $record.leaseStopFilePath = if ($null -ne $LeaseInfo) { $LeaseInfo.stopFilePath } else { $null }
+    $record.leaseHostProcessId = if ($null -ne $LeaseInfo) { $LeaseInfo.hostProcessId } else { $null }
+    $record.leaseHostProcessStartTime = if ($null -ne $LeaseInfo) { $LeaseInfo.hostProcessStartTime } else { $null }
+    $record.leaseState = if ($null -ne $LeaseInfo) { 'active' } else { $null }
+    $record.leaseHeartbeatSeconds = if ($null -ne $LeaseInfo) { $LeaseInfo.heartbeatSeconds } else { $null }
+    $record.lastHeartbeatUtc = if ($null -ne $LeaseInfo) { $LeaseInfo.lastHeartbeatUtc } else { $null }
+    $record.leaseExpiresAtUtc = if ($null -ne $LeaseInfo) { $LeaseInfo.leaseExpiresAtUtc } else { $null }
+    $record.releaseReason = $null
+    $record.codexSessionId = if ($null -ne $LeaseInfo) { $LeaseInfo.codexSessionId } else { $null }
     $record.commandPath = $null
     $record.commandArguments = @()
     $record.stdout = $null
     $record.stderr = $null
     $record.error = $null
+    if ($null -ne $LeaseInfo) {
+        $record.ownerProcessId = $LeaseInfo.hostProcessId
+        $record.ownerProcessStartTime = $LeaseInfo.hostProcessStartTime
+    }
 
     [pscustomobject]@{
         previousStatus = $previousStatus
@@ -1400,13 +1656,13 @@ try {
     if (($Action -eq 'Run' -or $Action -eq 'RunNext') -and [string]::IsNullOrWhiteSpace($CommandPath)) {
         throw "CommandPath is required for $Action."
     }
-    if (($Action -eq 'Run' -or $Action -eq 'Claim' -or $Action -eq 'Complete' -or $Action -eq 'Fail' -or $Action -eq 'Abandon' -or $Action -eq 'Cleanup' -or $Action -eq 'Handoff') -and [string]::IsNullOrWhiteSpace($PartitionId)) {
+    if (($Action -eq 'Run' -or $Action -eq 'Claim' -or $Action -eq 'Heartbeat' -or $Action -eq 'Complete' -or $Action -eq 'Fail' -or $Action -eq 'Abandon' -or $Action -eq 'CloseSession' -or $Action -eq 'Cleanup' -or $Action -eq 'Handoff') -and [string]::IsNullOrWhiteSpace($PartitionId)) {
         throw "PartitionId is required for $Action."
     }
-    if (($Action -eq 'Run' -or $Action -eq 'Claim' -or $Action -eq 'Complete' -or $Action -eq 'Fail' -or $Action -eq 'Abandon' -or $Action -eq 'Cleanup' -or $Action -eq 'Handoff') -and $null -eq (Get-ManifestPartition -Id $PartitionId)) {
+    if (($Action -eq 'Run' -or $Action -eq 'Claim' -or $Action -eq 'Heartbeat' -or $Action -eq 'Complete' -or $Action -eq 'Fail' -or $Action -eq 'Abandon' -or $Action -eq 'CloseSession' -or $Action -eq 'Cleanup' -or $Action -eq 'Handoff') -and $null -eq (Get-ManifestPartition -Id $PartitionId)) {
         throw "Unknown partition id: $PartitionId"
     }
-    if (($Action -eq 'Complete' -or $Action -eq 'Fail' -or $Action -eq 'Abandon' -or $Action -eq 'Handoff') -and [string]::IsNullOrWhiteSpace($SessionId)) {
+    if (($Action -eq 'Heartbeat' -or $Action -eq 'Complete' -or $Action -eq 'Fail' -or $Action -eq 'Abandon' -or $Action -eq 'CloseSession' -or $Action -eq 'Handoff') -and [string]::IsNullOrWhiteSpace($SessionId)) {
         throw "SessionId is required for $Action."
     }
     if ($Action -eq 'Handoff' -and [string]::IsNullOrWhiteSpace($HandoffId)) {
@@ -1440,7 +1696,7 @@ try {
         try {
             $state = Load-SessionState -Path $absoluteStatePath
             $reconciled = $false
-            if ($Action -eq 'List' -or ($Retry -and $Action -ne 'Cleanup')) {
+            if ($Action -ne 'Cleanup') {
                 $reconciled = Reconcile-AbandonedRecords -State $state
             }
 
@@ -1454,14 +1710,36 @@ try {
                 }
                 $result = New-PartitionListResult -State $state
             }
+            elseif ($Action -eq 'Heartbeat') {
+                $record = Get-PartitionRecord -State $state -Id $PartitionId
+                $leaseStatus = Assert-ManualSessionLease -Record $record -ClaimSessionId $SessionId
+                if ($null -ne $leaseStatus) {
+                    Save-SessionState -State $state -Path $absoluteStatePath
+                }
+                $result = [pscustomobject]@{
+                    status = 'heartbeat'
+                    partition = $PartitionId
+                    sessionId = $SessionId
+                    lastHeartbeatUtc = $record.lastHeartbeatUtc
+                    leaseExpiresAtUtc = $record.leaseExpiresAtUtc
+                    lockReleased = $true
+                }
+            }
             elseif ($Action -eq 'Handoff') {
-                $handoff = Handoff-ManualRecord -State $state -PartitionId $PartitionId -OldSessionId $SessionId -HandoffId $HandoffId -NewSessionId $invocationSessionId
+                $oldRecord = Get-PartitionRecord -State $state -Id $PartitionId
+                $null = Assert-ManualSessionLease -Record $oldRecord -ClaimSessionId $SessionId
+                Stop-RecordLease -Record $oldRecord -Reason 'handoff'
+                $newLease = Start-RecordLease -PartitionId $PartitionId -SessionToken $invocationSessionId
+                $handoff = Handoff-ManualRecord -State $state -PartitionId $PartitionId -OldSessionId $SessionId -HandoffId $HandoffId -NewSessionId $invocationSessionId -LeaseInfo $newLease
                 Save-SessionState -State $state -Path $absoluteStatePath
                 $result = New-HandoffResult -PartitionId $PartitionId -ReportPath $reportInfos[$PartitionId].reportPath -OldSessionId $handoff.oldSessionId -NewSessionId $handoff.newSessionId -HandoffId $HandoffId -PreviousStatus $handoff.previousStatus
             }
-            elseif ($Action -eq 'Complete' -or $Action -eq 'Fail' -or $Action -eq 'Abandon') {
+            elseif ($Action -eq 'Complete' -or $Action -eq 'Fail' -or $Action -eq 'Abandon' -or $Action -eq 'CloseSession') {
+                $record = Get-PartitionRecord -State $state -Id $PartitionId
+                $null = Assert-ManualSessionLease -Record $record -ClaimSessionId $SessionId
                 $finalStatus = if ($Action -eq 'Complete') { 'completed' } elseif ($Action -eq 'Fail') { 'failed' } else { 'abandoned' }
                 $finalExitCode = if ($Action -eq 'Complete') { 0 } else { $ResultExitCode }
+                Stop-RecordLease -Record $record -Reason $(if ($Action -eq 'CloseSession') { 'codex-session-closed' } else { $Action.ToLowerInvariant() })
                 $record = Complete-ManualRecord -State $state -PartitionId $PartitionId -ClaimSessionId $SessionId -FinalStatus $finalStatus -FailureMessage $FailureMessage -FinalExitCode $finalExitCode
                 Save-SessionState -State $state -Path $absoluteStatePath
                 $result = [pscustomobject]@{
@@ -1481,6 +1759,7 @@ try {
                 $record = Get-PartitionRecord -State $state -Id $PartitionId
                 $previousStatus = [string]$record.status
                 Set-ReportRecord -Record $record -ReportInfo $reportInfos[$PartitionId]
+                Stop-RecordLease -Record $record -Reason 'cleanup'
                 Reset-RecordToAvailable -Record $record
                 Save-SessionState -State $state -Path $absoluteStatePath
                 $result = New-CleanupResult -PartitionId $PartitionId -PreviousStatus $previousStatus
@@ -1503,11 +1782,26 @@ try {
                     }
                     else {
                         $claimMode = if ($Action -eq 'Claim' -or $Action -eq 'ClaimNext') { 'manual' } else { 'managed' }
-                        Set-ClaimRecord -Record $record -ReportInfo $reportInfo -SessionId $invocationSessionId -ClaimMode $claimMode -CommandPath $(if ($claimMode -eq 'managed') { $CommandPath } else { $null }) -CommandArguments $(if ($claimMode -eq 'managed') { $effectiveCommandArguments } else { @() })
-                        Save-SessionState -State $state -Path $absoluteStatePath
+                        if ($claimMode -eq 'manual') {
+                            Assert-CodexSessionHasNoOtherClaim -State $state -PartitionId $selectedId
+                        }
+                        $leaseInfo = if ($claimMode -eq 'manual') { Start-RecordLease -PartitionId $selectedId -SessionToken $invocationSessionId } else { $null }
+                        try {
+                            Set-ClaimRecord -Record $record -ReportInfo $reportInfo -SessionId $invocationSessionId -ClaimMode $claimMode -CommandPath $(if ($claimMode -eq 'managed') { $CommandPath } else { $null }) -CommandArguments $(if ($claimMode -eq 'managed') { $effectiveCommandArguments } else { @() }) -LeaseInfo $leaseInfo
+                            Save-SessionState -State $state -Path $absoluteStatePath
+                        }
+                        catch {
+                            if ($null -ne $leaseInfo) {
+                                Stop-Version4SessionLeaseHost -LeaseFilePath $leaseInfo.leaseFilePath -StopFilePath $leaseInfo.stopFilePath -SessionToken $invocationSessionId
+                            }
+                            throw
+                        }
 
                         if ($claimMode -eq 'manual') {
                             $result = New-ClaimedResult -ReportInfo $reportInfo -SessionId $invocationSessionId
+                            $result | Add-Member -MemberType NoteProperty -Name leaseHostProcessId -Value $leaseInfo.hostProcessId
+                            $result | Add-Member -MemberType NoteProperty -Name leaseExpiresAtUtc -Value $leaseInfo.leaseExpiresAtUtc
+                            $result | Add-Member -MemberType NoteProperty -Name codexSessionId -Value $leaseInfo.codexSessionId
                         }
                         else {
                             $pendingManagedRun = [pscustomobject]@{
@@ -1544,11 +1838,11 @@ try {
     }
 }
 catch {
-    if ($_.Exception.Message -match '^Report |^Unknown partition |^CommandPath |^CommandArgumentList |^PartitionId |^SessionId |^HandoffId |^Report contains ID-class|^Task table |^Task set |^TaskSetName |^TaskTablePath |^Initialize ') {
+    if ($_.Exception.Message -match '^Report |^Unknown partition |^CommandPath |^CommandArgumentList|^Use either CommandArgumentList|^PartitionId |^SessionId |^HandoffId |^Owner process is not available|^Report contains ID-class|^Task table |^Task set |^TaskSetName |^TaskTablePath |^Initialize ') {
         $result = New-InvalidResult -Message $_.Exception.Message
         $exitCode = $ExitInvalid
     }
-    elseif ($_.Exception.Message -match '^Partition is already|^Partition is not running|^Partition was not claimed|^Session id does not own|^Partition status|^Session state partition set|^No claimable') {
+    elseif ($_.Exception.Message -match '^Partition is already|^Partition is not running|^Partition was not claimed|^Session id does not own|^Owner Codex session does not own|^Codex session already owns|^Session lease is not active|^Partition status|^Session state partition set|^No claimable') {
         $result = [pscustomobject]@{ status = 'conflict'; partition = $PartitionId; error = $_.Exception.Message }
         $exitCode = $ExitConflict
     }

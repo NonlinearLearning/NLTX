@@ -40,10 +40,10 @@ System 拆分阶段不可以：
 
 本报告与以下规则配合使用：
 
-- [`ecs-system-domain-splitting/SKILL.md`](../../.agents/skills/ecs-system-domain-splitting/SKILL.md)
-- [`system-splitting/SKILL.md`](../../.agents/skills/ecs-system-domain-splitting/system-splitting/SKILL.md)
-- [`system-api-splitting/SKILL.md`](../../.agents/skills/ecs-system-domain-splitting/system-api-splitting/SKILL.md)
-- [`system-decomposition-session-contract.md`](../../.agents/skills/version4-system-decomposition-session/references/system-decomposition-session-contract.md)
+- [`ecs-system-domain-splitting/SKILL.md`](../../.agents/skills/ecs-system/SKILL.md)
+- [`system-splitting/SKILL.md`](../../.agents/skills/ecs-system/system-splitting/SKILL.md)
+- [`system-api-splitting/SKILL.md`](../../.agents/skills/ecs-system/system-api-splitting/SKILL.md)
+- [`system-decomposition-session-contract.md`](../../.agents/skills/version4-partition-session-runner/sessions/version4-system-decomposition-session/references/system-decomposition-session-contract.md)
 - [`System 拆分 Markdown 编写指南`](2026-09-02-system-split-markdown-writing-guide.md)
 
 ## 2. 三项核心工作
@@ -125,12 +125,12 @@ System 拆分阶段不可以：
 当前若返回 `Unavailable`，表示递归事实闭包不可用，不表示没有推导关系。
 
 完整工具目录和 artifact 契约见
-[`system-decomposition-toolchain.md`](../../.agents/skills/ecs-system-domain-splitting/references/system-decomposition-toolchain.md)。
+[`system-decomposition-toolchain.md`](../../.agents/skills/ecs-system/references/system-decomposition-toolchain.md)。
 
 #### 2.1.1a 实际工具实现和统一入口
 
 当前实现位于
-`.agents/skills/ecs-system-domain-splitting/tools/`，按职责分为：
+`.agents/skills/ecs-system/tools/`，按职责分为：
 
 | 层 | 实际路径 | 责任 |
 | --- | --- | --- |
@@ -178,7 +178,7 @@ build-scope
 reader envelope、fact 和 artifact ref，防止失败/partial 产物被 reader 升级。
 
 PowerShell 启动器
-[`Run-SystemDecomposition.ps1`](../../.agents/skills/ecs-system-domain-splitting/tools/Run-SystemDecomposition.ps1)
+[`Run-SystemDecomposition.ps1`](../../.agents/skills/ecs-system/tools/Run-SystemDecomposition.ps1)
 只调用已经生成的 CLI 程序集；它不会自动 restore、build、test、run 或修改 source tree。
 当前实现阶段只做源码级检查，未运行 CLI、测试或构建。
 
