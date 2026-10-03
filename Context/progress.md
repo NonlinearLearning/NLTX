@@ -15,7 +15,7 @@ The following were intentionally not changed:
 - Build/diagnostics/ evidence.
 
 For repository build rules, use
-[AGENTS.md#dotnet-build-concurrency-contract](../AGENTS.md#dotnet-build-concurrency-contract).
+[构建与验证约束](约束/构建与验证约束.md).
 For general documentation lifecycle rules, use
 [dome/dome1/docs/flowstate/README.md](../dome/dome1/docs/flowstate/README.md).
 There is no active migration plan/task selected by this card.

@@ -1,0 +1,65 @@
+﻿#define TRACE
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using Newtonsoft.Json;
+
+namespace Terraria.WorldBuilding;
+
+public class WorldManifest
+{
+	public List<GenPassResult> GenPassResults = new List<GenPassResult>();
+
+	public static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings
+	{
+		TypeNameHandling = TypeNameHandling.Auto
+	};
+
+	public string Version { get; set; }
+
+	public string GitSHA { get; set; }
+
+	public uint? FinalHash
+	{
+		get
+		{
+			if (GenPassResults.Count <= 0)
+			{
+				return null;
+			}
+			return GenPassResults[GenPassResults.Count - 1].Hash;
+		}
+	}
+
+	public static WorldManifest Deserialize(string json)
+{
+	using (new global::Terraria.CallTracker("Terraria.WorldBuilding.WorldManifest.Deserialize"))
+	{
+		try
+		{
+			if (!string.IsNullOrEmpty(json))
+			{
+				return JsonConvert.DeserializeObject<WorldManifest>(json, SerializerSettings);
+			}
+		}
+		catch (Exception value)
+		{
+			Trace.WriteLine(value);
+		}
+		return new WorldManifest();
+	}
+	}
+	public string Serialize()
+{
+	using (new global::Terraria.CallTracker("Terraria.WorldBuilding.WorldManifest.Serialize"))
+	{
+		return JsonConvert.SerializeObject(this, SerializerSettings);
+	}
+	}
+	public WorldManifest Clone()
+{
+	using (new global::Terraria.CallTracker("Terraria.WorldBuilding.WorldManifest.Clone"))
+	{
+		return JsonConvert.DeserializeObject<WorldManifest>(JsonConvert.SerializeObject(this, SerializerSettings), SerializerSettings);
+	}
+	}}

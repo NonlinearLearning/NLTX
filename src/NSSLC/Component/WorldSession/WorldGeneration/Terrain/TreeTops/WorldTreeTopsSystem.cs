@@ -71,6 +71,31 @@ public static class WorldTreeTopsSystem
       currentStyle);
   }
 
+  public static void ApplyStyles(
+    WorldTreeTopsStateComponent state,
+    IReadOnlyList<int> styles)
+  {
+    ArgumentNullException.ThrowIfNull(state);
+    ArgumentNullException.ThrowIfNull(styles);
+    if (styles.Count > state.AreaCount)
+    {
+      throw new ArgumentException(
+        "Tree tops style updates cannot exceed the number of world areas.",
+        nameof(styles));
+    }
+
+    int[] stableStyles = new int[styles.Count];
+    for (int index = 0; index < stableStyles.Length; index++)
+    {
+      stableStyles[index] = styles[index];
+    }
+
+    for (int areaId = 0; areaId < stableStyles.Length; areaId++)
+    {
+      state.SetTreeStyle(areaId, stableStyles[areaId]);
+    }
+  }
+
   private static int GetStyleCount(int areaId)
   {
     return areaId switch

@@ -10,7 +10,8 @@
 2. [文档库存快照](document-inventory.md)：记录本次盘点时工作树中的目录、数量和已知缺口。
 3. [逐文件 Markdown manifest](document-manifest.tsv)：记录当前 canonical 路径、逻辑域和产物类型。
 4. [Flowstate 文档生命周期入口](../dome/dome1/docs/flowstate/README.md)：定义 N1-N9 生命周期、manifest 和验收边界。
-5. [ECS 文件组织设计约束](../Context/架构设计/ECS文件组织设计约束.md)：涉及 ECS 领域文件时使用的仓库级约束。
+5. [ECS 文件组织设计约束](../Context/架构设计/ECS文件组织设计约束.md)：涉及 ECS 领域文件或生产/参考源码目录边界时使用的仓库级约束。
+6. [ECS 领域层与基础设施六边形架构边界](../Context/架构设计/ECS领域与基础设施架构边界.md)：说明 ECS 权威状态、应用用例、持久化端口和基础设施适配器的职责与依赖方向。
 
 ## 当前物理结构
 

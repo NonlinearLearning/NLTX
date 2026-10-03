@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Terraria.NonAuthoritative</RootNamespace>
+    <AssemblyName>NSSLC.Infrastructure.WorldStorage</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\NSSLC.Application\NSSLC.Application.csproj" />
+    <Compile Include="Platform\WorldFileStoreAdapter.cs" />
+    <Compile Include="WorldFile\WorldFileDocumentDecoder.cs" />
+    <Compile Include="WorldFile\WorldFileDocumentEncoder.cs" />
+    <Compile Include="WorldFile\WorldFileDocumentValidator.cs" />
+    <Compile Include="WorldFile\WorldFileFormatConstants.cs" />
+    <Compile Include="WorldStorageCoordinatorFactory.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <NetWorkRoot Condition="'$(NetWorkRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\..\ProjectItem\SourceCode\Net\NetWork\</NetWorkRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="$(NetWorkRoot)src\Packets\PacketDesignCompiler.Packets.csproj" />
+  </ItemGroup>
+</Project>

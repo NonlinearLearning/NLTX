@@ -12,7 +12,11 @@ public sealed class WorldLoadLifecycleComponent
 
   public bool LoadFailed { get; private set; }
 
+  public bool LoadCanceled { get; private set; }
+
   public bool WorldCleared { get; private set; }
+
+  public bool RequiresWorldReset { get; private set; }
 
   public bool WorldBackup { get; private set; }
 
@@ -24,12 +28,23 @@ public sealed class WorldLoadLifecycleComponent
   public void SetLoadResult(bool loadFailed, bool worldBackup)
   {
     LoadFailed = loadFailed;
+    LoadCanceled = false;
+    RequiresWorldReset = false;
+    WorldBackup = worldBackup;
+  }
+
+  public void SetLoadCanceled(bool worldBackup)
+  {
+    LoadFailed = true;
+    LoadCanceled = true;
+    RequiresWorldReset = false;
     WorldBackup = worldBackup;
   }
 
   public void MarkWorldCleared()
   {
     WorldCleared = true;
+    RequiresWorldReset = false;
   }
 
   public void ResetWorldCleared()
@@ -41,6 +56,15 @@ public sealed class WorldLoadLifecycleComponent
   {
     RecoveryPhase = WorldLoadRecoveryPhase.PrimaryLoad;
     LoadAttemptCount = 1;
+    RequiresWorldReset = false;
+    WorldCleared = false;
+  }
+
+  internal void SetLoadRequiresWorldReset(bool worldBackup)
+  {
+    LoadFailed = true;
+    RequiresWorldReset = true;
+    WorldBackup = worldBackup;
   }
 
   internal void ContinueRecovery(

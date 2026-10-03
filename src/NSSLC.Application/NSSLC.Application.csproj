@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Terraria.NonAuthoritative</RootNamespace>
+    <AssemblyName>NSSLC.Application</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NSSLC\Component\WorldSession\Terraria.WorldSession.csproj" />
+    <ProjectReference Include="..\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj" />
+    <ProjectReference Include="..\..\Build\Tools\WorldLoadApiGenerator\WorldLoadApiGenerator.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
+  </ItemGroup>
+</Project>

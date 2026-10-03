@@ -13,6 +13,11 @@
 - 新增、移动、拆分、合并或重命名 ECS、领域模型、测试及相关文件前，阅读
   [ECS 文件组织设计约束](Context/架构设计/ECS文件组织设计约束.md)。
 
+## ECS And Infrastructure Boundaries
+
+- 设计 ECS 领域状态与持久化、文件或平台基础设施的职责/依赖边界时，阅读
+  [ECS 领域层与基础设施六边形架构边界](Context/架构设计/ECS领域与基础设施架构边界.md)。
+
 ## 组件命名
 
 - 新增或重命名组件类型、字段、注册键或相关原型标识符前，阅读
@@ -27,15 +32,10 @@
 - 修改命令式 C#、ECS 系统、后台任务或协议适配器前，阅读
   [副作用隔离规范（草案）](Context/约束/非函数式编码副作用隔离规范.md)。
 
-## Dotnet Build Concurrency Contract
+## Build And Verification
 
-- 执行构建、测试、运行、发布等可能触发编译的操作前，阅读
+- 执行构建、测试、运行、发布等可能触发编译的操作，或修改构建策略、生成输出、报告验证结果前，阅读
   [构建与验证约束](Context/约束/构建与验证约束.md)。
-
-## Outputs And Verification
-
-- 修改构建策略、生成输出或报告验证结果前，阅读
-  [构建输出与验收要求](Context/约束/构建与验证约束.md#outputs-and-verification)。
 
 ## 入口维护
 
