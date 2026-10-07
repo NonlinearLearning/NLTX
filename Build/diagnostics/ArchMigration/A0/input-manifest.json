@@ -1,0 +1,87 @@
+{
+  "schemaVersion": 1,
+  "track": "A0",
+  "capturedOn": "2026-10-08",
+  "status": "partial / blocked-by-prerequisite",
+  "sourceBase": {
+    "commit": "af6f3039fa1611a3e0da0cb6c37707eb96f3b295",
+    "productionSourceFingerprint": "D22E54FEBE9AD29ECF8DB40E872A77D0A7195ECA3174C1625265B23527FC0CFE",
+    "fingerprintEvidence": "Build/diagnostics/ArchMigration/T5/handoff-report.md; no source files changed in T5-B5"
+  },
+  "availableInputs": [
+    {
+      "id": "tracked-real-world-v326",
+      "path": "src/World/科研.wld",
+      "role": "tracked real-world save candidate",
+      "available": true,
+      "worldFileVersion": 326,
+      "sizeBytes": 11713581,
+      "sha256": "7B6D6F46D6C805402AE22D381A16CDFE0CD60B676549EF0AFF5DB0A8F8B53B9E",
+      "compatibility": "Prior T5 custom Simulation host attempt failed during load at tick 0: world.backgrounds.load did not support version 326.",
+      "eligibleForBaseline": false,
+      "evidence": "Build/diagnostics/ArchMigration/T5/host-smoke.json and Build/diagnostics/ArchMigration/T5/command-log.jsonl",
+      "sourceMutationObserved": false
+    },
+    {
+      "id": "generated-worldfile-319-small-seed-12345",
+      "path": "Build/diagnostics/ArchMigration/T5/input/319-small-12345/generated.wld",
+      "role": "generated smoke fixture only",
+      "available": true,
+      "worldFileVersion": 319,
+      "sizeBytes": 2984820,
+      "widthTiles": 4200,
+      "heightTiles": 1200,
+      "seed": 12345,
+      "sha256": "28DBFA2C8222BE0D88F958912767E728FC2F5290A147BD0833F0B10D966BAE88",
+      "compatibility": "Existing custom ECS finite-host smoke passed for load, one tick, and exit.",
+      "eligibleForBaseline": false,
+      "ineligibilityReason": "Generated fixture and legacy DTO/Codec roundtrip evidence; not a representative real save and not Arch persistence evidence.",
+      "evidence": [
+        "Build/diagnostics/ArchMigration/T5/input/319-small-12345/roundtrip.json",
+        "Build/diagnostics/ArchMigration/T5/host-smoke-319.json"
+      ],
+      "sourceMutationObserved": false
+    }
+  ],
+  "missingInputs": [
+    {
+      "id": "compatible-real-small-world",
+      "description": "A compatible real small WorldFile save for repeatable host and persistence validation.",
+      "status": "not found in the current repository/worktree input inventory"
+    },
+    {
+      "id": "compatible-real-medium-world",
+      "description": "A compatible real medium WorldFile save for representative capacity and save/load validation.",
+      "status": "not found in the current repository/worktree input inventory"
+    }
+  ],
+  "performanceBudget": {
+    "status": "not frozen",
+    "plannedActorCountsFromT5Contract": {
+      "players": 255,
+      "npcs": 200,
+      "projectiles": 1000
+    },
+    "missingFreezeItems": [
+      "approved world inputs and representative component combinations",
+      "spawn/destroy/add/remove/item-transfer/tick operation proportions",
+      "warm-up and sampling protocol",
+      "acceptance thresholds for tick p95, allocation, and stable memory"
+    ],
+    "benchmarkRun": false
+  },
+  "representativeVerification": {
+    "budget": "approximately 10% of the T5 core selection",
+    "newRunsInT5B5": 0,
+    "reusedPassingScenarios": 1,
+    "scenario": "custom ECS load -> one tick -> exit using the generated WorldFile 319 fixture",
+    "archHostEvidence": false,
+    "benchmarkEvidence": false
+  },
+  "constraints": {
+    "productionHostPathChanged": false,
+    "legacyEcsDeleted": false,
+    "additionalSmokeMatrixRun": false,
+    "performanceBenchmarkRun": false
+  }
+}
