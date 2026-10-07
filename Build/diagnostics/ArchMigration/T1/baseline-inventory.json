@@ -1,0 +1,2361 @@
+{
+  "documentId": "DOC-2026-10-08-ARCH-TRACK-T1",
+  "capturedAt": "2026-10-08T02:26:40.5684034+08:00",
+  "worktree": "C:/Users/shan/.codex/worktrees/32f2/NLTX",
+  "head": "e2c686790ab6a4f14505ea914c27478f5959d061",
+  "status": [
+    "## HEAD (no branch)",
+    "?? docs/plans/2026-10-08-arch-migration-track-t1-baseline-api-probe.md",
+    "?? docs/plans/2026-10-08-arch-migration-track-t2-world-identity-signatures.md",
+    "?? docs/plans/2026-10-08-arch-migration-track-t3-lifecycle-relationships.md",
+    "?? docs/plans/2026-10-08-arch-migration-track-t4-query-network-items.md",
+    "?? docs/plans/2026-10-08-arch-migration-track-t5-host-performance-exit.md",
+    "?? docs/plans/2026-10-08-arch-parallel-execution-coordination.md"
+  ],
+  "sdkVersion": "10.0.400",
+  "globalJson": "{\r\n  \"sdk\": {\r\n    \"version\": \"10.0.400\",\r\n    \"rollForward\": \"latestPatch\",\r\n    \"allowPrerelease\": false\r\n  }\r\n}\r\n",
+  "referenceSearchExitCode": 0,
+  "referenceSearchOutput": "Build/diagnostics/ArchMigration/T1/baseline-reference-search.txt",
+  "matchedFileCount": 209,
+  "matchedSources": [
+    {
+      "path": "src\\NSSLC.Application\\Network\\IProjectileNetworkCommandSessionQuery.cs",
+      "sha256": "839255131CCC335A14B818440E121029B6BE16C5B24BEF24CE0A476CB1FC49EE",
+      "terms": [
+        "entityruntime",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\IProjectileNetworkOwnerThreadScheduler.cs",
+      "sha256": "DB46AAF47885192904ACAB637488867B3AAF515081ABDC97E4794E395BD31293",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\NetworkPlayerOwner.cs",
+      "sha256": "47BBE8C768066142CCABCA24D36B11528F31DE49115B321BBF904ABC8AE8BDF8",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\NetworkPlayerOwner.Loadout.cs",
+      "sha256": "B7ECEA0BC21C004CADA6CC26D22A3EA14EB57DC20652B9E89DFB04E7EF773D72",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\NetworkPlayerOwner.State.cs",
+      "sha256": "B8F8C90DCD39451C19D2BAE3B8256F6D888EBF5CEE1AB8E62ED6E4749882AFA7",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\NetworkSessionContext.cs",
+      "sha256": "4CD92EF01CB9BA864E9E672745B8F564011E4647F63872D3274EF2820D414D12",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\NetworkWorldItemOwner.cs",
+      "sha256": "295A54096DE1C17CD1CA42C4791E8CC95C1593DD88AE924C8A2BDDBCC029B9EA",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\NetworkWorldOwner.cs",
+      "sha256": "9872996869762E3A56F1C920E2EA8184BD65DB6FA30186DAE94D28B3C4A2999C",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\ProjectileNetworkCommandOwner.cs",
+      "sha256": "85855BDEDB6B1638AFF25B4F666680E135DA052C025C45BE0E19CD839CE5D185",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\ProjectileNetworkCommandSession.cs",
+      "sha256": "C9D7A54E4E35911E7A6885C3D5C5E52BE1D925D5709081C8DA2751D3E9799DC3",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\SocialNpcEffectOwner.cs",
+      "sha256": "6B078B12ED566B5A6FB765AE754F6D9D3DD169764CB028903C54FC5060EB2213",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "match",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\SocialNpcEffectSnapshot.cs",
+      "sha256": "E61BE04A54CB26F175616C9CB2DA2EFD07A5742CB57CDCE4C70F2BC269BE2B11",
+      "terms": [
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\SocialPlayerNpcInteractionSnapshot.cs",
+      "sha256": "541FCB671FACF2566DD641CC25B7BDE7924E95509F671D3E0A1E7C0FFC422703",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Network\\SocialProjectileSpawnSnapshot.cs",
+      "sha256": "8453F893AC1F1EC26535DFBC0DAB878A1B4D63B8D7FAC11E2F080A057D3F4A1F",
+      "terms": [
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Simulation\\WorldSimulationKernel.cs",
+      "sha256": "C994D55885F9047EDEC89526CEE9CB7A784019F646996D31BB19BFF7526A8FB9",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\Simulation\\WorldSimulationTickContext.cs",
+      "sha256": "276A84807AB3BDB9176B88BC8E9C8071F027E042D975600F641B74D239629510",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\LoadedWorldSession.cs",
+      "sha256": "E8FC0BF003C50D26CC1F96DE4B443DACFB82C2DEEB51252FFB937F7CA06909EE",
+      "terms": [
+        "entityruntime",
+        "identityregistry",
+        "loadedworldsession",
+        "worldstorageroot"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldBackgroundLoadApi.cs",
+      "sha256": "FE136051F8CA72DBCA8A21CC1CD0A2AB8353071AFE2E9EA2B19B81155823E336",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldBannerLoadApi.cs",
+      "sha256": "13D9D8C7D2C9A831AD662DA20440FDF6B659D777505816FE069FAAAD927E5179",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldBestiaryLoadApi.cs",
+      "sha256": "CC827064C47A50D10B25BD9639A4429BFC2A11D0963A1E537539F2F158B1BA2C",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldBossProgressionLoadApi.cs",
+      "sha256": "75DD85C015CF895E8F56CCAFC208464B5DADC2A19C9E7140618E5C783EB778CE",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldChestLoadApi.cs",
+      "sha256": "00F9A807D6DBEFF47F58DB077B9D066ED28F426CAF9334FDECD86F105C7FC2B1",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldCreativePowersLoadApi.cs",
+      "sha256": "31ABB1331EB7708AD62D739BB67875BC94C4FF50E3A6A11447E9570C7535F0BC",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldDefenderEventLoadApi.cs",
+      "sha256": "5FD6E2787B8D7303167142EA6308B6F143439B01105DFE4BF7BAEEA6195468A8",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldEnvironmentLoadApi.cs",
+      "sha256": "CA8F1CFDA3F0672E92BE533FE34FAF03C622E5744753A3892764D7610BF55998",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldEventLoadApi.cs",
+      "sha256": "B2CBE3334EEAC101C6D8A29470AF8CB03CD49125F11C46E02F2995E8A2294AFA",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldFooterLoadApi.cs",
+      "sha256": "E1F027AA9C0E8FC38B5C47D7659C238DB9BF66DCBCB3C0A98C39252237F8B44D",
+      "terms": [
+        "loadedworldsession",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldHeaderLoadApi.cs",
+      "sha256": "A4EDC69C9A2D7C75C5C5A882761793EA5F8298539C819A5818D19B18B08D185A",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldMetadataLoadApi.cs",
+      "sha256": "855EACE51C079809EE86593EA216996D035687F1F2298163EDD1306E35AC2A44",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldNpcLoadApi.cs",
+      "sha256": "D5EC88E51319FC471B1DD1BF825A85402C182B39996A320B823E0CE4B7B16507",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldNpcUnlockLoadApi.cs",
+      "sha256": "C2BA76F337399A8E7D19D990D09EA663E39CC6389F859B17C817483989AACB3B",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldPartyLoadApi.cs",
+      "sha256": "21A4FBDCF16DC1F627A90F1D6ECDCDBF43D33C942C5B25EB3F78847F68DCDE79",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldPressurePlateLoadApi.cs",
+      "sha256": "5A17697DC23EEE83196B637A14C90B013BB274F45FDE40E319A8254DA0434566",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldProgressionLoadApi.cs",
+      "sha256": "49FDF3D33CF60C6DBCD5638ACD2A528920F5E1D146DF6EAC2D31D0AF98905979",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldQuestLoadApi.cs",
+      "sha256": "D6BF5B1DB3185D38CCA1AA0A06D6E727E8DEA6E1B8DCE67DB0F86F4F4F2EAAD5",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldSandstormLoadApi.cs",
+      "sha256": "3A5F01B589505860024DE658260E8E7DD805E01A0E6E0D1A7ECD01E5544F6B9D",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldSeasonalLoadApi.cs",
+      "sha256": "91210605F22852CE71A168595A631DC782E946910C92040863220C38A3BFF4F5",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldSectionLoadApi.cs",
+      "sha256": "1A0FD8F7685DCE41CAA850150120862F4BD6F4316DBD957A5E67DD8CDE7FFFFC",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldSignLoadApi.cs",
+      "sha256": "EA2C49B174BFBE9A88B6731F84A1D2183903B83D1FFA4C7E41F17D8A473D3259",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldSpawnLoadApi.cs",
+      "sha256": "0A80B38D965F3BF592D9AEC17595B6EAE2485F4206DC2D1C98E8C827D345FC47",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldTileEntityLoadApi.cs",
+      "sha256": "D0358A101251665AA635F91D040612E3B36F9C12392CA36C50F14005166D012B",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldTilePayloadLoadApi.cs",
+      "sha256": "E97DA90B081CD0F075E9C0D94F9BA3CD1C4DBC8782C426C35EF7113A359F6ABE",
+      "terms": [
+        "loadedworldsession",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldTimePolicyLoadApi.cs",
+      "sha256": "35C40F2C88F7DE8D6FE3E3AD3E85E76FB6F893961002B43F2F57143079D318DB",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Loading\\WorldTownManagerLoadApi.cs",
+      "sha256": "DA9BB526CBBDB4B0E1FB794DF815F14E5AFD92894EB70CB9E7AC9C126FFB1B9B",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Persistence\\IWorldLoadLifecycleProjection.cs",
+      "sha256": "304E0C6E316E50889C8BB94B3EA3AAEBBC99E5BAD63A38DD50C1418F5A10506C",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Persistence\\IWorldLoadRecoveryEffects.cs",
+      "sha256": "A6D6AA28027A3D18AE4A9DF52C9B6BEDC7198FCBA6289346964ABF90F0E51DB8",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Persistence\\WorldLoadCoordinator.cs",
+      "sha256": "48435B58FD6FF95E8DE13D19E5EAA556E55B2B178E3E355C9B310EA91DF7FFC4",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\Persistence\\WorldLoadRecoveryCoordinator.cs",
+      "sha256": "A6092EF92DB44D61AADD1B6D376AA1DEBCBA1A607DFB10353FC349427BDCBB52",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Application\\WorldStorage\\WorldData\\WorldFileNpcSection.cs",
+      "sha256": "B86D445046728A9310C4A76DB5E8B7E1E4EF7C69B21621679167022CAF20429E",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\NetworkGatewayHost.cs",
+      "sha256": "CB592A45E72971BB6067EF02076DC9207DF1329D3E5229644F46BD7E2E081264",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\PacketBinding.cs",
+      "sha256": "02B67D5FDAEF6DA6B68C38CB1E1F292976B760523D2AD0AEED661B8740F40051",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\PacketGateway.cs",
+      "sha256": "CFFA061F8EC719CD823C6AAEE5C6E6DA002B5511E9C737142ADDC462519EBF7A",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\CompilerCore.cs",
+      "sha256": "C87307CD60A9A6C89602F9792F1EEDAA32101B18BE72DEDA6C50E6465D538EB2",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\DataPacketDefinition\\Codecs\\Chests\\SyncPlayerChestPacket.Codec.cs",
+      "sha256": "316ACE2B289B5A59F9DD2D052BCF0A7879987FCF5F8C24028E9E74BE95A62486",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\DataPacketDefinition\\Codecs\\Items\\ItemTweakerPacket.Codec.cs",
+      "sha256": "5A354196F59BED4DFA8CC576053C2CA2CD72C7FE37AF26915217B35733DB953F",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\DataPacketDefinition\\Codecs\\Players\\PlayerControlsPacket.Codec.cs",
+      "sha256": "29EDB862EDAC4E91AD6BFA94C9806D75F2CD749BCDF1D98438260098C65D06A5",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\DataPacketDefinition\\Codecs\\Projectiles\\SyncProjectilePacket.Codec.cs",
+      "sha256": "7BF2627845283026895B2EA7B43B08A79D4B3C9ADC6590E27D283934B6C47AFF",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\DataPacketDefinition\\Codecs\\Social\\SyncEmoteBubblePacket.Codec.cs",
+      "sha256": "AC60E297F5FD6361805C8C636DA4C89DED25FAF3870FFD2E0FD5854F3835B943",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\DataPacketDefinition\\Codecs\\World\\ShimmerActionsPacket.Codec.cs",
+      "sha256": "2F774615A904AE3194B15A70D05FA001810E030EA2F8B5AC8307569A5AEC9D5E",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\FunctionDeclarationCompiler.cs",
+      "sha256": "73AD8D07233D103568B225A21BAAD3DF777D3D0112A279E4C4BEB551D9D1FCA7",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\Model.cs",
+      "sha256": "EE328B7122D5EAAF1D060DBD3E752EFCE7B3AC5FDD82BB7ADE4164F372C917AB",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\SocialPacketHandlers.cs",
+      "sha256": "BA88B4CB572900330CE1938F75688F602FC958A3FD26B2A0B23241B693952D18",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\WorldDataPacketHandler.cs",
+      "sha256": "92BFE5013C1ABEE59958AA84DB4FE379B5637706FFF3A00C1B7D7FD46BAA4E95",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\WorldGenerationTileFrameRepairAdapter.cs",
+      "sha256": "30292C917DB9D524B80DCEBAF6288294C255AD7326AA2DB2F90D9D30D8EB6D56",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\WorldSynchronizationPacketHandlers.cs",
+      "sha256": "CD09A11E1D67D40E864614E621AEBCC1211EC921B37F713C7CD7D774DE67C467",
+      "terms": [
+        "entityruntime",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\WorldTileMetricsPacketProducer.cs",
+      "sha256": "4138DFFDFC2FF375719234BFAF2505250EA186ED2D6CC3F25496B97DF926D436",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\WorldTimePacketProducer.cs",
+      "sha256": "B531AD9FB8EC31F78D6E6E7F55EF1F672EB1384232FC89758776067201267513",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldGeneration\\Runtime\\TileEntity.cs",
+      "sha256": "5E4BBEB973CC32BC0579D02336B569227AF57916E05A47A0CFC568EC612B57E2",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldGeneration\\WorldGen.cs",
+      "sha256": "91846371B0774027EDB3CAB121739627820B456AF4868CCB07EABD2615D3BA37",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LegacyWorldChestAndSignProjection.cs",
+      "sha256": "FD7F8666A4BDDC18C61CE3F5277092B6427074AB6B58F41A4F1574C2158F8024",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LegacyWorldLoadRecoveryEffects.cs",
+      "sha256": "54E6E5BA8E87A7B6D25624A0B59F643BC6AD910DA9FFA3BE2AF7370296D685D4",
+      "terms": [
+        "loadedworldsession",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LegacyWorldPressurePlateProjection.cs",
+      "sha256": "566863A2B997829BF12F9A44B09A440A833D64F39F201EE127EE6B37B3FDF3A1",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LegacyWorldSessionProjection.cs",
+      "sha256": "990668EF48DE00BEE760674A842661408187D131EF85361A3A008EEE362E57CC",
+      "terms": [
+        "loadedworldsession",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LegacyWorldTileEntityMigration.cs",
+      "sha256": "5ECFF6D4E45102276EA041BA616F3D08801F5743C8DA7E3940BB697F545353C0",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LegacyWorldTileEntityProjection.cs",
+      "sha256": "4837E090FAF14F052C79DAAE88BABB037649ABC50B0EA631BA81552D5A6FB7A6",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LegacyWorldTileEntitySavePreparation.cs",
+      "sha256": "483FE65DD52353D4803E364C54225CB9BB73C76620DE7FE022C377111AEB0136",
+      "terms": [
+        "loadedworldsession",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LegacyWorldTileMapProjection.cs",
+      "sha256": "143EBA9683765179DDEBAECA20F23DAA2426C7F065DC3DF829594F8B8EE7452C",
+      "terms": [
+        "loadedworldsession",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LegacyWorldTreeTopsProjection.cs",
+      "sha256": "E451C5E7303206B20E53BA648E6CF29112A93AE86EB4F8C24B588944967039CD",
+      "terms": [
+        "loadedworldsession",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\Generation\\LoadedWorldPersistenceSnapshotSource.cs",
+      "sha256": "5DFAFDB7BB2AC35CE50A2449EC0462E9FAA47B30E86A299F6EAA1A496F686098",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\NetworkWorldSessionLoader.cs",
+      "sha256": "29BC673A6AC8D97BCB5E60ECCC05C4E05C557D9CA672A42BA3662061E57B35EA",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\WorldFile\\FileUtilities.cs",
+      "sha256": "F632A3D9F08CAF9740DE7798E98EB4C3A3B8443205D4B160C744B0BBD26FBCDF",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\WorldFile\\WorldFileDocumentDecoder.cs",
+      "sha256": "468580C5B2A33E0FB54EABC08B2735581B4F5B8C388DC1C366DB12A362EE077F",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\WorldFile\\WorldFileDocumentEncoder.cs",
+      "sha256": "97C528F25A70C66EAAD78FC06B1F9014242DAA8128078E9D840825A2B3A768F3",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\WorldFile\\WorldFileDocumentValidator.cs",
+      "sha256": "59EA712C71EF8182621DA693294DE13A641BCDB1E61A93735EFA4420DF4A0245",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\WorldStorageCoordinatorFactory.cs",
+      "sha256": "BE290DBDABE26820C01FBD8FB350C1D3A045393E017345E380EEB975E4C2BA11",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.NetworkServer\\Program.cs",
+      "sha256": "EC89870AE4397A4B88377D801FB836545730AD70DF40391DFE1D5724CF337B11",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\ActiveLiquidTickPhase.cs",
+      "sha256": "45C577421E1233A56D7170E7B8692EA8E732BD65B6592CBE717860F13F16613E",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\ActivePressurePlateTickPhase.cs",
+      "sha256": "7494FE77A1CC688AD05572864ADA24B584F4DBA11A2B5297CBDCBFD0F2532178",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\ActiveTileEntityTickPhase.cs",
+      "sha256": "81D15E3FDA07C448C320FFFA9F6D336F4A47B626DBEBD62AF5761E8861A6DB5F",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\NpcTaskLifecycleProbe.cs",
+      "sha256": "B32755D8290073F117CA97C6DD9194D35A9E4C5A52644E444FFD2B817EBE36A5",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\PressurePlateProbeInstaller.cs",
+      "sha256": "72FD4A4F7849619E98AC16061A6A8786C6E8ACAC357F43377DF61F373D65C463",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\Program.cs",
+      "sha256": "79BBE770124D16001C1DEE1E1978991CB16F237993713001D4B086E39923C89A",
+      "terms": [
+        "entityruntime",
+        "identityregistry",
+        "loadedworldsession",
+        "match",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeItemRegistry.cs",
+      "sha256": "92A462E6E548ADA7E8283F3C601B45BC7FF46C45B064EEA8340DAE9E3C567C53",
+      "terms": [
+        "entitycomponentsnapshot",
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeNpcEntity.cs",
+      "sha256": "8C9641FEC7362A687701F70987A447EC438D9AA6D2E190C16DB624A6590583D8",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeNpcHomeReturnCollisionQuery.cs",
+      "sha256": "8947820649A5B92367BD25ECFA0E9B5F0658F730837E6D675D51A6CFCB6BEF41",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeNpcNaturalSpawnPass.cs",
+      "sha256": "E4B9893FCE7B19C0262DE68B04B97A223FA8B57C83B455065960B0688088FDBF",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeNpcProjectileTargetSnapshot.cs",
+      "sha256": "2F6A90F554BE3C54DB9CE2B596A77F4356B7CD5F52A00C1D3DC59B49049FCC2F",
+      "terms": [
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeNpcStore.cs",
+      "sha256": "E8D4F628942DAC387D1D3BBA95A5570ADCA278120D6946EA4A91FD28A5479323",
+      "terms": [
+        "entityruntime",
+        "identityregistry",
+        "loadedworldsession",
+        "match",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeNpcTargetSelectionAdapter.cs",
+      "sha256": "6B678C4F9774EFAA6A929C1D0F20C8299F55E9C7294A239E6946099870E90CD1",
+      "terms": [
+        "loadedworldsession",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeNpcTrainingDummyBinding.cs",
+      "sha256": "3061AD534F2B7AEEDD8168D9712CCF2A019BFD3AF9CD20BABB675F4D31F402D9",
+      "terms": [
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimePlayerEntity.cs",
+      "sha256": "E79349292EC35050D91CC26B599C4E728583C43D69CF4DB1CFED3C22A3785BD8",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimePlayerInventoryOwner.cs",
+      "sha256": "A07C202B8BFA17A0B2F2438A36D45F1EF6EC63CB00DA272FC1F58B2DF3974FD6",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimePlayerStore.cs",
+      "sha256": "625DCF85E9F1A8AC3A1C6F61B8EF89766A9DD6BF9464BDF1858C1FAD96A182E8",
+      "terms": [
+        "entityruntime",
+        "identityregistry",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeProjectileStore.cs",
+      "sha256": "5B294043262A016A65E3CB90453FC4FAE264FF8E95515CF8293ACEB802E6D15B",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeSpatialEntityVerification.cs",
+      "sha256": "A13CF040F0AE1E3801AE95ECB8E8CEB9188E0CBF63A9EA2E3CAC7831B8E49CB6",
+      "terms": [
+        "entitycomponentsnapshot",
+        "entityruntime",
+        "match",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeSteamItemNetworkCommandOwner.cs",
+      "sha256": "6467E6CA375D92FB12CD57F320CF4A8166311C96484B0047E67DAA08CACB7642",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeTileEntityReloadVerification.cs",
+      "sha256": "439DC4347C9EA6A42A7238F6A7E58400B3E53044134EF3C5B6AA50F728DCF598",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "match",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeWorldItemStore.cs",
+      "sha256": "ED5E5B3FF5D38B30CD6F3B4BF75FDF822C4FAA007EDC8DD39726B02F385E46EC",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeWorldItemStore.NetworkSync.cs",
+      "sha256": "9A4F0A747D7C1391DFAF085FB4F02D102A017D7C7EF4F25E75800F390A4CB635",
+      "terms": [
+        "entitycomponentsnapshot",
+        "entityruntime",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\RuntimeWorldLoadRollbackVerification.cs",
+      "sha256": "C69B0B83FE886C2D8EDB98A7D73B91E0F43DEE31581EDA50AFDB00874EFABDB9",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "match",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\SimulationContentSupportManifest.cs",
+      "sha256": "6FB9A5B3F8360BEFD8CE480BD9132864E8F6B9C848F14710FAE2DC7D2AD54B00",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\TileEntityRemovalProbeInstaller.cs",
+      "sha256": "72EA11224EF6CFE6C09AF7FA9E1429A8DBDF5F5E76315EE3D252C213C2D7990A",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\WiredActuatorTrigger.cs",
+      "sha256": "AAC8B97146B8B65ABBEC75B0217A89F6B6B259D01F7456D90C82C7E38EFF2C0E",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.WorldGeneration\\WorldPersistenceRoundTrip.cs",
+      "sha256": "8805004DD843E88A838A7DC709166F57967226ACC5E94903A11590E02E4FABE7",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC.Tools.WorldGeneration\\WorldRoundTripMetadataComparison.cs",
+      "sha256": "EF175EA58DADFB0515077DC5C2468975FC7E51F1FEA0B11337C3C1521B11EFC9",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Content\\System\\ContentCatalogBuildSystem.cs",
+      "sha256": "FEE716D00BC3023E3A0AA10293806DBE5C397B966EA4A1A40D8BCBBCC589FF6F",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Items\\System\\WorldDrops\\WorldItemMotionSystem.cs",
+      "sha256": "BC6A0C3A45DFB6DE599E03D728A03972DE35CEB37209F6E924B48BE89EF33AC5",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Items\\System\\WorldDrops\\WorldItemReservationSystem.cs",
+      "sha256": "676B95FBAB216464E2783CD8979C3D601AA4A8BF74297F2CDCB27F4556A33A94",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\LeashedEntity\\System\\LeashedEntityRegistrationSystem.cs",
+      "sha256": "AA02555E587B70EC0B7334032226E7B36E28402A6D1A4D3F5EADBCA3CEB65A1A",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Npc\\System\\NpcTaskLifecycleSystem.cs",
+      "sha256": "A3AD74392EE9FC217C3DEA182605E8D7C7FBA8E12305C30253576319D82E6BA9",
+      "terms": [
+        "match",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Npc\\System\\NpcTaskReference.cs",
+      "sha256": "6C69415A8252218936279D96CFAB61376E5C27CF686E646832A034F3205E113E",
+      "terms": [
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Player\\System\\Progression\\ConsumedUpgradeEligibilityQuery.cs",
+      "sha256": "C944F4BD669BFC03D57DF69DBC7B46649B0C46E88AD7DF0B623E644A6C852164",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Projectile\\System\\IProjectilePacket27Codec.cs",
+      "sha256": "B7E55A90C85FA4920FEB63EFD7B630EA192EBD416267CC50881646108BB2CC9E",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Projectile\\System\\ProjectileLifecycleSystem.cs",
+      "sha256": "74EBDAD984709A00925434B50108213E63281B51525B87E95D4EBC55DA5369AC",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit",
+        "worldstorageroot"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Projectile\\System\\ProjectileStaticNpcImmunitySystem.cs",
+      "sha256": "7ABF78460C807E4DEAF89BB4DE1091EDF76CB37F3487969FEF98B53F0EC023B3",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Projectile\\System\\ProjectileTickContext.cs",
+      "sha256": "86486E70B5390400625B9DA4BAEC98F8021697EE1666C9FD4863C65B92A552BB",
+      "terms": [
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Projectile\\System\\ProjectileTickCoordinator.cs",
+      "sha256": "502EA4E6D202BFEC754A9A7B3FA11F4701F45167923C09CE11AB7C2CC1FB13C7",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Relationships\\System\\EntityReference.cs",
+      "sha256": "CAAF4D416B304EEF54B5D0FFF3D997C5641B380BF74CE4994DA6D5A1FF318321",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Relationships\\System\\EntityRuntimeId.cs",
+      "sha256": "E765B17EF115091BE31AC0F2A99E38231917820B478CE3033FF7701074DCF94C",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Relationships\\System\\ItemEntityRef.cs",
+      "sha256": "711CF8B3E446E167C89C194D34E902416C6EE73DBE9A4EE472D3CF0733E62D4B",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Relationships\\System\\RuntimeEntityHandle.cs",
+      "sha256": "EC29C833FDE4C4DD67589DE018A7C138BC050BC06A53C815A57B4DD128374475",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Share\\Entity\\System\\ComponentAccess.cs",
+      "sha256": "08F352A2D15F0895842AC91B92F740BE38F5BEEC21B4C070CF89F51C5A4EFEDB",
+      "terms": [
+        "entitycomponentsnapshot",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Share\\Entity\\System\\ComponentStore.cs",
+      "sha256": "7BD48514371AE35645DA63AB71AFAA9F183CF91C88B8F724BC05D5C73077D042",
+      "terms": [
+        "componentstore",
+        "entitycomponentsnapshot",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Share\\Entity\\System\\EntityIdentityRegistry.cs",
+      "sha256": "CB8328EC854152AB7E83922924F898947CBD2B0A0BA5B133EC840C0AB4DEA87A",
+      "terms": [
+        "identityregistry",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Share\\Entity\\System\\EntityRuntime.cs",
+      "sha256": "981F4F029600688FCF679F02574F75B1B99F8EDB0DC854AD54FCB5E6F21FAA89",
+      "terms": [
+        "componentstore",
+        "entitycomponentsnapshot",
+        "entityruntime",
+        "identityregistry",
+        "match",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Share\\Entity\\System\\EntityRuntimeStatus.cs",
+      "sha256": "2A26B8E0DCC03856A6B37E983B7BE80CA0AE18AA74E3C8DBCFD497CD62FD92DA",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldInteraction\\System\\TileEntities\\TileEntityRuntimeId.cs",
+      "sha256": "109B2E3A31F6ACA3D5FDFCDDBB1A817A954CB4F3DBC171FCD8D796E03EA60021",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldInteraction\\TileEntities\\TileEntityPersistenceIdentityComponent.cs",
+      "sha256": "F0E98933CA5B1578E69BB3C680CB7D7D72836625A1786C3C9FBD6EDC7CAF8C52",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldInteraction\\TileEntities\\TileEntityRuntimeIdComponent.cs",
+      "sha256": "862818BDDD54D6F847AFF0BBECA9362E68477154FEBC3CC0C7E16E52C1C89011",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\NpcProgression\\Boss\\BossEntityIndexRegistryComponent.cs",
+      "sha256": "4406CA7AEE3E2174ED018171C73BC2D9251DD0292F7F2073DAE55C2E1C483C75",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\System\\WorldGeneration\\Adapters\\RegisteredWorldGenerationPassRunner.cs",
+      "sha256": "38934F52F760AEFCEBD476264769C8F11B232306A923A70CB6E71ED7DE6F8B75",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\System\\WorldGeneration\\Adapters\\WorldSecretSeedInputAdapter.cs",
+      "sha256": "05396222F48D6A6134969F7BDDEE0763F58AC7AE32CD5C9773CB2B398D4F1FC5",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\System\\WorldGeneration\\Definitions\\WorldSecretSeedInputResult.cs",
+      "sha256": "0FDF89740006CF32747AC280AE4064BA5DD979421968F2F239377D27D5154694",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\System\\WorldGeneration\\Definitions\\WorldSeedOptionSeedMatchResult.cs",
+      "sha256": "6365E4E516FFA01639043AC7F97260C0A668403FE28D9C623AA4219FAC9A8B9F",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\System\\WorldGeneration\\Queries\\WorldGenerationConditionsAndSearchesQuery.cs",
+      "sha256": "A0A1C2D56AAD39ED203F67D0432E611F54C002A35D119AA979BD3A114F59D6DD",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\System\\WorldGeneration\\Queries\\WorldTileMergeCullStateQuery.cs",
+      "sha256": "C7B0533EA99DC60E2C06035451D8A0FBFD18501AD39378E2251F615490F9644D",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\System\\WorldGeneration\\Terrain\\WorldTerrainTileOverrideScope.cs",
+      "sha256": "E2D90191A98CDAAC67B617034F38C86DDA4FDA7FDA20E122164D7D095A62DA47",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\System\\WorldGeneration\\WorldGenerationPassExecutionSystem.cs",
+      "sha256": "CD993DD3212EC7C6D94C48694E8CA34E75E1A2BF0262AD358856CE5ADB87AA3A",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldStorage\\System\\TileEntityRecord.cs",
+      "sha256": "032358AB78D386CF1D2BA47AB8E237CF573BF2ADE9477C76C6DA83C9D82D8C3F",
+      "terms": [
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldStorage\\System\\TileEntityRuntimeState.cs",
+      "sha256": "036BDC23A22BE40A83B0DAFFD943F4CCFFB46D97C65107AF5D63A30D111ECACC",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldStorage\\System\\TileEntityStore.cs",
+      "sha256": "4AFC1EA68E6908F74E3442620D0D134004DFD657B57E1746020752C9A51D794E",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldStorage\\System\\TileMapSnapshot.cs",
+      "sha256": "7EEE6EAD2782BA7769A1D104B6FCDF92D9B4F293A40560043D36C9619A7DF3B0",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldStorage\\System\\WorldStorageRoot.cs",
+      "sha256": "690A5C62A0E13649B04E244A9564770AF30C880E13F062C72BD8ECDCEB7DFE24",
+      "terms": [
+        "entityruntime",
+        "worldstorageroot"
+      ]
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldStorage\\TileEntityBindingComponent.cs",
+      "sha256": "DC3B9D010C1D68B5AC66E028DECB7CF5730DCECE8F9503B957DAE60AA5116436",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\GatewayLoopbackVerification.cs",
+      "sha256": "05C2F30BACB1BDDAF6F864EF82DA83F241BFCC3CC57F0292EDD91F1DBE8AC3A1",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\MiningPacketVerification.cs",
+      "sha256": "3AF7E8CCF56E0241CB194A62E3A0172694A36D18C522B17EFDE485628795FE3F",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\NetworkWorldOwnerVerification.cs",
+      "sha256": "19CDADE7E5F93DFE6FA4E5B48AA6F4855C9F4290B7C60052BAE905D4A74BB06E",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\PlayerExtendedPacketVerification.cs",
+      "sha256": "338E74316961C78BBA8358955723217B6188A2CB84762913756283D129246AD1",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\PlayerLifecycleHandlerAcceptanceVerification.cs",
+      "sha256": "158B24052D467B685C5BBCC81EB2BE98C7801F8F49F6EB9039CFD661BECDA3CA",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\PlayerNetworkOwnerVerification.cs",
+      "sha256": "E931EA228525C3CFE75CC43AC7B3F211C4EE0D9C4D9D7256C981EAE224FB8B32",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\PlayerSessionLifecycleVerification.cs",
+      "sha256": "5F6697F5FDEE8930EF74FDEC360E0BC7E47FF27F0B97B0335866D546CC9C4AA5",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\PocketWireVerification.cs",
+      "sha256": "E9D2A9ACF134B371F6549150E4E412078A881E4FC380A06441A6C9347AA3F5B6",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\ProjectileNetworkCommandOwnerGatewayVerification.cs",
+      "sha256": "EE9118A3D0EF398A2550EB5ED836F017FC724C0F6CE4FC4041E824435F52B62B",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\RealClientVerification.cs",
+      "sha256": "8557EDF7E7F248D5518015F01BAED4650FDBFE78F9D8F1154ECCC026080D207D",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\RoutingVerification.cs",
+      "sha256": "E2A27D66164BF2F934DA28FEAEFADD68B839168BFAF2A01E20ADE4B5E1B4572A",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\SessionPacketBehaviorVerification.cs",
+      "sha256": "D923CC4F2E214F7FB7FEA4572F0B94733F02F8624F6D3637967CF394F60C3A2A",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\SocialNpcEffectVerification.cs",
+      "sha256": "91C16EFC21CA80E6ECDA75B55FB90A2187F568618842C6F593C9FCF29BA939B9",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\SocialPacketVerification.cs",
+      "sha256": "F307B2AAFF2BAC6975A9B81C437731BC2745C2CD3AA2FDCEAE36CD78637FA6E6",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\TilePlacementPacketVerification.cs",
+      "sha256": "9779B3B01F2D31151C04AE56B073E76A5AFFE09E702CB47F8F4BC7A220915975",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\WorldFrameRepairTcpVerification.cs",
+      "sha256": "C1CD343A5749ED5571F9E0BF780008680B1F645B272B6C30360B0263F5B4C34D",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\WorldMovementSectionVerification.cs",
+      "sha256": "61E9C1BF8CB337AE552D0A9A69C425A3825FA755B846FBCF4A2486881EEB5892",
+      "terms": [
+        "entityruntime",
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\WorldPacketBehaviorVerification.cs",
+      "sha256": "F6A21A0417A7B17A62BE4E616B5E5B2AA7D8FBA2256914E91BEE74BCFF0F0FDD",
+      "terms": [
+        "entityruntime",
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\WorldTileMetricsPacketVerification.cs",
+      "sha256": "182F919E3B6702BA5719638527989A2EFDC888DED515568019E175BAAFB2ADB6",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\WorldTimePacketVerification.cs",
+      "sha256": "B7CCB79CE1CE47A9900909A8BE1C50B56C15F691D1E2B63F87E78D2E310AA8A5",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "Test\\NSSLC.WorldStorage.GeneratedWorldLoadVerification\\Program.cs",
+      "sha256": "0408C84D8C8308AD0E3C848878AB45D19A51DEBEB5D9632088CF5C2669BBAB63",
+      "terms": [
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.EntityOrganization.Verification\\GeneratedWorldRollbackVerification.cs",
+      "sha256": "36593724D2BF3801E1D553194890FF8650228A5A96A4D89FFB9193473EB12B2C",
+      "terms": [
+        "entityruntime",
+        "identityregistry",
+        "loadedworldsession",
+        "match",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.EntityOrganization.Verification\\Program.cs",
+      "sha256": "32B7249BD6924966E7BB2C1E11DBED1B543E6EE5C9F252F177B3B505299008D4",
+      "terms": [
+        "componentstore",
+        "entitycomponentsnapshot",
+        "entityruntime",
+        "identityregistry",
+        "match",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.EntityOrganization.Verification\\SessionDisposalVerification.cs",
+      "sha256": "A0117CB6F870B34960E8245319DD9AADCA534BE3139056A58406E24180762CEB",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "worldstorageroot"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.EntityOrganization.Verification\\WorldSessionFailureVerification.cs",
+      "sha256": "80ED75CAD293151F59CD415A3C9429F6C5B004E925A318E0273F19DBAE63CA53",
+      "terms": [
+        "entityruntime",
+        "identityregistry",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "worldstorageroot"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.Items.NetworkOwner.Verification\\NetworkWorldItemOwnerVerification.cs",
+      "sha256": "1EA522BF30B6DD4DB4C538CCB77F5F90302739ABA760199527CC7EF1A68D26FB",
+      "terms": [
+        "entityruntime",
+        "loadedworldsession",
+        "match",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.Items.Verification\\WorldItemMotionVerification.cs",
+      "sha256": "4F08A035424A7EE80CB8C7C101DA6A5DAE3BC06AE2FAFF677632A92A34E88976",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.Items.Verification\\WorldItemReservationVerification.cs",
+      "sha256": "DF5C0679721B4B54AD9B4249F0124574C093722C66E93B8514310CCE083FAEB7",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.LeashedEntityVerification\\Program.cs",
+      "sha256": "8CEC58E29D5EC2C5D9D2DB9AB733178FEF8178C61B966699B021BA30F8978953",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.Npc.SpawnEligibility.Verification\\NpcSpawnBranchSelectionCoreChecks.cs",
+      "sha256": "D18043B96A641127DCD996E21E0B8E22F9E6D5A4CA60487FF0AF41D03BF86BBB",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.CoverageVerification\\Program.cs",
+      "sha256": "4960CE3AF3DAA789FE2C312AEB8507937D7898B161FEFB333453F5C9FFFF3285",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.GuideProfileVerification\\Program.cs",
+      "sha256": "863B25B1ED22307854169DE735C937DA7FF1B64D3CC9627BC2FC306B957C94CD",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.HostLifecycleVerification\\NpcDeathAuthorityProbe.cs",
+      "sha256": "9231857BCF529D46FA4CADCA831D53C7D8E78303F2C2ADF3A1D333732FC37575",
+      "terms": [
+        "loadedworldsession",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.HostLifecycleVerification\\Program.cs",
+      "sha256": "CEAE9F915CA1080954CA092710DB2F5CEA93EE75CA982F5CD4CEE2FA423FEF5D",
+      "terms": [
+        "entityruntime",
+        "identityregistry",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.LifecycleVerification\\Program.cs",
+      "sha256": "3575FCAABCF7C72C5E6160A1B3FD779DE5C8AFAAE75CB2224B589667A2967A0F",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.ReferenceVerification\\Program.cs",
+      "sha256": "D241E1A07543ED76FC56CF187E126AFCB31CAE08A7C4F8A2606ED120EFD1989B",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.SourceIdentityVerification\\Program.cs",
+      "sha256": "A3CFA83EC2410A8DEC7815B131C253868BC5F90DFFAC81CF1C0D78AD6AFC773C",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.TargetHostVerification\\Program.cs",
+      "sha256": "24A3B8D424ECEB086C4BA4AB926AC2DD790EEE218473F9F90736EB454F07A214",
+      "terms": [
+        "entityruntime",
+        "identityregistry",
+        "loadedworldsession"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.P01.Core.Verification\\Program.cs",
+      "sha256": "BB552A4E80ED783D54292156FF2F2668BD4B5F3FEE99F9E7A29D1FFF12D18B3C",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.P05MinionCapacityVerification\\Program.cs",
+      "sha256": "6C4327759A01694D443EE9D082D46A85989B617E415B752E10A6A8373A41585E",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.Player.InputControl.Verification\\Program.cs",
+      "sha256": "A4F3559367F38B37560180322C2CB2D9DB94732859BA3565FB7DC49853C65595",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.Player.MountSystem.CoreVerification\\Program.cs",
+      "sha256": "325B103E84F698F74674EB7FDF9BE97502E01D3F0206C93B92AC677332A0044D",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.PlayerDodgeVerification\\Program.cs",
+      "sha256": "87A1AFFA641FB876CAFF5A36280F0C65C20E639779CC401B8E184D9727482253",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.PlayerInteractionUiStateVerification\\Program.cs",
+      "sha256": "7A122EA2E2225A53110D043D3386399F68609236F69AA8D261428A8B1AE9483C",
+      "terms": [
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.PlayerItemSpaceVerification\\Program.cs",
+      "sha256": "D6624CDBD5A9E232ADF9E876523C569A03C08AEBE5B86ECB4D06FE836D549B31",
+      "terms": [
+        "entityruntime",
+        "match"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.PlayerItemSpaceVerification\\RuntimeItemOwnershipVerification.cs",
+      "sha256": "A535C4DBD01B029C662020C05AF29033402F7375057875C1320933E1F29534C0",
+      "terms": [
+        "entityruntime",
+        "identityregistry",
+        "loadedworldsession",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.PlayerPresentationDerivedVerification\\Program.cs",
+      "sha256": "30F03463B1C02F29A8DD1B6267A4969165FEB8E56B69B4ECED9304ECBDBF3DC1",
+      "terms": [
+        "entityruntime"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.ProjectileCombatVerification\\ProjectileDamageCandidateVerification.cs",
+      "sha256": "15B2861773B0CB439F550289B1462A333DA4D91A861C671020D98CD1820D6D0F",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.ProjectileCombatVerification\\ProjectileDefinitionHydrationVerification.cs",
+      "sha256": "00133711C1B4B538948BBFD1314D901411AAB1FECD2F611E1726897EEF67A92C",
+      "terms": [
+        "entityruntime",
+        "match",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.ProjectileCombatVerification\\ProjectileLifecycleVerification.cs",
+      "sha256": "FE1AED1278C5135A98DEA78C565BA1B3F18D1ABE3B54A71BF12D37518447BB8A",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle",
+        "worldstorageroot"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.ProjectileCombatVerification\\ProjectileNetworkApplyVerification.cs",
+      "sha256": "0052BA20A909AD5B2E01297E117BF10453E39F51D4C86486E2F61BD5DB0BE4EE",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.ProjectileCombatVerification\\ProjectileTickCoordinatorVerification.cs",
+      "sha256": "2AF56DF9ABBD2CC38DB76EC867B65B37271FDF05840496CD65B1FA2B8633F92F",
+      "terms": [
+        "entityruntime",
+        "match",
+        "runtimeentityhandle",
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.ProjectileCombatVerification\\ProjectileVerificationAccess.cs",
+      "sha256": "B38F597626542C393A2BA859E2B2A5E362805FE6D69D01EA5C1612CF09C12E91",
+      "terms": [
+        "tryedit"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.TileEntityVerification\\Program.cs",
+      "sha256": "5772E45B226E4618BAAB2CFD8A6E20CA43A507B336B257D36AD80D8695C79EC9",
+      "terms": [
+        "entityruntime",
+        "runtimeentityhandle"
+      ]
+    },
+    {
+      "path": "Test\\Terraria.WorldGeneration.P20.Verification\\Program.cs",
+      "sha256": "E5327C6F872BC7E529BBF533C0AD2786B3C524C4CA97C2094178D956284B0B29",
+      "terms": [
+        "match"
+      ]
+    }
+  ],
+  "candidateProjects": [
+    {
+      "path": "src\\NSSLC.Tools.WorldGeneration\\NSSLC.Tools.WorldGeneration.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\NSSLC.Application.Simulation.Verification\\NSSLC.Application.Simulation.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.P01.Core.Verification\\Terraria.P01.Core.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.ReferenceVerification\\Terraria.NpcAi.ReferenceVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.LifecycleVerification\\Terraria.NpcAi.LifecycleVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcProgressionVerification\\Terraria.NpcProgressionVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\NSSLC.Infrastructure.Network.Verification\\NSSLC.Infrastructure.Network.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.WorldGeneration.Verification\\Terraria.WorldSession.WorldGeneration.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC.Tools.Simulation\\NSSLC.Tools.Simulation.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.SourceIdentityVerification\\Terraria.NpcAi.SourceIdentityVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcDamageCombatVerification\\Terraria.NpcDamageCombatVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Items.Verification\\Terraria.Items.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.TargetHostVerification\\Terraria.NpcAi.TargetHostVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.HostLifecycleVerification\\Terraria.NpcAi.HostLifecycleVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.WorldGeneration.P18.CoreVerification\\Terraria.WorldSession.WorldGeneration.P18.CoreVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC.Tools.NetworkServer\\NSSLC.Tools.NetworkServer.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC.Application\\NSSLC.Application.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\NSSLC.WorldStorage.GeneratedWorldLoadVerification\\NSSLC.WorldStorage.GeneratedWorldLoadVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.Verification\\Terraria.NpcAi.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.EntityOrganization.Verification\\Terraria.EntityOrganization.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Items.NetworkOwner.Verification\\Terraria.Items.NetworkOwner.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.GuideProfileVerification\\Terraria.NpcAi.GuideProfileVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.WorldGeneration.P17.CoreVerification\\Terraria.WorldSession.WorldGeneration.P17.CoreVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerInputSyncVerification\\Terraria.PlayerInputSyncVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldStorage\\Terraria.WorldStorage.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Npc.SpawnEligibility.Verification\\Terraria.Npc.SpawnEligibility.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.NpcAi.CoverageVerification\\Terraria.NpcAi.CoverageVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.SwimTime.Verification\\Terraria.Player.SwimTime.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldStorage\\NSSLC.Infrastructure.WorldStorage.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.P16TreeTops.Verification\\Terraria.WorldSession.P16TreeTops.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.LeashedEntityVerification\\Terraria.LeashedEntityVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerEyeAnimationVerification\\Terraria.PlayerEyeAnimationVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.LifecycleInteraction.Verification\\Terraria.Player.LifecycleInteraction.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.MountSystem.CoreVerification\\Terraria.Player.MountSystem.CoreVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.SunScorch.Verification\\Terraria.Player.SunScorch.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.P16TransformBarrier.Verification\\Terraria.WorldSession.P16TransformBarrier.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerDpsTelemetryVerification\\Terraria.PlayerDpsTelemetryVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.LegacyPet.Verification\\Terraria.Player.LegacyPet.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.ArmorEffects.Verification\\Terraria.Player.ArmorEffects.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.Mobility.Core.Verification\\Terraria.Player.Mobility.Core.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.ShimmerTransition.Verification\\Terraria.Player.ShimmerTransition.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.P16TileMetrics.Verification\\Terraria.WorldSession.P16TileMetrics.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerDodgeVerification\\Terraria.PlayerDodgeVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.Progression.Verification\\Terraria.Player.Progression.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.AccessoryEffect.Verification\\Terraria.Player.AccessoryEffect.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.InputControl.Verification\\Terraria.Player.InputControl.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.Luck.Verification\\Terraria.Player.Luck.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerAccessoryVerification\\Terraria.PlayerAccessoryVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.P16LoadLifecycle.Verification\\Terraria.WorldSession.P16LoadLifecycle.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.TraversalPhysics.Verification\\Terraria.Player.TraversalPhysics.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerCombatResolutionVerification\\Terraria.PlayerCombatResolutionVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.CompanionCapability.Verification\\Terraria.Player.CompanionCapability.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.P05MinionCapacityVerification\\Terraria.P05MinionCapacityVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.Targeting.Verification\\Terraria.Player.Targeting.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.WorldObjectPet.Verification\\Terraria.Player.WorldObjectPet.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.P16HousingValidation.Verification\\Terraria.WorldSession.P16HousingValidation.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.Player.WallRescan.Verification\\Terraria.Player.WallRescan.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerBuilderInteractionVerification\\Terraria.PlayerBuilderInteractionVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerCombatProcVerification\\Terraria.PlayerCombatProcVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.ProjectileCombatVerification\\Terraria.ProjectileCombatVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Projectile\\Terraria.Projectile.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerBuilderOverlayVerification\\Terraria.PlayerBuilderOverlayVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldLoadApiGenerationVerification\\Terraria.WorldLoadApiGenerationVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.P16HousingScore.Verification\\Terraria.WorldSession.P16HousingScore.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.TileEntityVerification\\Terraria.TileEntityVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerSelectionVerification\\Terraria.PlayerSelectionVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerBarrierVerification\\Terraria.PlayerBarrierVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldLoadApiGenerationVerification.SecondaryApi\\Terraria.WorldLoadApiGenerationVerification.SecondaryApi.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldSession.P16HousingRegistry.Verification\\Terraria.WorldSession.P16HousingRegistry.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.SpatialSimulation.Verification\\Terraria.SpatialSimulation.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerReleaseRepeatVerification\\Terraria.PlayerReleaseRepeatVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.TileEntityHostFixtureVerification\\Terraria.TileEntityHostFixtureVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldLoadApiGenerationVerification.Api\\Terraria.WorldLoadApiGenerationVerification.Api.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldGeneration.PassExecution.Core.Verification\\Terraria.WorldGeneration.PassExecution.Core.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\PacketDesignCompiler.Core.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldGeneration.P20.Verification\\Terraria.WorldGeneration.P20.Verification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.WorldLoadApiGenerationVerification.TransitiveApis\\Terraria.WorldLoadApiGenerationVerification.TransitiveApis.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Items\\Terraria.Items.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerPresentationMessageVerification\\Terraria.PlayerPresentationMessageVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\Generator\\PacketDesignCompiler.Generator.csproj",
+      "targetFramework": "netstandard2.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerPresentationDerivedVerification\\Terraria.PlayerPresentationDerivedVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\DeathPenaltyAndRevenge\\Terraria.DeathPenaltyAndRevenge.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Physics\\Terraria.Physics.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\LeashedEntity\\Terraria.LeashedEntity.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Fishing\\Terraria.Fishing.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerPoseVerification\\Terraria.PlayerPoseVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Npc\\Terraria.Npc.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerManaActivityVerification\\Terraria.PlayerManaActivityVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\WorldGeneration\\NSSLC.WorldGeneration.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Content\\Terraria.Content.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerItemUseExecutionVerification\\Terraria.PlayerItemUseExecutionVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldSession\\Terraria.WorldSession.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerItemSpaceVerification\\Terraria.PlayerItemSpaceVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\StatusEffects\\Terraria.StatusEffects.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerItemMountRuntimeVerification\\Terraria.PlayerItemMountRuntimeVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Player\\Terraria.Player.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "Test\\Terraria.PlayerInteractionUiStateVerification\\Terraria.PlayerInteractionUiStateVerification.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\SpatialSimulation\\Terraria.SpatialSimulation.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Combat\\Terraria.Combat.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Share\\Entity\\Terraria.EntityEcs.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\SimulationRuleOverrides\\Terraria.SimulationRuleOverrides.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldProgressionAndUnlocks\\Terraria.WorldProgressionAndUnlocks.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Relationships\\Terraria.Relationships.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\WorldInteraction\\Terraria.WorldInteraction.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Town\\Terraria.Town.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\NSSLC.Infrastructure.Network.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\DataPacketDefinition\\PacketDesignCompiler.Packets.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    },
+    {
+      "path": "src\\NSSLC\\Component\\Teleportation\\Terraria.Teleportation.csproj",
+      "targetFramework": "net10.0",
+      "targetFrameworks": "",
+      "hasArchReference": false
+    }
+  ],
+  "archPackageReferences": [],
+  "a0InputDirectoryExists": false,
+  "a0ExistingReports": null,
+  "baselineInputs": "未发现 A0 input/report；不生成 world hash",
+  "inputDocumentHashes": [
+    {
+      "path": "docs/plans/2026-10-07-custom-ecs-to-arch-execution-plan.md",
+      "sha256": "94FE8109EB6093F144704E2B175A0EBB6545797AD85557196B8BF64C9D896499"
+    },
+    {
+      "path": "docs/research/2026-10-07-arch-api-migration-research.md",
+      "sha256": "BA895D3913AABDCE460C9B9B78C80386A8F1533A2F09081BCB42598E26D83790"
+    },
+    {
+      "path": "docs/plans/2026-10-08-arch-parallel-execution-coordination.md",
+      "sha256": "49CD9E7815380EA7F90BA2C31B1A7437B9C8D2B289FD2B327A900F66BE9509C2"
+    },
+    {
+      "path": "Context/progress.md",
+      "sha256": "C5FF32EFACD94897B5F4631D161920831A2E656B009831B5C53B2D7AC1B9EE17"
+    },
+    {
+      "path": "Context/约束/开发协作与变更约束.md",
+      "sha256": "C961158D173C732B773799A8B0927A98B35830DE9B2363C4C0062CF59AB19C50"
+    },
+    {
+      "path": "Context/约束/构建与验证约束.md",
+      "sha256": "05E46F2F62267048ACFEE53929C5127FEA98A4959E4415F0D7B39518C10F79E9"
+    },
+    {
+      "path": "Context/架构设计/ECS文件组织设计约束.md",
+      "sha256": "CF02223BC4AA75014372B96532B65B8E412FBC17B1E08BCC795937B0780B2DC8"
+    },
+    {
+      "path": "Context/架构设计/ECSEntity组织设计约束.md",
+      "sha256": "50250512C2FA6D0A4E6B3B4CD200BDA92FE30E98DCD1B72ED725557F64900E62"
+    },
+    {
+      "path": "Context/架构设计/ECS领域与基础设施架构边界.md",
+      "sha256": "E4872EE9A5C8401DAAC13C485FB655F58694466CA1C68C9D472B35E181FD3DAA"
+    },
+    {
+      "path": "Context/架构设计/组件命名设计约束.md",
+      "sha256": "3FF4DE667D9E4EAAAC09CBD2C5E8A79FD4B6A391502293C5EF236FC8C1DC74AD"
+    },
+    {
+      "path": "Context/约束/非函数式编码副作用隔离规范.md",
+      "sha256": "DD25A32B909A1218814144840B1C9B4BA846BD9BE7630FC81FBEAA53ECC861F6"
+    },
+    {
+      "path": "Context/约束/Google-CSharp-Style-Guide-约束.md",
+      "sha256": "E297FB94AE10C9169512B568FD62C6DBA7CED8DDBBAC3F09C7AF25845A84E019"
+    },
+    {
+      "path": "global.json",
+      "sha256": "0CFC9000E88F14411532C929ED46C55EE9CFE633C27DDB423E2552F062307A37"
+    }
+  ],
+  "diagnosticsIgnoreCheck": [
+    ".gitignore:25:Build\tBuild/diagnostics/ArchMigration/T1/baseline-inventory.json"
+  ]
+}

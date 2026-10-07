@@ -1,0 +1,30 @@
+[
+  {
+    "url": "https://raw.githubusercontent.com/genaray/Arch/04d52e7268eb6f376ca4841a0c204334120c5e9d/src/Arch/Templates/QueryDescription.WithAll.cs",
+    "path": ".\\Build\\diagnostics\\ArchMigration\\T1\\upstream-QueryDescription.WithAll.cs",
+    "status": 200,
+    "sha256": "F6138E13D17530692E29E918B57FD8B47BE6B282DAC4E7890CD678A27604B3E1",
+    "bytes": 6693
+  },
+  {
+    "url": "https://raw.githubusercontent.com/genaray/Arch/04d52e7268eb6f376ca4841a0c204334120c5e9d/src/Arch/Templates/QueryDescription.WithAny.cs",
+    "path": ".\\Build\\diagnostics\\ArchMigration\\T1\\upstream-QueryDescription.WithAny.cs",
+    "status": 200,
+    "sha256": "BD38BCBCE2450D13FFE0AD16C4049EFB6485AF1F064AB32754DB1D701F7B02F5",
+    "bytes": 6693
+  },
+  {
+    "url": "https://raw.githubusercontent.com/genaray/Arch/04d52e7268eb6f376ca4841a0c204334120c5e9d/src/Arch/Templates/QueryDescription.WithNone.cs",
+    "path": ".\\Build\\diagnostics\\ArchMigration\\T1\\upstream-QueryDescription.WithNone.cs",
+    "status": 200,
+    "sha256": "48D2F397983162E20FE5B9087D573120A338D19898007C15DBC82D2135AFC5B2",
+    "bytes": 6741
+  },
+  {
+    "url": "https://raw.githubusercontent.com/genaray/Arch/04d52e7268eb6f376ca4841a0c204334120c5e9d/src/Arch/Templates/QueryDescription.WithExclusive.cs",
+    "path": ".\\Build\\diagnostics\\ArchMigration\\T1\\upstream-QueryDescription.WithExclusive.cs",
+    "status": 200,
+    "sha256": "393784C2B0CFEE74F57E19225196DEBF71C7EDAB3D1476393003BCAA3C0403F5",
+    "bytes": 6981
+  }
+]

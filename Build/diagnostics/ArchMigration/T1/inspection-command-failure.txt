@@ -1,0 +1,9 @@
+Command: Get-Content -Raw <file> -TotalCount <n>
+Project: PowerShell read-only inspection
+Exit code: command stream ended with subsequent commands returning success; two PowerShell parameter errors were emitted
+Warnings: 0
+Errors: 2
+Output: agent tool output; preserved here for the diagnostic record
+Error 1: Get-Content: The 'Raw' and 'TotalCount' parameters cannot be specified in the same command.
+Error 2: Get-Content: The 'Raw' and 'TotalCount' parameters cannot be specified in the same command.
+Impact: no files changed; the subsequent inventory summary in that command completed. Corrected by using Get-Content -TotalCount for the source preview.

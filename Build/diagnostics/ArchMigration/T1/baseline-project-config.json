@@ -1,0 +1,650 @@
+[
+  {
+    "path": "src\\NSSLC.Tools.WorldGeneration\\NSSLC.Tools.WorldGeneration.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\NSSLC.Application.Simulation.Verification\\NSSLC.Application.Simulation.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.P01.Core.Verification\\Terraria.P01.Core.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcAi.ReferenceVerification\\Terraria.NpcAi.ReferenceVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcAi.LifecycleVerification\\Terraria.NpcAi.LifecycleVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcProgressionVerification\\Terraria.NpcProgressionVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\NSSLC.Infrastructure.Network.Verification\\NSSLC.Infrastructure.Network.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.WorldGeneration.Verification\\Terraria.WorldSession.WorldGeneration.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC.Tools.Simulation\\NSSLC.Tools.Simulation.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcAi.SourceIdentityVerification\\Terraria.NpcAi.SourceIdentityVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcDamageCombatVerification\\Terraria.NpcDamageCombatVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Items.Verification\\Terraria.Items.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcAi.TargetHostVerification\\Terraria.NpcAi.TargetHostVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcAi.HostLifecycleVerification\\Terraria.NpcAi.HostLifecycleVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.WorldGeneration.P18.CoreVerification\\Terraria.WorldSession.WorldGeneration.P18.CoreVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC.Tools.NetworkServer\\NSSLC.Tools.NetworkServer.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC.Application\\NSSLC.Application.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\NSSLC.WorldStorage.GeneratedWorldLoadVerification\\NSSLC.WorldStorage.GeneratedWorldLoadVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcAi.Verification\\Terraria.NpcAi.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.EntityOrganization.Verification\\Terraria.EntityOrganization.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Items.NetworkOwner.Verification\\Terraria.Items.NetworkOwner.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcAi.GuideProfileVerification\\Terraria.NpcAi.GuideProfileVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.WorldGeneration.P17.CoreVerification\\Terraria.WorldSession.WorldGeneration.P17.CoreVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerInputSyncVerification\\Terraria.PlayerInputSyncVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\WorldStorage\\Terraria.WorldStorage.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Npc.SpawnEligibility.Verification\\Terraria.Npc.SpawnEligibility.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.NpcAi.CoverageVerification\\Terraria.NpcAi.CoverageVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.SwimTime.Verification\\Terraria.Player.SwimTime.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC.Infrastructure\\WorldStorage\\NSSLC.Infrastructure.WorldStorage.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.P16TreeTops.Verification\\Terraria.WorldSession.P16TreeTops.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.LeashedEntityVerification\\Terraria.LeashedEntityVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerEyeAnimationVerification\\Terraria.PlayerEyeAnimationVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.LifecycleInteraction.Verification\\Terraria.Player.LifecycleInteraction.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.MountSystem.CoreVerification\\Terraria.Player.MountSystem.CoreVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.SunScorch.Verification\\Terraria.Player.SunScorch.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.P16TransformBarrier.Verification\\Terraria.WorldSession.P16TransformBarrier.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerDpsTelemetryVerification\\Terraria.PlayerDpsTelemetryVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.LegacyPet.Verification\\Terraria.Player.LegacyPet.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.ArmorEffects.Verification\\Terraria.Player.ArmorEffects.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.Mobility.Core.Verification\\Terraria.Player.Mobility.Core.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.ShimmerTransition.Verification\\Terraria.Player.ShimmerTransition.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.P16TileMetrics.Verification\\Terraria.WorldSession.P16TileMetrics.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerDodgeVerification\\Terraria.PlayerDodgeVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.Progression.Verification\\Terraria.Player.Progression.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.AccessoryEffect.Verification\\Terraria.Player.AccessoryEffect.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.InputControl.Verification\\Terraria.Player.InputControl.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.Luck.Verification\\Terraria.Player.Luck.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerAccessoryVerification\\Terraria.PlayerAccessoryVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.P16LoadLifecycle.Verification\\Terraria.WorldSession.P16LoadLifecycle.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.TraversalPhysics.Verification\\Terraria.Player.TraversalPhysics.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerCombatResolutionVerification\\Terraria.PlayerCombatResolutionVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.CompanionCapability.Verification\\Terraria.Player.CompanionCapability.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.P05MinionCapacityVerification\\Terraria.P05MinionCapacityVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.Targeting.Verification\\Terraria.Player.Targeting.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.WorldObjectPet.Verification\\Terraria.Player.WorldObjectPet.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.P16HousingValidation.Verification\\Terraria.WorldSession.P16HousingValidation.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.Player.WallRescan.Verification\\Terraria.Player.WallRescan.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerBuilderInteractionVerification\\Terraria.PlayerBuilderInteractionVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerCombatProcVerification\\Terraria.PlayerCombatProcVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.ProjectileCombatVerification\\Terraria.ProjectileCombatVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Projectile\\Terraria.Projectile.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerBuilderOverlayVerification\\Terraria.PlayerBuilderOverlayVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldLoadApiGenerationVerification\\Terraria.WorldLoadApiGenerationVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.P16HousingScore.Verification\\Terraria.WorldSession.P16HousingScore.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.TileEntityVerification\\Terraria.TileEntityVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerSelectionVerification\\Terraria.PlayerSelectionVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerBarrierVerification\\Terraria.PlayerBarrierVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldLoadApiGenerationVerification.SecondaryApi\\Terraria.WorldLoadApiGenerationVerification.SecondaryApi.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldSession.P16HousingRegistry.Verification\\Terraria.WorldSession.P16HousingRegistry.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.SpatialSimulation.Verification\\Terraria.SpatialSimulation.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerReleaseRepeatVerification\\Terraria.PlayerReleaseRepeatVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.TileEntityHostFixtureVerification\\Terraria.TileEntityHostFixtureVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldLoadApiGenerationVerification.Api\\Terraria.WorldLoadApiGenerationVerification.Api.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldGeneration.PassExecution.Core.Verification\\Terraria.WorldGeneration.PassExecution.Core.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\PacketDesignCompiler.Core.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldGeneration.P20.Verification\\Terraria.WorldGeneration.P20.Verification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.WorldLoadApiGenerationVerification.TransitiveApis\\Terraria.WorldLoadApiGenerationVerification.TransitiveApis.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Items\\Terraria.Items.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerPresentationMessageVerification\\Terraria.PlayerPresentationMessageVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\Generator\\PacketDesignCompiler.Generator.csproj",
+    "targetFramework": "netstandard2.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerPresentationDerivedVerification\\Terraria.PlayerPresentationDerivedVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\DeathPenaltyAndRevenge\\Terraria.DeathPenaltyAndRevenge.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Physics\\Terraria.Physics.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\LeashedEntity\\Terraria.LeashedEntity.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Fishing\\Terraria.Fishing.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerPoseVerification\\Terraria.PlayerPoseVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Npc\\Terraria.Npc.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerManaActivityVerification\\Terraria.PlayerManaActivityVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC.Infrastructure\\WorldGeneration\\NSSLC.WorldGeneration.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Content\\Terraria.Content.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerItemUseExecutionVerification\\Terraria.PlayerItemUseExecutionVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\WorldSession\\Terraria.WorldSession.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerItemSpaceVerification\\Terraria.PlayerItemSpaceVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\StatusEffects\\Terraria.StatusEffects.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerItemMountRuntimeVerification\\Terraria.PlayerItemMountRuntimeVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Player\\Terraria.Player.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "Test\\Terraria.PlayerInteractionUiStateVerification\\Terraria.PlayerInteractionUiStateVerification.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\SpatialSimulation\\Terraria.SpatialSimulation.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Combat\\Terraria.Combat.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Share\\Entity\\Terraria.EntityEcs.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\SimulationRuleOverrides\\Terraria.SimulationRuleOverrides.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\WorldProgressionAndUnlocks\\Terraria.WorldProgressionAndUnlocks.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Relationships\\Terraria.Relationships.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\WorldInteraction\\Terraria.WorldInteraction.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Town\\Terraria.Town.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC.Infrastructure\\Network\\NSSLC.Infrastructure.Network.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC.Infrastructure\\Network\\Pocket\\DataPacketDefinition\\PacketDesignCompiler.Packets.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  },
+  {
+    "path": "src\\NSSLC\\Component\\Teleportation\\Terraria.Teleportation.csproj",
+    "targetFramework": "net10.0",
+    "targetFrameworks": "",
+    "hasArchReference": false
+  }
+]

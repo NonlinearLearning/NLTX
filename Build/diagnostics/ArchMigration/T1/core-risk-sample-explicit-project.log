@@ -1,0 +1,17 @@
+Command: dotnet run --project Test/Terraria.Arch.Verification/Terraria.Arch.Verification.csproj --no-build --no-restore -- --case world.id-reuse --case world.isalive-worldid-boundary --case component.struct-class-access-critical --case query.composition-critical --case command-buffer.create-and-groups-critical
+Started: 2026-10-08T03:02:49.6096915+08:00
+Finished: 2026-10-08T03:02:55.8936562+08:00
+ExitCode: -1073741819
+
+PASS world.id-reuse
+PASS world.isalive-worldid-boundary
+PASS component.struct-class-access-critical
+PASS query.composition-critical
+Fatal error.
+System.AccessViolationException: Attempted to read or write protected memory. This is often an indication that other memory is corrupt.
+   at Arch.Core.Chunk.GetArray(Arch.Core.ComponentType)
+   at Arch.Buffer.CommandBuffer.Playback(Arch.Core.World, Boolean)
+   at Terraria.Arch.Verification.Program+<>c__DisplayClass45_0.<VerifyCriticalCommandBufferBehavior>b__0()
+   at Terraria.Arch.Verification.Program.CaptureException(System.Action)
+   at Terraria.Arch.Verification.Program.VerifyCriticalCommandBufferBehavior()
+   at Terraria.Arch.Verification.Program.Main(System.String[])

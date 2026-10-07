@@ -1,0 +1,42 @@
+Description:
+  .NET 运行命令
+
+用法:
+  dotnet run [<applicationArguments>...] [options]
+
+参数:
+  <applicationArguments>  Arguments passed to the application that is being run. []
+
+选项:
+  -c, --configuration <CONFIGURATION>     要运行的配置。大多数项目的默认值是 "Debug"。
+  -f, --framework <FRAMEWORK>             要运行的目标框架。必须在项目文件中指定目标框架。
+  --project <PROJECT_PATH>                定义要运行的项目文件的路径。使用项目文件的路径或包含项目文件的目录的路径。如果未指定，则默认为当前目录。
+  --file <FILE_PATH>                      要运行的基于文件的应用的路径(如果当前目录中没有项目，也可作为第一个参数传递)。
+  -lp, --launch-profile <LAUNCH_PROFILE>  启动应用程序时使用的启动配置文件名称(如果有).
+  --no-launch-profile                     请勿尝试使用 launchSettings.json 或 [app].run.json 来配置应用程序。 [default: False]
+  --device <设备>                           用于运行该应用程序的设备的标识符。
+  --list-devices                          列出可用于运行该应用程序的设备。 [default: False]
+  --no-build                              运行之前不要生成项目。Implies --no-restore. [default: False]
+  --interactive                           允许命令停止和等待用户输入或操作(例如，用以完成身份验证)。 [default: False]
+  --no-restore                            生成前请勿还原项目。 [default: False]
+  --no-cache                              跳过最新检查，并始终在运行之前生成程序。 [default: False]
+  --sc, --self-contained                  将 .NET 运行时与应用程序一起发布，从而无需在目标计算机上安装运行时。
+                                          默认值为 'false'。但目标为 .NET 7 或更低版本时，如果指定了运行时标识符，则默认值为 'true'。 [default: False]
+  --no-self-contained                     将应用程序发布为依赖框架的应用程序。目标计算机上必须安装兼容的 .NET 运行时才能运行该应用程序。 [default: False]
+  -v, -verbosity <LEVEL>                  设置 MSBuild 详细程度。允许值为 q[uiet]、m[inimal]、n[ormal]、d[etailed] 和 diag[nostic]。
+  -r, --runtime <RUNTIME_IDENTIFIER>      要为其运行的目标运行时。
+  -a, --arch <ARCH>                       目标体系结构。
+  --os <OS>                               目标操作系统。
+  --disable-build-servers                 强制命令忽略任何永久性生成服务器。 [default: False]
+  --artifacts-path <ARTIFACTS_DIR>        工件路径。项目中的所有输出(包括生成、发布和打包输出)都将放到指定路径下的子文件夹中。
+  -e, --environment <NAME="VALUE">        设置环境变量的值。
+                                          如果该变量不存在，则创建它；如果它已存在，则替代它。
+                                          可多次指定此参数来提供多个变量。
+  
+                                          示例:
+                                          -e VARIABLE=abc
+                                          -e VARIABLE="value with spaces"
+                                          -e VARIABLE="value;seperated with;semicolons"
+                                          -e VAR1=abc -e VAR2=def -e VAR3=ghi
+  -?, -h, --help                          显示命令行帮助。
+
