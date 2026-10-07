@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerWorldObjectPetCapabilityComponent.cs" Link="PlayerWorldObjectPetCapabilityComponent.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerWorldObjectPetCapabilityRebuildInput.cs" Link="PlayerWorldObjectPetCapabilityRebuildInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerWorldObjectPetCapabilityRebuildSystem.cs" Link="PlayerWorldObjectPetCapabilityRebuildSystem.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\Progression\PlayerWorldObjectPetCapabilityRebuildInput.cs" Link="PlayerWorldObjectPetCapabilityRebuildInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\Progression\PlayerWorldObjectPetCapabilityRebuildSystem.cs" Link="PlayerWorldObjectPetCapabilityRebuildSystem.cs" />
   </ItemGroup>
 </Project>

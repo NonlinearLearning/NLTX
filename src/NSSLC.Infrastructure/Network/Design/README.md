@@ -1,6 +1,17 @@
 # 网络网关与消息读写设计入口
 
-日期：2026-10-03（Asia/Shanghai）。状态：已实现网络基础设施；独立 AI 57 组验证通过，构建 0 警告/0 错误。
+日期：2026-10-05（Asia/Shanghai）。状态：网络基础设施已实现；网关 59 组验证、
+真实客户端无界面测试 8 个场景和 167 个历史字节样例通过。
+
+2026-10-05 的数据包本地复制、schema 17 接入、生成路径和当前验证入口见
+[Pocket 说明](../Pocket/README.md)；历史实施报告保留当时的 schema 7 交付证据。
+真实客户端改造、运行脚本和验收范围见
+[无界面网络测试说明](2026-10-05-headless-real-client.md)。AI 系统暂不实现，
+不纳入当前阶段交付与验收。
+对本仓库当前服务端的测试结果见
+[服务端现状测试](2026-10-05-current-server-probe.md)：无界面真实客户端已通过世界数据、
+出生区段、入服确认、脚本化行走/跳跃控制和远端区段请求。当前可运行的窄范围宿主见
+[NSSLC.Tools.NetworkServer](../../../NSSLC.Tools.NetworkServer/README.md)。
 
 前轮只交付设计文档；用户后续明确要求按报告实现，并将测试交给其他 AI。
 生产代码位于本目录上一级 Network，应用端口位于 NSSLC.Application/Network；
@@ -17,6 +28,7 @@
 7. [调查与交付报告](D:/ProjectItem/SourceCode/Net/NetWork/docs/reports/2026-10-03-network-gateway-design-report.md)：结论、证据限制、交付清单、实施顺序与验收目标。
 8. [实施报告](2026-10-03-network-gateway-implementation.md)：实际实现范围、验证与限制。
 9. [宿主接入说明](2026-10-03-network-host-integration.md)：事实表、owner 端口、启动、缓存与重连。
+10. [真实客户端无界面网络测试](2026-10-05-headless-real-client.md)：原客户端协议收发、运行脚本与验证范围。
 
 ## 本轮基线
 

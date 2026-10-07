@@ -1,0 +1,25 @@
+namespace Terraria.Npc;
+
+public readonly record struct NpcBlueSlimeTypeOneSelectionInput(
+  float CurrentItemState,
+  int NetId,
+  float NpcValue,
+  float PositionY,
+  float CenterY,
+  double WorldSurfaceTiles,
+  bool PositionInRockLayer,
+  bool CenterInRockLayer,
+  bool NoTrapsWorld,
+  bool GetGoodWorld,
+  bool RemixWorld,
+  bool VampireSeed,
+  bool SlimeRain,
+  bool GenuineParty,
+  bool IsBallooned,
+  bool IsSkyblockWorld,
+  bool HardMode,
+  int MoonPhase,
+  int NetMode,
+  bool LowTiles = false,
+  bool NoLifeCrystals = false,
+  bool AnyLifeCrystalSlime = false);

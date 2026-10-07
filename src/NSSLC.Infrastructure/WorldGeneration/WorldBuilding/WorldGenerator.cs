@@ -171,17 +171,21 @@ public class WorldGenerator
   }
 		public bool TryReset()
 {
-		
-			return TryOperateInControlLock(delegate
+			bool resetPerformed = false;
+			bool controlLockAcquired = TryOperateInControlLock(delegate
 			{
-				UpdatePreviousManifest();
-				WorldGen.RestoreTemporaryStateChanges();
-				WorldGen.clearWorld();
-				WorldGen.Reset();
-				ForceUpdateProgress();
-				Paused = true;
-				Main.NewText("World Reset", byte.MaxValue, byte.MaxValue, 0);
+				resetPerformed = WorldGen.TryRunWorldLifecycleMutation(delegate
+				{
+					UpdatePreviousManifest();
+					WorldGen.RestoreTemporaryStateChanges();
+					WorldGen.clearWorld();
+					WorldGen.Reset();
+					ForceUpdateProgress();
+					Paused = true;
+					Main.NewText("World Reset", byte.MaxValue, byte.MaxValue, 0);
+				});
 			});
+			return controlLockAcquired && resetPerformed;
 		
 		}
 		private void UpdatePreviousManifest()

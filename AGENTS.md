@@ -13,6 +13,11 @@
 - 新增、移动、拆分、合并或重命名 ECS、领域模型、测试及相关文件前，阅读
   [ECS 文件组织设计约束](Context/架构设计/ECS文件组织设计约束.md)。
 
+## ECS Entity Organization
+
+- 新增或调整实体身份、组件组合与存储、创建/销毁流程、实体查询或跨实体关系前，阅读
+  [ECS Entity 组织设计约束](Context/架构设计/ECSEntity组织设计约束.md)。
+
 ## ECS And Infrastructure Boundaries
 
 - 设计 ECS 领域状态与持久化、文件或平台基础设施的职责/依赖边界时，阅读

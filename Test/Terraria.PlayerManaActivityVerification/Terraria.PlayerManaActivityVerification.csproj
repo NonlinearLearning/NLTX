@@ -7,13 +7,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\src\NSSLC\Component\Player\ManaActivityPolicyDefinition.cs" Link="ManaActivityPolicyDefinition.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\ManaStatusSystem.cs" Link="ManaStatusSystem.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerActivityDecision.cs" Link="PlayerActivityDecision.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerActivityInput.cs" Link="PlayerActivityInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerActivityQuery.cs" Link="PlayerActivityQuery.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\ManaActivityPolicyDefinition.cs" Link="ManaActivityPolicyDefinition.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\ManaStatusSystem.cs" Link="ManaStatusSystem.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerActivityDecision.cs" Link="PlayerActivityDecision.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerActivityInput.cs" Link="PlayerActivityInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerActivityQuery.cs" Link="PlayerActivityQuery.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerManaActivityComponent.cs" Link="PlayerManaActivityComponent.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerManaRegenModifierComponent.cs" Link="PlayerManaRegenModifierComponent.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerManaStatusInput.cs" Link="PlayerManaStatusInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerManaStatusInput.cs" Link="PlayerManaStatusInput.cs" />
   </ItemGroup>
 </Project>

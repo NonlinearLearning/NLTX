@@ -30,7 +30,10 @@ public class DungeonGlobalTraps : GlobalDungeonFeature
 		int num3 = 1000;
 		int num4 = 0;
 		int num5 = (int)((double)(8.4f * num) * data.globalFeatureScalar);
+		bool tileSolid379 = Main.tileSolid[379];
 		Main.tileSolid[379] = false;
+		try
+		{
 		while (num4 < num5)
 		{
 			num2++;
@@ -150,6 +153,10 @@ public class DungeonGlobalTraps : GlobalDungeonFeature
 				}
 			}
 		}
-		Main.tileSolid[379] = true;
+		}
+		finally
+		{
+			Main.tileSolid[379] = tileSolid379;
+		}
 	
 	}}

@@ -6,8 +6,13 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\NSSLC\Component\Content\Terraria.Content.csproj" />
     <ProjectReference Include="..\..\src\NSSLC\Component\Items\Terraria.Items.csproj" />
     <ProjectReference Include="..\..\src\NSSLC\Component\Player\Terraria.Player.csproj" />
     <ProjectReference Include="..\..\src\NSSLC\Component\Relationships\Terraria.Relationships.csproj" />
+    <ProjectReference Include="..\..\src\NSSLC\Component\Share\Entity\Terraria.EntityEcs.csproj" />
+    <ProjectReference Include="..\..\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj" />
+    <ProjectReference Include="..\..\src\NSSLC.Application\NSSLC.Application.csproj" />
+    <ProjectReference Include="..\..\src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj" />
   </ItemGroup>
 </Project>

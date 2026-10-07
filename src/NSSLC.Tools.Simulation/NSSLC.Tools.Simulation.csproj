@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>Terraria.NonAuthoritative.SimulationHost</RootNamespace>
+    <AssemblyName>NSSLC.Tools.Simulation</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NSSLC\Component\Share\Entity\Terraria.EntityEcs.csproj" />
+    <ProjectReference Include="..\NSSLC.Application\NSSLC.Application.csproj" />
+    <ProjectReference Include="..\NSSLC.Infrastructure\Network\NSSLC.Infrastructure.Network.csproj" />
+    <ProjectReference Include="..\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj" />
+    <ProjectReference Include="..\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldStorage.csproj" />
+    <ProjectReference Include="..\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj" />
+    <ProjectReference Include="..\NSSLC\Component\Content\Terraria.Content.csproj" />
+    <ProjectReference Include="..\NSSLC\Component\Npc\Terraria.Npc.csproj" />
+    <ProjectReference Include="..\NSSLC\Component\Projectile\Terraria.Projectile.csproj" />
+    <ProjectReference Include="..\NSSLC\Component\Town\Terraria.Town.csproj" />
+  </ItemGroup>
+</Project>

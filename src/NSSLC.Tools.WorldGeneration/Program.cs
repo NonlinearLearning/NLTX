@@ -5,6 +5,9 @@ using System.Text.Json;
 using NSSLC.WorldGeneration;
 
 try {
+  if (args.Length > 0 && args[0] == "--roundtrip") {
+    return WorldPersistenceRoundTrip.Run(args.Skip(1).ToArray());
+  }
   string[] seeds = (args.Length > 0 ? args[0] : "12345").Split(',');
   string? reportPath = args.Length > 1 ? args[1] : null;
   GeneratedWorldSize size = args.Length > 2 ? Enum.Parse<GeneratedWorldSize>(args[2], true)

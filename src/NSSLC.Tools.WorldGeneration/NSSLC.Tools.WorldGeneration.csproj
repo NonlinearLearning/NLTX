@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj" />
+    <ProjectReference Include="..\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldStorage.csproj" />
   </ItemGroup>
 </Project>

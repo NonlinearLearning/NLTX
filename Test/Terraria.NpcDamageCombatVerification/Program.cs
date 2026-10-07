@@ -1218,7 +1218,8 @@ NpcDeathLifecycleResult splitPhase = deathPhaseLifecycleSystem.Reconcile(
   splitPhaseLifecycle,
   isLifeOwner: true,
   new Vector2(12.75f, -3.75f),
-  splitPhaseAi);
+  splitPhaseAi,
+  sourceNpcInstanceId: new NpcInstanceId(3960));
 Assert(
   !splitPhase.IsTerminal &&
     splitPhase.PhaseDecision is NpcDeathPhaseDecision splitDecision &&
@@ -1300,7 +1301,7 @@ var type398CombatLifecycle = new NpcLifecycleComponent(
   isActive: true,
   remainingActiveTicks: 600,
   stage: NpcLifecycleStage.Active);
-var type398Behavior = new NpcBehaviorComponent(0, 0, new float[4]);
+var type398Behavior = new NpcBehaviorStateComponent(0, 0, 0);
 var type398SyncIntent = new NpcNetworkSyncIntentComponent();
 var authoritySystem = new NpcAuthoritySystem();
 NpcCombatResult type398CombatResult = type398CombatSystem.ResolveAndCommit(
@@ -1334,7 +1335,7 @@ Assert(
     type398CombatHealth.CurrentLife == type398CombatHealth.MaximumLife &&
     type398CombatLifecycle.IsActive &&
     type398PhaseCommitted &&
-    type398Behavior.AiSlots[0] == 2.0f &&
+    type398Behavior.AuthoritativeAiSlots[0] == 2.0f &&
     type398Policy.RejectAllDamage &&
     type398Policy.RejectHostileDamage &&
     type398SyncIntent.IsPending,
@@ -1513,7 +1514,7 @@ Assert(
   !type548Policy.RejectHostileDamage,
   "Type 548 must return its AI and hostile-damage policy decisions.");
 
-var type548Behavior = new NpcBehaviorComponent(0, 0, new float[4]);
+var type548Behavior = new NpcBehaviorStateComponent(0, 0, 0);
 var type548SyncIntent = new NpcNetworkSyncIntentComponent();
 bool type548PhaseCommitted = authoritySystem.CommitDeathPhaseDecision(
   type548Phase,
@@ -1522,14 +1523,14 @@ bool type548PhaseCommitted = authoritySystem.CommitDeathPhaseDecision(
   type548SyncIntent);
 Assert(
   type548PhaseCommitted &&
-    type548Behavior.AiSlots[0] == 0.0f &&
-    type548Behavior.AiSlots[1] == 1.0f &&
+    type548Behavior.AuthoritativeAiSlots[0] == 0.0f &&
+    type548Behavior.AuthoritativeAiSlots[1] == 1.0f &&
     type548Policy.RejectHostileDamage &&
   type548SyncIntent.IsPending,
   "The authority owner must commit type 548 AI, hostile policy, and sync intent.");
 
 var type548ExistingPolicy = new DamageAcceptancePolicyComponent(true, false, true, false);
-var type548ExistingBehavior = new NpcBehaviorComponent(0, 0, new float[4]);
+var type548ExistingBehavior = new NpcBehaviorStateComponent(0, 0, 0);
 var type548ExistingSyncIntent = new NpcNetworkSyncIntentComponent();
 bool type548ExistingPolicyCommitted = authoritySystem.CommitDeathPhaseDecision(
   type548Phase,
@@ -1591,7 +1592,8 @@ NpcDeathPhaseInput goodWorldType13Input = new(
   new NpcAiStateComponent(0, 0.0f, 0.0f, 0.0f, 0.0f, 0),
   new Vector2(12.75f, -3.75f),
   IsGoodWorld: true,
-  BottomY: 80.5f);
+  BottomY: 80.5f,
+  SourceNpcInstanceId: new NpcInstanceId(1300));
 NpcDeathPhaseDecision goodWorldType13Decision =
   NpcDeathPhaseQuery.Evaluate(in goodWorldType13Input);
 Assert(
@@ -1662,7 +1664,8 @@ NpcDeathLifecycleResult goodWorldType36Death = deathPhaseLifecycleSystem.Reconci
   isLifeOwner: true,
   new Vector2(800.0f, 1200.0f),
   new NpcAiStateComponent(0, 0.0f, 0.0f, 0.0f, 0.0f, 0),
-  isGoodWorld: true);
+  isGoodWorld: true,
+  sourceNpcInstanceId: new NpcInstanceId(3600));
 Assert(
   !goodWorldType36Death.IsTerminal &&
     goodWorldType36Death.TerminalCommitPending &&
@@ -1680,6 +1683,119 @@ Assert(
     type36Spawn.WorldBottomMarginInTiles == 200 &&
     type36Spawn.RequestReplicationSyncAfterSpawn,
   "GoodWorld type 36 death must defer terminal commit with its surface-search spawn plan.");
+
+NpcDeathPhaseInput motherSlimeDeathInput = new(
+  new NpcTypeId(16),
+  IsActive: true,
+  IsLifeOwner: true,
+  CurrentLife: 0,
+  new NpcAiStateComponent(1, 0f, 0f, 0f, 0f, 0),
+  new Vector2(100f, 200f),
+  SourceNpcInstanceId: new NpcInstanceId(1600),
+  NetMode: 2);
+NpcDeathPhaseDecision motherSlimeDeathDecision =
+  NpcDeathPhaseQuery.Evaluate(in motherSlimeDeathInput);
+Assert(
+  !motherSlimeDeathDecision.SuppressTerminalDeath &&
+    motherSlimeDeathDecision.PhaseKind == NpcDeathPhaseKind.MotherSlimeDeathSplit &&
+    motherSlimeDeathDecision.MotherSlimeDeathSplitIntent.HasValue &&
+    motherSlimeDeathDecision.MotherSlimeDeathSplitIntent.Value.SourceNpcInstanceId ==
+      new NpcInstanceId(1600),
+  "Authoritative Mother Slime death must defer terminal commit with a split intent.");
+NpcMotherSlimeDeathSplitIntent motherSlimeSplitIntent =
+  motherSlimeDeathDecision.MotherSlimeDeathSplitIntent!.Value;
+
+NpcDeathPhaseInput motherSlimeClientDeathInput = motherSlimeDeathInput with
+{
+  NetMode = 1,
+};
+NpcDeathPhaseDecision motherSlimeClientDeathDecision =
+  NpcDeathPhaseQuery.Evaluate(in motherSlimeClientDeathInput);
+Assert(
+  motherSlimeClientDeathDecision.MotherSlimeDeathSplitIntent is null &&
+    motherSlimeClientDeathDecision.PhaseKind == NpcDeathPhaseKind.None,
+  "Client-side Mother Slime death must not request child spawns.");
+
+var motherSlimeLifecycle = new NpcLifecycleComponent(
+  isActive: true,
+  remainingActiveTicks: 600,
+  stage: NpcLifecycleStage.Active);
+var motherSlimeHealth = new NpcHealthComponent(currentLife: 0, maximumLife: 200);
+var motherSlimeDeathLifecycleSystem = new NpcDeathLifecycleSystem();
+NpcDeathLifecycleResult motherSlimePendingDeath =
+  motherSlimeDeathLifecycleSystem.Reconcile(
+    new NpcTypeId(16),
+    motherSlimeHealth,
+    motherSlimeLifecycle,
+    isLifeOwner: true,
+    motherSlimeDeathInput.Center,
+    motherSlimeDeathInput.Ai,
+    sourceNpcInstanceId: motherSlimeDeathInput.SourceNpcInstanceId,
+    netMode: motherSlimeDeathInput.NetMode);
+Assert(
+  !motherSlimePendingDeath.IsTerminal &&
+    motherSlimePendingDeath.TerminalCommitPending &&
+    motherSlimeLifecycle.IsActive,
+  "Mother Slime terminal death must stay pending until child effects finish.");
+NpcDeathLifecycleResult motherSlimeCommittedDeath =
+  motherSlimeDeathLifecycleSystem.CommitAfterPreTerminalEffects(
+    motherSlimeHealth,
+    motherSlimeLifecycle,
+    motherSlimePendingDeath);
+Assert(
+  motherSlimeCommittedDeath.IsTerminal &&
+    motherSlimeCommittedDeath.Transitioned &&
+    !motherSlimeLifecycle.IsActive,
+  "Mother Slime must commit terminal death only after the split effect completes.");
+
+var motherSlimeSplitPort = new RecordingMotherSlimeDeathSplitEffectPort(
+  childSlots: [4, 5],
+  rolls: [0, 0, 3, 2, 19, 0, 1]);
+NpcMotherSlimeDeathSplitResult motherSlimeSplit =
+  NpcMotherSlimeDeathSplitSystem.Apply(
+    in motherSlimeSplitIntent,
+    parentPosition: new Vector2(100.5f, 200.25f),
+    parentWidth: 32,
+    parentHeight: 18,
+    parentVelocity: new Vector2(2f, -1f),
+    parentDirection: -1,
+    netMode: 2,
+    motherSlimeSplitPort);
+Assert(
+  motherSlimeSplit == new NpcMotherSlimeDeathSplitResult(2, 2, 2, 0) &&
+    motherSlimeSplitPort.SpawnPositions.SequenceEqual([
+      new Vector2(116f, 218f),
+      new Vector2(116f, 218f),
+    ]) &&
+    motherSlimeSplitPort.ConfiguredChildren.Count == 2 &&
+    motherSlimeSplitPort.ConfiguredChildren[0].NpcSlot == 4 &&
+    motherSlimeSplitPort.ConfiguredChildren[0].Velocity.X == 2f &&
+    MathF.Abs(motherSlimeSplitPort.ConfiguredChildren[0].Velocity.Y + 1.3f) < 0.0001f &&
+    motherSlimeSplitPort.ConfiguredChildren[0].Ai0 == -2000f &&
+    motherSlimeSplitPort.ConfiguredChildren[1].NpcSlot == 5 &&
+    MathF.Abs(motherSlimeSplitPort.ConfiguredChildren[1].Velocity.X - 3.6f) < 0.0001f &&
+    motherSlimeSplitPort.ConfiguredChildren[1].Velocity.Y == -2f &&
+    motherSlimeSplitPort.ConfiguredChildren[1].Ai0 == -1000f &&
+    motherSlimeSplitPort.SyncedSlots.SequenceEqual([4, 5]),
+  "Mother Slime split must preserve child count, spawn position, random velocity/ai draws, and server sync order.");
+
+var motherSlimeClientSplitPort = new RecordingMotherSlimeDeathSplitEffectPort(
+  childSlots: [],
+  rolls: []);
+NpcMotherSlimeDeathSplitResult motherSlimeClientSplit =
+  NpcMotherSlimeDeathSplitSystem.Apply(
+    in motherSlimeSplitIntent,
+    parentPosition: Vector2.Zero,
+    parentWidth: 32,
+    parentHeight: 18,
+    parentVelocity: Vector2.Zero,
+    parentDirection: 1,
+    netMode: 1,
+    motherSlimeClientSplitPort);
+Assert(
+  motherSlimeClientSplit == default &&
+    motherSlimeClientSplitPort.Events.Count == 0,
+  "The Mother Slime split effect executor must also gate clients before consuming random values.");
 
 var childDeathAi = new NpcAiStateComponent(0, 0.0f, 0.0f, 0.0f, 1.0f, 0);
 var childDeathHealth = new NpcHealthComponent(currentLife: 0, maximumLife: 20);
@@ -1812,6 +1928,69 @@ Assert(recent[0].Credits.Length == 3,
   "Three accepted hits must produce three contributors.");
 
 Console.WriteLine("PASS: P12 combat, life, tracker and death core smoke");
+
+sealed class RecordingMotherSlimeDeathSplitEffectPort :
+  INpcMotherSlimeDeathSplitEffectPort
+{
+  private readonly Queue<int> _childSlots;
+  private readonly Queue<int> _rolls;
+
+  public RecordingMotherSlimeDeathSplitEffectPort(
+    int[] childSlots,
+    int[] rolls)
+  {
+    _childSlots = new Queue<int>(childSlots);
+    _rolls = new Queue<int>(rolls);
+  }
+
+  public int MaxNpcSlots => 200;
+
+  public List<string> Events { get; } = new();
+
+  public List<Vector2> SpawnPositions { get; } = new();
+
+  public List<(int NpcSlot, Vector2 Velocity, float Ai0)> ConfiguredChildren { get; } = new();
+
+  public List<int> SyncedSlots { get; } = new();
+
+  public int Next(int maxExclusive)
+  {
+    int value = _rolls.Dequeue();
+    Events.Add($"random:{maxExclusive}:{value}");
+    return value;
+  }
+
+  public int Next(int minInclusive, int maxExclusive)
+  {
+    int value = Next(maxExclusive - minInclusive) + minInclusive;
+    return value;
+  }
+
+  public int SpawnBlueSlimeChild(
+    NpcInstanceId sourceNpcInstanceId,
+    int positionX,
+    int positionY)
+  {
+    Events.Add("spawn");
+    SpawnPositions.Add(new Vector2(positionX, positionY));
+    return _childSlots.Dequeue();
+  }
+
+  public void ConfigureBlueSlimeChild(
+    int npcSlot,
+    Vector2 velocity,
+    float ai0)
+  {
+    Events.Add("configure");
+    ConfiguredChildren.Add((npcSlot, velocity, ai0));
+  }
+
+  public void SendNpcSyncPacket(int npcSlot)
+  {
+    Events.Add("sync");
+    SyncedSlots.Add(npcSlot);
+  }
+}
 
 sealed class RecordingNpcDamageOverTimeTextPort : INpcDamageOverTimeTextPort
 {

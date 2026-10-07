@@ -1,0 +1,47 @@
+{
+  "project": "NLTX",
+  "root": "D:/TRbackup/NLTX",
+  "timestamp": "2026-10-04T16:59:32.8242203+08:00",
+  "commit": "30e6c6cf2b2ebec1567f1c1e0d0ac243e5947839",
+  "baseline": "HEAD plus current dirty working tree",
+  "modes": [
+    "architecture",
+    "stability",
+    "release"
+  ],
+  "scope": "Non-communication headless simulation readiness; world publication, gameplay composition, current build, runtime persistence",
+  "report_language": "zh-CN",
+  "report_format": "md",
+  "overall_score": 4.8,
+  "dimension_scores": {
+    "Maintainability": 6.0,
+    "Release": 3.0,
+    "Stability": 4.0,
+    "Design": 6.0
+  },
+  "finding_counts": {
+    "Suspected": 1,
+    "Info": 0,
+    "Low": 0,
+    "High": 10,
+    "Confirmed": 12,
+    "Total": 13,
+    "Medium": 3,
+    "Critical": 0
+  },
+  "report_path": "D:/TRbackup/NLTX/docs/reviews/audit-report-NLTX-2026-10-04.md",
+  "evidence_directory": "D:/TRbackup/NLTX/Build/diagnostics/NonCommunicationSimulationAudit/2026-10-04",
+  "source_snapshot": "D:/TRbackup/NLTX/Build/diagnostics/NonCommunicationSimulationAudit/2026-10-04/source-snapshot.json",
+  "source_modified_by_reviewer": false,
+  "subagent_requested_model": "gpt-6.1-sol",
+  "subagent_requested_reasoning": "max",
+  "subagent_results": {
+    "world_persistence": "Task failed with provider quota error; root agent checked source independently",
+    "gameplay": "Initial wrong-root result discarded; corrected task failed with provider quota error",
+    "host_tick": "Completed NLTX audit"
+  },
+  "lint": {
+    "command": "python C:/Users/shan/.codex/skills/fuck-my-shit-mountain/scripts/report_lint.py --modes architecture,stability,release docs/reviews/audit-report-NLTX-2026-10-04.md",
+    "exit_code": 0
+  }
+}

@@ -22,7 +22,7 @@
 **/Build/*
 !Build/Tools/
 !Build/Tools/**
-
+Build
 
 .agents
 .learnings

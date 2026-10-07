@@ -844,6 +844,8 @@ static void FramingAndDebugSystemUsesExplicitPorts()
       framingPort);
   Assert(frameResult.Accepted && frameResult.FramesApplied,
     "SetFrames must commit through the explicit framing port.");
+  Assert(frameResult.AffectedRegion == framingPort.LastAffectedRegion,
+    "SetFrames must report the exact affected tile region returned by its framing owner.");
   Assert(
     framingPort.LastPosition == position && framingPort.LastFrameNeighbors,
     "SetFrames must preserve target and neighbor framing intent.");
@@ -1052,14 +1054,20 @@ sealed class ThrowingCountSink :
 
 sealed class RecordingFramingPort : WorldGenerationTileFramingAndDebugSystem.IFramingPort
 {
+  public WorldGenerationTileFramingAndDebugSystem.TileFrameRegion LastAffectedRegion { get; } =
+    new(6, 7, 8, 9);
+
   public TilePosition LastPosition { get; private set; }
 
   public bool LastFrameNeighbors { get; private set; }
 
-  public void Frame(TilePosition target, bool frameNeighbors)
+  public WorldGenerationTileFramingAndDebugSystem.TileFrameRegion Frame(
+    TilePosition target,
+    bool frameNeighbors)
   {
     LastPosition = target;
     LastFrameNeighbors = frameNeighbors;
+    return LastAffectedRegion;
   }
 }
 

@@ -1,6 +1,7 @@
 using Terraria.Player;
 using Terraria.Items;
 using Terraria.Relationships;
+using Terraria.PlayerItemSpaceVerification;
 
 static void Require(bool condition, string message)
 {
@@ -1510,6 +1511,8 @@ Require(
 
 Console.WriteLine(
   "PASS: player inventory, equipment, defense, loadout-switch, and container-relation core semantics");
+
+RuntimeItemOwnershipVerification.Run();
 
 sealed class TestInventoryItemQuery : IPlayerInventoryItemQuery
 {

@@ -7,61 +7,64 @@
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\src\NSSLC\Component\Relationships\Terraria.Relationships.csproj" />
+  </ItemGroup>
+  <ItemGroup>
     <Compile Include="Program.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerValueTypes.cs" Link="PlayerValueTypes.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerValueTypes.cs" Link="PlayerValueTypes.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerVitalStateComponent.cs" Link="PlayerVitalStateComponent.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatDefenseModifierComponent.cs" Link="PlayerCombatDefenseModifierComponent.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDamageMitigationInputComponent.cs" Link="PlayerDamageMitigationInputComponent.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDodgeAndImmunityStateComponent.cs" Link="PlayerDodgeAndImmunityStateComponent.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDodgeCapabilityInput.cs" Link="PlayerDodgeCapabilityInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDodgeActivationCommand.cs" Link="PlayerDodgeActivationCommand.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDodgeCommitCommand.cs" Link="PlayerDodgeCommitCommand.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDodgeCommitSystem.cs" Link="PlayerDodgeCommitSystem.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDodgeCapabilityInput.cs" Link="PlayerDodgeCapabilityInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDodgeActivationCommand.cs" Link="PlayerDodgeActivationCommand.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDodgeCommitCommand.cs" Link="PlayerDodgeCommitCommand.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDodgeCommitSystem.cs" Link="PlayerDodgeCommitSystem.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerBuffSlotsComponent.cs" Link="PlayerBuffSlotsComponent.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerBuffImmunityComponent.cs" Link="PlayerBuffImmunityComponent.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDamageEligibilityInput.cs" Link="PlayerDamageEligibilityInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDamageEligibilityQuery.cs" Link="PlayerDamageEligibilityQuery.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDamageEligibilityRejectionReason.cs" Link="PlayerDamageEligibilityRejectionReason.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDamageEligibilityResult.cs" Link="PlayerDamageEligibilityResult.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDamageMitigationInput.cs" Link="PlayerDamageMitigationInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDamageMitigationQuery.cs" Link="PlayerDamageMitigationQuery.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatResolutionCommand.cs" Link="PlayerCombatResolutionCommand.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatResolutionResult.cs" Link="PlayerCombatResolutionResult.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatResolutionSystem.cs" Link="PlayerCombatResolutionSystem.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatProcHitEffects.cs" Link="PlayerCombatProcHitEffects.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDamageEligibilityInput.cs" Link="PlayerDamageEligibilityInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDamageEligibilityQuery.cs" Link="PlayerDamageEligibilityQuery.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDamageEligibilityRejectionReason.cs" Link="PlayerDamageEligibilityRejectionReason.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDamageEligibilityResult.cs" Link="PlayerDamageEligibilityResult.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDamageMitigationInput.cs" Link="PlayerDamageMitigationInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDamageMitigationQuery.cs" Link="PlayerDamageMitigationQuery.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatResolutionCommand.cs" Link="PlayerCombatResolutionCommand.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatResolutionResult.cs" Link="PlayerCombatResolutionResult.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatResolutionSystem.cs" Link="PlayerCombatResolutionSystem.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatProcHitEffects.cs" Link="PlayerCombatProcHitEffects.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatProcStateComponent.cs" Link="PlayerCombatProcStateComponent.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatProcSystem.cs" Link="PlayerCombatProcSystem.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatProcSystem.HitCommit.cs" Link="PlayerCombatProcSystem.HitCommit.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatProcSystem.Lifecycle.cs" Link="PlayerCombatProcSystem.Lifecycle.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatProcSystem.Tick.cs" Link="PlayerCombatProcSystem.Tick.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatProcTickInput.cs" Link="PlayerCombatProcTickInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatProcTickQuery.cs" Link="PlayerCombatProcTickQuery.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCombatProcTickResult.cs" Link="PlayerCombatProcTickResult.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCommittedCombatHitEvent.cs" Link="PlayerCommittedCombatHitEvent.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\IPlayerDpsTelemetryCommitPort.cs" Link="IPlayerDpsTelemetryCommitPort.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\IPlayerTelemetryClock.cs" Link="IPlayerTelemetryClock.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerCommittedDamageEvent.cs" Link="PlayerCommittedDamageEvent.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatProcSystem.cs" Link="PlayerCombatProcSystem.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatProcSystem.HitCommit.cs" Link="PlayerCombatProcSystem.HitCommit.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatProcSystem.Lifecycle.cs" Link="PlayerCombatProcSystem.Lifecycle.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatProcSystem.Tick.cs" Link="PlayerCombatProcSystem.Tick.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatProcTickInput.cs" Link="PlayerCombatProcTickInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatProcTickQuery.cs" Link="PlayerCombatProcTickQuery.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCombatProcTickResult.cs" Link="PlayerCombatProcTickResult.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCommittedCombatHitEvent.cs" Link="PlayerCommittedCombatHitEvent.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\IPlayerDpsTelemetryCommitPort.cs" Link="IPlayerDpsTelemetryCommitPort.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\IPlayerTelemetryClock.cs" Link="IPlayerTelemetryClock.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerCommittedDamageEvent.cs" Link="PlayerCommittedDamageEvent.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDpsTelemetryComponent.cs" Link="PlayerDpsTelemetryComponent.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerDpsTelemetrySystem.cs" Link="PlayerDpsTelemetrySystem.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerStatusEffectDefinition.cs" Link="PlayerStatusEffectDefinition.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerStatusEffectCatalog.cs" Link="PlayerStatusEffectCatalog.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerStatusEffectApplyCommand.cs" Link="PlayerStatusEffectApplyCommand.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerStatusEffectTickInput.cs" Link="PlayerStatusEffectTickInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerStatusEffectRejectionReason.cs" Link="PlayerStatusEffectRejectionReason.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerStatusEffectResult.cs" Link="PlayerStatusEffectResult.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerStatusEffectSnapshot.cs" Link="PlayerStatusEffectSnapshot.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerStatusEffectTickResult.cs" Link="PlayerStatusEffectTickResult.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerStatusEffectSystem.cs" Link="PlayerStatusEffectSystem.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerManaRegenInput.cs" Link="PlayerManaRegenInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerManaRegenFailureReason.cs" Link="PlayerManaRegenFailureReason.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerManaRegenResult.cs" Link="PlayerManaRegenResult.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerManaRegenSystem.cs" Link="PlayerManaRegenSystem.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerDpsTelemetrySystem.cs" Link="PlayerDpsTelemetrySystem.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerStatusEffectDefinition.cs" Link="PlayerStatusEffectDefinition.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerStatusEffectCatalog.cs" Link="PlayerStatusEffectCatalog.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerStatusEffectApplyCommand.cs" Link="PlayerStatusEffectApplyCommand.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerStatusEffectTickInput.cs" Link="PlayerStatusEffectTickInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerStatusEffectRejectionReason.cs" Link="PlayerStatusEffectRejectionReason.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerStatusEffectResult.cs" Link="PlayerStatusEffectResult.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerStatusEffectSnapshot.cs" Link="PlayerStatusEffectSnapshot.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerStatusEffectTickResult.cs" Link="PlayerStatusEffectTickResult.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerStatusEffectSystem.cs" Link="PlayerStatusEffectSystem.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerManaRegenInput.cs" Link="PlayerManaRegenInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerManaRegenFailureReason.cs" Link="PlayerManaRegenFailureReason.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerManaRegenResult.cs" Link="PlayerManaRegenResult.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerManaRegenSystem.cs" Link="PlayerManaRegenSystem.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerManaRegenStateComponent.cs" Link="PlayerManaRegenStateComponent.cs" />
     <Compile Include="..\..\src\NSSLC\Component\Player\PlayerManaRegenModifierComponent.cs" Link="PlayerManaRegenModifierComponent.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerLifeRegenStatusFlags.cs" Link="PlayerLifeRegenStatusFlags.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerLifeRegenInput.cs" Link="PlayerLifeRegenInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerLifeRegenFailureReason.cs" Link="PlayerLifeRegenFailureReason.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerLifeRegenResult.cs" Link="PlayerLifeRegenResult.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\PlayerLifeRegenQuery.cs" Link="PlayerLifeRegenQuery.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerLifeRegenStatusFlags.cs" Link="PlayerLifeRegenStatusFlags.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerLifeRegenInput.cs" Link="PlayerLifeRegenInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerLifeRegenFailureReason.cs" Link="PlayerLifeRegenFailureReason.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerLifeRegenResult.cs" Link="PlayerLifeRegenResult.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\PlayerLifeRegenQuery.cs" Link="PlayerLifeRegenQuery.cs" />
   </ItemGroup>
 </Project>

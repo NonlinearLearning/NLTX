@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="ReferenceHarness.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/INpcEyeOfCthulhuProfileEffectPort.cs" Link="Profile/INpcEyeOfCthulhuProfileEffectPort.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/INpcEyeOfCthulhuRandomPort.cs" Link="Profile/INpcEyeOfCthulhuRandomPort.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcEyeOfCthulhuAttackIntent.cs" Link="Profile/NpcEyeOfCthulhuAttackIntent.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcEyeOfCthulhuExitReason.cs" Link="Profile/NpcEyeOfCthulhuExitReason.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcEyeOfCthulhuProfile.cs" Link="Profile/NpcEyeOfCthulhuProfile.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcEyeOfCthulhuProfileInput.cs" Link="Profile/NpcEyeOfCthulhuProfileInput.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcEyeOfCthulhuProfileResult.cs" Link="Profile/NpcEyeOfCthulhuProfileResult.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcEyeOfCthulhuProfileState.cs" Link="Profile/NpcEyeOfCthulhuProfileState.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/INpcBlueSlimeProfileEffectPort.cs" Link="Profile/INpcBlueSlimeProfileEffectPort.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcBlueSlimeProfile.cs" Link="Profile/NpcBlueSlimeProfile.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcBlueSlimeProfileInput.cs" Link="Profile/NpcBlueSlimeProfileInput.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcBlueSlimeProfileResult.cs" Link="Profile/NpcBlueSlimeProfileResult.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcBlueSlimeProfileState.cs" Link="Profile/NpcBlueSlimeProfileState.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcBlueSlimeSourceBranch.cs" Link="Profile/NpcBlueSlimeSourceBranch.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcBlueSlimeTypeOneSelectionResult.cs" Link="Profile/NpcBlueSlimeTypeOneSelectionResult.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/INpcMotherSlimeProfileEffectPort.cs" Link="Profile/INpcMotherSlimeProfileEffectPort.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcMotherSlimeProfile.cs" Link="Profile/NpcMotherSlimeProfile.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcMotherSlimeProfileInput.cs" Link="Profile/NpcMotherSlimeProfileInput.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcMotherSlimeProfileResult.cs" Link="Profile/NpcMotherSlimeProfileResult.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcMotherSlimeProfileState.cs" Link="Profile/NpcMotherSlimeProfileState.cs" />
+    <Compile Include="../../src/NSSLC/Component/Npc/System/NpcMotherSlimeSourceBranch.cs" Link="Profile/NpcMotherSlimeSourceBranch.cs" />
+  </ItemGroup>
+</Project>

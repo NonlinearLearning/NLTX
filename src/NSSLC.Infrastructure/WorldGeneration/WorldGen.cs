@@ -2784,7 +2784,10 @@ public partial class WorldGen
 		}
 		public static void DoRainbowStuff()
 {
+			bool tileSolid379 = Main.tileSolid[379];
 			Main.tileSolid[379] = false;
+			try
+			{
 			bool flag = !extraLiquid.Enabled || !roundLandmasses.Enabled;
 			for (int i = 0; i < Main.maxTilesX; i++)
 			{
@@ -2917,7 +2920,11 @@ public partial class WorldGen
 				}
 			}
 			OverGrownDungeonWithRainbowMoss();
-			Main.tileSolid[379] = true;
+			}
+			finally
+			{
+				Main.tileSolid[379] = tileSolid379;
+			}
 		
 		}
 		public static void DoDigExtraHoles()

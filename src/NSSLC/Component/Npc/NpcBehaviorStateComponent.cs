@@ -21,4 +21,17 @@ public sealed class NpcBehaviorStateComponent
   public long LastUpdatedTick { get; set; }
 
   public bool HasAuthoritativeSlots => AuthoritativeAiSlots.Length == 4;
+
+  public void CommitAiStateSlots(in NpcAiStateComponent aiState)
+  {
+    if (!HasAuthoritativeSlots)
+    {
+      throw new InvalidOperationException("NPC AI state must contain exactly four slots.");
+    }
+
+    AuthoritativeAiSlots[0] = aiState.State0;
+    AuthoritativeAiSlots[1] = aiState.State1;
+    AuthoritativeAiSlots[2] = aiState.State2;
+    AuthoritativeAiSlots[3] = aiState.State3;
+  }
 }

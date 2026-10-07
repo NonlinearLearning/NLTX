@@ -9,9 +9,11 @@
 1. [文档信息架构与管理方案](document-architecture.md)：定义分类、命名、路径归属和后续迁移门禁。
 2. [文档库存快照](document-inventory.md)：记录本次盘点时工作树中的目录、数量和已知缺口。
 3. [逐文件 Markdown manifest](document-manifest.tsv)：记录当前 canonical 路径、逻辑域和产物类型。
-4. [Flowstate 文档生命周期入口](../dome/dome1/docs/flowstate/README.md)：定义 N1-N9 生命周期、manifest 和验收边界。
+4. Flowstate 生命周期入口 `../dome/dome1/docs/flowstate/README.md` 当前不在本 checkout；现行路径分类和 manifest 规则见 [文档信息架构与管理方案](document-architecture.md)。
 5. [ECS 文件组织设计约束](../Context/架构设计/ECS文件组织设计约束.md)：涉及 ECS 领域文件或生产/参考源码目录边界时使用的仓库级约束。
 6. [ECS 领域层与基础设施六边形架构边界](../Context/架构设计/ECS领域与基础设施架构边界.md)：说明 ECS 权威状态、应用用例、持久化端口和基础设施适配器的职责与依赖方向。
+7. [ECS Entity 组织设计约束](../Context/架构设计/ECSEntity组织设计约束.md)：涉及实体身份、组件关联、创建/销毁、查询和跨实体关系时使用；参考机制见 [SS14 Entity 源码研究](research/2026-10-06-ss14-entity-organization.md)。
+8. [Entity 组织迁移代码设计](architecture/2026-10-06-entity-organization-design.md) 与 [执行文档](architecture/execution/2026-10-06-entity-organization-execution.md)：规定统一身份、组件访问、纵向切换及验收门禁。B0–B9 的主验收 receipt 状态为 `ACCEPTED_WITH_NAMED_LIMITS`；receipt 在 15:37 checker 通过后记录了当时文档快照，当前 B9 范围澄清编辑仍待主验收重跑 checker。这不表示全 Terraria 或权威 NetworkServer gameplay parity。B9 旧身份字面审计以生产源码与 `Test` 为范围，并按仓库约束排除只读 `src/NSSLC.Infrastructure/分类参考/`；该目录中的同名参考类型不是生产声明，主 receipt 摘要没有复述此排除项。Simulation DLL `0B052D…` 的 PDB/source map 证明 4 个 assembly 的 PDB/CodeView GUID 与 17 项编译 source Documents 在 artifact-time 对应；主验收 receipt 记录当前树另有 9 项 source hash drift，来自独立 NPC AI 后续写入，超出本迁移运行验收范围。该 drift 不使绑定此 DLL 的运行证据失效，也不能据此声称当前源码等于编译输入。zero-tick 与 NetId 4 spatial/两次切换窄 run 通过；B8 的 38 场景 matrix 与真实 WorldFile late-finalize rollback/retry 证据分别记录在 `621C…`、`5BA221…` 构建/运行证据中。具名限制包括 Mother Slime 237/11 差异且完整因果/parity 未证、NPC 有限内容/AI style、Projectile type 1、NetworkServer packet-27/29 disabled、coin definitions/GetItem Fill stubs，以及 Leashed 无 production caller。细分状态与证据边界见 [执行 ledger](migration/ledgers/2026-10-06-entity-organization-execution-ledger.md)。
 
 ## 当前物理结构
 
@@ -63,6 +65,8 @@ docs/
 | 外部资料、源码证据和边界调查 | `research/` | 研究材料不直接等同于 owner 或迁移完成证明 |
 | 计划、任务和 PRD | `plans/` | 计划不等于实施证据；完成状态必须有执行或验收材料支撑 |
 | 架构决策和变更控制 | `architecture/decisions/`、`cr/` | 路径搬迁、范围变更和例外都应有可追溯记录 |
+| Entity 运行时组织迁移 | [代码设计](architecture/2026-10-06-entity-organization-design.md)、[执行文档](architecture/execution/2026-10-06-entity-organization-execution.md) | 按源码行为映射、单写切换和真实宿主验收逐批推进 |
+| 自定义 ECS 转向 Arch | [执行计划](plans/2026-10-07-custom-ecs-to-arch-execution-plan.md)、[官方 API 研究](research/2026-10-07-arch-api-migration-research.md) | 允许破坏旧 ECS API；采用 Arch 2.1.0 原生 World/Entity/Query，分批验收并退出旧框架；当前仅完成计划 |
 | 人工复核与返工要求 | `reviews/human/`、`reviews/audits/` | 人工意见不覆盖源码和调用证据，需要在结论中标注证据范围 |
 
 ## 管理规则

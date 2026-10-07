@@ -7,7 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerAccessoryEffectSnapshotComponent.cs" Link="PlayerAccessoryEffectSnapshotComponent.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerAccessoryEffectSnapshotRebuildInput.cs" Link="PlayerAccessoryEffectSnapshotRebuildInput.cs" />
-    <Compile Include="..\..\src\NSSLC\Component\Player\Progression\PlayerAccessoryEffectSnapshotRebuildSystem.cs" Link="PlayerAccessoryEffectSnapshotRebuildSystem.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\Progression\PlayerAccessoryEffectSnapshotRebuildInput.cs" Link="PlayerAccessoryEffectSnapshotRebuildInput.cs" />
+    <Compile Include="..\..\src\NSSLC\Component\Player\System\Progression\PlayerAccessoryEffectSnapshotRebuildSystem.cs" Link="PlayerAccessoryEffectSnapshotRebuildSystem.cs" />
   </ItemGroup>
 </Project>

@@ -6,6 +6,6 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/WorldSession/Terraria.WorldSession.csproj" />
+    <ProjectReference Include="../../src/NSSLC/Component/WorldSession/Terraria.WorldSession.csproj" />
   </ItemGroup>
 </Project>

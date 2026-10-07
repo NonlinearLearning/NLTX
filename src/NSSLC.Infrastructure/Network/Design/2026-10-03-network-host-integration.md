@@ -2,21 +2,37 @@
 
 日期：2026-10-03。组合入口已通过独立 AI 的真实 TCP 验证；最终 57 组验证及接入限制见实施报告。
 
-宿主引用 `Network/NSSLC.Infrastructure.Network.csproj`。默认 `NetWorkRoot` 从工程位置
-相对查找 `ProjectItem/SourceCode/Net/NetWork`；其他目录结构通过 MSBuild 属性配置。
-生成工具从正式 manifest 生成全目录，产物写到 `Build/generated/Network`，只按自身
-manifest 清理过期文件。生产项目不引用 `分类参考` 或历史原型程序集。
+2026-10-05 接入更新：宿主引用 `Network/NSSLC.Infrastructure.Network.csproj`。
+定义、编译器和生成器已复制到本仓库 `Network/Pocket`，项目引用使用本地路径。
+生成工具从正式 manifest 生成全目录，C# 产物按用户要求写到
+`Network/Pocket/PocketSourceFile`，只按自身 manifest 清理过期文件。
+DLL、obj 和 Roslyn 输出仍位于 `Build/`；详情见 [Pocket 入口](../Pocket/README.md)。
+生产项目不引用 `分类参考` 或历史原型程序集。
+
+当前阶段 AI 系统暂不实现，不纳入本次网关接入的交付与验收范围。
+网络处理器及测试 owner 的接入不代表游戏 AI 行为已实现。
 
 ## 协议事实
 
-创建 `ProtocolFacts`，为 10、20、23、27、72、82、86 的两个实际方向绑定名为 `facts`
-的具体事实对象。宿主必须提供真实冻结的 tile frame-important、tile-entity、NPC
+宿主必须提供真实冻结的 tile frame-important、压缩规则、tile-entity、NPC
 life-width、projectile UUID 和模块布局资料；测试中的零表或固定委托只是夹具。
+在运行进程中先初始化一次全局模型，然后创建强类型 `ProtocolFacts`：
 
-`TerrariaProtocolProfile.Create(facts)` 在启动时解析全部依赖，缺失即失败。第一次 Get
-冻结 Bind 注册，稳定事实对象本身也必须保持不变。默认 facts 版本为独立实例标识，
-宿主可显式提供已管理的事实版本。ProfileKey 包含目录指纹和该版本，wire Hello 独立
-检查 `Terraria319`。`Sample` 是正式定义工程保留的命名空间，不表示引用 Prototypes。
+```csharp
+var inputs = new ProtocolInputs(
+    frameImportant, allowsSaveCompressionBatching, tileEntityCodecs,
+    isServer: true, catchableTypes, lifeWidthResolver, needsUuid, slotCount,
+    moduleCodecs, tagEffectNpcSlotCount, tagEffectUsesProcTimes);
+var frozenFacts = new ProtocolFacts(inputs, version: protocolFactsVersion);
+```
+
+这些表和委托由宿主拥有，初始化后必须保持稳定。生成 reader/writer 直接读取
+`ProtocolInputs.Instance`；模型未初始化或重复构造会失败，一个进程只能使用一套
+协议事实和端别配置。客户端若需要不同表或 `IsServer` 值，运行在独立进程。
+`TerrariaProtocolProfile.Create(facts)` 检查初始化模型，并封存事实注册。
+默认 facts 版本为独立实例标识，宿主可显式提供已管理的版本。ProfileKey 包含目录
+指纹和该版本，wire Hello 独立检查 `Terraria319`。`Sample` 是正式定义工程保留的
+命名空间，不表示引用 Prototypes。包使用消息名称类型和直接成员，不再有包级 Payload/Body。
 
 ## 领域端口
 
@@ -52,9 +68,16 @@ GameSession 的 Active 目标；SectionSubscribers 还要求当前世界代次�
 独立诊断通过 `TryReadDiagnostic` 读取有限的元数据通道。其 DropOldest 只影响诊断，
 业务帧邮箱满会关闭连接。成功 Write receipt 表示整帧在本地发送完成，不表示对端业务 ACK。
 
-生产接入尚需真实客户端序列、实际领域 owner、负载与物理工作集验证。完整格式目录
-不表示全部 162 个消息已经实现 gameplay handler；未注册处理器、opaque、85、94 和
-尚无语义证据的模块仍禁用。
+生产接入尚需完整生产领域 owner、负载与物理工作集验证。完整格式目录不表示全部
+162 个消息已经实现 gameplay handler；未注册处理器、opaque、85、94 和尚无语义证据的
+模块仍禁用。
+
+2026-10-05 真实客户端验收补充：无界面 `world-player` 场景通过原版客户端发送 207 帧，
+跨越 600 个 tile 并请求 3 个新区段；随后使用包 17 破坏一个附近的普通活动 tile，测试宿主
+只在进程内存 overlay 中提交变更，并通过包 20 回传；客户端原版解析器确认 tile inactive，
+再请求同一区段，确认新快照仍保留破坏结果。
+该 host 行为仅用于探测，不包含玩家物理/碰撞、掉落、保护规则或存档，也不代表生产 Tiles
+owner 已迁移；原世界文件不会被写入。当前阶段 AI 系统仍暂不实现。
 
 ## 组合入口
 

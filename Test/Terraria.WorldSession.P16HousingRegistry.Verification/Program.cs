@@ -22,7 +22,9 @@ TilePosition room = new(100, 200);
 TownHousingRegistrySystem.AssignRoom(registry, merchant, room);
 AssertEqual(TownHousingKeyMode.Type, registry.ResidentKeyMode, "NPC type key mode is selected.");
 Assert(TownHousingRegistrySystem.HasRoom(registry, merchant), "Assigned room is indexed.");
-AssertEqual(room, registry.RoomsByResidentKey[merchant], "Assigned room position is retained.");
+Assert(TownHousingRegistrySystem.TryGetRoom(registry, merchant, out TilePosition assignedRoom),
+  "Assigned room position can be queried.");
+AssertEqual(room, assignedRoom, "Assigned room position is retained.");
 AssertEqual(1UL, registry.Revision, "First room assignment advances revision.");
 
 TownHousingRegistrySystem.MarkHomeless(registry, merchant);
@@ -46,7 +48,9 @@ using (BinaryReader reader = new(stream, System.Text.Encoding.UTF8, leaveOpen: t
 }
 
 Assert(TownHousingRegistrySystem.HasRoom(restored, merchant), "Saved room restores by NPC type.");
-AssertEqual(room, restored.RoomsByResidentKey[merchant], "Saved coordinates retain Version4 order.");
+Assert(TownHousingRegistrySystem.TryGetRoom(restored, merchant, out TilePosition restoredRoom),
+  "Restored room position can be queried.");
+AssertEqual(room, restoredRoom, "Saved coordinates retain Version4 order.");
 AssertEqual(1, restored.AssignedRoomCount, "Restored room count.");
 Console.WriteLine("PASS: Version4 room count/type/x/y persistence layout");
 

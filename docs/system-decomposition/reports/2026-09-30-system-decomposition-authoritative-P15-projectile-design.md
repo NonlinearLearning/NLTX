@@ -6,18 +6,18 @@
 | --- | --- |
 | `designStatus` | `proposed` |
 | `migrationVerificationStatus` | `not-run`（P15 行为/集成验收未执行） |
-| `focusedVerifierStatus` | `partial`（lifecycle、hydration、ordered tick coordinator 的局部 verifier 已通过；packet API 只有声明，网络 wire 未验证） |
+| `focusedVerifierStatus` | `partial`（lifecycle、hydration、ordered tick coordinator 曾有局部 verifier 通过记录；tick 记录早于本次 numUpdates/逐子步寿命/outcome/冷却边界调整，当前代码未验证；packet 网络 wire 未验证） |
 | `hydrationVerifierStatus` | `partial`（hydration focused verifier 已通过；完整 SetDefaults/content 接线仍未验证） |
-| 最近更新 | `2026-10-01` |
+| 最近更新 | `2026-10-04` |
 | partition / task | `P15` / `AUTH-SYS-P15` |
 | 原 session | `4426a5ad1b824c2490a832c3bb6726b8` |
 | 输入报告 | [P15 权威静态拆分报告](2026-09-18-system-decomposition-authoritative-P15-projectile.md) |
 | `outputReport` | 本设计文档；执行文档见 [P15 执行文档](2026-09-30-system-decomposition-authoritative-P15-projectile-execution.md) |
-| `sourceModified` | `true`（`src/NSSLC` 的 packet 27/29 声明、lifecycle 与 ordered tick coordinator 局部切片；不代表 P15 已迁移） |
+| `sourceModified` | `true`（`src/NSSLC` 的 packet 27/29 command、lifecycle 与 ordered tick coordinator 局部切片；`src/NSSLC.Application/Network` 的 projectile network owner port；`src/NSSLC.Infrastructure/Network` 的 packet codec/DTO mapper/Gateway registration adapter；不代表 P15 已迁移） |
 | 范围 | 17 个叶子组、126 个成员（118 fields + 8 properties） |
 | 本轮交付 | 保留 packet 27/29 函数声明、validated lifecycle apply/termination 的 proposed 边界、有序 tick coordinator 的 immunity/lifetime 推进说明；不实现 packet wire 逻辑，完整 P15 仍不验收 |
 
-本文是已结算 P15 报告的派生设计文档，不创建新的分区 claim，也不改变原 session 的结算状态。本文提出 ECS 边界和契约，并记录 packet 27/29 的声明级接口、生命周期和有序调度壳的局部实现证据；它不表示代码已完整迁移、API 已兼容或行为等价。局部实现不能替代真实 Version4 Main 调度接线、完整内容数据和跨系统集成证据。
+本文是已结算 P15 报告的派生设计文档，不创建新的分区 claim，也不改变原 session 的结算状态。本文提出 ECS 边界和契约，并记录 packet 27/29 codec/Gateway registration/owner port、生命周期和有序调度壳的局部实现证据；它不表示代码已完整迁移、API 已兼容或行为等价。局部实现不能替代具体 Application owner、真实 Version4 Main 调度接线、完整内容数据和跨系统集成证据。
 
 ### Source and Evidence
 
@@ -69,13 +69,13 @@ packet 27 的目标源码在 `MessageBuffer.cs:1381` 先按 owner/identity 查�
 
 普通 spawn 的 proposed 契约让 `ProjectileSpawnCommand` 只接收 owner/type 与 spawn 参数，不让调用方预填 identity、UUID 或 slot。`ProjectileIdentityDefinition.NeedsUuid` 用 nullable 表达：`true`/`false` 表示内容定义已知策略，`null` 表示未知；未知策略由 hydration/lifecycle 在占槽前拒绝。`TrySpawn` 应在 free-slot 分配或 oldest-slot 替换选定槽后，于同一 lifecycle 提交设置 `SlotIndex = slot`、普通本地 `Identity = slot`，并按已知 `NeedsUuid` 设置 `ProjectileUuid = slot` 或保留 `-1`。旧 `TryCreate` 的显式 identity 语义仍需单独保留并验证。
 
-网络 apply 切片由同一 `ProjectileLifecycleSystem.TryApplyNetwork` 提交：按 owner+packet identity 查找活动实例；同 type 只覆盖 position/velocity/AI/damage 等 packet 字段并保留已存在的 UUID；type 变化在原本地 slot 上换代并保留 packet identity，generation 递增；没有现有映射时按 packet identity 创建新状态。类型 UUID 策略未知或不需要 UUID 却携带 UUID 时，应在任何槽/index 修改前拒绝。Packet 27/29 目前只保留 `IProjectilePacket27Codec`、`IProjectilePacket29Codec` 的函数声明，未提供 wire decode/encode、长度校验、授权、relay 或结果构造逻辑；`TryApplyNetwork` 与 `TryTerminateNetwork` 只作为 lifecycle owner 的 proposed 状态边界记录，不由声明接口调用。未来 adapter 实现不得替换服务器 `whoAmI`，服务器会话授权和 relay 仍属于外部 adapter/integration。以上不能把本切片称为网络迁移完成。
+网络 apply 切片由同一 `ProjectileLifecycleSystem.TryApplyNetwork` 提交：按 owner+packet identity 查找活动实例；同 type 只覆盖 position/velocity/AI/damage 等 packet 字段并保留已存在的 UUID；type 变化在原本地 slot 上换代并保留 packet identity，generation 递增；没有现有映射时按 packet identity 创建新状态。类型 UUID 策略未知或不需要 UUID 却携带 UUID 时，应在任何槽/index 修改前拒绝。Packet 27/29 现在有 wire codec、已解码 DTO mapper、只允许 Active 阶段的显式 Gateway handler registration helper，以及 Application `IProjectileNetworkCommandOwner` port；handler 按 Version4 规则将 packet 27 的普通类型 owner 投影为受信 actor、type 949 投影为 255，并将 packet 29 owner 投影为受信 actor。Hostile-type 判定、世界/session 解析、lifecycle 提交和权威 relay 由 Application port 的具体 owner 完成；该 owner 与生产 Gateway 注册调用尚不存在。以上不能把本切片称为网络迁移完成。
 
-Version4 与完整参考源码都将 `ProjectileID.Sets.NeedsUUID` 初始化为 `Factory.CreateBoolSet(625, 626, 627, 628)`；`Projectile.SetDefaults` 将实例 UUID 重置为 `-1`，普通 spawn 再按该表设置。当前 NLTX 候选 schema 尚没有完整类型 catalog/builder 将该表绑定到生产定义；未显式填充的 `NeedsUuid=null` 仍是缺口，不能默认成 `false`。Stardust Dragon 的 parent UUID 到 `ai[0]` 转换仍属于待实现边界；packet 27/29 的 UUID、长度、可选字段和终止语义仅保留声明，wire 实现、服务器授权、relay 与生产类型策略均未闭合。
+Version4 与完整参考源码都将 `ProjectileID.Sets.NeedsUUID` 初始化为 `Factory.CreateBoolSet(625, 626, 627, 628)`；`Projectile.SetDefaults` 将实例 UUID 重置为 `-1`，普通 spawn 再按该表设置。当前 NLTX 候选 schema 尚没有完整类型 catalog/builder 将该表绑定到生产定义；未显式填充的 `NeedsUuid=null` 仍是缺口，不能默认成 `false`。Stardust Dragon 的 parent UUID 到 `ai[0]` 转换仍属于待实现边界；packet codec 和 Gateway handler registration seam 已存在，但服务器授权、relay/output 构造、生产类型策略和实际运行时注册仍未闭合。
 
 设计拟使用只读 `IProjectileDefinitionQuery` 解析 type，由确定性的 `ProjectileDefinitionHydrationSystem` 构造候选状态，再由 lifecycle owner 统一提交 slot、generation 与 owner/identity index。hydrator 计划从 content schema 映射 definition identity/type、geometry 缩放尺寸、lifetime、AI/extra updates、friendly/hostile、spawn damage/knockback/center/velocity/AI、penetration、collision policy、immunity arrays/policy、network-important、presentation/trail 和已建模能力；缺失 definition、type mismatch、非法范围或无法表示值应在占槽前拒绝。schema 中的 owner hit-check distance 与 local/static NPC cooldown 目标值 `1000`、`-2`、`-1` 仍需按 Version4 证据和真实 catalog 装载复核。
 
-此切片仍非完整 `SetDefaults`：当前 `ProjectileDefinition` 缺少大量逐类型分支字段、Main/difficulty/`ProjectileID.Sets` 派生输入、trail/AI 辅助规则、source modifiers、wet collision 共享标志、banner/minion spawn effects 及其精确覆盖顺序；content builder 仍未提供真实类型全集、`NeedsUuid` 数据装载或生产 spawn caller。packet 27/29 只有声明级接口，局部 lifecycle apply/termination 与 ordered tick coordinator 的旧 verifier 记录不覆盖这些声明；服务器校验、relay、recipient/section、Main 的 `projHostile`/`projHook` 初始化、pool 复用旧实例数组清除闭包、完整 `Kill` 副作用和 coordinator 到权威 Main 的真实接线仍未形成迁移证据。`Terraria.SpatialMotionPhysics.ProjectileDefinitionCatalog` 是另一命名空间下仅保存 frame/pet 数组的类型，不能当作 content defaults。以上缺口继续标 `unknown` / `partial`，本设计不以局部文件或 verifier 状态升级 P15。
+此切片仍非完整 `SetDefaults`：当前 `ProjectileDefinition` 缺少大量逐类型分支字段、Main/difficulty/`ProjectileID.Sets` 派生输入、trail/AI 辅助规则、source modifiers、wet collision 共享标志、banner/minion spawn effects 及其精确覆盖顺序；content builder 仍未提供真实类型全集、`NeedsUuid` 数据装载或生产 spawn caller。packet 27/29 codec、handler registration seam、Application command-owner port 与局部 lifecycle apply/termination 已形成代码切片，但没有具体 owner、生产 Gateway 注册、hostile table 决策、relay、recipient/section 或 network verifier；Main 的 `projHostile`/`projHook` 初始化、pool 复用旧实例数组清除闭包、完整 `Kill` 副作用和 coordinator 到权威 Main 的真实接线仍未形成迁移证据。`Terraria.SpatialMotionPhysics.ProjectileDefinitionCatalog` 是另一命名空间下仅保存 frame/pet 数组的类型，不能当作 content defaults。以上缺口继续标 `unknown` / `partial`，本设计不以局部文件或 verifier 状态升级 P15。
 
 | `SetDefaults` / spawn 概念 | 当前新状态写入 | 状态 |
 | --- | --- | --- |
@@ -85,7 +85,7 @@ Version4 与完整参考源码都将 `ProjectileID.Sets.NeedsUUID` 初始化为 
 | spawn position/velocity/damage/originalDamage/knockback/AI | `Kinematics`、`Damage`、`Behavior` | proposed 显式 spawn 参数接入 lifecycle；source modifier 与 subtype 覆盖 `unknown` |
 | network-important、presentation、trail、已建模能力 | `Network`、`Presentation`、`Animation`、`Trail`、能力状态 | schema 字段映射 `partial`；缺失成员仍 `unknown` |
 | 普通 spawn slot identity 与条件 UUID | `TrySpawn` 在选槽后派生 `Identity=slot`，按显式 `NeedsUuid` 设置 UUID；`null` 在 commit 前拒绝 | 本地 schema/lifecycle 机制 `partial`；真实类型表装载、Stardust Dragon 与 packet UUID 仍 `unknown` |
-| packet 27/29 network API | `IProjectilePacket27Codec` / `IProjectilePacket29Codec` 函数声明；command/result/status 类型和 lifecycle owner 边界 | wire 编解码、decode-before-commit、服务器 guard、relay、recipient/section、完整 Kill 副作用均 `not-run` / `unknown` |
+| packet 27/29 network API | packet codec、DTO mapper、Active-only Gateway registration helper、trusted-owner projection 和 Application command-owner port；具体 owner 尚无实现 | hostile-type/world policy、decode-before-commit 实际提交、relay、recipient/section、完整 Kill 副作用均 `not-run` / `unknown` |
 | Main/difficulty/其余 `ProjectileID.Sets`、packet、湿碰撞及外部效果 | 未实现 | `unknown` / `integration-review` |
 
 CPG Query API 对 `SetDefaults` 符号查询返回了 `Terraria.Projectile` 的 `void(int)`，同时带回一个位于 `Terraria/Item.cs` 的同名记录，故按声明路径和签名选择 Projectile 符号。对 `Projectile.cs`、`Main.cs`、`MessageBuffer.cs`、`NetMessage.cs` 的 call-site 查询只返回 `Main.cs` 与 `MessageBuffer.cs` 两处；目标源码 `Projectile.cs:10270` 可直接看到 `NewProjectile -> projectile.SetDefaults(Type)`，该边未出现在索引结果中。`Get-CpgCallableFacts` 为 `partial` 并带 `CalleeEffectsNotExpanded`，其空 `DirectCallTargets` 也不能覆盖源码可见的辅助调用。该项记为 CPG/source `evidence-gap`，按源码保留调用关系，不以查询 `complete` 推断 caller 闭包。
@@ -145,7 +145,7 @@ CPG Query API 对 `SetDefaults` 符号查询返回了 `Terraria.Projectile` 的 
 
 拟议的 `ProjectileLifecycleSystem` 作为 slot/identity 的串行提交 owner：free-slot create 在一个调用内分配槽、写入本地 slot identity（普通 `TrySpawn` 路径）并注册 owner/identity；普通 spawn 的 UUID 由 definition 中显式、已知的 `NeedsUuid` 规则决定，未知策略在 slot/index 修改前拒绝。`TryApplyNetwork` 复用同一 owner，按 packet identity 查找或在原槽换代，避免 network adapter 成为第二个 gameplay writer。旧 `TryCreate` 仍使用调用方显式身份，不套用本地 spawn 派生规则。重复身份注册失败应释放临时槽。池满时同一 lifecycle 调用扫描已占用常规槽，跳过 `NetworkImportant`，以严格更小的 `TimeLeft` 选择受害槽；同寿命时保留升序扫描中的较低 slot，并按 Generation 条件替换 identity mapping 与 slot state。若没有可替换项或新 identity 已映射到别的 handle，则拒绝且保留现有映射。terminate 校验 handle generation 和索引双向关系，再提交寿命终止、注销 identity 并释放槽。上述规则均需在实现阶段通过真实调用入口和行为验证确认，不构成已迁移或已验证结果。
 
-这仍是局部 lifecycle 设计切片。满池替换只覆盖拟议 `WorldStorageRoot.Projectiles` 的常规 0..999 槽，不实现 Version4/完整参考在无普通候选时返回并访问 `Main.projectile[1000]` 的哨兵路径；该额外元素的生命周期、更新、网络和清理语义仍 `unknown`。拟议 owner 已接入 definition hydration、packet command 27/29 的局部状态边界和 ordered tick coordinator seam，但 packet command 尚未由 wire codec 产生，`NewProjectile` 的湿碰撞/source/minion 副作用、coordinator 到 Main 的权威接线，以及旧 `Kill` 的 channel、声音、伤害、子弹、网络等效果仍未形成证据。因此 `TryTerminateNetwork` 只表达按 owner+identity 释放槽位的局部边界，不等同旧 `Kill`；P15 行为/集成验收仍为 `not-run`，不能据此认定迁移成功。
+这仍是局部 lifecycle 设计切片。满池替换只覆盖拟议 `WorldStorageRoot.Projectiles` 的常规 0..999 槽，不实现 Version4/完整参考在无普通候选时返回并访问 `Main.projectile[1000]` 的哨兵路径；该额外元素的生命周期、更新、网络和清理语义仍 `unknown`。拟议 owner 已接入 definition hydration、packet command 27/29 的局部状态边界、wire codec/Gateway handler seam 和 ordered tick coordinator seam；具体 Application owner、`NewProjectile` 的湿碰撞/source/minion 副作用、coordinator 到 Main 的权威接线，以及旧 `Kill` 的 channel、声音、伤害、子弹、网络等效果仍未形成证据。因此 `TryTerminateNetwork` 只表达按 owner+identity 释放槽位的局部边界，不等同旧 `Kill`；P15 行为/集成验收仍为 `not-run`，不能据此认定迁移成功。
 
 ## Boundary Role and Decision
 
@@ -168,13 +168,13 @@ flowchart LR
 | System / adapter | 负责 | 不负责 |
 | --- | --- | --- |
 | `ProjectileLifecycleSystem` | 槽位分配/复用，definition hydration，owner 与 identity 建立/解除，寿命终止和 recycle 提交 | 跨域直接修改 Player、NPC、Collision 或网络接收缓冲 |
-| `ProjectileTickCoordinator` | 保留 `PreUpdateAllProjectiles`/`PostUpdateAllProjectiles` 边界；通过只读 slot query 按 `0..999` 升序读取当前 generation，按 `UpdateCadence.MaxUpdates` 委派每个子步 | 不拥有 AI、运动、碰撞、战斗、表现或网络规则；不自行分配/回收槽位；当前仍未接入 Version4 权威 Main 入口 |
-| `IProjectileTickAdapter` | 作为单槽位行为委派边界，接收 coordinator 提供的 `ProjectileTickContext` 和状态，并把 AI、运动、碰撞、战斗、表现或网络工作交给各自 owner | 不预选 slot、不建立 identity、不绕过 lifecycle 提交终止；不把多个 projectiles 改成全局分阶段循环 |
+| `ProjectileTickCoordinator` | 保留 `PreUpdateAllProjectiles`/`PostUpdateAllProjectiles` 边界；通过只读 slot query 按 `0..999` 升序读取当前 generation；以 `numUpdates` 计数控制子步，允许 AI 重置计数延长循环；只在 pre-AI preparation 返回 `Ready` 后推进正值 `soundDelay` | 不拥有 AI、运动、碰撞、战斗、表现或网络规则；不自行分配/回收槽位；当前仍未接入 Version4 权威 Main 入口 |
+| `IProjectileTickAdapter` | 作为单槽位行为委派边界，接收 coordinator 提供的 `ProjectileTickContext` 和状态；`PrepareProjectileStep` 处理 AI 前缀并报告 `Ready`/`Continued`/`Returned`，`UpdateProjectileStep` 再表达子步尾段的完成、continue、return；把 AI、运动、碰撞、战斗、表现或网络工作交给各自 owner | 不预选 slot、不建立 identity、不绕过 lifecycle 提交终止；不把多个 projectiles 改成全局分阶段循环；尚无 adapter 将 Version4 分支映射到两个结果契约 |
 | `ProjectileMotionAndAiSystem` | 在 coordinator 提供的单个槽位更新子步内调用 AI/运动行为；显式接收随机数与时间上下文 | 写 NPC/Player 生命状态，绕过 lifecycle 提交终止 |
 | `ProjectileCollisionTargetingSystem` | 生成碰撞候选、目标快照和命中资格结果 | 在 Query 中改全局 Collision 标志或提交伤害 |
 | `ProjectileCombatResolutionSystem` | 在 commit 时重查活动 identity、目标有效性、免疫和 penetration，并向 damage owner 发命令 | 复制/拥有 NPC、Player damage component |
 | `ProjectilePresentationSystem` | trail、frame、opacity 和 render facts | 决定伤害、寿命、identity 或 slot 回收 |
-| `ProjectileNetworkAdapter` / `ProjectileNetworkProjection` | 声明 packet 27/29 解码、校验、投影、recipient/section 的接口；将 packet 29 交给 lifecycle termination command | 在声明接口中实现 wire 逻辑或替换服务器 `whoAmI`；作为第二个 gameplay writer |
+| `ProjectileNetworkAdapter` / `ProjectileNetworkProjection` | packet codec 和 Gateway registration helper 将已解码 packet 映射为命令并投影可信发送者 owner；Application owner 负责提交及输出 relay/recipient intent | 基础设施直接写 projectile state；接受 packet owner 为授权事实；作为第二个 gameplay writer |
 | `ProjectileSpecializedRuleSystem` | 按能力承载 minion、counterweight、bobber、fishing/mining、kite、storm 等规则 | 将所有专用规则塞入通用 System，或私自拥有其他域的生命周期/伤害状态 |
 
 以上 System 是协作边界，不是 17 个叶子组的一对一拆分。调度协调器只负责保留原有每槽位的内序和接入委派，不应把所有 projectiles 改为“先统一 AI，再统一 collision，再统一 combat”的全局多轮调度。
@@ -185,9 +185,9 @@ Version4 `Main.cs:11530-11551` 的观察为：`PreUpdateAllProjectiles`，按 `n
 
 ### Ordered tick coordinator 局部切片
 
-`ProjectileTickCoordinator.Tick(IProjectileTickAdapter)` 是对上述边界的局部 ECS seam：先调用 `PreUpdateAllProjectiles`，再以固定 `RegularSlotCount = 1000` 遍历本地槽位 `0..999`。每次迭代通过 `ProjectileLifecycleSystem.TryGetAtSlot` 读取当前 `ProjectileHandle`、generation 和状态；该方法只读 occupied slot，不分配、注册、释放或修改 lifecycle。活动实例在子步前按 regular Update 只推进一次 `ProjectileHitImmunitySystem.AdvanceTick`，随后按 `UpdateCadence.MaxUpdates` 执行子步，而 `MaxUpdates = ExtraUpdates + 1`；每个子步开始前重新按 handle 读取 lifecycle 状态，若 adapter 在前一子步提交了终止或实体已不再 active，则停止该 projectile 的剩余子步。每个仍有效的子步创建带 slot、generation、substep index 的 `ProjectileTickContext`，交给 `IProjectileTickAdapter.UpdateProjectile`。所有仍有效的子步完成后只推进一次 `ProjectileLifetimeSystem.Advance`；到期通过 lifecycle owner 提交 `LifetimeExpired` 并释放槽位，最后调用 `PostUpdateAllProjectiles`。
+`ProjectileTickCoordinator.Tick(IProjectileTickAdapter)` 是对上述边界的局部 ECS seam：先调用 `PreUpdateAllProjectiles`，再以固定 `RegularSlotCount = 1000` 遍历本地槽位 `0..999`。每次迭代通过 `ProjectileLifecycleSystem.TryGetAtSlot` 读取当前 `ProjectileHandle`、generation 和状态；该方法只读 occupied slot，不分配、注册、释放或修改 lifecycle。活动实例在子步前按 regular Update 只推进一次 `ProjectileHitImmunitySystem.AdvanceTick`，然后把 `Trajectory.NumUpdates` 设为 `UpdateCadence.ExtraUpdates`，在计数非负时先递减再执行 preparation；AI 可把该计数重置为 `0` 来延长循环。preparation 对应 Version4 的 AI 前缀并返回 `Ready`、`Continued` 或 `Returned`；只有仍活动且返回 `Ready` 的当前 generation 才推进正值 `EffectCooldown.SoundDelay`，随后调用 `UpdateProjectileStep`。preparation 与更新阶段都重新按 handle 确认活动实体；已终止实体不再推进冷却或调用后续阶段。更新阶段的 `Completed` 会推进一次 `ProjectileLifetimeSystem.Advance`；`Continued` 跳过该尾段并进入下一子步；`Returned` 跳过尾段并结束本轮 projectile 更新。preparation 的 `Continued`/`Returned` 同样跳过冷却与寿命尾段。到期通过 lifecycle owner 提交 `LifetimeExpired` 并释放槽位。Version4 的 `timeLeft--` 位于 extra-update while body 内，故它按每个执行子步推进，而非每个 regular Update 一次。默认接口实现源码兼容旧 adapter：未覆写 preparation 时返回 `Ready`，未覆写子步结果时沿用 `void` 并返回 `Completed`；若旧 adapter 自身包含 Version4 pre-AI 早退，则必须覆写 preparation 才能保留行为。尚无生产 AI adapter 将 Version4 的各分支映射到这些结果。最后调用 `PostUpdateAllProjectiles`。
 
-这条 seam 保留了目标源码的升序槽位、Pre/Post 相对位置、一次性免疫推进、一次性寿命递减和额外更新次数，并在 adapter 中途终止时避免继续调用失效实体。定向 build 后重新运行的 tick coordinator verifier 已覆盖到期释放和中途终止保护并通过。当前仍只是局部 coordinator。它尚未替代 `Version4/Main.cs` 的真实调度入口，也没有证明 `ProjectileUpdateLoopIndex`、当前帧 spawn 可见性、AI/collision/combat 交错顺序或完整终止副作用已经接通；这些项目继续标为 `unknown` / `partial`。
+这条 seam 保留了目标源码的升序槽位、Pre/Post 相对位置、一次性免疫推进、可被 AI 延长的子步计数、pre-AI 正值 `soundDelay` 推进和每个已执行子步的寿命递减，并在 preparation/adapter 提交终止后避免继续调用失效实体。`ProjectileTickPreparationResult` 表达 pre-AI 前缀是否抵达冷却边界；`ProjectileTickSubstepResult` 表达更新阶段正常到达循环尾、`continue` 和方法级 `return`。当前仍无 adapter 将 Version4 的真实 early-out/AI 分支映射到两个结果契约。既有 tick coordinator verifier 的历史通过记录早于本次计数/寿命/outcome/冷却边界调整；本次没有运行验证。当前仍只是局部 coordinator。它尚未替代 `Version4/Main.cs` 的真实调度入口，也没有证明 `ProjectileUpdateLoopIndex`、当前帧 spawn 可见性、Version4 每个分支的 outcome 映射、AI/collision/combat 交错顺序或完整终止副作用已经接通；这些项目继续标为 `unknown` / `partial`。
 
 迁移时遵守以下执行规则：
 
@@ -203,7 +203,7 @@ Version4 `Main.cs:11530-11551` 的观察为：`PreUpdateAllProjectiles`，按 `n
 | 契约 | 输入与责任 | 一致性要求 |
 | --- | --- | --- |
 | `SpawnProjectileCommand` | spawn source、owner/type、位置/速度、伤害意图 | 不接收预填 identity/UUID 或预选 slot；在一个提交内选 free/oldest slot、验证 generation，再按普通 `NewProjectile` 规则以 slot 派生 identity，并按经验证的 `NeedsUUID[type]` 规则初始化 UUID |
-| `ApplyProjectileNetworkCommand` / `ProjectileNetworkTerminateCommand` | packet 27 的状态值 / packet 29 的 owner+identity | 作为声明级输入契约；实际 wire 校验、状态提交、终止副作用仍由后续 owner/adapter 设计负责；codec 不承担服务器会话 owner 替换 |
+| `ApplyProjectileNetworkCommand` / `ProjectileNetworkTerminateCommand` | packet 27 的状态值 / packet 29 的 owner+identity | codec 保留线上 owner 值；Gateway handler 将它替换为 Version4 受信 actor 投影（packet 27 type 949 使用 255）；Application owner 仍负责类型策略、状态提交、终止副作用和权威输出 |
 | `ResolveProjectileHitCommand` | 几何候选、目标快照、expected generation | 提交时重新验证 projectile、target、immunity、penetration；外部 damage owner 提交 NPC/Player 状态 |
 | `TerminateProjectileCommand` | 终止原因和预期 handle | 由 lifecycle owner 统一解除索引、寿命、channel 关系并通过 adapter 发出副作用 |
 | `ProjectileCollisionAdapter` | tile/world 查询上下文 -> collision snapshot | 隔离共享标志和懒加载；保持旧调用顺序 |
@@ -228,7 +228,7 @@ Query API 的 `complete` 只表示该选定查询的索引范围已处理，不�
 
 同一只读 Query API 会话中，`Find-CpgSymbols(Kill:void())` 按 `Terraria/Projectile.cs` 声明路径返回 `complete`；对 `Terraria/MessageBuffer.cs` 的 `Find-CpgCallSites` 返回 2 个 `CallTargets`，与目标源码 Packet 29 分支和另一处 MessageBuffer Kill 路径一致。该结果只确认选定 shard 内的静态 Kill 边，不能闭合 `Kill` 的 channel、声音、伤害、子弹、网络或其它副作用；因此 `TryTerminateNetwork` 的局部释放结果仍不能替代完整 Kill 行为。
 
-同一只读 Query API 会话补查 `Update:void(int)` 与 `PreUpdateAllProjectiles:void()`：两个符号按目标声明路径返回 `complete`；`Update` 在选定的 `Terraria/Main.cs` shard 中返回 2 个静态调用点，`PreUpdateAllProjectiles` 返回 1 个静态调用点。对 `Kill:void()` 的选定路径查询返回 `partial`，并因 `MaxItems=100` 命中 `ItemBudgetExhausted`；返回结果包含 MessageBuffer 和 Projectile 内部调用，但不构成完整 caller 集。`Update` callable facts 为 `partial` / `CalleeEffectsNotExpanded`，其局部操作节点可见先调用 `DecrementLocalImmuneTimeCounters`、设置 `numUpdates = extraUpdates` 并进入循环，但 callee effects 未展开。该结果与目标 `Main.cs` 的 Pre/升序 slot pass/Post 源码片段支持 coordinator 的局部顺序设计；仍不闭合 `Projectile.Update` 内部行为、`ProjectileUpdateLoopIndex` 可见性或真实 Main 接入，故保留 `partial`。
+同一只读 Query API 会话补查 `Update:void(int)` 与 `PreUpdateAllProjectiles:void()`：两个符号按目标声明路径返回 `complete`；`Update` 在选定的 `Terraria/Main.cs` shard 中返回 2 个静态调用点，`PreUpdateAllProjectiles` 返回 1 个静态调用点。对 `Kill:void()` 的选定路径查询返回 `partial`，并因 `MaxItems=100` 命中 `ItemBudgetExhausted`；返回结果包含 MessageBuffer 和 Projectile 内部调用，但不构成完整 caller 集。`Update` callable facts 为 `partial` / `CalleeEffectsNotExpanded`，其局部操作节点可见先调用 `DecrementLocalImmuneTimeCounters`、设置 `numUpdates = extraUpdates` 并进入循环，但 callee effects 未展开。后续逐行源码复核确认 `numUpdates` 在子步开始先递减、AI/命中分支可重置为 0，且 `timeLeft--` 位于同一循环体尾部，因此每个已执行子步推进寿命；当前 coordinator 已映射这些计数粒度。该结果与目标 `Main.cs` 的 Pre/升序 slot pass/Post 源码片段支持 coordinator 的局部顺序设计；仍不闭合 early-return 对循环尾推进的影响、`Projectile.Update` 内部行为、`ProjectileUpdateLoopIndex` 可见性或真实 Main 接入，故保留 `partial`。
 
 ## Call and Dependency DAG
 
@@ -244,7 +244,7 @@ Query API 的 `complete` 只表示该选定查询的索引范围已处理，不�
 
 ## Verification Plan
 
-验证计划包含源码/CPG 关系闭包、126 成员单写者矩阵、真实调用入口、1000 槽及 sentinel、spawn hydration、packet 27/29 声明、ordered tick coordinator、调度顺序、AI/collision/combat、持久化、网络重复/损坏输入和跨系统副作用。当前可保留的 focused 入口有 `--lifecycle`、`--hydration`、`--network` 和 `--tick-coordinator`；packet codec verifier 已移除，因为 packet API 只保留函数声明。已有定向 build 后，`--lifecycle`、`--hydration`、`--tick-coordinator` 三个入口返回 `PASS`；这些只提供生命周期、hydration 子集和调度壳的切片证据。`--network`、packet wire、真实 Main 接线及 P15 整体 `verificationStatus` 仍为 `not-run`，不能升级为迁移成功。任何未执行项目保持 `not-run`，证据缺口保持 `unknown`、`partial` 或 `evidence-gap`。
+验证计划包含源码/CPG 关系闭包、126 成员单写者矩阵、真实调用入口、1000 槽及 sentinel、spawn hydration、packet 27/29 codec 与 Gateway owner path、ordered tick coordinator、调度顺序、AI/collision/combat、持久化、网络重复/损坏输入和跨系统副作用。当前可保留的 focused 入口有 `--lifecycle`、`--hydration`、`--network` 和 `--tick-coordinator`；packet Gateway handler/owner 与 codec verifier 尚未执行。历史定向 build 后，`--lifecycle`、`--hydration`、`--tick-coordinator` 三个入口返回过 `PASS`；tick coordinator 结果早于可变 `numUpdates`、逐子步寿命和 pre-AI 冷却边界修改，不能作为当前代码的验证证据。`--network`、packet Gateway owner path、真实 Main 接线及 P15 整体 `verificationStatus` 仍为 `not-run`，不能升级为迁移成功。任何未执行项目保持 `not-run`，证据缺口保持 `unknown`、`partial` 或 `evidence-gap`。
 
 ## Evidence Gaps and Blocking Decisions
 
@@ -255,7 +255,7 @@ Query API 的 `complete` 只表示该选定查询的索引范围已处理，不�
 | Version4 空方法体与完整参考树实现的版本关系 | `unknown` | 确认目标语义的来源；逐个 stub 做保留/恢复/替代决策 |
 | `Projectile.Update` 所有被调行为、随机消耗和异常分支 | `partial` | 固定目标源码基线，必要时用 trace 建立顺序基准 |
 | Collision 共享静态标志及 tile 懒加载 | `unknown` | 定义隔离 adapter/snapshot 并证明顺序不变 |
-| 网络重复包、服务器 owner guard、relay、recipient 和持久化闭包 | `not-run`（packet 27/29 只有声明级 API） | 完成 packet/state matrix、服务器会话授权、relay/section、Kill 副作用及异常输入策略 |
+| 网络重复包、服务器 owner guard、relay、recipient 和持久化闭包 | `not-run`（codec/Gateway registration/owner port 有局部代码，无具体 owner 或生产注册） | 完成 packet/state matrix、服务器会话授权、relay/section、Kill 副作用及异常输入策略 |
 | 当前 NLTX 候选 System 与权威 scheduler 的关系 | `unknown` | 找到或指定唯一 authoritative coordinator |
 | Player/NPC、minion、fishing/mining、counterweight 和效果 spawn owner | `crossSubsystemOwner: integration-review` | 确认 Commands、事件方向和共享 ID 所有权 |
 
