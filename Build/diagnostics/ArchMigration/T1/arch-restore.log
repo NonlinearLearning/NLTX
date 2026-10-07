@@ -1,0 +1,65 @@
+Command: dotnet restore Test/Terraria.Arch.Verification/Terraria.Arch.Verification.csproj --verbosity normal
+Started: 2026-10-08T02:36:00.3814097+08:00
+Finished: 2026-10-08T02:36:02.8828010+08:00
+ExitCode: 0
+
+生成启动时间为 2026/10/8 2:36:00。
+     1>项目“C:\Users\shan\.codex\worktrees\32f2\NLTX\Test\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj”在节点 1 上(Restore 个目标)。
+     1>_GetAllRestoreProjectPathItems:
+         正在确定要还原的项目…
+     1>项目“C:\Users\shan\.codex\worktrees\32f2\NLTX\Test\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj”(1)正在节点 1 上生成“C:\Users\shan\.codex\worktrees\32f2\NLTX\Test\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj”(1:6) (_GenerateProjectRestoreGraph 个目标)。
+     1>AddPrunePackageReferences:
+         Loading prune package data from PrunePackageData folder
+         Failed to load prune package data from PrunePackageData folder, loading from targeting packs instead
+         Looking for targeting packs in C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref
+         Pack directories found: C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.0-rc.1.25451.107
+         C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.11
+         Found package overrides file C:\Program Files\dotnet\packs\Microsoft.NETCore.App.Ref\10.0.11\data\PackageOverrides.txt
+     1>已完成生成项目“C:\Users\shan\.codex\worktrees\32f2\NLTX\Test\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj”(_GenerateProjectRestoreGraph 个目标)的操作。
+     1>Restore:
+         X.509 证书链验证将使用 .NET 选择的默认信任存储进行代码签名。
+         X.509 证书链验证将使用 .NET 选择的默认信任存储进行时间戳。
+         正在还原 C:\Users\shan\.codex\worktrees\32f2\NLTX\Test\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj 的包...
+           CACHE https://api.nuget.org/v3-flatcontainer/arch/index.json
+           CACHE https://api.nuget.org/v3-flatcontainer/arch/2.1.0/arch.2.1.0.nupkg
+           CACHE https://api.nuget.org/v3-flatcontainer/arch.lowlevel/index.json
+           CACHE https://api.nuget.org/v3-flatcontainer/collections.pooled/index.json
+           CACHE https://api.nuget.org/v3-flatcontainer/communitytoolkit.highperformance/index.json
+           CACHE https://api.nuget.org/v3-flatcontainer/microsoft.extensions.objectpool/index.json
+           CACHE https://api.nuget.org/v3-flatcontainer/zeroallocjobscheduler/index.json
+           CACHE https://api.nuget.org/v3-flatcontainer/communitytoolkit.highperformance/8.2.2/communitytoolkit.highperformance.8.2.2.nupkg
+           CACHE https://api.nuget.org/v3-flatcontainer/arch.lowlevel/1.1.5/arch.lowlevel.1.1.5.nupkg
+           CACHE https://api.nuget.org/v3-flatcontainer/collections.pooled/2.0.0-preview.27/collections.pooled.2.0.0-preview.27.nupkg
+           CACHE https://api.nuget.org/v3-flatcontainer/microsoft.extensions.objectpool/7.0.0/microsoft.extensions.objectpool.7.0.0.nupkg
+           CACHE https://api.nuget.org/v3-flatcontainer/zeroallocjobscheduler/1.1.2/zeroallocjobscheduler.1.1.2.nupkg
+         已使用内容哈希 PKu/zSvwV1fWxt8+CEW15O9OlQ2zB9UoeAaor/aJJ0QeTKxxSjigczYLoVPKjYLAQu3ddZQd7Z3zplVTtUgigQ== 从 https://api.nuget.org/v3/index.json 到 C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\packages\zeroallocjobscheduler\1.1.2 安装 ZeroAllocJobScheduler 1.1.2。
+         已使用内容哈希 kc6T2qAsgzdb5RV+RIqVQ33LROhgXmA5fZRUhXRK+AJ1J58NML1i2M6XTKIj1ISirCwuqgYnM4qYkhqGcngG1g== 从 https://api.nuget.org/v3/index.json 到 C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\packages\arch.lowlevel\1.1.5 安装 Arch.LowLevel 1.1.5。
+         已使用内容哈希 udvKco0sAVgYGTBnHUb0tY9JQzJ/nPDiv/8PIyz69wl1AibeCDZOLVVI+6156dPfHmJH7ws5oUJRiW4ZmAvuuA== 从 https://api.nuget.org/v3/index.json 到 C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\packages\microsoft.extensions.objectpool\7.0.0 安装 Microsoft.Extensions.ObjectPool 7.0.0。
+         已使用内容哈希 VS3uHc1GNamanS1i1hQ3PoZUddIagCswVMWvucAgqWwY2KVwgL2Q7raGu0hTqP/CWuROoq0RiNbIvu4ST1bMzg== 从 https://api.nuget.org/v3/index.json 到 C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\packages\collections.pooled\2.0.0-preview.27 安装 Collections.Pooled 2.0.0-preview.27。
+         已使用内容哈希 Z9zxQztEvD/c2tsdW+LDm5E3Rd04JKeWRa6S0JOBfEFE7800+JLa7pgMAL6I/hvOY6q93QXvQ6Y+5E/TPc5Tfw== 从 https://api.nuget.org/v3/index.json 到 C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\packages\arch\2.1.0 安装 Arch 2.1.0。
+         已使用内容哈希 +zIp8d3sbtYaRbM6hqDs4Ui/z34j7DcUmleruZlYLE4CVxXq+MO8XJyIs42vzeTYFX+k0Iq1dEbBUnQ4z/Gnrw== 从 https://api.nuget.org/v3/index.json 到 C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\packages\communitytoolkit.highperformance\8.2.2 安装 CommunityToolkit.HighPerformance 8.2.2。
+           CACHE https://api.nuget.org/v3/vulnerabilities/index.json
+           CACHE https://api.nuget.org/v3/vulnerabilities/vulnerability.base.json
+           CACHE https://api.nuget.org/v3/vulnerabilities/vulnerability.update.json
+         正在生成 MSBuild 文件 C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\obj\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj.nuget.g.props。
+         正在生成 MSBuild 文件 C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\obj\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj.nuget.g.targets。
+         将资产文件写入磁盘。路径: C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\obj\Terraria.Arch.Verification\project.assets.json
+         已还原 C:\Users\shan\.codex\worktrees\32f2\NLTX\Test\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj (用时 953 毫秒)。
+         
+         使用的 NuGet 配置文件:
+             C:\Users\shan\.codex\worktrees\32f2\NLTX\NuGet.Config
+             C:\Users\shan\AppData\Roaming\NuGet\NuGet.Config
+             C:\Program Files (x86)\NuGet\Config\Microsoft.VisualStudio.Offline.config
+         
+         使用的源:
+             https://api.nuget.org/v3/index.json
+         
+         已安装:
+             C:\Users\shan\.codex\worktrees\32f2\NLTX\Test\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj 的 6 包
+     1>已完成生成项目“C:\Users\shan\.codex\worktrees\32f2\NLTX\Test\Terraria.Arch.Verification\Terraria.Arch.Verification.csproj”(Restore 个目标)的操作。
+
+已成功生成。
+    0 个警告
+    0 个错误
+
+已用时间 00:00:02.06

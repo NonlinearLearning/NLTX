@@ -1,0 +1,30 @@
+[
+  {
+    "url": "https://raw.githubusercontent.com/genaray/Arch/04d52e7268eb6f376ca4841a0c204334120c5e9d/src/Arch/Core/World.cs",
+    "path": ".\\Build\\diagnostics\\ArchMigration\\T1\\upstream-World.cs",
+    "status": 200,
+    "sha256": "41F7078B462B5C12B8FA2A997699CDEC12591E453A62EBE02FF2FB3B0F1FFBC1",
+    "bytes": 67795
+  },
+  {
+    "url": "https://raw.githubusercontent.com/genaray/Arch/04d52e7268eb6f376ca4841a0c204334120c5e9d/src/Arch/Core/Entity.cs",
+    "path": ".\\Build\\diagnostics\\ArchMigration\\T1\\upstream-Entity.cs",
+    "status": 200,
+    "sha256": "18EE844D65A508B6BAAF140F7F9CF91DDE4AEAFF40642049743704285340CD6B",
+    "bytes": 8893
+  },
+  {
+    "url": "https://raw.githubusercontent.com/genaray/Arch/04d52e7268eb6f376ca4841a0c204334120c5e9d/src/Arch/Core/QueryDescription.cs",
+    "path": null,
+    "status": 200,
+    "sha256": null,
+    "bytes": 0
+  },
+  {
+    "url": "https://raw.githubusercontent.com/genaray/Arch/04d52e7268eb6f376ca4841a0c204334120c5e9d/src/Arch/Buffer/CommandBuffer.cs",
+    "path": ".\\Build\\diagnostics\\ArchMigration\\T1\\upstream-CommandBuffer.cs",
+    "status": 200,
+    "sha256": "F193CD817F7AF04050F47B02826E90E17AABCD3EDA492736A659E93056DD0D4B",
+    "bytes": 17018
+  }
+]

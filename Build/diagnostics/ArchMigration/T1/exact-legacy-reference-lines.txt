@@ -1,0 +1,1229 @@
+src\NSSLC.Tools.NetworkServer\Program.cs:31:      var worldRuntimeId = await worldOwner.InvokeAsync(session => session.EntityRuntime.RuntimeId);
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:52:      RuntimeEntityHandle firstRoot = CreatePublishedRoot(firstSession, "issued-history-first");
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:53:      Require(firstSession.EntityRuntime.TryGetReference(
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:70:        _ = secondSession.EntityRuntime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:79:      Require(secondSession.EntityRuntime.EntityCount == 0 &&
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:84:      RuntimeEntityHandle replacementRoot = CreatePublishedRoot(
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:87:      Require(secondSession.EntityRuntime.TryGetReference(
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:102:  private static RuntimeEntityHandle CreatePublishedRoot(
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:106:    RuntimeEntityHandle root = session.EntityRuntime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:107:    Require(session.EntityRuntime.TryAttach(root, new TestWorldRootComponent(label)),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:109:    Require(session.EntityRuntime.TryPublishEntity(root),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:250:    Require(!next.EntityRuntime.TryResolve(firstReference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:283:          previous.EntityRuntime.TryResolve(harness.PreviousReference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:328:          previous.EntityRuntime.TryResolve(harness.PreviousReference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:358:    EntityRuntime runtime = session.EntityRuntime;
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:359:    RuntimeEntityHandle root = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:439:    EntityRuntime runtime = evidence.Session.EntityRuntime;
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:443:        "Candidate cleanup must begin root termination through EntityRuntime.");
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:445:        "Candidate cleanup must remove the root through EntityRuntime.");
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:460:    Require(!evidence.Session.EntityRuntime.TryGetStatus(evidence.Root, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:462:    Require(!evidence.Session.EntityRuntime.TryResolve(evidence.Reference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:469:    Require(evidence.Session.EntityRuntime.EntityCount == 0 &&
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:470:        !evidence.Session.EntityRuntime.TryResolve(evidence.TileEntityReference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:481:    int runtimeEntityCount = evidence.Session.EntityRuntime.EntityCount;
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:494:        evidence.Session.EntityRuntime.EntityCount == runtimeEntityCount,
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:946:          previous.EntityRuntime.TryResolve(previousReference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:989:          previous.EntityRuntime.TryResolve(previousReference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1002:      int previousEntityCount = previous.EntityRuntime.EntityCount;
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1018:            DirtySession.Session.EntityRuntime.EntityCount == 1 &&
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1019:            DirtySession.Session.EntityRuntime.TryResolve(DirtySession.Reference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1026:        Require(previous.EntityRuntime.EntityCount == previousEntityCount &&
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1028:            previous.EntityRuntime.TryResolve(previousReference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1054:      bool inspected = previous.EntityRuntime.TryInspect<TestWorldRootComponent>(
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1076:          previous.EntityRuntime.TryResolve(previousReference, out _),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1090:      Require(ThrowsObjectDisposed(() => _ = LastSession!.EntityRuntime) &&
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1099:      RuntimeEntityHandle root = session.EntityRuntime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1100:      Require(session.EntityRuntime.TryAttach(root, new TestWorldRootComponent("generated-dirty")),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1102:      Require(session.EntityRuntime.TryPublishEntity(root),
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1104:      Require(session.EntityRuntime.TryGetReference(
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1209:      Require(next.EntityRuntime.TryResolve(retiredReference, out _) == false,
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1220:    EntityRuntime runtime,
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1222:    RuntimeEntityHandle root,
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1232:    public EntityRuntime Runtime { get; } = runtime;
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1235:    public RuntimeEntityHandle Root { get; } = root;
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1248:    RuntimeEntityHandle root,
+Test\Terraria.EntityOrganization.Verification\WorldSessionFailureVerification.cs:1252:    public RuntimeEntityHandle Root { get; } = root;
+Test\Terraria.EntityOrganization.Verification\SessionDisposalVerification.cs:14:    EntityRuntime runtime = session.EntityRuntime;
+Test\Terraria.EntityOrganization.Verification\SessionDisposalVerification.cs:18:    RuntimeEntityHandle npcHandle = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\SessionDisposalVerification.cs:103:        runtime.TryResolve(npcReference, out RuntimeEntityHandle resolvedNpc) &&
+src\NSSLC.Tools.Simulation\NpcTaskLifecycleProbe.cs:34:    Require(session.EntityRuntime.TryInspect<NpcTaskStateComponent>(
+Test\Terraria.EntityOrganization.Verification\Program.cs:47:  using var runtime = new EntityRuntime();
+Test\Terraria.EntityOrganization.Verification\Program.cs:48:  RuntimeEntityHandle handle = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:89:    runtime.TryResolve(reference, out RuntimeEntityHandle resolved) && resolved == handle,
+Test\Terraria.EntityOrganization.Verification\Program.cs:94:    runtime.TryEdit<TestReferenceComponent>(
+Test\Terraria.EntityOrganization.Verification\Program.cs:140:        reentrantEditWasRejected = !runtime.TryEdit<TestReferenceComponent>(
+Test\Terraria.EntityOrganization.Verification\Program.cs:149:  RuntimeEntityHandle second = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:155:  RuntimeEntityHandle isolated = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:161:    runtime.TryEdit<TestReferenceComponent>(
+Test\Terraria.EntityOrganization.Verification\Program.cs:177:  RuntimeEntityHandle[] matches = runtime.Match<TestPositionComponent, TestHealthComponent>();
+Test\Terraria.EntityOrganization.Verification\Program.cs:184:    runtime.TryEdit<TestPositionComponent>(
+Test\Terraria.EntityOrganization.Verification\Program.cs:205:  RuntimeEntityHandle[] positionMatches = runtime.Match<TestPositionComponent>();
+Test\Terraria.EntityOrganization.Verification\Program.cs:219:      out EntityComponentSnapshot<TestPositionSnapshot> beforeReplace),
+Test\Terraria.EntityOrganization.Verification\Program.cs:231:      out EntityComponentSnapshot<TestPositionSnapshot> afterReplace) &&
+Test\Terraria.EntityOrganization.Verification\Program.cs:245:      out EntityComponentSnapshot<TestPositionSnapshot> afterReattach) &&
+Test\Terraria.EntityOrganization.Verification\Program.cs:263:  Assert(!runtime.TryEdit<TestPositionComponent>(handle, static (ref TestPositionComponent _) => { }),
+Test\Terraria.EntityOrganization.Verification\Program.cs:269:  RuntimeEntityHandle replacement = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:293:  using (var firstRuntime = new EntityRuntime(registry))
+Test\Terraria.EntityOrganization.Verification\Program.cs:295:    RuntimeEntityHandle first = firstRuntime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:301:    using var secondRuntime = new EntityRuntime(registry);
+Test\Terraria.EntityOrganization.Verification\Program.cs:305:    RuntimeEntityHandle other = secondRuntime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:335:    RuntimeEntityHandle next = secondRuntime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:376:    _ = new RuntimeEntityHandle(new EntityRuntimeId(Guid.NewGuid()), 0, 0);
+Test\Terraria.EntityOrganization.Verification\Program.cs:390:  using var runtime = new EntityRuntime(registry);
+Test\Terraria.EntityOrganization.Verification\Program.cs:405:  RuntimeEntityHandle validHandle = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:415:  using var runtime = new EntityRuntime();
+Test\Terraria.EntityOrganization.Verification\Program.cs:416:  RuntimeEntityHandle first = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:421:  FieldInfo generationsField = typeof(EntityRuntime).GetField(
+Test\Terraria.EntityOrganization.Verification\Program.cs:429:  RuntimeEntityHandle replacement = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:443:  using var runtime = new EntityRuntime();
+Test\Terraria.EntityOrganization.Verification\Program.cs:444:  RuntimeEntityHandle handle = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:536:  using var runtime = new EntityRuntime();
+Test\Terraria.EntityOrganization.Verification\Program.cs:537:  RuntimeEntityHandle removed = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:538:  RuntimeEntityHandle retained = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:544:  RuntimeEntityHandle[] candidates = runtime.Match<TestPositionComponent>();
+Test\Terraria.EntityOrganization.Verification\Program.cs:545:  var reusableCandidates = new List<RuntimeEntityHandle> { default };
+Test\Terraria.EntityOrganization.Verification\Program.cs:556:  foreach (RuntimeEntityHandle candidate in candidates)
+Test\Terraria.EntityOrganization.Verification\Program.cs:586:  using var runtime = new EntityRuntime();
+Test\Terraria.EntityOrganization.Verification\Program.cs:587:  RuntimeEntityHandle handle = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:594:      out EntityComponentSnapshot<TestPositionSnapshot> beforeEdit),
+Test\Terraria.EntityOrganization.Verification\Program.cs:597:    runtime.TryEdit<TestPositionComponent>(
+Test\Terraria.EntityOrganization.Verification\Program.cs:607:    _ = runtime.TryEdit<TestPositionComponent>(
+Test\Terraria.EntityOrganization.Verification\Program.cs:629:      out EntityComponentSnapshot<TestPositionSnapshot> current),
+Test\Terraria.EntityOrganization.Verification\Program.cs:641:      out EntityComponentSnapshot<int> beforePairEdit),
+Test\Terraria.EntityOrganization.Verification\Program.cs:661:  using var runtime = new EntityRuntime();
+Test\Terraria.EntityOrganization.Verification\Program.cs:662:  RuntimeEntityHandle handle = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:669:      out EntityComponentSnapshot<TestPositionSnapshot> beforeInspection),
+Test\Terraria.EntityOrganization.Verification\Program.cs:692:      out EntityComponentSnapshot<TestPositionSnapshot> afterInspection),
+Test\Terraria.EntityOrganization.Verification\Program.cs:705:  using var runtime = new EntityRuntime();
+Test\Terraria.EntityOrganization.Verification\Program.cs:706:  RuntimeEntityHandle handle = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:739:    Benchmark = "EntityRuntime component access microbenchmark",
+Test\Terraria.EntityOrganization.Verification\Program.cs:746:    RuntimePath = "EntityRuntime TryCapture/TryEdit and both allocating and reusable Match paths",
+Test\Terraria.EntityOrganization.Verification\Program.cs:766:  using var runtime = new EntityRuntime();
+Test\Terraria.EntityOrganization.Verification\Program.cs:767:  var handles = new RuntimeEntityHandle[capacity];
+Test\Terraria.EntityOrganization.Verification\Program.cs:768:  var reusableMatches = new List<RuntimeEntityHandle>(capacity);
+Test\Terraria.EntityOrganization.Verification\Program.cs:772:    RuntimeEntityHandle handle = runtime.CreateEntity();
+Test\Terraria.EntityOrganization.Verification\Program.cs:833:          runtime.TryEdit<TestPositionComponent>(
+Test\Terraria.EntityOrganization.Verification\Program.cs:852:      foreach (RuntimeEntityHandle handle in reusableMatches)
+Test\Terraria.EntityOrganization.Verification\Program.cs:872:      foreach (RuntimeEntityHandle handle in runtime.Match<TestPositionComponent>())
+Test\Terraria.EntityOrganization.Verification\Program.cs:900:      EntityRuntime = Measure(RuntimeRead, capacity, passes, repetitions),
+Test\Terraria.EntityOrganization.Verification\Program.cs:905:      EntityRuntime = Measure(RuntimeWrite, capacity, passes, repetitions),
+Test\Terraria.EntityOrganization.Verification\Program.cs:916:  foreach (RuntimeEntityHandle handle in runtime.Match<TestPositionComponent>())
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:76:    EntityRuntime? failedCandidateRuntime = null;
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:80:    RuntimeEntityHandle previousHandle = default;
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:123:    previousRootCount = previousSession.EntityRuntime.EntityCount;
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:148:      $"Factory cleanup must remove every failed-candidate EntityRuntime root; " +
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:196:    Require(!nextSession.EntityRuntime.TryResolve(previousReference, out _),
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:249:        failedCandidateRuntime = session.EntityRuntime;
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:250:        failedCandidateInitialRootCount = session.EntityRuntime.EntityCount;
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:297:        : Invalid("Host restoration changed an existing EntityReference or RuntimeEntityHandle.");
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:562:    Require(session.EntityRuntime.EntityCount > 0,
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:563:      $"{worldLabel} WorldFile prerequisite failed: its loaded owners created no EntityRuntime " +
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:851:    out RuntimeEntityHandle handle)
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:858:    Require(session.EntityRuntime.TryResolve(reference, out handle),
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:866:    RuntimeEntityHandle expectedHandle,
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:872:      "The previous session's EntityReference, RuntimeEntityHandle, root count or " +
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:880:    RuntimeEntityHandle expectedHandle,
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:884:    if (session.IsDisposed || session.EntityRuntime.EntityCount != expectedRootCount ||
+Test\Terraria.EntityOrganization.Verification\GeneratedWorldRollbackVerification.cs:888:        !session.EntityRuntime.TryResolve(currentReference, out RuntimeEntityHandle currentHandle) ||
+src\NSSLC.Infrastructure\WorldStorage\WorldStorageCoordinatorFactory.cs:206:      session.EntityRuntime.EnsureCanDispose();
+src\NSSLC.Infrastructure\WorldStorage\WorldStorageCoordinatorFactory.cs:896:        pending.Previous?.EntityRuntime.EnsureCanDispose();
+src\NSSLC.Tools.Simulation\Program.cs:648:    var entityRuntimesBySession = new Dictionary<LoadedWorldSession, EntityRuntime>();
+src\NSSLC.Tools.Simulation\Program.cs:768:      entityRuntimesBySession.Add(createdSession, createdSession.EntityRuntime);
+src\NSSLC.Tools.Simulation\Program.cs:932:    var runtimeItems = new RuntimeItemRegistry(content, session.EntityRuntime);
+src\NSSLC.Tools.Simulation\Program.cs:955:      session.EntityRuntime,
+src\NSSLC.Tools.Simulation\Program.cs:1094:      EntityRuntime entityRuntime = session.EntityRuntime;
+src\NSSLC.Tools.Simulation\Program.cs:1096:        entityRuntime,
+src\NSSLC.Tools.Simulation\Program.cs:1103:        entityRuntime,
+src\NSSLC.Tools.Simulation\Program.cs:1109:        entityRuntime,
+src\NSSLC.Tools.Simulation\Program.cs:1114:        RuntimeSpatialEntityVerification.AssertMovementWriteProtocol(entityRuntime, player);
+src\NSSLC.Tools.Simulation\Program.cs:1122:          entityRuntime,
+src\NSSLC.Tools.Simulation\Program.cs:1127:          entityRuntime,
+src\NSSLC.Tools.Simulation\Program.cs:1478:          session.EntityRuntime,
+src\NSSLC.Tools.Simulation\Program.cs:2161:        runtimeItems = new RuntimeItemRegistry(content, switchedSession.EntityRuntime);
+src\NSSLC.Tools.Simulation\Program.cs:2265:        !ReferenceEquals(session.EntityRuntime, items.EntityRuntime))
+src\NSSLC.Tools.Simulation\Program.cs:2271:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Tools.Simulation\Program.cs:2284:    RuntimeEntityHandle playerHandle = player.RuntimeHandle;
+src\NSSLC.Tools.Simulation\Program.cs:2291:    RuntimeEntityHandle[] projectileHandlesBefore = runtime.Match<ProjectileIdentityComponent>();
+src\NSSLC.Tools.Simulation\Program.cs:2303:    var projectileHandlesBeforeSet = new HashSet<RuntimeEntityHandle>(projectileHandlesBefore);
+src\NSSLC.Tools.Simulation\Program.cs:2304:    RuntimeEntityHandle[] newProjectileHandles = runtime.Match<ProjectileIdentityComponent>()
+src\NSSLC.Tools.Simulation\Program.cs:2346:        !npcs.TryResolveEntityReference(borrowedNpcReference, out RuntimeEntityHandle resolvedNpc) ||
+src\NSSLC.Tools.Simulation\Program.cs:2352:        !runtime.TryResolve(itemReference.Reference, out RuntimeEntityHandle resolvedItem) ||
+src\NSSLC.Tools.Simulation\Program.cs:2354:        !runtime.TryResolve(projectileReference, out RuntimeEntityHandle resolvedProjectile) ||
+src\NSSLC.Tools.Simulation\Program.cs:2444:        !ReferenceEquals(session.EntityRuntime, items.EntityRuntime))
+src\NSSLC.Tools.Simulation\Program.cs:2450:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Tools.Simulation\Program.cs:2455:    RuntimeEntityHandle firstPlayerHandle = firstPlayer.RuntimeHandle;
+src\NSSLC.Tools.Simulation\Program.cs:2457:    RuntimeEntityHandle secondPlayerHandle = secondPlayer.RuntimeHandle;
+src\NSSLC.Tools.Simulation\Program.cs:2482:          !npcs.TryResolveEntityReference(npcReference, out RuntimeEntityHandle resolvedNpc) ||
+src\NSSLC.Tools.Simulation\Program.cs:2511:    if (!runtime.TryResolve(firstArrows.Entity.Reference, out RuntimeEntityHandle arrowItemHandle) ||
+src\NSSLC.Tools.Simulation\Program.cs:2620:        npcs.TryResolveEntityReference(npcReference, out RuntimeEntityHandle retainedNpc) == false ||
+src\NSSLC.Tools.Simulation\Program.cs:2679:    RuntimeEntityHandle oldHandle = originalPlayer.RuntimeHandle;
+src\NSSLC.Tools.Simulation\Program.cs:3913:    var switchedItemRegistry = new RuntimeItemRegistry(content, session.EntityRuntime);
+src\NSSLC.Tools.Simulation\Program.cs:3914:    var players = new RuntimePlayerStore(session.EntityRuntime, session.IdentityRegistry);
+src\NSSLC.Tools.Simulation\Program.cs:4778:          !store.TryResolveEntityReference(reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\Program.cs:4791:      session.EntityRuntime.EntityCount,
+src\NSSLC.Tools.Simulation\Program.cs:4802:        session.EntityRuntime.EntityCount != evidence.EntityCount)
+src\NSSLC.Tools.Simulation\Program.cs:4820:          !store.TryResolveEntityReference(reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\Program.cs:4834:    RuntimeEntityHandle handle)
+src\NSSLC.Tools.Simulation\Program.cs:4874:    RuntimeEntityHandle Handle,
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:106:  private readonly EntityRuntime _entityRuntime;
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:109:  private RuntimeNpcEntity(EntityRuntime entityRuntime)
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:111:    _entityRuntime = entityRuntime;
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:118:  public required RuntimeEntityHandle RuntimeHandle { get; init; }
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:225:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:226:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:234:    ArgumentNullException.ThrowIfNull(entityRuntime);
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:248:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:254:    if (!entityRuntime.TryAttach(runtimeHandle, new VelocityComponent(0.0f, 0.0f)))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:258:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:266:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:272:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:280:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcHitStateComponent()))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:284:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcStatusFlagsComponent()))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:288:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:294:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:303:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:309:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcDirectionComponent(1, 1)))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:313:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcTargetComponent()))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:317:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcTargetSelectionStateComponent()))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:321:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcImmediateEffectStateComponent()))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:325:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcTaskStateComponent()))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:329:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:338:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:345:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcMovementTickStateComponent()))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:349:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:357:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:364:    if (!entityRuntime.TryAttach(runtimeHandle, HydrateHousingRelation(savedState)))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:368:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:374:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcGivenNameComponent(savedState.Name)))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:378:    if (!entityRuntime.TryAttach(runtimeHandle, new NpcLegacySlotComponent(slot)))
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:382:    if (!entityRuntime.TryAttach(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:389:    return new RuntimeNpcEntity(entityRuntime)
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:428:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:442:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:457:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:467:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:480:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:516:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:875:    bool edited = _entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:932:    bool edited = _entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:942:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:952:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:966:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:992:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1005:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1018:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1031:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1044:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1057:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1071:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1085:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1099:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1171:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1194:    bool localBehaviorCommitted = _entityRuntime.TryEdit<NpcLocalBehaviorStateComponent>(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1208:    bool behaviorCommitted = _entityRuntime.TryEdit<NpcBehaviorStateComponent>(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1223:    if (!_entityRuntime.TryEdit<NpcBehaviorStateComponent>(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1236:    return _entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcEntity.cs:1252:    bool edited = _entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:19:  private readonly EntityRuntime _entityRuntime;
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:21:  internal EntityRuntime EntityRuntime => _entityRuntime;
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:23:  internal bool IsBoundTo(EntityRuntime entityRuntime) =>
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:24:    ReferenceEquals(_entityRuntime, entityRuntime);
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:26:  public RuntimeItemRegistry(ContentCatalog catalog, EntityRuntime entityRuntime)
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:29:    _entityRuntime = entityRuntime ?? throw new ArgumentNullException(nameof(entityRuntime));
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:54:        !TryResolve(source.Entity, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:130:    if (!TryResolve(entity, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:160:        !TryResolve(item.Entity, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:183:    if (!TryResolve(entity, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:199:    return TryResolve(entity, out RuntimeEntityHandle handle) &&
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:207:    if (TryResolve(entity, out RuntimeEntityHandle handle) &&
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:226:    if (!TryResolve(entity, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:249:    out RuntimeEntityHandle playerHandle)
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:270:    return TryResolve(entity, out RuntimeEntityHandle handle) &&
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:296:    if (TryResolve(entity, out RuntimeEntityHandle handle) &&
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:306:          out EntityComponentSnapshot<WorldItemComponentProjection> worldItem) &&
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:310:          out EntityComponentSnapshot<LocationComponent> location) &&
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:314:          out EntityComponentSnapshot<VelocityComponent> velocity) &&
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:318:          out EntityComponentSnapshot<ColliderComponent> collider))
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:339:        !TryResolve(expected.Entity, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:376:        !TryResolve(entity, out RuntimeEntityHandle handle))
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:409:    if (!TryResolve(entity, out RuntimeEntityHandle handle))
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:445:          out EntityComponentSnapshot<WorldItemComponentProjection> worldItem) ||
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:476:    EntityComponentSnapshot<WorldItemReservationProjection> reservationSnapshot = default;
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:594:    RuntimeEntityHandle handle = default;
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:686:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:703:          out EntityComponentSnapshot<ItemInstanceProjection> instanceSnapshot) ||
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:707:          out EntityComponentSnapshot<ItemStackComponent> stackSnapshot))
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:726:  private bool TryResolve(ItemEntityRef entity, out RuntimeEntityHandle handle)
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:760:    EntityComponentSnapshot<TProjection> expected,
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:761:    EntityComponentSnapshot<TProjection> current)
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:800:  private void RemoveIncompleteEntity(RuntimeEntityHandle handle)
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:819:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:937:  EntityComponentSnapshot<WorldItemComponentProjection> WorldItem,
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:938:  EntityComponentSnapshot<LocationComponent> Location,
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:939:  EntityComponentSnapshot<VelocityComponent> Velocity,
+src\NSSLC.Tools.Simulation\RuntimeItemRegistry.cs:940:  EntityComponentSnapshot<ColliderComponent> Collider);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:27:    using var runtime = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:28:    RuntimeEntityHandle owner = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:101:  using var runtime = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:102:  RuntimeEntityHandle originalOwner = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:133:  Require(runtime.TryEdit<NpcTaskStateComponent>(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:149:  RuntimeEntityHandle replacementOwner = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:199:  using var nextSession = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:200:  RuntimeEntityHandle nextSessionOwner = CreateEntity(nextSession);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:219:  using var runtime = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:220:  RuntimeEntityHandle owner = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:436:    using var runtime = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:437:    RuntimeEntityHandle owner = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:486:  using var resetRuntime = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:487:  RuntimeEntityHandle resetOwner = CreateEntity(resetRuntime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:495:  Require(resetRuntime.TryEdit<NpcTaskStateComponent>(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:515:  using var runtime = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:516:  RuntimeEntityHandle owner = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:517:  RuntimeEntityHandle targetEntity = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:596:  bool resetTargetCache = runtime.TryEdit<NpcTargetSelectionStateComponent>(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:600:  bool discardEffects = runtime.TryEdit<NpcImmediateEffectStateComponent>(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:635:  var runtime = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:636:  RuntimeEntityHandle owner = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:637:  RuntimeEntityHandle child = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:691:  Require(runtime.TryEdit<NpcTargetSelectionStateComponent>(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:697:  Require(runtime.TryEdit<NpcImmediateEffectStateComponent>(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:715:  using var nextSession = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:716:  RuntimeEntityHandle replacement = CreateEntity(nextSession);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:726:  using var runtime = new EntityRuntime();
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:727:  RuntimeEntityHandle owner = CreateEntity(runtime);
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:766:static NpcTaskReference CaptureReference(EntityRuntime runtime, RuntimeEntityHandle owner)
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:786:  EntityRuntime runtime,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:787:  RuntimeEntityHandle owner,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:801:  EntityRuntime runtime,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:802:  RuntimeEntityHandle currentOwner,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:807:  bool edited = runtime.TryEdit(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:811:  Require(edited, "EntityRuntime must validate the attached task state before advancing.");
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:816:  EntityRuntime runtime,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:817:  RuntimeEntityHandle currentOwner,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:822:  bool edited = runtime.TryEdit(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:826:  Require(edited, "EntityRuntime must validate the attached task state before completing.");
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:831:  EntityRuntime runtime,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:832:  RuntimeEntityHandle currentOwner,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:838:  bool edited = runtime.TryEdit(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:847:  Require(edited, "EntityRuntime must validate the attached task state before failing.");
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:852:  EntityRuntime runtime,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:853:  RuntimeEntityHandle currentOwner,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:859:  bool edited = runtime.TryEdit(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:868:  Require(edited, "EntityRuntime must validate the attached task state before interrupting.");
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:873:  EntityRuntime runtime,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:874:  RuntimeEntityHandle currentOwner,
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:879:  bool edited = runtime.TryEdit(
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:883:  Require(edited, "EntityRuntime must validate the attached task component before termination.");
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:887:static RuntimeEntityHandle CreateEntity(EntityRuntime runtime)
+Test\Terraria.NpcAi.LifecycleVerification\Program.cs:889:  RuntimeEntityHandle handle = runtime.CreateEntity();
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:16:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:23:    ArgumentNullException.ThrowIfNull(entityRuntime);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:62:    var handles = new HashSet<RuntimeEntityHandle>();
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:65:      if (!npc.RuntimeHandle.RuntimeId.Equals(entityRuntime.RuntimeId))
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:75:      AssertNpcParity(entityRuntime, npc);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:80:      if (!player.RuntimeHandle.RuntimeId.Equals(entityRuntime.RuntimeId))
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:90:      AssertPlayerParity(entityRuntime, player);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:95:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:101:    ArgumentNullException.ThrowIfNull(entityRuntime);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:114:    AssertNpcMutationIsolation(entityRuntime, firstDuplicate, secondDuplicate);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:117:      AssertPlayerMutationIsolation(entityRuntime, players[0], players[1]);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:122:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:125:    ArgumentNullException.ThrowIfNull(entityRuntime);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:128:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:135:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:138:    ArgumentNullException.ThrowIfNull(entityRuntime);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:141:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:148:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:154:    AssertPlayerParity(entityRuntime, player);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:169:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:174:    AssertPlayerParity(entityRuntime, player);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:189:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:194:    ArgumentNullException.ThrowIfNull(entityRuntime);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:203:    if (!entityRuntime.TryEdit<PlayerVitalState>(
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:245:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:256:    AssertPlayerRespawn(entityRuntime, player, rootBeforeContact, colliderBeforeContact);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:269:  private static void AssertNpcParity(EntityRuntime entityRuntime, RuntimeNpcEntity npc)
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:272:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:276:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:280:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:284:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:287:    if (entityRuntime.Has<MovementStateComponent>(npc.RuntimeHandle))
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:294:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:323:  private static void AssertPlayerParity(EntityRuntime entityRuntime, RuntimePlayerEntity player)
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:326:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:330:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:334:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:338:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:341:    if (entityRuntime.Has<MovementStateComponent>(player.RuntimeHandle))
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:348:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:366:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:367:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:373:    AssertQueryMembership<LocationComponent>(entityRuntime, handle, "location");
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:374:    AssertQueryMembership<VelocityComponent>(entityRuntime, handle, "velocity");
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:375:    AssertQueryMembership<ColliderComponent>(entityRuntime, handle, "collider");
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:376:    AssertQueryMembership<MovementGroundedStateComponent>(entityRuntime, handle, "grounded state");
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:387:    if (!TryCapture(entityRuntime, handle, out LocationComponent currentLocation) ||
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:388:        !TryCapture(entityRuntime, handle, out VelocityComponent currentVelocity) ||
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:389:        !TryCapture(entityRuntime, handle, out ColliderComponent currentCollider) ||
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:390:        !TryCapture(entityRuntime, handle, out MovementGroundedStateComponent currentGrounded) ||
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:430:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:442:      AssertNpcParity(entityRuntime, first);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:443:      AssertNpcParity(entityRuntime, second);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:453:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:465:      AssertPlayerParity(entityRuntime, first);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:466:      AssertPlayerParity(entityRuntime, second);
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:476:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:477:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:494:    EntityComponentSnapshot<LocationComponent> beforeLocation = CaptureVersioned<LocationComponent>(
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:495:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:498:    EntityComponentSnapshot<VelocityComponent> beforeVelocity = CaptureVersioned<VelocityComponent>(
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:499:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:502:    EntityComponentSnapshot<MovementGroundedStateComponent> beforeGrounded =
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:504:        entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:507:    EntityComponentSnapshot<ColliderComponent> beforeCollider = CaptureVersioned<ColliderComponent>(
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:508:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:520:      EntityComponentSnapshot<LocationComponent> afterLocation =
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:522:          entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:525:      EntityComponentSnapshot<VelocityComponent> afterVelocity =
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:527:          entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:530:      EntityComponentSnapshot<MovementGroundedStateComponent> afterGrounded =
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:532:          entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:535:      EntityComponentSnapshot<ColliderComponent> afterCollider =
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:537:          entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:561:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:562:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:566:    if (!TryCapture(entityRuntime, handle, out TComponent component))
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:575:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:576:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:580:    if (!entityRuntime.Match<TComponent>().Contains(handle))
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:587:  private static EntityComponentSnapshot<TComponent> CaptureVersioned<TComponent>(
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:588:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:589:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:593:    if (!entityRuntime.TryCaptureVersioned<TComponent, TComponent>(
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:596:          out EntityComponentSnapshot<TComponent> snapshot))
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:605:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:606:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimeSpatialEntityVerification.cs:610:    return entityRuntime.TryCapture<TComponent, TComponent>(
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:28:  private readonly EntityRuntime _runtime;
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:127:    private readonly EntityRuntime _runtime;
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:140:      EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:197:      RuntimeEntityHandle runtimeHandle = context.RuntimeHandle;
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:232:        !_runtime.TryEdit<ProjectileTrajectoryStateComponent>(
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:286:        if (!_runtime.TryEdit<ProjectileWetStateComponent>(
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:370:        if (!_runtime.TryEdit<ProjectileUpdateCadenceComponent>(
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:383:      RuntimeEntityHandle runtimeHandle)
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:392:    private TComponent ReadComponent<TComponent>(RuntimeEntityHandle runtimeHandle)
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:601:      RuntimeEntityHandle runtimeHandle = context.RuntimeHandle;
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:693:        if (!_runtime.TryEdit<ProjectileBehaviorStateComponent>(
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:803:            if (!_runtime.TryEdit<ProjectileHitImmunityStateComponent>(
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:836:          if (!_runtime.TryEdit<ProjectilePenetrationStateComponent>(
+src\NSSLC.Tools.Simulation\RuntimeProjectileStore.cs:856:          out RuntimeEntityHandle currentRuntimeHandle) &&
+Test\Terraria.NpcAi.HostLifecycleVerification\Program.cs:104:      typeof(EntityRuntime).Assembly,
+Test\Terraria.NpcAi.HostLifecycleVerification\NpcDeathAuthorityProbe.cs:91:    HashSet<RuntimeEntityHandle> existingHandles = npcs.CreateProjectileTargetSnapshot()
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:25:  private EntityRuntime _entityRuntime;
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:38:    _entityRuntime = new EntityRuntime(_identityRegistry);
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:43:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:46:    _entityRuntime = entityRuntime ?? throw new ArgumentNullException(nameof(entityRuntime));
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:97:    ReferenceEquals(_entityRuntime, session.EntityRuntime);
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:110:        _entityRuntime.TryResolve(reference, out RuntimeEntityHandle handle))
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:200:    EntityRuntime candidateRuntime = session.EntityRuntime;
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:220:    var candidateHandles = new List<RuntimeEntityHandle>(playerCount);
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:238:        RuntimeEntityHandle handle = candidateRuntime.CreateEntity();
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:337:    RuntimeEntityHandle handle = _entityRuntime.CreateEntity();
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:402:        _entityRuntime = new EntityRuntime(_identityRegistry);
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:430:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:443:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:444:    IEnumerable<RuntimeEntityHandle> handles)
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:446:    RuntimeEntityHandle[] ownedHandles = handles.ToArray();
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:447:    foreach (RuntimeEntityHandle handle in ownedHandles)
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:456:    foreach (RuntimeEntityHandle handle in ownedHandles)
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:476:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimePlayerStore.cs:487:    EntityRuntime runtime,
+src\NSSLC\Component\WorldStorage\TileEntityBindingComponent.cs:4:/// Binds a TileEntity's persistent ID and tile-space anchor to its EntityRuntime root.
+src\NSSLC.Tools.Simulation\RuntimePlayerInventoryOwner.cs:17:  private readonly EntityRuntime _entityRuntime;
+src\NSSLC.Tools.Simulation\RuntimePlayerInventoryOwner.cs:18:  private readonly RuntimeEntityHandle _playerHandle;
+src\NSSLC.Tools.Simulation\RuntimePlayerInventoryOwner.cs:30:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimePlayerInventoryOwner.cs:31:    RuntimeEntityHandle playerHandle,
+src\NSSLC.Tools.Simulation\RuntimePlayerInventoryOwner.cs:36:    _entityRuntime = entityRuntime ?? throw new ArgumentNullException(nameof(entityRuntime));
+src\NSSLC.Tools.Simulation\RuntimePlayerInventoryOwner.cs:42:        "The Player inventory owner and Item registry must share one EntityRuntime.",
+src\NSSLC.Tools.Simulation\RuntimePlayerInventoryOwner.cs:124:      if (!_entityRuntime.TryEdit<PlayerInventorySlotsComponent>(
+src\NSSLC.Tools.Simulation\RuntimePlayerInventoryOwner.cs:803:    if (!_entityRuntime.TryEdit<PlayerInventorySlotsComponent>(
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:85:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:98:          !runtime.TryResolve(reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:129:    Func<LoadedWorldSession, EntityRuntime> runtimeForSession,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:168:    EntityRuntime previousRuntime = runtimeForSession(previousSession);
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:169:    if (!ReferenceEquals(previousRuntime, previousSession.EntityRuntime) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:195:    EntityRuntime failedCandidateRuntime = runtimeForSession(failedCandidate);
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:265:    EntityRuntime nextRuntime = runtimeForSession(nextSession);
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:316:    EntityRuntime runtime)
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:330:          !runtime.TryResolve(reference, out RuntimeEntityHandle resolvedHandle) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:365:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:497:    EntityRuntime runtime)
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:501:    if (!runtime.TryResolve(reference, out RuntimeEntityHandle resolvedHandle) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:518:      if (item.IsEmpty || !runtime.TryResolve(item.Entity.Reference, out RuntimeEntityHandle itemHandle) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:555:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:558:    RuntimeEntityHandle[] handles = runtime.Match<
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:562:    foreach (RuntimeEntityHandle handle in handles)
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:597:    EntityRuntime runtime)
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:633:    EntityRuntime runtime)
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:639:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:640:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:689:    RuntimeEntityHandle Handle,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:710:      EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:712:      RuntimeEntityHandle handle)
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:780:      EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:782:      RuntimeEntityHandle handle)
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:799:    RuntimeEntityHandle Handle,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:828:    RuntimeEntityHandle Handle);
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:832:    RuntimeEntityHandle Handle,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:880:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:909:  internal EntityRuntime Runtime { get; }
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:941:  RuntimeEntityHandle Handle);
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:956:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeWorldLoadRollbackVerification.cs:971:  internal EntityRuntime Runtime { get; }
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:18:  private readonly EntityRuntime _entityRuntime;
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:21:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:22:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:27:    _entityRuntime = entityRuntime;
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:56:  public RuntimeEntityHandle RuntimeHandle { get; }
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:232:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:242:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:252:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:262:    if (!_entityRuntime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:271:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:272:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:281:    ArgumentNullException.ThrowIfNull(entityRuntime);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:317:    Attach(entityRuntime, runtimeHandle, identity);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:318:    Attach(entityRuntime, runtimeHandle, deathRecord);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:319:    Attach(entityRuntime, runtimeHandle, rest);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:320:    Attach(entityRuntime, runtimeHandle, sitting);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:321:    Attach(entityRuntime, runtimeHandle, sleeping);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:322:    Attach(entityRuntime, runtimeHandle, ghost);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:323:    Attach(entityRuntime, runtimeHandle, new PlayerDebuffStatusAliasComponent());
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:324:    Attach(entityRuntime, runtimeHandle, new PlayerAccessoryStringEffectComponent());
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:325:    Attach(entityRuntime, runtimeHandle, new PlayerNpcTargetingStateComponent());
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:326:    Attach(entityRuntime, runtimeHandle, new PlayerDodgeAndImmunityStateComponent());
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:327:    Attach(entityRuntime, runtimeHandle, lifecycle);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:328:    Attach(entityRuntime, runtimeHandle, new PlayerVitalState
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:335:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:338:    Attach(entityRuntime, runtimeHandle, new VelocityComponent(0.0f, 0.0f));
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:339:    Attach(entityRuntime, runtimeHandle, collider);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:340:    Attach(entityRuntime, runtimeHandle, new MovementGroundedStateComponent(false));
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:341:    Attach(entityRuntime, runtimeHandle, new PlayerMovementPhysicsStateComponent());
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:342:    Attach(entityRuntime, runtimeHandle, new PlayerContactImmunityComponent(remainingTicks: 0));
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:343:    Attach(entityRuntime, runtimeHandle, new PlayerSpawnPointComponent(spawnPosition));
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:344:    Attach(entityRuntime, runtimeHandle, new PlayerItemUseState());
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:345:    Attach(entityRuntime, runtimeHandle, default(PlayerItemUseIntentComponent));
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:347:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:350:    Attach(entityRuntime, runtimeHandle, new PlayerInventorySlotsComponent());
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:352:    if (!entityRuntime.TryPublishEntity(runtimeHandle))
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:358:      entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:363:    return new RuntimePlayerEntity(entityRuntime, runtimeHandle, slot, weapon, inventory);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:446:    if (!_entityRuntime.TryEdit<PlayerVitalState>(
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:568:    return _entityRuntime.TryEdit(RuntimeHandle, editor);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:573:    return _entityRuntime.TryEdit(RuntimeHandle, editor);
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:578:    if (!_entityRuntime.TryEdit<PlayerItemUseIntentComponent>(
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:589:    if (!_entityRuntime.TryEdit<PlayerItemUseState>(
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:622:    EntityRuntime entityRuntime,
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:623:    RuntimeEntityHandle handle,
+src\NSSLC.Tools.Simulation\RuntimePlayerEntity.cs:627:    if (!entityRuntime.TryAttach(handle, component))
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:35:      ownerEntity.Reference.RuntimeId != _session.EntityRuntime.RuntimeId)
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:81:          out RuntimeEntityHandle handle))
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:143:    if (!_session.EntityRuntime.TryResolve(
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:145:          out RuntimeEntityHandle ownerHandle) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:146:        !_session.EntityRuntime.TryGetStatus(ownerHandle, out EntityRuntimeStatus ownerStatus) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:188:          "An unallocated network item could not be removed from EntityRuntime.");
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:202:          out RuntimeEntityHandle handle))
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:231:        !_session.EntityRuntime.TryReplace<
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:261:    out RuntimeEntityHandle handle)
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:266:        !_session.EntityRuntime.TryResolve(entity.Reference, out handle) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:267:        !_session.EntityRuntime.TryGetStatus(handle, out EntityRuntimeStatus status) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:269:        !_session.EntityRuntime.TryCaptureVersioned<
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:276:          out EntityComponentSnapshot<WorldItemStateProjection> stateSnapshot) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:277:        !_session.EntityRuntime.TryCaptureVersioned<
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:282:          out EntityComponentSnapshot<WorldItemReservationProjection> reservationSnapshot) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:284:        itemEntity.Reference.RuntimeId != _session.EntityRuntime.RuntimeId ||
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:404:    EntityComponentSnapshot<WorldItemStateProjection> Snapshot,
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.NetworkSync.cs:415:    EntityComponentSnapshot<WorldItemReservationProjection> Snapshot)
+src\NSSLC.Tools.Simulation\RuntimeNpcTrainingDummyBinding.cs:10:  RuntimeEntityHandle RuntimeHandle,
+src\NSSLC.Application\Network\SocialProjectileSpawnSnapshot.cs:17:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC.Application\Network\SocialProjectileSpawnSnapshot.cs:86:  public RuntimeEntityHandle RuntimeHandle { get; }
+src\NSSLC.Tools.Simulation\RuntimeNpcTargetSelectionAdapter.cs:122:          out RuntimeEntityHandle runtimeHandle) ||
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.cs:36:    if (!ReferenceEquals(session.EntityRuntime, registry.EntityRuntime))
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.cs:39:        "World item registry and store must share the loaded session EntityRuntime.",
+src\NSSLC.Tools.Simulation\RuntimeWorldItemStore.cs:63:    ReferenceEquals(_session.EntityRuntime, session.EntityRuntime);
+src\NSSLC.Tools.Simulation\RuntimeTileEntityReloadVerification.cs:75:          !previousSession.EntityRuntime.TryResolve(reference, out _))
+src\NSSLC.Tools.Simulation\RuntimeTileEntityReloadVerification.cs:157:        !newSession.EntityRuntime.TryResolve(entity.Reference, out _);
+src\NSSLC.Tools.Simulation\RuntimeTileEntityReloadVerification.cs:160:        newSession.EntityRuntime.TryResolve(reloadedReference, out _);
+src\NSSLC.Tools.Simulation\RuntimeTileEntityReloadVerification.cs:185:        newSession.EntityRuntime.TryResolve(
+src\NSSLC.Tools.Simulation\RuntimeTileEntityReloadVerification.cs:187:          out RuntimeEntityHandle resolvedHandle) &&
+src\NSSLC.Application\Network\SocialNpcEffectSnapshot.cs:17:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC.Application\Network\SocialNpcEffectSnapshot.cs:83:  public RuntimeEntityHandle RuntimeHandle { get; }
+src\NSSLC.Tools.Simulation\RuntimeSteamItemNetworkCommandOwner.cs:136:        expectedRuntimeId != session.EntityRuntime.RuntimeId)
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:56:  private EntityRuntime _entityRuntime;
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:60:  private Dictionary<NpcInstanceId, RuntimeEntityHandle> _handlesByInstanceId = new();
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:79:    _entityRuntime = new EntityRuntime(_identityRegistry);
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:113:        _handlesByInstanceId.TryGetValue(instanceId, out RuntimeEntityHandle handle) &&
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:123:  public bool TryResolveEntityReference(EntityReference reference, out RuntimeEntityHandle handle)
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:155:    EntityRuntime candidateRuntime = session.EntityRuntime;
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:156:    var candidateRootHandles = new List<RuntimeEntityHandle>();
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:157:    var candidateHandles = new Dictionary<NpcInstanceId, RuntimeEntityHandle>();
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:413:      _entityRuntime = new EntityRuntime(_identityRegistry);
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:458:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:459:    IEnumerable<RuntimeEntityHandle> handles,
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:468:    RuntimeEntityHandle[] ownedHandles = handles.ToArray();
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:470:    foreach (RuntimeEntityHandle handle in ownedHandles)
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:480:        bool edited = runtime.TryEdit(
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:501:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:502:    IEnumerable<RuntimeEntityHandle> handles,
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:518:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:519:    IEnumerable<RuntimeEntityHandle> handles)
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:521:    foreach (RuntimeEntityHandle handle in handles.ToArray())
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:573:    EntityRuntime runtime,
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:581:    RuntimeEntityHandle handle = runtime.CreateEntity();
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:930:    RuntimeEntityHandle[] handles = _handlesByInstanceId.Values.ToArray();
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:938:    if (!_handlesByInstanceId.TryGetValue(instanceId, out RuntimeEntityHandle handle) ||
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:1124:        !_entityRuntime.TryResolve(target.Reference, out RuntimeEntityHandle resolvedHandle) ||
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:1482:          out RuntimeEntityHandle parentHandle) ||
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:1483:        !_entityRuntime.TryResolve(relation.ParentReference, out RuntimeEntityHandle referenceHandle) ||
+src\NSSLC.Tools.Simulation\RuntimeNpcStore.cs:1746:        !_entityRuntime.TryResolve(binding.Reference, out RuntimeEntityHandle handle) ||
+Test\NSSLC.Infrastructure.Network.Verification\WorldTimePacketVerification.cs:27:    EntityRuntimeId runtimeId = await owner.InvokeAsync(session => session.EntityRuntime.RuntimeId);
+Test\NSSLC.Infrastructure.Network.Verification\WorldTimePacketVerification.cs:113:      return session.EntityRuntime.RuntimeId;
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:146:        session.EntityRuntime,
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:201:      session.EntityRuntime,
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:249:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:250:    Dictionary<(int Slot, uint Generation), RuntimeEntityHandle> boundNpcs =
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:278:      RuntimeEntityHandle handle = CreateNpcRuntimeEntity(
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:288:  private static Dictionary<(int Slot, uint Generation), RuntimeEntityHandle>
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:289:    BuildNpcBindingIndex(EntityRuntime runtime)
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:291:    var bindings = new Dictionary<(int Slot, uint Generation), RuntimeEntityHandle>();
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:292:    foreach (RuntimeEntityHandle handle in runtime.Match<NpcLegacySlotComponent>())
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:311:  private RuntimeEntityHandle CreateNpcRuntimeEntity(
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:318:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:319:    RuntimeEntityHandle handle = runtime.CreateEntity();
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:409:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:411:    foreach (RuntimeEntityHandle handle in runtime.Match<NpcLegacySlotComponent>())
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:428:    RuntimeEntityHandle handle)
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:430:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:507:    EntityRuntime runtime,
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:572:    if (!runtime.TryEdit<NpcNetworkSyncIntentComponent>(
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:676:    RuntimeEntityHandle handle)
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:678:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:718:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:719:    if (!lifecycle.TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) ||
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:841:      ReferenceEquals(session.EntityRuntime, session.Storage.EntityRuntime);
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:850:    EntityRuntime runtime,
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:851:    RuntimeEntityHandle handle)
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:872:    EntityRuntime runtime,
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:873:    RuntimeEntityHandle handle,
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:885:    EntityRuntime runtime,
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:886:    RuntimeEntityHandle handle)
+src\NSSLC.Application\Network\SocialNpcEffectOwner.cs:905:    RuntimeEntityHandle Handle,
+src\NSSLC.Tools.Simulation\RuntimeNpcProjectileTargetSnapshot.cs:9:  RuntimeEntityHandle RuntimeHandle,
+Test\NSSLC.Infrastructure.Network.Verification\WorldTileMetricsPacketVerification.cs:28:    EntityRuntimeId runtimeId = await owner.InvokeAsync(session => session.EntityRuntime.RuntimeId);
+Test\NSSLC.Infrastructure.Network.Verification\WorldTileMetricsPacketVerification.cs:104:      return session.EntityRuntime.RuntimeId;
+src\NSSLC.Application\Network\ProjectileNetworkCommandSession.cs:9:/// The session query creates this value on the EntityRuntime owner thread.
+src\NSSLC.Application\Network\ProjectileNetworkCommandSession.cs:22:    if (!ReferenceEquals(worldSession.EntityRuntime, worldSession.Storage.EntityRuntime))
+src\NSSLC.Application\Network\ProjectileNetworkCommandSession.cs:25:        "The projectile session must use the world's canonical EntityRuntime.",
+src\NSSLC.Application\Network\ProjectileNetworkCommandOwner.cs:96:    if (!lifecycle.TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) ||
+src\NSSLC.Application\Network\ProjectileNetworkCommandOwner.cs:97:      runtimeHandle.RuntimeId != session.WorldSession.EntityRuntime.RuntimeId)
+src\NSSLC.Application\Network\ProjectileNetworkCommandOwner.cs:147:      session.WorldSession.EntityRuntime.RuntimeId != sender.WorldRuntimeId.Value ||
+src\NSSLC.Application\Network\ProjectileNetworkCommandOwner.cs:148:      !ReferenceEquals(session.WorldSession.EntityRuntime, session.WorldSession.Storage.EntityRuntime))
+Test\Terraria.LeashedEntityVerification\Program.cs:40:static LeashedEntityRegistrationSystem CreateSystem(EntityRuntime runtime)
+Test\Terraria.LeashedEntityVerification\Program.cs:54:static EntityReference CreateExternalRoot(EntityRuntime runtime)
+Test\Terraria.LeashedEntityVerification\Program.cs:56:  RuntimeEntityHandle handle = runtime.CreateEntity();
+Test\Terraria.LeashedEntityVerification\Program.cs:64:  EntityRuntime runtime,
+Test\Terraria.LeashedEntityVerification\Program.cs:67:  if (!runtime.TryResolve(anchorReference, out RuntimeEntityHandle handle))
+Test\Terraria.LeashedEntityVerification\Program.cs:80:  EntityRuntime runtime,
+Test\Terraria.LeashedEntityVerification\Program.cs:83:  Require(runtime.TryResolve(memberReference, out RuntimeEntityHandle handle),
+Test\Terraria.LeashedEntityVerification\Program.cs:125:  using EntityRuntime runtime = new();
+Test\Terraria.LeashedEntityVerification\Program.cs:126:  using EntityRuntime otherRuntime = new();
+Test\Terraria.LeashedEntityVerification\Program.cs:137:  Require(runtime.TryResolve(first.RuntimeEntityReference, out RuntimeEntityHandle firstRoot),
+Test\Terraria.LeashedEntityVerification\Program.cs:171:  using EntityRuntime runtime = new();
+Test\Terraria.LeashedEntityVerification\Program.cs:221:  using EntityRuntime runtime = new();
+Test\Terraria.LeashedEntityVerification\Program.cs:253:  using EntityRuntime runtime = new();
+Test\Terraria.LeashedEntityVerification\Program.cs:268:  Require(runtime.TryResolve(oldAnchor, out RuntimeEntityHandle oldAnchorHandle),
+Test\Terraria.LeashedEntityVerification\Program.cs:293:  Require(runtime.TryResolve(member.RuntimeEntityReference, out RuntimeEntityHandle memberHandle),
+Test\Terraria.LeashedEntityVerification\Program.cs:349:  using EntityRuntime runtime = new();
+Test\Terraria.LeashedEntityVerification\Program.cs:364:  Require(runtime.TryResolve(target, out RuntimeEntityHandle targetHandle)
+Test\Terraria.LeashedEntityVerification\Program.cs:403:  using EntityRuntime runtime = new();
+Test\Terraria.LeashedEntityVerification\Program.cs:439:  using EntityRuntime runtime = new();
+Test\Terraria.LeashedEntityVerification\Program.cs:545:  using EntityRuntime runtime = new();
+Test\Terraria.LeashedEntityVerification\Program.cs:553:  Require(runtime.TryResolve(anchorReference, out RuntimeEntityHandle anchorHandle),
+src\NSSLC\Component\Relationships\System\RuntimeEntityHandle.cs:5:public readonly record struct RuntimeEntityHandle
+src\NSSLC\Component\Relationships\System\RuntimeEntityHandle.cs:7:  public RuntimeEntityHandle(EntityRuntimeId runtimeId, int localIndex, uint generation)
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:17:    using var runtime = new EntityRuntime();
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:18:    RuntimeEntityHandle itemHandle = runtime.CreateEntity();
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:19:    RuntimeEntityHandle firstPlayerHandle = runtime.CreateEntity();
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:20:    RuntimeEntityHandle secondPlayerHandle = runtime.CreateEntity();
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:23:      "EntityRuntime attaches world-item location");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:25:      "EntityRuntime attaches world-item velocity");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:27:      "EntityRuntime attaches the source 16×16 world-item collider");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:31:      "EntityRuntime attaches world-item lifetime");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:34:      "EntityRuntime attaches replication state");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:36:      "EntityRuntime attaches reservation state");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:38:      "EntityRuntime publishes the world item");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:40:      "EntityRuntime publishes first player identity");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:42:      "EntityRuntime publishes second player identity");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:239:    bool changedReplicationId = runtime.TryEdit<WorldItemStateComponent>(
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:245:    Assert(changedReplicationId, "EntityRuntime updates the item replication id");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:264:    EntityRuntime runtime,
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:265:    RuntimeEntityHandle handle,
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:269:    Assert(found, "EntityRuntime returns a scoped entity reference");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:274:    EntityRuntime runtime,
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:275:    RuntimeEntityHandle itemHandle,
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:301:    Assert(edited, "EntityRuntime edits world-item reservation components");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:306:    EntityRuntime runtime,
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:307:    RuntimeEntityHandle itemHandle,
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:332:    Assert(edited, "EntityRuntime edits world-item reservation components");
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:337:    EntityRuntime runtime,
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:338:    RuntimeEntityHandle itemHandle)
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:350:    EntityRuntime runtime,
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:351:    RuntimeEntityHandle itemHandle,
+Test\Terraria.Items.Verification\WorldItemReservationVerification.cs:369:    Assert(inspected, "EntityRuntime inspects reservation state");
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:582:      session => session.EntityRuntime.TryResolve(item.Reference, out _)).ConfigureAwait(false);
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:611:      session => session.EntityRuntime.TryResolve(item.Reference, out _)).ConfigureAwait(false);
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:681:    EntityRuntime runtime = session.EntityRuntime;
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:682:    RuntimeEntityHandle handle = runtime.CreateEntity();
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:720:    if (!session.EntityRuntime.TryResolve(item.Reference, out RuntimeEntityHandle handle) ||
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:721:      !session.EntityRuntime.TryCapture(
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:725:      !session.EntityRuntime.TryCapture(
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:729:      !session.EntityRuntime.TryCapture(
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:733:      !session.EntityRuntime.TryCapture(
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:737:      !session.EntityRuntime.TryCapture(
+Test\Terraria.Items.NetworkOwner.Verification\NetworkWorldItemOwnerVerification.cs:741:      !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\WorldStorage\Loading\LoadedWorldSession.cs:15:  private readonly EntityRuntime _entityRuntime;
+src\NSSLC.Application\WorldStorage\Loading\LoadedWorldSession.cs:28:    _entityRuntime = new EntityRuntime(_identityRegistry);
+src\NSSLC.Application\WorldStorage\Loading\LoadedWorldSession.cs:32:  public EntityRuntime EntityRuntime {
+Test\NSSLC.Infrastructure.Network.Verification\ProjectileNetworkCommandOwnerGatewayVerification.cs:25:    RuntimeEntityHandle RuntimeHandle,
+Test\NSSLC.Infrastructure.Network.Verification\ProjectileNetworkCommandOwnerGatewayVerification.cs:200:          "Projectile lifecycle work escaped the EntityRuntime owner thread.");
+Test\NSSLC.Infrastructure.Network.Verification\ProjectileNetworkCommandOwnerGatewayVerification.cs:941:          out RuntimeEntityHandle runtimeHandle))
+Test\NSSLC.Infrastructure.Network.Verification\ProjectileNetworkCommandOwnerGatewayVerification.cs:955:    bool definitionFound = world.EntityRuntime.TryInspect<ProjectileDefinitionComponent>(
+Test\NSSLC.Infrastructure.Network.Verification\ProjectileNetworkCommandOwnerGatewayVerification.cs:989:      world.EntityRuntime.EntityCount));
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:14:/// state on its EntityRuntime thread.
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:273:      item.Reference.RuntimeId != session.EntityRuntime.RuntimeId ||
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:382:      expectedRuntimeId != session.EntityRuntime.RuntimeId ||
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:411:        out RuntimeEntityHandle itemHandle,
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:429:    if (!session.EntityRuntime.TryBeginTermination(itemHandle))
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:434:    if (!session.EntityRuntime.TryRemoveEntity(itemHandle))
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:462:      expectedRuntimeId != session.EntityRuntime.RuntimeId ||
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:519:        out RuntimeEntityHandle itemHandle,
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:558:    bool edited = session.EntityRuntime.TryEditComponents<
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:637:    out RuntimeEntityHandle handle,
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:641:      item.Reference.RuntimeId != session.EntityRuntime.RuntimeId ||
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:642:      !session.EntityRuntime.TryResolve(item.Reference, out handle) ||
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:643:      !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:651:      !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:655:      !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:659:      !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:663:      !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:673:      !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkWorldItemOwner.cs:677:      !session.EntityRuntime.TryCapture(
+Test\NSSLC.Infrastructure.Network.Verification\PlayerSessionLifecycleVerification.cs:15:    EntityRuntimeId runtimeId = await world.InvokeAsync(session => session.EntityRuntime.RuntimeId);
+Test\NSSLC.Infrastructure.Network.Verification\PlayerSessionLifecycleVerification.cs:85:        session.EntityRuntime.TryResolve(oldPlayer.Reference, out _)),
+Test\NSSLC.Infrastructure.Network.Verification\PlayerSessionLifecycleVerification.cs:99:          session.EntityRuntime.TryResolve(newPlayer.Reference, out _)),
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:143:    bool edited = session.EntityRuntime.TryEditPair<
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:237:    RuntimeEntityHandle playerHandle,
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:241:    if (!session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:247:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:261:    if (selectedItem.RuntimeId != session.EntityRuntime.RuntimeId ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:263:        !session.EntityRuntime.TryResolve(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:264:          selectedItem.Reference, out RuntimeEntityHandle itemHandle))
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:270:    if (session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:277:    else if (session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:334:    if (!session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:359:          !session.EntityRuntime.TryResolve(candidate.Reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:420:    if (!session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:425:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:429:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:446:      session.EntityRuntime.TryResolve(target.Reference, out RuntimeEntityHandle targetHandle) &&
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:449:      session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:453:      session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:465:      if (!session.EntityRuntime.TryResolve(candidate.Reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:467:          !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:471:          !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:476:          !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:480:          !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:521:    bool edited = session.EntityRuntime.TryEdit<PlayerLifecycleComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:671:      !session.EntityRuntime.TryResolve(target.Reference, out RuntimeEntityHandle targetHandle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:727:      !session.EntityRuntime.TryResolve(sender.Reference, out RuntimeEntityHandle senderHandle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:729:      !session.EntityRuntime.TryResolve(target.Reference, out RuntimeEntityHandle targetHandle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:736:    if (!session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:740:      !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:884:    RuntimeEntityHandle handle,
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:887:    EntityRuntime runtime = session.EntityRuntime;
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:1011:      // Capture optional inputs before editing the luck component. EntityRuntime
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:1037:    EntityRuntime runtime,
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:1038:    RuntimeEntityHandle handle,
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:1043:    bool edited = runtime.TryEdit(handle, (ref TComponent component) =>
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:1049:    EntityRuntime runtime,
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:1050:    RuntimeEntityHandle handle,
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:1105:    EntityRuntime runtime,
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:1106:    RuntimeEntityHandle handle)
+src\NSSLC.Application\Network\NetworkPlayerOwner.State.cs:1115:  private static bool CaptureStinky(EntityRuntime runtime, RuntimeEntityHandle handle)
+Test\NSSLC.Infrastructure.Network.Verification\PlayerNetworkOwnerVerification.cs:16:      session => session.EntityRuntime.RuntimeId);
+Test\NSSLC.Infrastructure.Network.Verification\PlayerNetworkOwnerVerification.cs:76:    Verify.That(!await owner.InvokeAsync(session => session.EntityRuntime.TryResolve(
+Test\NSSLC.Infrastructure.Network.Verification\PlayerNetworkOwnerVerification.cs:120:      !await owner.InvokeAsync(session => session.EntityRuntime.TryResolve(
+src\NSSLC.Application\Network\NetworkPlayerOwner.Loadout.cs:100:    if (!session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.Loadout.cs:111:    bool edited = session.EntityRuntime.TryEditComponents<
+Test\NSSLC.Infrastructure.Network.Verification\PlayerLifecycleHandlerAcceptanceVerification.cs:30:      session => session.EntityRuntime.RuntimeId);
+Test\NSSLC.Infrastructure.Network.Verification\PlayerLifecycleHandlerAcceptanceVerification.cs:131:      if (!session.EntityRuntime.TryResolve(playerReference, out RuntimeEntityHandle playerHandle)) {
+Test\NSSLC.Infrastructure.Network.Verification\PlayerLifecycleHandlerAcceptanceVerification.cs:135:      RuntimeEntityHandle itemHandle = session.EntityRuntime.CreateEntity();
+Test\NSSLC.Infrastructure.Network.Verification\PlayerLifecycleHandlerAcceptanceVerification.cs:136:      if (!session.EntityRuntime.TryAttach(itemHandle, new ItemDefinitionComponent(9001)) ||
+Test\NSSLC.Infrastructure.Network.Verification\PlayerLifecycleHandlerAcceptanceVerification.cs:137:          !session.EntityRuntime.TryPublishEntity(itemHandle) ||
+Test\NSSLC.Infrastructure.Network.Verification\PlayerLifecycleHandlerAcceptanceVerification.cs:138:          !session.EntityRuntime.TryGetReference(
+Test\NSSLC.Infrastructure.Network.Verification\PlayerLifecycleHandlerAcceptanceVerification.cs:140:          !session.EntityRuntime.TryEdit<PlayerInventorySlotsComponent>(
+Test\NSSLC.Infrastructure.Network.Verification\PlayerLifecycleHandlerAcceptanceVerification.cs:157:      if (!session.EntityRuntime.TryResolve(playerReference, out RuntimeEntityHandle playerHandle) ||
+Test\NSSLC.Infrastructure.Network.Verification\PlayerLifecycleHandlerAcceptanceVerification.cs:158:          !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:86:/// RuntimeEntityHandle remain the sole identity source; every public result is detached.
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:335:    RuntimeEntityHandle handle = session.EntityRuntime.CreateEntity();
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:339:      if (!session.EntityRuntime.TryPublishEntity(handle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:340:          !session.EntityRuntime.TryGetReference(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:365:      RemoveUnpublishedEntity(session.EntityRuntime, handle);
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:413:    if (!session.EntityRuntime.TryResolve(bound.Reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:431:        expectedRuntimeId != session.EntityRuntime.RuntimeId)
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:494:    bool capturedPendingTeleport = session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:521:    bool spatialEdited = session.EntityRuntime.TryEditPair<LocationComponent, VelocityComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:545:        !session.EntityRuntime.TryEdit<PlayerInventoryComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:555:        !session.EntityRuntime.TryEdit<PlayerNetworkStateComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:565:    if (!session.EntityRuntime.TryEdit<PlayerNetworkStateComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:584:    if (!session.EntityRuntime.TryEdit<PlayerMountComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:605:    if (!session.EntityRuntime.TryEdit<PlayerNetworkCameraStateComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:643:          !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:662:    bool edited = session.EntityRuntime.TryEditComponents<
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:679:    if (!applied || !session.EntityRuntime.TryEdit<PlayerAppearanceSelectionComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:722:          !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:766:    bool edited = session.EntityRuntime.TryEditComponents<
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:811:    if (!session.EntityRuntime.TryReplace(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:813:        !session.EntityRuntime.TryEdit<LocationComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:839:    bool edited = session.EntityRuntime.TryEdit<PlayerIdentityComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:885:      ? session.EntityRuntime.TryEdit<PlayerVitalStateComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:889:      : session.EntityRuntime.TryEditPair<
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:925:    bool edited = session.EntityRuntime.TryEdit<PlayerBuffSlotsComponent>(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:970:    if (!session.EntityRuntime.TryResolve(bound.Reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1035:        !session.EntityRuntime.TryResolve(bound.Reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1057:      playerEntity.Reference.RuntimeId != session.EntityRuntime.RuntimeId)
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1067:        !session.EntityRuntime.TryResolve(bound.Reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1120:      runtimeId == session.EntityRuntime.RuntimeId;
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1125:    RuntimeEntityHandle handle,
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1142:    Attach(session.EntityRuntime, handle, identity);
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1143:    Attach(session.EntityRuntime, handle, lifecycle);
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1144:    Attach(session.EntityRuntime, handle, new PlayerDeathRecordComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1145:    Attach(session.EntityRuntime, handle, new PlayerRestComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1146:    Attach(session.EntityRuntime, handle, new PlayerSittingComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1147:    Attach(session.EntityRuntime, handle, new PlayerSleepingComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1148:    Attach(session.EntityRuntime, handle, new PlayerGhostStateComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1149:    Attach(session.EntityRuntime, handle, new PlayerVitalStateComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1150:    Attach(session.EntityRuntime, handle, new PlayerNetworkStateComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1151:    Attach(session.EntityRuntime, handle, new PlayerNetworkCameraStateComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1152:    Attach(session.EntityRuntime, handle, new PlayerSpawnPointComponent(spawnPosition));
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1153:    Attach(session.EntityRuntime, handle,
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1155:    Attach(session.EntityRuntime, handle, new VelocityComponent(0.0f, 0.0f));
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1156:    Attach(session.EntityRuntime, handle,
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1158:    Attach(session.EntityRuntime, handle, new PlayerInventoryComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1159:    Attach(session.EntityRuntime, handle, new PlayerInventorySlotsComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1160:    Attach(session.EntityRuntime, handle, new PlayerEquipmentRelationComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1161:    Attach(session.EntityRuntime, handle, new PlayerEquipmentComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1162:    Attach(session.EntityRuntime, handle, new PlayerLoadoutStateComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1163:    Attach(session.EntityRuntime, handle, new PlayerAppearanceCustomizationComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1164:    Attach(session.EntityRuntime, handle, new PlayerAppearanceSelectionComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1165:    Attach(session.EntityRuntime, handle, new PlayerBuffSlotsComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1166:    Attach(session.EntityRuntime, handle, new PlayerBuffComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1167:    Attach(session.EntityRuntime, handle, new PlayerZoneAndEnvironmentStateComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1168:    Attach(session.EntityRuntime, handle, new PlayerLuckAndRescanStateComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1169:    Attach(session.EntityRuntime, handle, new PlayerQuestEventProgressComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1170:    Attach(session.EntityRuntime, handle, new PlayerHeldItemPresentationStateComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1171:    Attach(session.EntityRuntime, handle, new PlayerMountComponent());
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1178:    if (!session.EntityRuntime.TryResolve(bound.Reference, out RuntimeEntityHandle handle) ||
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1184:    if (!session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1194:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1203:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1207:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1211:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1216:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1229:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1238:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1242:        !session.EntityRuntime.TryCapture(
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1252:      session.EntityRuntime.RuntimeId,
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1289:    if (session.EntityRuntime.TryGetStatus(bound.Handle, out EntityRuntimeStatus status))
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1292:          !session.EntityRuntime.TryBeginTermination(bound.Handle))
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1297:      if (!session.EntityRuntime.TryRemoveEntity(bound.Handle))
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1311:  private static void RemoveUnpublishedEntity(EntityRuntime runtime, RuntimeEntityHandle handle)
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1325:    EntityRuntime runtime,
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1326:    RuntimeEntityHandle handle,
+src\NSSLC.Application\Network\NetworkPlayerOwner.cs:1340:    RuntimeEntityHandle Handle,
+Test\NSSLC.Infrastructure.Network.Verification\PlayerExtendedPacketVerification.cs:20:      session => session.EntityRuntime.RuntimeId);
+Test\NSSLC.Infrastructure.Network.Verification\PlayerExtendedPacketVerification.cs:81:      session.EntityRuntime.TryResolve(firstReference, out RuntimeEntityHandle firstHandle) &&
+Test\NSSLC.Infrastructure.Network.Verification\PlayerExtendedPacketVerification.cs:82:      session.EntityRuntime.TryCapture(
+Test\NSSLC.Infrastructure.Network.Verification\PlayerExtendedPacketVerification.cs:86:      session.EntityRuntime.TryCapture(
+Test\NSSLC.Infrastructure.Network.Verification\PlayerExtendedPacketVerification.cs:112:      session.EntityRuntime.TryResolve(firstReference, out RuntimeEntityHandle firstHandle) &&
+Test\NSSLC.Infrastructure.Network.Verification\PlayerExtendedPacketVerification.cs:113:      session.EntityRuntime.TryCapture(firstHandle,
+Test\NSSLC.Infrastructure.Network.Verification\PlayerExtendedPacketVerification.cs:129:      session.EntityRuntime.TryResolve(firstReference, out RuntimeEntityHandle firstHandle) &&
+Test\NSSLC.Infrastructure.Network.Verification\PlayerExtendedPacketVerification.cs:130:      session.EntityRuntime.TryEdit<PlayerNetworkStateComponent>(
+src\NSSLC.Application\Network\IProjectileNetworkOwnerThreadScheduler.cs:3:/// <summary>Schedules ECS-mutating network owner work on its EntityRuntime owner thread.</summary>
+src\NSSLC.Application\Network\IProjectileNetworkOwnerThreadScheduler.cs:7:  /// Queues the synchronous operation for the owning EntityRuntime thread. Implementations must
+src\NSSLC.Application\Network\IProjectileNetworkCommandSessionQuery.cs:12:  /// This method is called on the EntityRuntime owner thread.
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:24:    RuntimeEntityHandle handle = await owner.InvokeAsync(CreateLocatedEntity);
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:41:    RuntimeEntityHandle handle = await owner.InvokeAsync(CreateLocatedEntity);
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:78:    RuntimeEntityHandle handle = await owner.InvokeAsync(CreateLocatedEntity);
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:126:  private static RuntimeEntityHandle CreateLocatedEntity(LoadedWorldSession session) {
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:127:    RuntimeEntityHandle handle = session.EntityRuntime.CreateEntity();
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:128:    Verify.That(session.EntityRuntime.TryAttach(handle, new LocationComponent(1, 2))
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:129:        && session.EntityRuntime.TryPublishEntity(handle),
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:135:      RuntimeEntityHandle handle) {
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:137:    Verify.That(session.EntityRuntime.TryInspect<LocationComponent>(handle,
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:143:  private static void SetLocationX(LoadedWorldSession session, RuntimeEntityHandle handle,
+Test\NSSLC.Infrastructure.Network.Verification\NetworkWorldOwnerVerification.cs:145:    Verify.That(session.EntityRuntime.TryEdit<LocationComponent>(handle,
+Test\NSSLC.Infrastructure.Network.Verification\GatewayLoopbackVerification.cs:17:        session => session.EntityRuntime.RuntimeId);
+Test\Terraria.TileEntityVerification\Program.cs:57:  using EntityRuntime runtime = new();
+Test\Terraria.TileEntityVerification\Program.cs:75:  Require(runtime.TryResolve(dummyById, out RuntimeEntityHandle dummyHandle),
+Test\Terraria.TileEntityVerification\Program.cs:77:  Require(runtime.TryResolve(sensorById, out RuntimeEntityHandle sensorHandle),
+Test\Terraria.TileEntityVerification\Program.cs:114:  using EntityRuntime runtime = new();
+Test\Terraria.TileEntityVerification\Program.cs:268:  using EntityRuntime runtime = new();
+Test\Terraria.TileEntityVerification\Program.cs:284:  Require(runtime.TryResolve(dummyReference, out RuntimeEntityHandle dummyHandle),
+Test\Terraria.TileEntityVerification\Program.cs:371:  using EntityRuntime firstRuntime = new();
+Test\Terraria.TileEntityVerification\Program.cs:410:  using EntityRuntime secondRuntime = new();
+Test\Terraria.TileEntityVerification\Program.cs:427:  using EntityRuntime runtime = new();
+src\NSSLC\Component\WorldStorage\System\WorldStorageRoot.cs:12:    EntityRuntime entityRuntime,
+src\NSSLC\Component\WorldStorage\System\WorldStorageRoot.cs:15:    EntityRuntime = entityRuntime ?? throw new ArgumentNullException(nameof(entityRuntime));
+src\NSSLC\Component\WorldStorage\System\WorldStorageRoot.cs:31:    TileEntities = new TileEntityStore(EntityRuntime, TileEntityUpdates);
+src\NSSLC\Component\WorldStorage\System\WorldStorageRoot.cs:34:  public EntityRuntime EntityRuntime { get; }
+src\NSSLC\Component\WorldStorage\System\WorldStorageRoot.cs:37:  public EntityRuntime ProjectileRuntime => EntityRuntime;
+src\NSSLC\Component\WorldStorage\System\WorldStorageRoot.cs:39:  public EntityRuntime TileEntityRuntime => EntityRuntime;
+Test\Terraria.NpcAi.TargetHostVerification\Program.cs:473:    var runtimeItems = new RuntimeItemRegistry(catalog, session.EntityRuntime);
+Test\Terraria.NpcAi.TargetHostVerification\Program.cs:474:    var runtimePlayers = new RuntimePlayerStore(session.EntityRuntime, identityRegistry);
+Test\Terraria.NpcAi.TargetHostVerification\Program.cs:940:          typeof(EntityRuntime).Assembly,
+Test\Terraria.ProjectileCombatVerification\ProjectileVerificationAccess.cs:56:    if (!lifecycle.TryEdit(handle, editor))
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:32:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:54:      lifecycle.TryGetRuntimeHandle(firstHandle, out RuntimeEntityHandle firstRuntimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:161:      lifecycle.TryGetRuntimeHandle(secondHandle, out RuntimeEntityHandle secondRuntimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:196:        out RuntimeEntityHandle replacementRuntimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:259:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:260:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:270:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:271:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:284:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:285:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:304:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:305:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:323:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileDefinitionHydrationVerification.cs:324:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:29:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:138:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:180:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:229:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:270:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:311:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:356:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:406:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:459:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:499:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:553:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:592:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:635:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:648:      lifecycle.TryGetRuntimeHandle(handle, out RuntimeEntityHandle projectileRuntimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:652:      runtime.TryEdit<ProjectileTrailCacheComponent>(
+Test\Terraria.ProjectileCombatVerification\ProjectileTickCoordinatorVerification.cs:656:      "The prior trail point should be seeded through the owning EntityRuntime.");
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:25:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:48:    Assert(lifecycle.TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:131:    Assert(runtime.TryEdit<LocationComponent>(
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:135:    Assert(runtime.TryEdit<ColliderComponent>(
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:160:    Assert(runtime.TryEdit<ProjectileHitImmunityStateComponent>(
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:245:      out RuntimeEntityHandle sameDefinitionRuntimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:280:      runtime.TryEdit<ProjectileHitImmunityStateComponent>(
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:329:    Assert(lifecycle.TryGetRuntimeHandle(staticHandle, out RuntimeEntityHandle staticRuntimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:530:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:531:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:552:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:553:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:575:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:576:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:586:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileDamageCandidateVerification.cs:587:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileNetworkApplyVerification.cs:28:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileNetworkApplyVerification.cs:52:      lifecycle.TryGetRuntimeHandle(firstHandle, out RuntimeEntityHandle firstRuntimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileNetworkApplyVerification.cs:88:      lifecycle.TryGetRuntimeHandle(updatedHandle, out RuntimeEntityHandle updatedRuntimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileNetworkApplyVerification.cs:130:        out RuntimeEntityHandle replacementRuntimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileNetworkApplyVerification.cs:207:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileNetworkApplyVerification.cs:208:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileNetworkApplyVerification.cs:218:    EntityRuntime runtime,
+Test\Terraria.ProjectileCombatVerification\ProjectileNetworkApplyVerification.cs:219:    RuntimeEntityHandle runtimeHandle)
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:28:    using var entityRuntime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:29:    using var world = new WorldStorageRoot(entityRuntime);
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:45:    if (!lifecycle.TryGetRuntimeHandle(first, out RuntimeEntityHandle firstRuntimeHandle))
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:62:      world.ProjectileRuntime.TryResolve(firstReference, out RuntimeEntityHandle firstRoot) &&
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:123:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:178:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:266:    using var entityRuntime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:267:    using var world = new WorldStorageRoot(entityRuntime);
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:316:    using var tieRuntime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:354:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:406:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:439:    using var duplicateRuntime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:476:    using var importantRuntime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:514:    using var highLifetimeRuntime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:543:    using var tiedRuntime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:573:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:613:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:620:    Assert(lifecycle.TryGetRuntimeHandle(original, out RuntimeEntityHandle originalRoot),
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:657:    Assert(lifecycle.TryGetRuntimeHandle(original, out RuntimeEntityHandle currentRoot) &&
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:685:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:692:    Assert(lifecycle.TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle),
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:741:    using var runtime = new EntityRuntime();
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:750:    Assert(lifecycle.TryGetRuntimeHandle(original, out RuntimeEntityHandle originalRoot),
+Test\Terraria.ProjectileCombatVerification\ProjectileLifecycleVerification.cs:778:    Assert(lifecycle.TryGetRuntimeHandle(original, out RuntimeEntityHandle currentRoot) &&
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:104:    RuntimeEntityHandle sourceHandle = Resolve(fixture.Runtime, source.Entity);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:106:      fixture.Runtime.TryEdit<ItemInstanceComponent>(
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:144:    RuntimeEntityHandle splitHandle = Resolve(fixture.Runtime, split.Entity);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:182:    RuntimeEntityHandle itemHandle = Resolve(fixture.Runtime, drop.Entity);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:244:      playerWasBorrowed = fixture.Runtime.TryEdit<PlayerInventorySlotsComponent>(
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:281:    RuntimeEntityHandle secondPlayerHandle = CreatePlayer(fixture.Runtime);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:301:      fixture.Runtime.TryEdit<PlayerInventorySlotsComponent>(
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:331:    using var foreignRuntime = new EntityRuntime();
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:333:    RuntimeEntityHandle foreignPlayerHandle = CreatePlayer(foreignRuntime);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:349:      "an Item registry must reject a Player relation from another EntityRuntime");
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:367:      "a Player owner must reject an Item registry bound to a different EntityRuntime");
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:369:    RuntimeEntityHandle expiredPlayerHandle = CreatePlayer(fixture.Runtime);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:453:      fixture.Runtime.TryEdit<ItemStackComponent>(
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:630:      RuntimeEntityHandle handle = Resolve(fixture.Runtime, drop.Entity);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:683:      fixture.Runtime.TryEdit<ItemStackComponent>(
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:752:      var registry = new RuntimeItemRegistry(catalog, session.EntityRuntime);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:754:      using var players = new RuntimePlayerStore(session.EntityRuntime, session.IdentityRegistry);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:757:        worldItems.ActiveCount == 1 && session.EntityRuntime.EntityCount == 1,
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:763:        session.EntityRuntime.EntityCount == 0,
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:769:      var registry = new RuntimeItemRegistry(catalog, session.EntityRuntime);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:786:        session.EntityRuntime.EntityCount == 0,
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:793:    RuntimeEntityHandle handle = Resolve(fixture.Runtime, item);
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:844:      fixture.Runtime.TryEdit<PlayerInventorySlotsComponent>(
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:871:      fixture.Runtime.TryEdit<ItemStackComponent>(
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:933:      fixture.Runtime.TryEdit<PlayerInventorySlotsComponent>(
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:939:  private static RuntimeEntityHandle CreatePlayer(EntityRuntime runtime)
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:941:    RuntimeEntityHandle handle = runtime.CreateEntity();
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:951:  private static RuntimeEntityHandle Resolve(EntityRuntime runtime, ItemEntityRef item)
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:953:    Require(runtime.TryResolve(item.Reference, out RuntimeEntityHandle handle),
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:982:    public EntityRuntime Runtime { get; } = new();
+Test\Terraria.PlayerItemSpaceVerification\RuntimeItemOwnershipVerification.cs:984:    public RuntimeEntityHandle PlayerHandle { get; }
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:13:  private readonly EntityRuntime _runtime;
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:19:  public TileEntityStore(EntityRuntime runtime, TileEntityUpdateSchedule updates)
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:187:    bool edited = _runtime.TryEdit<TileEntityLogicSensorComponent>(
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:214:    bool edited = _runtime.TryEdit<TileEntityTrainingDummyComponent>(
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:313:    var retainedHandles = new HashSet<RuntimeEntityHandle>();
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:314:    var createdHandles = new List<RuntimeEntityHandle>();
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:351:        RuntimeEntityHandle handle = CreateRuntimeEntity(entity);
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:379:      foreach (RuntimeEntityHandle handle in createdHandles)
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:396:        foreach (RuntimeEntityHandle handle in createdHandles)
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:426:  private RuntimeEntityHandle CreateRuntimeEntity(TileEntitySnapshot entity)
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:428:    RuntimeEntityHandle handle = _runtime.CreateEntity();
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:549:    RuntimeEntityHandle handle,
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:555:      return _runtime.TryEdit<TileEntityTrainingDummyComponent>(
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:563:      return _runtime.TryEdit<TileEntityLogicSensorComponent>(
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:583:        0 => _runtime.TryEdit<TileEntityTrainingDummyComponent>(
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:587:        2 => _runtime.TryEdit<TileEntityLogicSensorComponent>(
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:605:  private bool CanRetire(RuntimeEntityHandle handle)
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:610:  private bool RetireRuntimeEntity(RuntimeEntityHandle handle)
+src\NSSLC\Component\WorldStorage\System\TileEntityStore.cs:631:    RuntimeEntityHandle Handle,
+src\NSSLC\Component\WorldStorage\System\TileEntityRecord.cs:15:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC\Component\WorldStorage\System\TileEntityRecord.cs:39:  internal RuntimeEntityHandle RuntimeHandle { get; }
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:21:  private readonly EntityRuntime _runtime;
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:68:        out RuntimeEntityHandle runtimeHandle))
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:102:          out RuntimeEntityHandle stepRuntimeHandle))
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:137:          out RuntimeEntityHandle preparedRuntimeHandle) ||
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:216:          out RuntimeEntityHandle currentRuntimeHandle) ||
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:284:    out RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:297:    RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:321:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:325:      !_runtime.TryEdit<ProjectileBehaviorStateComponent>(
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:333:      !_runtime.TryEdit<ProjectileTrajectoryStateComponent>(
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:342:      !_runtime.TryEdit<MotionHistoryComponent>(
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:355:    if (!TryGetActiveRuntimeHandle(context.Handle, out RuntimeEntityHandle runtimeHandle) ||
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:395:    if (!_runtime.TryEdit<ProjectileTrailCacheComponent>(
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:418:          out RuntimeEntityHandle afterDustRuntimeHandle) &&
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:425:  private TComponent Read<TComponent>(RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileTickCoordinator.cs:441:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC\Component\Projectile\System\ProjectileTickContext.cs:17:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC\Component\Projectile\System\ProjectileTickContext.cs:57:  public RuntimeEntityHandle RuntimeHandle { get; }
+src\NSSLC\Component\Projectile\System\ProjectileStaticNpcImmunitySystem.cs:95:    EntityRuntime runtime,
+src\NSSLC\Component\Projectile\System\ProjectileStaticNpcImmunitySystem.cs:109:        out RuntimeEntityHandle runtimeHandle))
+src\NSSLC\Component\Projectile\System\ProjectileStaticNpcImmunitySystem.cs:133:        out RuntimeEntityHandle runtimeHandle))
+src\NSSLC\Component\Projectile\System\ProjectileStaticNpcImmunitySystem.cs:138:      if (!runtime.TryEdit<ProjectileHitImmunityStateComponent>(
+src\NSSLC\Component\Projectile\System\ProjectileStaticNpcImmunitySystem.cs:154:    EntityRuntime runtime,
+src\NSSLC\Component\Projectile\System\ProjectileStaticNpcImmunitySystem.cs:155:    out RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:22:  private readonly EntityRuntime _runtime;
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:24:  internal EntityRuntime Runtime => _runtime;
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:38:    EntityRuntime runtime)
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:125:      if (!TryGetRuntimeHandle(existingHandle, out RuntimeEntityHandle existingRuntimeHandle))
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:289:      out RuntimeEntityHandle previousRuntimeHandle))
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:345:    RuntimeEntityHandle replacementRuntimeHandle = replacementState.RuntimeHandle;
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:462:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:507:    out RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:531:    return TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) &&
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:535:  public bool TryEdit<TComponent>(
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:541:    return TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) &&
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:542:      _runtime.TryEdit(runtimeHandle, editor);
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:549:    if (!TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle))
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:591:    if (TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) &&
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:611:    out RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:688:    if (!TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) ||
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:711:    if (!TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) ||
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:785:    out RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:825:  private TComponent ReadComponent<TComponent>(RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:888:    RuntimeEntityHandle runtimeHandle = _runtime.CreateEntity();
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:963:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:974:  private void RemoveRuntimeEntity(RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:1047:  public ProjectileRootBinding(RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\Projectile\System\ProjectileLifecycleSystem.cs:1058:  public RuntimeEntityHandle RuntimeHandle { get; }
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:12:/// external callbacks and rely on EntityRuntime's owner-thread access contract to prevent an
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:18:  private readonly EntityRuntime _runtime;
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:27:    EntityRuntime runtime,
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:59:    RuntimeEntityHandle runtimeHandle = _runtime.CreateEntity();
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:220:        !_runtime.TryResolve(member.RuntimeEntityReference, out RuntimeEntityHandle memberHandle) ||
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:346:    bool targetExists = _runtime.TryResolve(targetReference, out RuntimeEntityHandle targetHandle);
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:367:          !_runtime.TryResolve(memberReference, out RuntimeEntityHandle memberHandle))
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:436:        out RuntimeEntityHandle runtimeHandle) ||
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:555:    if (_runtime.TryResolve(entityReference, out RuntimeEntityHandle runtimeHandle))
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:597:      if (_runtime.TryResolve(targetReference, out RuntimeEntityHandle targetHandle) &&
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:647:    if (!_runtime.TryResolve(targetReference, out RuntimeEntityHandle targetHandle))
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:674:    if (!_runtime.TryResolve(targetReference, out RuntimeEntityHandle targetHandle))
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:686:    if (!_runtime.TryResolve(targetReference, out RuntimeEntityHandle targetHandle))
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:698:    if (_runtime.TryResolve(targetReference, out RuntimeEntityHandle targetHandle))
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:777:    out RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:795:    out RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:822:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:843:  private bool TryRead<TComponent>(RuntimeEntityHandle runtimeHandle, out TComponent component)
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:853:    RuntimeEntityHandle runtimeHandle,
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:866:  private void RefreshProjection(EntityReference reference, RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:893:            out RuntimeEntityHandle runtimeHandle) ||
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:912:  private void Attach<TComponent>(RuntimeEntityHandle runtimeHandle, TComponent component)
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:969:  private void RemoveCandidateRoot(RuntimeEntityHandle runtimeHandle)
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:984:    RuntimeEntityHandle RuntimeHandle,
+src\NSSLC\Component\LeashedEntity\System\LeashedEntityRegistrationSystem.cs:990:    RuntimeEntityHandle RuntimeHandle,
+src\NSSLC\Component\Items\System\WorldDrops\WorldItemReservationSystem.cs:5:/// The owner resolves the item through the shared EntityRuntime, verifies active world
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:8:public sealed class EntityRuntime : IDisposable
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:10:  private readonly Dictionary<Type, IComponentStore> _componentStores = new();
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:18:  public EntityRuntime(EntityIdentityRegistry? identityRegistry = null)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:77:      foreach (IComponentStore store in _componentStores.Values)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:91:  public RuntimeEntityHandle CreateEntity()
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:95:    var handle = new RuntimeEntityHandle(RuntimeId, localIndex, generation);
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:104:      ComponentStore<EntityIdentityComponent> identityStore = GetOrCreateStore<EntityIdentityComponent>();
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:117:      foreach (IComponentStore store in _componentStores.Values)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:133:  public bool TryPublishEntity(RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:147:  public bool TryGetStatus(RuntimeEntityHandle handle, out EntityRuntimeStatus status)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:161:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:179:  public bool TryResolve(EntityReference reference, out RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:184:        !_identityRegistry.TryResolve(reference, out RuntimeEntityHandle candidate) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:196:  public bool Has<TComponent>(RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:204:  public bool TryAttach<TComponent>(RuntimeEntityHandle handle, TComponent component)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:214:    ComponentStore<TComponent> store = GetOrCreateStore<TComponent>();
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:224:  public bool TryReplace<TComponent>(RuntimeEntityHandle handle, TComponent component)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:234:    return TryGetStore<TComponent>(out ComponentStore<TComponent> store) &&
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:239:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:240:    EntityComponentSnapshot<TProjection> expectedSnapshot,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:252:    return TryGetStore<TComponent>(out ComponentStore<TComponent> store) &&
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:256:  public bool TryDetach<TComponent>(RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:262:        !TryGetStore<TComponent>(out ComponentStore<TComponent> store) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:272:  public bool TryEdit<TComponent>(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:273:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:280:        !TryGetStore<TComponent>(out ComponentStore<TComponent> store))
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:288:      return store.TryEdit(handle, editor);
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:297:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:304:        !TryGetStore<TComponent>(out ComponentStore<TComponent> store))
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:321:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:330:        !TryGetStore<TFirstComponent>(out ComponentStore<TFirstComponent> firstStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:331:        !TryGetStore<TSecondComponent>(out ComponentStore<TSecondComponent> secondStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:342:      bool firstComponentEdited = firstStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:347:          secondComponentEdited = secondStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:366:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:381:        !TryGetStore<TFirstComponent>(out ComponentStore<TFirstComponent> firstStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:382:        !TryGetStore<TSecondComponent>(out ComponentStore<TSecondComponent> secondStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:383:        !TryGetStore<TThirdComponent>(out ComponentStore<TThirdComponent> thirdStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:396:      bool firstEdited = firstStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:401:          secondEdited = secondStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:406:              thirdEdited = thirdStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:432:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:458:        !TryGetStore<TFirstComponent>(out ComponentStore<TFirstComponent> firstStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:459:        !TryGetStore<TSecondComponent>(out ComponentStore<TSecondComponent> secondStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:460:        !TryGetStore<TThirdComponent>(out ComponentStore<TThirdComponent> thirdStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:461:        !TryGetStore<TFourthComponent>(out ComponentStore<TFourthComponent> fourthStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:462:        !TryGetStore<TFifthComponent>(out ComponentStore<TFifthComponent> fifthStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:476:      bool firstEdited = firstStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:481:          secondEdited = secondStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:486:              thirdEdited = thirdStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:491:                  fourthEdited = fourthStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:496:                      fifthEdited = fifthStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:532:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:565:        !TryGetStore<TFirstComponent>(out ComponentStore<TFirstComponent> firstStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:566:        !TryGetStore<TSecondComponent>(out ComponentStore<TSecondComponent> secondStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:567:        !TryGetStore<TThirdComponent>(out ComponentStore<TThirdComponent> thirdStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:568:        !TryGetStore<TFourthComponent>(out ComponentStore<TFourthComponent> fourthStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:569:        !TryGetStore<TFifthComponent>(out ComponentStore<TFifthComponent> fifthStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:570:        !TryGetStore<TSixthComponent>(out ComponentStore<TSixthComponent> sixthStore) ||
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:586:      bool firstEdited = firstStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:591:          secondEdited = secondStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:596:              thirdEdited = thirdStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:601:                  fourthEdited = fourthStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:606:                      fifthEdited = fifthStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:611:                          sixthEdited = sixthStore.TryEdit(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:644:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:654:        !TryGetStore<TComponent>(out ComponentStore<TComponent> store))
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:672:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:674:    out EntityComponentSnapshot<TProjection> snapshot)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:682:        !TryGetStore<TComponent>(out ComponentStore<TComponent> store))
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:702:      snapshot = new EntityComponentSnapshot<TProjection>(
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:716:  public RuntimeEntityHandle[] Match<TComponent>()
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:723:  public void Match<TComponent>(List<RuntimeEntityHandle> destination)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:739:  public RuntimeEntityHandle[] Match<TFirstComponent, TSecondComponent>()
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:750:    List<RuntimeEntityHandle> destination)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:768:  public bool TryBeginTermination(RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:782:  public bool IsReadyForTermination(RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:790:  public bool TryRemoveEntity(RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:805:    foreach (IComponentStore store in _componentStores.Values)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:816:  private RuntimeEntityHandle[] MatchRecords(Func<EntityRecord, bool> predicate)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:818:    var matches = new List<RuntimeEntityHandle>();
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:830:  private bool TryGetAccessibleRecord(RuntimeEntityHandle handle, out EntityRecord entity)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:835:  private bool TryGetRunningRecord(RuntimeEntityHandle handle, out EntityRecord entity)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:840:  private bool TryGetRecord(RuntimeEntityHandle handle, out EntityRecord entity)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:856:  private ComponentStore<TComponent> GetOrCreateStore<TComponent>()
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:859:    if (_componentStores.TryGetValue(typeof(TComponent), out IComponentStore? store))
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:861:      return (ComponentStore<TComponent>)store;
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:864:    var newStore = new ComponentStore<TComponent>();
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:869:  private bool TryGetStore<TComponent>(out ComponentStore<TComponent> store)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:872:    if (_componentStores.TryGetValue(typeof(TComponent), out IComponentStore? value))
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:874:      store = (ComponentStore<TComponent>)value;
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:907:      throw new ObjectDisposedException(nameof(EntityRuntime));
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:916:  private sealed class EntityRecord(RuntimeEntityHandle handle, EntityUuid uuid)
+src\NSSLC\Component\Share\Entity\System\EntityRuntime.cs:918:    public RuntimeEntityHandle Handle { get; } = handle;
+src\NSSLC\Component\Items\System\WorldDrops\WorldItemMotionSystem.cs:5:/// The caller owns thread affinity and resolves the current entity through EntityRuntime.
+src\NSSLC\Component\Share\Entity\System\EntityIdentityRegistry.cs:12:  private readonly Dictionary<EntityUuid, RuntimeEntityHandle> _liveByUuid = new();
+src\NSSLC\Component\Share\Entity\System\EntityIdentityRegistry.cs:13:  private readonly Dictionary<RuntimeEntityHandle, EntityUuid> _liveByHandle = new();
+src\NSSLC\Component\Share\Entity\System\EntityIdentityRegistry.cs:21:  internal EntityUuid Register(RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\EntityIdentityRegistry.cs:40:  internal bool TryResolve(EntityReference reference, out RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\EntityIdentityRegistry.cs:54:  internal bool Unregister(RuntimeEntityHandle handle, EntityUuid uuid)
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:7:internal interface IComponentStore
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:9:  bool Remove(RuntimeEntityHandle handle);
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:12:internal sealed class ComponentStore<TComponent> : IComponentStore
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:18:  public bool Contains(RuntimeEntityHandle handle) => TryGetCell(handle, out _);
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:20:  public bool TryAttach(RuntimeEntityHandle handle, TComponent component)
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:39:  public bool TryReplace(RuntimeEntityHandle handle, TComponent component)
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:62:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:63:    EntityComponentSnapshot<TProjection> expectedSnapshot,
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:87:  public bool TryEdit(RuntimeEntityHandle handle, EntityComponentEditor<TComponent> editor)
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:114:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:127:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:143:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:164:  public bool Remove(RuntimeEntityHandle handle)
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:175:  private bool IsAttachedElsewhere(RuntimeEntityHandle handle, TComponent component)
+src\NSSLC\Component\Share\Entity\System\ComponentStore.cs:208:  private bool TryGetCell(RuntimeEntityHandle handle, out ComponentCell<TComponent> cell)
+src\NSSLC\Component\Share\Entity\System\ComponentAccess.cs:6:public readonly struct EntityComponentSnapshot<TProjection>
+src\NSSLC\Component\Share\Entity\System\ComponentAccess.cs:9:  internal EntityComponentSnapshot(
+src\NSSLC\Component\Share\Entity\System\ComponentAccess.cs:10:    RuntimeEntityHandle handle,
+src\NSSLC\Component\Share\Entity\System\ComponentAccess.cs:29:  internal RuntimeEntityHandle Handle { get; }
+src\NSSLC\Component\Npc\System\NpcTaskReference.cs:8:  public NpcTaskReference(RuntimeEntityHandle entityHandle, ulong taskGeneration)
+src\NSSLC\Component\Npc\System\NpcTaskReference.cs:19:  public RuntimeEntityHandle EntityHandle { get; }
+src\NSSLC\Component\Npc\System\NpcTaskLifecycleSystem.cs:57:    RuntimeEntityHandle currentEntityHandle,
+src\NSSLC\Component\Npc\System\NpcTaskLifecycleSystem.cs:103:    RuntimeEntityHandle currentEntityHandle,
+src\NSSLC\Component\Npc\System\NpcTaskLifecycleSystem.cs:151:    RuntimeEntityHandle currentEntityHandle,
+src\NSSLC\Component\Npc\System\NpcTaskLifecycleSystem.cs:200:    RuntimeEntityHandle currentEntityHandle,
+src\NSSLC\Component\Npc\System\NpcTaskLifecycleSystem.cs:233:    RuntimeEntityHandle entityHandle,
+src\NSSLC\Component\Npc\System\NpcTaskLifecycleSystem.cs:249:    RuntimeEntityHandle currentEntityHandle,
+src\NSSLC\Component\Npc\System\NpcTaskLifecycleSystem.cs:346:    RuntimeEntityHandle currentEntityHandle,

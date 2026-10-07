@@ -1,0 +1,125 @@
+{
+  "runFailure": "Command: dotnet run Test/Terraria.Arch.Verification/Terraria.Arch.Verification.csproj --no-build --no-restore -- --case world.id-reuse --case world.isalive-worldid-boundary --case component.struct-class-access-critical --case query.composition-critical --case command-buffer.create-and-groups-critical\r\nStarted: 2026-10-08T02:50:04.6083075+08:00\r\nFinished: 2026-10-08T02:50:04.9516954+08:00\r\nExitCode: 1\r\n\r\n找不到要运行的项目。请确保 C:\\Users\\shan\\.codex\\worktrees\\32f2\\NLTX 中存在项目，或使用 --project 传递项目路径。\r\n",
+  "failedPatch": "apply_patch reported: Failed to find expected lines in Build/diagnostics/ArchMigration/T1/invoke-dotnet.ps1; no file was changed by that patch.",
+  "runSyntax": [
+    {
+      "IgnoreCase": true,
+      "LineNumber": 13,
+      "Line": "  --project <PROJECT_PATH>                定义要运行的项目文件的路径。使用项目文件的路径或包含项目文件的目录的路径。如果未指定，则默认为当前目录。",
+      "Filename": "InputStream",
+      "Path": "InputStream",
+      "Pattern": "--project|--no-build|--no-restore",
+      "Context": null,
+      "Matches": [
+        {
+          "Groups": "--project",
+          "Success": true,
+          "Name": "0",
+          "Captures": "--project",
+          "Index": 2,
+          "Length": 9,
+          "Value": "--project",
+          "ValueSpan": null
+        }
+      ]
+    },
+    {
+      "IgnoreCase": true,
+      "LineNumber": 19,
+      "Line": "  --no-build                              运行之前不要生成项目。Implies --no-restore. [default: False]",
+      "Filename": "InputStream",
+      "Path": "InputStream",
+      "Pattern": "--project|--no-build|--no-restore",
+      "Context": null,
+      "Matches": [
+        {
+          "Groups": "--no-build",
+          "Success": true,
+          "Name": "0",
+          "Captures": "--no-build",
+          "Index": 2,
+          "Length": 10,
+          "Value": "--no-build",
+          "ValueSpan": null
+        }
+      ]
+    },
+    {
+      "IgnoreCase": true,
+      "LineNumber": 21,
+      "Line": "  --no-restore                            生成前请勿还原项目。 [default: False]",
+      "Filename": "InputStream",
+      "Path": "InputStream",
+      "Pattern": "--project|--no-build|--no-restore",
+      "Context": null,
+      "Matches": [
+        {
+          "Groups": "--no-restore",
+          "Success": true,
+          "Name": "0",
+          "Captures": "--no-restore",
+          "Index": 2,
+          "Length": 12,
+          "Value": "--no-restore",
+          "ValueSpan": null
+        }
+      ]
+    }
+  ],
+  "projectExists": true,
+  "builtDllExists": true,
+  "runnerSha256": "877C0DB86DC51D8B7B4626B97ACDE6A2B71D585435A4DC61F95E61508D0B0488",
+  "runnerContext": [
+    "  (Join-Path $root 'Directory.Build.props')",
+    "  (Join-Path $root 'Directory.Build.targets')",
+    "  (Join-Path $intermediateDirectory 'project.assets.json')",
+    ")",
+    "$inputHashesBefore = @(Get-FileHashes $inputPaths)",
+    "$command = \"dotnet $Operation $Project $($ExtraArgs -join ' ')\".Trim()",
+    "$commandArgs = @($Operation, $projectPath) + $ExtraArgs",
+    "$startedAt = Get-Date",
+    "$output = @(& dotnet @commandArgs 2>&1)",
+    "$exitCode = $LASTEXITCODE",
+    "$finishedAt = Get-Date",
+    "$outputText = ($output | ForEach-Object { \"$_\" }) -join \"`n\"",
+    "@(",
+    "  \"Command: $command\"",
+    "  \"Started: $($startedAt.ToString('o'))\"",
+    "  \"Finished: $($finishedAt.ToString('o'))\"",
+    "  \"ExitCode: $exitCode\"",
+    "  ''",
+    "  $outputText",
+    ") | Set-Content -Encoding utf8 -LiteralPath $logPath",
+    "",
+    "$dllHashes = @(Get-FileHashes @((Get-ChildItem -LiteralPath $outputDirectory -Recurse -File -Filter '*.dll' -ErrorAction SilentlyContinue | ForEach-Object FullName)))",
+    "$pdbHashes = @(Get-FileHashes @((Get-ChildItem -LiteralPath $outputDirectory -Recurse -File -Filter '*.pdb' -ErrorAction SilentlyContinue | ForEach-Object FullName)))",
+    "$assetHashes = @(Get-FileHashes @((Join-Path $intermediateDirectory 'project.assets.json')))",
+    "$warningCount = [regex]::Matches($outputText, '(?im)\\bwarning\\s+[A-Z]{2,}\\d+:').Count",
+    "$errorCount = [regex]::Matches($outputText, '(?im)\\berror\\s+[A-Z]{2,}\\d+:').Count",
+    "$record = [pscustomobject]@{",
+    "  name = $Name",
+    "  project = $Project",
+    "  operation = $Operation",
+    "  command = $command",
+    "  exitCode = $exitCode",
+    "  warningCount = $warningCount",
+    "  errorCount = $errorCount",
+    "  outputPath = [System.IO.Path]::GetRelativePath($root, $logPath)",
+    "  sourceHashBefore = $sourceAggregateBefore",
+    "  sourceFilesBefore = $sourceHashesBefore",
+    "  dllHashes = $dllHashes",
+    "  pdbHashes = $pdbHashes",
+    "  inputHashesBefore = $inputHashesBefore",
+    "  assetsHashesAfter = $assetHashes",
+    "  startedAt = $startedAt.ToString('o')",
+    "  finishedAt = $finishedAt.ToString('o')",
+    "}",
+    "Add-Content -Encoding utf8 -LiteralPath $ledgerPath -Value ($record | ConvertTo-Json -Depth 8 -Compress)",
+    "",
+    "$output | ForEach-Object { Write-Output $_ }",
+    "Write-Output \"T1 command result: exit=$exitCode warnings=$warningCount errors=$errorCount log=$($record.outputPath)\"",
+    "if ($exitCode -ne 0) {",
+    "  exit $exitCode",
+    "}"
+  ]
+}

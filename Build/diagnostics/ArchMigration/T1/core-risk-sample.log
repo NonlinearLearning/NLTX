@@ -1,0 +1,6 @@
+Command: dotnet run Test/Terraria.Arch.Verification/Terraria.Arch.Verification.csproj --no-build --no-restore -- --case world.id-reuse --case world.isalive-worldid-boundary --case component.struct-class-access-critical --case query.composition-critical --case command-buffer.create-and-groups-critical
+Started: 2026-10-08T02:50:04.6083075+08:00
+Finished: 2026-10-08T02:50:04.9516954+08:00
+ExitCode: 1
+
+找不到要运行的项目。请确保 C:\Users\shan\.codex\worktrees\32f2\NLTX 中存在项目，或使用 --project 传递项目路径。

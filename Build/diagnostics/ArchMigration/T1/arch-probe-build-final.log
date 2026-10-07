@@ -1,0 +1,12 @@
+Command: dotnet build Test/Terraria.Arch.Verification/Terraria.Arch.Verification.csproj --no-restore --verbosity minimal
+Started: 2026-10-08T02:58:33.1382816+08:00
+Finished: 2026-10-08T02:58:34.2766849+08:00
+ExitCode: 0
+
+  Terraria.Arch.Verification -> C:\Users\shan\.codex\worktrees\32f2\NLTX\Build\bin\Terraria.Arch.Verification\Debug\net10.0\Terraria.Arch.Verification.dll
+
+已成功生成。
+    0 个警告
+    0 个错误
+
+已用时间 00:00:00.85

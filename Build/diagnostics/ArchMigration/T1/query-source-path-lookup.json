@@ -1,0 +1,102 @@
+{
+  "url": "https://api.github.com/repos/genaray/Arch/git/trees/04d52e7268eb6f376ca4841a0c204334120c5e9d?recursive=1",
+  "commit": "04d52e7268eb6f376ca4841a0c204334120c5e9d",
+  "paths": [
+    {
+      "path": "src/Arch/Templates/QueryDescription.WithAll.cs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "54c4cdf83c3692a453688433894a7f3f25707101"
+    },
+    {
+      "path": "src/Arch/Templates/QueryDescription.WithAll.tt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d8e4d45dd9d6b6f0700f500985452a368fe5be5b"
+    },
+    {
+      "path": "src/Arch/Templates/QueryDescription.WithAny.cs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "527cd8469988288f1be8c8e14e064cccd6b56902"
+    },
+    {
+      "path": "src/Arch/Templates/QueryDescription.WithAny.tt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "91e36536981eb82ab3590e7ce9767a6f81b84426"
+    },
+    {
+      "path": "src/Arch/Templates/QueryDescription.WithExclusive.cs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "34b1b960cdf83c9ff86ca7eeffc64d96550f78f7"
+    },
+    {
+      "path": "src/Arch/Templates/QueryDescription.WithExclusive.tt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7a8da8367bb5741fd5e7f6a04406da6458e80bb8"
+    },
+    {
+      "path": "src/Arch/Templates/QueryDescription.WithNone.cs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "7fc3f1456db1afa35982e5ddc1f44797383d0b2e"
+    },
+    {
+      "path": "src/Arch/Templates/QueryDescription.WithNone.tt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "48511f4aa1d3291cf723f047590bdf368a0bb194"
+    },
+    {
+      "path": "src/Arch/Templates/World.AddWithQueryDescription.cs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "5fe3987e4d6e7df7c5b6e9f387702248b94dc5e1"
+    },
+    {
+      "path": "src/Arch/Templates/World.AddWithQueryDescription.tt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "ce00c7f3e3fb03480bc81370ff3c2dde77678080"
+    },
+    {
+      "path": "src/Arch/Templates/World.Query.cs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "83c363526c3af399ec7d9927bcc16a377eb1077c"
+    },
+    {
+      "path": "src/Arch/Templates/World.Query.tt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "8048b5936d97926a90ff543da8d7292768a8543a"
+    },
+    {
+      "path": "src/Arch/Templates/World.RemoveWithQueryDescription.cs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d7ebe21fdb9d630ef481d74e1c8af2133f90af55"
+    },
+    {
+      "path": "src/Arch/Templates/World.RemoveWithQueryDescription.tt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "3475eaa6d132eab817901c4c93c8a3c2cecf4eef"
+    },
+    {
+      "path": "src/Arch/Templates/World.SetWithQueryDescription.cs",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "d26664111f0d07a78c0e9851a1892a72ab97bb0c"
+    },
+    {
+      "path": "src/Arch/Templates/World.SetWithQueryDescription.tt",
+      "mode": "100644",
+      "type": "blob",
+      "sha": "b894e3eabf29d8b21b072b57ea0803446281b010"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+Command: GET pinned raw GitHub sources for World.cs, Entity.cs, QueryDescription.cs, CommandBuffer.cs
+Project: source provenance inspection
+Exit code: mixed HTTP/source-file handling (World.cs, Entity.cs, CommandBuffer.cs returned 200; guessed QueryDescription.cs path returned HTTP 404)
+Warnings: 0
+Errors: 4 emitted by PowerShell for the 404, then Resolve-Path/Get-FileHash/Get-Item on the missing path
+Output: Build/diagnostics/ArchMigration/T1/arch-pinned-source-hashes.json and agent tool output
+Failed URL: https://raw.githubusercontent.com/genaray/Arch/04d52e7268eb6f376ca4841a0c204334120c5e9d/src/Arch/Core/QueryDescription.cs
+Failure: 404: Not Found
+Recovery direction: use the restored Arch 2.1.0 package XML API documentation and package assets as the canonical exact path/signature evidence; query behavior will be observed by the compiled probe.

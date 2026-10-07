@@ -1,0 +1,115 @@
+{
+  "status": "partial",
+  "auditType": "local-static-source-and-evidence-audit",
+  "networkAccess": false,
+  "testsLaunched": false,
+  "pinnedCommit": "04d52e7268eb6f376ca4841a0c204334120c5e9d",
+  "sourceHashes": [
+    {
+      "path": "Build\\diagnostics\\ArchMigration\\T1\\upstream-World.cs",
+      "expectedSha256": "41F7078B462B5C12B8FA2A997699CDEC12591E453A62EBE02FF2FB3B0F1FFBC1",
+      "actualSha256": "41F7078B462B5C12B8FA2A997699CDEC12591E453A62EBE02FF2FB3B0F1FFBC1",
+      "matches": true
+    },
+    {
+      "path": "Build\\diagnostics\\ArchMigration\\T1\\upstream-Entity.cs",
+      "expectedSha256": "18EE844D65A508B6BAAF140F7F9CF91DDE4AEAFF40642049743704285340CD6B",
+      "actualSha256": "18EE844D65A508B6BAAF140F7F9CF91DDE4AEAFF40642049743704285340CD6B",
+      "matches": true
+    },
+    {
+      "path": "Build\\diagnostics\\ArchMigration\\T1\\upstream-CommandBuffer.cs",
+      "expectedSha256": "F193CD817F7AF04050F47B02826E90E17AABCD3EDA492736A659E93056DD0D4B",
+      "actualSha256": "F193CD817F7AF04050F47B02826E90E17AABCD3EDA492736A659E93056DD0D4B",
+      "matches": true
+    },
+    {
+      "path": "Build\\diagnostics\\ArchMigration\\T1\\upstream-QueryDescription.WithAll.cs",
+      "expectedSha256": "F6138E13D17530692E29E918B57FD8B47BE6B282DAC4E7890CD678A27604B3E1",
+      "actualSha256": "F6138E13D17530692E29E918B57FD8B47BE6B282DAC4E7890CD678A27604B3E1",
+      "matches": true
+    },
+    {
+      "path": "Build\\diagnostics\\ArchMigration\\T1\\upstream-QueryDescription.WithAny.cs",
+      "expectedSha256": "BD38BCBCE2450D13FFE0AD16C4049EFB6485AF1F064AB32754DB1D701F7B02F5",
+      "actualSha256": "BD38BCBCE2450D13FFE0AD16C4049EFB6485AF1F064AB32754DB1D701F7B02F5",
+      "matches": true
+    },
+    {
+      "path": "Build\\diagnostics\\ArchMigration\\T1\\upstream-QueryDescription.WithNone.cs",
+      "expectedSha256": "48D2F397983162E20FE5B9087D573120A338D19898007C15DBC82D2135AFC5B2",
+      "actualSha256": "48D2F397983162E20FE5B9087D573120A338D19898007C15DBC82D2135AFC5B2",
+      "matches": true
+    },
+    {
+      "path": "Build\\diagnostics\\ArchMigration\\T1\\upstream-QueryDescription.WithExclusive.cs",
+      "expectedSha256": "393784C2B0CFEE74F57E19225196DEBF71C7EDAB3D1476393003BCAA3C0403F5",
+      "actualSha256": "393784C2B0CFEE74F57E19225196DEBF71C7EDAB3D1476393003BCAA3C0403F5",
+      "matches": true
+    },
+    {
+      "path": "Build\\diagnostics\\ArchMigration\\T1\\upstream-src-Arch-Core-Archetype.cs",
+      "expectedSha256": "DB8B46E4816913C729B4BCDEC4283E4140BE3AC5001F80B7B6C03F8FBD3962EF",
+      "actualSha256": "DB8B46E4816913C729B4BCDEC4283E4140BE3AC5001F80B7B6C03F8FBD3962EF",
+      "matches": true
+    }
+  ],
+  "allCapturedSourceHashesMatch": true,
+  "checks": [
+    {
+      "id": "command-buffer-create-id-index-alignment",
+      "status": "confirmed-by-pinned-source",
+      "evidence": [
+        "upstream-CommandBuffer.cs:138-149",
+        "upstream-CommandBuffer.cs:173-182"
+      ],
+      "basis": true,
+      "limit": "This establishes unique staged-ID/index alignment in one live buffer; cross-World entities sharing a local Id and stale handles across buffer reuse were not runtime-probed."
+    },
+    {
+      "id": "command-buffer-add-set-shared-value-slot",
+      "status": "confirmed-by-pinned-source",
+      "evidence": [
+        "upstream-CommandBuffer.cs:215-227",
+        "upstream-CommandBuffer.cs:238-251"
+      ],
+      "basis": true,
+      "limit": "The final value-only assertions were not reached in the process that terminated with AccessViolationException; the stored value-slot behavior is source-verified."
+    },
+    {
+      "id": "world-move-refreshes-entity-data",
+      "status": "confirmed-by-pinned-source",
+      "evidence": [
+        "upstream-World.cs:325-347"
+      ],
+      "basis": true,
+      "limit": "This confirms the normal Move code updates EntityData after a structural move; it is not an independent runtime stress test of every EntityInfo capacity path."
+    },
+    {
+      "id": "access-violation-stack-captured",
+      "status": "captured-runtime-evidence",
+      "evidence": [
+        "core-risk-sample-explicit-project.log",
+        "upstream-CommandBuffer.cs:322-350"
+      ],
+      "basis": true,
+      "limit": "Chunk.cs was not captured, so the internal unchecked lookup/index path remains unverified."
+    }
+  ],
+  "probeCaseCount": 44,
+  "selectedRiskCases": [
+    "world.id-reuse",
+    "world.isalive-worldid-boundary",
+    "component.struct-class-access-critical",
+    "query.composition-critical",
+    "command-buffer.create-and-groups-critical"
+  ],
+  "selectedRiskCaseCount": 5,
+  "selectedShare": 0.11363636363636363,
+  "chunkImplementation": {
+    "expectedPath": "src/Arch/Core/Chunk.cs",
+    "capturedPath": "Build\\diagnostics\\ArchMigration\\T1\\upstream-src-Arch-Core-Chunk.cs",
+    "captured": false,
+    "status": "not-verified"
+  }
+}
