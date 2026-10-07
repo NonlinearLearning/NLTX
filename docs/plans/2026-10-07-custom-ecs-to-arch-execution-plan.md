@@ -9,6 +9,8 @@
 证据入口：[Arch 官方 API 研究](../research/2026-10-07-arch-api-migration-research.md)、当前工作树源码及本文列出的仓库约束  
 canonical 路径：`docs/plans/2026-10-07-custom-ecs-to-arch-execution-plan.md`
 
+2026-10-08 范围增强：[Arch 原生 API 覆盖与自定义 ECS 退出审计](../reviews/audits/2026-10-08-arch-native-api-coverage-audit.md)。按用户新要求，通用系统接口/组织、世界级权威组件和关系扩展适用性也纳入完成条件；下文已同步这些增量。审计和合同更新不代表生产迁移已完成。
+
 ## 1. 目标与已确认范围
 
 用户已明确允许采用 Arch 时破坏当前 ECS 的兼容性。因此，本计划以 **直接使用 Arch 原生存储与 API，退出自定义 ECS 框架** 为目标。旧 C# 类型、方法签名、构造参数、泛型编辑委托、查询返回形式及相关测试可以修改或删除。保留旧 `EntityRuntime` 外观、仿制全部 `TryEdit/Match` 契约或长期并存两个 ECS 后端，都不是完成条件。
@@ -18,7 +20,7 @@ canonical 路径：`docs/plans/2026-10-07-custom-ecs-to-arch-execution-plan.md`
 1. 每个已加载世界会话拥有一个 Arch `World`；组件权威状态实际存放在 Arch archetype/chunk 中。
 2. ECS 内部使用自带 `Version` 的 Arch `Entity`、`QueryDescription` 和原生读写 API；不采用已被 Arch 2.0 移除的框架 `EntityReference`。
 3. 删除 `EntityRuntime`、`ComponentStore<T>`、`IComponentStore`、`RuntimeEntityHandle`、旧组件编辑委托与通用 `EntityComponentSnapshot<T>` 的生产用途；测试转向新行为契约。
-4. 实体创建组合、玩法行为、UUID 登记和关系清理由领域 owner 负责；Arch 承担存储与遍历。
+4. 通用 System 接口与组使用 Arch.System；世界级权威组件进入 Arch World 的单例实体。实体创建组合、玩法行为和 UUID 登记由领域 owner 负责；通用关系优先采用经验证的官方扩展。
 5. 已支持的实际模拟、世界切换、加载失败恢复、网络入口和存档流程通过新验收。
 
 允许破坏 ECS API，不自动改变网络包格式、存档格式、服务器权威身份根或现有玩法结果。它们按实际行为独立验收；如果实施发现必须改变这些外部行为，应在对应批次明确新行为及受影响场景，不能把变化隐藏在框架切换内。
@@ -51,8 +53,13 @@ canonical 路径：`docs/plans/2026-10-07-custom-ecs-to-arch-execution-plan.md`
 | 自带版本的 Arch `Entity` | 本世界内同步或跨 tick 的运行时引用 | 保存完整 `Id/WorldId/Version` 并附所需世界实例 token；不是领域 UUID 或持久化身份 |
 | `Arch.Buffer.CommandBuffer` | 已声明提交点的结构变化 | 来自核心 Arch 包；`Playback(World, bool dispose=true)` 非 FIFO/事务；临时实体不能直接发布 |
 | 批量/非泛型 API | 动态创建组合与后续热点优化 | 先证明相同默认值、组件实例隔离及注册关系，再替换创建路径 |
+| `Arch.System.ISystem<T>/BaseSystem<W,T>/Group<T>` | 周期系统接口、生命周期和注册分组 | 注册顺序显式；Kernel 仍负责会话/线程/tick 提交；不自动生成业务依赖 DAG |
 
-首轮只必选 Arch 核心包及必要的传递依赖。`Arch.System`、`Arch.System.SourceGenerator`、并行查询、`PURE_ECS`、事件总线、关系扩展和持久化扩展都不作为迁移前置条件。现有领域 System 不必为了使用 Arch 继承新的框架基类；现有显式模拟阶段仍负责调度。
+按 2026-10-08 新要求，Arch 核心 API 与 `Arch.System 1.1.0` 为本轮必选。周期更新对象使用官方 `ISystem<T>`，需要默认实现时采用 `BaseSystem<W,T>`，注册分组采用 `Group<T>`；退出自定义 `IWorldSimulationTickPhase`，不新增同等通用接口或调度框架。领域阶段、线程、会话失效和 tick 提交仍由宿主明确组织。
+
+官方关系扩展纳入 T1 适用性探针与 T3 接线范围，不能整体排除：已发布 `Arch.Relationships 1.0.1` 声明依赖旧 Arch `1.2.6.5-alpha`，当前官方源码声明 2.1.0，但 NuGet 尚未发布该关系版本；清理 API 还受 EVENTS/构建配置影响。实际采用的源码/包、核心事件变体和依赖闭包必须经探针确认。不得安装不存在的版本、降级核心或另造通用关系图。
+
+SourceGenerator、并行查询和事件总线按真实用途采用；手写原生 World.Query 已满足原生 API 要求。PURE_ECS 不在本轮启用；Arch.Persistence 不替换现有 WorldFile 边界。具体采用与保留领域代码的界限见增强审计 N1–N5。
 
 `Arch.Buffer` 是核心包中的命名空间，不是本轮需要额外安装的包。稳定命令缓冲 `Create(ComponentType[])` 返回负 Id 的暂存 Entity；回放按 `Create → Add → Set → Remove → Destroy` 分组，不能表达任意业务调用的 FIFO 顺序。带 UUID/关系的生产生成优先在安全创建阶段直接创建真实实体；不要依赖私有 Resolve 或猜测暂存 Entity 的最终 Id。
 
@@ -74,14 +81,14 @@ canonical 路径：`docs/plans/2026-10-07-custom-ecs-to-arch-execution-plan.md`
 
 | 当前入口 | 已观察到的职责 | 迁移处理 |
 | --- | --- | --- |
-| [EntityRuntime.cs](../../src/NSSLC/Component/Share/Entity/EntityRuntime.cs) | 实体记录、句柄分配、组件关联、状态、借用、查询、owner thread | 退出框架；拆出实际需要的领域生命周期/身份职责，存储与遍历直接交给 Arch |
-| [ComponentStore.cs](../../src/NSSLC/Component/Share/Entity/ComponentStore.cs) | 按索引数组、稳定 cell、class 实例检查、attachment/data revision | 删除存储实现；不在 Arch 外再保留同一组件的权威 cell |
-| [ComponentAccess.cs](../../src/NSSLC/Component/Share/Entity/ComponentAccess.cs) | 通用版本快照与编辑/检查委托 | 迁移实际调用后删除；必要的业务冲突校验改成 owner 协议 |
-| [EntityIdentityRegistry.cs](../../src/NSSLC/Component/Share/Entity/EntityIdentityRegistry.cs) | UUID 签发历史、UUID/运行时句柄映射、线程约束 | 保留身份职责；映射目标改为完整 Arch Entity |
-| [RuntimeEntityHandle.cs](../../src/NSSLC/Component/Relationships/RuntimeEntityHandle.cs)、[EntityReference.cs](../../src/NSSLC/Component/Relationships/EntityReference.cs) | runtime/index/generation；UUID/runtime/scope 引用 | 前者退出；后者按领域关系需要保留 UUID 和世界实例作用域，不照搬 Arch 已移除的同名类型 |
+| [EntityRuntime.cs](../../src/NSSLC/Component/Share/Entity/System/EntityRuntime.cs) | 实体记录、句柄分配、组件关联、状态、借用、查询、owner thread | 退出框架；拆出实际需要的领域生命周期/身份职责，存储与遍历直接交给 Arch |
+| [ComponentStore.cs](../../src/NSSLC/Component/Share/Entity/System/ComponentStore.cs) | 按索引数组、稳定 cell、class 实例检查、attachment/data revision | 删除存储实现；不在 Arch 外再保留同一组件的权威 cell |
+| [ComponentAccess.cs](../../src/NSSLC/Component/Share/Entity/System/ComponentAccess.cs) | 通用版本快照与编辑/检查委托 | 迁移实际调用后删除；必要的业务冲突校验改成 owner 协议 |
+| [EntityIdentityRegistry.cs](../../src/NSSLC/Component/Share/Entity/System/EntityIdentityRegistry.cs) | UUID 签发历史、UUID/运行时句柄映射、线程约束 | 保留身份职责；映射目标改为完整 Arch Entity |
+| [RuntimeEntityHandle.cs](../../src/NSSLC/Component/Relationships/System/RuntimeEntityHandle.cs)、[EntityReference.cs](../../src/NSSLC/Component/Relationships/System/EntityReference.cs) | runtime/index/generation；UUID/runtime/scope 引用 | 前者退出；后者按领域关系需要保留 UUID 和世界实例作用域，不照搬 Arch 已移除的同名类型 |
 | [LoadedWorldSession.cs](../../src/NSSLC.Application/WorldStorage/Loading/LoadedWorldSession.cs) | 创建运行时、存储根、发布/回滚、释放 | 改为拥有 Arch World；世界实例 token、候选会话、发布及释放顺序由会话控制 |
-| [WorldStorageRoot.cs](../../src/NSSLC/Component/WorldStorage/WorldStorageRoot.cs) | 分类槽位、Projectile identity、TileEntity 与其他世界存储 | ECS 实体映射切到 Arch；容量、槽位与协议投影保留自身业务职责 |
-| [WorldSimulationKernel.cs](../../src/NSSLC.Application/Simulation/WorldSimulationKernel.cs) | owner thread、命令排空、显式阶段、会话失效检查 | 保持已声明阶段职责；不因使用 Arch 替换成隐式框架排序 |
+| [WorldStorageRoot.cs](../../src/NSSLC/Component/WorldStorage/System/WorldStorageRoot.cs) | 分类槽位、Projectile identity、TileEntity 与其他世界存储 | ECS 实体映射切到 Arch；容量、槽位与协议投影保留自身业务职责 |
+| [WorldSimulationKernel.cs](../../src/NSSLC.Application/Simulation/WorldSimulationKernel.cs) | owner thread、命令排空、显式阶段、会话失效检查 | 通用系统契约使用 Arch.System；保留显式业务阶段与逐边界会话检查 |
 | `src/NSSLC.Tools.Simulation/RuntimeNpc*`、`RuntimePlayer*`、`RuntimeProjectileStore`、`RuntimeItemRegistry`、`RuntimeWorldItemStore*` | 创建组合、适配视图、组件读写、更新顺序、物品冲突检查 | 改为 Arch 引用和领域 API；重型实体包装按真实职责简化或退出 |
 | `src/NSSLC.Application/Network/` 与 `src/NSSLC.Tools.NetworkServer/` | 网络 owner、世界/连接 epoch、排队请求与 typed projection | 重新解析当前世界与带版本实体；不跨会话捕获 World 或 ref |
 | [Terraria.EntityOrganization.Verification](../../Test/Terraria.EntityOrganization.Verification/Program.cs) | 生命周期、借用、快照冲突、句柄失效、基准 | 旧实现细节断言改为新 Arch 与领域行为断言；保留有价值的行为覆盖 |
@@ -98,7 +105,7 @@ canonical 路径：`docs/plans/2026-10-07-custom-ecs-to-arch-execution-plan.md`
 flowchart TD
     Session[LoadedWorldSession\n世界实例 token 与发布/回滚] --> World[Arch World\n组件唯一权威存储]
     Session --> Registry[EntityIdentityRegistry\nUUID 与完整 Arch Entity 映射]
-    Kernel[WorldSimulationKernel\n显式阶段与 owner thread] --> Systems[领域 Systems\nArch 查询与受控提交]
+    Kernel[WorldSimulationKernel\n显式阶段与 owner thread] --> Systems[Arch.System 接口与 Group\n领域更新和原生查询]
     Systems --> World
     Systems --> Registry
     Systems --> Slots[分类槽位与网络投影\n容量和兼容顺序]
@@ -110,6 +117,7 @@ flowchart TD
 ### 4.1 世界与身份
 
 - `LoadedWorldSession` 是 World 的唯一生命周期 owner；通过正式 `World.Create` 建立，失败候选与卸载调用 `Dispose()` 完整退出。稳定源码中 `World.Destroy(world)` 直接调用 `world.Dispose()`；两者不是要求先后调用的两级清理。owner 仍要先清理项目自己的关系、映射和缓冲。
+- 会话内建立世界单例实体，Rules、TimeWeather、Progression 等权威组件通过 Arch 原生 API 读写；旧 WorldSessionRestoreState 不再在 World 外独立拥有同一份可写状态。必要单例存在后，IsFresh 按默认组件与无玩法实体/加载提交判断，不再要求 World 总实体数为零。
 - `EntityUuid` 继续表示权威实例身份；普通 Player 死亡/复活仍在同一实例上，真实销毁重建生成新 UUID。
 - UUID registry 映射到所属会话的完整 Arch Entity。`EntityRuntimeId` 可继续作为独立世界实例 token 使用，其意义不再绑定自定义运行时实现。
 - 不能把 `Entity.Id` 当成 `whoAmI`、NPC slot、Projectile 协议 identity、存档键或 UUID。分类槽位表只做容量、顺序和投影，指向同一 Arch 实体及其组件。
@@ -142,6 +150,7 @@ flowchart TD
 4. 不能统一改成“tick 末回放”而悄悄改变同 tick spawn、命中、掉落或死亡效果。现有 NPC 槽位扫描支持新实体在扫描到的位置决定本 tick/下一 tick 更新；有此行为要求的路径继续由显式槽位调度调用原生组件访问。
 5. `World.Query` 用于无需旧槽位时序的批处理。需要确定顺序时显式按领域槽位或业务键组织，不依赖 chunk、archetype、Entity ID 或创建顺序。
 6. 现有 `WorldSimulationKernel.EnqueueCommand` 是领域/网络请求队列，不用 Arch CommandBuffer 替代。领域校验先完成，存储结构命令再由其 owner 提交。
+7. 周期系统生命周期和分组使用 Arch.System。Initialize、BeforeUpdate、Update、AfterUpdate、Dispose 的实际调用由宿主接线；Group.Update 不会自动调用前后钩子。分组不能丢失原有会话中途失效检查；不把官方组误认为自动排序、事务或并行调度器。
 
 ## 5. 旧 API 的退出映射
 
@@ -158,6 +167,8 @@ flowchart TD
 | `Match<T...>()` | Arch `QueryDescription` + `World.Query` | 查询顺序改变可接受，但实际依赖旧顺序的玩法路径要显式组织 |
 | runtime owner-thread 检查 | 会话/Kernel/提交 owner 的线程检查 | 保留单写执行约束；不误认 Arch 默认自动线程安全 |
 | `RuntimeNpcEntity/RuntimePlayerEntity` 长期组件聚合 | 原生实体引用 + Spawn/领域 System/值快照 | 类可删除或收窄为边界视图；禁止保留第二份可写组件 |
+| `IWorldSimulationTickPhase` 及通用更新组 | Arch.System ISystem/BaseSystem/Group | 移除自定义系统接口；业务阶段、trace 与停止检查由宿主维护 |
+| WorldSessionRestoreState 的长期可写状态聚合 | 世界单例实体上的领域组件 | 加载/运行/保存读取同一 Arch 状态；恢复输入只作边界数据 |
 
 旧测试中通过反射修改 `_generations`、要求槽位从同一自建表复用、固定 attachment revision 数值等实现约束可删除。对应的“旧引用不命中新实例、过期物品提交不覆盖新状态、创建失败不泄漏”行为必须用新机制覆盖。
 
@@ -200,6 +211,8 @@ flowchart TD
 
 验证 `Dispose` 的世界登记/回收与 `Clear` 的存储重置区别；`World.Destroy(world)` 等价于 Dispose。对命令缓冲验证分组回放、重复 Set/Add 的覆盖、负 Id 临时 Entity、已销毁目标、异常后的部分效果及默认清空。在线文档与稳定 API 冲突时记录实际结果和固定源码。
 
+新增 Arch.System 1.1.0 的 Group 注册顺序、嵌套、完整生命周期、异常和零 tick 释放探针；新增官方 Relationships 的包/固定源码兼容性、EVENTS 的 Debug/Release 行为、Arch 与 Arch-Events 单程序集闭包及关系清理探针。每个缺口分别记录，不把核心探针通过视为扩展已通过。
+
 完成条件：固定版本和传递依赖已记录，关键探针通过；本项目知道哪些检查由 Arch 提供、哪些必须由领域 owner 提供。
 
 ### A2：World、身份及生产签名协调切换
@@ -212,6 +225,7 @@ flowchart TD
 4. 整体修改字段、构造参数、返回值、槽位映射与实际消费者。只允许本批次内短期编译过渡类型，并列出删除位置；不能长期保留旧泛型运行时转发层。
 5. 将普通组件访问接到 Arch。通用快照及借用 API 的消费者改成短期原生访问或具名领域协议；不再维护第二份组件值。
 6. 增加会话 owner-thread 检查、访问作用域和未发布/终止拒绝规则；世界 token 校验优先于访问 Arch 存储。
+7. 将世界规则、时间、进度等权威状态接到世界单例实体，改候选恢复、默认值、IsFresh 和真实消费者；分类槽位只维护有明确业务用途的实体投影，不能成为第二套运行时存储。
 
 完成条件：受影响项目闭包可构建，最小实际加载/一 tick/退出路径通过；没有同实体的新旧权威组件并存。该门禁只允许进入领域深化验收，不代表生产迁移已完成。
 
@@ -227,13 +241,15 @@ flowchart TD
 
 每类以真实 Spawn/Release/Load caller 完成纵向验收，而非仅在手工 `world.Create` 场景证明组件能读写。发布失败、清理失败和重复清理分别记录；不得把清理不确定包装成正常拒绝。
 
+消费 A1 的官方关系兼容性结果，通用关系机制使用已验证的扩展，不自建通用图/反向字典。NPC 父子关系已有双重描述，必须选定唯一权威来源。无需通用图的领域 Entity 字段须说明职责与清理规则；销毁 source/target、复用、失败候选和 World 释放纳入关系证据。
+
 ### A4：原生 System 访问与查询
 
 1. 收窄/删除长期持有全部组件的 `RuntimeNpcEntity/RuntimePlayerEntity` 包装。组合工厂只创建初始状态；诊断视图只保存值；系统接受 World/实体或明确所需的值。
 2. 先替换现有 `Match` 调用，缓存稳定的 `QueryDescription`；查询成员变化后重新读取组件，不缓存 ref 或 chunk 索引。
 3. 对依赖时序的 owner 继续显式槽位循环；对独立批处理采用原生查询。NPC scan 的同 tick 与 next tick spawn、目标平局、物品争抢和 RNG 消费顺序分别比较。
 4. 查询回调内记录结构意图，结束后校验并提交；需要同 tick 立即可见的路径在领域规定的安全边界完成，不能随意后移。
-5. 不统一迁移到 SourceGenerator、系统基类或并行查询。只有已测得的热点、稳定读写集合和无副作用冲突支持进一步优化。
+5. 周期更新实现官方 ISystem，必要时继承 BaseSystem，注册分组使用 Group；退出旧 phase 系统接口，向 A6 交接阶段与生命周期合同。SourceGenerator 用于实际重复查询样板，手写原生 Query 也可；并行优化依据已测热点和副作用边界，不另造查询/系统框架。
 
 完成条件：已支持的领域更新走原生存储；状态与效果顺序相符；不存在框架层兼容包装承担全部领域规则。
 
@@ -267,7 +283,7 @@ flowchart TD
 
 ### A8：删除旧框架与最终验收
 
-1. 删除生产路径中的 `EntityRuntime`、`ComponentStore/IComponentStore`、自定义 component cell、`RuntimeEntityHandle`、旧编辑委托和 `EntityComponentSnapshot`；保留领域 UUID/关系/投影职责。
+1. 删除生产路径中的 `EntityRuntime`、`ComponentStore/IComponentStore`、自定义 component cell、`RuntimeEntityHandle`、旧编辑委托、`EntityComponentSnapshot` 和 `IWorldSimulationTickPhase`；连同新命名的等价存储、访问、系统、结构缓冲及通用关系实现一起审计。保留有明确消费者的领域 UUID/关系数据/投影职责。
 2. 重写或删除只绑定旧实现细节的验证；旧状态基准保存为独立历史证据，不把旧后端留在 production compile 中。
 3. 审计 source/project references、默认构造、所有模拟和网络装配、备选分支及测试夹具；排除只读参考与历史文档后生产旧框架声明/调用为零。
 4. 验收默认宿主实际组件来自 Arch，不只检查 `PackageReference` 存在。一个实体的查询与指定实体访问指向同一状态；没有私下 cell/数组镜像接受权威写入。

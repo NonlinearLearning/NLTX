@@ -82,6 +82,27 @@ API 行为矩阵和 handoff 尚未落盘时，T2–T5 的依赖部分必须继�
 CommandBuffer malformed-target 行为扩写成生产 API 合同；T2–T5 只能消费报告中明确标注为已观察的
 边界，并继续等待生产签名/生命周期整合。
 
+## 3.1 范围增强：不得以新名字保留第二套通用 ECS
+
+新增静态审计 [Arch 原生 API 覆盖与自定义 ECS 退出审计](../../reviews/audits/2026-10-08-arch-native-api-coverage-audit.md)
+已作为“增强项待实施和行为验证”的范围输入，而不是迁移通过证据。审计确认当前主工作树生产
+路径仍没有 `Arch.Core`/`Arch.System` 引用，`EntityRuntime`、`ComponentStore`、`ComponentAccess`、
+通用 `RuntimeEntityHandle`、自制 `IWorldSimulationTickPhase` 和 Arch World 外的可写
+`WorldSessionRestoreState` 仍然存在。
+
+因此，后续验收新增以下硬门槛：
+
+- 通用 System 接口/组、世界级权威状态、组件存储、查询/编辑/快照、结构缓冲和通用关系图不能
+  通过改名或转发层继续存在；领域规则、协议槽位、UUID 和文件 DTO 仍由各自 owner 负责。
+- T2-B2 必须先交付唯一 Arch World owner、完整 token/WorldId/Version registry 和世界单例实体；
+  T3/T4/T5 在此之前只能做不依赖生产签名的审计或夹具。
+- `Arch.System`、`Arch.Relationships`、Arch-Events 的版本/配置/清理行为仍需独立探针验证；
+  静态来源声明、NuGet 包存在或 PackageReference 加入均不算兼容性通过。
+
+T2-B2 的执行合同见 [生产 World、身份与世界权威状态切换](../../plans/2026-10-08-arch-migration-track-t2-production-world-identity-execution.md)。
+该合同不改变当前 A2 `not-run（生产）` 的验收结论；只有当前源码、构建、约 10% 生产验证和
+scoped handoff 到达后才可更新门禁。
+
 ## 4. T2：World、身份与生产签名
 
 交接：`C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\diagnostics\ArchMigration\T2\handoff.md`
