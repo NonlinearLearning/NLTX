@@ -2,8 +2,9 @@
 
 **Status: partial.** Package restore, package signature verification, probe build, selected risk cases,
 and fixed-source comparison are recorded. The final CommandBuffer case terminated the process with an
-`AccessViolationException`; Arch's `Chunk.cs` implementation was not captured, so the internal cause
-is not verified.
+`AccessViolationException`; inspection of Arch's `Chunk.cs` implementation is
+**blocked-by-prerequisite** because the source snapshot is absent and further capture was stopped for
+the accepted T1 closeout. The internal cause is not verified.
 
 ## Provenance
 
@@ -32,4 +33,3 @@ is not verified.
 1. **Create ID/index mapping conflict:** the pinned source shows each normal staged Create uses `-(Size + 1)`, stores the buffer entry at index `Size`, then records `CreateCommand(Size - 1)` after `Register` increments `Size`. This aligns generated ID lookup with the entry index for a live buffer. It does not prove behavior for cross-World entities with equal local IDs or stale handles.
 2. **Add/Set shared value slot:** confirmed. `Add<T>` records the structural add and writes the component value through the same `SetIndex` used by `Set<T>`. The actual value-only runtime assertion was not reached after the process-level crash.
 3. **EntityData stale after archetype movement:** rejected for the normal `World.Move` path by source. It repairs the entity displaced by source removal and updates the moved entity's `EntityData.Archetype` and `EntityData.Slot`. This is source evidence, not a capacity stress test.
-

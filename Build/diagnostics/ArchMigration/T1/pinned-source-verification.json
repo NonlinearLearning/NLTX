@@ -110,6 +110,7 @@
     "expectedPath": "src/Arch/Core/Chunk.cs",
     "capturedPath": "Build\\diagnostics\\ArchMigration\\T1\\upstream-src-Arch-Core-Chunk.cs",
     "captured": false,
-    "status": "not-verified"
+    "status": "blocked-by-prerequisite",
+    "reason": "The fixed-source snapshot is absent; further source capture was explicitly stopped for the accepted T1 closeout."
   }
 }

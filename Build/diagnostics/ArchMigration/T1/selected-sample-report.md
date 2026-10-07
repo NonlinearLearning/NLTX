@@ -28,7 +28,7 @@ The final run exited `-1073741819` (`0xC0000005`), which is a process-level memo
 - The other 39 registered probe cases, including standalone World Clear, stale entity version, token guard, individual component accessor, query-per-operator, and ordinary CommandBuffer cleanup/replay cases.
 - Full probe matrix, all solution tests, full solution build, and production integration.
 - The post-crash component/world state. The process exited before that state could be inspected.
-- `Chunk.cs` internals. Only the captured call site and runtime stack are available.
+- `Chunk.cs` internals (**blocked-by-prerequisite**: no captured source snapshot; further capture was stopped for the accepted T1 closeout). Only the captured call site and runtime stack are available.
 
 ## Build/package evidence (not test results)
 
@@ -36,4 +36,3 @@ The final run exited `-1073741819` (`0xC0000005`), which is a process-level memo
 - `dotnet nuget verify ... --all`: exit 0, 0 warnings, 0 errors.
 - Final probe build: exit 0, 0 warnings, 0 errors. See `arch-probe-build-final.log` and the exact hashes in the command ledger.
 - No full solution build or full test suite was run.
-

@@ -37,7 +37,7 @@ This is not evidence that the entire API or migration is unusable. It is a concr
 ## Exact remaining coverage
 
 - 39 of 44 probe cases were not selected. In the selected fifth case, staged creation assertions ran before the failing Set stage, but the composite case as a whole did not complete.
-- `Chunk.cs` implementation, malformed Set behavior, process post-crash state, transaction/rollback behavior, same-buffer cross-World ID collisions, stale temporary handles after buffer reuse, full solution build/tests, host assembly, and production integration remain unverified.
+- **blocked-by-prerequisite:** The pinned `Chunk.cs` implementation is absent from the captured source set, so its internal `GetArray` failure mechanism cannot be checked. Further source capture was stopped for the accepted T1 closeout. Malformed Set behavior beyond the observed crash, process post-crash state, transaction/rollback behavior, same-buffer cross-World ID collisions, stale temporary handles after buffer reuse, full solution build/tests, host assembly, and production integration remain unverified.
 - No A0 input-world directory was present in `Build/diagnostics/ArchMigration/A0/`; no input world hash was fabricated.
 - T1 does not claim production ECS migration completion.
 
