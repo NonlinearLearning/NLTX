@@ -1,0 +1,66 @@
+  Terraria.Relationships -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Relationships\Debug\net10.0\Terraria.Relationships.dll
+  Terraria.Content -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Content\Debug\net10.0\Terraria.Content.dll
+  Terraria.Combat -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Combat\Debug\net10.0\Terraria.Combat.dll
+  Terraria.Items -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Items\Debug\net10.0\Terraria.Items.dll
+  Terraria.Player -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Player\Debug\net10.0\Terraria.Player.dll
+  Terraria.EntityEcs -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.EntityEcs\Debug\net10.0\Terraria.EntityEcs.dll
+  Terraria.WorldStorage -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.WorldStorage\Debug\net10.0\Terraria.WorldStorage.dll
+  PacketDesignCompiler.Generator -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\PacketDesignCompiler.Generator\Debug\netstandard2.0\PacketDesignCompiler.Generator.dll
+  Terraria.WorldInteraction -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.WorldInteraction\Debug\net10.0\Terraria.WorldInteraction.dll
+  Terraria.Physics -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Physics\Debug\net10.0\Terraria.Physics.dll
+  Terraria.SpatialSimulation -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.SpatialSimulation\Debug\net10.0\Terraria.SpatialSimulation.dll
+  Terraria.Npc -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Npc\Debug\net10.0\Terraria.Npc.dll
+  Terraria.Projectile -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Projectile\Debug\net10.0\Terraria.Projectile.dll
+  Terraria.Town -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Town\Debug\net10.0\Terraria.Town.dll
+  Terraria.WorldSession -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.WorldSession\Debug\net10.0\Terraria.WorldSession.dll
+  WorldLoadApiGenerator -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\WorldLoadApiGenerator\Debug\net10.0\WorldLoadApiGenerator.dll
+  NSSLC.Application -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\NSSLC.Application\Debug\net10.0\NSSLC.Application.dll
+  PacketDesignCompiler.Core -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\PacketDesignCompiler.Core\Debug\net10.0\NetWork.PacketDesignCompiler.dll
+  PacketDesignCompiler.Packets -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\PacketDesignCompiler.Packets\Debug\net10.0\NetWork.PacketDesignCompiler.Packets.dll
+  NetworkCodecGenerator -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\NetworkCodecGenerator\Debug\net10.0\NetworkCodecGenerator.dll
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\LegacyApi.cs(371,23): warning CS0108: “TECritterAnchor.Hook_AfterPlacement(int, int, int, int, int, int)”隐藏继承的成员“TELeashedEntityAnchorWithItem.Hook_AfterPlacement(int, int, int, int, int, int)”。如果是有意隐藏，请使用关键字 new。 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\LegacyApi.cs(417,23): warning CS0108: “TEKiteAnchor.Hook_AfterPlacement(int, int, int, int, int, int)”隐藏继承的成员“TELeashedEntityAnchorWithItem.Hook_AfterPlacement(int, int, int, int, int, int)”。如果是有意隐藏，请使用关键字 new。 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Dungeon\Rooms\BiomeStructuredDungeonRoom.cs(74,14): warning CS0219: 变量“windowType”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldBuilding\Actions.cs(358,4): warning CS0162: 检测到无法访问的代码 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(27207,10): warning CS0219: 变量“flag2”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(33614,5): warning CS0162: 检测到无法访问的代码 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(38585,5): warning CS1717: 对同一变量进行赋值；是否希望对其他变量赋值? [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(40019,7): warning CS0219: 变量“num”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(43580,10): warning CS0219: 变量“flag2”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(57091,7): warning CS0219: 变量“num2”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(58346,7): warning CS0219: 变量“num4”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(86476,8): warning CS0219: 变量“flag”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\WorldEntities.cs(17,42): warning CS0067: 从不使用事件“Player.PlayerHooks.OnEnterWorld” [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Biomes\EnchantedSwordBiome.cs(17,17): warning CS0649: 从未对字段“EnchantedSwordBiome._chanceOfRealSword”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Biomes\EnchantedSwordBiome.cs(14,17): warning CS0649: 从未对字段“EnchantedSwordBiome._chanceOfEntrance”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\NpcStaticMembers.cs(8,23): warning CS0414: 字段“NPC.EoCKilledToday”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\NpcStaticMembers.cs(9,23): warning CS0414: 字段“NPC.WoFKilledToday”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+  NSSLC.WorldGeneration -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\NSSLC.WorldGeneration\Debug\net10.0\NSSLC.WorldGeneration.dll
+  NSSLC.Infrastructure.WorldStorage -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\NSSLC.Infrastructure.WorldStorage\Debug\net10.0\NSSLC.Infrastructure.WorldStorage.dll
+  Network codecs: 165 layouts, 70BAF5EEBEC42171E7DFFB2F7CDBC11AF8283134A2B45280EA0C8F6835799FA6.
+  NSSLC.Infrastructure.Network -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\NSSLC.Infrastructure.Network\Debug\net10.0\NSSLC.Infrastructure.Network.dll
+  NSSLC.Tools.Simulation -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\NSSLC.Tools.Simulation\Debug\net10.0\NSSLC.Tools.Simulation.dll
+
+已成功生成。
+
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\LegacyApi.cs(371,23): warning CS0108: “TECritterAnchor.Hook_AfterPlacement(int, int, int, int, int, int)”隐藏继承的成员“TELeashedEntityAnchorWithItem.Hook_AfterPlacement(int, int, int, int, int, int)”。如果是有意隐藏，请使用关键字 new。 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\LegacyApi.cs(417,23): warning CS0108: “TEKiteAnchor.Hook_AfterPlacement(int, int, int, int, int, int)”隐藏继承的成员“TELeashedEntityAnchorWithItem.Hook_AfterPlacement(int, int, int, int, int, int)”。如果是有意隐藏，请使用关键字 new。 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Dungeon\Rooms\BiomeStructuredDungeonRoom.cs(74,14): warning CS0219: 变量“windowType”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldBuilding\Actions.cs(358,4): warning CS0162: 检测到无法访问的代码 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(27207,10): warning CS0219: 变量“flag2”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(33614,5): warning CS0162: 检测到无法访问的代码 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(38585,5): warning CS1717: 对同一变量进行赋值；是否希望对其他变量赋值? [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(40019,7): warning CS0219: 变量“num”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(43580,10): warning CS0219: 变量“flag2”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(57091,7): warning CS0219: 变量“num2”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(58346,7): warning CS0219: 变量“num4”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\WorldGen.cs(86476,8): warning CS0219: 变量“flag”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\WorldEntities.cs(17,42): warning CS0067: 从不使用事件“Player.PlayerHooks.OnEnterWorld” [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Biomes\EnchantedSwordBiome.cs(17,17): warning CS0649: 从未对字段“EnchantedSwordBiome._chanceOfRealSword”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Biomes\EnchantedSwordBiome.cs(14,17): warning CS0649: 从未对字段“EnchantedSwordBiome._chanceOfEntrance”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\NpcStaticMembers.cs(8,23): warning CS0414: 字段“NPC.EoCKilledToday”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\Runtime\NpcStaticMembers.cs(9,23): warning CS0414: 字段“NPC.WoFKilledToday”已被赋值，但从未使用过它的值 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj]
+    17 个警告
+    0 个错误
+
+已用时间 00:00:10.39

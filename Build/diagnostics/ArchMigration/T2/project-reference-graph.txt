@@ -1,0 +1,67 @@
+Roots:
+src/NSSLC/Component/Share/Entity/Terraria.EntityEcs.csproj
+src/NSSLC/Component/WorldStorage/Terraria.WorldStorage.csproj
+src/NSSLC.Application/NSSLC.Application.csproj
+src/NSSLC.Tools.Simulation/NSSLC.Tools.Simulation.csproj
+src/NSSLC.Tools.NetworkServer/NSSLC.Tools.NetworkServer.csproj
+
+ProjectReference edges:
+Build\Tools\NetworkCodecGenerator\NetworkCodecGenerator.csproj -> src\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj
+src\NSSLC.Application\NSSLC.Application.csproj -> Build\Tools\WorldLoadApiGenerator\WorldLoadApiGenerator.csproj
+src\NSSLC.Application\NSSLC.Application.csproj -> src\NSSLC\Component\Items\Terraria.Items.csproj
+src\NSSLC.Application\NSSLC.Application.csproj -> src\NSSLC\Component\Player\Terraria.Player.csproj
+src\NSSLC.Application\NSSLC.Application.csproj -> src\NSSLC\Component\Projectile\Terraria.Projectile.csproj
+src\NSSLC.Application\NSSLC.Application.csproj -> src\NSSLC\Component\WorldSession\Terraria.WorldSession.csproj
+src\NSSLC.Application\NSSLC.Application.csproj -> src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj
+src\NSSLC.Infrastructure\Network\NSSLC.Infrastructure.Network.csproj -> Build\Tools\NetworkCodecGenerator\NetworkCodecGenerator.csproj
+src\NSSLC.Infrastructure\Network\NSSLC.Infrastructure.Network.csproj -> src\NSSLC.Application\NSSLC.Application.csproj
+src\NSSLC.Infrastructure\Network\NSSLC.Infrastructure.Network.csproj -> src\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj
+src\NSSLC.Infrastructure\Network\NSSLC.Infrastructure.Network.csproj -> src\NSSLC\Component\Projectile\Terraria.Projectile.csproj
+src\NSSLC.Infrastructure\Network\NSSLC.Infrastructure.Network.csproj -> src\NSSLC\Component\WorldSession\Terraria.WorldSession.csproj
+src\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj -> src\NSSLC.Infrastructure\Network\Pocket\Generator\PacketDesignCompiler.Generator.csproj
+src\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj -> src\NSSLC.Infrastructure\Network\Pocket\PacketDesignCompiler.Core.csproj
+src\NSSLC.Infrastructure\Network\Pocket\PacketDesignCompiler.Core.csproj -> src\NSSLC.Infrastructure\Network\Pocket\Generator\PacketDesignCompiler.Generator.csproj
+src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj -> src\NSSLC\Component\SpatialSimulation\Terraria.SpatialSimulation.csproj
+src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj -> src\NSSLC\Component\WorldSession\Terraria.WorldSession.csproj
+src\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldStorage.csproj -> src\NSSLC.Application\NSSLC.Application.csproj
+src\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldStorage.csproj -> src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj
+src\NSSLC.Tools.NetworkServer\NSSLC.Tools.NetworkServer.csproj -> src\NSSLC.Infrastructure\Network\NSSLC.Infrastructure.Network.csproj
+src\NSSLC.Tools.NetworkServer\NSSLC.Tools.NetworkServer.csproj -> src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj
+src\NSSLC.Tools.NetworkServer\NSSLC.Tools.NetworkServer.csproj -> src\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldStorage.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC.Application\NSSLC.Application.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC.Infrastructure\Network\NSSLC.Infrastructure.Network.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC.Infrastructure\WorldGeneration\NSSLC.WorldGeneration.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldStorage.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC\Component\Content\Terraria.Content.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC\Component\Npc\Terraria.Npc.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC\Component\Projectile\Terraria.Projectile.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC\Component\Share\Entity\Terraria.EntityEcs.csproj
+src\NSSLC.Tools.Simulation\NSSLC.Tools.Simulation.csproj -> src\NSSLC\Component\Town\Terraria.Town.csproj
+src\NSSLC\Component\Combat\Terraria.Combat.csproj -> src\NSSLC\Component\Relationships\Terraria.Relationships.csproj
+src\NSSLC\Component\Items\Terraria.Items.csproj -> src\NSSLC\Component\Relationships\Terraria.Relationships.csproj
+src\NSSLC\Component\Npc\Terraria.Npc.csproj -> src\NSSLC\Component\Combat\Terraria.Combat.csproj
+src\NSSLC\Component\Npc\Terraria.Npc.csproj -> src\NSSLC\Component\Content\Terraria.Content.csproj
+src\NSSLC\Component\Npc\Terraria.Npc.csproj -> src\NSSLC\Component\Relationships\Terraria.Relationships.csproj
+src\NSSLC\Component\Npc\Terraria.Npc.csproj -> src\NSSLC\Component\SpatialSimulation\Terraria.SpatialSimulation.csproj
+src\NSSLC\Component\Physics\Terraria.Physics.csproj -> src\NSSLC\Component\Relationships\Terraria.Relationships.csproj
+src\NSSLC\Component\Physics\Terraria.Physics.csproj -> src\NSSLC\Component\WorldInteraction\Terraria.WorldInteraction.csproj
+src\NSSLC\Component\Player\Terraria.Player.csproj -> src\NSSLC\Component\Items\Terraria.Items.csproj
+src\NSSLC\Component\Player\Terraria.Player.csproj -> src\NSSLC\Component\Relationships\Terraria.Relationships.csproj
+src\NSSLC\Component\Projectile\Terraria.Projectile.csproj -> src\NSSLC\Component\Content\Terraria.Content.csproj
+src\NSSLC\Component\Projectile\Terraria.Projectile.csproj -> src\NSSLC\Component\Npc\Terraria.Npc.csproj
+src\NSSLC\Component\Projectile\Terraria.Projectile.csproj -> src\NSSLC\Component\Relationships\Terraria.Relationships.csproj
+src\NSSLC\Component\Projectile\Terraria.Projectile.csproj -> src\NSSLC\Component\Share\Entity\Terraria.EntityEcs.csproj
+src\NSSLC\Component\Projectile\Terraria.Projectile.csproj -> src\NSSLC\Component\SpatialSimulation\Terraria.SpatialSimulation.csproj
+src\NSSLC\Component\Projectile\Terraria.Projectile.csproj -> src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj
+src\NSSLC\Component\Share\Entity\Terraria.EntityEcs.csproj -> src\NSSLC\Component\Relationships\Terraria.Relationships.csproj
+src\NSSLC\Component\SpatialSimulation\Terraria.SpatialSimulation.csproj -> src\NSSLC\Component\Physics\Terraria.Physics.csproj
+src\NSSLC\Component\SpatialSimulation\Terraria.SpatialSimulation.csproj -> src\NSSLC\Component\Share\Entity\Terraria.EntityEcs.csproj
+src\NSSLC\Component\Town\Terraria.Town.csproj -> src\NSSLC\Component\Npc\Terraria.Npc.csproj
+src\NSSLC\Component\WorldInteraction\Terraria.WorldInteraction.csproj -> src\NSSLC\Component\Items\Terraria.Items.csproj
+src\NSSLC\Component\WorldInteraction\Terraria.WorldInteraction.csproj -> src\NSSLC\Component\Relationships\Terraria.Relationships.csproj
+src\NSSLC\Component\WorldInteraction\Terraria.WorldInteraction.csproj -> src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj
+src\NSSLC\Component\WorldSession\Terraria.WorldSession.csproj -> src\NSSLC\Component\Content\Terraria.Content.csproj
+src\NSSLC\Component\WorldSession\Terraria.WorldSession.csproj -> src\NSSLC\Component\Npc\Terraria.Npc.csproj
+src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj -> src\NSSLC\Component\Items\Terraria.Items.csproj
+src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj -> src\NSSLC\Component\Share\Entity\Terraria.EntityEcs.csproj

@@ -1,0 +1,1 @@
+PASS: entity 0@0 v1 was alive in its owner World and absent from a distinct empty World; LoadedWorldSession created a token-scoped World singleton, mutated its Rules component, remained fresh, rejected cross-thread access, and repeated dispose succeeded.

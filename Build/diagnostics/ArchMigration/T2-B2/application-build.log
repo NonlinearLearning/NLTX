@@ -1,0 +1,39 @@
+  Terraria.Content -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Content\Debug\net10.0\Terraria.Content.dll
+  Terraria.Relationships -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Relationships\Debug\net10.0\Terraria.Relationships.dll
+  Terraria.Combat -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Combat\Debug\net10.0\Terraria.Combat.dll
+  Terraria.Items -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Items\Debug\net10.0\Terraria.Items.dll
+  Terraria.EntityEcs -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.EntityEcs\Debug\net10.0\Terraria.EntityEcs.dll
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(11,15): warning CS0649: 从未对字段“WorldSectionState._sectionCountX”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(14,33): warning CS0169: 从不使用字段“WorldSectionState._frameIteration” [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(15,33): warning CS0169: 从不使用字段“WorldSectionState._mapIteration” [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(16,16): warning CS0649: 从未对字段“WorldSectionState._revision”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(13,15): warning CS0649: 从未对字段“WorldSectionState._mapSectionsRemaining”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(12,15): warning CS0649: 从未对字段“WorldSectionState._sectionCountY”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+  Terraria.WorldStorage -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.WorldStorage\Debug\net10.0\Terraria.WorldStorage.dll
+  Terraria.Player -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Player\Debug\net10.0\Terraria.Player.dll
+  Terraria.WorldInteraction -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.WorldInteraction\Debug\net10.0\Terraria.WorldInteraction.dll
+  Terraria.Physics -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Physics\Debug\net10.0\Terraria.Physics.dll
+  Terraria.SpatialSimulation -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.SpatialSimulation\Debug\net10.0\Terraria.SpatialSimulation.dll
+  Terraria.Npc -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Npc\Debug\net10.0\Terraria.Npc.dll
+  Terraria.Projectile -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.Projectile\Debug\net10.0\Terraria.Projectile.dll
+  Terraria.WorldSession -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\Terraria.WorldSession\Debug\net10.0\Terraria.WorldSession.dll
+  WorldLoadApiGenerator -> C:\Users\shan\.codex\worktrees\5c94\NLTX\Build\bin\WorldLoadApiGenerator\Debug\net10.0\WorldLoadApiGenerator.dll
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\WorldStorage\Loading\LoadedWorldSession.cs(29,23): error CS1501: “Create”方法没有采用 0 个参数的重载 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\NSSLC.Application.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\WorldStorage\Loading\LoadedWorldSession.cs(38,13): error CS1061: “WorldSessionRestoreState”未包含“Destroy”的定义，并且找不到可接受第一个“WorldSessionRestoreState”类型参数的可访问扩展方法“Destroy”(是否缺少 using 指令或程序集引用?) [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\NSSLC.Application.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\WorldStorage\Loading\LoadedWorldSession.cs(142,11): error CS1061: “WorldSessionRestoreState”未包含“Destroy”的定义，并且找不到可接受第一个“WorldSessionRestoreState”类型参数的可访问扩展方法“Destroy”(是否缺少 using 指令或程序集引用?) [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\NSSLC.Application.csproj]
+
+生成失败。
+
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(11,15): warning CS0649: 从未对字段“WorldSectionState._sectionCountX”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(14,33): warning CS0169: 从不使用字段“WorldSectionState._frameIteration” [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(15,33): warning CS0169: 从不使用字段“WorldSectionState._mapIteration” [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(16,16): warning CS0649: 从未对字段“WorldSectionState._revision”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(13,15): warning CS0649: 从未对字段“WorldSectionState._mapSectionsRemaining”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\System\WorldSectionState.cs(12,15): warning CS0649: 从未对字段“WorldSectionState._sectionCountY”赋值，字段将一直保持其默认值 0 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC\Component\WorldStorage\Terraria.WorldStorage.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\WorldStorage\Loading\LoadedWorldSession.cs(29,23): error CS1501: “Create”方法没有采用 0 个参数的重载 [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\NSSLC.Application.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\WorldStorage\Loading\LoadedWorldSession.cs(38,13): error CS1061: “WorldSessionRestoreState”未包含“Destroy”的定义，并且找不到可接受第一个“WorldSessionRestoreState”类型参数的可访问扩展方法“Destroy”(是否缺少 using 指令或程序集引用?) [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\NSSLC.Application.csproj]
+C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\WorldStorage\Loading\LoadedWorldSession.cs(142,11): error CS1061: “WorldSessionRestoreState”未包含“Destroy”的定义，并且找不到可接受第一个“WorldSessionRestoreState”类型参数的可访问扩展方法“Destroy”(是否缺少 using 指令或程序集引用?) [C:\Users\shan\.codex\worktrees\5c94\NLTX\src\NSSLC.Application\NSSLC.Application.csproj]
+    6 个警告
+    3 个错误
+
+已用时间 00:00:56.49
