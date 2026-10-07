@@ -2,7 +2,7 @@
 
 | Date | Status | Checkpoint result | Base |
 | --- | --- | --- | --- |
-| 2026-10-08 | partial / blocked-by-prerequisite | not-run | `b55ba5b04054b72bde12aaad2ad0b3a191bc49f7` |
+| 2026-10-08 | partial / blocked-by-prerequisite | not-run; C# build count = 0 | `0c2d186f017767e4055bcb9a7647fdbc5b37e737` |
 
 ## Acceptance scope
 
@@ -10,9 +10,9 @@ The current user instruction and the updated main-worktree T5/coordination contr
 
 ## Result
 
-No production source or project file was changed in this checkpoint, so no C# build was run. This follows the main acceptance decision for a no-production-diff handoff; it also avoids labeling old build logs as current results.
+The closeout started from T5 HEAD `0c2d186f017767e4055bcb9a7647fdbc5b37e737`. The tracked working tree has no source or project-file changes; the only untracked files are the six existing user plan documents under `docs/plans/2026-10-08-arch-*.md`. No production source or project file was changed, so no C# build was run. The result is **partial / blocked-by-prerequisite / not-run**, with current C# build count **0**.
 
-The T5 checkout still has no accepted T1–T4 production signature set to connect to Simulation, NetworkServer, WorldStorage, or the host composition. The T2 worktree has uncommitted source edits which retain both `EntityRuntime` and an Arch World in `LoadedWorldSession`; its T2-B2 contract prohibits leaving that dual backend as a production bridge. T3/T4 do not yet provide accepted, committed caller contracts for T5 to compile against. Porting these worktree-local edits would invent an integration baseline and leave the production ownership switch incomplete.
+At this T5 HEAD, the T5 worktree contains no accepted T1–T4 production signature closure to connect to Simulation, NetworkServer, WorldStorage, or the host composition. This closeout records the T5 worktree state only and makes no claim about future results in other worktrees. Without production changes in this checkout, compiling a future integration would not verify this checkpoint.
 
 The previous T5 report contains successful Simulation and NetworkServer builds from before this compile-only acceptance change. Those results are historical only. The pre-CR T5-B6 MSBuild item evaluations are also historical project inspections, not C# build results and not this checkpoint's evidence.
 
@@ -22,9 +22,10 @@ The previous T5 report contains successful Simulation and NetworkServer builds f
 | --- | --- | --- | --- |
 | NSSLC.Tools.Simulation | not run | not-run: no production diff and upstream Arch owner/caller contracts are not integrated | none |
 | NSSLC.Tools.NetworkServer | not run | not-run: no production diff and upstream Arch owner/caller contracts are not integrated | none |
-| NSSLC.Application / WorldStorage dependencies | not run | not-run: no production diff and upstream Arch owner/caller contracts are not integrated | none |
+| NSSLC.Application | not run | not-run: no production diff and upstream Arch owner/caller contracts are not integrated | none |
+| WorldStorage dependencies | not run | not-run: no production diff and upstream Arch owner/caller contracts are not integrated | none |
 
-Current C# build count: **0**. Current warnings/errors: **not applicable**. Current DLL/PDB: **none produced**. The project dependency closure for a future integrated Arch host has not been compiled in this checkpoint.
+Current C# build count: **0**. Simulation, NetworkServer, and Application: **not-run**. Current warnings/errors: **not applicable**. Current DLL/PDB: **none produced**. The project dependency closure for a future integrated Arch host has not been compiled in this checkpoint.
 
 ## Explicitly not run
 
@@ -37,9 +38,9 @@ The existing A8 deletion manifest and all old ECS implementations remain untouch
 
 ## Files and rollback
 
-This checkpoint adds only this handoff and `compile-only-command-log.jsonl`. It changes no production C#, project file, test, plan, or main-worktree file. The earlier untracked plans remain untouched.
+This closeout changes only this handoff and `compile-only-command-log.jsonl`. It changes no production C#, project file, or test. The six untracked user plan documents remain untouched.
 
-Rollback point: T5 base `b55ba5b04054b72bde12aaad2ad0b3a191bc49f7`. Reverting the handoff commit removes only compile-only diagnostic text; there is no production change to roll back. The last recorded source fingerprint is `D22E54FEBE9AD29ECF8DB40E872A77D0A7195ECA3174C1625265B23527FC0CFE`; it is historical fingerprint evidence, not a C# build result.
+Closeout base: T5 HEAD `0c2d186f017767e4055bcb9a7647fdbc5b37e737`. Reverting the closeout documentation commit removes only these diagnostic updates; there is no production change to roll back. The last recorded source fingerprint is `D22E54FEBE9AD29ECF8DB40E872A77D0A7195ECA3174C1625265B23527FC0CFE`; it is historical fingerprint evidence, not a C# build result.
 
 ## Next owner action
 
