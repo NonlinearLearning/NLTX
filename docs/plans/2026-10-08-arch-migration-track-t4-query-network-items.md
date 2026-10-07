@@ -6,10 +6,16 @@
 依赖：T2 的访问合同；消费 T3 的生命周期/关系合同  
 主计划：[自定义 ECS 转向 Arch 执行计划](2026-10-07-custom-ecs-to-arch-execution-plan.md)
 
+范围增强：[Arch 原生 API 覆盖审计](../reviews/audits/2026-10-08-arch-native-api-coverage-audit.md)，尤其 N1/N4/N5；周期 System 改为官方接口，并消费 T1 的 System 探针。
+
+编译-only 限制：本线不运行 Query/ref、网络队列、物品冲突、RNG、序列化或 admission 验证；只
+编译受影响 System、查询、网络和物品项目。
+
 ## 1. 目标
 
 让领域 System 从旧 `Match/TryEdit/ComponentStore/RuntimeEntity` 访问迁移到 Arch 原生查询
-和明确的领域 owner 协议，同时保留必要的显式调度顺序。网络、异步和排队请求不得捕获会
+和明确的领域 owner 协议；周期系统使用 Arch.System 的 ISystem，按需要使用 BaseSystem，
+并向 T5 交接官方 Group 的注册与生命周期合同，同时保留显式业务顺序。网络、异步和排队请求不得捕获会
 跨会话失效的裸 ID/ref；物品预留、拾取和转移不得因为删除通用快照 API 而失去过期提交保护。
 
 ## 2. 设计不变量
@@ -50,6 +56,13 @@ PlayerItemSpace 及相关 DTO/投影。不要把 Arch Entity 的整数直接写�
    明确安全边界提交，不能统一推迟到 tick 末。
 4. 收窄或删除长期持有所有组件的 `RuntimeNpcEntity/RuntimePlayerEntity`；只保留值投影或
    明确边界视图，禁止第二份可写组件。
+5. 周期更新对象实现 `ISystem<WorldSimulationTickContext>`，需要默认实现时采用
+   `BaseSystem<World, WorldSimulationTickContext>`；退出 IWorldSimulationTickPhase，
+   不重建通用 System 接口/组。普通领域计算方法按职责保留。
+6. 交接 Initialize/BeforeUpdate/Update/AfterUpdate/Dispose、显式阶段顺序及可能切换会话的
+   边界；宿主分组和检查接线归 T5，不能用整个 tick 一次 Group.Update 丢失中途停止语义。
+7. 重复查询样板可使用官方 SourceGenerator；手写 World.Query 也是原生 API。删除旧多组件
+   编辑/通用 Capture 层，不以新的泛型 Arch facade 延续它。
 
 ### T4-B2：网络/异步请求重解析
 
@@ -67,24 +80,22 @@ PlayerItemSpace 及相关 DTO/投影。不要把 Arch Entity 的整数直接写�
    数量。
 3. 明确预留 token 的签发、消费、释放、过期和世界切换失效；owner 负责所有副作用顺序。
 
-### T4-B4：约 10% 核心测试
+### T4-B4：编译结果交接
 
-选择约 10%：一个 Query/ref 与结构变化边界；一个过期跨世界网络请求拒绝；一个物品预留过期
-或重复拾取保护；一个同 tick/next tick 或 RNG 顺序代表路径；一个 DTO 不含 Arch Entity 的
-序列化/admission smoke。不要执行全量网络和全部 Item 场景。
+只编译受影响 System、查询、网络和物品项目及引用闭包；上述行为场景全部不运行。记录编译
+命令、退出码、warning/error 数、输出路径、未编译 gameplay 和未验证风险。
 
 ## 5. 完成条件
 
-- 支持的领域更新主要走 Arch 原生存储/查询，旧框架包装不再承担所有规则。
+- 支持集内的 ECS 存储/访问/查询使用 Arch 原生 API，周期系统使用官方接口；旧通用访问包装退出。
 - 没有跨结构变化/跨帧可写 ref；查询顺序依赖被显式建模。
 - 排队请求按 token/epoch/UUID/WorldId/Version 重新解析；过期请求不会写新实例。
-- 物品数量守恒与过期提交保护有具名 owner 和证据。
-- 10% 测试、构建、未覆盖系统和未接线网络 gameplay 清晰交接。
+- 物品数量守恒与过期提交保护的 owner 已具名，但本轮不运行证据。
+- 编译结果、未覆盖系统和未接线网络 gameplay 清晰交接；不提交测试结果。
 
 ## 6. 失败切换与交接
 
-遇到 ref 失效或查询顺序问题，先做最小复现并读取固定 Arch 源码，再从“延迟结构变化/显式
-槽位顺序”方向验证，禁止只换 lambda 写法。网络/物品失败时同时检查 token、epoch、UUID、
+遇到编译错误，先读取完整错误和上下文，再从“收窄依赖闭包/最小隔离项目”的方向
+修复，禁止只换 lambda 写法。网络/物品风险只记录 token、epoch、UUID、
 预留状态、数量和关系 owner；不能只修最后一条异常。交接包括系统访问矩阵、请求重解析协议、
 物品冲突合同、changed files/commit、证据和给 T5 的宿主注意事项。
-

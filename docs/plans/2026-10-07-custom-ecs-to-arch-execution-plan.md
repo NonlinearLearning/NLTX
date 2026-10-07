@@ -11,6 +11,8 @@ canonical 路径：`docs/plans/2026-10-07-custom-ecs-to-arch-execution-plan.md`
 
 2026-10-08 范围增强：[Arch 原生 API 覆盖与自定义 ECS 退出审计](../reviews/audits/2026-10-08-arch-native-api-coverage-audit.md)。按用户新要求，通用系统接口/组织、世界级权威组件和关系扩展适用性也纳入完成条件；下文已同步这些增量。审计和合同更新不代表生产迁移已完成。
 
+2026-10-08 验收规则变更：[CR-2026-10-08 编译-only 门禁](../../.agent-workplace/changes/CR-2026-10-08-arch-compile-only-acceptance.md)。本轮不执行任何测试、运行时探针、冒烟、benchmark、simulation、保存/加载或行为验证；当前唯一硬门禁是受影响项目在仓库固定 SDK/目标框架下通过增量编译。编译通过不推导运行行为、性能、关系清理、世界切换或旧框架退出已经正确；这些内容保留为风险和后续验证项。
+
 ## 1. 目标与已确认范围
 
 用户已明确允许采用 Arch 时破坏当前 ECS 的兼容性。因此，本计划以 **直接使用 Arch 原生存储与 API，退出自定义 ECS 框架** 为目标。旧 C# 类型、方法签名、构造参数、泛型编辑委托、查询返回形式及相关测试可以修改或删除。保留旧 `EntityRuntime` 外观、仿制全部 `TryEdit/Match` 契约或长期并存两个 ECS 后端，都不是完成条件。
@@ -25,7 +27,7 @@ canonical 路径：`docs/plans/2026-10-07-custom-ecs-to-arch-execution-plan.md`
 
 允许破坏 ECS API，不自动改变网络包格式、存档格式、服务器权威身份根或现有玩法结果。它们按实际行为独立验收；如果实施发现必须改变这些外部行为，应在对应批次明确新行为及受影响场景，不能把变化隐藏在框架切换内。
 
-本次交付是研究与计划文档，没有安装依赖、修改生产 C#、构建或执行运行验收。
+本次交付是研究与计划文档，没有安装依赖、修改生产 C# 或执行运行时验收；按新的编译-only 规则，后续实现批次只需对受影响项目执行增量编译。
 
 ## 2. API 基线与采用范围
 
@@ -57,7 +59,7 @@ canonical 路径：`docs/plans/2026-10-07-custom-ecs-to-arch-execution-plan.md`
 
 按 2026-10-08 新要求，Arch 核心 API 与 `Arch.System 1.1.0` 为本轮必选。周期更新对象使用官方 `ISystem<T>`，需要默认实现时采用 `BaseSystem<W,T>`，注册分组采用 `Group<T>`；退出自定义 `IWorldSimulationTickPhase`，不新增同等通用接口或调度框架。领域阶段、线程、会话失效和 tick 提交仍由宿主明确组织。
 
-官方关系扩展纳入 T1 适用性探针与 T3 接线范围，不能整体排除：已发布 `Arch.Relationships 1.0.1` 声明依赖旧 Arch `1.2.6.5-alpha`，当前官方源码声明 2.1.0，但 NuGet 尚未发布该关系版本；清理 API 还受 EVENTS/构建配置影响。实际采用的源码/包、核心事件变体和依赖闭包必须经探针确认。不得安装不存在的版本、降级核心或另造通用关系图。
+官方关系扩展纳入 T1 适用性范围与 T3 接线合同，不能整体排除：已发布 `Arch.Relationships 1.0.1` 声明依赖旧 Arch `1.2.6.5-alpha`，当前官方源码声明 2.1.0，但 NuGet 尚未发布该关系版本；清理 API 还受 EVENTS/构建配置影响。本轮只记录实际采用的源码/包、核心事件变体和依赖闭包，兼容性保持未验证。不得安装不存在的版本、降级核心或另造通用关系图。
 
 SourceGenerator、并行查询和事件总线按真实用途采用；手写原生 World.Query 已满足原生 API 要求。PURE_ECS 不在本轮启用；Arch.Persistence 不替换现有 WorldFile 边界。具体采用与保留领域代码的界限见增强审计 N1–N5。
 
@@ -179,14 +181,14 @@ flowchart TD
 | 批次 | 交付物 | 主要依赖 | 完成门禁 |
 | --- | --- | --- | --- |
 | A0 当前树基线与影响清单 | source/caller 清单、旧运行场景及已知失败 | 无 | 源码、输入、产物可对应；已支持路径均有 owner |
-| A1 稳定包与原生 API 探针 | 固定包、API 矩阵、引用/结构变更/释放探针 | A0 | 实际稳定包在 net10.0 构建运行；关键 API 无猜测 |
-| A2 原生 World 与接口整体切换 | 会话、身份、创建/访问的签名切换 | A1 | 已识别生产 caller 编译；一个世界只有一个权威存储 |
-| A3 创建与生命周期纵向验证 | Player/NPC/Projectile/Item/TileEntity 创建清理 | A2 | 容量、失败、删除、关系、同 tick spawn 验收 |
-| A4 领域访问与查询重构 | 原生查询、重型实体包装退出、ref 边界 | A2–A3 | 支持路径行为对照；无跨有效期 ref |
-| A5 网络与物品冲突协议 | epoch 重解析、预留/转移提交合同、DTO 投影 | A2；相关 A3–A4 | 过期/重复/跨世界请求均正确拒绝 |
-| A6 会话/保存/加载及实际宿主 | 原生默认宿主、失败恢复与世界切换 | A3–A5 | 真实宿主和 WorldFile 路径通过 |
-| A7 性能与热点优化 | 旧/新测量报告、必要优化 | A6 | 满足冻结预算，热点代码仍通过行为检查 |
-| A8 删除旧框架与最终验收 | 删除清单、依赖/源码审计、当前构建证据 | A6–A7 | 生产路径全 Arch；必需场景通过；限制具名 |
+| A1 稳定包与原生 API 探针 | 固定包、API 矩阵、编译面探针 | A0 | 受影响探针/项目在 net10.0 编译；不运行探针 |
+| A2 原生 World 与接口整体切换 | 会话、身份、创建/访问的签名切换 | A1 | 已识别生产 caller 编译；运行行为不在本轮门禁 |
+| A3 创建与生命周期纵向改造 | Player/NPC/Projectile/Item/TileEntity 的生产调用闭包 | A2 | 受影响项目编译；生命周期行为不运行验证 |
+| A4 领域访问与查询重构 | 原生查询、重型实体包装退出、ref 边界 | A2–A3 | 受影响项目编译；行为对照不在本轮门禁 |
+| A5 网络与物品冲突协议 | epoch 重解析、预留/转移提交合同、DTO 投影 | A2；相关 A3–A4 | 受影响项目编译；过期请求行为不运行验证 |
+| A6 会话/保存/加载及实际宿主 | 原生默认宿主、失败恢复与世界切换的调用闭包 | A3–A5 | 受影响宿主项目编译；不运行 WorldFile/宿主路径 |
+| A7 性能与热点优化 | 保留性能设计输入，暂不测量 | A6 | 本轮跳过，不构成编译门禁 |
+| A8 删除旧框架与最终验收 | 删除清单和受影响项目编译 | A6–A7 | 仅在明确获准后删除；删除后只要求编译通过 |
 
 允许破坏签名意味着部分改动跨多个项目，不能假装每个文件都能独立编译。A2 的会话构造、句柄替换和消费者重接属于一个协调切换批次；在隔离迁移分支中一次修齐其必须共同编译的调用闭包。之后的领域优化按较小批次提交。原有未改写二进制与 Arch 二进制分开运行比较，不在一个活世界双写。
 
@@ -203,17 +205,19 @@ flowchart TD
 
 ### A1：固定包与最小原生探针
 
-建议在 `Test/Terraria.Arch.Verification/` 建立一个以 Arch 真实行为为目标的验证项目；输出继续进入仓库 `Build/` 约定目录。
+如生产编译闭包需要 `Test/Terraria.Arch.Verification/` 项目，只编译该项目；本轮不建立或运行
+以 Arch 真实行为为目标的验证项目。
 
-探针覆盖：World 注册/释放、Entity ID 回收后的旧 Entity.Version 失效、World ID 回收与世界 token、跨 World 相同 Id/Version 误判防护、class/struct 组件、Has/Get/Set/Add/Remove 前置条件、All/Any/None/Exclusive、ref 值更新、候选查询重校验、命令缓冲新实体与回放。
+上述 World、Entity、组件、查询、ref 和命令缓冲行为保留为未来验证范围；本轮不运行探针。
 
-同时覆盖跨实体结构变化：读取 A 的 ref 时增删 B 或增长相同 archetype，证明新协议不保留失效 ref。验证的是本项目限制下的正确处理，不故意依赖 Arch 未承诺的布局稳定性。
+跨实体结构变化和 ref 生命周期保留为未验证风险，不在本轮执行。
 
-验证 `Dispose` 的世界登记/回收与 `Clear` 的存储重置区别；`World.Destroy(world)` 等价于 Dispose。对命令缓冲验证分组回放、重复 Set/Add 的覆盖、负 Id 临时 Entity、已销毁目标、异常后的部分效果及默认清空。在线文档与稳定 API 冲突时记录实际结果和固定源码。
+`Dispose`、`Clear`、`World.Destroy` 和 CommandBuffer 的具体行为只保留为 API 设计记录，不在本轮运行验证。
 
-新增 Arch.System 1.1.0 的 Group 注册顺序、嵌套、完整生命周期、异常和零 tick 释放探针；新增官方 Relationships 的包/固定源码兼容性、EVENTS 的 Debug/Release 行为、Arch 与 Arch-Events 单程序集闭包及关系清理探针。每个缺口分别记录，不把核心探针通过视为扩展已通过。
+Arch.System、Relationships、Events 的包引用和编译闭包可在受影响项目中编译；Group 生命周期、
+Release 清理和关系行为本轮不运行验证，每个缺口标为未验证。
 
-完成条件：固定版本和传递依赖已记录，关键探针通过；本项目知道哪些检查由 Arch 提供、哪些必须由领域 owner 提供。
+完成条件：固定版本、传递依赖和受影响项目编译通过；运行时 API 边界和 owner 行为保持未验证。
 
 ### A2：World、身份及生产签名协调切换
 
@@ -227,7 +231,7 @@ flowchart TD
 6. 增加会话 owner-thread 检查、访问作用域和未发布/终止拒绝规则；世界 token 校验优先于访问 Arch 存储。
 7. 将世界规则、时间、进度等权威状态接到世界单例实体，改候选恢复、默认值、IsFresh 和真实消费者；分类槽位只维护有明确业务用途的实体投影，不能成为第二套运行时存储。
 
-完成条件：受影响项目闭包可构建，最小实际加载/一 tick/退出路径通过；没有同实体的新旧权威组件并存。该门禁只允许进入领域深化验收，不代表生产迁移已完成。
+完成条件：受影响项目闭包可构建。最小实际加载、一 tick、退出和单一权威状态属于设计目标，不在本轮执行或验收。
 
 ### A3：创建、销毁与关系逐类验收
 
@@ -251,7 +255,7 @@ flowchart TD
 4. 查询回调内记录结构意图，结束后校验并提交；需要同 tick 立即可见的路径在领域规定的安全边界完成，不能随意后移。
 5. 周期更新实现官方 ISystem，必要时继承 BaseSystem，注册分组使用 Group；退出旧 phase 系统接口，向 A6 交接阶段与生命周期合同。SourceGenerator 用于实际重复查询样板，手写原生 Query 也可；并行优化依据已测热点和副作用边界，不另造查询/系统框架。
 
-完成条件：已支持的领域更新走原生存储；状态与效果顺序相符；不存在框架层兼容包装承担全部领域规则。
+完成条件：受影响领域更新项目编译通过；状态/效果顺序和兼容包装退出本轮不运行验证。
 
 ### A5：网络请求与物品提交保护
 
@@ -259,25 +263,18 @@ flowchart TD
 2. owner thread 排空时重新检查当前会话、连接 epoch、UUID、Entity.WorldId/Version、能力和生命周期，然后提交；不以裸 Entity ID 重建请求目标。
 3. 把 `RuntimeItemRegistry`、`RuntimeWorldItemStore.NetworkSync` 的通用组件快照校验改为领域提交校验。必须证明旧拾取计划、预留失效、数量改变、移除重建、转移失败不覆盖新状态。
 4. 保持既有协议字段及 DTO 方向；Framework Entity 的三个运行时整数不进入协议包或持久化 payload。
-5. 网络 admission smoke、仿真中的 packet owner 与真实权威 gameplay 分别记录；目前未支持的 gameplay 不能由 smoke 通过替代验收。
+5. 网络 admission、packet owner 和真实权威 gameplay 本轮不运行；目前未支持的 gameplay 继续标记为未验证。
 
 ### A6：会话、保存/加载与宿主汇合
 
-- 模拟宿主和 NetworkServer 的实际装配只使用 Arch World；世界切换创建新 World/token，旧引用不解析到新世界实体。
-- 保持应用加载协调器的 Prepare/Commit/发布/失败恢复；失败候选先撤销相关映射和关系，再完整释放其 World。
-- 验证 controlled late-finalize failure：原会话及其 NPC/Player/Projectile/Item 状态未被错误候选清理，失败候选被隔离/释放，再次加载成功。
-- 保存通过领域值快照与现有 DTO/Codec，不安装 Arch.Persistence 替代 WorldFile 存档。
-- 对真实 `.wld` 执行保存/重载/两次切换/取消及零 tick 退出；保存路径指向本批次测试副本和生成目录，输入 world 保持不变。
+- 模拟宿主、NetworkServer、世界切换、候选失败、保存/加载和零 tick 只保留为待验证设计目标。
+- 不运行真实 `.wld`、WorldFile、host、rollback/retry、取消或 tick 路径；不安装 Arch.Persistence 替代 WorldFile。
 
-完成条件：所有必需实际宿主场景绑定当前源码产物通过；会话及世界注册/缓冲/关系索引没有退出泄漏。
+完成条件：受影响宿主、保存/加载项目编译通过；所有实际场景和退出泄漏保持未验证。
 
 ### A7：测量后优化
 
-使用既有 benchmark 的 Player 255、NPC 200、Projectile 1000 容量，并补充真实组件组合、Spawn/Destroy、Add/Remove、物品转移及完整 Simulation tick。
-
-至少分开比较：旧运行时、原生 Arch 单实体 Get/Set、原生批量 Query；对照相同 class/struct 组合和同一输入，不把“改成 struct”带来的差异全部归因 Arch。测量 warm-up 后耗时、分配、GC、内存、archetype 数量和结构变化比例；完整运行可记录 tick 分位数。
-
-验收预算在 A0/A1 冻结。首轮建议预算为：相同机器/配置/输入下，完整 tick 的 p95 不高于旧基线的 110%，每 tick 分配不高于 110%，固定实体量的稳定存活内存不高于 115%；分别运行至少 5 次并记录 warm-up 与测量区间。Spawn/Destroy 的尾部耗时另列，不用平均值掩盖尖峰。这些是拟采用的迁移门禁，不是已测结果；A0 若证明某项指标不适用于现有计量方式，应在切换前记录替代指标与具体预算。仅微基准胜出不能证明整个游戏更快。
+本轮跳过 benchmark、性能对照、warm-up、GC、内存和 tick 分位数测量；A7 不构成当前编译门禁。
 
 必要优化包括缓存 QueryDescription、减少重复 Add、建立合理初始组合、减少无谓快照分配及使用原生查询技巧。多线程、PURE_ECS、事件生成器、chunk size 调整另行立项，首轮不靠同时更改多项机制掩盖回归。
 
@@ -287,16 +284,21 @@ flowchart TD
 2. 重写或删除只绑定旧实现细节的验证；旧状态基准保存为独立历史证据，不把旧后端留在 production compile 中。
 3. 审计 source/project references、默认构造、所有模拟和网络装配、备选分支及测试夹具；排除只读参考与历史文档后生产旧框架声明/调用为零。
 4. 验收默认宿主实际组件来自 Arch，不只检查 `PackageReference` 存在。一个实体的查询与指定实体访问指向同一状态；没有私下 cell/数组镜像接受权威写入。
-5. 在最终源码修订重新构建必要项目并运行矩阵；关联源码 hash、产物 hash、输入 hash 和具名限制。
+5. 在最终源码修订重新构建必要项目；本轮不运行矩阵，不生成运行时输入/产物证据。
 
-完成条件：默认运行路径为原生 Arch，旧框架生产实现退出，必需场景通过，性能达到冻结预算，未覆盖范围明确。框架包安装、编译通过或文档完成均不能单独表示迁移完成。
+完成条件：在获准的删除范围内，受影响项目编译通过。由于本轮不做运行时验证，编译通过只表示源码/依赖闭包可构建，不表示默认运行路径、行为、性能或旧框架退出已被证明。
 
-## 7. 验证矩阵
+## 7. 行为矩阵（本轮非门禁）
+
+下表保留迁移设计目标和未来验证边界，但按 CR-2026-10-08 不执行、不作为本轮通过条件；不得为填表而运行任何测试或探针。
 
 | 目标 | 新验收断言 | 既有可复用入口 |
 | --- | --- | --- |
 | 运行时引用 | Entity ID 复用后旧版本引用失效；跨世界 token 拒绝；旧会话退出后请求拒绝 | EntityOrganization + A1 Arch verifier |
 | 组件实例 | 两个相同定义实例不共享可变数组/class；struct 更新被查询和直接访问共同观察 | EntityOrganization、各 Spawn caller |
+| 世界单例 | 默认组件、候选恢复、IsFresh、运行和保存来自同一 Arch 权威状态 | T2 session/load 与 T5 保存加载路径 |
+| System 生命周期 | 官方接口/Group 按合同初始化、更新、释放；会话中途切换停止后续工作 | T1 System 探针、T4 更新对象与 T5 宿主 |
+| 关系/事件配置 | 实际包/源码兼容，Release 清理覆盖 source/target 销毁、复用及 World 退出 | T1 扩展探针与 T3 关系真实 caller |
 | 查询与结构变化 | 查询中新增/删除/能力变更按声明提交点可见；候选失效重校验；不持有失效 ref | Arch verifier + NPC/Projectile host probes |
 | 玩法顺序 | NPC 新建同 tick/next tick、命中/掉落顺序、RNG、平局选择、拾取争抢按合同 | NpcAi/HostLifecycle、Simulation Eye probes |
 | 创建/删除 | 构建中不模拟；失败无半成品；关系/映射/订阅完整清理；重复释放可解释 | EntityOrganization、Npc/Projectile/TileEntity verifiers |
@@ -308,40 +310,22 @@ flowchart TD
 
 现有验证项目的通过范围以本次当前运行结果为准。TileEntity、Leashed、NetworkServer gameplay、NPC AI parity 和全部 Projectile 类型分别声明支持集；不得用本计划把历史未支持项改成已通过。
 
-## 8. 构建、运行与证据命令
+## 8. 编译与构建证据命令
 
-以下为实施时使用的命令模板，**本次编写计划没有运行它们**。新包引用首次 restore 是必要的；后续没有依赖变化则使用 `--no-restore`。只构建本批次受影响项目，不执行全 solution Rebuild。
+以下为实施时使用的命令模板。只构建本批次受影响项目，不执行全 solution Rebuild；本轮禁止 `dotnet test`、`dotnet run`、benchmark、fixture、simulation、host smoke 和其他运行时验证。新包引用首次 restore 是必要的；后续没有依赖变化则使用 `--no-restore`。
 
-原生核心接入及其验证：
+原生核心接入及其编译：
 
 ```powershell
 dotnet restore src/NSSLC/Component/Share/Entity/Terraria.EntityEcs.csproj
 dotnet build src/NSSLC/Component/Share/Entity/Terraria.EntityEcs.csproj --no-restore
-dotnet build Test/Terraria.EntityOrganization.Verification/Terraria.EntityOrganization.Verification.csproj
-dotnet run --project Test/Terraria.EntityOrganization.Verification/Terraria.EntityOrganization.Verification.csproj --no-build --no-restore
-dotnet run --project Test/Terraria.EntityOrganization.Verification/Terraria.EntityOrganization.Verification.csproj --no-build --no-restore -- --benchmark Build/diagnostics/ArchMigration/A7/arch-component-benchmark.json
 ```
 
-`Test/Terraria.Arch.Verification` 是 A1 拟新增项目，届时按相同约束构建运行；当前不能声称该路径已存在。旧基准命令在旧源码产物上另跑一轮，与 Arch 结果分开保存。
+验证项目和 `Test/Terraria.Arch.Verification` 如被源码依赖影响，只允许编译，不运行；当前不能声称任何验证项目行为已通过。旧基准不在本轮执行。
 
-Simulation 使用现有 fixture 输出：
+Simulation、fixture、WorldFile、保存加载和宿主运行命令本轮全部停用，不提供可复制的运行命令。
 
-```powershell
-dotnet build src/NSSLC.Tools.Simulation/NSSLC.Tools.Simulation.csproj -p:FixtureHostBuild=true
-
-$archInputWorld = 'D:\TRbackup\NLTX\Build\diagnostics\ArchMigration\A0\input\small-world.wld'
-$archCandidateWorld = 'D:\TRbackup\NLTX\Build\diagnostics\ArchMigration\A0\input\medium-world.wld'
-
-dotnet Build/bin/FixtureHost/NSSLC.Tools.Simulation/Debug/net10.0/NSSLC.Tools.Simulation.dll $archInputWorld 600 --players 1 --seed 12345 --npc-slot-probe true --spawn-npc 1 --report Build/diagnostics/ArchMigration/A6/npc-slot.json
-
-dotnet Build/bin/FixtureHost/NSSLC.Tools.Simulation/Debug/net10.0/NSSLC.Tools.Simulation.dll $archInputWorld 600 --players 1 --seed 12345 --spawn-npc 1 --switch-world $archInputWorld --switch-world $archCandidateWorld --report Build/diagnostics/ArchMigration/A6/two-switches.json
-
-dotnet Build/bin/FixtureHost/NSSLC.Tools.Simulation/Debug/net10.0/NSSLC.Tools.Simulation.dll $archInputWorld 1 --players 1 --seed 12345 --runtime-world-load-rollback $archCandidateWorld --report Build/diagnostics/ArchMigration/A6/runtime-rollback.json
-```
-
-输入 world 由 A0 准备和指纹登记，以上不是当前存在文件的断言。各 probe 的条件以当前 `Program.cs` 为准；空间、Eye、TileEntity、取消、save 与 rollback 的互斥选项分开运行，不把全部选项塞进一条命令。新增 CLI 参数也要更新矩阵。
-
-每次报告构建/运行通过前，记录命令、项目、退出码、warning/error 数、输出路径、source/DLL/PDB/input hash。普通输出应在 `Build/bin/<Project>/`，fixture 在 `Build/bin/FixtureHost/<Project>/`，诊断在 `Build/diagnostics/ArchMigration/<batch>/`。历史编译输入与当前源码不同则重新构建，不沿用旧结果。
+每次报告编译通过前，记录命令、项目、退出码、warning/error 数和输出路径；普通输出应在 `Build/bin/<Project>/`。本轮不要求 DLL/PDB/input hash 作为运行证据，也不生成运行诊断；历史编译输入与当前源码不同则重新构建，不沿用旧结果。
 
 ## 9. 回退与失败处理
 
@@ -355,20 +339,14 @@ dotnet Build/bin/FixtureHost/NSSLC.Tools.Simulation/Debug/net10.0/NSSLC.Tools.Si
 
 ## 10. 完成检查与实施记录
 
-- [ ] Arch 版本、源码、目标框架和依赖固定并由实际探针确认。
-- [ ] 当前源码、输入与产物对应，已知失败/支持范围登记。
-- [ ] 一个会话一个 World；一个实体组件只有一个权威写入源。
-- [ ] 旧裸 Entity ID/世界 ID 回收不导致误命中新实例。
-- [ ] 领域 UUID、普通复活、真实重建和网络/存档投影满足已接受合同。
-- [ ] 创建失败、发布、终止、关系断开、结构提交点、线程与 ref 生命周期已验证。
-- [ ] 实际物品冲突保护有新 owner 协议，旧通用 revision API 已退出。
-- [ ] 已支持 Player/NPC/Projectile/Item/TileEntity 实际路径通过。
-- [ ] 世界切换、真实 late-finalize rollback/retry、取消和零 tick 释放通过。
-- [ ] 生产源码及项目引用中旧自建框架退出；原生 Arch 为默认运行路径。
-- [ ] 测量报告满足冻结预算；未启用的优化不冒充性能收益。
-- [ ] 最终 ledger 链接当前运行证据，并清楚列出未覆盖能力。
+- [ ] 受影响生产项目在固定 SDK/net10.0 下增量编译通过。
+- [ ] 受影响的探针/验证项目（如参与编译闭包）编译通过，不执行。
+- [ ] 每个批次记录 build 命令、退出码、warning/error 数和 `Build/bin/` 输出路径。
+- [ ] 未编译项目、未接线 caller 和编译失败保留为 `not-run`/`blocked`，不得伪装完成。
+- [ ] 世界单例、关系清理、System 生命周期、网络/物品冲突、宿主切换、性能和旧框架退出
+      仅保留为非本轮行为风险，不以编译结果推导通过。
 
-实施开始后新增 `docs/migration/ledgers/2026-10-07-arch-migration-execution-ledger.md`，逐批记录状态、改动、输入、构建/运行证据、已知限制和回退点。该 ledger 当前尚未创建，本文的待执行批次不能改写为已完成。
+实施开始后使用 `docs/migration/ledgers/2026-10-07-arch-migration-execution-ledger.md`，逐批记录状态、改动、编译命令/结果、已知限制和回退点。该 ledger 已存在；本轮不得把历史运行证据或编译成功扩写为行为完成。
 
 ## 11. 仓库约束及关联材料
 

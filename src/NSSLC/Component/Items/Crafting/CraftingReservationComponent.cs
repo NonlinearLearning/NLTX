@@ -1,5 +1,16 @@
 namespace Terraria.Items;
 
+/// <summary>
+/// 保存合成事务占用的材料来源、数量和预留生命周期。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：由 Recipe 的配方判定、材料消费与产物创建流程重组。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Recipe.cs。</para>
+/// <para>重组说明：材料预留、事务阶段、来源版本和事务序号是合成流程拆分时新增的状态。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-07-version4-second-round-review-merged.md。</para>
+/// <para>依据位置：第 2176 行。</para>
+/// </remarks>
 public sealed class CraftingReservationComponent
 {
   public CraftingReservationComponent(

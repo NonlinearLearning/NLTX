@@ -6,11 +6,16 @@
 依赖：T2 的 World、身份 registry 与生产签名合同  
 主计划：[自定义 ECS 转向 Arch 执行计划](2026-10-07-custom-ecs-to-arch-execution-plan.md)
 
+范围增强：[Arch 原生 API 覆盖审计](../reviews/audits/2026-10-08-arch-native-api-coverage-audit.md)，尤其 N3/N4；官方关系接线还需消费 T1 的扩展兼容性结论。
+
+编译-only 限制：本线不运行 Spawn/Release、关系清理、复用、可见性或其他测试/验证；只编译
+受影响 caller 和项目闭包，并明确所有运行时风险仍未验证。
+
 ## 1. 目标
 
 按真实 Spawn/Release/Load caller 验收 Player、NPC、Projectile、Item 和已支持 TileEntity，
-证明 Arch 只承载组件存储与遍历，领域 owner 负责 UUID、生命周期、关系、槽位、容量、发布
-和失败清理。重点不是手工 `world.Create` 能否读写，而是半成品、重建、复用、重复释放、
+使用 Arch 核心 API 承载存储和原生身份，通用关系优先采用已验证的官方扩展；领域 owner 负责
+UUID、玩法生命周期、槽位、容量、发布及业务清理。重点不是手工 `world.Create` 能否读写，而是半成品、重建、复用、重复释放、
 关系断开和同 tick 可见性都能解释并复现。
 
 ## 2. 设计不变量
@@ -64,25 +69,30 @@ world item store、TileEntity host、EntityIdentityRegistry、关系和槽位 ow
 3. 证明构建中/终止中实体不会进入不应参与的普通 Query；同 tick spawn 规则由领域调度显式
    决定，不依赖 Arch chunk 顺序。
 4. 结构变化前释放所有 ref，提交后重新取得组件；禁止保留跨结构变化的可写 ref。
+5. 消费 T1 的 Relationships/Events 兼容性、构建配置与清理 API 结果；通用关系采用官方
+   Add/Get/Set/Remove 等入口，不另建泛型关系图或反向字典。
+6. 对 RuntimeNpcEntity 当前同时维护的 NpcParentRelationComponent/EntityRelationState
+   确定唯一权威关系；移除冗余写入。无需通用图的领域 Entity 字段给出职责和清理依据。
+7. 补 source/target 销毁、同类型多关系、移除重建、槽位复用、旧 token、候选失败和 World
+   释放矩阵；不能把安装包或 Debug 行为视为 Release 自动清理证据。
 
-### T3-B4：约 10% 核心测试
+### T3-B4：编译结果交接
 
-选取约 10% 的高风险路径：一个 NPC 创建失败清理与槽位复用；一个 Player 复活/重建身份对照；
-一个 Projectile 或 Item 真实 create-release；一个 TileEntity 已支持路径或明确拒绝；一个
-关系断开/重复释放场景。不要运行全类全容量矩阵，未执行项列清。
+只编译受影响的 NPC、Player、Projectile、Item、TileEntity caller 项目及其引用闭包；不运行
+上述路径。记录编译命令、退出码、warning/error 数、输出路径和未编译支持集。
 
 ## 5. 完成条件
 
 - 至少一条真实 caller per supported category 使用 T2 的 Arch World/identity contract。
-- 创建失败、发布失败、重复释放、关系清理和槽位复用都有当前源码证据。
+- 创建失败、发布失败、重复释放、关系清理和槽位复用本轮不运行，标为未验证风险。
 - 普通复活与真实重建的 UUID/Entity 语义正确；没有第二份权威组件状态。
 - 同 tick/next tick 的关键可见性不依赖 chunk/Entity.Id/创建顺序。
-- 构建、10% 核心测试、支持集和未覆盖范围交接完整。
+- 关系机制采用已验证官方 API 或明确的原生领域组件；没有自建通用图/反向索引框架，清理配置和缺口具名。
+- 构建、未编译支持集和运行时未验证范围交接完整。
 
 ## 6. 失败切换与交接
 
-若发现 T2 签名不足，不要在 T3 复制一个平行身份协议；记录最小接口缺口和最小隔离复现，
-把不依赖该缺口的类别继续推进。若失败连续两次，按 pua 要求换方向（例如从真实 caller
+若发现 T2 签名不足，不要在 T3 复制一个平行身份协议；记录最小接口缺口和编译闭包，
+把不依赖该缺口的类别继续推进。若编译失败连续两次，按 pua 要求换方向（例如从真实 caller
 回放切到最小 lifecycle fixture），并保存两次完整错误。交接包括每类实体的状态机/流程图、
 changed files/commit、生命周期和关系合同、测试证据、已知半成品清理风险和 T4/T5 输入。
-

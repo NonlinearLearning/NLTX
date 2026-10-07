@@ -4,6 +4,14 @@ using System.Linq;
 
 namespace Terraria.WorldStorage;
 
+/// <summary>
+/// 保存世界压力板与玩家占用之间的双向索引。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：由 PressurePlateHelper.PressurePlatesPressed 的玩家占用登记流程重组。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.GameContent/PressurePlateHelper.cs。</para>
+/// <para>重组说明：按压力板和玩家维护的双向索引及生命周期管理是拆分时新增的实现状态。</para>
+/// </remarks>
 public sealed class WorldPressurePlateRegistryComponent : IDisposable
 {
   private const int MaximumPlayerSlotCount = 255;

@@ -3,6 +3,19 @@ namespace Terraria.Player;
 // status: implemented-isolated-core
 // source-members: P09-1411, P09-1412
 // crossSubsystemOwner: loadout swap, item payload, network, and persistence remain integration-review
+/// <summary>
+/// 保存玩家装备配置集合和当前配置选择。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Player。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Player.cs。</para>
+/// <para>主要源成员：Loadouts（第 2484 行）； CurrentLoadoutIndex（第 2491 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-P09-player-inventory-equipment-component-design.md。
+/// </para>
+/// <para>依据位置：第 14 行。</para>
+/// </remarks>
 public sealed class PlayerLoadoutStateComponent
 {
   public const int LoadoutCount = 3;

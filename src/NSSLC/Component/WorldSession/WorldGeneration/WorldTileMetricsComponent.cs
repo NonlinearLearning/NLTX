@@ -2,6 +2,14 @@ using System;
 
 namespace Terraria.WorldGeneration.Components;
 
+/// <summary>
+/// 保存世界方块统计、分列扫描游标和已发布快照。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.WorldGen。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/WorldGen.cs。</para>
+/// <para>主要源成员：tileCounts（第 4117 行）。</para>
+/// </remarks>
 public sealed class WorldTileMetricsComponent
 {
   private int[] _tileCounts = Array.Empty<int>();

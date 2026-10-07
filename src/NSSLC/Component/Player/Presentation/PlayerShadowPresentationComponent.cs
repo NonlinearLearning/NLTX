@@ -2,6 +2,18 @@ using System.Numerics;
 
 namespace Terraria.Player.Presentation;
 
+/// <summary>
+/// 保存玩家影像残影和高级残影的表现缓存。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Player。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Player.cs。</para>
+/// <para>
+/// 主要源成员：cursorItemIconReversed（第 1296 行）； runSoundDelay（第 1300 行）； shadowCount（第 1312 行）；
+/// skipAnimatingValuesInPlayerFrame（第 1327 行）； availableAdvancedShadowsCount（第 1334 行）；
+/// _advancedShadows（第 1336 行）。
+/// </para>
+/// </remarks>
 public sealed class PlayerShadowPresentationComponent
 {
   public const int SocialShadowCapacity = 3;

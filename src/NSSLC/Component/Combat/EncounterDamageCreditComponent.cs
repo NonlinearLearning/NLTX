@@ -3,6 +3,21 @@ using System.Collections.Generic;
 
 namespace Terraria.Combat;
 
+/// <summary>
+/// 保存一次战斗的贡献账户、世界伤害、最后贡献者及统计生命周期。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.GameContent.NPCDamageTracker。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.GameContent/NPCDamageTracker.cs。</para>
+/// <para>
+/// 主要源成员：_list（第 58 行）； _worldCredit（第 60 行）； _lastAttacker（第 62 行）； _ticks（第 64 行）；
+/// _lastHitTime（第 66 行）。
+/// </para>
+/// <para>重组说明：贡献账户 UUID、EncounterId、Revision 和显式生命周期是拆分时新增的表达。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-1/design/。</para>
+/// <para>拆分依据文件：2026-09-06-version4-combat-and-status-component-design-report.md。</para>
+/// <para>依据位置：第 277 行。</para>
+/// </remarks>
 public struct EncounterDamageCreditComponent
 {
   public EncounterDamageCreditComponent(

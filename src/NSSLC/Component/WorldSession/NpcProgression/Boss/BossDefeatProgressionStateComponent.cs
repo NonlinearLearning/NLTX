@@ -2,6 +2,24 @@ using System;
 
 namespace Terraria.WorldSession.NpcProgression.Boss;
 
+/// <summary>
+/// 保存世界各首领的击败进度。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>
+/// 主要源成员：downedBoss1（第 6211 行）； downedBoss2（第 6213 行）； downedBoss3（第 6215 行）； downedQueenBee（第
+/// 6217 行）； downedSlimeKing（第 6219 行）； downedPlantBoss（第 6229 行）； downedGolemBoss（第 6231 行）；
+/// downedFishron（第 6235 行）； downedAncientCultist（第 6247 行）； downedMoonlord（第 6249 行）；
+/// downedEmpressOfLight（第 6259 行）； downedQueenSlime（第 6261 行）； downedDeerclops（第 6263 行）；
+/// downedMechBossAny（第 6285 行）； downedMechBoss1（第 6287 行）； downedMechBoss2（第 6289 行）；
+/// downedMechBoss3（第 6291 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-p13-npc-town-progression-component-design.md。</para>
+/// <para>依据位置：第 136 行。</para>
+/// </remarks>
 public sealed class BossDefeatProgressionStateComponent
 {
   public bool DownedBoss1 { get; private set; }

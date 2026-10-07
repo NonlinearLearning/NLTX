@@ -4,6 +4,22 @@ using System.Collections.ObjectModel;
 
 namespace Terraria.WorldStorage;
 
+/// <summary>
+/// 保存当前和上一轮晶塔列表及刷新冷却。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.GameContent.TeleportPylonsSystem。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.GameContent/TeleportPylonsSystem.cs。</para>
+/// <para>
+/// 主要源成员：_pylons（第 15 行）； _pylonsOld（第 17 行）； _cooldownForUpdatingPylonsList（第 19 行）。
+/// </para>
+/// <para>重组说明：Revision 用于拆分后的版本或实例生命周期管理。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-P01-liquid-wiring-spatial-death-teleport-component-design.md。
+/// </para>
+/// <para>依据位置：第 269 行。</para>
+/// </remarks>
 public sealed class PylonRegistryComponent
 {
   private List<PylonRegistryEntry> _currentPylons = new();

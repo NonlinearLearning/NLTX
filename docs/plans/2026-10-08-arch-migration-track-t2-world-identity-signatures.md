@@ -6,6 +6,11 @@
 依赖：T1 的 API/包探针；若 T1 未完成，只能做扫描和隔离式准备  
 主计划：[自定义 ECS 转向 Arch 执行计划](2026-10-07-custom-ecs-to-arch-execution-plan.md)
 
+范围增强：[Arch 原生 API 覆盖审计](../reviews/audits/2026-10-08-arch-native-api-coverage-audit.md)，尤其 N2/N4。世界权威组件和槽位职责属于本线签名切换闭包。
+
+编译-only 限制：本线不运行加载、tick、退出、World 清理、身份拒绝或其他测试/冒烟；只编译
+受影响生产项目和必要的项目闭包。
+
 ## 1. 目标
 
 把“每个加载会话一个 Arch World、领域 UUID 与 Arch Entity 分离、World token 先于实体
@@ -22,6 +27,8 @@
   领域生命周期/能力 → 组件访问。不能只检查 Id。
 - World.Id 可回收；不能把旧 World.Id/Entity.Version 当作永不碰撞的全局 epoch。
 - 一个实体上的一个组件只有一个权威 Arch 状态；不在旧 store、wrapper、数组中继续写第二份。
+- 世界规则、时间、进度等组件挂到会话的世界单例实体，不在 WorldSessionRestoreState 中继续
+  维护 Arch 外的独立可写权威对象；外部加载输入与领域值快照按职责保留。
 - 生产迁移允许破坏旧 API；短期过渡类型必须在交接中列出删除点和退出条件。
 
 ## 3. 前置读取与允许范围
@@ -62,6 +69,10 @@
 4. 明确关系、槽位、Projectile identity 等投影如何指向同一 Entity，且清理由对应 owner 完成。
 5. 对 World dispose/clear、实体销毁、候选发布失败建立幂等清理顺序，不假定 CommandBuffer
    是事务。
+6. 建立世界单例及所需领域组件；修改候选恢复、默认初始化、模拟/保存读取和 IsFresh 调用闭包。
+   有默认单例时不再按总 EntityCount 为零判断 fresh；候选仍不能进入正式模拟。
+7. 区分 Arch Entity.Version 与协议槽位绑定/复用代次；槽位只保存完整 Entity 与明确投影数据，
+   不保留另一个实体 allocator、通用组件访问层或组件权威数组。
 
 ### T2-B2：生产签名整体编译闭包
 
@@ -70,21 +81,21 @@
 2. 将高频普通组件访问接到 Arch 原生 API 或明确领域接口，避免建立新的泛型转发层。
 3. 添加 owner-thread、token、WorldId、alive、生命周期和能力检查；检查失败要有具名结果。
 4. 结束所有 Arch ref 的借用后再调用结构变化或跨领域副作用；必要时改值快照/命令意图。
-5. 只构建受影响项目和最小加载/一 tick/退出路径，不跑全量测试。
+5. 只构建受影响项目和必要的项目引用闭包；不运行加载、tick、退出或任何测试。
 
-### T2-B3：约 10% 核心测试
+### T2-B3：编译结果交接
 
-选择：一个正常会话创建-一 tick-退出；一个候选 World 失败清理；一个旧 token/跨 World Entity
-拒绝；一个 UUID 普通复活与真实重建身份差异；一个生产 caller 编译/冒烟路径。按实际测试
-数量约取 10%，其余列为 not-run。重点观察世界/registry/关系/缓冲是否泄漏或误命中。
+记录受影响项目的 `dotnet build` 命令、退出码、warning/error 数和 `Build/bin/` 输出路径。
+World/registry/关系/缓冲泄漏、误命中和生命周期行为全部标记为未运行，不补做冒烟。
 
 ## 5. 完成条件
 
 - 受影响生产项目编译，且一条真实装配路径使用 Arch World。
 - 一个会话只有一个权威 World；没有同实体新旧组件双写。
+- 世界单例、候选加载与 IsFresh 使用同一 Arch 权威状态；槽位代次的必要消费者与失效规则明确。
 - World token、WorldId、Version、UUID 的语义和校验顺序在代码/报告中可见。
-- 候选失败、卸载和重复清理有证据；旧 API 过渡项有删除清单。
-- 10% 核心测试、构建证据和未覆盖 caller 完整交接。
+- 候选失败、卸载和重复清理本轮未运行；旧 API 过渡项有删除清单。
+- 编译证据、未编译 caller 和运行时未验证范围完整交接。
 
 ## 6. 失败处理与交接
 
@@ -92,6 +103,5 @@
 并切换到“先生成调用闭包图/最小隔离项目”的不同方案；不得以兼容桥无限拖延。若 T1 API
 结论冲突，暂停依赖部分，保留局部代码和精确错误。
 
-交接必须包括 changed files、commit、调用闭包清单、World/token/UUID 不变量、构建命令、
-10% 测试及 T3/T4 需要遵循的字段/接口合同。
-
+交接必须包括 changed files、commit、调用闭包清单、World/token/UUID 设计合同、构建命令与
+结果、未编译 caller，以及 T3/T4 需要遵循的字段/接口合同；不提交测试或冒烟结果。

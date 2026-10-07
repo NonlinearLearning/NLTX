@@ -3,6 +3,23 @@ using System.Collections.Generic;
 
 namespace Terraria.Combat;
 
+/// <summary>
+/// 保存受击主体按通道区分的免伤窗口。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Player。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Player.cs。</para>
+/// <para>
+/// 主要源成员：immune（第 968 行）； immuneNoBlink（第 970 行）； immuneTime（第 972 行）； hurtCooldowns（第 2475 行）。
+/// </para>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>主要源成员：immune（第 6303 行）。</para>
+/// <para>重组说明：按通道组织的窗口键和 Revision 是统一免伤模型时新增的状态。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-P06-player-combat-status-component-design.md。</para>
+/// <para>依据位置：第 50 行。</para>
+/// </remarks>
 public struct ImmunityComponent
 {
   public ImmunityComponent(int remainingTicks)

@@ -1,5 +1,20 @@
 namespace Terraria.Npc;
 
+/// <summary>
+/// 保存 NPC 选目标后的几何、评分、朝向和同步结果。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>
+/// 主要源成员：netUpdate（第 6015 行）； directionY（第 6305 行）； target（第 6321 行）； targetRect（第 6345 行）；
+/// oldTarget（第 6363 行）。
+/// </para>
+/// <para>拆分来源：Terraria.Entity。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Entity.cs。</para>
+/// <para>主要源成员：direction（第 20 行）。</para>
+/// <para>重组说明：Score 和目标种类用于显式选目标结果，来自选目标流程的重组。</para>
+/// </remarks>
 public sealed class NpcTargetSelectionStateComponent
 {
   public NpcTargetKind TargetKind { get; private set; }

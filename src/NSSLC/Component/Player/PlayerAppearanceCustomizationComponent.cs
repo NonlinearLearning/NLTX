@@ -1,5 +1,22 @@
 namespace Terraria.Player;
 
+/// <summary>
+/// 保存玩家发型、染色和身体服装颜色。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Player。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Player.cs。</para>
+/// <para>
+/// 主要源成员：hairDye（第 1947 行）； skinDyePacked（第 1950 行）； hairColor（第 1952 行）； skinColor（第 1954 行）；
+/// eyeColor（第 1956 行）； shirtColor（第 1958 行）； underShirtColor（第 1960 行）； pantsColor（第 1962 行）；
+/// shoeColor（第 1964 行）； hair（第 1966 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-p11-player-presentation-derived-component-design.md。
+/// </para>
+/// <para>依据位置：第 90 行。</para>
+/// </remarks>
 public sealed class PlayerAppearanceCustomizationComponent
 {
   public byte HairDye { get; private set; }

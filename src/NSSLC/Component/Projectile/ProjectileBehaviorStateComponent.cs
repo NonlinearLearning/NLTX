@@ -2,6 +2,17 @@ using System;
 
 namespace Terraria.Projectile;
 
+/// <summary>
+/// 保存射弹权威 AI 和局部 AI 槽位。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Projectile。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Projectile.cs。</para>
+/// <para>主要源成员：ai（第 128 行）； localAI（第 130 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-P15-projectile-component-design.md。</para>
+/// <para>依据位置：第 16 行。</para>
+/// </remarks>
 public struct ProjectileBehaviorStateComponent
 {
   public const int MaxAiSlots = 3;

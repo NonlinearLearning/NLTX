@@ -5,6 +5,24 @@ using Terraria.WorldInteraction.Tiles;
 
 namespace Terraria.WorldInteraction.Wiring;
 
+/// <summary>
+/// 保存一次电路传播的前沿、门、灯、逻辑门和传送目标暂存。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Wiring。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Wiring.cs。</para>
+/// <para>
+/// 主要源成员：blockPlayerTeleportationForOneIteration（第 17 行）； running（第 19 行）； _wireSkip（第 21 行）；
+/// _wireList（第 23 行）； _wireDirectionList（第 25 行）； _toProcess（第 27 行）； _GatesCurrent（第 29 行）；
+/// _LampsToCheck（第 31 行）； _GatesNext（第 33 行）； _GatesDone（第 35 行）； _PixelBoxTriggers（第 37 行）；
+/// _teleport（第 39 行）； _currentWireColor（第 65 行）； CurrentUser（第 67 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-P01-liquid-wiring-spatial-death-teleport-component-design.md。
+/// </para>
+/// <para>依据位置：第 19 行。</para>
+/// </remarks>
 public sealed class WirePropagationScratchComponent
 {
   public const int TeleportTargetCount = 2;

@@ -3,6 +3,19 @@ using Terraria.WorldInteraction.Tiles;
 
 namespace Terraria.WorldInteraction.Wiring;
 
+/// <summary>
+/// 保存已登记机关的坐标和到期计时。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Wiring。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Wiring.cs。</para>
+/// <para>主要源成员：_mechX（第 57 行）； _mechY（第 59 行）； _numMechs（第 61 行）； _mechTime（第 63 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-P01-liquid-wiring-spatial-death-teleport-component-design.md。
+/// </para>
+/// <para>依据位置：第 240 行。</para>
+/// </remarks>
 public sealed class WiringMechanismScheduleComponent
 {
   public const int MaximumEntryCount = 1000;

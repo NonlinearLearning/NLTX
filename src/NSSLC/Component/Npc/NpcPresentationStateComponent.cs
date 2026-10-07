@@ -4,6 +4,20 @@ namespace Terraria.Npc;
 // sourceMembers: IsABestiaryIconDummy, IsAPortraitDummy, ForcePartyHatOn,
 // nameOverIncrement, nameOverDistance, nameOver, altTexture, townNpcVariationIndex
 // crossSubsystemOwner: presentation snapshot integration-review
+/// <summary>
+/// 保存 NPC 图鉴、头像、名字显示、材质和派对外观状态。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>
+/// 主要源成员：ForcePartyHatOn（第 5905 行）； nameOverIncrement（第 5943 行）； nameOverDistance（第 5945 行）；
+/// nameOver（第 5947 行）； altTexture（第 5961 行）； townNpcVariationIndex（第 5963 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-P12-npc-combat-network-damage-component-design.md。</para>
+/// <para>依据位置：第 13 行。</para>
+/// </remarks>
 public sealed class NpcPresentationStateComponent
 {
   public NpcPresentationStateComponent(

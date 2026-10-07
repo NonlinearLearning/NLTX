@@ -5,6 +5,12 @@ namespace Terraria.LeashedEntity;
 /// <summary>
 /// Runtime reverse links for leashed entities that use this entity as their anchor.
 /// </summary>
+/// <remarks>
+/// <para>职责：保存锚点所绑定的拴系实体集合。</para>
+/// <para>拆分来源：由 LeashedEntity.AnchorPosition 的锚点关联流程重组。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.GameContent/LeashedEntity.cs。</para>
+/// <para>重组说明：锚点到拴系实体的反向成员集合是拆分时新增的索引。</para>
+/// </remarks>
 public readonly struct LeashedAnchorLinksComponent
 {
   private readonly EntityReference[]? _members;

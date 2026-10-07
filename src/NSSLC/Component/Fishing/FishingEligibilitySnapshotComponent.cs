@@ -6,6 +6,23 @@ namespace Terraria.Fishing;
 // componentId: FISHING-ELIGIBILITY-SNAPSHOT
 // designStatus: candidate
 // crossSubsystemOwner: integration-review
+/// <summary>
+/// 保存水域、鱼竿、鱼饵、环境和稀有度的钓鱼判定快照。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.DataStructures.FishingAttempt。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.DataStructures/FishingAttempt.cs。</para>
+/// <para>
+/// 主要源成员：waterTilesCount（第 31 行）； waterNeededToFish（第 33 行）； waterQuality（第 35 行）； chumsInWater（第
+/// 37 行）； fishingLevel（第 39 行）； CanFishInLava（第 41 行）； heightLevel（第 47 行）。
+/// </para>
+/// <para>重组说明：原钓鱼判定数据按一次尝试形成快照，规则版本是新增的快照前提。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-1/design/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-05-version4-fishing-and-catch-simulation-component-code-draft.md。
+/// </para>
+/// <para>依据位置：第 295 行。</para>
+/// </remarks>
 public struct FishingEligibilitySnapshotComponent
 {
   public FishingEligibilitySnapshotComponent(

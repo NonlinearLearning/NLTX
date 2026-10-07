@@ -3,6 +3,24 @@ using System.Numerics;
 namespace Terraria.Player;
 
 // Owns the mutable pose state used by the player presentation boundary.
+/// <summary>
+/// 保存玩家身体各部位的姿态、速度和动画偏移。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Player。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Player.cs。</para>
+/// <para>
+/// 主要源成员：headRotation（第 1099 行）； bodyRotation（第 1101 行）； legRotation（第 1103 行）； headPosition（第
+/// 1105 行）； bodyPosition（第 1107 行）； legPosition（第 1109 行）； headVelocity（第 1111 行）； bodyVelocity（第
+/// 1113 行）； legVelocity（第 1115 行）； fullRotation（第 1117 行）； fullRotationOrigin（第 1119 行）；
+/// fartKartCloudDelay（第 1121 行）； gfxOffY（第 1124 行）； stepSpeed（第 1126 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-p11-player-presentation-derived-component-design.md。
+/// </para>
+/// <para>依据位置：第 85 行。</para>
+/// </remarks>
 public sealed class PlayerPoseAndAnimationStateComponent
 {
   public float HeadRotation { get; private set; }

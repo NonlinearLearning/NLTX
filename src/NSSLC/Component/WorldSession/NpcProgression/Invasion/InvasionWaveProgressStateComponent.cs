@@ -2,6 +2,19 @@ using System;
 
 namespace Terraria.WorldSession.NpcProgression.Invasion;
 
+/// <summary>
+/// 保存世界入侵点数、波次击杀和波次编号。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>
+/// 主要源成员：totalInvasionPoints（第 5937 行）； waveKills（第 5939 行）； waveNumber（第 5941 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-p13-npc-town-progression-component-design.md。</para>
+/// <para>依据位置：第 356 行。</para>
+/// </remarks>
 public sealed class InvasionWaveProgressStateComponent
 {
   public float TotalInvasionPoints { get; private set; }

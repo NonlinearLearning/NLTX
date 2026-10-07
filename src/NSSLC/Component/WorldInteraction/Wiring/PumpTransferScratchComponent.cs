@@ -4,6 +4,22 @@ using Terraria.WorldInteraction.Tiles;
 
 namespace Terraria.WorldInteraction.Wiring;
 
+/// <summary>
+/// 保存一次电路执行中输入泵和输出泵的位置暂存。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Wiring。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Wiring.cs。</para>
+/// <para>
+/// 主要源成员：_inPumpX（第 43 行）； _inPumpY（第 45 行）； _numInPump（第 47 行）； _outPumpX（第 49 行）； _outPumpY（第
+/// 51 行）； _numOutPump（第 53 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-P01-liquid-wiring-spatial-death-teleport-component-design.md。
+/// </para>
+/// <para>依据位置：第 233 行。</para>
+/// </remarks>
 public sealed class PumpTransferScratchComponent
 {
   public const int MaxPumpCount = 20;

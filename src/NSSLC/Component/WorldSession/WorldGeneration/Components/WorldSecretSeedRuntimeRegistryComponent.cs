@@ -5,6 +5,20 @@ using Terraria.WorldGeneration.Definitions;
 
 namespace Terraria.WorldGeneration.Components;
 
+/// <summary>
+/// 保存秘密种子定义、启用变体和生成阶段注册状态。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.WorldGen.SecretSeed。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/WorldGen.cs。</para>
+/// <para>主要源成员：activeSecretSeedCount（第 422 行）； _enabled（第 424 行）； Enabled（第 426 行）。</para>
+/// <para>重组说明：生成身份、版本、命令去重集合和显式注册生命周期是新增状态。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-p18-world-seeds-skyblock-definitions-component-design.md。
+/// </para>
+/// <para>依据位置：第 129 行。</para>
+/// </remarks>
 public sealed class WorldSecretSeedRuntimeRegistryComponent
 {
   private readonly WorldSecretSeedRegistryDefinitionsProjection _definitions;

@@ -2,6 +2,17 @@ using System;
 
 namespace Terraria.SimulationRuleOverrides;
 
+/// <summary>
+/// 保存本轮生效的世界创造模式规则快照。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：由 CreativePowers 的规则读取与生效流程重组。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.GameContent.Creative/CreativePowers.cs。</para>
+/// <para>重组说明：生效快照、Tick 和来源版本是拆分时新增的派生结果。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-07-version4-second-round-review-merged.md。</para>
+/// <para>依据位置：第 1718 行。</para>
+/// </remarks>
 public readonly record struct RuleOverrideSnapshotComponent
 {
   public RuleOverrideSnapshotComponent(

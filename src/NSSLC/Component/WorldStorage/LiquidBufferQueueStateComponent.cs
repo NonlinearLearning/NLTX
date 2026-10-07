@@ -3,6 +3,19 @@ using System.Collections.Generic;
 
 namespace Terraria.WorldStorage;
 
+/// <summary>
+/// 保存液体待执行缓冲队列及入队容量限制。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.LiquidBuffer。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/LiquidBuffer.cs。</para>
+/// <para>主要源成员：numLiquidBuffer（第 5 行）； x（第 7 行）； y（第 9 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-P01-liquid-wiring-spatial-death-teleport-component-design.md。
+/// </para>
+/// <para>依据位置：第 182 行。</para>
+/// </remarks>
 public sealed class LiquidBufferQueueStateComponent
 {
   public const int DefaultReservedSlots = 2;

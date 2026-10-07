@@ -5,6 +5,25 @@ using Terraria.WorldGeneration.Definitions;
 
 namespace Terraria.WorldGeneration.Components;
 
+/// <summary>
+/// 保存空岛规则扫描的方块、墙和活动数量及提交状态。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.WorldGen.Skyblock。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/WorldGen.cs。</para>
+/// <para>
+/// 主要源成员：noAltars（第 3143 行）； noDungeon（第 3145 行）； noTemple（第 3147 行）； noHellstone（第 3149 行）；
+/// noFossils（第 3151 行）； noLifeCrystals（第 3153 行）； noHellforge（第 3155 行）； lowTiles（第 3157 行）；
+/// hasTile（第 3159 行）； hasWall（第 3161 行）； currentActiveTiles（第 3163 行）； denyFloatingIslands（第 3165
+/// 行）； denyAllGeneration（第 3177 行）； denySomeGeneration（第 3179 行）。
+/// </para>
+/// <para>重组说明：分列扫描游标、扫描版本、提交前提和显式生命周期是新增状态。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-p18-world-seeds-skyblock-definitions-component-design.md。
+/// </para>
+/// <para>依据位置：第 132 行。</para>
+/// </remarks>
 public sealed class WorldSkyblockGenerationScanComponent
 {
   private readonly bool[] _hasTile;

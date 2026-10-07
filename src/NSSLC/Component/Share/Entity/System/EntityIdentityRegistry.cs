@@ -6,17 +6,23 @@ namespace EntityEcs;
 
 public sealed class EntityIdentityRegistry
 {
-  private readonly Func<Guid> _createUuid;
   private readonly int _ownerThreadId;
-  private readonly HashSet<EntityUuid> _issued = new();
+  private readonly EntityUuidIssuer _uuidIssuer;
   private readonly Dictionary<EntityUuid, RuntimeEntityHandle> _liveByUuid = new();
   private readonly Dictionary<RuntimeEntityHandle, EntityUuid> _liveByHandle = new();
 
   public EntityIdentityRegistry(Func<Guid>? createUuid = null)
+      : this(new EntityUuidIssuer(createUuid))
   {
-    _createUuid = createUuid ?? Guid.NewGuid;
+  }
+
+  public EntityIdentityRegistry(EntityUuidIssuer uuidIssuer)
+  {
+    _uuidIssuer = uuidIssuer ?? throw new ArgumentNullException(nameof(uuidIssuer));
     _ownerThreadId = Environment.CurrentManagedThreadId;
   }
+
+  public EntityUuidIssuer UuidIssuer => _uuidIssuer;
 
   internal EntityUuid Register(RuntimeEntityHandle handle)
   {
@@ -26,11 +32,7 @@ public sealed class EntityIdentityRegistry
       throw new ArgumentException("An identity requires a valid runtime handle.", nameof(handle));
     }
 
-    EntityUuid uuid = new(_createUuid());
-    if (!_issued.Add(uuid))
-    {
-      throw new InvalidOperationException("The entity UUID has already been issued by this registry.");
-    }
+    EntityUuid uuid = _uuidIssuer.Issue();
 
     _liveByUuid.Add(uuid, handle);
     _liveByHandle.Add(handle, uuid);

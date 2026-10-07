@@ -1,5 +1,16 @@
 namespace Terraria.Npc;
 
+/// <summary>
+/// 保存 NPC 可分步任务的代数、阶段、游标和结束原因。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：由 NPC.AI 中可分步执行的目标搜索、住房和回家流程重组。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>重组说明：TaskGeneration、Phase、Cursor 和结束原因是任务执行与终止模型新增的状态。</para>
+/// <para>拆分依据目录：docs/system-decomposition/。</para>
+/// <para>拆分依据文件：2026-10-05-npc-ai-system-redesign.md。</para>
+/// <para>依据位置：第 218 行。</para>
+/// </remarks>
 public sealed class NpcTaskStateComponent
 {
   public ulong TaskGeneration { get; private set; }

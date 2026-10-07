@@ -2,6 +2,17 @@ using System;
 
 namespace Terraria.Town.Doors;
 
+/// <summary>
+/// 保存城镇 NPC 待执行的门交互意图。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>主要源成员：closeDoor（第 6425 行）； doorX（第 6427 行）； doorY（第 6429 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-p13-npc-town-progression-component-design.md。</para>
+/// <para>依据位置：第 141 行。</para>
+/// </remarks>
 public sealed class TownDoorInteractionIntentComponent
 {
   private TownDoorInteractionIntent? _pendingIntent;

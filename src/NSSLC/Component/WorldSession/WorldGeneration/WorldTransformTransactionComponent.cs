@@ -3,6 +3,19 @@ using System.Threading;
 
 namespace Terraria.WorldGeneration.Components;
 
+/// <summary>
+/// 保存世界变换的并发占用和变换版本。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.WorldGen。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/WorldGen.cs。</para>
+/// <para>主要源成员：_transformingWorld（第 4145 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-P16-world-lifecycle-housing-metrics-component-design.md。
+/// </para>
+/// <para>依据位置：第 160 行。</para>
+/// </remarks>
 public sealed class WorldTransformTransactionComponent
 {
   private readonly object _sync = new();

@@ -2,6 +2,17 @@ using System;
 
 namespace Terraria.WorldSession.NpcProgression.MoonLord;
 
+/// <summary>
+/// 保存月亮领主召唤倒计时和请求状态。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>主要源成员：MoonLordCountdown（第 5921 行）； MaxMoonLordCountdown（第 5923 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-p13-npc-town-progression-component-design.md。</para>
+/// <para>依据位置：第 126 行。</para>
+/// </remarks>
 public sealed class MoonLordEncounterStateComponent
 {
   private int _maxMoonLordCountdown;

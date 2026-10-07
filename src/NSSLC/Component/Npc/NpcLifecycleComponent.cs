@@ -2,6 +2,17 @@ using System;
 
 namespace Terraria.Npc;
 
+/// <summary>
+/// 保存 NPC 活动状态、生命周期阶段和剩余活动时间。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>主要源成员：active（第 5897 行）； timeLeft（第 6319 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-1/design/。</para>
+/// <para>拆分依据文件：2026-09-05-version4-npc-and-town-simulation-component-design.md。</para>
+/// <para>依据位置：第 381 行。</para>
+/// </remarks>
 public sealed class NpcLifecycleComponent
 {
   public NpcLifecycleComponent(

@@ -2,6 +2,26 @@ using System;
 
 namespace Terraria.WorldGeneration.Components;
 
+/// <summary>
+/// 保存世界身份、尺寸、种子、地层和出生点等基础信息。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Main。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Main.cs。</para>
+/// <para>
+/// 主要源成员：maxTilesX（第 522 行）； maxTilesY（第 524 行）； dungeonX（第 565 行）； dungeonY（第 567 行）；
+/// worldName（第 585 行）； worldSurface（第 587 行）； rockLayer（第 589 行）； spawnTileX（第 986 行）；
+/// spawnTileY（第 988 行）； worldID（第 1434 行）。
+/// </para>
+/// <para>拆分来源：Terraria.IO.WorldFileData。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.IO/WorldFileData.cs。</para>
+/// <para>主要源成员：WorldGeneratorVersion（第 29 行）； UniqueId（第 39 行）； SeedText（第 84 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-1/design/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-06-version4-world-generation-and-ecology-component-code-draft.md。
+/// </para>
+/// <para>依据位置：第 228 行。</para>
+/// </remarks>
 public sealed class WorldDescriptorComponent
 {
   private const int SectionHeight = 150;

@@ -2,6 +2,17 @@ using System;
 
 namespace Terraria.Npc.Environment;
 
+/// <summary>
+/// 保存 NPC 呼吸资源和消耗计数。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>主要源成员：breath（第 6433 行）； breathMax（第 6435 行）； breathCounter（第 6437 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-p13-npc-town-progression-component-design.md。</para>
+/// <para>依据位置：第 644 行。</para>
+/// </remarks>
 public sealed class NpcBreathStateComponent
 {
   public NpcBreathStateComponent(

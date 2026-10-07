@@ -7,6 +7,17 @@ namespace Terraria.SpatialSimulation.Components;
 // status: proposed
 // componentId: SPATIAL.COMP.COLLISION_SHAPE
 // crossSubsystemOwner: integration-review
+/// <summary>
+/// 保存空间碰撞形状、尺寸、偏移和启用状态。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Entity。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Entity.cs。</para>
+/// <para>主要源成员：width（第 22 行）； height（第 24 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-1/design/。</para>
+/// <para>拆分依据文件：2026-09-05-version4-spatial-simulation-component-code-draft.md。</para>
+/// <para>依据位置：第 175 行。</para>
+/// </remarks>
 public readonly record struct CollisionShapeComponent
 {
   public CollisionShapeComponent(

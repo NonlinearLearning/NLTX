@@ -8,6 +8,20 @@ namespace Terraria.LeashedEntity;
 /// componentOwner: LeashedEntitySimulation
 /// crossSubsystemOwner: integration-review
 /// </summary>
+/// <remarks>
+/// <para>职责：保存拴系小动物的类型、目标位置和行为状态。</para>
+/// <para>拆分来源：Terraria.GameContent.LeashedEntities.LeashedCritter。</para>
+/// <para>
+/// 原始文件：D:/TRbackup/Version4/Terraria.GameContent.LeashedEntities/LeashedCritter.cs。
+/// </para>
+/// <para>
+/// 主要源成员：anchorStyle（第 15 行）； npcType（第 17 行）； WaitTime（第 27 行）； State（第 29 行）； TargetPosition（第
+/// 31 行）； isAquatic（第 39 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-P02-leashed-entity-component-design.md。</para>
+/// <para>依据位置：第 1150 行。</para>
+/// </remarks>
 public struct LeashedCritterBehaviorComponent
 {
   /// <summary>

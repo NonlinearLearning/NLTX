@@ -5,6 +5,17 @@ namespace Terraria.WorldGeneration.Components;
 // status: proposed
 // evidenceStatus: partial; Version4 type-level key is confirmed, final key mode unresolved
 // crossSubsystemOwner: integration-review
+/// <summary>
+/// 保存居民与房间的索引及房间分配顺序。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.GameContent.TownRoomManager。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.GameContent/TownRoomManager.cs。</para>
+/// <para>主要源成员：_roomLocationPairs（第 13 行）； _hasRoom（第 15 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-1/design/。</para>
+/// <para>拆分依据文件：2026-09-05-version4-npc-and-town-simulation-component-design.md。</para>
+/// <para>依据位置：第 623 行。</para>
+/// </remarks>
 public sealed class TownHousingRegistryComponent
 {
   private readonly List<TownHousingResidentKey> _roomAssignmentOrder = new();

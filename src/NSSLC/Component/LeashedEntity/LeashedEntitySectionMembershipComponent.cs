@@ -8,6 +8,15 @@ namespace Terraria.LeashedEntity;
 /// componentOwner: LeashedEntitySimulation
 /// crossSubsystemOwner: integration-review
 /// </summary>
+/// <remarks>
+/// <para>职责：保存拴系实体所属区块、区块槽位及激活状态。</para>
+/// <para>拆分来源：Terraria.GameContent.LeashedEntity。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.GameContent/LeashedEntity.cs。</para>
+/// <para>主要源成员：sectionSlot（第 183 行）。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-P02-leashed-entity-component-design.md。</para>
+/// <para>依据位置：第 1142 行。</para>
+/// </remarks>
 public struct LeashedEntitySectionMembershipComponent
 {
   /// <summary>

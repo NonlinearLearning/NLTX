@@ -4,6 +4,20 @@ using Terraria.Npc;
 
 namespace Terraria.WorldSession.NpcProgression.Boss;
 
+/// <summary>
+/// 保存世界当前首领实体的旧索引及实体映射。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>
+/// 主要源成员：golemBoss（第 6007 行）； plantBoss（第 6009 行）； crimsonBoss（第 6011 行）； deerclopsBoss（第 6013
+/// 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-p13-npc-town-progression-component-design.md。</para>
+/// <para>依据位置：第 376 行。</para>
+/// </remarks>
 public sealed class BossEntityIndexRegistryComponent
 {
   private readonly Dictionary<BossKind, BossEntityIndexKey> _entries = new();

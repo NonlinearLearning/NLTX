@@ -16,6 +16,11 @@ public sealed class EntityRuntime : IDisposable
   private bool _isDisposed;
 
   public EntityRuntime(EntityIdentityRegistry? identityRegistry = null)
+      : this(identityRegistry, new EntityRuntimeId(Guid.NewGuid()))
+  {
+  }
+
+  public EntityRuntime(EntityIdentityRegistry? identityRegistry, EntityRuntimeId runtimeId)
   {
     _identityRegistry = identityRegistry ?? new EntityIdentityRegistry();
     _ownerThreadId = Environment.CurrentManagedThreadId;
@@ -24,7 +29,12 @@ public sealed class EntityRuntime : IDisposable
       throw new InvalidOperationException("The entity runtime and identity registry must share an owner thread.");
     }
 
-    RuntimeId = new EntityRuntimeId(Guid.NewGuid());
+    if (!runtimeId.IsAssigned)
+    {
+      throw new ArgumentException("An entity runtime requires an assigned runtime ID.", nameof(runtimeId));
+    }
+
+    RuntimeId = runtimeId;
   }
 
   public EntityRuntimeId RuntimeId { get; }

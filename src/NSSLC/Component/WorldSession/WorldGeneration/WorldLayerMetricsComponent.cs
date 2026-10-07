@@ -3,6 +3,25 @@ using System.Collections.Generic;
 
 namespace Terraria.WorldGeneration.Components;
 
+/// <summary>
+/// 保存世界地表、岩层、雪地和云层的生成指标。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.WorldBuilding.GenVars。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.WorldBuilding/GenVars.cs。</para>
+/// <para>
+/// 主要源成员：lowestCloud（第 46 行）； worldSurfaceLow（第 66 行）； worldSurface（第 68 行）； worldSurfaceHigh（第
+/// 70 行）； rockLayerLow（第 72 行）； rockLayer（第 74 行）； rockLayerHigh（第 76 行）； snowTop（第 78 行）；
+/// snowBottom（第 80 行）； snowOriginLeft（第 82 行）； snowOriginRight（第 84 行）； snowMinX（第 86 行）；
+/// snowMaxX（第 88 行）。
+/// </para>
+/// <para>重组说明：GenerationId 用于拆分后的版本或实例生命周期管理。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-p17-world-terrain-biomes-genvars-component-design.md。
+/// </para>
+/// <para>依据位置：第 388 行。</para>
+/// </remarks>
 public sealed class WorldLayerMetricsComponent
 {
   private int[] _snowMinX;

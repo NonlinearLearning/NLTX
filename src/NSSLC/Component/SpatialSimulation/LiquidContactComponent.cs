@@ -7,6 +7,19 @@ namespace Terraria.SpatialSimulation.Components;
 // status: proposed
 // componentId: SPATIAL.COMP.LIQUID_CONTACT
 // crossSubsystemOwner: integration-review
+/// <summary>
+/// 保存空间主体的各类液体接触结果和接触计时。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Entity。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Entity.cs。</para>
+/// <para>
+/// 主要源成员：wet（第 26 行）； shimmerWet（第 28 行）； honeyWet（第 30 行）； wetCount（第 32 行）； lavaWet（第 34 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-1/design/。</para>
+/// <para>拆分依据文件：2026-09-05-version4-spatial-simulation-component-design.md。</para>
+/// <para>依据位置：第 411 行。</para>
+/// </remarks>
 public struct LiquidContactComponent
 {
   public long? ResolvedAtTick;

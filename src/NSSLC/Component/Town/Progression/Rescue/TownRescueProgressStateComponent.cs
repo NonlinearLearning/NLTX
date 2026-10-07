@@ -2,6 +2,21 @@ using System;
 
 namespace Terraria.Town.Progression.Rescue;
 
+/// <summary>
+/// 保存城镇 NPC 的救援解锁进度。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>
+/// 主要源成员：savedTaxCollector（第 6151 行）； savedGoblin（第 6153 行）； savedWizard（第 6155 行）； savedMech（第
+/// 6157 行）； savedAngler（第 6159 行）； savedStylist（第 6161 行）； savedBartender（第 6163 行）；
+/// savedGolfer（第 6165 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-p13-npc-town-progression-component-design.md。</para>
+/// <para>依据位置：第 130 行。</para>
+/// </remarks>
 public sealed class TownRescueProgressStateComponent
 {
   public bool SavedTaxCollector { get; private set; }

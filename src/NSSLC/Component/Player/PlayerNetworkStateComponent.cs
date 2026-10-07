@@ -8,6 +8,17 @@ namespace Terraria.Player;
 /// components remain the owners of their respective state; this component holds the remaining
 /// player-owned network facts so packet DTOs never become a second store.
 /// </summary>
+/// <remarks>
+/// <para>职责：保存玩家网络同步使用的外观、控制、战斗和交互投影。</para>
+/// <para>拆分来源：Terraria.Player。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Player.cs。</para>
+/// <para>
+/// 主要源成员：skinVariant（第 904 行）； voiceVariant（第 906 行）； voicePitchOffset（第 908 行）； itemRotation（第
+/// 1023 行）； stealth（第 1077 行）； PotionOfReturnHomePosition（第 1901 行）； hostile（第 1968 行）；
+/// MinionRestTargetPoint（第 2386 行）； MinionAttackTargetNPC（第 2388 行）； itemAnimation（第 2393 行）；
+/// ShouldNotDraw（第 3094 行）； talkNPC（第 3110 行）。
+/// </para>
+/// </remarks>
 public sealed class PlayerNetworkStateComponent
 {
   // Packet 4 facts that do not have a separate domain component yet. These are

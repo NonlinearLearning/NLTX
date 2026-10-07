@@ -2,6 +2,23 @@ using System;
 
 namespace Terraria.WorldSession.NpcProgression.Events;
 
+/// <summary>
+/// 保存世界入侵、季节事件和天界塔的击败进度。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.NPC。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>
+/// 主要源成员：downedGoblins（第 6221 行）； downedFrost（第 6223 行）； downedPirates（第 6225 行）； downedClown（第
+/// 6227 行）； downedMartians（第 6233 行）； downedHalloweenTree（第 6237 行）； downedHalloweenKing（第 6239
+/// 行）； downedChristmasIceQueen（第 6241 行）； downedChristmasTree（第 6243 行）； downedChristmasSantank（第
+/// 6245 行）； downedTowerSolar（第 6251 行）； downedTowerVortex（第 6253 行）； downedTowerNebula（第 6255 行）；
+/// downedTowerStardust（第 6257 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-11-version4-p13-npc-town-progression-component-design.md。</para>
+/// <para>依据位置：第 137 行。</para>
+/// </remarks>
 public sealed class EventDefeatProgressionStateComponent
 {
   public bool DownedGoblins { get; private set; }

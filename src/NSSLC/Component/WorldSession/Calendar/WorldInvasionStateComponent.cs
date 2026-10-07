@@ -3,6 +3,21 @@ using Terraria.WorldSession.Components;
 
 namespace Terraria.WorldSession.Calendar;
 
+/// <summary>
+/// 保存世界入侵的种类、位置、规模、波次和进度。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Main。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Main.cs。</para>
+/// <para>
+/// 主要源成员：invasionType（第 1059 行）； invasionX（第 1061 行）； invasionSize（第 1063 行）； invasionDelay（第
+/// 1065 行）； invasionWarn（第 1067 行）； invasionSizeStart（第 1069 行）； invasionProgressIcon（第 1071 行）；
+/// invasionProgress（第 1073 行）； invasionProgressMax（第 1075 行）； invasionProgressWave（第 1077 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-15-version4-非权威20分区组件实现审计报告.md。</para>
+/// <para>依据位置：第 35 行。</para>
+/// </remarks>
 public sealed class WorldInvasionStateComponent
 {
   public WorldInvasionStateComponent(

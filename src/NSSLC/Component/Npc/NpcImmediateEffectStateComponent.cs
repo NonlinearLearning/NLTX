@@ -2,6 +2,14 @@ using System.Numerics;
 
 namespace Terraria.Npc;
 
+/// <summary>
+/// 保存 NPC 本轮待提交的跳跃、开门、回家、同步和粒子效果。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：由 NPC.AI 中跳跃、开门、回家、粒子和网络更新等即时效果重组。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/NPC.cs。</para>
+/// <para>重组说明：这是拆分 NPC AI 后新增的本轮效果容器；请求、结果和失败原因不对应原版单一字段组。</para>
+/// </remarks>
 public sealed class NpcImmediateEffectStateComponent
 {
   public int DespawnEncouragementTicks { get; private set; }

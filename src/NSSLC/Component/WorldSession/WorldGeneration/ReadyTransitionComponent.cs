@@ -2,6 +2,17 @@ using System;
 
 namespace Terraria.WorldGeneration.Components;
 
+/// <summary>
+/// 保存世界进入就绪状态所需的生成、液体、住房和保存完成条件。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：由 WorldGen 在生成、液体稳定、住房和保存完成后发布世界的流程重组。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/WorldGen.cs。</para>
+/// <para>重组说明：各完成门槛、发布版本和失败原因是就绪切换模型新增的状态。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-1/design/。</para>
+/// <para>拆分依据文件：2026-09-05-version4-world-generation-and-ecology-component-design.md。</para>
+/// <para>依据位置：第 706 行。</para>
+/// </remarks>
 public readonly record struct ReadyTransitionComponent
 {
   public ReadyTransitionComponent(

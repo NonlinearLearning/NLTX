@@ -4,6 +4,17 @@ using System.Collections.ObjectModel;
 
 namespace Terraria.SimulationRuleOverrides;
 
+/// <summary>
+/// 保存创造模式规则的默认和当前权限。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：由 CreativePowers 的开关、滑块和权限状态重组。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.GameContent.Creative/CreativePowers.cs。</para>
+/// <para>重组说明：原 Power 内部状态按世界、玩家和权限主体分别重组；版本字段是新增状态。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>拆分依据文件：2026-09-07-version4-second-round-review-merged.md。</para>
+/// <para>依据位置：第 1721 行。</para>
+/// </remarks>
 public sealed class RuleOverridePermissionStateComponent
 {
   public RuleOverridePermissionStateComponent(

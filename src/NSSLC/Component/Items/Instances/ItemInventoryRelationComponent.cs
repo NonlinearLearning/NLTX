@@ -8,6 +8,14 @@ public enum ItemInventorySlotKind : byte
   Trash,
 }
 
+/// <summary>
+/// 保存物品实例与玩家背包槽位之间的归属关系。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：由 Player.inventory 的槽位归属模型重组。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Player.cs。</para>
+/// <para>重组说明：玩家实体引用、槽位种类和槽位索引组成拆分时新增的显式关系。</para>
+/// </remarks>
 public readonly record struct ItemInventoryRelationComponent
 {
   public ItemInventoryRelationComponent(

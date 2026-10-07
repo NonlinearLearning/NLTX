@@ -3,6 +3,22 @@ using System.Numerics;
 
 namespace Terraria.Player.Presentation;
 
+/// <summary>
+/// 保存玩家头顶消息的文本、片段、尺寸、颜色和剩余时间。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.Player.OverheadMessage。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria/Player.cs。</para>
+/// <para>
+/// 主要源成员：chatText（第 457 行）； snippets（第 459 行）； messageSize（第 461 行）； timeLeft（第 463 行）； color（第
+/// 465 行）。
+/// </para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-p11-player-presentation-derived-component-design.md。
+/// </para>
+/// <para>依据位置：第 102 行。</para>
+/// </remarks>
 public sealed class PlayerOverheadMessageStateComponent
 {
   private string _chatText = string.Empty;

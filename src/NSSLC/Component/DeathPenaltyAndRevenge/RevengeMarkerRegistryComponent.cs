@@ -6,6 +6,20 @@ using System.Collections.ObjectModel;
 
 namespace Terraria.DeathPenaltyAndRevenge;
 
+/// <summary>
+/// 保存世界内金币复仇标记的索引和集合。
+/// </summary>
+/// <remarks>
+/// <para>拆分来源：Terraria.GameContent.CoinLossRevengeSystem。</para>
+/// <para>原始文件：D:/TRbackup/Version4/Terraria.GameContent/CoinLossRevengeSystem.cs。</para>
+/// <para>主要源成员：_markers（第 295 行）。</para>
+/// <para>重组说明：Revision 用于拆分后的版本或实例生命周期管理。</para>
+/// <para>拆分依据目录：docs/component-decomposition/review-round-2/。</para>
+/// <para>
+/// 拆分依据文件：2026-09-11-version4-P01-liquid-wiring-spatial-death-teleport-component-design.md。
+/// </para>
+/// <para>依据位置：第 215 行。</para>
+/// </remarks>
 public sealed class RevengeMarkerRegistryComponent
 {
   private readonly Dictionary<RevengeMarkerId, RevengeMarkerSnapshot?> _markers;

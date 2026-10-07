@@ -6,6 +6,11 @@
 协调文档：[并行长线协调](2026-10-08-arch-parallel-execution-coordination.md)  
 主计划：[自定义 ECS 转向 Arch 执行计划](2026-10-07-custom-ecs-to-arch-execution-plan.md)
 
+范围增强：[Arch 原生 API 覆盖审计](../reviews/audits/2026-10-08-arch-native-api-coverage-audit.md)，尤其 N1/N3 与能力采用边界。新增内容是待执行合同，不代表旧探针已覆盖。
+
+编译-only 限制：本线不运行探针、测试、benchmark、冒烟或其他运行时验证；只编译受影响
+项目并记录编译结果。API/关系/Events 行为仍属于未验证风险，不得从编译成功推导。
+
 ## 1. 目标
 
 建立所有后续长线都能复核的当前源码基线，并在实际仓库 SDK、目标框架和输出约束下验证
@@ -58,22 +63,32 @@ Arch 研究文档。必须读取 `C:\Users\shan\.agents\skills\pua\SKILL.md`，�
 5. 对线上文档与固定源码的差异逐项标记“文档漂移 / 以探针为准”，尤其是 namespace、
    `WithNone`、`Playback` 拼写和 EntityReference。
 
-### T1-B2：只运行约 10% 核心测试并交接
+### T1-B2：编译门禁与交接
 
-选择本线最高风险的约 10%：至少包含一个 World 释放/ID 复用场景、一个跨 World 或 token
-拒绝场景、一个 struct/class 组件访问场景、一个 Query 组合场景、一个 CommandBuffer
-暂存实体/分组场景。不要运行完整矩阵。若探针数量很少，明确说明“10% 按风险代表项取整”。
+只针对探针项目执行 `dotnet build`（必要时先 restore）；不得运行探针或测试。报告命令、
+项目、退出码、warning/error 数和 `Build/bin/` 输出路径。编译失败时保存第一条完整错误和
+上下文，按 pua 要求切换排查方向；不以运行验证替代编译门禁。
 
-构建只针对探针项目；运行只针对上述选择项。报告命令、退出码、warning/error 数、输出
-路径及输入/产物 hash。编译失败时保存第一条完整错误和前后 50 行上下文，按 pua 要求换
-至少一种本质不同的修复/验证方向后再报告阻塞。
+### T1-B3：System 与官方关系/事件兼容性增补
+
+1. 固定 `Arch.System 1.1.0`，验证 ISystem/BaseSystem/带名称 Group 的签名、注册顺序、
+   嵌套、Initialize/BeforeUpdate/Update/AfterUpdate/Dispose；明确 Update 不自动调用前后钩子，
+   Group 不提供业务依赖排序或并行 DAG。
+2. 检查官方 Relationships 发布包与固定源码：NuGet 仅有 1.0.0/1.0.1，1.0.1 声明旧 Arch
+   依赖；源码声明 2.1.0 不代表已发布。实际编译/运行确定兼容性，不降级核心或猜包版本。
+3. 对需要关系自动清理的方案，验证 EVENTS、Debug/Release、Arch-Events 2.1.0 与扩展的
+   实际依赖图。生产只解析一个兼容 Arch.dll；不要同时引入两套核心变体。
+4. 必要时评估固定官方源码构建扩展，记录来源/许可证/hash/配置；不复制重写关系存储。
+   source/target 销毁、移除重建和 World 释放的清理行为交接给 T3。
+5. 本轮不运行新增能力探针；只记录涉及的项目和编译闭包。关系局部未决不改变编译结果，
+   但必须作为未验证风险交接，不能把编译通过冒充关系通过。
 
 ## 4. 完成条件
 
 - `Arch 2.1.0` 实际在仓库 SDK/net10.0 约束下 restore/build；依赖和资产可复核。
-- 关键 API 的探针结果与主计划事实一致或已记录差异。
-- T2–T5 能拿到一份明确的边界表：Arch 保证什么，NLTX owner 必须保证什么。
-- 10% 核心测试的选择、运行、跳过项和理由完整记录。
+- 受影响探针项目编译通过或记录精确编译错误；不运行关键 API 探针。
+- T2–T5 能拿到当前源码的编译闭包和未编译项目清单；行为边界作为后续风险记录。
+- Arch.System、关系/Events 的运行时兼容性本轮保持未验证，不作为编译通过的附带结论。
 - 生成 T1 交接报告，状态只能是 `done`、`partial` 或 `blocked`，不能用“基本完成”。
 
 ## 5. 失败与回退
@@ -84,7 +99,6 @@ Arch 研究文档。必须读取 `C:\Users\shan\.agents\skills\pua\SKILL.md`，�
 
 ## 6. 交接给总验收会话
 
-必须提交：探针代码/commit、baseline inventory、API 行为矩阵、10% 测试报告、构建证据、
-未覆盖清单、T2–T5 的前置注意事项。交接报告放在 `Build/diagnostics/ArchMigration/T1/`，
+必须提交：探针代码/commit、baseline inventory、编译命令与结果、未编译清单、行为验证未执行
+说明、T2–T5 的前置注意事项。交接报告放在 `Build/diagnostics/ArchMigration/T1/`，
 必要时另写 `docs/research/` 事实增补，但不得把探针通过写成生产迁移通过。
-
