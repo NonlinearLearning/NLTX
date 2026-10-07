@@ -34,7 +34,7 @@ alias，`EntityIdentityRegistry` 仍映射 `EntityUuid` 到 `RuntimeEntityHandle
 | B0 五类实体真实 caller 盘点 | done（静态） | 已定位 NPC、Player、Projectile、Item/world-drop、TileEntity 的创建/发布/释放入口。 |
 | 生命周期状态机与失败回滚合同 | partial | 旧 caller 已有局部回滚；统一 Arch `World`、token、UUID registry 尚未提供。 |
 | NPC 父子关系唯一权威 | blocked | 当前同时写入 `NpcParentRelationComponent` 与 `EntityRelationState`；需要 T2 Entity/token 入口后移除冗余写入。 |
-| 官方关系扩展采用 | blocked | T1/T3-B3 的关系包/程序集兼容性结论未进入当前工作树；本轮禁止安装、探针或生产接线。 |
+| 官方关系扩展采用 | partial / blocked 生产接线 | 当前工作树有 T1 的隔离编译证据：`Arch.Relationships 1.0.1` 的部分方法可编译，但包声明旧 Arch 依赖且未有运行时清理证据；Events API 探针仍有签名错误。 |
 | Player 普通复活/真实重建语义 | partial | `PlayerLifecycleComponent` 支持同实例死亡阶段；实际 Arch UUID/Entity 语义未接线。 |
 | 槽位 generation 与 Arch Version 分离 | partial | 现有 `EntitySlotStore` 有槽位 generation；Arch Entity 尚未存在，无法完成双 token 检查。 |
 | 运行时验证 | not-run | 由 compile-only 变更控制明确禁止。 |
@@ -88,6 +88,32 @@ D0D77F6259A15836AB831592ED3DB4A51645562D88932D489846D45BB6C42334  src/NSSLC.Tool
 45AAEF998449D8314AE564CC4FA881C58AED931B31BBFCAA6561DF2499F06FCF  src/NSSLC/Component/WorldStorage/System/EntitySlotStore.cs
 9712FCDC33CB8ECE6880578DB06512628516E979DC1F56287CAF4219E6BC6C8B  src/NSSLC/Component/WorldStorage/System/WorldStorageRoot.cs
 ```
+
+### 2.3 T1 关系/Events 兼容性证据
+
+当前工作树中出现了未跟踪的 T1 隔离项目和诊断文件；本线只读取证据，没有执行这些项目。
+证据将关系扩展从“完全未知”收窄为“部分编译面已观察、生产采用仍阻塞”：
+
+- `Build/diagnostics/ArchMigration/T1/relationships-core-build-attempt-4.json` 记录
+  `Terraria.Arch.Relationships.PackageProbe.csproj` exit `0`、0 warning、0 error。该版本的
+  probe 只保留了实际可编译的 `AddRelationship`、`SetRelationship`、`HasRelationship`、
+  `GetRelationship`、`TryGetRelationship`、`GetRelationships`、`Relationship<T>.Set` 和
+  `RemoveRelationship` 表面。
+- 同一 probe 的前序记录确认 `Relationship<T>.Count` 不在实际 1.0.1 二进制引用面；
+  `TryGetRelationships`/`TryGetRefRelationships` 也被记录为 XML/二进制漂移项，不能在生产
+  合同中使用。该编译结果不能证明 source/target destroy、World dispose 或反向清理行为。
+- `Arch.Relationships 1.0.1` 的 PackageReference 可 restore，但其 nuspec 声明的 Arch 依赖是
+  `1.2.6.5-alpha`。这与本项目固定的 Arch 2.1.0 形成兼容性风险；不能因为局部类型能编译就
+  把它写成生产兼容通过，也不能为了它降级核心 Arch。
+- `Build/diagnostics/ArchMigration/T1/events-package-evidence.json` 记录 `Arch-Events 2.1.0`
+  包 Debug/Release restore/build 各 exit `0`、0 warning、0 error；但
+  `events-api-build.json` 的 API probe Debug/Release 各 exit `1`、4 error，错误是事件委托
+  参数要求 `in`。因此 Events 包资产可取得，当前事件 API 接线和清理行为仍未通过编译合同。
+
+T3 的采用结论：可以把上述关系方法作为后续 T2 合入后的候选 API 表面，但不能现在接入生产，
+也不能把 `Arch.Relationships 1.0.1` 的包依赖或 Events package build 当作 Release 清理证据。
+在 T2 session/token/world owner 和关系扩展的 source/target/World 清理语义没有共同交接前，
+NPC、Item、Projectile、TileEntity 的生产关系接线继续标记 `blocked-by-prerequisite`。
 
 ## 3. B0 实体类别支持矩阵
 
