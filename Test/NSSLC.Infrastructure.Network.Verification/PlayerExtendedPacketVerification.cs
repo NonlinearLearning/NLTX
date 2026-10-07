@@ -25,6 +25,30 @@ internal static class PlayerExtendedPacketVerification
     ConnectionIdentity connection = new(Guid.NewGuid(), 1);
     SenderBinding binding = new(2, Guid.NewGuid());
     current[connection] = binding;
+    var handlers = new PlayerExtendedPacketHandlers(owner);
+    var upload = new NetworkSessionContext(
+      connection, "verification", NetworkSessionStage.AwaitPlayerData, binding,
+      IsHost: false, runtimeId);
+    PacketHandlingResult initialLoadout = await handlers.HandleAsync(
+      upload,
+      new SyncLoadoutPacket { Player = 99, LoadoutIndex = 1, AccessoryVisibilityMask = 3 },
+      CancellationToken.None);
+    Verify.That(initialLoadout.Accepted && initialLoadout.Outbound.Count == 1 &&
+      initialLoadout.Outbound[0].Packet is SyncLoadoutPacket initialProjection &&
+      initialProjection.Player == 2 && initialProjection.LoadoutIndex == 1 &&
+      initialProjection.AccessoryVisibilityMask == 3,
+      "Packet 147 must accept loadout-first login before packet 4 creates the Player entity.");
+    NetworkPlayerBindingResult initialPlayer = await owner.EnsurePlayerAsync(upload);
+    Verify.That(initialPlayer.Status == NetworkPlayerBindingStatus.Existing &&
+      initialPlayer.Player.HasValue,
+      "Login loadout must create the authenticated Player through the existing owner entry point.");
+    var lifecycle = new PlayerLifecyclePacketHandlers(owner);
+    PacketHandlingResult initialIdentity = await lifecycle.HandleAsync(
+      upload,
+      new SyncPlayerPacket { Player = 99, Name = "Loadout Login" },
+      CancellationToken.None);
+    Verify.That(initialIdentity.Accepted,
+      "Packet 4 must apply character identity to the Player already created by login loadout.");
     var context = new NetworkSessionContext(
       connection, "verification", NetworkSessionStage.Active, binding,
       IsHost: false, runtimeId);
@@ -32,6 +56,8 @@ internal static class PlayerExtendedPacketVerification
     Verify.That(firstPlayer.Succeeded,
       "The extended packet fixture requires an authenticated player.");
     EntityReference firstReference = firstPlayer.Player!.Value.Reference;
+    Verify.That(firstReference == initialPlayer.Player!.Value.Reference,
+      "Login and Active loadout processing must share the same Player entity.");
 
     ConnectionIdentity targetConnection = new(Guid.NewGuid(), 2);
     SenderBinding targetBinding = new(7, Guid.NewGuid());
@@ -42,7 +68,6 @@ internal static class PlayerExtendedPacketVerification
     Verify.That((await owner.EnsurePlayerAsync(targetContext)).Succeeded,
       "The spectating fixture requires an active target player.");
 
-    var handlers = new PlayerExtendedPacketHandlers(owner);
     PacketHandlingResult loadout = await handlers.HandleAsync(
       context,
       new SyncLoadoutPacket { Player = 99, LoadoutIndex = 1, AccessoryVisibilityMask = 3 },

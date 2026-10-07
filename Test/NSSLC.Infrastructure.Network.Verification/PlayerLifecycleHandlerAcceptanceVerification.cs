@@ -217,6 +217,26 @@ internal static class PlayerLifecycleHandlerAcceptanceVerification
     Verify.That(mana.Accepted && mana.Outbound.Count == 0,
       "Packet 42 must commit mana without inventing an unsolicited relay.");
 
+    PacketHandlingResult equipmentMana = await handlers.HandleAsync(upload,
+      new Unknown42Packet { Player = 200, Mana = 220, MaximumMana = 200 },
+      CancellationToken.None);
+    Verify.That(equipmentMana.Accepted && equipmentMana.Outbound.Count == 0,
+      "Login packet 42 carries base maximum mana and must allow equipment-boosted current mana.");
+    NetworkPlayerSnapshot? afterEquipmentMana = await playerOwner.CapturePlayerAsync(active);
+    Verify.That(afterEquipmentMana is { StatMana: 220, StatManaMax: 200 },
+      "Packet 42 must preserve current mana separately from the transmitted base maximum.");
+    foreach ((short currentMana, short baseMaximum) in new[] {
+      ((short)-1, (short)200), ((short)220, (short)-1)
+    }) {
+      PacketHandlingResult invalidMana = await handlers.HandleAsync(upload,
+        new Unknown42Packet { Player = 200, Mana = currentMana, MaximumMana = baseMaximum },
+        CancellationToken.None);
+      NetworkPlayerSnapshot? afterInvalidMana = await playerOwner.CapturePlayerAsync(active);
+      Verify.That(!invalidMana.Accepted && invalidMana.RejectionCode == "InvalidPlayerState" &&
+        afterInvalidMana is { StatMana: 220, StatManaMax: 200 },
+        "Negative packet-42 mana values must reject without changing the accepted player state.");
+    }
+
     PacketHandlingResult buffs = await handlers.HandleAsync(active,
       new PlayerBuffsPacket { Player = 200, BuffTypes = new ushort[] { 5, 10 } },
       CancellationToken.None);

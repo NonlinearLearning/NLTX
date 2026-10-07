@@ -59,7 +59,15 @@ public sealed partial class NetworkPlayerOwner
     NetworkPlayerBindingStatus validation = ValidateContext(
       session,
       context,
-      allowAwaitPlayerData: false);
+      allowAwaitPlayerData: true);
+    if (validation == NetworkPlayerBindingStatus.Applied &&
+      context.Stage == NetworkSessionStage.AwaitPlayerData &&
+      targetLoadoutIndex < PlayerLoadoutStateComponent.LoadoutCount)
+    {
+      // Login may upload the loadout before packet 4 supplies the character identity.
+      NetworkPlayerBindingResult binding = EnsurePlayerOnOwnerThread(session, context);
+      validation = binding.Succeeded ? NetworkPlayerBindingStatus.Applied : binding.Status;
+    }
     NetworkPlayerLoadoutStatus status = validation switch
     {
       NetworkPlayerBindingStatus.RejectedStage =>

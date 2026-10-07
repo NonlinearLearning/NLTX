@@ -92,7 +92,8 @@ public static class PlayerNetworkStateSystem
     int maximumMana)
   {
     ArgumentNullException.ThrowIfNull(vitals);
-    if (maximumMana < 0 || mana < 0 || mana > maximumMana)
+    // Packet 42 carries the base maximum, which excludes equipment and buff bonuses.
+    if (maximumMana < 0 || mana < 0)
     {
       return false;
     }

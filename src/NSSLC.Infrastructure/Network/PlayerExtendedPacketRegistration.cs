@@ -17,7 +17,9 @@ public static class PlayerExtendedPacketRegistration
     gateway.Register<NebulaLevelupRequestPacket>(Active(102), handlers);
     gateway.Register<DeadPlayerPacket>(Active(135), handlers);
     gateway.Register<SyncTilePickingPacket>(Active(125), handlers);
-    gateway.Register<SyncLoadoutPacket>(Active(147), handlers);
+    gateway.Register<SyncLoadoutPacket>(
+      new PacketPolicy(147, NetworkSessionStage.AwaitPlayerData | NetworkSessionStage.Active,
+        MaximumPerWindow: 120, MaximumBytesPerWindow: 1024), handlers);
     gateway.Register<SpectatePlayerPacket>(Active(150), handlers);
     gateway.Register<TeamChangeFromUIPacket>(Active(157), handlers);
   }
