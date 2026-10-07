@@ -17,24 +17,30 @@
 
 ## 1. 本轮结论
 
-当前主工作树仍由 `EntityRuntime`、`ComponentStore`、`RuntimeEntityHandle` 和
-`EntityComponentSnapshot` 承载实体存储与访问。生产源码范围内没有 `Arch.Core`、`Arch.System`、
-`Arch.Buffer` 引用，也没有 Arch PackageReference。`LoadedWorldSession` 仍直接构造
-`EntityRuntime`，`WorldStorageRoot` 仍暴露 `ProjectileRuntime` 与 `TileEntityRuntime` compatibility
-alias，`EntityIdentityRegistry` 仍映射 `EntityUuid` 到 `RuntimeEntityHandle`。
+当前主工作树包含一个未提交的 T2 partial prerequisite slice：`NSSLC.Application` 直接引用
+`Arch 2.1.0`，`LoadedWorldSession` 创建并拥有 Arch `World`、世界单例和独立
+`EntityRuntimeId` session token，`EntityRuntime` 接收该 token，`EntityUuidIssuer` 被抽出为
+UUID 签发端口。这个切片只作为 T3 的前置证据，不代表 T2 或 T3 已完成。
 
-因此，本线完成了不依赖 T2 的 B0 支持矩阵、生命周期状态机、关系来源/目标清理矩阵和 T2 精确
-阻塞输入；真实 Arch caller 接线、官方关系扩展接线及编译闭包迁移保持 blocked。没有添加新的
-通用关系图、反向字典、实体 facade 或第二套身份协议。
+实体生产路径仍由 `EntityRuntime`、`ComponentStore`、`RuntimeEntityHandle` 和
+`EntityComponentSnapshot` 承载。`EntityIdentityRegistry` 仍映射 `EntityUuid` 到
+`RuntimeEntityHandle`，尚未切换到 `(session token, Arch.Entity)`；`WorldStorageRoot` 仍接受
+`EntityRuntime`，并暴露 `ProjectileRuntime` 与 `TileEntityRuntime` compatibility alias。五类
+真实 caller 也尚未使用 Arch Entity registry 合同。
+
+因此，本线完成了不依赖 T2 完整切换的 B0 支持矩阵、生命周期状态机、关系来源/目标清理矩阵和
+T2 精确阻塞输入；真实 Arch caller 接线、官方关系扩展接线及完整编译闭包迁移保持 blocked。
+没有添加新的通用关系图、反向字典、实体 facade 或第二套身份协议。
 
 ### 状态摘要
 
 | 条目 | 状态 | 证据或缺口 |
 | --- | --- | --- |
 | B0 五类实体真实 caller 盘点 | done（静态） | 已定位 NPC、Player、Projectile、Item/world-drop、TileEntity 的创建/发布/释放入口。 |
-| 生命周期状态机与失败回滚合同 | partial | 旧 caller 已有局部回滚；统一 Arch `World`、token、UUID registry 尚未提供。 |
+| T2 World/token bootstrap | partial | `LoadedWorldSession` 已创建 Arch `World`、世界单例和 session token；registry、slot、caller 闭包仍未切换。 |
+| 生命周期状态机与失败回滚合同 | partial | 旧 caller 已有局部回滚；Arch World owner 已出现，但统一 Arch identity/关系回滚尚未提供。 |
 | NPC 父子关系唯一权威 | blocked | 当前同时写入 `NpcParentRelationComponent` 与 `EntityRelationState`；需要 T2 Entity/token 入口后移除冗余写入。 |
-| 官方关系扩展采用 | partial / blocked 生产接线 | 当前工作树有 T1 的隔离编译证据：`Arch.Relationships 1.0.1` 的部分方法可编译，但包声明旧 Arch 依赖且未有运行时清理证据；Events API 探针仍有签名错误。 |
+| 官方关系扩展采用 | partial / blocked 生产接线 | Relationships 只有部分编译面；Events 最终 API probe Debug/Release 已为 0 warning/0 error，但关系/事件清理、重入和 Release 行为仍未运行。 |
 | Player 普通复活/真实重建语义 | partial | `PlayerLifecycleComponent` 支持同实例死亡阶段；实际 Arch UUID/Entity 语义未接线。 |
 | 槽位 generation 与 Arch Version 分离 | partial | 现有 `EntitySlotStore` 有槽位 generation；Arch Entity 尚未存在，无法完成双 token 检查。 |
 | 运行时验证 | not-run | 由 compile-only 变更控制明确禁止。 |
@@ -46,34 +52,52 @@ alias，`EntityIdentityRegistry` 仍映射 `EntityUuid` 到 `RuntimeEntityHandle
 以下扫描针对 `src/`，排除 `分类参考`、`obj` 和 `bin`，以 2026-10-08 当前工作树为准：
 
 ```text
-生产 C# 文件：3370
+生产 C# 文件：3371
 包含 EntityRuntime|ComponentStore|RuntimeEntityHandle|EntityComponentSnapshot 的文件：69
-包含 Arch.Core|Arch.System|Arch.Buffer 的 C# 文件：0
-包含 Arch 的生产 csproj：0
+包含 Arch.Core|Arch.System|Arch.Buffer 的 C# 文件：1
+包含 Arch PackageReference 的生产 csproj：1
 ```
 
 关键 owner 仍是：
 
-- `src/NSSLC.Application/WorldStorage/Loading/LoadedWorldSession.cs`：构造 `EntityRuntime`，以
-  `_entityRuntime.EntityCount == 0` 参与 `IsFresh`，并在 `Dispose` 中先清理 `WorldStorageRoot` 再释放 runtime。
+- `src/NSSLC.Application/WorldStorage/Loading/LoadedWorldSession.cs`：先创建 Arch `World`，再生成
+  `EntityRuntimeId` 并构造旧 runtime；创建世界单例并以 `_entityRuntime.EntityCount == 0` 参与
+  `IsFresh`，在 `Dispose` 中先清理 `WorldStorageRoot`/runtime 再释放 Arch World。世界单例访问和
+  Dispose 的 owner-thread/生命周期门禁已存在，但实体 registry 尚未使用该 Arch World。
 - `src/NSSLC/Component/Share/Entity/System/EntityIdentityRegistry.cs`：
-  `EntityUuid ↔ RuntimeEntityHandle` 双向映射，尚未保存 `(session token, Arch.Entity)`。
+  `EntityUuid ↔ RuntimeEntityHandle` 双向映射，尚未保存 `(session token, Arch.Entity)`；当前
+  `EntityUuidIssuer` 只负责签发历史，不能替代 live entity registry。
 - `src/NSSLC/Component/WorldStorage/System/WorldStorageRoot.cs`：以 `EntityRuntime` 为构造参数，
   暴露 `ProjectileRuntime`/`TileEntityRuntime` 两个同义 alias。
 - `src/NSSLC/Component/Relationships/System/RuntimeEntityHandle.cs`：表达
   `RuntimeId/local index/generation`，尚不是 Arch `Entity` 投影。
 
-这些事实使 T2 的生产签名成为本线硬前置。T3 不复制身份协议来绕过它；依赖该签名的实现统一
-标记 `blocked-by-prerequisite`。
+T2 partial slice 已提供 World/token bootstrap，但以下字段仍未完成，继续作为 T3 硬前置：
+
+1. registry live value 仍是 `RuntimeEntityHandle`，没有 `(session token, Arch.Entity)` 的
+   exact mapping、WorldId/IsAlive/Version 解析门禁和 exact unregister。
+2. `WorldStorageRoot`、`EntitySlotStore`、`TileEntityStore` 和 Projectile identity 仍以旧
+   runtime handle/alias 为运行时定位，未接入 Arch Entity 投影。
+3. `RuntimeNpcStore`、`RuntimePlayerStore` 仍存在独立 `new EntityRuntime(...)` 构造路径；五类
+   caller 尚未共享唯一 World/registry owner。
+4. 候选 World 失败、World dispose、旧 token/foreign World/旧 Version 拒绝和 UUID issuer 跨
+   candidate 生命周期的生产语义没有完成并且全部未运行。
+5. 世界单例仍与 `WorldSessionRestoreState` 双路径可达，`IsFresh` 仍检查旧 runtime 计数；领域
+   caller 尚未全面改为单例组件访问。
+
+T3 不复制身份协议来绕过这些缺口；依赖该签名的实现统一标记 `blocked-by-prerequisite`。
 
 ### 2.2 当前源码 hash
 
-以下 hash 锁定本报告的静态观察输入；这些文件本轮没有被 T3 修改：
+以下 hash 锁定本报告的静态观察输入。前五个 T2 owner 文件是当前主 checkout 的未提交 partial
+prerequisite slice；其余 T3 caller 文件本轮没有被修改：
 
 ```text
-D2587AE03D7695F1CEC339CAC9B79E39F4228B7CC0F2C4B2A4FAB54C4AE736B7  src/NSSLC.Application/WorldStorage/Loading/LoadedWorldSession.cs
-B1F9BD0976DB6FA229EAF30AA06342F643869334B9C1AE09815145AF95AE22A8  src/NSSLC/Component/Share/Entity/System/EntityIdentityRegistry.cs
-BF7372957F2BEA6BE0572E20CF9097FE5A6B03B6FFE22ED209BE61EB350B89EE  src/NSSLC/Component/Share/Entity/System/EntityRuntime.cs
+596D0AA01C0369F38C4C1726076982C0AE90F3530124F739A255DF1B9A33D6A0  src/NSSLC.Application/NSSLC.Application.csproj
+ADF249F0BBF4DB1A5AC82EF39E672CAA33AFF6C09A947BF990277EEA661EFD0A  src/NSSLC.Application/WorldStorage/Loading/LoadedWorldSession.cs
+875423517B9E462F7272DC2443AEAE2A50BF13033DA55AD0FD7FBF03994157E4  src/NSSLC/Component/Share/Entity/System/EntityIdentityRegistry.cs
+A47A71EA92A0FCB2AC62B924B1DCE119C2A8D53F12FCA17340953B4243A7039D  src/NSSLC/Component/Share/Entity/System/EntityRuntime.cs
+4F73B6C0E9B3913594E5A8D40D74A9C5077A9D26539D2EBC3D8AB9B9F7132A9C  src/NSSLC/Component/Relationships/System/EntityUuidIssuer.cs
 659F70CB60D39D65CFF231F8014C957E1253EDC4AB7D2C0C7169117FC12CC457  src/NSSLC/Component/Share/Entity/System/EntityRelationState.cs
 5B6352F6D0432B7DDC2CB90143E75AEC8B07CF0C9C43D241DF7106C3863DD7EC  src/NSSLC/Component/Npc/NpcParentRelationComponent.cs
 D753DFC9A99B6C7AB301D7C4E269A902B9CC3F1679A5AE885C4332BA788FF2D6  src/NSSLC.Tools.Simulation/RuntimeNpcEntity.cs
@@ -106,12 +130,18 @@ D0D77F6259A15836AB831592ED3DB4A51645562D88932D489846D45BB6C42334  src/NSSLC.Tool
   `1.2.6.5-alpha`。这与本项目固定的 Arch 2.1.0 形成兼容性风险；不能因为局部类型能编译就
   把它写成生产兼容通过，也不能为了它降级核心 Arch。
 - `Build/diagnostics/ArchMigration/T1/events-package-evidence.json` 记录 `Arch-Events 2.1.0`
-  包 Debug/Release restore/build 各 exit `0`、0 warning、0 error；但
-  `events-api-build.json` 的 API probe Debug/Release 各 exit `1`、4 error，错误是事件委托
-  参数要求 `in`。因此 Events 包资产可取得，当前事件 API 接线和清理行为仍未通过编译合同。
+  包 Debug/Release restore/build 各 exit `0`、0 warning、0 error。
+- `Build/diagnostics/ArchMigration/T1/events-api-build-attempt-3.json` 记录修正事件委托 `in`
+  参数后的 Debug/Release API probe 各 exit `0`、0 warning、0 error；这才是当前 Events
+  compile-surface 结果。较早的 `events-api-build.json` Debug/Release 各 exit `1`、4 error
+  属于 historical attempt，错误是 probe 委托参数缺少 `in`，不能覆盖最终结果。
+- 最终编译结果仍不能证明事件订阅清理、source/target destroy、World dispose、重入顺序或
+  Release 运行时行为；`Arch-Events` 与常规 `Arch` 同程序集名的 co-load 风险也未在生产闭包
+  中解决。
 
-T3 的采用结论：可以把上述关系方法作为后续 T2 合入后的候选 API 表面，但不能现在接入生产，
-也不能把 `Arch.Relationships 1.0.1` 的包依赖或 Events package build 当作 Release 清理证据。
+T3 的采用结论：可以把 Relationships 的已观察方法和 Events 的最终编译表面作为后续 T2 完整
+切换后的候选 API 输入，但不能现在接入生产，也不能把包 build 或 API compile 当作 Release 清理
+证据。
 在 T2 session/token/world owner 和关系扩展的 source/target/World 清理语义没有共同交接前，
 NPC、Item、Projectile、TileEntity 的生产关系接线继续标记 `blocked-by-prerequisite`。
 
@@ -123,11 +153,11 @@ NPC、Item、Projectile、TileEntity 的生产关系接线继续标记 `blocked-
 
 | 类别 | 当前真实入口与组件组合 | 身份/槽位/发布边界 | 失败与销毁路径 | T3 状态 |
 | --- | --- | --- | --- | --- |
-| NPC | `RuntimeNpcStore.TrySpawn`（约 633 行）按 200 个 NPC 槽扫描；`CreateRuntimeNpc`（约 572 行）调用 `RuntimeNpcEntity.Hydrate`，附加 identity、lifecycle、movement、AI、combat、target 和可选能力组件。 | `EntityRuntime.CreateEntity` 先分配 `RuntimeEntityHandle`；`EntityIdentityRegistry` 签发 UUID；`TryPublishEntity` 后写入 `EntitySlotStore<RuntimeNpcEntity,NpcRuntimeSlot>` 与 `_handlesByInstanceId`。槽位 generation 独立维护。 | 组件/发布失败调用 `RemoveRuntimeNpcIdentity`；父子创建失败反向释放；`TryRelease` 先 `DetachChildren`、终止 runtime、释放槽位、注销 instance 映射，再删除 runtime entity。容量上限为 200。 | partial；Arch World/token/Entity 未接入。 |
-| Player | `RuntimePlayerStore.Initialize`（约 167 行）批量 hydrate；断线/重建使用 `TryCreatePlayerAtSlot`（约 325 行）；`RuntimePlayerEntity.Hydrate` 附加 identity、death record、lifecycle、ghost、位置、运动、碰撞、输入、背包槽和能力组件。 | 玩家槽位是 `LegacyPlayerSlot`；runtime handle 由旧 EntityRuntime 分配；发布后初始化 `RuntimePlayerInventoryOwner`。`TryDestroyPlayer`（约 294 行）是实际销毁入口。 | hydrate 失败会终止并删除 handle；销毁前释放背包物品。普通死亡在 `PlayerLifecycleComponent` 内推进，不由 `AdvanceLifecycle` 重新创建实体；真实重建路径是销毁后在槽位重新 hydrate。 | partial；普通复活保实例的 UUID 语义需 T2 registry 接线确认。 |
-| Projectile | `RuntimeProjectileStore.TrySpawnArrow`（约 67 行）构造 `ProjectileSpawnCommand`；`ProjectileLifecycleSystem.TrySpawn` → `CreateRuntimeEntity`（约 888 行）附加 definition、identity、lifetime、network、kinematics、collision、immunity 等组合。 | `ProjectileIdentityIndex` 保留 owner/identity ↔ `ProjectileHandle` 的双向协议投影；`TryAllocate` 写槽位 generation；`TryRegister` 成功后发布可见。Arch Entity 不能替代 projectile identity。 | 创建失败执行 `RemoveRuntimeEntity`；终止先 `TryUnregister`/释放 slot，再终止和删除 runtime entity；旧 handle/slot generation 不得命中新实例。 | partial；Arch Entity 与协议 identity 尚未分离接线。 |
+| NPC | `RuntimeNpcStore.TrySpawn`（约 633 行）按 200 个 NPC 槽扫描；`CreateRuntimeNpc`（约 572 行）调用 `RuntimeNpcEntity.Hydrate`，附加 identity、lifecycle、movement、AI、combat、target 和可选能力组件。 | `EntityRuntime.CreateEntity` 先分配 `RuntimeEntityHandle`；`EntityIdentityRegistry` 签发 UUID；`TryPublishEntity` 后写入 `EntitySlotStore<RuntimeNpcEntity,NpcRuntimeSlot>` 与 `_handlesByInstanceId`。槽位 generation 独立维护。 | 组件/发布失败调用 `RemoveRuntimeNpcIdentity`；父子创建失败反向释放；`TryRelease` 先 `DetachChildren`、终止 runtime、释放槽位、注销 instance 映射，再删除 runtime entity。容量上限为 200。 | partial；session World/token bootstrap 已存在，Arch Entity registry 和 caller 接线未完成。 |
+| Player | `RuntimePlayerStore.Initialize`（约 167 行）批量 hydrate；断线/重建使用 `TryCreatePlayerAtSlot`（约 325 行）；`RuntimePlayerEntity.Hydrate` 附加 identity、death record、lifecycle、ghost、位置、运动、碰撞、输入、背包槽和能力组件。 | 玩家槽位是 `LegacyPlayerSlot`；runtime handle 由旧 EntityRuntime 分配；发布后初始化 `RuntimePlayerInventoryOwner`。`TryDestroyPlayer`（约 294 行）是实际销毁入口。 | hydrate 失败会终止并删除 handle；销毁前释放背包物品。普通死亡在 `PlayerLifecycleComponent` 内推进，不由 `AdvanceLifecycle` 重新创建实体；真实重建路径是销毁后在槽位重新 hydrate。 | partial；session token bootstrap 已存在，普通复活保 UUID 与真实重建换 UUID 尚未由 Arch registry 接线确认。 |
+| Projectile | `RuntimeProjectileStore.TrySpawnArrow`（约 67 行）构造 `ProjectileSpawnCommand`；`ProjectileLifecycleSystem.TrySpawn` → `CreateRuntimeEntity`（约 888 行）附加 definition、identity、lifetime、network、kinematics、collision、immunity 等组合。 | `ProjectileIdentityIndex` 保留 owner/identity ↔ `ProjectileHandle` 的双向协议投影；`TryAllocate` 写槽位 generation；`TryRegister` 成功后发布可见。Arch Entity 不能替代 projectile identity。 | 创建失败执行 `RemoveRuntimeEntity`；终止先 `TryUnregister`/释放 slot，再终止和删除 runtime entity；旧 handle/slot generation 不得命中新实例。 | partial；session token bootstrap 已存在，Arch Entity 与协议 identity 的分离接线未完成。 |
 | Item / world-drop | `RuntimeItemRegistry.Create`、`CreateWorldDrop`、split item 均汇入 `CreateEntity`（约 588 行）；world-drop 由 `RuntimeWorldItemStore.SpawnWorldItem`（约 249 行）写入 400 槽位，更新/拾取/过期在 `Update`（约 117 行）。 | item UUID/runtime reference 与 `ItemEntityRef` 属于领域身份；world-drop 另有 `WorldItemSlot`、`ReplicationId` 和 `WorldItemReservationComponent`。发布前必须完成 item instance/stack 与可选位置、速度、碰撞、world state、reservation。 | 任一 attach/publish/capture 失败调用 `RemoveIncompleteEntity`；过期或完整拾取先释放 world slot/关系，再 `RuntimeItemRegistry.Remove`；部分拾取保留实体并增加 revision。 | partial；数量守恒/重复拾取/重建仅有旧代码路径，本轮不运行。 |
-| TileEntity（已支持） | `TileEntityStore.Replace`/`CommitRuntimeSnapshot`（约 257/263 行）调用 `CreateRuntimeEntity`（约 426 行）；仅 type `0` TrainingDummy 与 type `2` LogicSensor 附加对应能力组件。 | `TileEntityId`、anchor 和 persistence payload 是领域/存档投影；`TileEntityRecord` 只保存运行时 handle 与快照输入；`_byId`、`_byAnchor` 为领域索引。 | Replace 先校验 ID/anchor 唯一性，创建和发布失败回滚新 handle；移除先 unschedule、终止、删除，再清理两个索引；Dispose 清空所有记录。 | partial；保存/重载和 anchor 失效尚未在 Arch World 上接线。 |
+| TileEntity（已支持） | `TileEntityStore.Replace`/`CommitRuntimeSnapshot`（约 257/263 行）调用 `CreateRuntimeEntity`（约 426 行）；仅 type `0` TrainingDummy 与 type `2` LogicSensor 附加对应能力组件。 | `TileEntityId`、anchor 和 persistence payload 是领域/存档投影；`TileEntityRecord` 只保存运行时 handle 与快照输入；`_byId`、`_byAnchor` 为领域索引。 | Replace 先校验 ID/anchor 唯一性，创建和发布失败回滚新 handle；移除先 unschedule、终止、删除，再清理两个索引；Dispose 清空所有记录。 | partial；session World/token bootstrap 已存在，保存/重载和 anchor 仍未通过 Arch Entity 投影接线。 |
 | Leashed（明确未支持） | `LeashedEntityRegistrationSystem` 有隔离注册实现，但当前生产 caller 扫描未找到真实 world host 接线。 | 当前系统另有 section/legacy slot/anchor index 和 `LeashedEntityAnchorRelationComponent`；它不能被扩大成 T3 已支持集。 | 仅作为未接线代码风险记录；不接入 Arch 关系扩展，不为其新增 caller。 | not-supported / not-run。 |
 
 ### 3.1 每类实体的目标 Arch 流程
@@ -259,10 +289,11 @@ NPC generic relation 冗余写入。T3 不会把 `World.Id`、`Entity.Id` 或 `E
 
 - **done（静态）**：五类支持集 caller、容量/槽位/关系 owner、旧 runtime 依赖和 NPC 冗余关系
   写入已定位；本报告与源文件 hash 已保存。
-- **partial**：旧 caller 已表达局部失败回滚、槽位 generation 和 Player 死亡阶段，但还没有
-  Arch World/identity contract。
-- **blocked**：真实 Arch caller 接线、官方 Relationships/Events 清理 API、T2 registry/World
-  owner、Arch 版本与 slot 双重校验。
+- **partial**：T2 partial slice 已表达 Arch World owner、世界单例、session token 和 UUID issuer；
+  旧 caller 仍表达局部失败回滚、槽位 generation 和 Player 死亡阶段。
+- **blocked**：真实五类 Arch caller 接线、`EntityUuid ↔ (token, Arch.Entity)` registry、
+  `WorldStorageRoot`/slot/TileEntity 投影、官方 Relationships/Events 清理 API、Arch Version 与
+  slot 双重校验。
 - **not-run**：所有创建/销毁/关系清理/复用/可见性/World dispose 行为和测试。
 
 ### 受影响项目（待 T2 签名合入后编译）
@@ -299,6 +330,36 @@ Terraria.Npc、Terraria.Player、Terraria.Projectile、Terraria.Items、Terraria
 Terraria.WorldInteraction、NSSLC.Infrastructure.WorldStorage 等项目
 ```
 
+T2 partial prerequisite slice 在本轮主 checkout 的增量编译记录：
+
+```text
+项目：src/NSSLC.Application/NSSLC.Application.csproj
+命令：dotnet restore src/NSSLC.Application/NSSLC.Application.csproj --nologo
+退出码：0
+warning/error：0 / 0
+
+项目：src/NSSLC.Application/NSSLC.Application.csproj
+命令：dotnet build src/NSSLC.Application/NSSLC.Application.csproj --no-restore --nologo
+退出码：0
+warning/error：6 / 0
+输出：Build/bin/NSSLC.Application/Debug/net10.0/NSSLC.Application.dll
+
+项目：src/NSSLC.Tools.Simulation/NSSLC.Tools.Simulation.csproj
+命令：dotnet restore src/NSSLC.Tools.Simulation/NSSLC.Tools.Simulation.csproj --nologo
+退出码：0
+warning/error：0 / 0
+
+项目：src/NSSLC.Tools.Simulation/NSSLC.Tools.Simulation.csproj
+命令：dotnet build src/NSSLC.Tools.Simulation/NSSLC.Tools.Simulation.csproj --no-restore --nologo
+退出码：0
+warning/error：17 / 0
+输出：Build/bin/NSSLC.Tools.Simulation/Debug/net10.0/NSSLC.Tools.Simulation.dll
+```
+
+Application 的 6 个 warning 来自未修改的 `WorldSectionState.cs`；Simulation 的 17 个 warning
+来自未修改的 `NSSLC.Infrastructure.WorldGeneration`。两次 build 均只证明 partial T2 源码的
+编译闭包可构建，不证明 registry、五类 caller 或生命周期/关系行为已经通过。
+
 17 个 warning 均来自 `NSSLC.Infrastructure.WorldGeneration` 既有代码（`LegacyApi.cs`、
 `WorldGen.cs`、`WorldEntities.cs`、`EnchantedSwordBiome.cs`、`NpcStaticMembers.cs` 等），本轮
 没有修改这些文件；0 error 只证明当前旧 caller 闭包可构建，不能证明 Arch 接线或生命周期行为。
@@ -326,15 +387,29 @@ host smoke、WorldFile、关系探针和行为 API probe。历史 custom ECS 或
 ### Changed files
 
 - `docs/architecture/execution/2026-10-08-arch-migration-track-t3-lifecycle-relationships-execution.md`
-  （本交接文档；没有生产 C# 修改）。
+  （本交接文档；本轮只收口 T3 handoff，没有继续扩展生命周期/关系 caller）。
 - `docs/document-manifest.tsv`（新增本执行文档的 canonical manifest 记录）。
+
+当前主 checkout 还保留一组未提交的 T2 partial prerequisite source changes，仅作为本报告的
+前置证据，不作为 T3 完成提交：
+
+- `src/NSSLC.Application/NSSLC.Application.csproj`
+- `src/NSSLC.Application/WorldStorage/Loading/LoadedWorldSession.cs`
+- `src/NSSLC/Component/Share/Entity/System/EntityRuntime.cs`
+- `src/NSSLC/Component/Share/Entity/System/EntityIdentityRegistry.cs`
+- `src/NSSLC/Component/Relationships/System/EntityUuidIssuer.cs`
+
+这些切片只建立 Arch World/世界单例/session token/UUID issuer 的 bootstrap；没有把五类真实
+caller 接入 Arch registry，也没有改变关系清理责任。`codex/arch-t2-probe-handoff` 未被
+cherry-pick、合并或改写。
 
 现有工作树中的其他源码、计划和组件改动均保留，未执行 reset、clean、checkout 或批量删除。
 
 ### 下一 owner
 
-- **T2**：提供第 7 节的 World/token/identity 最小输入，并先移除 `WorldStorageRoot` 的旧 runtime
-  构造闭包；T3 不复制该协议。
+- **T2**：完成第 7 节尚未满足的 identity/slot/WorldStorageRoot 最小输入：把 live registry 改为
+  `(session token, Arch.Entity)`，迁移 slot/TileEntity 投影，定义候选失败与 dispose 清理，并关闭
+  独立 runtime 构造路径；T3 不复制该协议。
 - **T1/T3-B3 owner**：给出实际 `Arch.Relationships`/Events 程序集、配置与清理 API 证据；当前不
   能由 NuGet 名称或 Debug 源码声明推断 Release 行为。
 - **T3 生产线**：收到 T2 后按第 3 节顺序接线五类 caller，先统一生命周期 owner，再移除 NPC
