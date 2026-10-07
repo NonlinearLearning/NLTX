@@ -1,0 +1,15 @@
+# T4 inspection failure audit
+
+This note preserves the inspection failures reported by the prior T4 continuation summary and the failures observed while completing B0/B1. None indicates an Arch runtime failure.
+
+| Failure | Diagnosis | Correction and result |
+| --- | --- | --- |
+| Two earlier reads used unresolved/assumed paths. The prior continuation summary did not preserve the exact command strings or raw stderr. | Path assumptions had not been checked against the checkout. Exact original error text is unavailable in the inherited evidence, so it is not reconstructed here. | Switched to rg --files over docs/Context and relevant source roots, then read discovered paths. Searches completed successfully and the actual paths are recorded in the matrix/hash manifest. |
+| Earlier evidence-collector script declared the same top-level JavaScript binding r twice. | This was a script parse/name-collision error, not a repository or SDK failure. The exact parser wording was not retained in the inherited summary. | Subsequent functions.exec calls use a fresh isolate and unique bindings. Evidence collection completed; no repository files were touched by the failed script. |
+| read_thread was called with turnLimit 15; the app tool rejected values greater than 10. | Tool schema limit, not missing thread data. Exact response: read_thread received invalid arguments: turnLimit: Too big: expected number to be <=10. | Retried with turnLimit 10 and obtained the recent task history. |
+| Two guessed ProjectileNetworkApplyCommand/TerminateCommand paths under NSSLC.Application/Network did not exist. | The command DTOs are under the Projectile component System directory. | Used rg --files to locate the real paths: src/NSSLC/Component/Projectile/System/ProjectileNetworkApplyCommand.cs and ProjectileNetworkTerminateCommand.cs. The corrected source search succeeded. |
+| A guessed T3 report path under docs/plans did not exist. | T3 stores its execution report under docs/architecture/execution. | Used git show --name-only for T3 HEAD, then read docs/architecture/execution/2026-10-08-arch-migration-track-t3-lifecycle-relationships-execution.md successfully. |
+| Arch usage search returned exit code 1. | rg uses exit 1 for no matching lines; stderr was empty. This is the expected evidence that no Arch query/type usage is wired into the audited current production directories. | Recorded as zero matches, not as a build/test failure. |
+| First git diff --cached --check reported trailing spaces on metadata lines used for Markdown hard breaks. | Formatting issue in the new diagnostics documents. | Removed trailing spaces and reran the whitespace check before commit. |
+
+The required PUA diagnosis path was followed for inspection errors: read the exact available error, checked the preceding path/tool assumption, searched the real tree/commit metadata, and changed the lookup method. No failure was attributed to the environment without evidence. Earlier raw command output was not present in the inherited summary, so that limitation is explicit.

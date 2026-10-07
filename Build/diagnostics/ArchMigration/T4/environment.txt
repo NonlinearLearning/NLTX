@@ -1,0 +1,9 @@
+dotnet --version exit=0 10.0.400 project.assets.json checks:
+NSSLC.Tools.Simulation=False
+NSSLC.Tools.NetworkServer=False
+Terraria.EntityOrganization.Verification=False
+Terraria.Items.Verification=False
+Terraria.Items.NetworkOwner.Verification=False
+NSSLC.Application.Simulation.Verification=False
+NSSLC.Infrastructure.Network.Verification=False
+repo .wld search exit=0 src\World\科研.wld
