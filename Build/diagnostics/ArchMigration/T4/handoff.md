@@ -2,10 +2,25 @@
 
 Track: T4
 Status: partial
-Batch status: B0 inventory complete; B1 independent assessment complete; production access migration blocked-by-prerequisite.
+Overall prerequisite status: blocked-by-prerequisite
+Batch status: B0 inventory complete; B1 production access migration blocked-by-prerequisite.
 Baseline: e2c686790ab6a4f14505ea914c27478f5959d061
 Branch: codex/arch-migration-t4
 Date: 2026-10-08
+
+## Current acceptance amendment: T4-B4 compile-only
+
+On 2026-10-08 the user accepted CR-2026-10-08-arch-compile-only-acceptance.md and changed this
+batch's gate to incremental `dotnet build` only. The CR is stored outside this worktree at
+`D:\TRbackup\NLTX\.agent-workplace\changes\CR-2026-10-08-arch-compile-only-acceptance.md`.
+The user's later steering confirms that prior runtime samples are historical and do not count as
+current acceptance. No runtime command was run after that steering.
+
+T4-B4 remains partial and T4 remains blocked by T2/T3 production contracts. The compile-only
+handoff, build log, phase concept map, failure record, and artifact hashes are in
+[T4-B4](../T4-B4/handoff.md). This amendment supersedes the earlier B4 sample-test wording as the
+current gate; it does not claim query/ref, network, item, lifecycle, serialization, admission, or
+host behavior is verified.
 
 ## Goal and result
 
@@ -22,7 +37,18 @@ No production source or Context constraint changed. The T4 checkout still uses c
 
 ## Validation and tests
 
-This batch changed only generated diagnostics. No T4 production project build, restore, test or simulation smoke was run. The T4 test selection budget and Arch-specific smoke are not claimed as complete. DLL/PDB hashes are not applicable because this batch generated no build outputs. Prior T2/T3 builds and tests are external evidence only; they are not attributed to T4.
+The accepted B0/B1 commit changed only diagnostics. No T4 production project build, restore, test or simulation smoke was run for that committed batch. The T4 test selection budget and Arch-specific smoke are not claimed as complete. Prior T2/T3 builds and tests are external evidence only; they are not attributed to T4.
+
+### Follow-up verification result (2026-10-08)
+
+A transient packet-29 owner-rejection experiment was stopped and its source/test edits were discarded. It is not part of the accepted commit and does not count as completed T4-B2 work. Its verification result is retained here because it exposed the current gateway rejection behavior:
+
+| Command | Scope | Exit | Warnings / errors | Result |
+| --- | --- | ---: | ---: | --- |
+| `dotnet build Test/NSSLC.Infrastructure.Network.Verification/NSSLC.Infrastructure.Network.Verification.csproj --no-restore -v:minimal` | Network verification project and dependencies | 0 | 0 / 0 | Exploratory build outputs were under `Build/bin/`, including `Build/bin/NSSLC.Infrastructure.Network.Verification/Debug/net10.0/NSSLC.Infrastructure.Network.Verification.dll`. |
+| `dotnet run --project Test/NSSLC.Infrastructure.Network.Verification/NSSLC.Infrastructure.Network.Verification.csproj --no-build --no-restore -- --projectile-runtime-owner` | Projectile network owner sample | -532462766 | 0 / 1 | Failed with `The gateway did not submit the projectile command to its Application owner.` A missing-identity packet was rejected first; `PacketGateway` propagated the rejected result as a protocol exception and closed that session, so the subsequent valid packet in the same peer could not run. The experiment was discarded without changing the accepted source tree. |
+
+No follow-up verification was run. The current checkout contains no retained production or test edits from this experiment.
 
 Static evidence commands and outcomes are in command-log.md. Source/input fingerprints and the consumed T2/T3 report hashes are in source-hashes.md. Prior and current inspection failures plus corrections are recorded in failure-audit.md.
 
@@ -35,12 +61,13 @@ Static evidence commands and outcomes are in command-log.md. Source/input finger
 - Build/diagnostics/ArchMigration/T4/source-hashes.md
 - Build/diagnostics/ArchMigration/T4/environment.txt (existing T4 environment record)
 
-Commit: scoped diagnostics commit; exact revision is reported in the task final response.
+Accepted B0/B1 commit: `9bdde4eb7b316e27d78eb6463da68355dafd6fb9`.
 
 ## Open findings and uncovered scope
 
 - No B1 native query/ref migration, production project build, or Arch smoke.
 - No T4-B2 queued network request rewrite or DTO serialization scan against a migrated Arch entity model.
+- The transient packet-29 rejection probe above did not complete T4-B2; protocol rejection closes the gateway session, and no nonfatal rejection contract was implemented.
 - Packet 29 stale/missing/inactive/duplicate terminate currently returns accepted no-op after ignoring TryTerminateNetwork false; re-evaluate once T2/T3 contracts are integrated.
 - No T4-B3 owner-specific item mutation conflict replacement or quantity conservation verification. Existing WorldItemReservationSystem is a separate named domain protocol; RuntimeItemRegistry still composes generic component revisions.
 - No T4-B4 approximately 10% T4 core tests were run.
