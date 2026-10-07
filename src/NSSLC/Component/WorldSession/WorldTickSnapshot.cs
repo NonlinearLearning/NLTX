@@ -10,6 +10,7 @@ public sealed class WorldTickSnapshot
     WorldRulesSnapshotValue? rules,
     WorldClockSnapshotValue? clock,
     WorldWeatherSnapshotValue? weather,
+    WorldEventSnapshotValue? events,
     SessionReadinessSnapshotValue? readiness,
     bool isCommitted)
   {
@@ -18,12 +19,14 @@ public sealed class WorldTickSnapshot
     Rules = rules;
     Clock = clock;
     Weather = weather;
+    Events = events;
     Readiness = readiness;
     IsCommitted = isCommitted;
   }
 
   public static WorldTickSnapshot Uncommitted => new(
     0,
+    null,
     null,
     null,
     null,
@@ -37,7 +40,8 @@ public sealed class WorldTickSnapshot
     WorldRulesSnapshotValue rules,
     WorldClockSnapshotValue clock,
     WorldWeatherSnapshotValue weather,
-    SessionReadinessSnapshotValue readiness)
+    SessionReadinessSnapshotValue readiness,
+    WorldEventSnapshotValue? events = null)
   {
     ArgumentOutOfRangeException.ThrowIfNegative(revision);
     if (!readiness.CanUpdateEntities)
@@ -53,6 +57,7 @@ public sealed class WorldTickSnapshot
       rules,
       clock,
       weather,
+      events,
       readiness,
       true);
   }
@@ -63,5 +68,6 @@ public sealed class WorldTickSnapshot
   public WorldRulesSnapshotValue? Rules { get; }
   public WorldClockSnapshotValue? Clock { get; }
   public WorldWeatherSnapshotValue? Weather { get; }
+  public WorldEventSnapshotValue? Events { get; }
   public SessionReadinessSnapshotValue? Readiness { get; }
 }

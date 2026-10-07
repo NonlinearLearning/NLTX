@@ -1,15 +1,15 @@
-using EntityEcs.Components;
+using Terraria.Relationships;
 
 namespace Terraria.LeashedEntity;
 
 public readonly record struct LeashedEntityHandle(
-  EntityId RuntimeEntityId,
+  EntityReference RuntimeEntityReference,
   int LegacySlot,
   uint SlotGeneration)
 {
   public bool IsAssigned =>
-    RuntimeEntityId.IsAssigned
+    !RuntimeEntityReference.IsEmpty
+    && RuntimeEntityReference.Scope != EntityReferenceScope.None
     && LegacySlot >= 0
     && SlotGeneration > 0;
 }
-

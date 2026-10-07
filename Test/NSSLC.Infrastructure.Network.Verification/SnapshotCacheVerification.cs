@@ -14,14 +14,14 @@ internal static class SnapshotCacheVerification {
         maximumItems: 4, timeProvider: time);
     Guid world = Guid.NewGuid();
     var first = new PacketSnapshotCacheKey(profile.Key, world, 1, new(0, 0), 1, "public");
-    Packet10Packet packet = CreateSection();
+    TileSectionPacket packet = CreateSection();
     Verify.That(await cache.TryStoreAsync(first, packet), "The shared section snapshot was not cached.");
-    packet.Body.StartX = 999;
+    packet.StartX = 999;
     Verify.That(cache.TryGet(first, out ReadOnlyMemory<byte> encoded) && encoded.Span[2] == 10,
         "The cached section must own its encoded bytes independently of later packet mutation.");
-    Packet10Packet decoded = (Packet10Packet)profile.Find(PacketDirection.ServerToClient, (byte)10)
+    TileSectionPacket decoded = (TileSectionPacket)profile.Find(PacketDirection.ServerToClient, (byte)10)
         .Decode(encoded[3..]);
-    Verify.That(decoded.Body.StartX == 0 && decoded.Body.Width == 1,
+    Verify.That(decoded.StartX == 0 && decoded.Width == 1,
         "Cache bytes must preserve the snapshot captured at store time.");
     byte[] original = encoded.ToArray();
     Verify.That(MemoryMarshal.TryGetArray(encoded, out ArraySegment<byte> writable),
@@ -44,9 +44,9 @@ internal static class SnapshotCacheVerification {
     Verify.Throws<ArgumentException>(() => cache.TryGet(first with { ProfileKey = "another" }, out _));
     Verify.Throws<ArgumentException>(() => cache.TryGet(first with { WorldKey = Guid.Empty }, out _));
     await Verify.ThrowsAsync<PacketEncodingException>(
-        async () => await cache.TryStoreAsync(first, new Packet38Packet { Password = "secret" }));
+        async () => await cache.TryStoreAsync(first, new SendPasswordPacket { Password = "secret" }));
     await Verify.ThrowsAsync<PacketEncodingException>(
-        async () => await cache.TryStoreAsync(first, new Packet161Packet { Payload = new("secret") }));
+        async () => await cache.TryStoreAsync(first, new HostTokenPacket { HostToken = "secret" }));
     time.Advance(TimeSpan.FromSeconds(2));
     cache.SweepExpired();
     Verify.That(cache.Count == 0 && cache.UsedBytes == 0 && budget.Used == 0,
@@ -86,9 +86,9 @@ internal static class SnapshotCacheVerification {
     }
   }
 
-  public static Packet10Packet CreateSection() {
-    return new Packet10Packet {
-      Body = new Packet10Body { Width = 1, Height = 1, Tiles = new[] { new Packet10Tile() } }
+  public static TileSectionPacket CreateSection() {
+    return new TileSectionPacket {
+      Width = 1, Height = 1, Tiles = new[] { new Packet10Tile() }
     };
   }
 }

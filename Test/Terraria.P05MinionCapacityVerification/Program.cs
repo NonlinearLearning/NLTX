@@ -28,7 +28,11 @@ VerifyCrossoverPetCapabilityRebuild();
 VerifyWorldObjectPetCapabilityRebuild();
 VerifyStandardNamedPetCapabilityRebuild();
 
-var owner = new EntityReference(Guid.NewGuid(), EntityReferenceScope.Player);
+var referenceRuntimeId = new EntityRuntimeId(Guid.NewGuid());
+EntityReference CreateReference(Guid entityId, EntityReferenceScope scope) =>
+  new(new EntityUuid(entityId), referenceRuntimeId, scope);
+
+var owner = CreateReference(Guid.NewGuid(), EntityReferenceScope.Player);
 var component = new PlayerMinionCapacityComponent(owner);
 var minionCore = new PlayerCoreMinionCapabilityComponent();
 var crossoverMinions = new PlayerCrossoverMinionCapabilityComponent();
@@ -209,7 +213,7 @@ var first = new SubmitMinionCapacityDeltaCommand(
   IdempotencyToken: Guid.NewGuid());
 
 var system = new PlayerMinionCapacityCommitSystem(component);
-var otherOwner = new EntityReference(Guid.NewGuid(), EntityReferenceScope.Player);
+var otherOwner = CreateReference(Guid.NewGuid(), EntityReferenceScope.Player);
 var commandForOtherOwner = first with
 {
   Owner = otherOwner,
@@ -222,7 +226,7 @@ Assert(component.NumMinions == 0, "A rejected owner must not change the target p
 
 var mismatchedOwner = first with
 {
-  ProjectileOwner = new EntityReference(Guid.NewGuid(), EntityReferenceScope.Player),
+  ProjectileOwner = CreateReference(Guid.NewGuid(), EntityReferenceScope.Player),
 };
 Assert(
   system.Apply(mismatchedOwner) == PlayerMinionCapacityCommitStatus.RejectedInvalidCommand,

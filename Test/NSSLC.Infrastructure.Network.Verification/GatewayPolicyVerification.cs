@@ -28,12 +28,12 @@ internal static class GatewayPolicyVerification {
     await using var gateway = new PacketGateway(profile, authority);
     GatewayVerification.RegisterProgression(gateway);
     gateway.Register(new PacketPolicy(13, NetworkSessionStage.Active),
-        new RecordingHandler<Packet13Packet>((_, _, _) =>
+        new RecordingHandler<PlayerControlsPacket>((_, _, _) =>
             throw new InvalidOperationException("A malformed packet must never reach its owner.")));
     await using var peer = new GatewayPeer(gateway, profile);
     await peer.JoinAsync();
-    byte[] valid = profile.Find(PacketDirection.ClientToServer, typeof(Packet13Packet))
-        .Encode(new Packet13Packet());
+    byte[] valid = profile.Find(PacketDirection.ClientToServer, typeof(PlayerControlsPacket))
+        .Encode(new PlayerControlsPacket());
     byte[] trailing = new byte[valid.Length + 1];
     valid.CopyTo(trailing, 0);
     trailing[^1] = 17;

@@ -14,6 +14,36 @@ public static class WorldTileMetricsSystem
   private const int SurfaceTileWeight = 5;
   private const int LowerTileWeight = 1;
 
+  public static void EnsureTileTypeCount(
+    WorldTileMetricsComponent component,
+    int tileTypeCount)
+  {
+    ArgumentNullException.ThrowIfNull(component);
+    component.EnsureTileTypeCount(tileTypeCount);
+  }
+
+  /// <summary>
+  /// Exposes the active metric owner's scratch array to its legacy runtime adapter.
+  /// </summary>
+  public static int[] GetMutableTileCounts(WorldTileMetricsComponent component)
+  {
+    ArgumentNullException.ThrowIfNull(component);
+    return component.TileCounts;
+  }
+
+  public static void Reset(WorldTileMetricsComponent component)
+  {
+    ArgumentNullException.ThrowIfNull(component);
+    component.Reset();
+  }
+
+  public static WorldTileMetricsSnapshot CreatePendingSnapshot(
+    WorldTileMetricsComponent component)
+  {
+    ArgumentNullException.ThrowIfNull(component);
+    return component.CreatePendingSnapshot();
+  }
+
   public static WorldTileMetricsPublicationResult BeginColumn(
     WorldTileMetricsComponent component,
     int columnX)
@@ -61,14 +91,44 @@ public static class WorldTileMetricsSystem
     }
 
     component.TileScanTickCount = 0;
-    columnX = component.NextTileColumnX;
-    component.NextTileColumnX++;
+    if (component.ScheduledTileColumnX < 0)
+    {
+      component.ScheduledTileColumnX = component.NextTileColumnX;
+    }
+
+    columnX = component.ScheduledTileColumnX;
+    return true;
+  }
+
+  /// <summary>
+  /// Commits the scan cursor only after the scheduled column has completed successfully.
+  /// </summary>
+  public static void CompleteScheduledColumn(
+    WorldTileMetricsComponent component,
+    int columnX,
+    int maxTilesX)
+  {
+    ArgumentNullException.ThrowIfNull(component);
+    if (maxTilesX <= 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(maxTilesX));
+    }
+
+    if (columnX < 0 || columnX >= maxTilesX ||
+        component.ScheduledTileColumnX != columnX ||
+        component.NextTileColumnX != columnX)
+    {
+      throw new InvalidOperationException(
+        "Only the currently scheduled tile column can advance the scan cursor.");
+    }
+
+    component.NextTileColumnX = columnX + 1;
     if (component.NextTileColumnX >= maxTilesX)
     {
       component.NextTileColumnX = 0;
     }
 
-    return true;
+    component.ScheduledTileColumnX = -1;
   }
 
   /// <summary>

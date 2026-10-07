@@ -10,6 +10,8 @@ public sealed record PacketGatewayOptions {
   public TimeSpan OwnerTimeout { get; init; } = TimeSpan.FromSeconds(10);
   public TimeSpan CleanupTimeout { get; init; } = TimeSpan.FromSeconds(5);
   public TimeSpan RateWindow { get; init; } = TimeSpan.FromSeconds(1);
+  public bool IgnoreClientVersion { get; init; }
+  public bool UseSteamModuleIds { get; init; }
   public bool EnableHostAuthorization { get; init; }
   public bool EnablePing { get; init; }
 

@@ -69,6 +69,13 @@ if (args.Length == 1 && args[0] == "--tick-coordinator")
   return;
 }
 
+if (args.Length == 1 && args[0] == "--damage-candidates")
+{
+  ProjectileDamageCandidateVerification.Run();
+  Console.WriteLine("PASS: projectile NPC and PVP capability candidate inputs");
+  return;
+}
+
 var definition = new ProjectileDefinitionComponent(
   projectileType: 12,
   behaviorKey: 7,
@@ -186,8 +193,26 @@ AssertThrows<ArgumentOutOfRangeException>(
   "Negative player cooldowns must be rejected.");
 
 var trail = new ProjectileTrailCacheComponent(historyLength: 2);
-ProjectileTrailCacheSystem.Record(ref trail, new System.Numerics.Vector2(1f, 2f), 0.5f, 1);
-ProjectileTrailCacheSystem.Record(ref trail, new System.Numerics.Vector2(3f, 4f), 1.5f, -1);
+ProjectileTrailCacheSystem.Record(
+  ref trail,
+  trailingMode: 2,
+  frameCounter: 0,
+  position: new System.Numerics.Vector2(1f, 2f),
+  rotation: 0.5f,
+  spriteDirection: 1,
+  velocity: System.Numerics.Vector2.Zero,
+  numUpdates: 0,
+  ownerMovementDelta: null);
+ProjectileTrailCacheSystem.Record(
+  ref trail,
+  trailingMode: 2,
+  frameCounter: 0,
+  position: new System.Numerics.Vector2(3f, 4f),
+  rotation: 1.5f,
+  spriteDirection: -1,
+  velocity: System.Numerics.Vector2.Zero,
+  numUpdates: 0,
+  ownerMovementDelta: null);
 AssertEqual(
   new System.Numerics.Vector2(3f, 4f),
   trail.OldPositions[0],
@@ -320,6 +345,110 @@ AssertThrows<ArgumentOutOfRangeException>(
 AssertThrows<ArgumentOutOfRangeException>(
   () => ProjectileAnimationStateSystem.AdvanceFrameCounter(ref animation, 0),
   "Non-positive animation limits must be rejected.");
+
+var arrowDefinition = new ProjectileDefinitionComponent(
+  projectileType: 1,
+  behaviorKey: 1,
+  friendlyDefault: true,
+  hostileDefault: false,
+  extraUpdates: 0);
+var arrowBehavior = new ProjectileBehaviorStateComponent(ai0: 14.0f);
+var arrowKinematics = new ProjectileKinematicsStateComponent(
+  System.Numerics.Vector2.Zero,
+  new System.Numerics.Vector2(2.0f, 15.5f));
+var arrowTrajectory = new ProjectileTrajectoryStateComponent(
+  rotation: 0.0f,
+  spriteDirection: 1,
+  stepSpeed: 0.0f,
+  numUpdates: 0,
+  gfxOffY: 0.0f);
+ProjectileMotionAndAiSystem.AdvanceOrdinaryArrowAi(
+  in arrowDefinition,
+  ref arrowBehavior,
+  ref arrowKinematics,
+  ref arrowTrajectory);
+AssertEqual(15.0f, arrowBehavior.Ai0,
+  "Typed ordinary-arrow AI should advance the AI tick counter.");
+Assert(
+  MathF.Abs(arrowKinematics.Velocity.Y - 15.6f) < 0.0001f,
+  "Typed ordinary-arrow AI should apply gravity to component velocity.");
+var arrowDirection = new EntityEcs.Components.DirectionComponent(horizontal: 1);
+ProjectileMotionAndAiSystem.CommitOrdinaryArrowStep(
+  in arrowDefinition,
+  ref arrowKinematics,
+  ref arrowDirection,
+  new System.Numerics.Vector2(40.0f, 50.0f),
+  new System.Numerics.Vector2(-3.0f, 16.0f));
+AssertEqual(new System.Numerics.Vector2(40.0f, 50.0f), arrowKinematics.Position,
+  "Typed movement commit should update the shared kinematics component value.");
+AssertEqual(-1, arrowDirection.Horizontal,
+  "Typed movement commit should derive facing from the committed velocity.");
+var arrowSource = new ProjectileSourceMetadataComponent();
+var arrowDisposition = new ProjectileDispositionStateComponent(friendly: true);
+var arrowDamage = new ProjectileDamagePayloadComponent(isArrow: true);
+var arrowCadence = new ProjectileUpdateCadenceComponent(0);
+Assert(ProjectileMotionAndAiSystem.ApplyMagicQuiverExtraUpdate(
+  in arrowSource,
+  in arrowDisposition,
+  in arrowDamage,
+  ref arrowCadence,
+  ownerHasMagicQuiver: true),
+  "Typed Magic Quiver admission should promote a friendly arrow once.");
+AssertEqual(1, arrowCadence.ExtraUpdates,
+  "Typed Magic Quiver admission should commit the extra-update cadence value.");
+var noQuiverCadence = new ProjectileUpdateCadenceComponent(0);
+Assert(!ProjectileMotionAndAiSystem.ApplyMagicQuiverExtraUpdate(
+  in arrowSource,
+  in arrowDisposition,
+  in arrowDamage,
+  ref noQuiverCadence,
+  ownerHasMagicQuiver: false),
+  "A missing Magic Quiver must not promote projectile cadence.");
+AssertEqual(0, noQuiverCadence.ExtraUpdates,
+  "A missing Magic Quiver must leave cadence unchanged.");
+var npcProjectileSource = new ProjectileSourceMetadataComponent(isNpcProjectile: true);
+var npcProjectileCadence = new ProjectileUpdateCadenceComponent(0);
+Assert(!ProjectileMotionAndAiSystem.ApplyMagicQuiverExtraUpdate(
+  in npcProjectileSource,
+  in arrowDisposition,
+  in arrowDamage,
+  ref npcProjectileCadence,
+  ownerHasMagicQuiver: true),
+  "NPC projectiles must not receive owner Magic Quiver cadence.");
+AssertEqual(0, npcProjectileCadence.ExtraUpdates,
+  "NPC projectile rejection must leave cadence unchanged.");
+var hostileDisposition = new ProjectileDispositionStateComponent(friendly: false, hostile: true);
+var hostileCadence = new ProjectileUpdateCadenceComponent(0);
+Assert(!ProjectileMotionAndAiSystem.ApplyMagicQuiverExtraUpdate(
+  in arrowSource,
+  in hostileDisposition,
+  in arrowDamage,
+  ref hostileCadence,
+  ownerHasMagicQuiver: true),
+  "Non-friendly projectiles must not receive Magic Quiver cadence.");
+AssertEqual(0, hostileCadence.ExtraUpdates,
+  "Non-friendly projectile rejection must leave cadence unchanged.");
+var nonArrowDamage = new ProjectileDamagePayloadComponent(isArrow: false);
+var nonArrowCadence = new ProjectileUpdateCadenceComponent(0);
+Assert(!ProjectileMotionAndAiSystem.ApplyMagicQuiverExtraUpdate(
+  in arrowSource,
+  in arrowDisposition,
+  in nonArrowDamage,
+  ref nonArrowCadence,
+  ownerHasMagicQuiver: true),
+  "Non-arrow projectiles must not receive Magic Quiver cadence.");
+AssertEqual(0, nonArrowCadence.ExtraUpdates,
+  "Non-arrow projectile rejection must leave cadence unchanged.");
+var alreadyPromotedCadence = new ProjectileUpdateCadenceComponent(1);
+Assert(!ProjectileMotionAndAiSystem.ApplyMagicQuiverExtraUpdate(
+  in arrowSource,
+  in arrowDisposition,
+  in arrowDamage,
+  ref alreadyPromotedCadence,
+  ownerHasMagicQuiver: true),
+  "Magic Quiver must not promote a projectile twice.");
+AssertEqual(1, alreadyPromotedCadence.ExtraUpdates,
+  "A cadence already promoted to one extra update must remain unchanged.");
 
 ProjectileIdentityIndexVerification.Run();
 

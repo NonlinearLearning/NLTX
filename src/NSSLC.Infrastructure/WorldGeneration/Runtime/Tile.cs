@@ -1,3 +1,4 @@
+using System;
 using NSSLC.WorldGeneration.Geometry;
 using NSSLC.WorldGeneration.DataStructures;
 
@@ -5,23 +6,91 @@ namespace NSSLC.WorldGeneration;
 
 public class Tile
 {
-	public ushort type;
+	private ushort _type;
+	private ushort _wall;
+	private byte _liquid;
+	private ushort _sTileHeader;
+	private byte _bTileHeader;
+	private byte _bTileHeader2;
+	private byte _bTileHeader3;
+	private short _frameX;
+	private short _frameY;
+	private Action<int, int> _mutationObserver;
+	private int _observedX;
+	private int _observedY;
 
-	public ushort wall;
+	public ushort type
+	{
+		get => _type;
+		set => SetObservedValue(ref _type, value);
+	}
 
-	public byte liquid;
+	public ushort wall
+	{
+		get => _wall;
+		set => SetObservedValue(ref _wall, value);
+	}
 
-	public ushort sTileHeader;
+	public byte liquid
+	{
+		get => _liquid;
+		set => SetObservedValue(ref _liquid, value);
+	}
 
-	public byte bTileHeader;
+	public ushort sTileHeader
+	{
+		get => _sTileHeader;
+		set => SetObservedValue(ref _sTileHeader, value);
+	}
 
-	public byte bTileHeader2;
+	public byte bTileHeader
+	{
+		get => _bTileHeader;
+		set => SetObservedValue(ref _bTileHeader, value);
+	}
 
-	public byte bTileHeader3;
+	public byte bTileHeader2
+	{
+		get => _bTileHeader2;
+		set => SetObservedValue(ref _bTileHeader2, value);
+	}
 
-	public short frameX;
+	public byte bTileHeader3
+	{
+		get => _bTileHeader3;
+		set => SetObservedValue(ref _bTileHeader3, value);
+	}
 
-	public short frameY;
+	public short frameX
+	{
+		get => _frameX;
+		set => SetObservedValue(ref _frameX, value);
+	}
+
+	public short frameY
+	{
+		get => _frameY;
+		set => SetObservedValue(ref _frameY, value);
+	}
+
+	/// <summary>Binds owner-thread writeback tracking to this legacy runtime tile.</summary>
+	public void BindMutationObserver(int x, int y, Action<int, int> observer)
+	{
+		_observedX = x;
+		_observedY = y;
+		_mutationObserver = observer;
+	}
+
+	private void SetObservedValue<T>(ref T field, T value) where T : IEquatable<T>
+	{
+		if (field.Equals(value))
+		{
+			return;
+		}
+
+		field = value;
+		_mutationObserver?.Invoke(_observedX, _observedY);
+	}
 
 	private const int Bit0 = 1;
 
@@ -133,7 +202,9 @@ public class Tile
 	public object Clone()
 {
 	
-		return MemberwiseClone();
+		var clone = (Tile)MemberwiseClone();
+		clone.BindMutationObserver(0, 0, null);
+		return clone;
 	
 	}
 	public void ClearEverything()

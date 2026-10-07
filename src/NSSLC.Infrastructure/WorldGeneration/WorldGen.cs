@@ -20,6 +20,7 @@ using NSSLC.WorldGeneration.GameContent.Generation;
 using NSSLC.WorldGeneration.GameContent.Generation.Dungeon;
 using NSSLC.WorldGeneration.GameContent.Prefixes;
 using NSSLC.WorldGeneration.GameContent.Tile_Entities;
+using WorldGenWeaponsRack = NSSLC.WorldGeneration.GameContent.Tile_Entities.TEWeaponsRack;
 using NSSLC.WorldGeneration.GameContent.UI.States;
 using NSSLC.WorldGeneration.Graphics.Capture;
 using NSSLC.WorldGeneration.ID;
@@ -31,6 +32,10 @@ using NSSLC.WorldGeneration.Testing;
 using NSSLC.WorldGeneration.UI;
 using NSSLC.WorldGeneration.Utilities;
 using NSSLC.WorldGeneration.WorldBuilding;
+using Terraria.WorldGeneration.Adapters;
+using Terraria.WorldGeneration.Components;
+using Terraria.WorldGeneration.Housing;
+using Terraria.WorldGeneration.Systems;
 
 namespace NSSLC.WorldGeneration;
 
@@ -2779,7 +2784,6 @@ public partial class WorldGen
 		}
 		public static void DoRainbowStuff()
 {
-		
 			Main.tileSolid[379] = false;
 			bool flag = !extraLiquid.Enabled || !roundLandmasses.Enabled;
 			for (int i = 0; i < Main.maxTilesX; i++)
@@ -4160,7 +4164,12 @@ public partial class WorldGen
 
 	public static bool generatingRandomEvil;
 
-	public static int[] tileCounts = new int[TileID.Count];
+	// The legacy API resolves to the current world's scratch counts on each access.
+	public static int[] tileCounts =>
+		WorldTileMetricsSystem.GetMutableTileCounts(CurrentWorldTileMetrics);
+	private static WorldTileMetricsComponent CurrentWorldTileMetrics => Main.ActiveWorldSession.TileMetrics;
+	private static readonly IWorldTileMetricsTileSource _worldTileMetricsTileSource =
+		new MainWorldTileMetricsTileSource();
 
 	public static int totalEvil;
 
@@ -4189,6 +4198,7 @@ public partial class WorldGen
 	public static int totalD;
 
 	private static int _transformingWorld;
+	private static Action<Action, Action, Action> _worldTransformationHandler;
 
 	public static bool spawnEye;
 
@@ -4324,6 +4334,10 @@ public partial class WorldGen
 
 	private static Stack<Point> _roomCheckStack = new Stack<Point>();
 
+	private static readonly LegacyHousingTileSource _housingTileSource = new();
+	private static readonly IHousingRoomScoreTileSource _housingRoomScoreTileSource =
+		_housingTileSource;
+
 	public static TownNPCRoomCheckFailureReason roomCheckFailureReason = TownNPCRoomCheckFailureReason.None;
 
 	public static int meteorShowerCount;
@@ -4439,11 +4453,22 @@ public partial class WorldGen
 
 	public static bool _preventInfiniteRopeFraming = false;
 
-	public static bool TransformingWorld => _transformingWorld > 0;
+	public static bool TransformingWorld => Volatile.Read(ref _transformingWorld) > 0;
+	public static void RegisterWorldTransformationHandler(Action<Action, Action, Action> handler)
+	{
+		ArgumentNullException.ThrowIfNull(handler);
+		if (Interlocked.CompareExchange(ref _worldTransformationHandler, handler, null) != null)
+		{
+			throw new InvalidOperationException("A world-transformation handler is already registered.");
+		}
+	}
 
 	public static UnifiedRandom genRand => Main.rand;
 
-	public static double oceanLevel => (Main.worldSurface + Main.rockLayer) / 2.0 + 40.0;
+	public static double oceanLevel =>
+		Terraria.WorldGeneration.Metrics.WorldOceanLevelQuery.Evaluate(
+			Main.worldSurface,
+			Main.rockLayer);
 
 	public static void SetupStatueList()
 {
@@ -5696,59 +5721,35 @@ public partial class WorldGen
 	}
 	public static bool RoomNeeds()
 {
-	
-		roomChair = false;
-		roomDoor = false;
-		roomTable = false;
-		roomTorch = false;
-		for (int i = 0; i < TileID.Sets.RoomNeeds.CountsAsChairTypes.Length; i++)
-		{
-			if (houseTile[TileID.Sets.RoomNeeds.CountsAsChairTypes[i]])
-			{
-				roomChair = true;
-				break;
-			}
-		}
-		for (int j = 0; j < TileID.Sets.RoomNeeds.CountsAsTableTypes.Length; j++)
-		{
-			if (houseTile[TileID.Sets.RoomNeeds.CountsAsTableTypes[j]])
-			{
-				roomTable = true;
-				break;
-			}
-		}
-		for (int k = 0; k < TileID.Sets.RoomNeeds.CountsAsTorchTypes.Length; k++)
-		{
-			if (houseTile[TileID.Sets.RoomNeeds.CountsAsTorchTypes[k]])
-			{
-				roomTorch = true;
-				break;
-			}
-		}
-		for (int l = 0; l < TileID.Sets.RoomNeeds.CountsAsDoorTypes.Length; l++)
-		{
-			if (houseTile[TileID.Sets.RoomNeeds.CountsAsDoorTypes[l]])
-			{
-				roomDoor = true;
-				break;
-			}
-		}
-		if (roomChair && roomTable && roomDoor && roomTorch)
-		{
-			canSpawn = true;
-		}
-		else
-		{
-			canSpawn = false;
-		}
+		HousingRoomRequirementResult requirements = HousingRoomRequirementsQuery.Evaluate(
+			houseTile,
+			TileID.Sets.RoomNeeds.CountsAsChairTypes,
+			TileID.Sets.RoomNeeds.CountsAsTableTypes,
+			TileID.Sets.RoomNeeds.CountsAsTorchTypes,
+			TileID.Sets.RoomNeeds.CountsAsDoorTypes);
+		roomChair = requirements.HasChair;
+		roomTable = requirements.HasTable;
+		roomTorch = requirements.HasTorch;
+		roomDoor = requirements.HasDoor;
+		canSpawn = requirements.CanSpawn;
 		return canSpawn;
 	
 	}
 	public static void QuickFindHome(int npc)
 {
-	
 		bool flag = Main.tileSolid[379];
 		Main.tileSolid[379] = true;
+		try
+		{
+			QuickFindHomeWithTileSolid379(npc);
+		}
+		finally
+		{
+			Main.tileSolid[379] = flag;
+		}
+	}
+	private static void QuickFindHomeWithTileSolid379(int npc)
+	{
 		if (Main.npc[npc].homeTileX > 10 && Main.npc[npc].homeTileY > 10 && Main.npc[npc].homeTileX < Main.maxTilesX - 10 && Main.npc[npc].homeTileY < Main.maxTilesY)
 		{
 			canSpawn = false;
@@ -5806,8 +5807,6 @@ public partial class WorldGen
 				Main.npc[npc].homeless = true;
 			}
 		}
-		Main.tileSolid[379] = flag;
-	
 	}
 	private static bool IsRoomConsideredOccupiedForNPCIndex(int npc)
 {
@@ -5903,6 +5902,11 @@ public partial class WorldGen
 		{
 			roomOccupied = true;
 			hiScore = -1;
+			return;
+		}
+		if (feedback.GetType() == typeof(NoRoomCheckFeedback) && numRoomTiles > 0)
+		{
+			ScoreRoomWithHousingSystem();
 			return;
 		}
 		hiScore = 0;
@@ -6023,7 +6027,34 @@ public partial class WorldGen
 				}
 			}
 		}
-	
+		
+	}
+	private static void ScoreRoomWithHousingSystem()
+	{
+		var room = new HousingRoomEvaluationResult(
+			true,
+			HousingRoomValidationFailure.None,
+			numRoomTiles,
+			new TilePosition(roomX1, roomY1),
+			new TilePosition(roomX2, roomY2),
+			default,
+			roomHasStinkbug,
+			roomHasEchoStinkbug);
+		HousingRoomScoreSnapshot score = HousingRoomScoreSystem.ScoreRoom(
+			room,
+			Main.maxTilesX,
+			Main.maxTilesY,
+			_housingRoomScoreTileSource,
+			position => Housing_CheckIfInRoom(position.X, position.Y),
+			sharedRoomX >= 0 ? sharedRoomX : null);
+		hiScore = score.HighScore;
+		roomEvil = score.BaseScore < 50;
+		roomHasStandingSpace = score.HasStandingSpace;
+		if (score.HasBestCandidate)
+		{
+			bestX = score.BestX.Value;
+			bestY = score.BestY.Value;
+		}
 	}
 	public static void Housing_GetTestedRoomBounds(out int startX, out int endX, out int startY, out int endY)
 {
@@ -6085,6 +6116,11 @@ public partial class WorldGen
 		if (feedback == null)
 		{
 			feedback = NoRoomCheckFeedback.WithText;
+		}
+		if (feedback.GetType() == typeof(NoRoomCheckFeedback) &&
+			maxRoomTiles > 0 && maxRoomSize > 0)
+		{
+			return StartRoomCheckWithHousingSystem(x, y);
 		}
 		roomHasStinkbug = false;
 		roomHasEchoStinkbug = false;
@@ -6151,6 +6187,115 @@ public partial class WorldGen
 		}
 		return false;
 	
+	}
+	/// <summary>
+	/// Checks a room against the published tile map using the candidate world's explicit dimensions.
+	/// </summary>
+	public static bool IsHousingRoomValidAt(int x, int y, int worldWidth, int worldHeight)
+	{
+		if (worldWidth <= 0 || worldHeight <= 0 || Main.tile == null ||
+			Main.tile.GetLength(0) != worldWidth || Main.tile.GetLength(1) != worldHeight)
+		{
+			throw new InvalidOperationException(
+				"Housing validation dimensions do not match the published runtime tile map.");
+		}
+
+		HousingRoomEvaluationResult result = EvaluateRoomWithHousingSystem(
+			x,
+			y,
+			worldWidth,
+			worldHeight);
+		return result.Failure is HousingRoomValidationFailure.None or
+			HousingRoomValidationFailure.MissingRequirement;
+	}
+	private static bool StartRoomCheckWithHousingSystem(int x, int y)
+	{
+		roomHasStinkbug = false;
+		roomHasEchoStinkbug = false;
+		roomX1 = x;
+		roomX2 = x;
+		roomY1 = y;
+		roomY2 = y;
+		roomTiles.Reset(new Point(x, y), maxRoomSize);
+		numRoomTiles = 0;
+		for (int i = 0; i < TileID.Count; i++)
+		{
+			houseTile[i] = false;
+		}
+		canSpawn = true;
+
+		if (Main.maxTilesX <= 0 || lastMaxTilesY <= 0)
+		{
+			roomCheckFailureReason = TownNPCRoomCheckFailureReason.TooCloseToWorldEdge;
+			canSpawn = false;
+			return false;
+		}
+
+		HousingRoomEvaluationResult result = EvaluateRoomWithHousingSystem(
+			x,
+			y,
+			Main.maxTilesX,
+			lastMaxTilesY);
+
+		numRoomTiles = result.RoomTileCount;
+		roomX1 = result.RoomMinimum.X;
+		roomX2 = result.RoomMaximum.X;
+		roomY1 = result.RoomMinimum.Y;
+		roomY2 = result.RoomMaximum.Y;
+		roomHasStinkbug = result.HasStinkbug;
+		roomHasEchoStinkbug = result.HasEchoStinkbug;
+		foreach (TilePosition position in result.VisitedTiles)
+		{
+			roomTiles.Add(new Point(position.X, position.Y));
+		}
+		foreach (int tileType in result.ClassifiedTileTypes)
+		{
+			houseTile[tileType] = true;
+		}
+
+		roomCheckFailureReason = result.Failure switch
+		{
+			HousingRoomValidationFailure.TooCloseToWorldEdge =>
+				TownNPCRoomCheckFailureReason.TooCloseToWorldEdge,
+			HousingRoomValidationFailure.StartedInSolidTile =>
+				TownNPCRoomCheckFailureReason.RoomCheckStartedInASolidTile,
+			HousingRoomValidationFailure.RoomTooBig =>
+				TownNPCRoomCheckFailureReason.RoomIsTooBig,
+			HousingRoomValidationFailure.UnsafeWall =>
+				TownNPCRoomCheckFailureReason.TooManyUnsafeWalls,
+			HousingRoomValidationFailure.MissingWall =>
+				TownNPCRoomCheckFailureReason.HoleInWallIsTooBig,
+			HousingRoomValidationFailure.RoomTooSmall =>
+				TownNPCRoomCheckFailureReason.RoomIsTooSmall,
+			HousingRoomValidationFailure.None or HousingRoomValidationFailure.MissingRequirement =>
+				TownNPCRoomCheckFailureReason.None,
+			_ => throw new InvalidOperationException(
+				$"Unexpected housing validation failure '{result.Failure}'."),
+		};
+		canSpawn = result.Failure is HousingRoomValidationFailure.None or
+			HousingRoomValidationFailure.MissingRequirement;
+		return canSpawn;
+	}
+	private static HousingRoomEvaluationResult EvaluateRoomWithHousingSystem(
+		int x,
+		int y,
+		int worldWidth,
+		int worldHeight)
+	{
+		var definition = new HousingValidationDefinition(
+			maxRoomTiles,
+			maxRoomSize,
+			60,
+			TileID.Count,
+			10);
+		HousingValidationSystem.TryEvaluateRoom(
+			new TilePosition(x, y),
+			worldWidth,
+			worldHeight,
+			definition,
+			_housingTileSource,
+			out HousingRoomEvaluationResult result);
+		return result;
 	}
 	private static bool CheckRoom(int x, int y, int iteration, IRoomCheckFeedback feedback)
 {
@@ -6621,25 +6766,26 @@ public partial class WorldGen
 		return 2;
 	
 	}
-	public static void SetWorldSize(int size)
+public static void SetWorldSize(int size)
 {
-	
-		switch (size)
+		RunWorldLifecycleMutation(() =>
 		{
-		case 0:
-			Main.maxTilesX = 4200;
-			Main.maxTilesY = 1200;
-			break;
-		case 1:
-			Main.maxTilesX = 6400;
-			Main.maxTilesY = 1800;
-			break;
-		default:
-			Main.maxTilesX = 8400;
-			Main.maxTilesY = 2400;
-			break;
-		}
-	
+			switch (size)
+			{
+			case 0:
+				Main.maxTilesX = 4200;
+				Main.maxTilesY = 1200;
+				break;
+			case 1:
+				Main.maxTilesX = 6400;
+				Main.maxTilesY = 1800;
+				break;
+			default:
+				Main.maxTilesX = 8400;
+				Main.maxTilesY = 2400;
+				break;
+			}
+		});
 	}
 	public static void worldGenCallback(GenerationProgress customProgressObject, WorldGenerator.Controller customGenController, WorldGenerationFinishCallback afterGeneration)
 {
@@ -6716,9 +6862,131 @@ public partial class WorldGen
 		ThreadPool.QueueUserWorkItem(saveToonWhilePlayingCallBack, 1);
 	
 	}
-	public static void serverLoadWorldCallBack()
-{
-    throw new NotSupportedException("This operation requires the game or persistence host.");
+  private static readonly object _worldLifecycleGate = new object();
+  private static bool _worldLoadCallbackActive;
+  private static bool _worldUpdateActive;
+
+  internal static void RunWorldLifecycleMutation(Action operation)
+  {
+    ArgumentNullException.ThrowIfNull(operation);
+    if (!Monitor.TryEnter(_worldLifecycleGate))
+    {
+      throw new InvalidOperationException(
+        "Another world lifecycle operation is already in progress.");
+    }
+
+    if (_worldUpdateActive)
+    {
+      Monitor.Exit(_worldLifecycleGate);
+      throw new InvalidOperationException(
+        "A world lifecycle mutation cannot run inside a world update.");
+    }
+
+    bool preserveExistingLoadGate = isGeneratingOrLoadingWorld;
+    bool mutationCompleted = false;
+    isGeneratingOrLoadingWorld = true;
+    try
+    {
+      operation.Invoke();
+      mutationCompleted = true;
+    }
+    finally
+    {
+      isGeneratingOrLoadingWorld = preserveExistingLoadGate || !mutationCompleted;
+      Monitor.Exit(_worldLifecycleGate);
+    }
+  }
+
+  internal static bool TryRunWorldLifecycleMutation(Action operation)
+  {
+    ArgumentNullException.ThrowIfNull(operation);
+    if (!Monitor.TryEnter(_worldLifecycleGate))
+    {
+      return false;
+    }
+
+    if (_worldUpdateActive)
+    {
+      Monitor.Exit(_worldLifecycleGate);
+      return false;
+    }
+
+    bool preserveExistingLoadGate = isGeneratingOrLoadingWorld;
+    bool mutationCompleted = false;
+    isGeneratingOrLoadingWorld = true;
+    try
+    {
+      operation.Invoke();
+      mutationCompleted = true;
+      return true;
+    }
+    finally
+    {
+      isGeneratingOrLoadingWorld = preserveExistingLoadGate || !mutationCompleted;
+      Monitor.Exit(_worldLifecycleGate);
+    }
+  }
+
+  internal static TResult RunWorldLifecycleOperation<TResult>(Func<TResult> operation)
+  {
+    ArgumentNullException.ThrowIfNull(operation);
+    if (!Monitor.TryEnter(_worldLifecycleGate))
+    {
+      throw new InvalidOperationException(
+        "Another world lifecycle operation is already in progress.");
+    }
+
+    if (_worldUpdateActive)
+    {
+      Monitor.Exit(_worldLifecycleGate);
+      throw new InvalidOperationException(
+        "A world lifecycle operation cannot run inside a world update.");
+    }
+
+    try
+    {
+      return operation.Invoke();
+    }
+    finally
+    {
+      Monitor.Exit(_worldLifecycleGate);
+    }
+  }
+
+  public static void serverLoadWorldCallBack()
+  {
+    lock (_worldLifecycleGate)
+    {
+      if (_worldUpdateActive)
+      {
+        throw new InvalidOperationException(
+          "A world-load callback cannot run inside a world update.");
+      }
+
+      if (_worldLoadCallbackActive)
+      {
+        throw new InvalidOperationException(
+          "A world-load callback cannot re-enter before the active callback completes.");
+      }
+
+      _worldLoadCallbackActive = true;
+      try
+      {
+        WorldFile.LoadWorld();
+        if (loadFailed)
+        {
+          return;
+        }
+
+        // Owner-based loading stages persisted state in the session, not parser temp fields.
+        SoundEngine.PlaySound(10);
+        Hooks.WorldLoaded();
+      }
+      finally
+      {
+        _worldLoadCallbackActive = false;
+      }
+    }
   }
 	public static Task serverLoadWorld()
 {
@@ -6726,10 +6994,28 @@ public partial class WorldGen
 		return Task.Factory.StartNew(serverLoadWorldCallBack);
 	
 	}
-	public static void clearWorld()
+public static void clearWorld()
 {
+    RunWorldLifecycleMutation(ClearWorldCore);
+  }
+
+  private static void ClearWorldCore()
+  {
+    worldCleared = false;
+    NPC.ResetBadgerHatTime();
+    Array.Clear(NPC.ShimmeredTownNPCs, 0, NPC.ShimmeredTownNPCs.Length);
+    NPC.ClearFoundActiveNPCs();
     Main.ResetWorldStorage();
+    Main.BestiaryTracker.Reset();
+    PressurePlateHelper.Reset();
+    TreeTops.Reset();
+    ExtraSpawnPointManager.ResetExtraSpawns();
+    BirthdayParty.WorldClear();
+    LanternNight.WorldClear();
+    Sandstorm.WorldClear();
+    DD2Event.ResetProgressEntirely();
     ResetGenerationState();
+    WorldFile.ResetTemps();
     Manifest = new WorldManifest();
     TownManager = new TownRoomManager();
     lastMaxTilesX = Main.maxTilesX;
@@ -6738,6 +7024,28 @@ public partial class WorldGen
     totalSolid = totalGood = totalEvil = totalBlood = 0;
     totalSolid2 = totalGood2 = totalEvil2 = totalBlood2 = 0;
     Liquid.ReInit();
+    worldCleared = true;
+  }
+  /// <summary>
+  /// Captures the active map size for legacy housing boundary checks after world publication.
+  /// </summary>
+  public static void CaptureWorldDimensionCompatibilityState(int maxTilesX, int maxTilesY)
+  {
+    if (maxTilesX <= 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(maxTilesX));
+    }
+    if (maxTilesY <= 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(maxTilesY));
+    }
+    if (Main.maxTilesX != maxTilesX || Main.maxTilesY != maxTilesY)
+    {
+      throw new InvalidOperationException(
+        "World dimension compatibility must match the active legacy runtime dimensions.");
+    }
+    lastMaxTilesX = maxTilesX;
+    lastMaxTilesY = maxTilesY;
   }
 	public static void setBG(int bg, int style)
 {
@@ -10633,9 +10941,16 @@ public partial class WorldGen
 {
     throw new NotSupportedException("This operation requires the game or persistence host.");
   }
-	public static bool GenerateWorld(GenerationProgress customProgressObject = null, WorldGenerator.Controller customController = null)
+public static bool GenerateWorld(GenerationProgress customProgressObject = null, WorldGenerator.Controller customController = null)
 {
-	
+		return RunWorldLifecycleOperation(
+			() => GenerateWorldCore(customProgressObject, customController));
+}
+private static bool GenerateWorldCore(GenerationProgress customProgressObject, WorldGenerator.Controller customController)
+{
+		bool preserveExistingLoadGate = isGeneratingOrLoadingWorld;
+		bool clearWorldAttempted = false;
+		bool clearWorldCompleted = false;
 		generatingWorld = true;
 		isGeneratingOrLoadingWorld = true;
 		generatingWorldOnThisThread = true;
@@ -10646,19 +10961,21 @@ public partial class WorldGen
 			GenVars.configuration = WorldGenConfiguration.FromEmbeddedPath("NSSLC.WorldGeneration.GameContent.WorldBuilding.Configuration.json");
 			Hooks.ProcessWorldGenConfig(ref GenVars.configuration);
 			_generator = new WorldGenerator(Main.ActiveWorldFileData.Seed, GenVars.configuration, customProgressObject, customController);
+			clearWorldAttempted = true;
 			clearWorld();
+			clearWorldCompleted = worldCleared;
 			Reset();
 			AddPasses();
 			DisablePassesForSpecialSeeds(_generator._passes);
 			flag = _generator.GenerateWorld();
 			Finish();
-			return flag;
 		}
 		finally
 		{
 			RestoreTemporaryStateChanges();
 			generatingWorld = false;
-			isGeneratingOrLoadingWorld = false;
+			isGeneratingOrLoadingWorld = !clearWorldCompleted &&
+				(preserveExistingLoadGate || clearWorldAttempted);
 			generatingWorldOnThisThread = false;
 			drunkWorldGen = false;
 			notTheBees = false;
@@ -10670,9 +10987,19 @@ public partial class WorldGen
 			everythingWorldGen = false;
 			skyblockWorldGen = false;
 		}
+		if (flag)
+		{
+			worldCleared = false;
+		}
+
+		return flag;
 	
 	}
 	public static void Reset()
+	{
+		RunWorldLifecycleMutation(ResetCore);
+	}
+	private static void ResetCore()
 {
 	
 		Manifest.Version = Main.versionNumber;
@@ -31383,9 +31710,35 @@ public partial class WorldGen
 	
 	}
 	public static void TransformWorldOnBackgroundThread(Action transform, Action mainThreadFollowup)
-{
-    throw new NotSupportedException("This operation requires the game or persistence host.");
-  }
+	{
+		ArgumentNullException.ThrowIfNull(transform);
+		ArgumentNullException.ThrowIfNull(mainThreadFollowup);
+		Action<Action, Action, Action> handler = Volatile.Read(ref _worldTransformationHandler);
+		if (handler == null)
+		{
+			throw new NotSupportedException("This operation requires the game or persistence host.");
+		}
+
+		Interlocked.Increment(ref _transformingWorld);
+		int completionClaimed = 0;
+		void CompleteLegacyTransform()
+		{
+			if (Interlocked.Exchange(ref completionClaimed, 1) == 0)
+			{
+				Interlocked.Decrement(ref _transformingWorld);
+			}
+		}
+
+		try
+		{
+			handler(transform, mainThreadFollowup, CompleteLegacyTransform);
+		}
+		catch
+		{
+			CompleteLegacyTransform();
+			throw;
+		}
+	}
 	public static void ClearUnbreakableWallsWithPaintUpTo(int tierColor)
 {
 	
@@ -46047,7 +46400,7 @@ public partial class WorldGen
 		{
 			return;
 		}
-		if (TileEntity.TryGetAt<TEWeaponsRack>(num, num2, out var result) && result.item.stack > 0)
+		if (TileEntity.TryGetAt<WorldGenWeaponsRack>(num, num2, out var result) && result.item.stack > 0)
 		{
 			result.DropItem();
 			if (Main.netMode != 2)
@@ -46057,7 +46410,7 @@ public partial class WorldGen
 		}
 		destroyObject = true;
 		Item.NewItem(GetItemSource_FromTileBreak(i, j), i * 16, j * 16, 48, 48, 2699);
-		TileEntityType<TEWeaponsRack>.Kill(num, num2);
+		TileEntityType<WorldGenWeaponsRack>.Kill(num, num2);
 		for (int m = 0; m < 3; m++)
 		{
 			for (int n = 0; n < 3; n++)
@@ -63496,7 +63849,7 @@ public partial class WorldGen
 			}
 			return;
 		}
-		if (tile.type == 471 && TileEntity.TryGetAt<TEWeaponsRack>(i - tile.frameX % 54 / 18, j - tile.frameY % 54 / 18, out var result3) && result3.item.stack > 0)
+		if (tile.type == 471 && TileEntity.TryGetAt<WorldGenWeaponsRack>(i - tile.frameX % 54 / 18, j - tile.frameY % 54 / 18, out var result3) && result3.item.stack > 0)
 		{
 			result3.DropItem();
 			if (Main.netMode != 2)
@@ -70998,144 +71351,92 @@ public partial class WorldGen
 	
 	}
 	public static void CountTiles(int X)
-{
-	
+	{
+		CountTiles(CurrentWorldTileMetrics, X);
+	}
+
+	private static void CountTiles(WorldTileMetricsComponent metrics, int X)
+	{
+		int[] tileCounts = WorldTileMetricsSystem.GetMutableTileCounts(metrics);
 		if (X == 0)
 		{
-			totalEvil = totalEvil2;
-			totalBlood = totalBlood2;
-			totalSolid = totalSolid2;
-			totalGood = totalGood2;
-			tGood = (byte)Math.Round((double)totalGood / (double)totalSolid * 100.0);
-			tEvil = (byte)Math.Round((double)totalEvil / (double)totalSolid * 100.0);
-			tBlood = (byte)Math.Round((double)totalBlood / (double)totalSolid * 100.0);
-			if (tGood == 0 && totalGood > 0)
+			WorldTileMetricsPublicationResult publication =
+				WorldTileMetricsSystem.BeginColumn(metrics, X);
+			if (publication.HasSnapshot)
 			{
-				tGood = 1;
+				LegacyWorldTileMetricsProjection.PublishCompletedWindow(
+					publication.Snapshot,
+					publication.ShouldSendMessage57);
 			}
-			if (tEvil == 0 && totalEvil > 0)
-			{
-				tEvil = 1;
-			}
-			if (tBlood == 0 && totalBlood > 0)
-			{
-				tBlood = 1;
-			}
-			if (Main.netMode == 2)
-			{
-				NetMessage.SendData(57);
-			}
-			totalEvil2 = 0;
-			totalSolid2 = 0;
-			totalGood2 = 0;
-			totalBlood2 = 0;
+
+			WorldTileMetricsSystem.CompleteColumnStart(metrics, X);
+			PublishPendingTileMetrics(metrics);
 		}
-		ushort num = 0;
-		ushort num2 = 0;
-		int num3 = 0;
-		int num4 = 0;
-		int num5 = 0;
-		do
-		{
-			int num6;
-			int num7;
-			if (num4 == 0)
-			{
-				num6 = 40;
-				num5 = (int)(Main.worldSurface + 1.0);
-				num7 = 5;
-			}
-			else
-			{
-				num6 = num5;
-				num5 = Main.maxTilesY - 40;
-				num7 = 1;
-			}
-			for (int i = num6; i < num5; i++)
-			{
-				Tile tile = Main.tile[X, i];
-				if (tile == null)
-				{
-					tile = (Main.tile[X, i] = new Tile());
-				}
-				Skyblock.hasWall[tile.wall] = true;
-				if (!tile.active())
-				{
-					continue;
-				}
-				Skyblock.currentActiveTiles++;
-				Skyblock.hasTile[tile.type] = true;
-				num = tile.type;
-				if (num != 0)
-				{
-					if (num == num2)
-					{
-						num3 += num7;
-						continue;
-					}
-					tileCounts[num2] += num3;
-					num2 = num;
-					num3 = num7;
-				}
-			}
-			tileCounts[num2] += num3;
-			num3 = 0;
-			num4++;
-		}
-		while (num4 < 2);
-		AddUpAlignmentCounts();
-		if (X == Main.maxTilesX - 1)
+
+		WorldTileMetricsSystem.ScanColumnTiles(
+			X,
+			Main.worldSurface,
+			Main.maxTilesY,
+			_worldTileMetricsTileSource,
+			tileCounts,
+			wall => Skyblock.hasWall[wall] = true,
+			() => Skyblock.currentActiveTiles++,
+			tile => Skyblock.hasTile[tile] = true);
+		bool fullScanCompleted = WorldTileMetricsSystem.CompleteColumn(
+			metrics,
+			tileCounts,
+			TileID.Sets.HallowCountCollection,
+			TileID.Sets.CorruptCountCollection,
+			TileID.Sets.CrimsonCountCollection,
+			Main.remixWorld,
+			X,
+			Main.maxTilesX);
+		PublishPendingTileMetrics(metrics);
+		if (fullScanCompleted)
 		{
 			Skyblock.Calculate();
 		}
-	
+	}
+
+	public static void ResetWorldTileMetrics()
+	{
+		WorldTileMetricsComponent metrics = CurrentWorldTileMetrics;
+		WorldTileMetricsSystem.Reset(metrics);
+		LegacyWorldTileMetricsProjection.Reset();
+	}
+
+	private static void PublishPendingTileMetrics(WorldTileMetricsComponent metrics)
+	{
+		WorldTileMetricsSnapshot snapshot =
+			WorldTileMetricsSystem.CreatePendingSnapshot(metrics);
+		LegacyWorldTileMetricsProjection.PublishPendingWindow(snapshot);
+	}
+
+	private sealed class MainWorldTileMetricsTileSource : IWorldTileMetricsTileSource
+	{
+		public WorldTileMetricsTileSample ReadOrCreateTile(int x, int y)
+		{
+			Tile tile = Main.tile[x, y];
+			if (tile == null)
+			{
+				tile = Main.tile[x, y] = new Tile();
+			}
+
+			return new WorldTileMetricsTileSample(tile.type, tile.wall, tile.active());
+		}
 	}
 	public static void AddUpAlignmentCounts(bool clearCounts = false)
-{
-	
-		if (clearCounts)
-		{
-			totalEvil2 = 0;
-			totalSolid2 = 0;
-			totalGood2 = 0;
-			totalBlood2 = 0;
-		}
-		int num = 0;
-		int num2 = 0;
-		int num3 = 0;
-		for (int i = 0; i < TileID.Sets.HallowCountCollection.Count; i++)
-		{
-			int num4 = tileCounts[TileID.Sets.HallowCountCollection[i]];
-			totalGood2 += num4;
-			num += num4;
-		}
-		for (int j = 0; j < TileID.Sets.CorruptCountCollection.Count; j++)
-		{
-			int num5 = tileCounts[TileID.Sets.CorruptCountCollection[j]];
-			totalEvil2 += num5;
-			num2 += num5;
-		}
-		for (int k = 0; k < TileID.Sets.CrimsonCountCollection.Count; k++)
-		{
-			int num6 = tileCounts[TileID.Sets.CrimsonCountCollection[k]];
-			totalBlood2 += num6;
-			num3 += num6;
-		}
-		if (Main.remixWorld)
-		{
-			int num7 = tileCounts[474];
-			totalEvil2 += num7;
-			num2 += num7;
-			num7 = tileCounts[195];
-			totalBlood2 += num7;
-			num3 += num7;
-		}
-		totalSolid2 += tileCounts[2] + tileCounts[477] + tileCounts[1] + tileCounts[60] + tileCounts[53] + tileCounts[161];
-		totalSolid2 += num;
-		totalSolid2 += num2;
-		totalSolid2 += num3;
-		Array.Clear(tileCounts, 0, tileCounts.Length);
-	
+	{
+		WorldTileMetricsComponent metrics = CurrentWorldTileMetrics;
+		WorldTileMetricsSystem.AccumulateAlignmentCounts(
+			metrics,
+			WorldTileMetricsSystem.GetMutableTileCounts(metrics),
+			TileID.Sets.HallowCountCollection,
+			TileID.Sets.CorruptCountCollection,
+			TileID.Sets.CrimsonCountCollection,
+			Main.remixWorld,
+			clearCounts);
+		PublishPendingTileMetrics(metrics);
 	}
 	public static void plantDye(int i, int j, bool exoticPlant = false)
 {
@@ -71349,8 +71650,33 @@ public partial class WorldGen
 	
 	}
 	public static void UpdateWorld()
-{
-	
+	{
+		if (!Monitor.TryEnter(_worldLifecycleGate))
+		{
+			return;
+		}
+
+		if (_worldUpdateActive || _worldLoadCallbackActive)
+		{
+			Monitor.Exit(_worldLifecycleGate);
+			return;
+		}
+
+		_worldUpdateActive = true;
+		try
+		{
+			UpdateWorldCore();
+		}
+		finally
+		{
+			_worldUpdateActive = false;
+			Monitor.Exit(_worldLifecycleGate);
+		}
+	}
+
+	private static void UpdateWorldCore()
+	{
+		
 		if (isGeneratingOrLoadingWorld)
 		{
 			return;
@@ -71368,16 +71694,27 @@ public partial class WorldGen
 		UpdateLunarApocalypse();
 		if (Main.netMode != 1)
 		{
-			totalD++;
-			if (totalD >= 30)
+			WorldTileMetricsComponent metrics = CurrentWorldTileMetrics;
+			if (WorldTileMetricsSystem.AdvanceCadence(
+					metrics,
+					Main.maxTilesX,
+					out int tileColumnX))
 			{
 				totalD = 0;
-				CountTiles(totalX);
-				totalX++;
+				CountTiles(metrics, tileColumnX);
+				WorldTileMetricsSystem.CompleteScheduledColumn(
+					metrics,
+					tileColumnX,
+					Main.maxTilesX);
+				totalX = tileColumnX + 1;
 				if (totalX >= Main.maxTilesX)
 				{
 					totalX = 0;
 				}
+			}
+			else
+			{
+				totalD++;
 			}
 		}
 		Liquid.skipCount++;
@@ -71518,11 +71855,17 @@ public partial class WorldGen
 				Point point = Main.rand.NextFromRectangle(tileRectangle);
 				if (Main.wallHouse[Main.tile[point.X, point.Y].wall])
 				{
-					bool flag = Main.tileSolid[379];
-					Main.tileSolid[379] = true;
+				bool flag = Main.tileSolid[379];
+				Main.tileSolid[379] = true;
+				try
+				{
 					SpawnTownNPC(point.X, point.Y, canSpawnNewTownNPC: false);
+				}
+				finally
+				{
 					Main.tileSolid[379] = flag;
-					break;
+				}
+				break;
 				}
 			}
 		}
@@ -74758,8 +75101,14 @@ public partial class WorldGen
 			{
 				bool flag = Main.tileSolid[379];
 				Main.tileSolid[379] = true;
-				SpawnTownNPC(x, y);
-				Main.tileSolid[379] = flag;
+				try
+				{
+					SpawnTownNPC(x, y);
+				}
+				finally
+				{
+					Main.tileSolid[379] = flag;
+				}
 			}
 		}
 	
@@ -85487,7 +85836,7 @@ public partial class WorldGen
 					CheckWeaponsRack(i, j);
 					break;
 				case 471:
-					TEWeaponsRack.Framing_CheckTile(i, j);
+					WorldGenWeaponsRack.Framing_CheckTile(i, j);
 					break;
 				case 34:
 				case 454:

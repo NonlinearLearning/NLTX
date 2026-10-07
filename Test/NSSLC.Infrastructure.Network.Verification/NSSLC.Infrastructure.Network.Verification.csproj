@@ -7,5 +7,7 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NSSLC.Infrastructure\Network\NSSLC.Infrastructure.Network.csproj" />
+    <ProjectReference Include="..\..\src\NSSLC\Component\WorldSession\Terraria.WorldSession.csproj" />
+    <None Update="WireFixtures.json" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 </Project>

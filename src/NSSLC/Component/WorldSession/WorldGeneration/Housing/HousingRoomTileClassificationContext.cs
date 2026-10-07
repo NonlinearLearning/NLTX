@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace Terraria.WorldGeneration.Housing;
 
@@ -15,6 +16,22 @@ public sealed class HousingRoomTileClassificationContext
   public int TileTypeCount => _classifiedTileTypes.Length;
 
   public int ClassifiedTileTypeCount { get; private set; }
+
+  public IReadOnlyList<int> CreateSnapshot()
+  {
+    int[] tileTypes = new int[ClassifiedTileTypeCount];
+    int snapshotIndex = 0;
+    for (int tileType = 0; tileType < _classifiedTileTypes.Length; tileType++)
+    {
+      if (_classifiedTileTypes[tileType])
+      {
+        tileTypes[snapshotIndex] = tileType;
+        snapshotIndex++;
+      }
+    }
+
+    return Array.AsReadOnly(tileTypes);
+  }
 
   public bool Contains(int tileType)
   {

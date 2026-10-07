@@ -5,7 +5,7 @@ namespace Terraria.NonAuthoritative.Persistence;
 /// </summary>
 public interface IWorldLoadAttemptObserver
 {
-  void OnFileOpened();
+  void OnFileRead();
 
   void OnDocumentValidated();
 }

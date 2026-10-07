@@ -1,18 +1,18 @@
-using System;
+using Terraria.Relationships;
 
 namespace EntityEcs.Components;
 
 public readonly record struct EntityIdentityComponent
 {
-  public EntityIdentityComponent(Guid uuid)
+  internal EntityIdentityComponent(EntityUuid uuid)
   {
-    UUID = uuid;
+    if (!uuid.IsAssigned)
+    {
+      throw new ArgumentException("An entity identity component requires an assigned UUID.", nameof(uuid));
+    }
+
+    Uuid = uuid;
   }
 
-  public readonly Guid UUID;
-
-  public static EntityIdentityComponent Create()
-  {
-    return new EntityIdentityComponent(Guid.NewGuid());
-  }
+  public EntityUuid Uuid { get; }
 }

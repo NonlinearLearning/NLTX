@@ -30,13 +30,13 @@ public sealed class LeashedSectionIndex
 
   public int SectionCount => _buckets.Count;
 
-  public void SetActive(SectionCoordinate section, bool active)
+  internal void SetActive(SectionCoordinate section, bool active)
   {
     Bucket bucket = GetOrCreate(section);
     bucket.IsActive = active;
   }
 
-  public int Add(SectionCoordinate section, LeashedEntityHandle handle)
+  internal int Add(SectionCoordinate section, LeashedEntityHandle handle)
   {
     if (!handle.IsAssigned)
     {
@@ -51,7 +51,7 @@ public sealed class LeashedSectionIndex
     return slot;
   }
 
-  public bool Remove(
+  internal bool Remove(
     SectionCoordinate section,
     LeashedEntityHandle handle,
     int sectionSlot)
@@ -69,7 +69,18 @@ public sealed class LeashedSectionIndex
     return true;
   }
 
-  public IReadOnlyList<LeashedSectionSlotChange> CompactIfNecessary(
+  public bool Contains(
+    SectionCoordinate section,
+    LeashedEntityHandle handle,
+    int sectionSlot)
+  {
+    return _buckets.TryGetValue(section, out Bucket? bucket)
+      && sectionSlot >= 0
+      && sectionSlot < bucket.LogicalCount
+      && bucket.Handles[sectionSlot] == handle;
+  }
+
+  internal IReadOnlyList<LeashedSectionSlotChange> CompactIfNecessary(
     SectionCoordinate section)
   {
     if (!_buckets.TryGetValue(section, out Bucket? bucket)
@@ -141,7 +152,7 @@ public sealed class LeashedSectionIndex
     return snapshot.Handles;
   }
 
-  public void Clear()
+  internal void Clear()
   {
     _buckets.Clear();
   }

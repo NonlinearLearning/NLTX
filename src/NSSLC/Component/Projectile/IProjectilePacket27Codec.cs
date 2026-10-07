@@ -15,10 +15,18 @@ public interface IProjectilePacket27Codec
     ReadOnlySpan<byte> payload,
     out ProjectileNetworkApplyCommand command);
 
+  /// <summary>
+  /// Encodes a body. The caller must pass the protocol's NeedsUUID result for
+  /// this type, and it must match the command's UUID presence.
+  /// </summary>
   byte[] Encode(
     ProjectileNetworkApplyCommand command,
     bool includeUuid);
 
+  /// <summary>
+  /// Encodes a body. The caller must pass the protocol's NeedsUUID result for
+  /// this type, and it must match the command's UUID presence.
+  /// </summary>
   bool TryEncode(
     ProjectileNetworkApplyCommand command,
     bool includeUuid,

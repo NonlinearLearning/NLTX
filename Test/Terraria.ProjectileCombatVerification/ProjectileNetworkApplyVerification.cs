@@ -1,6 +1,9 @@
 using System;
 using System.Numerics;
 
+using EntityEcs;
+using EntityEcs.Components;
+
 using Terraria.Content;
 using Terraria.Projectile;
 using Terraria.Relationships;
@@ -22,7 +25,8 @@ internal static class ProjectileNetworkApplyVerification
       static value => new ProjectileSlot(value),
       maximumCapacity: 2);
     var identities = new ProjectileIdentityIndex();
-    var lifecycle = new ProjectileLifecycleSystem(slots, identities);
+    using var runtime = new EntityRuntime();
+    var lifecycle = new ProjectileLifecycleSystem(slots, identities, runtime);
     var context = new ProjectileDefinitionHydrationContext(
       catalogRevision: 9,
       npcCapacity: 64,
@@ -44,16 +48,24 @@ internal static class ProjectileNetworkApplyVerification
     Assert(
       lifecycle.TryApplyNetwork(first, definitions, context, out ProjectileHandle firstHandle),
       "A valid packet state should allocate a local slot.");
-    Assert(lifecycle.TryGet(firstHandle, out ProjectileEntityState? firstState) &&
-      firstState is not null, "The packet-created state should be readable.");
+    Assert(
+      lifecycle.TryGetRuntimeHandle(firstHandle, out RuntimeEntityHandle firstRuntimeHandle),
+      "The packet-created state should be readable.");
+    Assert(
+      lifecycle.TryGetEntityReference(firstHandle, out EntityReference firstReference),
+      "The packet-created runtime root should publish a projectile reference.");
+    ProjectileIdentityComponent firstIdentity =
+      ReadComponent<ProjectileIdentityComponent>(runtime, firstRuntimeHandle);
+    ProjectileDamagePayloadComponent firstDamage =
+      ReadComponent<ProjectileDamagePayloadComponent>(runtime, firstRuntimeHandle);
     AssertEqual(0, firstHandle.Slot.Value, "The first packet should use the first free slot.");
-    AssertEqual(42, firstState!.Identity.Identity,
+    AssertEqual(42, firstIdentity.Identity,
       "Network identity must remain the packet identity.");
-    AssertEqual(0, firstState.Identity.SlotIndex,
+    AssertEqual(0, firstIdentity.SlotIndex,
       "The local slot must remain a separate field.");
-    AssertEqual(900, firstState.Identity.ProjectileUuid,
+    AssertEqual(900, firstIdentity.ProjectileUuid,
       "A supplied packet UUID must be retained.");
-    AssertEqual(18, firstState.Damage.CurrentDamage,
+    AssertEqual(18, firstDamage.CurrentDamage,
       "Packet damage should be applied during hydration.");
 
     var update = new ProjectileNetworkApplyCommand(
@@ -72,13 +84,25 @@ internal static class ProjectileNetworkApplyVerification
       "A same-type packet should update the active instance.");
     AssertEqual(firstHandle, updatedHandle,
       "A same-type packet must not replace the active generation.");
-    Assert(lifecycle.TryGet(updatedHandle, out ProjectileEntityState? updatedState) &&
-      updatedState is not null, "The updated packet state should be readable.");
-    AssertEqual(30.0f, updatedState!.Kinematics.Position.X,
+    Assert(
+      lifecycle.TryGetRuntimeHandle(updatedHandle, out RuntimeEntityHandle updatedRuntimeHandle),
+      "The updated packet state should be readable.");
+    Assert(
+      lifecycle.TryGetEntityReference(updatedHandle, out EntityReference updatedReference),
+      "The updated runtime root should publish a projectile reference.");
+    ProjectileKinematicsStateComponent updatedKinematics =
+      CaptureKinematics(runtime, updatedRuntimeHandle);
+    ProjectileBehaviorStateComponent updatedBehavior =
+      ReadComponent<ProjectileBehaviorStateComponent>(runtime, updatedRuntimeHandle);
+    ProjectileIdentityComponent updatedIdentity =
+      ReadComponent<ProjectileIdentityComponent>(runtime, updatedRuntimeHandle);
+    AssertEqual(firstReference, updatedReference,
+      "A same-type packet must retain the projectile entity root.");
+    AssertEqual(30.0f, updatedKinematics.Position.X,
       "Same-type packets should update position in place.");
-    AssertEqual(9.0f, updatedState.Behavior.GetAi(0),
+    AssertEqual(9.0f, updatedBehavior.GetAi(0),
       "Same-type packets should update AI in place.");
-    AssertEqual(900, updatedState.Identity.ProjectileUuid,
+    AssertEqual(900, updatedIdentity.ProjectileUuid,
       "An omitted UUID must not clear the existing UUID.");
 
     var replacement = new ProjectileNetworkApplyCommand(
@@ -98,13 +122,23 @@ internal static class ProjectileNetworkApplyVerification
       "A type change should retain the selected local slot.");
     AssertEqual(firstHandle.Generation + 1, replacementHandle.Generation,
       "A type change should advance the local generation.");
-    Assert(!lifecycle.TryGet(firstHandle, out _),
+    Assert(!lifecycle.TryGetRuntimeHandle(firstHandle, out _),
       "The replaced packet generation must become stale.");
-    Assert(lifecycle.TryGet(replacementHandle, out ProjectileEntityState? replacementState) &&
-      replacementState is not null, "The replacement state should be readable.");
-    AssertEqual(42, replacementState!.Identity.Identity,
+    Assert(
+      lifecycle.TryGetRuntimeHandle(
+        replacementHandle,
+        out RuntimeEntityHandle replacementRuntimeHandle),
+      "The replacement state should be readable.");
+    Assert(
+      lifecycle.TryGetEntityReference(replacementHandle, out EntityReference replacementReference),
+      "The replacement runtime root should publish a projectile reference.");
+    ProjectileIdentityComponent replacementIdentity =
+      ReadComponent<ProjectileIdentityComponent>(runtime, replacementRuntimeHandle);
+    Assert(replacementReference.EntityId != firstReference.EntityId,
+      "A changed packet type must publish a new projectile entity root.");
+    AssertEqual(42, replacementIdentity.Identity,
       "Replacement must still preserve the packet identity.");
-    AssertEqual(901, replacementState.Identity.ProjectileUuid,
+    AssertEqual(901, replacementIdentity.ProjectileUuid,
       "Replacement must retain the packet UUID.");
 
     var malformed = new ProjectileNetworkApplyCommand(
@@ -135,6 +169,63 @@ internal static class ProjectileNetworkApplyVerification
       "An unknown UUID policy must reject network apply.");
     AssertEqual(1, slots.ActiveCount,
       "Unknown network policy must not modify active slots.");
+
+    var missingIdentityTermination = new ProjectileNetworkTerminateCommand(
+      ownerSlot: 7,
+      identity: 43);
+    Assert(!lifecycle.TryTerminateNetwork(missingIdentityTermination),
+      "A packet-29 request for a missing identity must be a no-op.");
+    Assert(lifecycle.TryGetRuntimeHandle(replacementHandle, out _),
+      "A missing-identity packet-29 request must preserve other projectiles.");
+
+    var missingTermination = new ProjectileNetworkTerminateCommand(
+      ownerSlot: 8,
+      identity: 42);
+    Assert(!lifecycle.TryTerminateNetwork(missingTermination),
+      "A packet-29 request with the wrong owner must be a no-op.");
+    Assert(lifecycle.TryGetRuntimeHandle(replacementHandle, out _),
+      "A wrong-owner packet-29 request must preserve the projectile.");
+    AssertEqual(1, slots.ActiveCount,
+      "A wrong-owner packet-29 request must not release a slot.");
+
+    var termination = new ProjectileNetworkTerminateCommand(
+      ownerSlot: 7,
+      identity: 42);
+    Assert(lifecycle.TryTerminateNetwork(termination),
+      "A packet-29 request matching the active owner identity should terminate it.");
+    Assert(!lifecycle.TryGetRuntimeHandle(replacementHandle, out _),
+      "An accepted packet-29 request should release the projectile generation.");
+    Assert(!lifecycle.TryTerminateNetwork(termination),
+      "A repeated packet-29 request after release should be a no-op.");
+    AssertEqual(0, slots.ActiveCount,
+      "Accepted packet-29 termination should release exactly one slot.");
+    AssertEqual(0, identities.Count,
+      "Accepted packet-29 termination should unregister the protocol identity.");
+  }
+
+  private static ProjectileKinematicsStateComponent CaptureKinematics(
+    EntityRuntime runtime,
+    RuntimeEntityHandle runtimeHandle)
+  {
+    LocationComponent location = ReadComponent<LocationComponent>(runtime, runtimeHandle);
+    VelocityComponent velocity = ReadComponent<VelocityComponent>(runtime, runtimeHandle);
+    return new ProjectileKinematicsStateComponent(
+      new Vector2(location.X, location.Y),
+      new Vector2(velocity.X, velocity.Y));
+  }
+
+  private static TComponent ReadComponent<TComponent>(
+    EntityRuntime runtime,
+    RuntimeEntityHandle runtimeHandle)
+    where TComponent : notnull
+  {
+    TComponent component = default!;
+    Assert(
+      runtime.TryInspect<TComponent>(
+        runtimeHandle,
+        (in TComponent value) => component = value),
+      $"The runtime fixture should expose {typeof(TComponent).Name}.");
+    return component;
   }
 
   private static ProjectileDefinition CreateDefinition(int typeId, bool? needsUuid)

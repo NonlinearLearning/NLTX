@@ -27,7 +27,7 @@ public static class ProjectileLifetimeSystem
     ref ProjectileLifetimeStateComponent state,
     ProjectileEndReason reason)
   {
-    if (reason == ProjectileEndReason.None)
+    if (reason is ProjectileEndReason.None or ProjectileEndReason.WorldBoundary)
     {
       throw new ArgumentOutOfRangeException(nameof(reason));
     }
@@ -40,6 +40,19 @@ public static class ProjectileLifetimeSystem
     state.Active = false;
     state.TimeLeft = 0;
     state.EndReason = reason;
+    return true;
+  }
+
+  public static bool CommitWorldBoundaryDeactivation(
+    ref ProjectileLifetimeStateComponent state)
+  {
+    if (!state.Active)
+    {
+      return false;
+    }
+
+    state.Active = false;
+    state.EndReason = ProjectileEndReason.WorldBoundary;
     return true;
   }
 }

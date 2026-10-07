@@ -35,6 +35,17 @@ public static class ProjectileNetworkStateSystem
     state.SendRequested = true;
   }
 
+  /// <summary>
+  /// Begins one entered Version4 projectile update substep. The immediate
+  /// update request is transient; a deferred request remains pending.
+  /// </summary>
+  public static void BeginProjectileUpdateSubstep(
+    ref ProjectileNetworkStateComponent state)
+  {
+    state.PrimaryUpdatePending = false;
+    state.SendRequested = state.SecondaryUpdatePending;
+  }
+
   public static bool TryConsumeSendBudget(
     ref ProjectileNetworkStateComponent state)
   {

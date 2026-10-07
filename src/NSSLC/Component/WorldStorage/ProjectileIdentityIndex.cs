@@ -1,20 +1,31 @@
+using System;
+
 namespace Terraria.WorldStorage;
 
 /// <summary>
 /// Maintains the owner/identity mapping for active projectiles.
 /// All access must be serialized by the world lifecycle owner.
 /// </summary>
-public sealed class ProjectileIdentityIndex
+public sealed class ProjectileIdentityIndex : IDisposable
 {
   private Dictionary<OwnerProjectileIdentity, ProjectileHandle> _byOwnerIdentity = new();
   private Dictionary<ProjectileHandle, OwnerProjectileIdentity> _byProjectile = new();
+  private bool _isDisposed;
 
-  public int Count => _byOwnerIdentity.Count;
+  public int Count
+  {
+    get
+    {
+      VerifyAccess();
+      return _byOwnerIdentity.Count;
+    }
+  }
 
   public bool TryGetHandle(
     OwnerProjectileIdentity identity,
     out ProjectileHandle handle)
   {
+    VerifyAccess();
     ValidateIdentity(identity);
     return _byOwnerIdentity.TryGetValue(identity, out handle);
   }
@@ -23,6 +34,7 @@ public sealed class ProjectileIdentityIndex
     ProjectileHandle handle,
     out OwnerProjectileIdentity identity)
   {
+    VerifyAccess();
     ValidateHandle(handle);
     return _byProjectile.TryGetValue(handle, out identity);
   }
@@ -31,6 +43,7 @@ public sealed class ProjectileIdentityIndex
     OwnerProjectileIdentity identity,
     ProjectileHandle handle)
   {
+    VerifyAccess();
     Validate(identity, handle);
 
     if (_byOwnerIdentity.TryGetValue(identity, out var existingHandle))
@@ -57,6 +70,7 @@ public sealed class ProjectileIdentityIndex
     ProjectileHandle expectedHandle,
     ProjectileHandle replacementHandle)
   {
+    VerifyAccess();
     return TryReplace(identity, expectedHandle, identity, replacementHandle);
   }
 
@@ -66,6 +80,7 @@ public sealed class ProjectileIdentityIndex
     OwnerProjectileIdentity replacementIdentity,
     ProjectileHandle replacementHandle)
   {
+    VerifyAccess();
     Validate(expectedIdentity, expectedHandle);
     Validate(replacementIdentity, replacementHandle);
 
@@ -141,6 +156,7 @@ public sealed class ProjectileIdentityIndex
     ProjectileHandle expectedHandle,
     out OwnerProjectileIdentity identity)
   {
+    VerifyAccess();
     ValidateHandle(expectedHandle);
 
     if (!_byProjectile.TryGetValue(expectedHandle, out identity))
@@ -163,6 +179,7 @@ public sealed class ProjectileIdentityIndex
   public void Rebuild(
     IReadOnlyCollection<KeyValuePair<OwnerProjectileIdentity, ProjectileHandle>> entries)
   {
+    VerifyAccess();
     ArgumentNullException.ThrowIfNull(entries);
 
     var byOwnerIdentity = new Dictionary<OwnerProjectileIdentity, ProjectileHandle>(
@@ -184,6 +201,23 @@ public sealed class ProjectileIdentityIndex
 
     _byOwnerIdentity = byOwnerIdentity;
     _byProjectile = byProjectile;
+  }
+
+  public void Dispose()
+  {
+    if (_isDisposed)
+    {
+      return;
+    }
+
+    _byOwnerIdentity.Clear();
+    _byProjectile.Clear();
+    _isDisposed = true;
+  }
+
+  private void VerifyAccess()
+  {
+    ObjectDisposedException.ThrowIf(_isDisposed, this);
   }
 
   private static void Validate(

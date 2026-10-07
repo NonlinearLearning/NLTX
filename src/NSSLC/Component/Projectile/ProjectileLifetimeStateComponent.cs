@@ -16,7 +16,16 @@ public struct ProjectileLifetimeStateComponent
       throw new ArgumentOutOfRangeException(nameof(timeLeft));
     }
 
-    if (endReason != ProjectileEndReason.None && (active || timeLeft != 0))
+    if (endReason == ProjectileEndReason.WorldBoundary && active)
+    {
+      throw new ArgumentException(
+        "A world-boundary deactivated projectile must be inactive.",
+        nameof(active));
+    }
+
+    if (endReason != ProjectileEndReason.None &&
+      endReason != ProjectileEndReason.WorldBoundary &&
+      (active || timeLeft != 0))
     {
       throw new ArgumentException(
         "A terminated projectile must be inactive with no remaining time.",

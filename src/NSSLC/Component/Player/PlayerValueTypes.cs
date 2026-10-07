@@ -1,11 +1,6 @@
+global using ItemEntityRef = Terraria.Relationships.ItemEntityRef;
+
 namespace Terraria.Player;
-
-public readonly record struct ItemEntityRef(Guid EntityId)
-{
-  public static ItemEntityRef None => new(Guid.Empty);
-
-  public bool IsEmpty => EntityId == Guid.Empty;
-}
 
 public readonly record struct LegacyPlayerSlot(int Value);
 
@@ -30,6 +25,7 @@ public enum PlayerDifficulty : byte
   Classic,
   Mediumcore,
   Hardcore,
+  Journey,
 }
 
 public enum PlayerConnectionState : byte

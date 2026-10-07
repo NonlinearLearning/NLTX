@@ -41,44 +41,46 @@ namespace NSSLC.WorldGeneration.GameContent.Creative
 
 namespace NSSLC.WorldGeneration.GameContent.Tile_Entities
 {
-  public class TEItemFrame
+  public class TEItemFrame : TileEntity
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TEItemFrame>(x, y, type);
     public NSSLC.WorldGeneration.Item item = new NSSLC.WorldGeneration.Item();
     public void DropItem() { }
   }
 
-  public class TEWeaponsRack
+  public class TEWeaponsRack : TileEntity
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TEWeaponsRack>(x, y, type);
+    public NSSLC.WorldGeneration.Item item = new NSSLC.WorldGeneration.Item();
+    public void DropItem() { }
+    public static void Framing_CheckTile(int callX, int callY) { }
+  }
+
+  public class TEFoodPlatter : TileEntity
+  {
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TEFoodPlatter>(x, y, type);
     public NSSLC.WorldGeneration.Item item = new NSSLC.WorldGeneration.Item();
     public void DropItem() { }
   }
 
-  public class TEFoodPlatter
+  public class TEDeadCellsDisplayJar : TileEntity
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TEDeadCellsDisplayJar>(x, y, type);
     public NSSLC.WorldGeneration.Item item = new NSSLC.WorldGeneration.Item();
     public void DropItem() { }
   }
 
-  public class TEDeadCellsDisplayJar
+  public class TELeashedEntityAnchorWithItem : TileEntity
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
-    public NSSLC.WorldGeneration.Item item = new NSSLC.WorldGeneration.Item();
-    public void DropItem() { }
-  }
-
-  public class TELeashedEntityAnchorWithItem
-  {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TELeashedEntityAnchorWithItem>(x, y, type);
     public NSSLC.WorldGeneration.Item item = new NSSLC.WorldGeneration.Item();
     public void DropItemForTileBreak() { }
   }
 
-  public class TETrainingDummy
+  public class TETrainingDummy : TileEntity
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public int npc;
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TETrainingDummy>(x, y, type);
   }
 }
 

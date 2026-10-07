@@ -22,7 +22,70 @@ public sealed class PlayerLuckAndRescanStateComponent
 
   public byte KiteLuckLevel { get; internal set; }
 
+  public byte LuckPotion { get; internal set; }
+
+  public bool HasGardenGnomeNearby { get; internal set; }
+
+  public bool BrokenMirrorBadLuck { get; internal set; }
+
+  public float EquipmentBasedLuckBonus { get; internal set; }
+
   public bool LuckNeedsSync { get; internal set; }
+
+  public bool ApplyNetworkFactors(
+    int ladyBugLuckTime,
+    float torchLuck,
+    byte luckPotion,
+    bool hasGardenGnomeNearby,
+    bool brokenMirrorBadLuck,
+    float equipmentBasedLuckBonus,
+    float coinLuck,
+    byte kiteLuckLevel,
+    bool usedGalaxyPearl = false,
+    bool lanternsUp = false,
+    bool stinky = false)
+  {
+    if (!float.IsFinite(torchLuck) ||
+      !float.IsFinite(equipmentBasedLuckBonus) ||
+      !float.IsFinite(coinLuck))
+    {
+      return false;
+    }
+
+    LadyBugLuckTimeLeft = ladyBugLuckTime;
+    TorchLuck = torchLuck;
+    LuckPotion = luckPotion;
+    HasGardenGnomeNearby = hasGardenGnomeNearby;
+    BrokenMirrorBadLuck = brokenMirrorBadLuck;
+    EquipmentBasedLuckBonus = equipmentBasedLuckBonus;
+    CoinLuck = coinLuck;
+    KiteLuckLevel = kiteLuckLevel;
+    Luck = PlayerLuckSystem.Recalculate(
+      new PlayerLuckCalculationInput(
+        LadyBugLuckTimeLeft: ladyBugLuckTime,
+        LadyBugGoodLuckTime: DefaultLadyBugGoodLuckTime,
+        LadyBugBadLuckTime: DefaultLadyBugBadLuckTime,
+        TorchLuck: torchLuck,
+        LuckPotion: luckPotion,
+        KiteLuckLevel: kiteLuckLevel,
+        UsedGalaxyPearl: usedGalaxyPearl,
+        LanternsUp: lanternsUp,
+        HasGardenGnomeNearby: hasGardenGnomeNearby,
+        Stinky: stinky,
+        EquipmentBasedLuckBonus: equipmentBasedLuckBonus,
+        CoinLuck: coinLuck,
+        BrokenMirrorBadLuck: brokenMirrorBadLuck),
+      this);
+    LuckNeedsSync = true;
+    return true;
+  }
+
+  // Terraria's network luck calculation uses NPC.ladyBugGoodLuckTime and
+  // NPC.ladyBugBadLuckTime. These are fixed gameplay constants in the current
+  // protocol generation; keep them at the calculation seam until the world
+  // rules owner exposes a formal configuration query.
+  private const int DefaultLadyBugGoodLuckTime = 43_200;
+  private const int DefaultLadyBugBadLuckTime = -10_800;
 
   public int UnbreakableWallScanCooldown { get; internal set; }
 

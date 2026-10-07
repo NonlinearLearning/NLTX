@@ -29,4 +29,10 @@ public sealed class PlayerAccessoryStringEffectComponent
   public bool StressBallPrevious { get; internal set; }
 
   public bool StaffOfRegrowthBonus { get; internal set; }
+
+  public void CommitTankPet(int projectileSlot)
+  {
+    ArgumentOutOfRangeException.ThrowIfLessThan(projectileSlot, -1);
+    TankPet = projectileSlot;
+  }
 }

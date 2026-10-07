@@ -1,0 +1,1004 @@
+[
+  {
+    "Packet": "KickPacket",
+    "Id": 2,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "StatusTextSizePacket",
+    "Id": 9,
+    "Variant": "default",
+    "Hex": "00000000000000"
+  },
+  {
+    "Packet": "TileSectionPacket",
+    "Id": 10,
+    "Variant": "default",
+    "Hex": "63608000460646288B0100"
+  },
+  {
+    "Packet": "AreaTileChangePacket",
+    "Id": 20,
+    "Variant": "default",
+    "Hex": "00000000010100000000"
+  },
+  {
+    "Packet": "SyncNPCPacket",
+    "Id": 23,
+    "Variant": "default",
+    "Hex": "000000000000000000000000000000000000000080000000"
+  },
+  {
+    "Packet": "NetModulesPacket",
+    "Id": 82,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "TileEntitySharingPacket",
+    "Id": 86,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "SmartTextMessagePacket",
+    "Id": 107,
+    "Variant": "default",
+    "Hex": "00000000000000"
+  },
+  {
+    "Packet": "PlayerHurtV2Packet",
+    "Id": 117,
+    "Variant": "default",
+    "Hex": "00000000010000"
+  },
+  {
+    "Packet": "PlayerDeathV2Packet",
+    "Id": 118,
+    "Variant": "default",
+    "Hex": "000000000100"
+  },
+  {
+    "Packet": "HelloPacket",
+    "Id": 1,
+    "Variant": "default",
+    "Hex": "00"
+  },
+  {
+    "Packet": "PlayerInfoPacket",
+    "Id": 3,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "SyncEquipmentPacket",
+    "Id": 5,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "RequestWorldDataPacket",
+    "Id": 6,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "SpawnTileDataPacket",
+    "Id": 8,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "TileFrameSectionPacket",
+    "Id": 11,
+    "Variant": "default",
+    "Hex": "0000000000000000"
+  },
+  {
+    "Packet": "PlayerSpawnPacket",
+    "Id": 12,
+    "Variant": "default",
+    "Hex": "000000000000000000000000000000"
+  },
+  {
+    "Packet": "PlayerControlsPacket",
+    "Id": 13,
+    "Variant": "default",
+    "Hex": "0000000000000000000000000000"
+  },
+  {
+    "Packet": "PlayerControlsPacket",
+    "Id": 13,
+    "Variant": "conditional",
+    "Hex": "0300844020050000A03F000020C000006040000098C007000000A8400000D0400000E840000008410000144100002841"
+  },
+  {
+    "Packet": "PlayerActivePacket",
+    "Id": 14,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "SyncPlayerPacket",
+    "Id": 4,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000000000000000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "PlayerLifeManaPacket",
+    "Id": 16,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "TileManipulationPacket",
+    "Id": 17,
+    "Variant": "default",
+    "Hex": "0000000000000000"
+  },
+  {
+    "Packet": "SetTimePacket",
+    "Id": 18,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "ToggleDoorStatePacket",
+    "Id": 19,
+    "Variant": "default",
+    "Hex": "000000000000"
+  },
+  {
+    "Packet": "SyncItemPacket",
+    "Id": 21,
+    "Variant": "default",
+    "Hex": "000000000000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "ItemOwnerPacket",
+    "Id": 22,
+    "Variant": "default",
+    "Hex": "0000000000000000000000"
+  },
+  {
+    "Packet": "UnusedMeleeStrikePacket",
+    "Id": 24,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "SyncProjectilePacket",
+    "Id": 27,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "DamageNPCPacket",
+    "Id": 28,
+    "Variant": "default",
+    "Hex": "00000000000000000000"
+  },
+  {
+    "Packet": "KillProjectilePacket",
+    "Id": 29,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "TogglePVPPacket",
+    "Id": 30,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "RequestChestOpenPacket",
+    "Id": 31,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "SyncChestItemPacket",
+    "Id": 32,
+    "Variant": "default",
+    "Hex": "0000000000000000"
+  },
+  {
+    "Packet": "SyncPlayerChestPacket",
+    "Id": 33,
+    "Variant": "default",
+    "Hex": "00000000000000"
+  },
+  {
+    "Packet": "ChestUpdatesPacket",
+    "Id": 34,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "PlayerHealPacket",
+    "Id": 35,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "SyncPlayerZonePacket",
+    "Id": 36,
+    "Variant": "default",
+    "Hex": "00000000000000"
+  },
+  {
+    "Packet": "SendPasswordPacket",
+    "Id": 38,
+    "Variant": "default",
+    "Hex": "00"
+  },
+  {
+    "Packet": "ReleaseItemOwnershipPacket",
+    "Id": 39,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "SyncTalkNPCPacket",
+    "Id": 40,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "ItemRotationAndAnimationPacket",
+    "Id": 41,
+    "Variant": "default",
+    "Hex": "00000000000000"
+  },
+  {
+    "Packet": "Unknown42Packet",
+    "Id": 42,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "ManaEffectPacket",
+    "Id": 43,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "TeamChangePacket",
+    "Id": 45,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "OpenSignRequestPacket",
+    "Id": 46,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "OpenSignResponsePacket",
+    "Id": 47,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "PlayerBuffsPacket",
+    "Id": 50,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "MiscDataSyncPacket",
+    "Id": 51,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "LockAndUnlockPacket",
+    "Id": 52,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "AddNPCBuffPacket",
+    "Id": 53,
+    "Variant": "default",
+    "Hex": "000000000000"
+  },
+  {
+    "Packet": "NPCBuffsPacket",
+    "Id": 54,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "AddPlayerBuffPvPPacket",
+    "Id": 55,
+    "Variant": "default",
+    "Hex": "00000000000000"
+  },
+  {
+    "Packet": "InstrumentSoundPacket",
+    "Id": 58,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "HitSwitchPacket",
+    "Id": 59,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "Unknown60Packet",
+    "Id": 60,
+    "Variant": "default",
+    "Hex": "00000000000000"
+  },
+  {
+    "Packet": "Unknown62Packet",
+    "Id": 62,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "SyncTilePaintOrCoatingPacket",
+    "Id": 63,
+    "Variant": "default",
+    "Hex": "000000000000"
+  },
+  {
+    "Packet": "SyncWallPaintOrCoatingPacket",
+    "Id": 64,
+    "Variant": "default",
+    "Hex": "000000000000"
+  },
+  {
+    "Packet": "Unknown66Packet",
+    "Id": 66,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "Unknown68Packet",
+    "Id": 68,
+    "Variant": "default",
+    "Hex": "00"
+  },
+  {
+    "Packet": "BugCatchingPacket",
+    "Id": 70,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "BugReleasingPacket",
+    "Id": 71,
+    "Variant": "default",
+    "Hex": "0000000000000000000000"
+  },
+  {
+    "Packet": "TravelMerchantItemsPacket",
+    "Id": 72,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "RequestTeleportationByServerPacket",
+    "Id": 73,
+    "Variant": "default",
+    "Hex": "00"
+  },
+  {
+    "Packet": "AnglerQuestPacket",
+    "Id": 74,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "QuestsCountSyncPacket",
+    "Id": 76,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "TemporaryAnimationPacket",
+    "Id": 77,
+    "Variant": "default",
+    "Hex": "0000000000000000"
+  },
+  {
+    "Packet": "InvasionProgressReportPacket",
+    "Id": 78,
+    "Variant": "default",
+    "Hex": "00000000000000000000"
+  },
+  {
+    "Packet": "PlaceObjectPacket",
+    "Id": 79,
+    "Variant": "default",
+    "Hex": "0000000000000000000000"
+  },
+  {
+    "Packet": "SyncPlayerChestIndexPacket",
+    "Id": 80,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "CombatTextIntPacket",
+    "Id": 81,
+    "Variant": "default",
+    "Hex": "000000000000000000000000000000"
+  },
+  {
+    "Packet": "PlayerStealthPacket",
+    "Id": 84,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "TileEntityPlacementPacket",
+    "Id": 87,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "ItemTweakerPacket",
+    "Id": 88,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "ItemTweakerPacket",
+    "Id": 88,
+    "Variant": "conditional",
+    "Hex": "00007FEFCDAB8941010000A03F7B00EA002A0000007040"
+  },
+  {
+    "Packet": "ItemFrameTryPlacingPacket",
+    "Id": 89,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "InstancedItemPacket",
+    "Id": 90,
+    "Variant": "default",
+    "Hex": "000000000000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "SyncExtraValuePacket",
+    "Id": 92,
+    "Variant": "default",
+    "Hex": "0000000000000000000000000000"
+  },
+  {
+    "Packet": "MurderSomeoneElsesPortalPacket",
+    "Id": 95,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "TeleportPlayerThroughPortalPacket",
+    "Id": 96,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "MinionRestTargetUpdatePacket",
+    "Id": 99,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "TeleportNPCThroughPortalPacket",
+    "Id": 100,
+    "Variant": "default",
+    "Hex": "0000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "UpdateTowerShieldStrengthsPacket",
+    "Id": 101,
+    "Variant": "default",
+    "Hex": "0000000000000000"
+  },
+  {
+    "Packet": "NebulaLevelupRequestPacket",
+    "Id": 102,
+    "Variant": "default",
+    "Hex": "0000000000000000000000"
+  },
+  {
+    "Packet": "MoonlordHorrorPacket",
+    "Id": 103,
+    "Variant": "default",
+    "Hex": "0000000000000000"
+  },
+  {
+    "Packet": "ShopOverridePacket",
+    "Id": 104,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000"
+  },
+  {
+    "Packet": "GemLockTogglePacket",
+    "Id": 105,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "PoofOfSmokePacket",
+    "Id": 106,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "WiredCannonShotPacket",
+    "Id": 108,
+    "Variant": "default",
+    "Hex": "000000000000000000000000000000"
+  },
+  {
+    "Packet": "MassWireOperationPacket",
+    "Id": 109,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "MassWireOperationPayPacket",
+    "Id": 110,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "TogglePartyPacket",
+    "Id": 111,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "SpecialFXPacket",
+    "Id": 112,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000"
+  },
+  {
+    "Packet": "CrystalInvasionStartPacket",
+    "Id": 113,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "MinionAttackTargetUpdatePacket",
+    "Id": 115,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "CrystalInvasionSendWaitTimePacket",
+    "Id": 116,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "CombatTextStringPacket",
+    "Id": 119,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000"
+  },
+  {
+    "Packet": "EmojiPacket",
+    "Id": 120,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "SyncItemsWithShimmerPacket",
+    "Id": 145,
+    "Variant": "default",
+    "Hex": "0000000000000000000000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "SyncItemCannotBeTakenByEnemiesPacket",
+    "Id": 148,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "SyncItemDespawnPacket",
+    "Id": 151,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "TeamChangeFromUIPacket",
+    "Id": 157,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "TEDisplayDollDataSyncPacket",
+    "Id": 121,
+    "Variant": "default",
+    "Hex": "000000000000000000000000"
+  },
+  {
+    "Packet": "RequestTileEntityInteractionPacket",
+    "Id": 122,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "WeaponsRackTryPlacingPacket",
+    "Id": 123,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "TEHatRackItemSyncPacket",
+    "Id": 124,
+    "Variant": "default",
+    "Hex": "0000000000000000000000"
+  },
+  {
+    "Packet": "SyncTilePickingPacket",
+    "Id": 125,
+    "Variant": "default",
+    "Hex": "000000000000"
+  },
+  {
+    "Packet": "SyncRevengeMarkerPacket",
+    "Id": 126,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000000000000000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "RemoveRevengeMarkerPacket",
+    "Id": 127,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "LandGolfBallInCupPacket",
+    "Id": 128,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "FinishedConnectingToServerPacket",
+    "Id": 129,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "FishOutNPCPacket",
+    "Id": 130,
+    "Variant": "default",
+    "Hex": "000000000000"
+  },
+  {
+    "Packet": "TamperWithNPCPacket",
+    "Id": 131,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "PlayLegacySoundPacket",
+    "Id": 132,
+    "Variant": "default",
+    "Hex": "0000000000000000000000"
+  },
+  {
+    "Packet": "FoodPlatterTryPlacingPacket",
+    "Id": 133,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "UpdatePlayerLuckFactorsPacket",
+    "Id": 134,
+    "Variant": "default",
+    "Hex": "000000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "DeadPlayerPacket",
+    "Id": 135,
+    "Variant": "default",
+    "Hex": "00"
+  },
+  {
+    "Packet": "SyncCavernMonsterTypePacket",
+    "Id": 136,
+    "Variant": "default",
+    "Hex": "000000000000000000000000"
+  },
+  {
+    "Packet": "RequestNPCBuffRemovalPacket",
+    "Id": 137,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "SetCountsAsHostForGameplayPacket",
+    "Id": 139,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "SetMiscEventValuesPacket",
+    "Id": 140,
+    "Variant": "default",
+    "Hex": "0000000000"
+  },
+  {
+    "Packet": "RequestLucyPopupPacket",
+    "Id": 141,
+    "Variant": "default",
+    "Hex": "000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "SyncProjectileTrackersPacket",
+    "Id": 142,
+    "Variant": "default",
+    "Hex": "00FFFFFFFF"
+  },
+  {
+    "Packet": "CrystalInvasionRequestedToSkipWaitTimePacket",
+    "Id": 143,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "RequestQuestEffectPacket",
+    "Id": 144,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "ShimmerActionsPacket",
+    "Id": 146,
+    "Variant": "default",
+    "Hex": "000000A03F000020C0"
+  },
+  {
+    "Packet": "SyncLoadoutPacket",
+    "Id": 147,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "DeadCellsDisplayJarTryPlacingPacket",
+    "Id": 149,
+    "Variant": "default",
+    "Hex": "000000000000000000"
+  },
+  {
+    "Packet": "SpectatePlayerPacket",
+    "Id": 150,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "ItemUseSoundPacket",
+    "Id": 152,
+    "Variant": "default",
+    "Hex": "00"
+  },
+  {
+    "Packet": "NPCDebuffDamagePacket",
+    "Id": 153,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "PingPacket",
+    "Id": 154,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "SyncChestSizePacket",
+    "Id": 155,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "TELeashedEntityAnchorPlaceItemPacket",
+    "Id": 156,
+    "Variant": "default",
+    "Hex": "000000000000"
+  },
+  {
+    "Packet": "ExtraSpawnSectionLoadedPacket",
+    "Id": 158,
+    "Variant": "default",
+    "Hex": "00"
+  },
+  {
+    "Packet": "RequestSectionPacket",
+    "Id": 159,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "ItemPositionPacket",
+    "Id": 160,
+    "Variant": "default",
+    "Hex": "00000000000000000000"
+  },
+  {
+    "Packet": "HostTokenPacket",
+    "Id": 161,
+    "Variant": "default",
+    "Hex": "00"
+  },
+  {
+    "Packet": "RequestPasswordPacket",
+    "Id": 37,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "LiquidUpdatePacket",
+    "Id": 48,
+    "Variant": "default",
+    "Hex": "000000000000"
+  },
+  {
+    "Packet": "InitialSpawnPacket",
+    "Id": 49,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "UniqueTownNPCInfoSyncRequestPacket",
+    "Id": 56,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "UniqueTownNPCInfoSyncResponsePacket",
+    "Id": 56,
+    "Variant": "default",
+    "Hex": "00000000000000"
+  },
+  {
+    "Packet": "Unknown57Packet",
+    "Id": 57,
+    "Variant": "default",
+    "Hex": "000000"
+  },
+  {
+    "Packet": "SpawnBossUseLicenseStartEventPacket",
+    "Id": 61,
+    "Variant": "default",
+    "Hex": "00000000"
+  },
+  {
+    "Packet": "TeleportEntityPacket",
+    "Id": 65,
+    "Variant": "default",
+    "Hex": "000000000000000000000000"
+  },
+  {
+    "Packet": "ChestNameRequestPacket",
+    "Id": 69,
+    "Variant": "default",
+    "Hex": "000000000000"
+  },
+  {
+    "Packet": "ChestNameResponsePacket",
+    "Id": 69,
+    "Variant": "default",
+    "Hex": "00000000000000"
+  },
+  {
+    "Packet": "AnglerQuestFinishedPacket",
+    "Id": 75,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "QuickStackChestsRequestPacket",
+    "Id": 85,
+    "Variant": "default",
+    "Hex": "00"
+  },
+  {
+    "Packet": "QuickStackChestsResponsePacket",
+    "Id": 85,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "SyncEmoteBubblePacket",
+    "Id": 91,
+    "Variant": "default",
+    "Hex": "00000000FF"
+  },
+  {
+    "Packet": "DevCommandsPacket",
+    "Id": 94,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000"
+  },
+  {
+    "Packet": "AchievementMessageNPCKilledPacket",
+    "Id": 97,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "AchievementMessageEventHappenedPacket",
+    "Id": 98,
+    "Variant": "default",
+    "Hex": "0000"
+  },
+  {
+    "Packet": "CrystalInvasionWipeAllTheThingsssPacket",
+    "Id": 114,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "WorldDataPacket",
+    "Id": 7,
+    "Variant": "default",
+    "Hex": "00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000"
+  },
+  {
+    "Packet": "Unknown15Packet",
+    "Id": 15,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "Unused25Packet",
+    "Id": 25,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "Unused26Packet",
+    "Id": 26,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "Unknown44Packet",
+    "Id": 44,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "Unknown67Packet",
+    "Id": 67,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "Unused83Packet",
+    "Id": 83,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "SocialHandshakePacket",
+    "Id": 93,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "NeverCalledPacket",
+    "Id": 0,
+    "Variant": "default",
+    "Hex": ""
+  },
+  {
+    "Packet": "ClientSyncedInventoryPacket",
+    "Id": 138,
+    "Variant": "default",
+    "Hex": ""
+  }
+]

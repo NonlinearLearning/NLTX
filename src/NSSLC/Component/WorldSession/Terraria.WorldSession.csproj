@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="..\Content\ColorRgba.cs" Link="Content\ColorRgba.cs" />
+    <ProjectReference Include="..\Content\Terraria.Content.csproj" />
     <ProjectReference Include="..\Npc\Terraria.Npc.csproj" />
   </ItemGroup>
 </Project>

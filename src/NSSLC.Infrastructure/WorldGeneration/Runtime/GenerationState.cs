@@ -39,20 +39,8 @@ public partial class WorldGen {
     Main.wofNPCIndex = -1;
     NPC.waveKills = 0f;
     spawnHardBoss = 0;
-    totalSolid2 = 0;
-    totalGood2 = 0;
-    totalEvil2 = 0;
-    totalBlood2 = 0;
-    totalSolid = 0;
-    totalGood = 0;
-    totalEvil = 0;
-    totalBlood = 0;
+    ResetWorldTileMetrics();
     Main.maxRaining = 0f;
-    totalX = 0;
-    totalD = 0;
-    tEvil = 0;
-    tBlood = 0;
-    tGood = 0;
     spawnEye = false;
     prioritizedTownNPCType = 0;
     shadowOrbCount = 0;
@@ -155,7 +143,6 @@ public partial class WorldGen {
     LiquidBuffer.numLiquidBuffer = 0;
     lastMaxTilesX = Main.maxTilesX;
     lastMaxTilesY = Main.maxTilesY;
-    worldCleared = true;
     Main.ResetWindCounter(resetExtreme: true);
     Main.ClearWorldSeedFlags();
   }

@@ -1,3 +1,5 @@
+using Terraria.Items;
+
 namespace Terraria.Player;
 
 public readonly record struct PlayerInventoryCommitPlan(
@@ -8,7 +10,9 @@ public readonly record struct PlayerInventoryCommitPlan(
   int AcceptedStack,
   int RemainingStack,
   int ExistingStackBefore,
-  int ExistingStackAfter)
+  int ExistingStackAfter,
+  ItemMutationRevision IncomingMutationRevision = default,
+  ItemMutationRevision ExistingMutationRevision = default)
 {
   public bool AssignsEmptySlot => ExistingItem.IsEmpty;
 

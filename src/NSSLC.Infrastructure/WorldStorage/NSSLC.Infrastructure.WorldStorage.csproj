@@ -9,11 +9,19 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\NSSLC.Application\NSSLC.Application.csproj" />
+    <ProjectReference Include="..\WorldGeneration\NSSLC.WorldGeneration.csproj" />
     <Compile Include="Platform\WorldFileStoreAdapter.cs" />
     <Compile Include="WorldFile\WorldFileDocumentDecoder.cs" />
     <Compile Include="WorldFile\WorldFileDocumentEncoder.cs" />
     <Compile Include="WorldFile\WorldFileDocumentValidator.cs" />
     <Compile Include="WorldFile\WorldFileFormatConstants.cs" />
+    <Compile Include="WorldFile\WorldFileTileCodec.cs" />
+    <Compile Include="WorldFile\WorldFileTileEntityAnchorValidator.cs" />
+    <Compile Include="WorldFile\WorldFileTileEntityCodec.cs" />
+    <Compile Include="Generation\*.cs" />
+    <Compile Include="WorldStorageIoGate.cs" />
     <Compile Include="WorldStorageCoordinatorFactory.cs" />
+    <Compile Include="NetworkWorldSessionLoader.cs" />
+    <Compile Include="WorldTransformationSchedulerAdapter.cs" />
   </ItemGroup>
 </Project>

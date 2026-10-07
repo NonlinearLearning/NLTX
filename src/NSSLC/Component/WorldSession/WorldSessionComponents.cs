@@ -12,7 +12,7 @@ public struct LanternNightState { public bool ManualLanterns; public bool Genuin
 public struct SandstormState { public bool Happening; public int TimeLeft; public float Severity; public float IntendedSeverity; }
 public sealed class WorldTimeWeatherState
 {
-  public bool DayTime = true; public double Time; public int MoonPhase; public bool Raining; public int RainTime; public float RainStrength; public int CoinRain;
+  public bool DayTime = true; public double Time; public short SunModY; public short MoonModY; public int MoonPhase; public long ClockRevision; public bool Raining; public int RainTime; public float RainStrength; public int CoinRain;
   public float WindTarget; public float WindCurrent; public int WindCounter; public int ExtremeWindCounter; public bool BloodMoon; public bool Eclipse; public bool PumpkinMoon; public bool SnowMoon; public bool SlimeRain; public double SlimeRainTime; public int SlimeRainKillCount; public int SlimeWarningTime;
   public bool FastForwardTimeToDawn; public bool FastForwardTimeToDusk; public int SundialCooldown; public int MoondialCooldown; public int CultistDelay; public BirthdayPartyState BirthdayParty; public LanternNightState LanternNight; public SandstormState Sandstorm;
   public bool IsRainingForever => RainTime >= 5_184_000; public MoonPhaseValue CurrentMoonPhase => (MoonPhaseValue)MoonPhase; public float WindForVisuals => WindCurrent;

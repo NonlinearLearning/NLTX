@@ -13,7 +13,9 @@ public readonly record struct HousingRoomScoreSnapshot
     int? bestX,
     int? bestY,
     int? sharedRoomX,
-    HousingRoomScoreCandidate[]? candidates = null)
+    HousingRoomScoreCandidate[]? candidates = null,
+    int? baseScore = null,
+    bool hasStandingSpace = false)
   {
     ArgumentOutOfRangeException.ThrowIfNegative(numRoomTiles);
     if (bestX.HasValue != bestY.HasValue)
@@ -25,9 +27,11 @@ public readonly record struct HousingRoomScoreSnapshot
 
     NumRoomTiles = numRoomTiles;
     HighScore = hiScore;
+    BaseScore = baseScore ?? hiScore;
     BestX = bestX;
     BestY = bestY;
     SharedRoomX = sharedRoomX;
+    HasStandingSpace = hasStandingSpace;
     _candidates = Array.AsReadOnly(
       candidates is null
         ? Array.Empty<HousingRoomScoreCandidate>()
@@ -38,11 +42,15 @@ public readonly record struct HousingRoomScoreSnapshot
 
   public int HighScore { get; }
 
+  public int BaseScore { get; }
+
   public int? BestX { get; }
 
   public int? BestY { get; }
 
   public int? SharedRoomX { get; }
+
+  public bool HasStandingSpace { get; }
 
   public IReadOnlyList<HousingRoomScoreCandidate> Candidates
   {

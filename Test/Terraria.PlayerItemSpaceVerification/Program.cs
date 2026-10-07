@@ -1,4 +1,6 @@
 using Terraria.Player;
+using Terraria.Items;
+using Terraria.Relationships;
 
 static void Require(bool condition, string message)
 {
@@ -290,8 +292,9 @@ static PlayerInventoryItemSnapshot CreateInventoryItem(
   bool canFillEmptyAmmoSlot = false,
   bool isUniqueStack = false)
 {
+  ItemEntityRef itemReference = CreateItemReference(Guid.NewGuid());
   return new PlayerInventoryItemSnapshot(
-    Entity: new ItemEntityRef(Guid.NewGuid()),
+    Entity: itemReference,
     TypeId: typeId,
     PrefixId: 0,
     Stack: stack,
@@ -299,7 +302,27 @@ static PlayerInventoryItemSnapshot CreateInventoryItem(
     IsCoin: isCoin,
     HasAmmo: hasAmmo,
     CanFillEmptyAmmoSlot: canFillEmptyAmmoSlot,
-    IsUniqueStack: isUniqueStack);
+    IsUniqueStack: isUniqueStack,
+    MutationRevision: CreateMutationRevision(itemReference));
+}
+
+static ItemEntityRef CreateItemReference(Guid entityId)
+{
+  var reference = new EntityReference(
+    new EntityUuid(entityId),
+    new EntityRuntimeId(Guid.Parse("F0000000-0000-0000-0000-000000000001")),
+    EntityReferenceScope.Item);
+  return ItemEntityRef.FromReference(reference);
+}
+
+static ItemMutationRevision CreateMutationRevision(ItemEntityRef item)
+{
+  return new ItemMutationRevision(
+    item.Reference,
+    instanceAttachmentRevision: 1,
+    instanceDataRevision: 1,
+    stackAttachmentRevision: 1,
+    stackDataRevision: 1);
 }
 
 static PlayerItemSpaceCandidate CandidateFor(
@@ -326,7 +349,7 @@ static ItemEntityRef[] CreateEntityRefs(int count)
   ItemEntityRef[] entities = new ItemEntityRef[count];
   for (int index = 0; index < count; index++)
   {
-    entities[index] = new ItemEntityRef(Guid.NewGuid());
+    entities[index] = CreateItemReference(Guid.NewGuid());
   }
 
   return entities;
@@ -1001,7 +1024,7 @@ Require(
 PlayerEquipmentRelationComponent equipmentRelations = new();
 PlayerEquipmentCommitSystem equipmentSystem =
   new(equipmentRelations);
-ItemEntityRef helmet = new(Guid.NewGuid());
+ItemEntityRef helmet = CreateItemReference(Guid.NewGuid());
 PlayerEquipmentCommitResult armorCommit = equipmentSystem.Commit(
   new PlayerEquipmentCommitCommand(
     Guid.NewGuid(),
@@ -1039,7 +1062,7 @@ PlayerEquipmentCommitResult staleEquipmentResult = equipmentSystem.Commit(
     Guid.NewGuid(),
     PlayerEquipmentSlotKind.MiscEquipment,
     SlotIndex: 4,
-    new ItemEntityRef(Guid.NewGuid()),
+    CreateItemReference(Guid.NewGuid()),
     ExpectedRevision: 0));
 Require(
   !staleEquipmentResult.Applied &&
@@ -1048,7 +1071,7 @@ Require(
   equipmentRelations.MiscEquipmentSlots[4].IsEmpty,
   "A stale equipment revision must reject before changing a relation.");
 
-ItemEntityRef replacement = new(Guid.NewGuid());
+ItemEntityRef replacement = CreateItemReference(Guid.NewGuid());
 PlayerEquipmentCommitResult replacementResult = equipmentSystem.Commit(
   new PlayerEquipmentCommitCommand(
     Guid.NewGuid(),
@@ -1088,7 +1111,7 @@ PlayerEquipmentCommitResult invalidEquipmentIndexResult = equipmentSystem.Commit
     Guid.NewGuid(),
     PlayerEquipmentSlotKind.MiscDye,
     SlotIndex: PlayerEquipmentRelationComponent.MiscDyeSlotCount,
-    new ItemEntityRef(Guid.NewGuid())));
+    CreateItemReference(Guid.NewGuid())));
 Require(
   !invalidEquipmentIndexResult.Applied &&
   invalidEquipmentIndexResult.RejectionReason ==
@@ -1097,11 +1120,11 @@ Require(
   "Equipment commit must reject an out-of-range misc-dye slot without changing revision.");
 
 TestEquipmentVisualItemQuery visualQuery = new();
-ItemEntityRef baseArmor = new(Guid.NewGuid());
-ItemEntityRef vanityArmor = new(Guid.NewGuid());
-ItemEntityRef headDye = new(Guid.NewGuid());
-ItemEntityRef bodyDye = new(Guid.NewGuid());
-ItemEntityRef legDye = new(Guid.NewGuid());
+ItemEntityRef baseArmor = CreateItemReference(Guid.NewGuid());
+ItemEntityRef vanityArmor = CreateItemReference(Guid.NewGuid());
+ItemEntityRef headDye = CreateItemReference(Guid.NewGuid());
+ItemEntityRef bodyDye = CreateItemReference(Guid.NewGuid());
+ItemEntityRef legDye = CreateItemReference(Guid.NewGuid());
 visualQuery.Items[baseArmor] = new PlayerEquipmentVisualItemSnapshot(
   baseArmor,
   TypeId: 100,

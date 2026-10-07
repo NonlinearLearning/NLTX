@@ -8,6 +8,10 @@ namespace Terraria.SpatialSimulation.Components;
 // status: proposed
 // componentId: SPATIAL.COMP.MOVEMENT_STATE
 // crossSubsystemOwner: integration-review
+/// <summary>
+/// Invocation-scoped input/output for movement algorithms. Runtime entities assemble this value
+/// from spatial components and do not attach it as persistent component state.
+/// </summary>
 public struct MovementStateComponent
 {
   public MovementStateComponent(

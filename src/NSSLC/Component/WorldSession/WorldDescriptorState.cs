@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Terraria.WorldStorage;
 
 namespace Terraria.WorldSession.Components;
 
@@ -22,6 +24,8 @@ public sealed class WorldDescriptorState
   public double RockLayer;
   public int SpawnTileX;
   public int SpawnTileY;
+  public IReadOnlyList<TileCoordinate> ExtraSpawnPoints { get; internal set; } =
+      Array.Empty<TileCoordinate>();
   public int DungeonTileX;
   public int DungeonTileY;
 

@@ -134,6 +134,14 @@ public sealed class WorldLoadApiCatalogGenerator : ISourceGenerator
       context.Compilation,
       apiInterface,
       context);
+    var declaredSectionIds = new HashSet<string>(
+      sectionSchemas.Select(schema => schema.SectionId),
+      StringComparer.Ordinal);
+    declarations.RemoveAll(declaration =>
+      !SymbolEqualityComparer.Default.Equals(
+        declaration.ApiType.ContainingAssembly,
+        context.Compilation.Assembly) &&
+      !declaredSectionIds.Contains(declaration.SectionId));
 
     bool hasErrors = ValidateSectionSchemas(
       declarations,

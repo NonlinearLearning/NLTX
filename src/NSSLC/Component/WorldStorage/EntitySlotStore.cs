@@ -1,6 +1,8 @@
+using System;
+
 namespace Terraria.WorldStorage;
 
-public sealed class EntitySlotStore<TState, TSlot>
+public sealed class EntitySlotStore<TState, TSlot> : IDisposable
   where TState : class
   where TSlot : struct
 {
@@ -9,9 +11,25 @@ public sealed class EntitySlotStore<TState, TSlot>
   private readonly Func<int, TSlot> _createSlot;
   private readonly int _maximumCapacity;
   private int _activeCount;
+  private bool _isDisposed;
 
-  public int Capacity => _entries.Length;
-  public int ActiveCount => _activeCount;
+  public int Capacity
+  {
+    get
+    {
+      VerifyAccess();
+      return _entries.Length;
+    }
+  }
+
+  public int ActiveCount
+  {
+    get
+    {
+      VerifyAccess();
+      return _activeCount;
+    }
+  }
 
   public EntitySlotStore(
     Func<TSlot, int> getSlotValue,
@@ -29,6 +47,7 @@ public sealed class EntitySlotStore<TState, TSlot>
 
   public bool TryAllocate(TState state, out TSlot slot, out uint generation)
   {
+    VerifyAccess();
     ArgumentNullException.ThrowIfNull(state);
 
     for (int i = 0; i < _entries.Length; i++)
@@ -81,6 +100,7 @@ public sealed class EntitySlotStore<TState, TSlot>
 
   public bool TryAllocateAt(TSlot slot, TState state, out uint generation)
   {
+    VerifyAccess();
     ArgumentNullException.ThrowIfNull(state);
 
     int index = GetSlotValue(slot);
@@ -121,6 +141,7 @@ public sealed class EntitySlotStore<TState, TSlot>
 
   public bool TryGet(TSlot slot, uint generation, out TState? state)
   {
+    VerifyAccess();
     int index = GetSlotValue(slot);
     if (!TryGetEntry(index, generation, out EntitySlotEntry<TState> entry))
     {
@@ -138,6 +159,7 @@ public sealed class EntitySlotStore<TState, TSlot>
     out uint generation,
     out TState? state)
   {
+    VerifyAccess();
     ArgumentOutOfRangeException.ThrowIfNegative(index);
     if (index >= _entries.Length || !_entries[index].IsOccupied)
     {
@@ -161,6 +183,7 @@ public sealed class EntitySlotStore<TState, TSlot>
     TState replacement,
     out uint replacementGeneration)
   {
+    VerifyAccess();
     ArgumentNullException.ThrowIfNull(replacement);
 
     int index = GetSlotValue(slot);
@@ -179,6 +202,7 @@ public sealed class EntitySlotStore<TState, TSlot>
 
   public bool TryRelease(TSlot slot, uint expectedGeneration, out TState? releasedState)
   {
+    VerifyAccess();
     int index = GetSlotValue(slot);
     if (!TryGetEntry(index, expectedGeneration, out EntitySlotEntry<TState> entry))
     {
@@ -192,6 +216,18 @@ public sealed class EntitySlotStore<TState, TSlot>
     entry.IsGenerationExhausted = entry.Generation == uint.MaxValue;
     _activeCount--;
     return true;
+  }
+
+  public void Dispose()
+  {
+    if (_isDisposed)
+    {
+      return;
+    }
+
+    _entries = Array.Empty<EntitySlotEntry<TState>>();
+    _activeCount = 0;
+    _isDisposed = true;
   }
 
   private int GetNextCapacity()
@@ -243,6 +279,11 @@ public sealed class EntitySlotStore<TState, TSlot>
     int value = _getSlotValue(slot);
     ArgumentOutOfRangeException.ThrowIfNegative(value);
     return value;
+  }
+
+  private void VerifyAccess()
+  {
+    ObjectDisposedException.ThrowIf(_isDisposed, this);
   }
 
   private TSlot CreateSlot(int value)

@@ -4,9 +4,8 @@
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <NetWorkRoot Condition="'$(NetWorkRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\..\ProjectItem\SourceCode\Net\NetWork\</NetWorkRoot>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="$(NetWorkRoot)src\Packets\PacketDesignCompiler.Packets.csproj" />
+    <ProjectReference Include="..\..\..\src\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj" />
   </ItemGroup>
 </Project>

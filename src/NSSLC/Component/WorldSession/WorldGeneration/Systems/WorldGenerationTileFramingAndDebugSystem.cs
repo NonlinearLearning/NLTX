@@ -27,18 +27,21 @@ public static class WorldGenerationTileFramingAndDebugSystem
     bool FramesApplied,
     bool DiagnosticPublished,
     bool StopRequested,
-    string? FailureReason)
+    string? FailureReason,
+    TileFrameRegion? AffectedRegion = null)
   {
     public static Result Succeeded(
       bool framesApplied = false,
-      bool diagnosticPublished = false)
+      bool diagnosticPublished = false,
+      TileFrameRegion? affectedRegion = null)
     {
       return new Result(
         true,
         framesApplied,
         diagnosticPublished,
         false,
-        null);
+        null,
+        affectedRegion);
     }
 
     public static Result Failed(string reason, bool stopRequested)
@@ -49,13 +52,38 @@ public static class WorldGenerationTileFramingAndDebugSystem
         false,
         false,
         stopRequested,
-        reason);
+        reason,
+        null);
+    }
+  }
+
+  /// <summary>
+  /// Inclusive tile bounds actually affected by one framing operation.
+  /// </summary>
+  public readonly record struct TileFrameRegion(
+    int StartX,
+    int StartY,
+    int EndXInclusive,
+    int EndYInclusive)
+  {
+    public bool IsWellFormed =>
+      StartX <= EndXInclusive &&
+      StartY <= EndYInclusive;
+
+    public void Validate()
+    {
+      if (!IsWellFormed)
+      {
+        throw new ArgumentException(
+          "A framing result must contain an ordered inclusive tile region.",
+          nameof(TileFrameRegion));
+      }
     }
   }
 
   public interface IFramingPort
   {
-    void Frame(TilePosition target, bool frameNeighbors);
+    TileFrameRegion Frame(TilePosition target, bool frameNeighbors);
   }
 
   public static Result Execute(
@@ -98,8 +126,13 @@ public static class WorldGenerationTileFramingAndDebugSystem
       return Result.Failed("FramingPortMissing", stopRequested: true);
     }
 
-    framingPort.Frame(command.Target, command.FrameNeighbors);
-    return Result.Succeeded(framesApplied: true);
+    TileFrameRegion affectedRegion = framingPort.Frame(
+      command.Target,
+      command.FrameNeighbors);
+    affectedRegion.Validate();
+    return Result.Succeeded(
+      framesApplied: true,
+      affectedRegion: affectedRegion);
   }
 
   private static Result ExecuteDiagnostic(

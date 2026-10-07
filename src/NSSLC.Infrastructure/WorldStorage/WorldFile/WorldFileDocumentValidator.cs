@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 using Terraria.NonAuthoritative.Persistence;
 using Terraria.WorldStorage;
@@ -309,7 +310,7 @@ public sealed class WorldFileDocumentValidator : IWorldPersistenceDocumentValida
         for (int itemIndex = 0; itemIndex < chest.Items.Count; itemIndex++)
         {
           WorldFileChestItem item = chest.Items[itemIndex];
-          if (item.Stack < short.MinValue || item.Stack > short.MaxValue || item.Type < 0)
+          if (item.Stack < short.MinValue || item.Stack > short.MaxValue)
           {
             return WorldStorageFailure.Create(
               WorldStorageFailureKind.InvalidData,
@@ -394,6 +395,28 @@ public sealed class WorldFileDocumentValidator : IWorldPersistenceDocumentValida
           WorldStorageFailureKind.InvalidData,
           "The world TileEntity section count does not match its opaque payload or exceeds " +
           "the supported bounds.");
+      }
+
+      if (document.FormatVersion == WorldFileFormatConstants.LatestWritableVersion &&
+          tileEntities.EntityCount > 0)
+      {
+        try
+        {
+          foreach (TileEntitySnapshot entity in new WorldFileTileEntityCodec().Decode(tileEntities))
+          {
+            if (!IsValidTileCoordinate(entity.Anchor.X, header.MaxTilesX) ||
+                !IsValidTileCoordinate(entity.Anchor.Y, header.MaxTilesY))
+            {
+              return WorldStorageFailure.Create(
+                WorldStorageFailureKind.InvalidData,
+                "A world TileEntity anchor lies outside the world.");
+            }
+          }
+        }
+        catch (Exception exception) when (exception is IOException or InvalidDataException)
+        {
+          return WorldStorageFailure.Create(WorldStorageFailureKind.InvalidData, exception.Message);
+        }
       }
     }
 

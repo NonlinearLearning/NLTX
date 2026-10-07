@@ -143,6 +143,10 @@ public class WorldGenSnapshot
 		TileSnapshot.Load(binaryReader, this);
 	}
 	public void Restore()
+	{
+		WorldGen.RunWorldLifecycleMutation(RestoreCore);
+	}
+	private void RestoreCore()
 {
 		Load();
 		WorldGen.RestoreTemporaryStateChanges();

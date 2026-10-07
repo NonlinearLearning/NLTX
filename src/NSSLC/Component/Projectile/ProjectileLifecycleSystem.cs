@@ -1,5 +1,8 @@
 using System;
 
+using EntityEcs;
+using EntityEcs.Components;
+
 using Terraria.Content;
 using Terraria.Relationships;
 using Terraria.WorldStorage;
@@ -16,6 +19,9 @@ public sealed class ProjectileLifecycleSystem
 
   private readonly EntitySlotStore<WorldEntityState, ProjectileSlot> _projectiles;
   private readonly ProjectileIdentityIndex _identities;
+  private readonly EntityRuntime _runtime;
+
+  internal EntityRuntime Runtime => _runtime;
 
   public ProjectileLifecycleSystem(WorldStorageRoot worldStorage)
   {
@@ -23,17 +29,21 @@ public sealed class ProjectileLifecycleSystem
 
     _projectiles = worldStorage.Projectiles;
     _identities = worldStorage.ProjectileIdentities;
+    _runtime = worldStorage.ProjectileRuntime;
   }
 
   public ProjectileLifecycleSystem(
     EntitySlotStore<WorldEntityState, ProjectileSlot> projectiles,
-    ProjectileIdentityIndex identities)
+    ProjectileIdentityIndex identities,
+    EntityRuntime runtime)
   {
     ArgumentNullException.ThrowIfNull(projectiles);
     ArgumentNullException.ThrowIfNull(identities);
+    ArgumentNullException.ThrowIfNull(runtime);
 
     _projectiles = projectiles;
     _identities = identities;
+    _runtime = runtime;
   }
 
   public bool TryCreate(
@@ -54,7 +64,7 @@ public sealed class ProjectileLifecycleSystem
     ProjectileNetworkStateComponent network,
     out ProjectileHandle handle)
   {
-    var state = new ProjectileEntityState(identity, lifetime, network);
+    var state = new ProjectileInitialComponents(identity, lifetime, network);
     return TryCommitCreate(state, out handle);
   }
 
@@ -74,7 +84,7 @@ public sealed class ProjectileLifecycleSystem
         definition,
         spawn,
         hydrationContext,
-        out ProjectileEntityState? state) ||
+        out ProjectileInitialComponents? state) ||
       state is null)
     {
       handle = default;
@@ -112,20 +122,40 @@ public sealed class ProjectileLifecycleSystem
       command.Identity);
     if (_identities.TryGetHandle(ownerIdentity, out ProjectileHandle existingHandle))
     {
-      if (!TryGet(existingHandle, out ProjectileEntityState? existingState) ||
-        existingState is null ||
-        !existingState.Identity.MatchesOwnerAndIdentity(
-          command.OwnerSlot,
-          command.Identity))
+      if (!TryGetRuntimeHandle(existingHandle, out RuntimeEntityHandle existingRuntimeHandle))
       {
         throw new InvalidOperationException(
           "Projectile identity index and network state disagree.");
       }
 
-      if (existingState.Lifetime.Active &&
-        existingState.Definition.ProjectileType == command.ProjectileType)
+      if (!TryGetIdentity(existingHandle, out ProjectileIdentityComponent existingIdentity))
       {
-        ApplyNetworkFields(existingState, command);
+        if (_runtime.Has<ProjectileIdentityComponent>(existingRuntimeHandle))
+        {
+          handle = default;
+          return false;
+        }
+
+        throw new InvalidOperationException(
+          "Projectile identity index and network state disagree.");
+      }
+
+      if (!existingIdentity.MatchesOwnerAndIdentity(
+        command.OwnerSlot,
+        command.Identity))
+      {
+        throw new InvalidOperationException(
+          "Projectile identity index and network state disagree.");
+      }
+
+      ProjectileLifetimeStateComponent existingLifetime =
+        ReadComponent<ProjectileLifetimeStateComponent>(existingRuntimeHandle);
+      ProjectileDefinitionComponent existingDefinition =
+        ReadComponent<ProjectileDefinitionComponent>(existingRuntimeHandle);
+      if (existingLifetime.Active &&
+        existingDefinition.ProjectileType == command.ProjectileType)
+      {
+        ApplyNetworkFields(existingRuntimeHandle, command);
         handle = existingHandle;
         return true;
       }
@@ -134,7 +164,7 @@ public sealed class ProjectileLifecycleSystem
         definition,
         ToSpawnCommand(command),
         hydrationContext,
-        out ProjectileEntityState? replacementState) ||
+        out ProjectileInitialComponents? replacementState) ||
         replacementState is null)
       {
         handle = default;
@@ -142,9 +172,10 @@ public sealed class ProjectileLifecycleSystem
       }
 
       replacementState.Identity = CreateNetworkIdentity(command);
+      ProjectileRootBinding replacementRoot = CreateRuntimeEntity(replacementState);
       return TryReplaceAtHandle(
         existingHandle,
-        replacementState,
+        replacementRoot,
         ownerIdentity,
         out handle);
     }
@@ -153,7 +184,7 @@ public sealed class ProjectileLifecycleSystem
       definition,
       ToSpawnCommand(command),
       hydrationContext,
-      out ProjectileEntityState? state) ||
+      out ProjectileInitialComponents? state) ||
       state is null)
     {
       handle = default;
@@ -165,7 +196,7 @@ public sealed class ProjectileLifecycleSystem
   }
 
   private bool TryCommitCreate(
-    ProjectileEntityState state,
+    ProjectileInitialComponents state,
     out ProjectileHandle handle)
   {
     return TryCommitCreate(
@@ -176,7 +207,7 @@ public sealed class ProjectileLifecycleSystem
   }
 
   private bool TryCommitCreate(
-    ProjectileEntityState state,
+    ProjectileInitialComponents state,
     bool deriveIdentityFromSlot,
     bool needsUuid,
     out ProjectileHandle handle)
@@ -189,42 +220,73 @@ public sealed class ProjectileLifecycleSystem
       return false;
     }
 
-    if (_projectiles.TryAllocate(state, out ProjectileSlot slot, out uint generation))
+    ProjectileRootBinding entity = CreateRuntimeEntity(state);
+    bool committed = false;
+    try
     {
-      state.Identity = deriveIdentityFromSlot
-        ? WithSpawnSlotIdentity(identity, slot, needsUuid)
-        : WithSlot(identity, slot);
-      OwnerProjectileIdentity ownerIdentity = GetOwnerIdentity(state.Identity);
-      handle = new ProjectileHandle(slot, generation);
-
-      if (_identities.TryRegister(ownerIdentity, handle))
+      if (_projectiles.TryAllocate(entity, out ProjectileSlot slot, out uint generation))
       {
-        return true;
+        ProjectileIdentityComponent slotIdentity = deriveIdentityFromSlot
+          ? WithSpawnSlotIdentity(identity, slot, needsUuid)
+          : WithSlot(identity, slot);
+        if (!_runtime.TryReplace(entity.RuntimeHandle, slotIdentity))
+        {
+          if (!_projectiles.TryRelease(slot, generation, out _))
+          {
+            throw new InvalidOperationException(
+              "A projectile identity commit failure left its slot occupied.");
+          }
+
+          handle = default;
+          return false;
+        }
+
+        OwnerProjectileIdentity ownerIdentity = GetOwnerIdentity(slotIdentity);
+        handle = new ProjectileHandle(slot, generation);
+
+        if (_identities.TryRegister(ownerIdentity, handle))
+        {
+          committed = true;
+          return true;
+        }
+
+        if (!_projectiles.TryRelease(slot, generation, out _))
+        {
+          throw new InvalidOperationException(
+            "A failed identity registration left its projectile slot occupied.");
+        }
+
+        handle = default;
+        return false;
       }
 
-      if (!_projectiles.TryRelease(slot, generation, out _))
+      if (TryReplaceOldest(entity, deriveIdentityFromSlot, needsUuid, out handle))
       {
-        throw new InvalidOperationException(
-          "A failed identity registration left its projectile slot occupied.");
+        committed = true;
+        return true;
       }
 
       handle = default;
       return false;
     }
-
-    return TryReplaceOldest(state, deriveIdentityFromSlot, needsUuid, out handle);
+    finally
+    {
+      if (!committed)
+      {
+        RemoveRuntimeEntity(entity.RuntimeHandle);
+      }
+    }
   }
 
   private bool TryReplaceOldest(
-    ProjectileEntityState replacementState,
+    ProjectileRootBinding replacementState,
     bool deriveIdentityFromSlot,
     bool needsUuid,
     out ProjectileHandle replacementHandle)
   {
     if (!TryFindOldest(
       out ProjectileHandle previousHandle,
-      out ProjectileEntityState? previousState) ||
-      previousState is null)
+      out RuntimeEntityHandle previousRuntimeHandle))
     {
       replacementHandle = default;
       return false;
@@ -236,7 +298,9 @@ public sealed class ProjectileLifecycleSystem
       return false;
     }
 
-    OwnerProjectileIdentity previousIdentity = GetOwnerIdentity(previousState.Identity);
+    ProjectileIdentityComponent previousIdentityComponent =
+      ReadComponent<ProjectileIdentityComponent>(previousRuntimeHandle);
+    OwnerProjectileIdentity previousIdentity = GetOwnerIdentity(previousIdentityComponent);
     if (!_identities.TryGetIdentity(previousHandle, out OwnerProjectileIdentity indexedIdentity) ||
       indexedIdentity != previousIdentity)
     {
@@ -244,10 +308,19 @@ public sealed class ProjectileLifecycleSystem
         "Projectile slot state and owner identity index disagree.");
     }
 
-    replacementState.Identity = deriveIdentityFromSlot
-      ? WithSpawnSlotIdentity(replacementState.Identity, previousHandle.Slot, needsUuid)
-      : WithSlot(replacementState.Identity, previousHandle.Slot);
-    OwnerProjectileIdentity replacementIdentity = GetOwnerIdentity(replacementState.Identity);
+    ProjectileIdentityComponent replacementComponent =
+      ReadComponent<ProjectileIdentityComponent>(replacementState.RuntimeHandle);
+    ProjectileIdentityComponent replacementIdentityComponent = deriveIdentityFromSlot
+      ? WithSpawnSlotIdentity(replacementComponent, previousHandle.Slot, needsUuid)
+      : WithSlot(replacementComponent, previousHandle.Slot);
+    if (!_runtime.TryReplace(replacementState.RuntimeHandle, replacementIdentityComponent))
+    {
+      replacementHandle = default;
+      return false;
+    }
+
+    OwnerProjectileIdentity replacementIdentity = GetOwnerIdentity(
+      replacementIdentityComponent);
 
     if (_identities.TryGetHandle(replacementIdentity, out ProjectileHandle currentHandle) &&
       currentHandle != previousHandle)
@@ -265,71 +338,95 @@ public sealed class ProjectileLifecycleSystem
 
   private bool TryReplaceAtHandle(
     ProjectileHandle previousHandle,
-    ProjectileEntityState replacementState,
+    ProjectileRootBinding replacementState,
     OwnerProjectileIdentity replacementIdentity,
     out ProjectileHandle replacementHandle)
   {
-    if (previousHandle.Generation == uint.MaxValue ||
-      !_projectiles.TryGet(
-        previousHandle.Slot,
-        previousHandle.Generation,
-        out WorldEntityState? previousStoredState) ||
-      previousStoredState is not ProjectileEntityState previousState)
+    RuntimeEntityHandle replacementRuntimeHandle = replacementState.RuntimeHandle;
+    bool committed = false;
+    try
     {
-      replacementHandle = default;
-      return false;
-    }
-
-    OwnerProjectileIdentity previousIdentity = GetOwnerIdentity(previousState.Identity);
-    if (!_identities.TryGetIdentity(previousHandle, out OwnerProjectileIdentity indexedIdentity) ||
-      indexedIdentity != previousIdentity)
-    {
-      throw new InvalidOperationException(
-        "Projectile slot state and owner identity index disagree.");
-    }
-
-    replacementState.Identity = WithSlot(replacementState.Identity, previousHandle.Slot);
-    replacementHandle = new ProjectileHandle(
-      previousHandle.Slot,
-      previousHandle.Generation + 1);
-
-    if (!_identities.TryReplace(
-      previousIdentity,
-      previousHandle,
-      replacementIdentity,
-      replacementHandle))
-    {
-      replacementHandle = default;
-      return false;
-    }
-
-    if (_projectiles.TryReplace(
-      previousHandle.Slot,
-      previousHandle.Generation,
-      replacementState,
-      out uint committedGeneration))
-    {
-      if (committedGeneration != replacementHandle.Generation)
+      if (previousHandle.Generation == uint.MaxValue ||
+        !_projectiles.TryGet(
+          previousHandle.Slot,
+          previousHandle.Generation,
+          out WorldEntityState? previousStoredState) ||
+        previousStoredState is not ProjectileRootBinding previousState)
       {
-        throw new InvalidOperationException(
-          "Projectile slot and identity generations diverged during replacement.");
+        replacementHandle = default;
+        return false;
       }
 
-      return true;
-    }
+      // Complete every borrowed-root and mapping read before changing the
+      // identity index or the slot generation.
+      OwnerProjectileIdentity previousIdentity = GetOwnerIdentity(
+        ReadComponent<ProjectileIdentityComponent>(previousState.RuntimeHandle));
+      if (!_identities.TryGetIdentity(previousHandle, out OwnerProjectileIdentity indexedIdentity) ||
+        indexedIdentity != previousIdentity)
+      {
+        throw new InvalidOperationException(
+          "Projectile slot state and owner identity index disagree.");
+      }
 
-    if (!_identities.TryReplace(
-      replacementIdentity,
-      replacementHandle,
-      previousIdentity,
-      previousHandle))
+      ProjectileIdentityComponent replacementIdentityComponent = WithSlot(
+        ReadComponent<ProjectileIdentityComponent>(replacementRuntimeHandle),
+        previousHandle.Slot);
+      if (!_runtime.TryReplace(replacementRuntimeHandle, replacementIdentityComponent))
+      {
+        replacementHandle = default;
+        return false;
+      }
+      replacementHandle = new ProjectileHandle(
+        previousHandle.Slot,
+        previousHandle.Generation + 1);
+
+      if (!_identities.TryReplace(
+        previousIdentity,
+        previousHandle,
+        replacementIdentity,
+        replacementHandle))
+      {
+        replacementHandle = default;
+        return false;
+      }
+
+      if (_projectiles.TryReplace(
+        previousHandle.Slot,
+        previousHandle.Generation,
+        replacementState,
+        out uint committedGeneration))
+      {
+        committed = true;
+        if (committedGeneration != replacementHandle.Generation)
+        {
+          throw new InvalidOperationException(
+            "Projectile slot and identity generations diverged during replacement.");
+        }
+
+        RemoveRuntimeEntity(previousState.RuntimeHandle);
+        return true;
+      }
+
+      if (!_identities.TryReplace(
+        replacementIdentity,
+        replacementHandle,
+        previousIdentity,
+        previousHandle))
+      {
+        throw new InvalidOperationException(
+          "A failed projectile slot replacement could not restore its identity mapping.");
+      }
+
+      replacementHandle = default;
+      return false;
+    }
+    finally
     {
-      throw new InvalidOperationException(
-        "A failed projectile slot replacement could not restore its identity mapping.");
+      if (!committed)
+      {
+        RemoveRuntimeEntity(replacementRuntimeHandle);
+      }
     }
-
-    replacementHandle = default;
-    return false;
   }
 
   private static ProjectileSpawnCommand ToSpawnCommand(
@@ -361,64 +458,157 @@ public sealed class ProjectileLifecycleSystem
       ownerSlot: command.OwnerSlot);
   }
 
-  private static void ApplyNetworkFields(
-    ProjectileEntityState state,
+  private void ApplyNetworkFields(
+    RuntimeEntityHandle runtimeHandle,
     ProjectileNetworkApplyCommand command)
   {
-    ProjectileKinematicsStateComponent kinematics = state.Kinematics;
-    kinematics.Position = command.Position;
-    kinematics.Velocity = command.Velocity;
-    state.Kinematics = kinematics;
-
-    ProjectileBehaviorStateComponent behavior = state.Behavior;
-    behavior.Ai0 = command.Ai0;
-    behavior.Ai1 = command.Ai1;
-    behavior.Ai2 = command.Ai2;
-    state.Behavior = behavior;
-
-    ProjectileDamagePayloadComponent damage = state.Damage;
-    damage.CurrentDamage = command.Damage;
-    damage.OriginalDamage = command.OriginalDamage;
-    damage.Knockback = command.Knockback;
-    state.Damage = damage;
-
-    if (command.ProjectileUuid >= 0)
+    if (!_runtime.TryEditComponents<
+      LocationComponent,
+      VelocityComponent,
+      ProjectileBehaviorStateComponent,
+      ProjectileDamagePayloadComponent,
+      ProjectileSourceMetadataComponent,
+      ProjectileIdentityComponent>(
+      runtimeHandle,
+      (ref LocationComponent location,
+        ref VelocityComponent velocity,
+        ref ProjectileBehaviorStateComponent behavior,
+        ref ProjectileDamagePayloadComponent damage,
+        ref ProjectileSourceMetadataComponent source,
+        ref ProjectileIdentityComponent identity) =>
+      {
+        location = new LocationComponent(command.Position.X, command.Position.Y);
+        velocity = new VelocityComponent(command.Velocity.X, command.Velocity.Y);
+        behavior.Ai0 = command.Ai0;
+        behavior.Ai1 = command.Ai1;
+        behavior.Ai2 = command.Ai2;
+        damage.CurrentDamage = command.Damage;
+        damage.OriginalDamage = command.OriginalDamage;
+        damage.Knockback = command.Knockback;
+        source.BannerIdToRespondTo = command.BannerIdToRespondTo;
+        if (command.ProjectileUuid >= 0)
+        {
+          identity = new ProjectileIdentityComponent(
+            identity.OwnerReference,
+            identity.SlotIndex,
+            identity.Identity,
+            command.ProjectileUuid,
+            identity.OwnerSlot);
+        }
+      }))
     {
-      state.Identity = new ProjectileIdentityComponent(
-        state.Identity.OwnerReference,
-        state.Identity.SlotIndex,
-        state.Identity.Identity,
-        command.ProjectileUuid,
-        state.Identity.OwnerSlot);
+      throw new InvalidOperationException(
+        "Validated Projectile network fields could not be committed together.");
     }
-
-    ProjectileSourceMetadataComponent source = state.Source;
-    source.BannerIdToRespondTo = command.BannerIdToRespondTo;
-    state.Source = source;
   }
 
-  public bool TryGet(ProjectileHandle handle, out ProjectileEntityState? state)
+  public bool TryGetRuntimeHandle(
+    ProjectileHandle handle,
+    out RuntimeEntityHandle runtimeHandle)
   {
-    if (!_projectiles.TryGet(handle.Slot, handle.Generation, out WorldEntityState? storedState) ||
-      storedState is not ProjectileEntityState projectileState)
+    if (!_projectiles.TryGet(
+          handle.Slot,
+          handle.Generation,
+          out WorldEntityState? storedState) ||
+      storedState is not ProjectileRootBinding binding ||
+      !_runtime.TryGetStatus(binding.RuntimeHandle, out EntityRuntimeStatus status) ||
+      status != EntityRuntimeStatus.Running)
     {
-      state = null;
+      runtimeHandle = default;
       return false;
     }
 
-    state = projectileState;
+    runtimeHandle = binding.RuntimeHandle;
     return true;
   }
 
+  public bool TryInspect<TComponent>(
+    ProjectileHandle handle,
+    EntityComponentInspector<TComponent> inspector)
+    where TComponent : notnull
+  {
+    ArgumentNullException.ThrowIfNull(inspector);
+    return TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) &&
+      _runtime.TryInspect(runtimeHandle, inspector);
+  }
+
+  public bool TryEdit<TComponent>(
+    ProjectileHandle handle,
+    EntityComponentEditor<TComponent> editor)
+    where TComponent : notnull
+  {
+    ArgumentNullException.ThrowIfNull(editor);
+    return TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) &&
+      _runtime.TryEdit(runtimeHandle, editor);
+  }
+
+  public bool TryGetIdentity(
+    ProjectileHandle handle,
+    out ProjectileIdentityComponent identity)
+  {
+    if (!TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle))
+    {
+      identity = default;
+      return false;
+    }
+
+    bool captured = false;
+    ProjectileIdentityComponent value = default;
+    if (!_runtime.TryInspect<ProjectileIdentityComponent>(
+      runtimeHandle,
+      (in ProjectileIdentityComponent component) =>
+      {
+        value = component;
+        captured = true;
+      }))
+    {
+      identity = default;
+      return false;
+    }
+
+    identity = captured ? value : default;
+    return captured;
+  }
+
+  public bool TryGetOwnerIdentity(
+    ProjectileHandle handle,
+    out OwnerProjectileIdentity ownerIdentity)
+  {
+    if (TryGetIdentity(handle, out ProjectileIdentityComponent identity))
+    {
+      ownerIdentity = GetOwnerIdentity(identity);
+      return true;
+    }
+
+    ownerIdentity = default;
+    return false;
+  }
+
+  public bool TryGetEntityReference(
+    ProjectileHandle handle,
+    out EntityReference reference)
+  {
+    if (TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) &&
+      _runtime.TryGetReference(
+        runtimeHandle,
+        EntityReferenceScope.Projectile,
+        out reference))
+    {
+      return true;
+    }
+
+    reference = EntityReference.None;
+    return false;
+  }
+
   /// <summary>
-  /// Reads the current generation at a local slot without allocating or
-  /// changing lifecycle state. The update coordinator uses this to preserve
-  /// the Version4 ascending 0..999 pass.
+  /// Resolves the current root at a local slot without allocating or changing
+  /// lifecycle state. The coordinator scans the ascending 0..999 range.
   /// </summary>
-  public bool TryGetAtSlot(
+  public bool TryGetRuntimeHandleAtSlot(
     int slotIndex,
     out ProjectileHandle handle,
-    out ProjectileEntityState? state)
+    out RuntimeEntityHandle runtimeHandle)
   {
     if (slotIndex < 0)
     {
@@ -432,70 +622,53 @@ public sealed class ProjectileLifecycleSystem
       out WorldEntityState? storedState))
     {
       handle = default;
-      state = null;
+      runtimeHandle = default;
       return false;
     }
 
-    if (storedState is not ProjectileEntityState projectileState)
+    if (storedState is not ProjectileRootBinding binding)
     {
       throw new InvalidOperationException(
-        "The projectile slot store contains a non-projectile state.");
+        "The projectile slot store contains a non-projectile root binding.");
+    }
+
+    if (!_runtime.TryGetStatus(binding.RuntimeHandle, out EntityRuntimeStatus status) ||
+      status != EntityRuntimeStatus.Running)
+    {
+      handle = default;
+      runtimeHandle = default;
+      return false;
     }
 
     handle = new ProjectileHandle(slot, generation);
-    state = projectileState;
+    runtimeHandle = binding.RuntimeHandle;
     return true;
   }
 
+  /// <summary>
+  /// Terminates the current generation. A root whose typed access is currently
+  /// borrowed is rejected without changing its slot, identity index, or lifetime.
+  /// </summary>
   public bool TryTerminate(ProjectileHandle handle, ProjectileEndReason reason)
   {
-    if (reason == ProjectileEndReason.None)
+    if (reason is ProjectileEndReason.None or ProjectileEndReason.WorldBoundary)
     {
       throw new ArgumentOutOfRangeException(nameof(reason));
     }
 
-    if (!TryGet(handle, out ProjectileEntityState? state) || state is null)
-    {
-      return false;
-    }
+    return TryEnd(handle, reason, preserveTimeLeft: false);
+  }
 
-    OwnerProjectileIdentity ownerIdentity = GetOwnerIdentity(state.Identity);
-    if (!_identities.TryGetIdentity(handle, out OwnerProjectileIdentity indexedIdentity) ||
-      indexedIdentity != ownerIdentity)
-    {
-      throw new InvalidOperationException(
-        "Projectile slot state and owner identity index disagree.");
-    }
-
-    ProjectileLifetimeStateComponent previousLifetime = state.Lifetime;
-    ProjectileLifetimeStateComponent terminatedLifetime = previousLifetime;
-    if (!ProjectileLifetimeSystem.CommitTermination(ref terminatedLifetime, reason))
-    {
-      return false;
-    }
-
-    if (!_identities.TryUnregister(handle, out OwnerProjectileIdentity removedIdentity) ||
-      removedIdentity != ownerIdentity)
-    {
-      throw new InvalidOperationException(
-        "A validated projectile identity could not be unregistered.");
-    }
-
-    state.Lifetime = terminatedLifetime;
-    if (_projectiles.TryRelease(handle.Slot, handle.Generation, out _))
-    {
-      return true;
-    }
-
-    state.Lifetime = previousLifetime;
-    if (!_identities.TryRegister(ownerIdentity, handle))
-    {
-      throw new InvalidOperationException(
-        "A failed projectile release could not restore its identity mapping.");
-    }
-
-    throw new InvalidOperationException(
-      "A validated projectile slot could not be released.");
+  /// <summary>
+  /// Commits the non-Kill world-boundary deactivation while preserving its
+  /// remaining time-left value until the inactive slot is released.
+  /// </summary>
+  public bool TryDeactivateAtWorldBoundary(ProjectileHandle handle)
+  {
+    return TryEnd(
+      handle,
+      ProjectileEndReason.WorldBoundary,
+      preserveTimeLeft: true);
   }
 
   /// <summary>
@@ -512,10 +685,10 @@ public sealed class ProjectileLifecycleSystem
       return false;
     }
 
-    if (!TryGet(handle, out ProjectileEntityState? state) ||
-      state is null ||
-      !state.Lifetime.Active ||
-      !state.Identity.MatchesOwnerAndIdentity(
+    if (!TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) ||
+      !TryGetIdentity(handle, out ProjectileIdentityComponent identity) ||
+      !ReadComponent<ProjectileLifetimeStateComponent>(runtimeHandle).Active ||
+      !identity.MatchesOwnerAndIdentity(
         command.OwnerSlot,
         command.Identity))
     {
@@ -523,6 +696,82 @@ public sealed class ProjectileLifecycleSystem
     }
 
     return TryTerminate(handle, ProjectileEndReason.NetworkTermination);
+  }
+
+  private bool TryEnd(
+    ProjectileHandle handle,
+    ProjectileEndReason reason,
+    bool preserveTimeLeft)
+  {
+    if (reason == ProjectileEndReason.None)
+    {
+      throw new ArgumentOutOfRangeException(nameof(reason));
+    }
+
+    if (!TryGetRuntimeHandle(handle, out RuntimeEntityHandle runtimeHandle) ||
+      !TryGetIdentity(handle, out ProjectileIdentityComponent identity))
+    {
+      return false;
+    }
+
+    OwnerProjectileIdentity ownerIdentity = GetOwnerIdentity(identity);
+    if (!_identities.TryGetIdentity(handle, out OwnerProjectileIdentity indexedIdentity) ||
+      indexedIdentity != ownerIdentity)
+    {
+      throw new InvalidOperationException(
+        "Projectile slot state and owner identity index disagree.");
+    }
+
+    ProjectileLifetimeStateComponent previousLifetime =
+      ReadComponent<ProjectileLifetimeStateComponent>(runtimeHandle);
+    ProjectileLifetimeStateComponent endedLifetime = previousLifetime;
+    bool ended = preserveTimeLeft
+      ? ProjectileLifetimeSystem.CommitWorldBoundaryDeactivation(ref endedLifetime)
+      : ProjectileLifetimeSystem.CommitTermination(ref endedLifetime, reason);
+    if (!ended)
+    {
+      return false;
+    }
+
+    if (!_identities.TryUnregister(handle, out OwnerProjectileIdentity removedIdentity) ||
+      removedIdentity != ownerIdentity)
+    {
+      throw new InvalidOperationException(
+        "A validated projectile identity could not be unregistered.");
+    }
+
+    if (!_runtime.TryReplace(runtimeHandle, endedLifetime))
+    {
+      if (!_identities.TryRegister(ownerIdentity, handle))
+      {
+        throw new InvalidOperationException(
+          "A failed projectile lifetime commit could not restore its identity mapping.");
+      }
+
+      throw new InvalidOperationException(
+        "A validated projectile lifetime could not be committed.");
+    }
+
+    if (_projectiles.TryRelease(handle.Slot, handle.Generation, out _))
+    {
+      RemoveRuntimeEntity(runtimeHandle);
+      return true;
+    }
+
+    if (!_runtime.TryReplace(runtimeHandle, previousLifetime))
+    {
+      throw new InvalidOperationException(
+        "A failed projectile release could not restore its lifetime state.");
+    }
+
+    if (!_identities.TryRegister(ownerIdentity, handle))
+    {
+      throw new InvalidOperationException(
+        "A failed projectile release could not restore its identity mapping.");
+    }
+
+    throw new InvalidOperationException(
+      "A validated projectile slot could not be released.");
   }
 
   private static OwnerProjectileIdentity GetOwnerIdentity(
@@ -533,11 +782,11 @@ public sealed class ProjectileLifecycleSystem
 
   private bool TryFindOldest(
     out ProjectileHandle handle,
-    out ProjectileEntityState? state)
+    out RuntimeEntityHandle runtimeHandle)
   {
     int oldestTimeLeft = MaximumOldestProjectileTimeLeft;
     handle = default;
-    state = null;
+    runtimeHandle = default;
 
     for (int index = 0; index < _projectiles.Capacity; index++)
     {
@@ -550,24 +799,42 @@ public sealed class ProjectileLifecycleSystem
         continue;
       }
 
-      if (storedState is not ProjectileEntityState candidate)
+      if (storedState is not ProjectileRootBinding candidate)
       {
         throw new InvalidOperationException(
           "The projectile slot store contains a non-projectile state.");
       }
 
-      if (candidate.Network.NetworkImportant ||
-        candidate.Lifetime.TimeLeft >= oldestTimeLeft)
+      ProjectileNetworkStateComponent network =
+        ReadComponent<ProjectileNetworkStateComponent>(candidate.RuntimeHandle);
+      ProjectileLifetimeStateComponent lifetime =
+        ReadComponent<ProjectileLifetimeStateComponent>(candidate.RuntimeHandle);
+      if (network.NetworkImportant || lifetime.TimeLeft >= oldestTimeLeft)
       {
         continue;
       }
 
-      oldestTimeLeft = candidate.Lifetime.TimeLeft;
+      oldestTimeLeft = lifetime.TimeLeft;
       handle = new ProjectileHandle(slot, generation);
-      state = candidate;
+      runtimeHandle = candidate.RuntimeHandle;
     }
 
-    return state is not null;
+    return runtimeHandle.IsAssigned;
+  }
+
+  private TComponent ReadComponent<TComponent>(RuntimeEntityHandle runtimeHandle)
+    where TComponent : struct
+  {
+    TComponent value = default;
+    if (!_runtime.TryInspect(
+      runtimeHandle,
+      (in TComponent component) => value = component))
+    {
+      throw new InvalidOperationException(
+        $"The projectile root does not expose {typeof(TComponent).Name}.");
+    }
+
+    return value;
   }
 
   private static ProjectileIdentityComponent WithSlot(
@@ -614,4 +881,179 @@ public sealed class ProjectileLifecycleSystem
       throw new ArgumentOutOfRangeException(nameof(identity));
     }
   }
+
+  private ProjectileRootBinding CreateRuntimeEntity(
+    ProjectileInitialComponents components)
+  {
+    RuntimeEntityHandle runtimeHandle = _runtime.CreateEntity();
+    try
+    {
+      Attach(runtimeHandle, components.Definition);
+      Attach(runtimeHandle, components.Identity);
+      Attach(runtimeHandle, components.Lifetime);
+      Attach(runtimeHandle, Clone(components.Network));
+      Attach(runtimeHandle, new ColliderComponent(
+        components.Geometry.Width,
+        components.Geometry.Height));
+      Attach(runtimeHandle, new ProjectileScaleComponent(components.Geometry.Scale));
+      Attach(runtimeHandle, components.Behavior);
+      Attach(runtimeHandle, components.UpdateCadence);
+      Attach(runtimeHandle, components.Trajectory);
+      Attach(runtimeHandle, components.Direction);
+      Attach(runtimeHandle, components.Disposition);
+      Attach(runtimeHandle, components.Damage);
+      Attach(runtimeHandle, components.DamagePolicy);
+      Attach(runtimeHandle, components.Penetration);
+      Attach(runtimeHandle, components.Collision);
+      Attach(runtimeHandle, components.WetState);
+      Attach(runtimeHandle, components.HitImmunityPolicy);
+      Attach(runtimeHandle, Clone(components.HitImmunity));
+      Attach(runtimeHandle, components.EffectCooldown);
+      Attach(runtimeHandle, components.Reflection);
+      Attach(runtimeHandle, components.Presentation);
+      Attach(runtimeHandle, components.Animation);
+      Attach(runtimeHandle, Clone(components.Trail));
+      Attach(runtimeHandle, components.Source);
+      if (components.Minion.IsMinion || components.Minion.MinionSlots != 0.0f)
+      {
+        Attach(runtimeHandle, components.Minion);
+      }
+
+      if (components.Sentry.IsSentry)
+      {
+        Attach(runtimeHandle, components.Sentry);
+      }
+
+      if (components.Bobber.IsBobber)
+      {
+        Attach(runtimeHandle, components.Bobber);
+      }
+
+      if (components.Counterweight.IsCounterweight)
+      {
+        Attach(runtimeHandle, components.Counterweight);
+      }
+
+      if (components.Trap.IsTrap)
+      {
+        Attach(runtimeHandle, components.Trap);
+      }
+      Attach(runtimeHandle, new LocationComponent(
+        components.Kinematics.Position.X,
+        components.Kinematics.Position.Y));
+      Attach(runtimeHandle, new VelocityComponent(
+        components.Kinematics.Velocity.X,
+        components.Kinematics.Velocity.Y));
+      Attach(runtimeHandle, components.MotionHistory);
+      if (!_runtime.TryPublishEntity(runtimeHandle))
+      {
+        throw new InvalidOperationException("The projectile entity root could not be published.");
+      }
+
+      return new ProjectileRootBinding(runtimeHandle);
+    }
+    catch
+    {
+      RemoveRuntimeEntity(runtimeHandle);
+      throw;
+    }
+  }
+
+  private void Attach<TComponent>(
+    RuntimeEntityHandle runtimeHandle,
+    TComponent component)
+    where TComponent : notnull
+  {
+    if (!_runtime.TryAttach(runtimeHandle, component))
+    {
+      throw new InvalidOperationException(
+        $"The projectile {typeof(TComponent).Name} component could not be attached.");
+    }
+  }
+
+  private void RemoveRuntimeEntity(RuntimeEntityHandle runtimeHandle)
+  {
+    if (!_runtime.TryGetStatus(runtimeHandle, out EntityRuntimeStatus status))
+    {
+      return;
+    }
+
+    if (status == EntityRuntimeStatus.Running &&
+        !_runtime.TryBeginTermination(runtimeHandle))
+    {
+      throw new InvalidOperationException("A projectile root could not begin termination.");
+    }
+
+    if (!_runtime.TryRemoveEntity(runtimeHandle))
+    {
+      throw new InvalidOperationException("A projectile root could not be removed.");
+    }
+  }
+
+  private static ProjectileNetworkStateComponent Clone(
+    ProjectileNetworkStateComponent component)
+  {
+    return new ProjectileNetworkStateComponent
+    {
+      NetworkImportant = component.NetworkImportant,
+      PrimaryUpdatePending = component.PrimaryUpdatePending,
+      SecondaryUpdatePending = component.SecondaryUpdatePending,
+      NetSpam = component.NetSpam,
+      SectionSyncSkippedForPlayer = component.SectionSyncSkippedForPlayer is null
+        ? null!
+        : (bool[])component.SectionSyncSkippedForPlayer.Clone(),
+      SendRequested = component.SendRequested,
+    };
+  }
+
+  private static ProjectileHitImmunityStateComponent Clone(
+    ProjectileHitImmunityStateComponent component)
+  {
+    return new ProjectileHitImmunityStateComponent
+    {
+      LocalNpcImmunityTicks = component.LocalNpcImmunityTicks is null
+        ? null!
+        : (int[])component.LocalNpcImmunityTicks.Clone(),
+      PlayerImmunityTicks = component.PlayerImmunityTicks is null
+        ? null!
+        : (int[])component.PlayerImmunityTicks.Clone(),
+      RestrikeDelayTicks = component.RestrikeDelayTicks,
+    };
+  }
+
+  private static ProjectileTrailCacheComponent Clone(
+    ProjectileTrailCacheComponent component)
+  {
+    return new ProjectileTrailCacheComponent
+    {
+      OldPositions = component.OldPositions is null
+        ? null!
+        : (System.Numerics.Vector2[])component.OldPositions.Clone(),
+      OldRotations = component.OldRotations is null
+        ? null!
+        : (float[])component.OldRotations.Clone(),
+      OldSpriteDirections = component.OldSpriteDirections is null
+        ? null!
+        : (int[])component.OldSpriteDirections.Clone(),
+      WhipPoints = component.WhipPoints is null
+        ? null!
+        : new System.Collections.Generic.List<System.Numerics.Vector2>(component.WhipPoints),
+    };
+  }
+}
+
+internal sealed class ProjectileRootBinding : WorldEntityState
+{
+  public ProjectileRootBinding(RuntimeEntityHandle runtimeHandle)
+  {
+    if (!runtimeHandle.IsAssigned)
+    {
+      throw new ArgumentException("A projectile root binding requires an assigned runtime handle.",
+        nameof(runtimeHandle));
+    }
+
+    RuntimeHandle = runtimeHandle;
+  }
+
+  public RuntimeEntityHandle RuntimeHandle { get; }
 }

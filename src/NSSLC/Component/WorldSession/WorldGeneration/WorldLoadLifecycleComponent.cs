@@ -4,6 +4,16 @@ namespace Terraria.WorldGeneration.Components;
 
 public sealed class WorldLoadLifecycleComponent
 {
+  public bool IsFresh =>
+    RecoveryPhase == WorldLoadRecoveryPhase.NotStarted &&
+    LoadAttemptCount == 0 &&
+    !IsGeneratingOrLoadingWorld &&
+    !LoadFailed &&
+    !LoadCanceled &&
+    !WorldCleared &&
+    !RequiresWorldReset &&
+    !WorldBackup;
+
   public WorldLoadRecoveryPhase RecoveryPhase { get; private set; }
 
   public int LoadAttemptCount { get; private set; }
@@ -20,12 +30,14 @@ public sealed class WorldLoadLifecycleComponent
 
   public bool WorldBackup { get; private set; }
 
-  public void SetLoadingOrGenerating(bool isGeneratingOrLoadingWorld)
+  public bool PreservePreexistingLoadGate { get; private set; }
+
+  internal void SetLoadingOrGenerating(bool isGeneratingOrLoadingWorld)
   {
     IsGeneratingOrLoadingWorld = isGeneratingOrLoadingWorld;
   }
 
-  public void SetLoadResult(bool loadFailed, bool worldBackup)
+  internal void SetLoadResult(bool loadFailed, bool worldBackup)
   {
     LoadFailed = loadFailed;
     LoadCanceled = false;
@@ -33,7 +45,7 @@ public sealed class WorldLoadLifecycleComponent
     WorldBackup = worldBackup;
   }
 
-  public void SetLoadCanceled(bool worldBackup)
+  internal void SetLoadCanceled(bool worldBackup)
   {
     LoadFailed = true;
     LoadCanceled = true;
@@ -41,23 +53,24 @@ public sealed class WorldLoadLifecycleComponent
     WorldBackup = worldBackup;
   }
 
-  public void MarkWorldCleared()
+  internal void MarkWorldCleared()
   {
     WorldCleared = true;
     RequiresWorldReset = false;
   }
 
-  public void ResetWorldCleared()
+  internal void ResetWorldCleared()
   {
     WorldCleared = false;
   }
 
-  internal void BeginRecovery()
+  internal void BeginRecovery(bool preservePreexistingLoadGate)
   {
     RecoveryPhase = WorldLoadRecoveryPhase.PrimaryLoad;
     LoadAttemptCount = 1;
     RequiresWorldReset = false;
     WorldCleared = false;
+    PreservePreexistingLoadGate = preservePreexistingLoadGate;
   }
 
   internal void SetLoadRequiresWorldReset(bool worldBackup)
@@ -65,6 +78,11 @@ public sealed class WorldLoadLifecycleComponent
     LoadFailed = true;
     RequiresWorldReset = true;
     WorldBackup = worldBackup;
+  }
+
+  internal void MarkUnpublishedSessionDiscarded()
+  {
+    RequiresWorldReset = false;
   }
 
   internal void ContinueRecovery(

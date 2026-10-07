@@ -2,6 +2,11 @@ namespace Terraria.Player;
 
 public sealed class PlayerRangedAccessoryCapabilityComponent
 {
+  public PlayerRangedAccessoryCapabilityComponent(bool magicQuiver = false)
+  {
+    MagicQuiver = magicQuiver;
+  }
+
   public bool MagicQuiver { get; internal set; }
 
   public bool MagmaStone { get; internal set; }

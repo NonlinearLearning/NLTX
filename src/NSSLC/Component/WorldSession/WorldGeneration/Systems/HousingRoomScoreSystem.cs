@@ -73,10 +73,12 @@ public static class HousingRoomScoreSystem
         null,
         null,
         sharedRoomX,
-        Array.Empty<HousingRoomScoreCandidate>());
+        Array.Empty<HousingRoomScoreCandidate>(),
+        baseScore);
     }
 
     int highScore = 0;
+    bool hasStandingSpace = false;
     int? bestX = null;
     int? bestY = null;
     List<HousingRoomScoreCandidate> candidates = new();
@@ -129,6 +131,7 @@ public static class HousingRoomScoreSystem
           }
         }
 
+        hasStandingSpace |= score > 0;
         if (sharedRoomX.HasValue && score >= 1 &&
             Math.Abs(sharedRoomX.Value - x) < 3)
         {
@@ -170,7 +173,9 @@ public static class HousingRoomScoreSystem
       bestX,
       bestY,
       sharedRoomX,
-      candidates.ToArray());
+      candidates.ToArray(),
+      baseScore,
+      hasStandingSpace);
   }
 
   private static (int StartX, int EndX, int StartY, int EndY) GetTestedBounds(

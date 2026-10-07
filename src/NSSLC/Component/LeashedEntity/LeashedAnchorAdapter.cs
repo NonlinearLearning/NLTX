@@ -1,4 +1,4 @@
-using EntityEcs.Components;
+using Terraria.Relationships;
 using Terraria.WorldStorage;
 
 namespace Terraria.LeashedEntity;
@@ -16,27 +16,27 @@ public static class LeashedAnchorAdapter
       LeashedAnchorCommandKind.Respawn,
       anchorId,
       position,
-      RuntimeEntityId: null,
+      RuntimeEntityReference: null,
       ItemType: null);
   }
 
   public static LeashedAnchorCommand CreateDespawn(
     TileEntityId anchorId,
     TileCoordinate position,
-    EntityId runtimeEntityId)
+    EntityReference runtimeEntityReference)
   {
-    if (!runtimeEntityId.IsAssigned)
+    if (runtimeEntityReference.IsEmpty || runtimeEntityReference.Scope == EntityReferenceScope.None)
     {
       throw new ArgumentException(
-        "A runtime entity identity is required for despawn.",
-        nameof(runtimeEntityId));
+        "A runtime entity reference is required for despawn.",
+        nameof(runtimeEntityReference));
     }
 
     return new(
       LeashedAnchorCommandKind.Despawn,
       anchorId,
       position,
-      runtimeEntityId,
+      runtimeEntityReference,
       ItemType: null);
   }
 
@@ -50,7 +50,7 @@ public static class LeashedAnchorAdapter
       LeashedAnchorCommandKind.InsertItem,
       anchorId,
       position,
-      RuntimeEntityId: null,
+      RuntimeEntityReference: null,
       itemType);
   }
 
@@ -64,7 +64,7 @@ public static class LeashedAnchorAdapter
       LeashedAnchorCommandKind.DropItem,
       anchorId,
       position,
-      RuntimeEntityId: null,
+      RuntimeEntityReference: null,
       itemType);
   }
 
@@ -76,4 +76,3 @@ public static class LeashedAnchorAdapter
     }
   }
 }
-

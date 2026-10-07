@@ -1,7 +1,11 @@
 namespace Terraria.Projectile;
 
-public readonly record struct ProjectileUpdateCadenceComponent(
+public record struct ProjectileUpdateCadenceComponent(
   int ExtraUpdates = 0)
 {
-  public int MaxUpdates => ExtraUpdates + 1;
+  public int MaxUpdates
+  {
+    readonly get => ExtraUpdates + 1;
+    set => ExtraUpdates = value - 1;
+  }
 }

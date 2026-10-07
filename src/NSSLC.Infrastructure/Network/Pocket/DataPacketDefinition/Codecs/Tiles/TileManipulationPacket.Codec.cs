@@ -1,0 +1,28 @@
+using Terraria.NetWork.Prototype.PacketDesignCompiler.Wire;
+
+namespace Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
+
+public sealed partial class TileManipulationPacket
+{
+    public static void Write(
+        PacketWireWriter writer,
+        byte action,
+        short x,
+        short y,
+        short tileOrWallType,
+        byte style)
+    {
+        writer.WriteByte(action);
+        writer.WriteInt16(x);
+        writer.WriteInt16(y);
+        writer.WriteInt16(tileOrWallType);
+        writer.WriteByte(style);
+    }
+
+    public static (
+        byte Action,
+        short X,
+        short Y,
+        short TileOrWallType,
+        byte Style) Read(PacketWireReader reader) => (Action: reader.ReadByte(), X: reader.ReadInt16(), Y: reader.ReadInt16(), TileOrWallType: reader.ReadInt16(), Style: reader.ReadByte());
+}

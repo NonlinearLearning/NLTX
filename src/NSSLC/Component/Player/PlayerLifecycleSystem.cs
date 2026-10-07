@@ -247,6 +247,22 @@ public static class PlayerLifecycleSystem
       lifecycle.SpectatingTargetSlot);
   }
 
+  /// <summary>Projects packet 16's life derived dead flag into lifecycle state.</summary>
+  public static void ApplyNetworkLife(
+    ref PlayerLifecycleComponent lifecycle,
+    int life)
+  {
+    if (life <= 0)
+    {
+      lifecycle.Phase = PlayerLifecyclePhase.Dead;
+      return;
+    }
+
+    lifecycle.Phase = PlayerLifecyclePhase.Alive;
+    lifecycle.DeadElapsedTicks = 0;
+    lifecycle.RespawnRemainingTicks = 0;
+  }
+
   public static bool CanSpectate(SpectatingEligibilityInput input)
   {
     if (input.TargetPlayerSlot < 0 || input.TargetPlayerSlot == input.ObserverPlayerSlot)

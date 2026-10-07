@@ -1,17 +1,19 @@
 using System;
 using System.Numerics;
 
+using EntityEcs.Components;
+
 using Terraria.Content;
 
 namespace Terraria.Projectile;
 
 public static class ProjectileDefinitionHydrationSystem
 {
-  public static bool TryHydrate(
+  internal static bool TryHydrate(
     ProjectileDefinition definition,
     ProjectileSpawnCommand spawn,
     ProjectileDefinitionHydrationContext context,
-    out ProjectileEntityState? state)
+    out ProjectileInitialComponents? state)
   {
     ArgumentNullException.ThrowIfNull(definition);
 
@@ -31,6 +33,18 @@ public static class ProjectileDefinitionHydrationSystem
 
     int width = (int)((float)geometry.Width * geometry.Scale);
     int height = (int)((float)geometry.Height * geometry.Scale);
+    Vector2 initialVelocity = spawn.Velocity;
+    if (identityDefinition.TypeId == 1 && behavior.AiStyle == 1)
+    {
+      while (initialVelocity.X >= 16.0f ||
+          initialVelocity.X <= -16.0f ||
+          initialVelocity.Y >= 16.0f ||
+          initialVelocity.Y < -16.0f)
+      {
+        initialVelocity *= 0.97f;
+      }
+    }
+
     ProjectileHostileDamageScaling hostileScaling = combat.HostileDamageScaling switch
     {
       ProjectileHostileDamageScalingDefinition.Default =>
@@ -41,7 +55,7 @@ public static class ProjectileDefinitionHydrationSystem
         "Projectile content contains an unsupported hostile damage scaling value."),
     };
 
-    var projectileState = new ProjectileEntityState(
+    var projectileState = new ProjectileInitialComponents(
       new ProjectileIdentityComponent(
         spawn.Owner.EntityReference,
         ownerSlot: spawn.Owner.LegacyOwnerSlot),
@@ -67,6 +81,7 @@ public static class ProjectileDefinitionHydrationSystem
         spawn.Ai1,
         spawn.Ai2),
       UpdateCadence = new ProjectileUpdateCadenceComponent(behavior.ExtraUpdates),
+      Direction = new DirectionComponent(horizontal: 1),
       Disposition = new ProjectileDispositionStateComponent(
         combat.Friendly,
         combat.Hostile),
@@ -98,6 +113,7 @@ public static class ProjectileDefinitionHydrationSystem
         decidesManualFallThrough: behavior.DecidesManualFallThrough,
         shouldFallThrough: behavior.ShouldFallThrough,
         ownerHitCheckDistance: geometry.OwnerHitCheckDistance),
+      WetState = new ProjectileWetStateComponent(),
       HitImmunityPolicy = new ProjectileHitImmunityPolicyComponent(
         usesLocalNpcImmunity: penetration.UsesLocalNpcImmunity,
         usesStaticNpcImmunity: penetration.UsesIdStaticNpcImmunity,
@@ -114,7 +130,9 @@ public static class ProjectileDefinitionHydrationSystem
         light: presentation.Light,
         drawLayer: presentation.DrawLayer,
         usesOwnerLight: capabilities.UsesOwnerLight,
-        hide: presentation.Hide),
+        hide: presentation.Hide,
+        trailingMode: ProjectileTrailCacheSystem.GetTrailingMode(
+          identityDefinition.TypeId)),
       Animation = new ProjectileAnimationStateComponent(
         frameCount: presentation.FrameCount),
       Trail = new ProjectileTrailCacheComponent(presentation.TrailCacheLength),
@@ -135,7 +153,7 @@ public static class ProjectileDefinitionHydrationSystem
         new Vector2(
           spawn.Center.X - width * 0.5f,
           spawn.Center.Y - height * 0.5f),
-        spawn.Velocity),
+        initialVelocity),
     };
 
     state = projectileState;

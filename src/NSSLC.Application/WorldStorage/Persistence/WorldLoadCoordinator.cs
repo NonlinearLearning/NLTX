@@ -27,6 +27,11 @@ public sealed class WorldLoadCoordinator
     _apiCatalog = apiCatalog ?? throw new ArgumentNullException(nameof(apiCatalog));
   }
 
+  internal bool UsesFileStore(IWorldFileStore fileStore)
+  {
+    return ReferenceEquals(_fileStore, fileStore);
+  }
+
   /// <summary>
   /// Loads the file at path once. Retry and backup selection belong to the lifecycle caller.
   /// </summary>
@@ -144,7 +149,7 @@ public sealed class WorldLoadCoordinator
           : Failed(1, failure);
     }
 
-    if (!TryNotifyFileOpened(attemptObserver, out WorldStorageFailure observerFailure))
+    if (!TryNotifyFileRead(attemptObserver, out WorldStorageFailure observerFailure))
     {
       return observerFailure.Kind == WorldStorageFailureKind.Canceled
         ? Canceled(1, observerFailure)
@@ -177,18 +182,30 @@ public sealed class WorldLoadCoordinator
     return ExecuteLoad(document, runtimeBindings, successStatus, 1, cancellationToken);
   }
 
-  private static bool TryNotifyFileOpened(
+  private static bool TryNotifyFileRead(
     IWorldLoadAttemptObserver? attemptObserver,
     out WorldStorageFailure failure)
   {
-    return TryNotify(attemptObserver?.OnFileOpened, out failure);
+    if (attemptObserver is null)
+    {
+      failure = WorldStorageFailure.None;
+      return true;
+    }
+
+    return TryNotify(attemptObserver.OnFileRead, out failure);
   }
 
   private static bool TryNotifyDocumentValidated(
     IWorldLoadAttemptObserver? attemptObserver,
     out WorldStorageFailure failure)
   {
-    return TryNotify(attemptObserver?.OnDocumentValidated, out failure);
+    if (attemptObserver is null)
+    {
+      failure = WorldStorageFailure.None;
+      return true;
+    }
+
+    return TryNotify(attemptObserver.OnDocumentValidated, out failure);
   }
 
   private static bool TryNotify(Action? observerAction, out WorldStorageFailure failure)
@@ -508,6 +525,13 @@ public sealed class WorldLoadCoordinator
     if (!execution.Succeeded)
     {
       return FailedExecution(attempts, execution);
+    }
+
+    if (runtimeBindings.TryGetOwnerContext(
+          LoadedWorldSession.OwnerContextId,
+          out LoadedWorldSession loadedSession))
+    {
+      loadedSession.SetSourceDocument(document);
     }
 
     return new WorldRecoveryOutcome(

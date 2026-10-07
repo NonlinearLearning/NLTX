@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace NSSLC.WorldGeneration
 {
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
@@ -21,10 +23,19 @@ namespace NSSLC.WorldGeneration
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
   public class BirthdayParty
   {
-    public static dynamic CelebratingNPCs = default;
-    public static dynamic GenuineParty = default;
-    public static dynamic PartyDaysOnCooldown = default;
-    public static dynamic WorldClear(params dynamic[] arguments) => default;
+    public static List<int> CelebratingNPCs = new();
+    public static bool GenuineParty;
+    public static bool ManualParty;
+    public static int PartyDaysOnCooldown;
+
+    public static dynamic WorldClear(params dynamic[] arguments)
+    {
+      CelebratingNPCs.Clear();
+      GenuineParty = false;
+      ManualParty = false;
+      PartyDaysOnCooldown = 0;
+      return null;
+    }
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
@@ -71,7 +82,17 @@ namespace NSSLC.WorldGeneration
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
   public class DD2Event
   {
-    public static dynamic ResetProgressEntirely(params dynamic[] arguments) => default;
+    public static bool DownedInvasionT1;
+    public static bool DownedInvasionT2;
+    public static bool DownedInvasionT3;
+
+    public static dynamic ResetProgressEntirely(params dynamic[] arguments)
+    {
+      DownedInvasionT1 = false;
+      DownedInvasionT2 = false;
+      DownedInvasionT3 = false;
+      return null;
+    }
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
@@ -177,7 +198,19 @@ namespace NSSLC.WorldGeneration
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
   public class LanternNight
   {
-    public static dynamic WorldClear(params dynamic[] arguments) => default;
+    public static bool GenuineLanterns;
+    public static int LanternNightsOnCooldown;
+    public static bool ManualLanterns;
+    public static bool NextNightIsLanternNight;
+
+    public static dynamic WorldClear(params dynamic[] arguments)
+    {
+      GenuineLanterns = false;
+      LanternNightsOnCooldown = 0;
+      ManualLanterns = false;
+      NextNightIsLanternNight = false;
+      return null;
+    }
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
@@ -248,8 +281,16 @@ namespace NSSLC.WorldGeneration
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
   public class PressurePlateHelper
   {
+    public static object EntityCreationLock = new object();
+    public static Dictionary<Geometry.Point, bool[]> PressurePlatesPressed = new();
+    public static bool NeedsFirstUpdate;
+
     public static dynamic DestroyPlate(params dynamic[] arguments) => default;
-    public static dynamic Reset(params dynamic[] arguments) => default;
+    public static dynamic Reset(params dynamic[] arguments)
+    {
+      PressurePlatesPressed.Clear();
+      return null;
+    }
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
@@ -261,7 +302,19 @@ namespace NSSLC.WorldGeneration
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
   public class Sandstorm
   {
-    public static dynamic WorldClear(params dynamic[] arguments) => default;
+    public static bool Happening;
+    public static float IntendedSeverity;
+    public static float Severity;
+    public static int TimeLeft;
+
+    public static dynamic WorldClear(params dynamic[] arguments)
+    {
+      Happening = false;
+      IntendedSeverity = 0f;
+      Severity = 0f;
+      TimeLeft = 0;
+      return null;
+    }
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
@@ -313,55 +366,80 @@ namespace NSSLC.WorldGeneration
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
-  public class TECritterAnchor
+  public class TECritterAnchor : NSSLC.WorldGeneration.GameContent.Tile_Entities.TELeashedEntityAnchorWithItem
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TECritterAnchor>(x, y, type);
     public static dynamic Kill(params dynamic[] arguments) => default;
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
-  public class TEDisplayDoll
+  public class TEDisplayDoll : TileEntity
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public NSSLC.WorldGeneration.Item[] items = CreateItems(19);
+    public byte pose;
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TEDisplayDoll>(x, y, type);
     public static dynamic Framing_CheckTile(params dynamic[] arguments) => default;
     public static dynamic IsBreakable(params dynamic[] arguments) => default;
+
+    private static NSSLC.WorldGeneration.Item[] CreateItems(int count)
+    {
+      var items = new NSSLC.WorldGeneration.Item[count];
+      for (int index = 0; index < items.Length; index++)
+      {
+        items[index] = new NSSLC.WorldGeneration.Item();
+      }
+      return items;
+    }
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
-  public class TEHatRack
+  public class TEHatRack : TileEntity
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public NSSLC.WorldGeneration.Item[] items = CreateItems(4);
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TEHatRack>(x, y, type);
     public static dynamic Framing_CheckTile(params dynamic[] arguments) => default;
     public static dynamic IsBreakable(params dynamic[] arguments) => default;
+
+    private static NSSLC.WorldGeneration.Item[] CreateItems(int count)
+    {
+      var items = new NSSLC.WorldGeneration.Item[count];
+      for (int index = 0; index < items.Length; index++)
+      {
+        items[index] = new NSSLC.WorldGeneration.Item();
+      }
+      return items;
+    }
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
-  public class TEKiteAnchor
+  public class TEKiteAnchor : NSSLC.WorldGeneration.GameContent.Tile_Entities.TELeashedEntityAnchorWithItem
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TEKiteAnchor>(x, y, type);
     public static dynamic Kill(params dynamic[] arguments) => default;
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
-  public class TELogicSensor
+  public class TELogicSensor : TileEntity
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public byte logicCheck;
+    public bool On;
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TELogicSensor>(x, y, type);
     public static dynamic Kill(params dynamic[] arguments) => default;
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
-  public class TETeleportationPylon
+  public class TETeleportationPylon : TileEntity
   {
     public static int PlacementPreviewHook_CheckIfCanPlace(int x, int y, int type, int style, int direction, int alternate) => 0;
-    public static int PlacementPreviewHook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public static int PlacementPreviewHook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TETeleportationPylon>(x, y, type);
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TETeleportationPylon>(x, y, type);
     public static dynamic Framing_CheckTile(params dynamic[] arguments) => default;
   }
 
   /// <summary>Compile-only API shape inferred from WorldGeneration call sites.</summary>
-  public class TEWeaponsRack
+  public class TEWeaponsRack : TileEntity
   {
-    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register(x, y, type);
+    public static int Hook_AfterPlacement(int x, int y, int type, int style, int direction, int alternate) => TileEntity.Register<TEWeaponsRack>(x, y, type);
     public NSSLC.WorldGeneration.Item item = new NSSLC.WorldGeneration.Item();
     public void DropItem() { }
     public static dynamic Framing_CheckTile(params dynamic[] arguments) => default;

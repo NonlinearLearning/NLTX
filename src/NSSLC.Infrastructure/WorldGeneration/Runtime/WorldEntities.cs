@@ -1,4 +1,9 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
 using NSSLC.WorldGeneration.Geometry;
+using Terraria.WorldGeneration.Components;
+using Terraria.WorldGeneration.Systems;
 
 namespace NSSLC.WorldGeneration
 {
@@ -91,6 +96,7 @@ namespace NSSLC.WorldGeneration
     public bool homeless;
     public bool homelessDespawn;
     public int lookForHomeTimeout;
+    public int housingCategory;
     public int townNpcVariationIndex;
     public int width;
     public int height;
@@ -193,19 +199,138 @@ namespace NSSLC.WorldGeneration.GameContent
 
   public partial class TownRoomManager
   {
+    private const int _minimumKnownNpcNetId = -65;
+
     public dynamic maxItems;
+    private TownHousingRegistryComponent _registry;
+
     public bool HasRoom(int npcType, out NSSLC.WorldGeneration.Geometry.Point roomPosition)
     {
+      if (TownHousingRegistrySystem.TryGetRoom(
+            Registry,
+            new TownHousingResidentKey(npcType),
+            out TilePosition room))
+      {
+        roomPosition = new NSSLC.WorldGeneration.Geometry.Point(room.X, room.Y);
+        return true;
+      }
+
       roomPosition = default;
-      return default;
+      return false;
     }
-    public bool HasRoom(params dynamic[] arguments) => default;
-    public dynamic CanNPCsLiveWithEachOther(params dynamic[] arguments) => default;
-    public void Clear() { }
-    public void SetRoom(params dynamic[] arguments) { }
-    public void KickOut(params dynamic[] arguments) { }
-    public void AddOccupantsToList(params dynamic[] arguments) { }
-    public bool HasRoomQuick(params dynamic[] arguments) => default;
+
+    public bool HasRoomQuick(int npcType)
+    {
+      return TownHousingRegistrySystem.HasRoom(
+        Registry,
+        new TownHousingResidentKey(npcType));
+    }
+
+    public bool CanNPCsLiveWithEachOther(int npcType, NSSLC.WorldGeneration.NPC npc)
+    {
+      ArgumentNullException.ThrowIfNull(npc);
+      if (npcType < _minimumKnownNpcNetId || npcType >= NSSLC.WorldGeneration.NPCID.Count)
+      {
+        return true;
+      }
+
+      return NSSLC.WorldGeneration.NPC.GetHousingCategoryForType(npcType) != npc.housingCategory;
+    }
+
+    public bool CanNPCsLiveWithEachOther(
+      NSSLC.WorldGeneration.NPC npc1,
+      NSSLC.WorldGeneration.NPC npc2)
+    {
+      ArgumentNullException.ThrowIfNull(npc1);
+      ArgumentNullException.ThrowIfNull(npc2);
+      return npc1.housingCategory != npc2.housingCategory;
+    }
+
+    public void SetRoom(int npcType, int x, int y)
+    {
+      SetRoom(npcType, new NSSLC.WorldGeneration.Geometry.Point(x, y));
+    }
+
+    public void SetRoom(
+      int npcType,
+      NSSLC.WorldGeneration.Geometry.Point roomPosition)
+    {
+      TownHousingRegistrySystem.AssignRoom(
+        Registry,
+        new TownHousingResidentKey(npcType),
+        new TilePosition(roomPosition.X, roomPosition.Y));
+    }
+
+    public void KickOut(NSSLC.WorldGeneration.NPC npc)
+    {
+      ArgumentNullException.ThrowIfNull(npc);
+      TownHousingRegistrySystem.MarkHomeless(
+        Registry,
+        new TownHousingResidentKey((int)npc.type));
+    }
+
+    public void KickOut(int npcType)
+    {
+      TownHousingRegistrySystem.RemoveResident(
+        Registry,
+        new TownHousingResidentKey(npcType));
+    }
+
+    public void AddOccupantsToList(int x, int y, List<int> occupants)
+    {
+      AddOccupantsToList(
+        new NSSLC.WorldGeneration.Geometry.Point(x, y),
+        occupants);
+    }
+
+    public void AddOccupantsToList(
+      NSSLC.WorldGeneration.Geometry.Point tilePosition,
+      List<int> occupants)
+    {
+      ArgumentNullException.ThrowIfNull(occupants);
+      IReadOnlyList<TownHousingResidentKey> residents =
+        TownHousingRegistrySystem.GetOccupants(
+          Registry,
+          new TilePosition(tilePosition.X, tilePosition.Y));
+      for (int index = 0; index < residents.Count; index++)
+      {
+        occupants.Add(residents[index].NpcType);
+      }
+    }
+
+    public byte GetHouseholdStatus(NSSLC.WorldGeneration.NPC npc)
+    {
+      ArgumentNullException.ThrowIfNull(npc);
+      if (npc.homeless)
+      {
+        return 1;
+      }
+
+      return HasRoomQuick((int)npc.type) ? (byte)2 : (byte)0;
+    }
+
+    public void Save(BinaryWriter writer)
+    {
+      TownHousingRegistryPersistenceAdapter.Save(writer, Registry);
+    }
+
+    public void Load(BinaryReader reader)
+    {
+      TownHousingRegistryPersistenceAdapter.Load(reader, Registry);
+    }
+
+    public void Clear()
+    {
+      TownHousingRegistrySystem.Clear(Registry);
+    }
+
+    public void Bind(TownHousingRegistryComponent registry)
+    {
+      _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+    }
+
+    private TownHousingRegistryComponent Registry =>
+      _registry ?? NSSLC.WorldGeneration.Main.ActiveWorldSession.TownHousing;
   }
 
 }

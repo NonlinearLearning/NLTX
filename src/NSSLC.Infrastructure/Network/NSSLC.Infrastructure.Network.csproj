@@ -4,14 +4,14 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <NetWorkRoot Condition="'$(NetWorkRoot)' == ''">$(MSBuildThisFileDirectory)..\..\..\..\..\ProjectItem\SourceCode\Net\NetWork\</NetWorkRoot>
-    <NetworkGeneratedDirectory>$(RepositoryBuildRoot)generated\Network</NetworkGeneratedDirectory>
+    <NetworkGeneratedDirectory>$(RepositoryBuildRoot)generated\Network\$(Configuration)\$(TargetFramework)</NetworkGeneratedDirectory>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="NetCoreServer" Version="8.0.7" />
     <ProjectReference Include="..\..\NSSLC.Application\NSSLC.Application.csproj" />
     <ProjectReference Include="..\..\NSSLC\Component\Projectile\Terraria.Projectile.csproj" />
-    <ProjectReference Include="$(NetWorkRoot)src\Packets\PacketDesignCompiler.Packets.csproj" />
+    <ProjectReference Include="..\..\NSSLC\Component\WorldSession\Terraria.WorldSession.csproj" />
+    <ProjectReference Include="Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj" />
     <ProjectReference Include="..\..\..\Build\Tools\NetworkCodecGenerator\NetworkCodecGenerator.csproj"
                       ReferenceOutputAssembly="false" />
     <Compile Include="*.cs" />

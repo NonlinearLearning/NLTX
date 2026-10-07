@@ -13,15 +13,15 @@ internal static class GatewayDeadlineVerification {
         new PacketGatewayOptions { OwnerTimeout = TimeSpan.FromSeconds(4) }, time);
     GatewayVerification.RegisterProgression(gateway);
     gateway.Register(new PacketPolicy(30, NetworkSessionStage.Active),
-        new RecordingHandler<Packet30Packet>((context, _, _) => ValueTask.FromResult(
+        new RecordingHandler<TogglePVPPacket>((context, _, _) => ValueTask.FromResult(
             new PacketHandlingResult(true, new[] {
-              new OutboundDispatch(new Packet16Packet(), PacketDispatchKind.Single,
+              new OutboundDispatch(new PlayerLifeManaPacket(), PacketDispatchKind.Single,
                   new[] { context.Connection })
             }))));
     await using var peer = new GatewayPeer(gateway, profile, ConnectionOptions(), time);
     await peer.JoinAsync();
     peer.Transport.OnSubmit = _ => true;
-    peer.Receive(new Packet30Packet());
+    peer.Receive(new TogglePVPPacket());
     await ProgressToDeadlineAsync(peer, time);
     await peer.Run.WaitAsync(TimeSpan.FromSeconds(5));
     Verify.That(peer.Session.Stage == NetworkSessionStage.Closed
@@ -44,9 +44,9 @@ internal static class GatewayDeadlineVerification {
         new PacketGatewayOptions { OwnerTimeout = TimeSpan.FromSeconds(4) }, time);
     GatewayVerification.RegisterProgression(gateway);
     gateway.Register(new PacketPolicy(30, NetworkSessionStage.Active),
-        new RecordingHandler<Packet30Packet>((_, _, _) => ValueTask.FromResult(
+        new RecordingHandler<TogglePVPPacket>((_, _, _) => ValueTask.FromResult(
             new PacketHandlingResult(true, new[] {
-              new OutboundDispatch(new Packet16Packet(), PacketDispatchKind.AllActiveExceptSender)
+              new OutboundDispatch(new PlayerLifeManaPacket(), PacketDispatchKind.AllActiveExceptSender)
             }))));
     await using var sender = new GatewayPeer(gateway, profile, ConnectionOptions(), time);
     await using var slow = new GatewayPeer(gateway, profile, ConnectionOptions(), time);
@@ -55,7 +55,7 @@ internal static class GatewayDeadlineVerification {
     await slow.JoinAsync();
     await normal.JoinAsync();
     slow.Transport.OnSubmit = _ => true;
-    sender.Receive(new Packet30Packet());
+    sender.Receive(new TogglePVPPacket());
     await Verify.EventuallyAsync(() => normal.Transport.FrameCount == 2,
         "A normal recipient must finish before the progressing slow recipient's owner deadline.");
     await ProgressToDeadlineAsync(slow, time);
@@ -75,7 +75,7 @@ internal static class GatewayDeadlineVerification {
       await using var gateway = new PacketGateway(profile, authority,
           new PacketGatewayOptions { OwnerTimeout = TimeSpan.FromSeconds(2) }, time);
       await using var peer = new GatewayPeer(gateway, profile, ConnectionOptions(), time);
-      peer.Receive(new Packet1Packet { Version = "Terraria319" });
+      peer.Receive(new HelloPacket { Version = "Terraria319" });
       await authority.Entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
       if (stopGateway) {
         await gateway.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));
@@ -100,7 +100,7 @@ internal static class GatewayDeadlineVerification {
     ProtocolProfile profile = GatewayVerification.CreateProfile();
     await using var gateway = new PacketGateway(profile, new RecordingAuthority());
     await using var peer = new GatewayPeer(gateway, profile);
-    peer.Receive(new Packet1Packet { Version = "Terraria319" });
+    peer.Receive(new HelloPacket { Version = "Terraria319" });
     await Verify.EventuallyAsync(() => peer.Transport.FrameCount == 1,
         "The guard fixture must establish its original actor before closure.");
     SenderBinding? original = peer.Session.Binding;
@@ -111,7 +111,8 @@ internal static class GatewayDeadlineVerification {
       Verify.That(!peer.Session.Bind(new SenderBinding(8, Guid.NewGuid()))
           && peer.Session.Stage == stage && peer.Session.Binding == original,
           "A closing or closed session must refuse rebinding without replacing its original lease.");
-      PacketProtocolException host = Verify.Throws<PacketProtocolException>(peer.Session.SetHost);
+      PacketProtocolException host = Verify.Throws<PacketProtocolException>(
+          () => peer.Session.SetHost(true));
       PacketProtocolException apply = Verify.Throws<PacketProtocolException>(() =>
           peer.Session.Apply(6, new PacketHandlingResult(true,
               nextStage: NetworkSessionStage.AwaitSectionRequest)));

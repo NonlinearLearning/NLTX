@@ -1,4 +1,5 @@
 using System.Net;
+using Terraria.Relationships;
 using Terraria.Network;
 
 namespace NSSLC.Infrastructure.Network;
@@ -18,11 +19,32 @@ public sealed class NetworkGatewayHost : IAsyncDisposable {
   public NetworkGatewayHost(IPAddress address, int port, ProtocolFacts facts,
       INetworkSessionAuthority authority, PacketGatewayOptions? gatewayOptions = null,
       PacketConnectionOptions? connectionOptions = null, PacketByteBudget? budget = null,
-      TimeProvider? timeProvider = null) {
-    Profile = TerrariaProtocolProfile.Create(facts);
+      TimeProvider? timeProvider = null,
+      Func<EntityRuntimeId?>? worldRuntimeIdProvider = null,
+      Func<NetworkSessionContext, CancellationToken, ValueTask>? sessionClosing = null)
+      : this(address, port, TerrariaProtocolProfile.Create(facts),
+          authority, gatewayOptions, connectionOptions, budget, timeProvider,
+          worldRuntimeIdProvider, sessionClosing) {
+  }
+
+  public NetworkGatewayHost(IPAddress address, int port, ProtocolProfile profile,
+      INetworkSessionAuthority authority, PacketGatewayOptions? gatewayOptions = null,
+      PacketConnectionOptions? connectionOptions = null, PacketByteBudget? budget = null,
+      TimeProvider? timeProvider = null,
+      Func<EntityRuntimeId?>? worldRuntimeIdProvider = null,
+      Func<NetworkSessionContext, CancellationToken, ValueTask>? sessionClosing = null) {
+    ArgumentNullException.ThrowIfNull(profile);
+    Profile = profile;
     Budget = budget ?? new();
     Snapshots = new(Profile, Budget, timeProvider: timeProvider);
-    Gateway = new(Profile, authority, gatewayOptions, timeProvider, Snapshots);
+    Gateway = new(
+      Profile,
+      authority,
+      gatewayOptions,
+      timeProvider,
+      Snapshots,
+      worldRuntimeIdProvider,
+      sessionClosing);
     Connections = new(Profile, connectionOptions, Budget);
     _server = new(address, port, Profile, Gateway.HandleAsync, connectionOptions, Budget);
   }

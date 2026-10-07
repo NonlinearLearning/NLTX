@@ -13,7 +13,7 @@ internal static class HostCompositionVerification {
         GeneratedProfileVerification.CreateFacts(), authority, budget: budget);
     var ownerHandled = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
     host.Gateway.Register(new PacketPolicy(6, NetworkSessionStage.AwaitPlayerData),
-        new RecordingHandler<Packet6Packet>((context, _, _) => {
+        new RecordingHandler<RequestWorldDataPacket>((context, _, _) => {
           Verify.That(context.Actor.PlayerSlot == 0 && context.ProfileKey == host.Profile.Key,
               "Host registration must bind its owner to the selected generated profile and actor.");
           ownerHandled.TrySetResult();
@@ -27,13 +27,13 @@ internal static class HostCompositionVerification {
     host.Start();
     Verify.Throws<InvalidOperationException>(() => host.Gateway.Register(
         new PacketPolicy(30, NetworkSessionStage.Active),
-        new RecordingHandler<Packet30Packet>((_, _, _) => ValueTask.FromResult(new PacketHandlingResult(true)))));
+        new RecordingHandler<TogglePVPPacket>((_, _, _) => ValueTask.FromResult(new PacketHandlingResult(true)))));
     await using (IPacketConnection client = await host.Connections.ConnectAsync("127.0.0.1",
         ((IPEndPoint)host.EndPoint).Port, TimeSpan.FromSeconds(5))) {
-      await client.WritePacketAsync(new Packet1Packet { Version = "Terraria319" });
-      Verify.That((await client.ReadPacketAsync())!.Get<Packet3Packet>().Payload.Player == 0,
+      await client.WritePacketAsync(new HelloPacket { Version = "Terraria319" });
+      Verify.That((await client.ReadPacketAsync())!.Get<PlayerInfoPacket>().Player == 0,
           "The host's real listener must admit and answer its generated client Hello.");
-      await client.WritePacketAsync(new Packet6Packet());
+      await client.WritePacketAsync(new RequestWorldDataPacket());
       await ownerHandled.Task.WaitAsync(TimeSpan.FromSeconds(5));
       await Verify.EventuallyAsync(() => host.Gateway.Sessions.Single().Stage
           == NetworkSessionStage.AwaitSectionRequest,

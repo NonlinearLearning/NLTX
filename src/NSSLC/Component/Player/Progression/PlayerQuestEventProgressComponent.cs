@@ -10,6 +10,21 @@ public sealed class PlayerQuestEventProgressComponent
 
   public int GolferScoreAccumulated { get; internal set; }
 
+  /// <summary>Replaces the two absolute counters received from packet 76.</summary>
+  public bool ApplyNetworkCounts(int anglerQuestsFinished, int golferScoreAccumulated)
+  {
+    if (anglerQuestsFinished < 0 ||
+      golferScoreAccumulated < 0 ||
+      golferScoreAccumulated > MaximumGolferScore)
+    {
+      return false;
+    }
+
+    AnglerQuestsFinished = anglerQuestsFinished;
+    GolferScoreAccumulated = golferScoreAccumulated;
+    return true;
+  }
+
   public bool DownedDd2EventAnyDifficulty { get; internal set; }
 
   internal bool HasApplied(PlayerProgressionCommandToken token)

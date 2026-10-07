@@ -71,7 +71,11 @@ public sealed class WorldFileDocumentDecoder : IWorldPersistenceDocumentDecoder
       WorldFileHeaderSection header = ReadHeader(reader, version, headerEnd);
       WorldFileEnvironmentSection? environment = ReadEnvironment(reader, headerEnd);
       WorldFileProgressionSection? progression = ReadProgression(reader, version, headerEnd);
-      WorldFileQuestSection? quests = ReadQuests(reader, version, headerEnd);
+      WorldFileQuestSection? quests = ReadQuests(
+        reader,
+        version,
+        headerEnd,
+        progression);
       WorldFileBannerSection? banners = ReadBanners(reader, version, headerEnd);
       WorldFileBossProgressionSection? bossProgression =
         ReadBossProgression(reader, version, headerEnd);
@@ -666,10 +670,23 @@ public sealed class WorldFileDocumentDecoder : IWorldPersistenceDocumentDecoder
   private static WorldFileQuestSection? ReadQuests(
     BinaryReader reader,
     int version,
-    long headerEnd)
+    long headerEnd,
+    WorldFileProgressionSection? progression)
   {
-    if (version < WorldFileFormatConstants.AnglerFinishedTodayVersion ||
-        reader.BaseStream.Position >= headerEnd)
+    if (version < WorldFileFormatConstants.AnglerFinishedTodayVersion)
+    {
+      return new WorldFileQuestSection(
+        Array.Empty<string>(),
+        savedAngler: false,
+        anglerQuest: 0,
+        savedStylist: false,
+        savedTaxCollector: false,
+        savedGolfer: false,
+        invasionSizeStart: CalculateLegacyInvasionSizeStart(progression),
+        cultistDelay: 86400);
+    }
+
+    if (reader.BaseStream.Position >= headerEnd)
     {
       return null;
     }
@@ -708,7 +725,7 @@ public sealed class WorldFileDocumentDecoder : IWorldPersistenceDocumentDecoder
       version >= WorldFileFormatConstants.SavedGolferVersion);
     int invasionSizeStart = version >= WorldFileFormatConstants.InvasionSizeStartVersion
       ? ReadBoundedInt32(reader, headerEnd)
-      : 0;
+      : CalculateLegacyInvasionSizeStart(progression);
     int cultistDelay = version >= WorldFileFormatConstants.CultistDelayVersion
       ? ReadBoundedInt32(reader, headerEnd)
       : 86400;
@@ -721,6 +738,42 @@ public sealed class WorldFileDocumentDecoder : IWorldPersistenceDocumentDecoder
       savedGolfer,
       invasionSizeStart,
       cultistDelay);
+  }
+
+  private static int CalculateLegacyInvasionSizeStart(
+    WorldFileProgressionSection? progression)
+  {
+    if (progression is null || progression.InvasionType <= 0 || progression.InvasionSize <= 0)
+    {
+      return 0;
+    }
+
+    int initialSize;
+    int groupSize;
+    switch (progression.InvasionType)
+    {
+      case 1:
+      case 2:
+        initialSize = 80;
+        groupSize = 40;
+        break;
+      case 3:
+        initialSize = 120;
+        groupSize = 60;
+        break;
+      case 4:
+        initialSize = 160;
+        groupSize = 40;
+        break;
+      default:
+        return 0;
+    }
+
+    int additionalGroups = (int)Math.Ceiling(
+      (float)(progression.InvasionSize - initialSize) / groupSize);
+    return additionalGroups > 0
+      ? initialSize + additionalGroups * groupSize
+      : initialSize;
   }
 
   private static WorldFileBannerSection? ReadBanners(

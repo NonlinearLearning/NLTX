@@ -1284,7 +1284,7 @@ public sealed class WorldFileDocumentEncoder : IWorldSaveEncoder
     for (int index = 0; index < chest.Items.Count; index++)
     {
       WorldFileChestItem item = chest.Items[index];
-      if (item.Stack < short.MinValue || item.Stack > short.MaxValue || item.Type < 0)
+      if (item.Stack < short.MinValue || item.Stack > short.MaxValue)
       {
         throw new InvalidDataException("A chest contains an invalid item.");
       }

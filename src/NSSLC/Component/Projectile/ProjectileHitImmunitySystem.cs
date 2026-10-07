@@ -9,6 +9,7 @@ public static class ProjectileHitImmunitySystem
     in ProjectileHitImmunityPolicyComponent policy)
   {
     DecrementPositive(state.PlayerImmunityTicks, nameof(state.PlayerImmunityTicks));
+    state.RestrikeDelayTicks = DecrementPositive(state.RestrikeDelayTicks);
 
     if (policy.UsesLocalNpcImmunity)
     {
@@ -16,8 +17,6 @@ public static class ProjectileHitImmunitySystem
         state.LocalNpcImmunityTicks,
         nameof(state.LocalNpcImmunityTicks));
     }
-
-    state.RestrikeDelayTicks = DecrementPositive(state.RestrikeDelayTicks);
   }
 
   public static bool IsLocalNpcImmune(
@@ -57,6 +56,20 @@ public static class ProjectileHitImmunitySystem
       nameof(state.LocalNpcImmunityTicks));
   }
 
+  public static bool RecordAcceptedNpcHit(
+    ref ProjectileHitImmunityStateComponent state,
+    in ProjectileHitImmunityPolicyComponent policy,
+    int npcIndex)
+  {
+    if (!policy.WritesLocalNpcImmunity)
+    {
+      return false;
+    }
+
+    SetLocalNpcImmunity(ref state, npcIndex, policy.LocalNpcCooldownTicks);
+    return true;
+  }
+
   public static void SetPlayerImmunity(
     ref ProjectileHitImmunityStateComponent state,
     int playerIndex,
@@ -90,6 +103,22 @@ public static class ProjectileHitImmunitySystem
     ref ProjectileHitImmunityStateComponent state)
   {
     Clear(state.LocalNpcImmunityTicks, nameof(state.LocalNpcImmunityTicks));
+  }
+
+  public static bool TryResetLocalNpcImmunityAtSlot(
+    ref ProjectileHitImmunityStateComponent state,
+    int npcSlot)
+  {
+    ArgumentOutOfRangeException.ThrowIfNegative(npcSlot);
+    int[] values = state.LocalNpcImmunityTicks;
+    ArgumentNullException.ThrowIfNull(values, nameof(state.LocalNpcImmunityTicks));
+    if (npcSlot >= values.Length)
+    {
+      return false;
+    }
+
+    values[npcSlot] = 0;
+    return true;
   }
 
   public static void ResetPlayerImmunity(

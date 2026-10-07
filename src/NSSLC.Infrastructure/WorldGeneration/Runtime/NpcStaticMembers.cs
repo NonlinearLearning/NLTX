@@ -5,7 +5,13 @@ public partial class NPC
   public static bool boughtBunny;
   public static bool boughtCat;
   public static bool boughtDog;
-  public static dynamic ClearFoundActiveNPCs(params dynamic[] arguments) => default;
+  private static bool EoCKilledToday;
+  private static bool WoFKilledToday;
+  public static bool[] npcsFoundForCheckActive = new bool[NPCID.Count];
+  public static void ClearFoundActiveNPCs()
+  {
+    System.Array.Clear(npcsFoundForCheckActive, 0, npcsFoundForCheckActive.Length);
+  }
   public static bool combatBookVolumeTwoWasUsed;
   public static bool combatBookWasUsed;
   public static bool downedAncientCultist;
@@ -39,6 +45,11 @@ public partial class NPC
   public static bool downedTowerSolar;
   public static bool downedTowerStardust;
   public static bool downedTowerVortex;
+  public static int[,] cavernMonsterType = new int[2, 3];
+  public static int butterflyChance;
+  public static int fireFlyChance;
+  public static int fireFlyFriendly;
+  public static int fireFlyMultiple;
   public static bool freeCake;
   public static dynamic GetAvailableAmountOfNPCsToSpawnUpToSlot(params dynamic[] arguments) => default;
   public static int goldCritterChance;
@@ -48,7 +59,11 @@ public partial class NPC
   public static int mechQueen;
   public static int MoonLordCountdown;
   public static bool peddlersSatchelWasUsed;
-  public static dynamic ResetBadgerHatTime(params dynamic[] arguments) => default;
+  public static void ResetBadgerHatTime()
+  {
+    EoCKilledToday = false;
+    WoFKilledToday = false;
+  }
   public static dynamic RevengeManager = default;
   public static int safeRangeX;
   public static int safeRangeY;
@@ -66,9 +81,10 @@ public partial class NPC
   public static int ShieldStrengthTowerSolar;
   public static int ShieldStrengthTowerStardust;
   public static int ShieldStrengthTowerVortex;
-  public static dynamic ShimmeredTownNPCs = default;
-  public static dynamic spawnSlotProtected = default;
+  public static bool[] ShimmeredTownNPCs = new bool[NPCID.Count];
+  public static int[] spawnSlotProtected = new int[200];
   public static int sWidth;
+  public static int stinkBugChance;
   public static bool TowerActiveNebula;
   public static bool TowerActiveSolar;
   public static bool TowerActiveStardust;

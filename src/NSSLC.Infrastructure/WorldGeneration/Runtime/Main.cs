@@ -9,7 +9,7 @@ public static partial class Main
   public static IO.WorldFileData ActiveWorldFileData;
   public static bool afterPartyOfDoom = default;
   public static int BartenderHelpTextIndex = default;
-  public static dynamic BestiaryTracker;
+  public static WorldBestiaryTracker BestiaryTracker = new WorldBestiaryTracker();
   public static bool bloodMoon = default;
   public static float bottomWorld = default;
   public static int[] caveBackStyle = new int[4];
@@ -130,6 +130,7 @@ public static partial class Main
   public static Sign[] sign = new Sign[32000];
   public static bool skyblockWorld = default;
   public static bool slimeRain = default;
+  public static int slimeRainKillCount = default;
   public static double slimeRainTime = default;
   public static int slimeWarningTime = default;
   public static int[] snowBG = new int[3];
@@ -187,7 +188,9 @@ public static partial class Main
   public static float windSpeedTarget = default;
   public static int wofNPCIndex;
   public static dynamic WorldFileMetadata;
+  public static int worldID => ActiveWorldFileData.WorldId;
   public static string worldPathName = default;
   public static double worldSurface = default;
+  public static int weatherCounter = default;
   public static bool zenithWorld = default;
 }

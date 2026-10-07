@@ -4,6 +4,7 @@ using NSSLC.WorldGeneration.Geometry;
 using NSSLC.WorldGeneration.DataStructures;
 using NSSLC.WorldGeneration.Enums;
 using NSSLC.WorldGeneration.GameContent.Tile_Entities;
+using WorldGenWeaponsRack = NSSLC.WorldGeneration.GameContent.Tile_Entities.TEWeaponsRack;
 using NSSLC.WorldGeneration.ID;
 using NSSLC.WorldGeneration.Modules;
 
@@ -4827,7 +4828,7 @@ public class TileObjectData
 		newTile.Direction = TileObjectDirection.PlaceLeft;
 		newTile.StyleHorizontal = true;
 		newTile.LavaDeath = false;
-		newTile.HookPostPlaceMyPlayer = new PlacementHook(TEWeaponsRack.Hook_AfterPlacement, -1, 0, processedCoordinates: true);
+		newTile.HookPostPlaceMyPlayer = new PlacementHook(WorldGenWeaponsRack.Hook_AfterPlacement, -1, 0, processedCoordinates: true);
 		newAlternate.CopyFrom(newTile);
 		newAlternate.Direction = TileObjectDirection.PlaceRight;
 		addAlternate(1);

@@ -14,4 +14,9 @@ public sealed class PlayerInventorySlotsComponent
     new bool[MainInventorySlotCount];
 
   public ItemEntityRef TrashItem { get; internal set; } = ItemEntityRef.None;
+
+  public void ClearTrashItem()
+  {
+    TrashItem = ItemEntityRef.None;
+  }
 }

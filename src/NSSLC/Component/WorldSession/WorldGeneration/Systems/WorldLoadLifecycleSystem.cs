@@ -11,6 +11,13 @@ public static class WorldLoadLifecycleSystem
   public static WorldLoadRecoveryAction StartRecovery(
     WorldLoadLifecycleComponent component)
   {
+    return StartRecovery(component, preservePreexistingLoadGate: false);
+  }
+
+  public static WorldLoadRecoveryAction StartRecovery(
+    WorldLoadLifecycleComponent component,
+    bool preservePreexistingLoadGate)
+  {
     ArgumentNullException.ThrowIfNull(component);
     if (component.RecoveryPhase != WorldLoadRecoveryPhase.NotStarted)
     {
@@ -18,7 +25,7 @@ public static class WorldLoadLifecycleSystem
         "World-load recovery can only start once for a lifecycle component.");
     }
 
-    component.BeginRecovery();
+    component.BeginRecovery(preservePreexistingLoadGate);
     return WorldLoadRecoveryAction.LoadWorld;
   }
 
@@ -33,6 +40,29 @@ public static class WorldLoadLifecycleSystem
   {
     ArgumentNullException.ThrowIfNull(component);
     EnsureLoadingAttempt(component.RecoveryPhase);
+    component.SetLoadingOrGenerating(true);
+  }
+
+  /// <summary>
+  /// Raises the load gate before an unpublished or partially published world is reset.
+  /// </summary>
+  public static void BeginWorldReset(WorldLoadLifecycleComponent component)
+  {
+    ArgumentNullException.ThrowIfNull(component);
+    if (component.RecoveryPhase is
+        WorldLoadRecoveryPhase.NotStarted or
+        WorldLoadRecoveryPhase.Completed or
+        WorldLoadRecoveryPhase.FailedNoBackup)
+    {
+      throw new InvalidOperationException(
+        "World reset requires an active or failed world-load recovery.");
+    }
+
+    if (!component.RequiresWorldReset)
+    {
+      component.SetLoadRequiresWorldReset(component.WorldBackup);
+    }
+
     component.SetLoadingOrGenerating(true);
   }
 
@@ -82,6 +112,65 @@ public static class WorldLoadLifecycleSystem
     component.SetLoadingOrGenerating(false);
   }
 
+  /// <summary>
+  /// Completes recovery by discarding an isolated candidate session without clearing the active
+  /// legacy world.
+  /// </summary>
+  public static void CompleteUnpublishedSessionDiscard(WorldLoadLifecycleComponent component)
+  {
+    ArgumentNullException.ThrowIfNull(component);
+    if (component.RecoveryPhase != WorldLoadRecoveryPhase.Failed ||
+        !component.RequiresWorldReset)
+    {
+      throw new InvalidOperationException(
+        "An unpublished session can only be discarded after a failed attempt requiring cleanup.");
+    }
+
+    component.MarkUnpublishedSessionDiscarded();
+    component.SetLoadingOrGenerating(false);
+  }
+
+  /// <summary>
+  /// Terminates recovery after an unexpected exception once any required host reset has finished.
+  /// </summary>
+  public static void FailRecoveryAfterUnexpectedException(
+    WorldLoadLifecycleComponent component,
+    bool requiresWorldReset,
+    bool worldResetCompleted)
+  {
+    ArgumentNullException.ThrowIfNull(component);
+    if (component.RecoveryPhase == WorldLoadRecoveryPhase.NotStarted)
+    {
+      throw new InvalidOperationException(
+        "An unexpected recovery failure requires a started world-load lifecycle.");
+    }
+
+    if (worldResetCompleted && !requiresWorldReset)
+    {
+      throw new ArgumentException(
+        "A world reset can only complete when publication required cleanup.",
+        nameof(worldResetCompleted));
+    }
+
+    component.SetLoadResult(loadFailed: true, worldBackup: component.WorldBackup);
+    if (requiresWorldReset && !worldResetCompleted)
+    {
+      component.SetLoadRequiresWorldReset(component.WorldBackup);
+      component.SetLoadingOrGenerating(true);
+    }
+    else
+    {
+      if (worldResetCompleted)
+      {
+        component.MarkWorldCleared();
+      }
+
+      component.SetLoadingOrGenerating(false);
+    }
+
+    component.ContinueRecovery(WorldLoadRecoveryPhase.Failed, component.LoadAttemptCount);
+  }
+
   public static WorldLoadRecoveryAction CompleteLoadAttempt(
     WorldLoadLifecycleComponent component,
     bool loadFailed)
@@ -111,6 +200,13 @@ public static class WorldLoadLifecycleSystem
       component.SetLoadRequiresWorldReset(component.WorldBackup);
       component.ContinueRecovery(WorldLoadRecoveryPhase.Failed, component.LoadAttemptCount);
       return WorldLoadRecoveryAction.ReportLoadFailure;
+    }
+
+    if (loadFailed)
+    {
+      // A failure without reset ends this candidate's local gate; an inherited host gate is
+      // tracked separately and remains projected through PreservePreexistingLoadGate.
+      component.SetLoadingOrGenerating(false);
     }
 
     if (!loadFailed && component.IsGeneratingOrLoadingWorld)

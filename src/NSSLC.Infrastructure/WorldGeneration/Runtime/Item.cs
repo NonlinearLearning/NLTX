@@ -51,7 +51,18 @@ public sealed partial class Item {
   }
 
   public void netDefaults(int itemType) {
-    SetDefaults(itemType);
+    if (itemType >= -18 && itemType <= -1) {
+      SetDefaults(3522 + itemType);
+    }
+    else if (itemType >= -24 && itemType <= -19) {
+      SetDefaults(3745 - itemType);
+    }
+    else if (itemType >= -48 && itemType <= -25) {
+      SetDefaults(3528 + itemType);
+    }
+    else if (itemType >= 0) {
+      SetDefaults(itemType);
+    }
   }
 
   public void TurnToAir() {

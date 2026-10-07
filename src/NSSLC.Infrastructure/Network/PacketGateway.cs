@@ -2,6 +2,7 @@ using System.Net;
 using System.Threading.Channels;
 using Terraria.Network;
 using Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
+using Terraria.Relationships;
 
 namespace NSSLC.Infrastructure.Network;
 
@@ -11,6 +12,8 @@ public sealed class PacketGateway : IAsyncDisposable {
   private readonly INetworkSessionAuthority _authority;
   private readonly bool _requiresPassword;
   private readonly TimeProvider _time;
+  private readonly Func<EntityRuntimeId?>? _worldRuntimeIdProvider;
+  private readonly Func<NetworkSessionContext, CancellationToken, ValueTask>? _sessionClosing;
   private readonly PacketSnapshotCache? _cache;
   private readonly Dictionary<(byte, ushort?, byte?), PacketHandlerRegistration> _handlers = new();
   private readonly Dictionary<ConnectionIdentity, NetworkSession> _sessions = new();
@@ -29,9 +32,25 @@ public sealed class PacketGateway : IAsyncDisposable {
     get { lock (_gate) { return Array.AsReadOnly(_sessions.Values.ToArray()); } }
   }
 
+  /// <summary>Returns a detached snapshot of explicitly registered ingress handlers.</summary>
+  public IReadOnlyList<PacketRegistrationSnapshot> Registrations {
+    get {
+      lock (_gate) {
+        return Array.AsReadOnly(_handlers.Values
+            .OrderBy(registration => registration.Policy.MessageId)
+            .ThenBy(registration => registration.Policy.ModuleId)
+            .ThenBy(registration => registration.Policy.Action)
+            .Select(registration => new PacketRegistrationSnapshot(registration.Policy,
+                registration.HandlerType)).ToArray());
+      }
+    }
+  }
+
   public PacketGateway(ProtocolProfile profile, INetworkSessionAuthority authority,
       PacketGatewayOptions? options = null, TimeProvider? timeProvider = null,
-      PacketSnapshotCache? snapshotCache = null) {
+      PacketSnapshotCache? snapshotCache = null,
+      Func<EntityRuntimeId?>? worldRuntimeIdProvider = null,
+      Func<NetworkSessionContext, CancellationToken, ValueTask>? sessionClosing = null) {
     _profile = profile;
     _authority = authority;
     _requiresPassword = authority.RequiresPassword;
@@ -39,30 +58,52 @@ public sealed class PacketGateway : IAsyncDisposable {
     Options.Validate();
     _ownerSlots = new(Options.MaximumSessions, Options.MaximumSessions);
     _time = timeProvider ?? TimeProvider.System;
+    _worldRuntimeIdProvider = worldRuntimeIdProvider;
+    _sessionClosing = sessionClosing;
     if (snapshotCache is not null && snapshotCache.ProfileKey != profile.Key) {
       throw new ArgumentException("Snapshot cache must use the gateway's profile.");
     }
     _cache = snapshotCache;
-    RequireFormat<Packet1Packet>(1, PacketDirection.ClientToServer);
-    RequireFormat<Packet3Packet>(3, PacketDirection.ServerToClient);
+    RequireFormat<HelloPacket>(1, PacketDirection.ClientToServer);
+    RequireFormat<PlayerInfoPacket>(3, PacketDirection.ServerToClient);
     if (_requiresPassword) {
-      RequireFormat<Packet38Packet>(38, PacketDirection.ClientToServer);
-      RequireFormat<Packet37Packet>(37, PacketDirection.ServerToClient);
+      RequireFormat<SendPasswordPacket>(38, PacketDirection.ClientToServer);
+      RequireFormat<RequestPasswordPacket>(37, PacketDirection.ServerToClient);
     }
     if (Options.EnableHostAuthorization) {
-      RequireFormat<Packet161Packet>(161, PacketDirection.ClientToServer);
-      RequireFormat<Packet139Packet>(139, PacketDirection.ServerToClient);
+      RequireFormat<HostTokenPacket>(161, PacketDirection.ClientToServer);
+      RequireFormat<SetCountsAsHostForGameplayPacket>(139, PacketDirection.ServerToClient);
     }
     if (Options.EnablePing) {
-      RequireFormat<Packet82Packet>(82, PacketDirection.ClientToServer);
-      RequireFormat<Packet82Packet>(82, PacketDirection.ServerToClient);
+      RequireFormat<NetModulesPacket>(82, PacketDirection.ClientToServer);
+      RequireFormat<NetModulesPacket>(82, PacketDirection.ServerToClient);
+      RequireFormat<PingPacket>(154, PacketDirection.ClientToServer);
+      RequireFormat<PingPacket>(154, PacketDirection.ServerToClient);
     }
+  }
+
+  internal EntityRuntimeId? CaptureWorldRuntimeId() {
+    return _worldRuntimeIdProvider?.Invoke();
+  }
+
+  /// <summary>Rechecks a captured sender before an owner commits queued work.</summary>
+  public bool IsCurrentSender(NetworkSessionContext context) {
+    ArgumentNullException.ThrowIfNull(context);
+    NetworkSession? session;
+    lock (_gate) {
+      if (_disposed || !_sessions.TryGetValue(context.Connection, out session)) {
+        return false;
+      }
+    }
+    return session.Matches(context)
+        && context.WorldRuntimeId == CaptureWorldRuntimeId();
   }
 
   public void Register<TPacket>(PacketPolicy policy, IPacketHandler<TPacket> handler) {
     ArgumentNullException.ThrowIfNull(handler);
-    if (policy.MessageId is 0 or 1 or 10 or 15 or 25 or 26 or 38 or 44 or 67 or 83
-        or 85 or 93 or 94 or 138 or 161 || policy.MessageId > 161
+    if (policy.MessageId is 0 or 1 or 10 or 38 or 85 or 93 or 94 or 161
+        || policy.MessageId > 161
+        || (policy.MessageId == 154 && Options.EnablePing)
         || policy.MaximumPerWindow < 1 || policy.MaximumBytesPerWindow < 1
         || policy.AllowedStages == 0
         || (policy.AllowedStages & ~(NetworkSessionStage.AwaitPlayerData
@@ -90,8 +131,52 @@ public sealed class PacketGateway : IAsyncDisposable {
         throw new InvalidOperationException("Gateway policy registration is frozen.");
       }
       _handlers.Add((policy.MessageId, policy.ModuleId, policy.Action), new(policy,
-          (context, packet, token) => handler.HandleAsync(context, (TPacket)packet, token)));
+          (context, packet, token) => handler.HandleAsync(context, (TPacket)packet, token),
+          handler.GetType().FullName ?? handler.GetType().Name));
     }
+  }
+
+  /// <summary>Publishes a detached server-owned world effect without an incoming packet.</summary>
+  /// <remarks>
+  /// The runtime token belongs to the committed world operation. Each target's current context
+  /// is used only as its transport admission lease; no player is the event's initiating sender.
+  /// A true result means local dispatch completed, not that clients acknowledged the effect.
+  /// </remarks>
+  public async ValueTask<bool> PublishWorldAsync(EntityRuntimeId expectedWorldRuntimeId,
+      OutboundDispatch dispatch, CancellationToken cancellationToken = default) {
+    ArgumentNullException.ThrowIfNull(dispatch);
+    cancellationToken.ThrowIfCancellationRequested();
+    if (dispatch.Kind is not (PacketDispatchKind.AllActive
+        or PacketDispatchKind.SectionSubscribers)
+        || dispatch.AllowedStages != NetworkSessionStage.Active
+        || dispatch.WorldKey != expectedWorldRuntimeId.Value) {
+      throw new ArgumentException("World effects require active world-scoped routing.",
+          nameof(dispatch));
+    }
+    _profile.Find(PacketDirection.ServerToClient, dispatch.Packet.GetType());
+    NetworkSession[] candidates;
+    lock (_gate) {
+      ObjectDisposedException.ThrowIf(_disposed, this);
+      if (!expectedWorldRuntimeId.IsAssigned
+          || CaptureWorldRuntimeId() != expectedWorldRuntimeId) {
+        return false;
+      }
+      candidates = _sessions.Values
+          .Where(session => session.Stage == NetworkSessionStage.Active).ToArray();
+    }
+    using var linked = CancellationTokenSource.CreateLinkedTokenSource(
+        cancellationToken, _stopping.Token);
+    var deliveries = new List<Task>(candidates.Length);
+    foreach (NetworkSession target in candidates) {
+      NetworkSessionContext lease = target.Context();
+      if (lease.WorldRuntimeId == expectedWorldRuntimeId && IsCurrentSender(lease)
+          && target.CanReceive(lease, dispatch)) {
+        deliveries.Add(DeliverAsync(lease, target, dispatch, default, linked.Token));
+      }
+    }
+    await Task.WhenAll(deliveries).ConfigureAwait(false);
+    linked.Token.ThrowIfCancellationRequested();
+    return CaptureWorldRuntimeId() == expectedWorldRuntimeId;
   }
 
   public PacketTcpServer CreateServer(IPAddress address, int port,
@@ -135,6 +220,9 @@ public sealed class PacketGateway : IAsyncDisposable {
   internal PacketPolicy? FindPolicy(byte id, ushort? module, byte? action,
       out PacketHandlerRegistration? handler) {
     handler = null;
+    if (id == 82 && module is ushort wireModule) {
+      module = ResolveModuleId(wireModule);
+    }
     if (id == 1) {
       return new(id, NetworkSessionStage.AwaitHello, MaximumPerWindow: 1);
     }
@@ -147,10 +235,19 @@ public sealed class PacketGateway : IAsyncDisposable {
     if (id == 82 && module == 2 && Options.EnablePing) {
       return new(id, NetworkSessionStage.Active, module, MaximumPerWindow: 5);
     }
+    if (id == 154 && Options.EnablePing) {
+      return new(id, NetworkSessionStage.Active,
+          MaximumPerWindow: 5, MaximumBytesPerWindow: 1);
+    }
     if (_handlers.TryGetValue((id, module, action), out handler)) {
       return handler.Policy;
     }
     return null;
+  }
+
+  internal ushort ResolveModuleId(ushort wireModule) {
+    return Options.UseSteamModuleIds
+        ? Packet82KnownModuleCodecsV4.ResolveLegacySteamModuleId(wireModule) : wireModule;
   }
 
   public async ValueTask DisposeAsync() {
@@ -215,11 +312,16 @@ public sealed class PacketGateway : IAsyncDisposable {
     } catch (Exception error) {
       Record(new(session.Identity, "SessionFailure:" + error.GetType().Name));
     } finally {
+      await PublishPlayerDisconnectedAsync(session).ConfigureAwait(false);
       session.MoveTo(NetworkSessionStage.Closing);
       try {
         await session.Connection.DisposeAsync().ConfigureAwait(false);
         if (session.Binding is SenderBinding binding) {
           using var cleanup = new CancellationTokenSource(Options.CleanupTimeout, _time);
+          if (_sessionClosing is not null) {
+            await _sessionClosing.Invoke(session.Context(), cleanup.Token).AsTask()
+                .WaitAsync(cleanup.Token).ConfigureAwait(false);
+          }
           await _authority.ReleaseAsync(session.Identity, binding, cleanup.Token).AsTask()
               .WaitAsync(cleanup.Token).ConfigureAwait(false);
         }
@@ -236,45 +338,71 @@ public sealed class PacketGateway : IAsyncDisposable {
     }
   }
 
+  private async Task PublishPlayerDisconnectedAsync(NetworkSession session) {
+    if (session.Stage != NetworkSessionStage.Active || session.Binding is not SenderBinding binding
+        || !_profile.Bindings.Any(packetBinding =>
+            packetBinding.Direction == PacketDirection.ServerToClient
+            && packetBinding.PacketType == typeof(PlayerActivePacket))) {
+      return;
+    }
+
+    using var cleanup = new CancellationTokenSource(Options.CleanupTimeout, _time);
+    try {
+      await DispatchAsync(session.Context(), new OutboundDispatch(
+          new PlayerActivePacket { Player = binding.PlayerSlot, ActiveState = 0 },
+          PacketDispatchKind.AllActiveExceptSender), cleanup.Token).ConfigureAwait(false);
+    } catch (Exception error) {
+      Record(new(session.Identity, "PlayerDisconnectProjectionFailure:" +
+          error.GetType().Name, 14));
+    }
+  }
+
   private async Task HandleMessageAsync(NetworkSession session, PacketMessage message,
       CancellationToken token) {
     if (message.MessageId == 1) {
-      if (message.Get<Packet1Packet>().Version != _profile.HelloVersion) {
+      if (!Options.IgnoreClientVersion
+          && message.Get<HelloPacket>().Version != _profile.HelloVersion) {
         throw new PacketProtocolException("VersionRejected", 1);
       }
       if (_requiresPassword) {
         session.MoveTo(NetworkSessionStage.AwaitPassword);
-        await session.Connection.WritePacketAsync(new Packet37Packet(), token).ConfigureAwait(false);
+        await session.Connection.WritePacketAsync(new RequestPasswordPacket(), token).ConfigureAwait(false);
       } else {
         await AdmitAsync(session, null, token).ConfigureAwait(false);
       }
       return;
     }
     if (message.MessageId == 38) {
-      await AdmitAsync(session, message.Get<Packet38Packet>().Password, token).ConfigureAwait(false);
+      await AdmitAsync(session, message.Get<SendPasswordPacket>().Password, token).ConfigureAwait(false);
       return;
     }
     NetworkSessionContext context = session.Context();
     if (message.MessageId == 161) {
       bool approved = await InvokeOwnerAsync(() => _authority.AuthorizeHostAsync(context,
-          message.Get<Packet161Packet>().Payload.HostToken, token), token).WaitAsync(token)
+          message.Get<HostTokenPacket>().HostToken, token), token).WaitAsync(token)
           .ConfigureAwait(false);
+      session.SetHost(approved);
       if (!approved) {
-        throw new PacketProtocolException("HostAuthorizationRejected", 161);
+        Record(new(session.Identity, "HostAuthorizationDenied", 161));
+        return;
       }
-      session.SetHost();
-      await session.Connection.WritePacketAsync(new Packet139Packet {
-        Payload = new(context.Actor.PlayerSlot, true)
+      await session.Connection.WritePacketAsync(new SetCountsAsHostForGameplayPacket {
+        Player = context.Actor.PlayerSlot, CountsAsHost = true
       }, token).ConfigureAwait(false);
       return;
     }
+    if (message.MessageId == 154 && session.Selected is null) {
+      _ = message.Get<PingPacket>();
+      await session.Connection.WritePacketAsync(new PingPacket(), token).ConfigureAwait(false);
+      return;
+    }
     if (message.MessageId == 82 && session.Selected is null) {
-      Packet82Packet ping = message.Get<Packet82Packet>();
-      if (ping.Payload.ModuleId != 2 || ping.Payload.Payload is not Packet82EmptyModulePayload) {
+      NetModulesPacket ping = message.Get<NetModulesPacket>();
+      if (ping.ModuleId != 2 || ping.Data is not Packet82PingData data) {
         throw new PacketProtocolException("InvalidPing", 82);
       }
-      await session.Connection.WritePacketAsync(new Packet82Packet {
-        Payload = new(2, new Packet82EmptyModulePayload())
+      await session.Connection.WritePacketAsync(new NetModulesPacket {
+        ModuleId = 2, Data = data
       }, token).ConfigureAwait(false);
       return;
     }
@@ -321,8 +449,8 @@ public sealed class PacketGateway : IAsyncDisposable {
       throw new PacketProtocolException("SessionClosed");
     }
     token.ThrowIfCancellationRequested();
-    await session.Connection.WritePacketAsync(new Packet3Packet {
-      Payload = new(admission.Binding.PlayerSlot, false)
+    await session.Connection.WritePacketAsync(new PlayerInfoPacket {
+      Player = admission.Binding.PlayerSlot, Accepted = false
     }, token).ConfigureAwait(false);
   }
 
@@ -388,7 +516,7 @@ public sealed class PacketGateway : IAsyncDisposable {
     session.MoveTo(NetworkSessionStage.Closing);
     try {
       using var deadline = new CancellationTokenSource(Options.CleanupTimeout, _time);
-      await session.Connection.WritePacketAsync(new Packet2Packet {
+      await session.Connection.WritePacketAsync(new KickPacket {
         Text = NetworkText.Literal("Connection rejected.")
       }, deadline.Token).AsTask().WaitAsync(deadline.Token).ConfigureAwait(false);
     } catch (Exception error) {
@@ -397,11 +525,7 @@ public sealed class PacketGateway : IAsyncDisposable {
   }
 
   private bool IsSenderCurrent(NetworkSessionContext context) {
-    lock (_gate) {
-      return _sessions.TryGetValue(context.Connection, out NetworkSession? session)
-          && session.Stage is not (NetworkSessionStage.Closing or NetworkSessionStage.Closed)
-          && session.Binding == context.Actor;
-    }
+    return IsCurrentSender(context);
   }
 
   private async Task ObserveLateMessageAsync(ConnectionIdentity identity, Task pending) {

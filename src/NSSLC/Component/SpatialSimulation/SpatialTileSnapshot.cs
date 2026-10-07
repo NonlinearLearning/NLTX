@@ -23,7 +23,8 @@ public readonly record struct SpatialTileSnapshot
     bool isHalfBrick,
     byte slope,
     byte liquidAmount,
-    LiquidKind liquidKind = LiquidKind.Nano)
+    LiquidKind liquidKind = LiquidKind.Nano,
+    bool? isInactive = null)
   {
     if (slope > 5)
     {
@@ -45,6 +46,7 @@ public readonly record struct SpatialTileSnapshot
     Y = y;
     Exists = exists;
     IsActive = isActive;
+    IsInactive = isInactive;
     BlocksMovement = blocksMovement;
     IsSolid = isSolid;
     IsSolidTop = isSolidTop;
@@ -61,6 +63,11 @@ public readonly record struct SpatialTileSnapshot
   public bool Exists { get; }
 
   public bool IsActive { get; }
+
+  /// <summary>
+  /// Version4 Tile.inActive state; null means the snapshot did not capture this fact.
+  /// </summary>
+  public bool? IsInactive { get; }
 
   public bool BlocksMovement { get; }
 

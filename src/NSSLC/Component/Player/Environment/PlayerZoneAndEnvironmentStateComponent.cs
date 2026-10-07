@@ -20,4 +20,14 @@ public sealed class PlayerZoneAndEnvironmentStateComponent
   public byte Zone5 { get; internal set; }
 
   public bool WasInShimmerZone { get; internal set; }
+
+  public void ApplyNetworkZones(byte zone1, byte zone2, byte zone3, byte zone4, byte zone5)
+  {
+    Zone1 = zone1;
+    Zone2 = zone2;
+    Zone3 = zone3;
+    Zone4 = zone4;
+    Zone5 = zone5;
+  }
+
 }

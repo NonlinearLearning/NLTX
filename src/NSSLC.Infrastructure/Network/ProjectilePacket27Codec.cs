@@ -1,137 +1,126 @@
-using System.Buffers.Binary;
+using System.IO;
 using System.Numerics;
 
+using Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
+using Terraria.NetWork.Prototype.PacketDesignCompiler.Wire;
 using Terraria.Projectile;
 
 namespace NSSLC.Infrastructure.Network;
 
 /// <summary>
-/// Encodes and decodes the packet-27 projectile payload, excluding its frame header.
+/// Maps projectile commands to the generated packet-27 body codec.
 /// </summary>
 public sealed class ProjectilePacket27Codec : IProjectilePacket27Codec
 {
-  private const int FixedPayloadLength = 22;
-
   public ProjectilePacket27DecodeResult Decode(ReadOnlySpan<byte> payload)
   {
-    var reader = new PacketReader(payload);
-    if (!reader.TryReadInt16(out short identity) ||
-      !reader.TryReadVector2(out Vector2 position) ||
-      !reader.TryReadVector2(out Vector2 velocity) ||
-      !reader.TryReadByte(out byte ownerSlot) ||
-      !reader.TryReadInt16(out short projectileType) ||
-      !reader.TryReadByte(out byte flags))
+    var reader = new PacketWireReader(payload.ToArray());
+    SyncProjectilePacket packet;
+    try
+    {
+      var value = SyncProjectilePacket.Read(reader);
+      packet = new SyncProjectilePacket {
+        Identity = value.Identity,
+        Position = value.Position,
+        Velocity = value.Velocity,
+        Owner = value.Owner,
+        ProjectileType = value.ProjectileType,
+        Ai0 = value.Ai0,
+        Ai1 = value.Ai1,
+        BannerId = value.BannerId,
+        Damage = value.Damage,
+        Knockback = value.Knockback,
+        OriginalDamage = value.OriginalDamage,
+        ProjectileUuid = value.ProjectileUuid,
+        Ai2 = value.Ai2
+      };
+    }
+    catch (PacketWireTruncationException)
     {
       return Result(ProjectilePacket27DecodeStatus.Truncated);
     }
-
-    byte extendedFlags = 0;
-    if ((flags & 0b0000_0100) != 0 && !reader.TryReadByte(out extendedFlags))
+    catch (PacketWireFormatException)
     {
-      return Result(ProjectilePacket27DecodeStatus.Truncated);
+      return Result(ProjectilePacket27DecodeStatus.Invalid);
     }
 
-    float ai0 = 0.0f;
-    float ai1 = 0.0f;
-    float ai2 = 0.0f;
-    int bannerIdToRespondTo = 0;
-    int damage = 0;
-    float knockback = 0.0f;
-    int originalDamage = 0;
-    int projectileUuid = -1;
-
-    if ((flags & 0b0000_0001) != 0 && !reader.TryReadSingle(out ai0))
-    {
-      return Result(ProjectilePacket27DecodeStatus.Truncated);
-    }
-
-    if ((flags & 0b0000_0010) != 0 && !reader.TryReadSingle(out ai1))
-    {
-      return Result(ProjectilePacket27DecodeStatus.Truncated);
-    }
-
-    if ((flags & 0b0000_1000) != 0)
-    {
-      if (!reader.TryReadUInt16(out ushort bannerId))
-      {
-        return Result(ProjectilePacket27DecodeStatus.Truncated);
-      }
-
-      bannerIdToRespondTo = bannerId;
-    }
-
-    if ((flags & 0b0001_0000) != 0)
-    {
-      if (!reader.TryReadInt16(out short packetDamage))
-      {
-        return Result(ProjectilePacket27DecodeStatus.Truncated);
-      }
-
-      damage = packetDamage;
-    }
-
-    if ((flags & 0b0010_0000) != 0 && !reader.TryReadSingle(out knockback))
-    {
-      return Result(ProjectilePacket27DecodeStatus.Truncated);
-    }
-
-    if ((flags & 0b0100_0000) != 0)
-    {
-      if (!reader.TryReadInt16(out short packetOriginalDamage))
-      {
-        return Result(ProjectilePacket27DecodeStatus.Truncated);
-      }
-
-      originalDamage = packetOriginalDamage;
-    }
-
-    if ((flags & 0b1000_0000) != 0)
-    {
-      if (!reader.TryReadInt16(out short packetUuid))
-      {
-        return Result(ProjectilePacket27DecodeStatus.Truncated);
-      }
-
-      if (packetUuid >= 0 && packetUuid < 1000)
-      {
-        projectileUuid = packetUuid;
-      }
-    }
-
-    if ((extendedFlags & 0b0000_0001) != 0 && !reader.TryReadSingle(out ai2))
-    {
-      return Result(ProjectilePacket27DecodeStatus.Truncated);
-    }
-
-    if (reader.Remaining != 0)
+    if (!reader.AtFrameEnd)
     {
       return Result(ProjectilePacket27DecodeStatus.TrailingBytes);
     }
 
-    try
+    return Map(packet);
+  }
+
+  /// <summary>
+  /// Maps an already decoded packet payload without parsing its bytes again.
+  /// The caller remains responsible for validating the sender against the
+  /// packet's declared owner before submitting the command.
+  /// </summary>
+  public ProjectilePacket27DecodeResult Map(SyncProjectilePacket packet)
+  {
+    ArgumentNullException.ThrowIfNull(packet);
+    if (TryMap(packet, out ProjectileNetworkApplyCommand command))
     {
-      var command = new ProjectileNetworkApplyCommand(
-        ownerSlot,
-        identity,
-        projectileType,
-        position,
-        velocity,
-        damage,
-        originalDamage,
-        knockback,
-        ai0,
-        ai1,
-        ai2,
-        projectileUuid,
-        bannerIdToRespondTo);
       return new ProjectilePacket27DecodeResult(
         ProjectilePacket27DecodeStatus.Decoded,
         command);
     }
+
+    return Result(ProjectilePacket27DecodeStatus.Invalid);
+  }
+
+  public bool TryMap(
+    SyncProjectilePacket packet,
+    out ProjectileNetworkApplyCommand command)
+  {
+    ArgumentNullException.ThrowIfNull(packet);
+
+    int projectileUuid = packet.ProjectileUuid is short uuid && uuid >= 0 && uuid < 1000
+      ? uuid
+      : -1;
+    try
+    {
+      command = new ProjectileNetworkApplyCommand(
+        packet.Owner,
+        packet.Identity,
+        packet.ProjectileType,
+        new Vector2(packet.Position.X, packet.Position.Y),
+        new Vector2(packet.Velocity.X, packet.Velocity.Y),
+        packet.Damage ?? 0,
+        packet.OriginalDamage ?? 0,
+        packet.Knockback ?? 0.0f,
+        packet.Ai0,
+        packet.Ai1,
+        packet.Ai2,
+        projectileUuid,
+        packet.BannerId ?? 0);
+      return true;
+    }
     catch (ArgumentOutOfRangeException)
     {
-      return Result(ProjectilePacket27DecodeStatus.Invalid);
+      command = default;
+      return false;
     }
+  }
+
+  /// <summary>
+  /// Creates the generated packet DTO for a profile-bound connection.
+  /// The profile's packet binding remains responsible for encoding and
+  /// validating the type-specific UUID protocol fact.
+  /// </summary>
+  public bool TryMapToPacket(
+    ProjectileNetworkApplyCommand command,
+    out SyncProjectilePacket packet)
+  {
+    packet = new SyncProjectilePacket();
+    if (!CanEncode(command))
+    {
+      return false;
+    }
+
+    packet = CreatePacket(command, command.ProjectileUuid >= 0);
+    return true;
   }
 
   public bool TryDecode(
@@ -166,118 +155,28 @@ public sealed class ProjectilePacket27Codec : IProjectilePacket27Codec
     out byte[] payload)
   {
     payload = Array.Empty<byte>();
-    if (!CanEncode(command))
+    if (!CanEncode(command) || includeUuid != (command.ProjectileUuid >= 0))
     {
       return false;
     }
 
-    byte flags = 0;
-    byte extendedFlags = 0;
-    if (command.Ai0 != 0.0f)
+    SyncProjectilePacket packet = CreatePacket(command, includeUuid);
+
+    using var body = new MemoryStream();
+    var writer = new PacketWireWriter(body);
+    try
     {
-      flags |= 0b0000_0001;
+      SyncProjectilePacket.Write(writer, packet.Identity, packet.Position, packet.Velocity,
+        packet.Owner, packet.ProjectileType, packet.Ai0, packet.Ai1, packet.BannerId,
+        packet.Damage, packet.Knockback, packet.OriginalDamage, packet.ProjectileUuid,
+        packet.Ai2, _ => includeUuid);
+    }
+    catch (PacketWireFormatException)
+    {
+      return false;
     }
 
-    if (command.Ai1 != 0.0f)
-    {
-      flags |= 0b0000_0010;
-    }
-
-    if (command.Ai2 != 0.0f)
-    {
-      flags |= 0b0000_0100;
-      extendedFlags |= 0b0000_0001;
-    }
-
-    if (command.BannerIdToRespondTo != 0)
-    {
-      flags |= 0b0000_1000;
-    }
-
-    if (command.Damage != 0)
-    {
-      flags |= 0b0001_0000;
-    }
-
-    if (command.Knockback != 0.0f)
-    {
-      flags |= 0b0010_0000;
-    }
-
-    if (command.OriginalDamage != 0)
-    {
-      flags |= 0b0100_0000;
-    }
-
-    if (includeUuid)
-    {
-      flags |= 0b1000_0000;
-    }
-
-    int payloadLength = FixedPayloadLength;
-    payloadLength += (flags & 0b0000_0001) != 0 ? sizeof(float) : 0;
-    payloadLength += (flags & 0b0000_0010) != 0 ? sizeof(float) : 0;
-    payloadLength += (flags & 0b0000_0100) != 0 ? 1 : 0;
-    payloadLength += (flags & 0b0000_1000) != 0 ? sizeof(ushort) : 0;
-    payloadLength += (flags & 0b0001_0000) != 0 ? sizeof(short) : 0;
-    payloadLength += (flags & 0b0010_0000) != 0 ? sizeof(float) : 0;
-    payloadLength += (flags & 0b0100_0000) != 0 ? sizeof(short) : 0;
-    payloadLength += (flags & 0b1000_0000) != 0 ? sizeof(short) : 0;
-    payloadLength += (extendedFlags & 0b0000_0001) != 0 ? sizeof(float) : 0;
-
-    payload = new byte[payloadLength];
-    int offset = 0;
-    WriteInt16(payload, ref offset, command.Identity);
-    WriteVector2(payload, ref offset, command.Position);
-    WriteVector2(payload, ref offset, command.Velocity);
-    payload[offset++] = (byte)command.OwnerSlot;
-    WriteInt16(payload, ref offset, command.ProjectileType);
-    payload[offset++] = flags;
-    if ((flags & 0b0000_0100) != 0)
-    {
-      payload[offset++] = extendedFlags;
-    }
-
-    if ((flags & 0b0000_0001) != 0)
-    {
-      WriteSingle(payload, ref offset, command.Ai0);
-    }
-
-    if ((flags & 0b0000_0010) != 0)
-    {
-      WriteSingle(payload, ref offset, command.Ai1);
-    }
-
-    if ((flags & 0b0000_1000) != 0)
-    {
-      WriteUInt16(payload, ref offset, command.BannerIdToRespondTo);
-    }
-
-    if ((flags & 0b0001_0000) != 0)
-    {
-      WriteInt16(payload, ref offset, command.Damage);
-    }
-
-    if ((flags & 0b0010_0000) != 0)
-    {
-      WriteSingle(payload, ref offset, command.Knockback);
-    }
-
-    if ((flags & 0b0100_0000) != 0)
-    {
-      WriteInt16(payload, ref offset, command.OriginalDamage);
-    }
-
-    if ((flags & 0b1000_0000) != 0)
-    {
-      WriteInt16(payload, ref offset, command.ProjectileUuid);
-    }
-
-    if ((extendedFlags & 0b0000_0001) != 0)
-    {
-      WriteSingle(payload, ref offset, command.Ai2);
-    }
-
+    payload = body.ToArray();
     return true;
   }
 
@@ -295,117 +194,34 @@ public sealed class ProjectilePacket27Codec : IProjectilePacket27Codec
       float.IsFinite(command.Ai1) && float.IsFinite(command.Ai2);
   }
 
+  private static SyncProjectilePacket CreatePacket(
+    ProjectileNetworkApplyCommand command,
+    bool includeUuid)
+  {
+    return new SyncProjectilePacket {
+      Identity = (short)command.Identity,
+      Position = new PacketVector2(command.Position.X, command.Position.Y),
+      Velocity = new PacketVector2(command.Velocity.X, command.Velocity.Y),
+      Owner = (byte)command.OwnerSlot,
+      ProjectileType = (short)command.ProjectileType,
+      Ai0 = command.Ai0,
+      Ai1 = command.Ai1,
+      BannerId = command.BannerIdToRespondTo == 0 ? null : (ushort)command.BannerIdToRespondTo,
+      Damage = command.Damage == 0 ? null : (short)command.Damage,
+      Knockback = command.Knockback == 0.0f ? null : command.Knockback,
+      OriginalDamage = command.OriginalDamage == 0 ? null : (short)command.OriginalDamage,
+      ProjectileUuid = includeUuid ? (short)command.ProjectileUuid : null,
+      Ai2 = command.Ai2
+    };
+  }
+
   private static bool IsFinite(Vector2 value)
   {
     return float.IsFinite(value.X) && float.IsFinite(value.Y);
   }
 
-  private static void WriteVector2(Span<byte> payload, ref int offset, Vector2 value)
-  {
-    WriteSingle(payload, ref offset, value.X);
-    WriteSingle(payload, ref offset, value.Y);
-  }
-
-  private static void WriteSingle(Span<byte> payload, ref int offset, float value)
-  {
-    BinaryPrimitives.WriteInt32LittleEndian(
-      payload[offset..],
-      BitConverter.SingleToInt32Bits(value));
-    offset += sizeof(float);
-  }
-
-  private static void WriteInt16(Span<byte> payload, ref int offset, int value)
-  {
-    BinaryPrimitives.WriteInt16LittleEndian(payload[offset..], (short)value);
-    offset += sizeof(short);
-  }
-
-  private static void WriteUInt16(Span<byte> payload, ref int offset, int value)
-  {
-    BinaryPrimitives.WriteUInt16LittleEndian(payload[offset..], (ushort)value);
-    offset += sizeof(ushort);
-  }
-
   private static ProjectilePacket27DecodeResult Result(ProjectilePacket27DecodeStatus status)
   {
     return new ProjectilePacket27DecodeResult(status, null);
-  }
-
-  private ref struct PacketReader
-  {
-    private readonly ReadOnlySpan<byte> _payload;
-    private int _offset;
-
-    public PacketReader(ReadOnlySpan<byte> payload)
-    {
-      _payload = payload;
-      _offset = 0;
-    }
-
-    public int Remaining => _payload.Length - _offset;
-
-    public bool TryReadByte(out byte value)
-    {
-      value = 0;
-      if (Remaining < sizeof(byte))
-      {
-        return false;
-      }
-
-      value = _payload[_offset++];
-      return true;
-    }
-
-    public bool TryReadInt16(out short value)
-    {
-      value = 0;
-      if (Remaining < sizeof(short))
-      {
-        return false;
-      }
-
-      value = BinaryPrimitives.ReadInt16LittleEndian(_payload[_offset..]);
-      _offset += sizeof(short);
-      return true;
-    }
-
-    public bool TryReadUInt16(out ushort value)
-    {
-      value = 0;
-      if (Remaining < sizeof(ushort))
-      {
-        return false;
-      }
-
-      value = BinaryPrimitives.ReadUInt16LittleEndian(_payload[_offset..]);
-      _offset += sizeof(ushort);
-      return true;
-    }
-
-    public bool TryReadSingle(out float value)
-    {
-      value = 0.0f;
-      if (Remaining < sizeof(float))
-      {
-        return false;
-      }
-
-      int bits = BinaryPrimitives.ReadInt32LittleEndian(_payload[_offset..]);
-      value = BitConverter.Int32BitsToSingle(bits);
-      _offset += sizeof(float);
-      return true;
-    }
-
-    public bool TryReadVector2(out Vector2 value)
-    {
-      value = default;
-      if (!TryReadSingle(out float x) || !TryReadSingle(out float y))
-      {
-        return false;
-      }
-
-      value = new Vector2(x, y);
-      return true;
-    }
   }
 }

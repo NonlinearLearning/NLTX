@@ -65,4 +65,18 @@ public sealed class WorldPersistenceDocument
     section = WorldLoadSection<TSection>.Present(storedSection.GetValue<TSection>());
     return true;
   }
+
+  public WorldPersistenceDocument WithReplacements(
+    params WorldPersistenceSection[] replacements)
+  {
+    ArgumentNullException.ThrowIfNull(replacements);
+    var sections = new Dictionary<string, WorldPersistenceSection>(_sections, StringComparer.Ordinal);
+    foreach (WorldPersistenceSection replacement in replacements)
+    {
+      ArgumentNullException.ThrowIfNull(replacement);
+      sections[replacement.SectionId] = replacement;
+    }
+
+    return new WorldPersistenceDocument(FormatVersion, sections.Values);
+  }
 }

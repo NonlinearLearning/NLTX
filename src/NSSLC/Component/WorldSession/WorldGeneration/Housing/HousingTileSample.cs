@@ -13,5 +13,7 @@ public readonly record struct HousingTileSample(
   bool IsStinkbug,
   bool IsEchoStinkbug)
 {
-  public bool HasAnyWall => WallType != 0 || IsHouseWall;
+  public int TileType { get; init; }
+
+  public bool HasAnyWall => WallType != 0;
 }

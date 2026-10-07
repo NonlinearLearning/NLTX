@@ -1,24 +1,16 @@
-using System;
-
 namespace Terraria.Projectile;
 
 public struct ProjectileEffectCooldownStateComponent
 {
   public ProjectileEffectCooldownStateComponent(int soundDelay = 0)
   {
-    ValidateSoundDelay(soundDelay);
     SoundDelay = soundDelay;
   }
 
+  /// <summary>
+  /// Version4 AI uses negative values as sentinels and countdown states.
+  /// </summary>
   public int SoundDelay;
 
   public bool IsDelayed => SoundDelay > 0;
-
-  private static void ValidateSoundDelay(int value)
-  {
-    if (value < -1)
-    {
-      throw new ArgumentOutOfRangeException(nameof(value));
-    }
-  }
 }

@@ -87,8 +87,7 @@ public static class HousingValidationSystem
         continue;
       }
 
-      if (context.VisitedTiles.IsAtTileLimit ||
-          context.VisitedTiles.WouldExceedRoomSize(position))
+      if (!context.VisitedTiles.IsWithinSearchWindow(position))
       {
         result = Failure(
           HousingRoomValidationFailure.RoomTooBig,
@@ -99,8 +98,44 @@ public static class HousingValidationSystem
         return false;
       }
 
-      context.VisitedTiles.TryAdd(position);
+      if (!context.VisitedTiles.TryMarkVisited(position))
+      {
+        continue;
+      }
+
+      if (context.VisitedTiles.IsAtTileLimit)
+      {
+        result = Failure(
+          HousingRoomValidationFailure.RoomTooBig,
+          context,
+          new HousingRoomRequirementResult(hasTorch, hasDoor, hasChair, hasTable, false),
+          hasStinkbug,
+          hasEchoStinkbug);
+        return false;
+      }
+
+      context.VisitedTiles.IncludeInRoomBounds(position);
+      if (context.VisitedTiles.HasReachedRoomSizeLimit)
+      {
+        result = Failure(
+          HousingRoomValidationFailure.RoomTooBig,
+          context,
+          new HousingRoomRequirementResult(hasTorch, hasDoor, hasChair, hasTable, false),
+          hasStinkbug,
+          hasEchoStinkbug);
+        return false;
+      }
+
       HousingTileSample tile = tileSource.ReadTile(position);
+      if (tile.IsActive)
+      {
+        context.TileClassification.Mark(tile.TileType);
+        hasTorch |= tile.HasTorch;
+        hasDoor |= tile.HasDoor;
+        hasChair |= tile.HasChair;
+        hasTable |= tile.HasTable;
+      }
+
       if (tile.IsActive && (tile.IsSolid || tile.IsOpenGate))
       {
         // Version4 treats a solid tile or an open gate reached by the flood fill
@@ -108,10 +143,6 @@ public static class HousingValidationSystem
         continue;
       }
 
-      hasTorch |= tile.HasTorch;
-      hasDoor |= tile.HasDoor;
-      hasChair |= tile.HasChair;
-      hasTable |= tile.HasTable;
       hasStinkbug |= tile.IsStinkbug;
       hasEchoStinkbug |= tile.IsEchoStinkbug;
 
@@ -180,7 +211,11 @@ public static class HousingValidationSystem
       new TilePosition(context.VisitedTiles.RoomX2, context.VisitedTiles.RoomY2),
       requirements,
       hasStinkbug,
-      hasEchoStinkbug);
+      hasEchoStinkbug)
+    {
+      VisitedTiles = context.VisitedTiles.CreateSnapshot(),
+      ClassifiedTileTypes = context.TileClassification.CreateSnapshot(),
+    };
     return true;
   }
 
@@ -199,7 +234,11 @@ public static class HousingValidationSystem
       new TilePosition(context.VisitedTiles.RoomX2, context.VisitedTiles.RoomY2),
       requirements,
       hasStinkbug,
-      hasEchoStinkbug);
+      hasEchoStinkbug)
+    {
+      VisitedTiles = context.VisitedTiles.CreateSnapshot(),
+      ClassifiedTileTypes = context.TileClassification.CreateSnapshot(),
+    };
   }
 
   private static bool HasHorizontalHouseWall(

@@ -1,4 +1,7 @@
+using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using NSSLC.WorldGeneration.Geometry;
 using NSSLC.WorldGeneration.Utilities;
 
@@ -42,8 +45,30 @@ public class TreeTopsInfo
 	public int GetTreeStyle(int areaId)
 {
 	
-		return _variations[areaId];
+		return Volatile.Read(ref _variations)[areaId];
 	
+	}
+	public void ApplyStyles(IReadOnlyList<int> styles)
+	{
+		ArgumentNullException.ThrowIfNull(styles);
+		if (styles.Count != _variations.Length)
+		{
+			throw new ArgumentException(
+				$"Tree tops state must contain exactly {_variations.Length} styles.",
+				nameof(styles));
+		}
+
+		int[] stableStyles = new int[styles.Count];
+		for (int areaId = 0; areaId < stableStyles.Length; areaId++)
+		{
+			stableStyles[areaId] = styles[areaId];
+		}
+
+		Volatile.Write(ref _variations, stableStyles);
+	}
+	public void Reset()
+	{
+		Volatile.Write(ref _variations, new int[AreaId.Count]);
 	}
 	public void CopyExistingWorldInfoForWorldGeneration()
 {
@@ -51,22 +76,22 @@ public class TreeTopsInfo
 		CopyExistingWorldInfo();
 	
 	}
-	private void CopyExistingWorldInfo()
+private void CopyExistingWorldInfo()
 {
-	
-		_variations[0] = Main.treeStyle[0];
-		_variations[1] = Main.treeStyle[1];
-		_variations[2] = Main.treeStyle[2];
-		_variations[3] = Main.treeStyle[3];
-		_variations[4] = WorldGen.corruptBG;
-		_variations[5] = WorldGen.jungleBG;
-		_variations[6] = WorldGen.snowBG;
-		_variations[7] = WorldGen.hallowBG;
-		_variations[8] = WorldGen.crimsonBG;
-		_variations[9] = WorldGen.desertBG;
-		_variations[10] = WorldGen.oceanBG;
-		_variations[11] = WorldGen.mushroomBG;
-		_variations[12] = WorldGen.underworldBG;
-	
+		int[] variations = new int[AreaId.Count];
+		variations[0] = Main.treeStyle[0];
+		variations[1] = Main.treeStyle[1];
+		variations[2] = Main.treeStyle[2];
+		variations[3] = Main.treeStyle[3];
+		variations[4] = WorldGen.corruptBG;
+		variations[5] = WorldGen.jungleBG;
+		variations[6] = WorldGen.snowBG;
+		variations[7] = WorldGen.hallowBG;
+		variations[8] = WorldGen.crimsonBG;
+		variations[9] = WorldGen.desertBG;
+		variations[10] = WorldGen.oceanBG;
+		variations[11] = WorldGen.mushroomBG;
+		variations[12] = WorldGen.underworldBG;
+		Volatile.Write(ref _variations, variations);
 	}
 }

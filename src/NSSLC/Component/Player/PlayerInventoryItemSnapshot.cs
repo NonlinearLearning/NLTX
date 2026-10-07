@@ -1,3 +1,5 @@
+using Terraria.Items;
+
 namespace Terraria.Player;
 
 public readonly record struct PlayerInventoryItemSnapshot(
@@ -12,7 +14,8 @@ public readonly record struct PlayerInventoryItemSnapshot(
   bool IsCoin = false,
   bool HasAmmo = false,
   bool IsNotAmmo = false,
-  bool CanFillEmptyAmmoSlot = false)
+  bool CanFillEmptyAmmoSlot = false,
+  ItemMutationRevision MutationRevision = default)
 {
   public bool IsEmpty =>
     Entity.IsEmpty ||

@@ -18,42 +18,44 @@ public static class WorldCreation {
         !Enum.IsDefined(request.Size) || !Enum.IsDefined(request.Evil)) {
       throw new ArgumentOutOfRangeException(nameof(request));
     }
-    lock (_generationLock) {
-      cancellationToken.ThrowIfCancellationRequested();
-      WorldGenerationOptions.Reset();
-      if (WorldGenerationOptions.GetOptionFromSeedText(request.Seed) != null) {
-        throw new NotSupportedException("Special seed modes require additional game runtime adapters.");
+    return WorldGen.RunWorldLifecycleOperation(() => {
+      lock (_generationLock) {
+        cancellationToken.ThrowIfCancellationRequested();
+        WorldGenerationOptions.Reset();
+        if (WorldGenerationOptions.GetOptionFromSeedText(request.Seed) != null) {
+          throw new NotSupportedException("Special seed modes require additional game runtime adapters.");
+        }
+        (Main.maxTilesX, Main.maxTilesY) = request.Size switch {
+          GeneratedWorldSize.Small => (4200, 1200),
+          GeneratedWorldSize.Medium => (6400, 1800),
+          GeneratedWorldSize.Large => (8400, 2400),
+          _ => throw new ArgumentOutOfRangeException(nameof(request.Size))
+        };
+        Main.GameMode = request.Difficulty;
+        Main.expertMode = request.Difficulty == 1 || request.Difficulty == 2;
+        Main.masterMode = request.Difficulty == 2;
+        Main.ActiveWorldFileData = new WorldFileData(request.Seed);
+        WorldGen.WorldGenParam_Evil = (int)request.Evil;
+        var controller = new WorldGenerator.Controller {
+          PassStarting = name => {
+            cancellationToken.ThrowIfCancellationRequested();
+            passStarting?.Invoke(name);
+          }
+        };
+        try {
+          if (!WorldGen.GenerateWorld(customController: controller)) {
+            throw new InvalidOperationException("World generation was aborted before completion.");
+          }
+          if (!WorldGen.InWorld(Main.spawnTileX, Main.spawnTileY, 10) ||
+              !Player.Spawn_IsAreaValidSpawn(Main.spawnTileX, Main.spawnTileY, true)) {
+            throw new InvalidOperationException("The generated world has an invalid spawn area.");
+          }
+          return new GeneratedWorld();
+        } finally {
+          WorldGenerator.CurrentController = null;
+          WorldGenerator.CurrentGenerationProgress = null;
+        }
       }
-      (Main.maxTilesX, Main.maxTilesY) = request.Size switch {
-        GeneratedWorldSize.Small => (4200, 1200),
-        GeneratedWorldSize.Medium => (6400, 1800),
-        GeneratedWorldSize.Large => (8400, 2400),
-        _ => throw new ArgumentOutOfRangeException(nameof(request.Size))
-      };
-      Main.GameMode = request.Difficulty;
-      Main.expertMode = request.Difficulty == 1 || request.Difficulty == 2;
-      Main.masterMode = request.Difficulty == 2;
-      Main.ActiveWorldFileData = new WorldFileData(request.Seed);
-      WorldGen.WorldGenParam_Evil = (int)request.Evil;
-      var controller = new WorldGenerator.Controller {
-        PassStarting = name => {
-          cancellationToken.ThrowIfCancellationRequested();
-          passStarting?.Invoke(name);
-        }
-      };
-      try {
-        if (!WorldGen.GenerateWorld(customController: controller)) {
-          throw new InvalidOperationException("World generation was aborted before completion.");
-        }
-        if (!WorldGen.InWorld(Main.spawnTileX, Main.spawnTileY, 10) ||
-            !Player.Spawn_IsAreaValidSpawn(Main.spawnTileX, Main.spawnTileY, true)) {
-          throw new InvalidOperationException("The generated world has an invalid spawn area.");
-        }
-        return new GeneratedWorld();
-      } finally {
-        WorldGenerator.CurrentController = null;
-        WorldGenerator.CurrentGenerationProgress = null;
-      }
-    }
+    });
   }
 }

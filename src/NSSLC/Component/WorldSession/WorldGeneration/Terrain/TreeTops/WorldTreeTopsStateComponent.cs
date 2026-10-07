@@ -19,6 +19,14 @@ public sealed class WorldTreeTopsStateComponent
   public void SetTreeStyle(int areaId, int style)
   {
     ValidateAreaId(areaId);
+    if (!WorldTreeTopsSystem.IsValidStyle(areaId, style))
+    {
+      throw new ArgumentOutOfRangeException(
+        nameof(style),
+        style,
+        $"Tree tops area {areaId} does not support style {style}.");
+    }
+
     _variations[areaId] = style;
   }
 

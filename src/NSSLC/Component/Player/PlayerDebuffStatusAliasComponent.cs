@@ -18,6 +18,11 @@ public sealed class PlayerDebuffStatusAliasComponent
 
   public bool Tongued { get; internal set; }
 
+  public void CommitGross(bool gross)
+  {
+    Gross = gross;
+  }
+
   internal void ResetEffects()
   {
     Cursed = false;

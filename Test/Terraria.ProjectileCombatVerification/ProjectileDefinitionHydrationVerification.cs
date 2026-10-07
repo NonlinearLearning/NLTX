@@ -1,5 +1,8 @@
 using System.Numerics;
 
+using EntityEcs;
+using EntityEcs.Components;
+
 using Terraria.Content;
 using Terraria.Projectile;
 using Terraria.Relationships;
@@ -10,7 +13,13 @@ internal static class ProjectileDefinitionHydrationVerification
   public static void Run()
   {
     ProjectileDefinition firstDefinition = CreateDefinition(12, 11, 6, 1.5f, needsUuid: false);
-    ProjectileDefinition secondDefinition = CreateDefinition(13, 8, 4, 1.0f, needsUuid: true);
+    ProjectileDefinition secondDefinition = CreateDefinition(
+      13,
+      8,
+      4,
+      1.0f,
+      needsUuid: true,
+      isTrap: true);
     ProjectileDefinition replacementDefinition = CreateDefinition(14, 5, 5, 1.0f, needsUuid: true);
     ProjectileDefinition unknownUuidDefinition = CreateDefinition(15, 5, 5, 1.0f, needsUuid: null);
     var definitions = new ProjectileDefinitionCatalog(
@@ -20,7 +29,8 @@ internal static class ProjectileDefinitionHydrationVerification
       static value => new ProjectileSlot(value),
       maximumCapacity: 2);
     var identities = new ProjectileIdentityIndex();
-    var lifecycle = new ProjectileLifecycleSystem(slots, identities);
+    using var runtime = new EntityRuntime();
+    var lifecycle = new ProjectileLifecycleSystem(slots, identities, runtime);
     var context = new ProjectileDefinitionHydrationContext(
       catalogRevision: 7,
       npcCapacity: 200,
@@ -41,42 +51,98 @@ internal static class ProjectileDefinitionHydrationVerification
       lifecycle.TrySpawn(firstSpawn, definitions, context, out ProjectileHandle firstHandle),
       "A catalog-backed projectile spawn should commit.");
     Assert(
-      lifecycle.TryGet(firstHandle, out ProjectileEntityState? firstState) &&
-        firstState is not null,
+      lifecycle.TryGetRuntimeHandle(firstHandle, out RuntimeEntityHandle firstRuntimeHandle),
       "The spawned projectile should be readable through its current handle.");
-    AssertEqual(16, firstState!.Geometry.Width, "Definition width should be scaled and truncated.");
-    AssertEqual(9, firstState.Geometry.Height, "Definition height should be scaled and truncated.");
+    ColliderComponent firstCollider = ReadComponent<ColliderComponent>(runtime, firstRuntimeHandle);
+    ProjectileKinematicsStateComponent firstKinematics =
+      CaptureKinematics(runtime, firstRuntimeHandle);
+    ProjectileLifetimeStateComponent firstLifetime =
+      ReadComponent<ProjectileLifetimeStateComponent>(runtime, firstRuntimeHandle);
+    ProjectileUpdateCadenceComponent firstUpdateCadence =
+      ReadComponent<ProjectileUpdateCadenceComponent>(runtime, firstRuntimeHandle);
+    ProjectileBehaviorStateComponent firstBehavior =
+      ReadComponent<ProjectileBehaviorStateComponent>(runtime, firstRuntimeHandle);
+    ProjectileDamagePayloadComponent firstDamage =
+      ReadComponent<ProjectileDamagePayloadComponent>(runtime, firstRuntimeHandle);
+    ProjectileDefinitionComponent firstDefinitionState =
+      ReadComponent<ProjectileDefinitionComponent>(runtime, firstRuntimeHandle);
+    ProjectileIdentityComponent firstIdentity =
+      ReadComponent<ProjectileIdentityComponent>(runtime, firstRuntimeHandle);
+    ProjectileHitImmunityStateComponent firstHitImmunity =
+      ReadDetachedHitImmunity(runtime, firstRuntimeHandle);
+    ProjectileNetworkStateComponent firstNetwork =
+      ReadDetachedNetwork(runtime, firstRuntimeHandle);
+    ProjectileTrailCacheComponent firstTrail =
+      ReadDetachedTrail(runtime, firstRuntimeHandle);
+    ProjectilePresentationStateComponent firstPresentation =
+      ReadComponent<ProjectilePresentationStateComponent>(runtime, firstRuntimeHandle);
+    AssertEqual(16, (int)firstCollider.Width, "Definition width should be scaled and truncated.");
+    AssertEqual(9, (int)firstCollider.Height, "Definition height should be scaled and truncated.");
     AssertEqual(
       new Vector2(92, 45.5f),
-      firstState.Kinematics.Position,
+      firstKinematics.Position,
       "Spawn center should convert to top-left position after scaled dimensions.");
     AssertEqual(
       new Vector2(3, -2),
-      firstState.Kinematics.Velocity,
+      firstKinematics.Velocity,
       "Spawn velocity should override the zero type default.");
-    AssertEqual(120, firstState.Lifetime.TimeLeft, "Lifetime should come from the type definition.");
-    AssertEqual(2, firstState.UpdateCadence.ExtraUpdates,
+    AssertEqual(120, firstLifetime.TimeLeft, "Lifetime should come from the type definition.");
+    AssertEqual(2, firstUpdateCadence.ExtraUpdates,
       "Extra updates should hydrate from definition.");
-    AssertEqual(1.25f, firstState.Behavior.GetAi(0), "Spawn AI should override reset AI state.");
-    AssertEqual(-4.0f, firstState.Behavior.GetAi(1), "Spawn AI slots should retain their order.");
-    AssertEqual(0.0f, firstState.Behavior.GetLocalAi(0), "Local AI should reset on initialization.");
-    AssertEqual(24, firstState.Damage.CurrentDamage, "Spawn damage should override definition defaults.");
-    AssertEqual(30, firstState.Damage.OriginalDamage, "Original damage should be retained.");
-    Assert(firstState.Damage.IsRanged, "Ranged content classification should hydrate.");
-    AssertEqual(7, firstState.Definition.CatalogRevision, "The catalog revision should be captured.");
-    AssertEqual(firstHandle.Slot.Value, firstState.Identity.Identity,
+    AssertEqual(1.25f, firstBehavior.GetAi(0), "Spawn AI should override reset AI state.");
+    AssertEqual(-4.0f, firstBehavior.GetAi(1), "Spawn AI slots should retain their order.");
+    AssertEqual(0.0f, firstBehavior.GetLocalAi(0), "Local AI should reset on initialization.");
+    AssertEqual(24, firstDamage.CurrentDamage, "Spawn damage should override definition defaults.");
+    AssertEqual(30, firstDamage.OriginalDamage, "Original damage should be retained.");
+    Assert(firstDamage.IsRanged, "Ranged content classification should hydrate.");
+    AssertEqual(7, firstDefinitionState.CatalogRevision, "The catalog revision should be captured.");
+    bool hasMinionCapability = runtime.Has<ProjectileMinionCapabilityComponent>(firstRuntimeHandle);
+    ProjectileMinionCapabilityComponent firstMinion = hasMinionCapability
+      ? ReadComponent<ProjectileMinionCapabilityComponent>(runtime, firstRuntimeHandle)
+      : default;
+    ProjectileSentryCapabilityComponent firstSentry =
+      ReadComponent<ProjectileSentryCapabilityComponent>(runtime, firstRuntimeHandle);
+    bool hasBobberCapability = runtime.Has<ProjectileBobberCapabilityComponent>(firstRuntimeHandle);
+    ProjectileBobberCapabilityComponent firstBobber = hasBobberCapability
+      ? ReadComponent<ProjectileBobberCapabilityComponent>(runtime, firstRuntimeHandle)
+      : default;
+    bool hasTrapCapability = runtime.Has<ProjectileTrapCapabilityComponent>(firstRuntimeHandle);
+    ProjectileTrapCapabilityComponent firstTrap = hasTrapCapability
+      ? ReadComponent<ProjectileTrapCapabilityComponent>(runtime, firstRuntimeHandle)
+      : default;
+    Assert(!hasMinionCapability && !firstMinion.IsMinion,
+      "An absent minion capability should remain distinguishable from a present capability.");
+    Assert(runtime.Has<ProjectileSentryCapabilityComponent>(firstRuntimeHandle) && firstSentry.IsSentry,
+      "A defined sentry capability should be attached to the entity root.");
+    Assert(!hasBobberCapability && !firstBobber.IsBobber,
+      "An absent bobber capability should not be attached as an inactive component.");
+    Assert(!hasTrapCapability && !firstTrap.IsTrap,
+      "An absent trap capability should not be attached as an inactive component.");
+    AssertEqual(firstHandle.Slot.Value, firstIdentity.Identity,
       "A local spawn should derive identity from the selected slot.");
-    AssertEqual(firstHandle.Slot.Value, firstState.Identity.SlotIndex,
+    AssertEqual(firstHandle.Slot.Value, firstIdentity.SlotIndex,
       "A local spawn should store its selected slot separately.");
-    AssertEqual(-1, firstState.Identity.ProjectileUuid,
+    AssertEqual(-1, firstIdentity.ProjectileUuid,
       "A type without UUID metadata should keep the reset UUID sentinel.");
-    AssertEqual(200, firstState.HitImmunity.LocalNpcImmunityTicks.Length,
+    AssertEqual(200, firstHitImmunity.LocalNpcImmunityTicks.Length,
       "NPC immunity storage should match the explicit world context.");
-    AssertEqual(8, firstState.Network.SectionSyncSkippedForPlayer.Length,
+    AssertEqual(8, firstNetwork.SectionSyncSkippedForPlayer.Length,
       "Network skip state should match the explicit player capacity.");
-    AssertEqual(3, firstState.Trail.OldPositions.Length,
+    ProjectileNetworkStateComponent detachedNetwork = firstNetwork;
+    detachedNetwork.SectionSyncSkippedForPlayer[0] = true;
+    Assert(!ReadDetachedNetwork(runtime, firstRuntimeHandle).SectionSyncSkippedForPlayer[0],
+      "A network component read must not expose its stored mutable array.");
+    AssertEqual(3, firstTrail.OldPositions.Length,
       "Trail arrays should be allocated at the definition length.");
-    AssertEqual((short)5, firstState.Presentation.GlowMask,
+    ProjectileTrailCacheComponent detachedTrail = firstTrail;
+    detachedTrail.OldPositions[0] = new Vector2(1, 2);
+    detachedTrail.WhipPoints.Add(new Vector2(3, 4));
+    ProjectileTrailCacheComponent currentTrail = ReadDetachedTrail(runtime, firstRuntimeHandle);
+    AssertEqual(Vector2.Zero, currentTrail.OldPositions[0],
+      "A trail component read must not expose its stored mutable arrays.");
+    AssertEqual(0, currentTrail.WhipPoints.Count,
+      "A trail component read must not expose its stored mutable list.");
+    AssertEqual((short)5, firstPresentation.GlowMask,
       "Glow mask should hydrate without changing its sentinel representation.");
 
     var secondSpawn = new ProjectileSpawnCommand(
@@ -92,13 +158,18 @@ internal static class ProjectileDefinitionHydrationVerification
       "A second spawn should allocate the next free slot.");
     AssertEqual(new ProjectileSlot(1), secondHandle.Slot, "A second spawn should use the next free slot.");
     Assert(
-      lifecycle.TryGet(secondHandle, out ProjectileEntityState? secondState) &&
-        secondState is not null,
+      lifecycle.TryGetRuntimeHandle(secondHandle, out RuntimeEntityHandle secondRuntimeHandle),
       "The second spawn should be readable through its handle.");
-    AssertEqual(secondHandle.Slot.Value, secondState!.Identity.Identity,
+    ProjectileIdentityComponent secondIdentity =
+      ReadComponent<ProjectileIdentityComponent>(runtime, secondRuntimeHandle);
+    ProjectileTrapCapabilityComponent secondTrap =
+      ReadComponent<ProjectileTrapCapabilityComponent>(runtime, secondRuntimeHandle);
+    AssertEqual(secondHandle.Slot.Value, secondIdentity.Identity,
       "A local spawn should derive owner identity from the selected slot.");
-    AssertEqual(secondHandle.Slot.Value, secondState.Identity.ProjectileUuid,
+    AssertEqual(secondHandle.Slot.Value, secondIdentity.ProjectileUuid,
       "A UUID-requiring type should derive UUID from the selected slot.");
+    Assert(runtime.Has<ProjectileTrapCapabilityComponent>(secondRuntimeHandle) && secondTrap.IsTrap,
+      "A declared trap capability should be attached to the entity root.");
 
     var replacementSpawn = new ProjectileSpawnCommand(
       projectileType: 14,
@@ -115,23 +186,36 @@ internal static class ProjectileDefinitionHydrationVerification
       "Full-pool replacement should retain the selected local slot.");
     AssertEqual(firstHandle.Slot.Value, replacementHandle.Slot.Value,
       "Replacement identity should be derived from the reused slot.");
-    Assert(!lifecycle.TryGet(firstHandle, out _), "Replacement should invalidate the old generation.");
-    Assert(lifecycle.TryGet(secondHandle, out _), "Replacement should preserve the non-selected slot.");
+    Assert(!lifecycle.TryGetRuntimeHandle(firstHandle, out _),
+      "Replacement should invalidate the old generation.");
+    Assert(lifecycle.TryGetRuntimeHandle(secondHandle, out _),
+      "Replacement should preserve the non-selected slot.");
     Assert(
-      lifecycle.TryGet(replacementHandle, out ProjectileEntityState? replacementState) &&
-        replacementState is not null,
+      lifecycle.TryGetRuntimeHandle(
+        replacementHandle,
+        out RuntimeEntityHandle replacementRuntimeHandle),
       "The replacement should be committed as the current slot state.");
-    Assert(replacementState!.Network.NetworkImportant,
+    ProjectileNetworkStateComponent replacementNetwork =
+      ReadDetachedNetwork(runtime, replacementRuntimeHandle);
+    ProjectileIdentityComponent replacementIdentity =
+      ReadComponent<ProjectileIdentityComponent>(runtime, replacementRuntimeHandle);
+    ProjectileBehaviorStateComponent replacementBehavior =
+      ReadComponent<ProjectileBehaviorStateComponent>(runtime, replacementRuntimeHandle);
+    ProjectileTrailCacheComponent replacementTrail =
+      ReadDetachedTrail(runtime, replacementRuntimeHandle);
+    ProjectileHitImmunityStateComponent replacementHitImmunity =
+      ReadDetachedHitImmunity(runtime, replacementRuntimeHandle);
+    Assert(replacementNetwork.NetworkImportant,
       "Network importance should hydrate from the replacement definition.");
-    AssertEqual(replacementHandle.Slot.Value, replacementState.Identity.Identity,
+    AssertEqual(replacementHandle.Slot.Value, replacementIdentity.Identity,
       "Replacement state should derive owner identity from the reused slot.");
-    AssertEqual(replacementHandle.Slot.Value, replacementState.Identity.ProjectileUuid,
+    AssertEqual(replacementHandle.Slot.Value, replacementIdentity.ProjectileUuid,
       "Replacement state should derive UUID from the reused slot when required.");
-    AssertEqual(0.0f, replacementState.Behavior.GetAi(0),
+    AssertEqual(0.0f, replacementBehavior.GetAi(0),
       "Replacement should not retain prior projectile AI.");
-    AssertEqual(0.0f, replacementState.Trail.OldPositions[0].X,
+    AssertEqual(0.0f, replacementTrail.OldPositions[0].X,
       "Replacement trail history should be fresh.");
-    AssertEqual(0, replacementState.HitImmunity.PlayerImmunityTicks[0],
+    AssertEqual(0, replacementHitImmunity.PlayerImmunityTicks[0],
       "Replacement player immunity should be fresh.");
     Assert(
       identities.TryGetHandle(
@@ -166,8 +250,97 @@ internal static class ProjectileDefinitionHydrationVerification
       "A definition without known UUID policy should reject before allocation or replacement.");
     AssertEqual(2, slots.ActiveCount,
       "An unknown UUID policy must not modify occupied projectile slots.");
-    Assert(lifecycle.TryGet(secondHandle, out _) && lifecycle.TryGet(replacementHandle, out _),
+    Assert(lifecycle.TryGetRuntimeHandle(secondHandle, out _) &&
+      lifecycle.TryGetRuntimeHandle(replacementHandle, out _),
       "An unknown UUID policy must preserve existing projectile handles.");
+  }
+
+  private static ProjectileKinematicsStateComponent CaptureKinematics(
+    EntityRuntime runtime,
+    RuntimeEntityHandle runtimeHandle)
+  {
+    LocationComponent location = ReadComponent<LocationComponent>(runtime, runtimeHandle);
+    VelocityComponent velocity = ReadComponent<VelocityComponent>(runtime, runtimeHandle);
+    return new ProjectileKinematicsStateComponent(
+      new Vector2(location.X, location.Y),
+      new Vector2(velocity.X, velocity.Y));
+  }
+
+  private static TComponent ReadComponent<TComponent>(
+    EntityRuntime runtime,
+    RuntimeEntityHandle runtimeHandle)
+    where TComponent : notnull
+  {
+    TComponent component = default!;
+    Assert(
+      runtime.TryInspect<TComponent>(
+        runtimeHandle,
+        (in TComponent value) => component = value),
+      $"The runtime fixture should expose {typeof(TComponent).Name}.");
+    return component;
+  }
+
+  private static ProjectileNetworkStateComponent ReadDetachedNetwork(
+    EntityRuntime runtime,
+    RuntimeEntityHandle runtimeHandle)
+  {
+    ProjectileNetworkStateComponent component = ReadComponent<ProjectileNetworkStateComponent>(
+      runtime,
+      runtimeHandle);
+    return new ProjectileNetworkStateComponent
+    {
+      NetworkImportant = component.NetworkImportant,
+      PrimaryUpdatePending = component.PrimaryUpdatePending,
+      SecondaryUpdatePending = component.SecondaryUpdatePending,
+      NetSpam = component.NetSpam,
+      SectionSyncSkippedForPlayer = component.SectionSyncSkippedForPlayer is null
+        ? null!
+        : (bool[])component.SectionSyncSkippedForPlayer.Clone(),
+      SendRequested = component.SendRequested,
+    };
+  }
+
+  private static ProjectileHitImmunityStateComponent ReadDetachedHitImmunity(
+    EntityRuntime runtime,
+    RuntimeEntityHandle runtimeHandle)
+  {
+    ProjectileHitImmunityStateComponent component = ReadComponent<ProjectileHitImmunityStateComponent>(
+      runtime,
+      runtimeHandle);
+    return new ProjectileHitImmunityStateComponent
+    {
+      LocalNpcImmunityTicks = component.LocalNpcImmunityTicks is null
+        ? null!
+        : (int[])component.LocalNpcImmunityTicks.Clone(),
+      PlayerImmunityTicks = component.PlayerImmunityTicks is null
+        ? null!
+        : (int[])component.PlayerImmunityTicks.Clone(),
+      RestrikeDelayTicks = component.RestrikeDelayTicks,
+    };
+  }
+
+  private static ProjectileTrailCacheComponent ReadDetachedTrail(
+    EntityRuntime runtime,
+    RuntimeEntityHandle runtimeHandle)
+  {
+    ProjectileTrailCacheComponent component = ReadComponent<ProjectileTrailCacheComponent>(
+      runtime,
+      runtimeHandle);
+    return new ProjectileTrailCacheComponent
+    {
+      OldPositions = component.OldPositions is null
+        ? null!
+        : (Vector2[])component.OldPositions.Clone(),
+      OldRotations = component.OldRotations is null
+        ? null!
+        : (float[])component.OldRotations.Clone(),
+      OldSpriteDirections = component.OldSpriteDirections is null
+        ? null!
+        : (int[])component.OldSpriteDirections.Clone(),
+      WhipPoints = component.WhipPoints is null
+        ? null!
+        : new System.Collections.Generic.List<Vector2>(component.WhipPoints),
+    };
   }
 
   private static ProjectileDefinition CreateDefinition(
@@ -175,7 +348,8 @@ internal static class ProjectileDefinitionHydrationVerification
     int width,
     int height,
     float scale,
-    bool? needsUuid)
+    bool? needsUuid,
+    bool isTrap = false)
   {
     return new ProjectileDefinition(
       new ProjectileIdentityDefinition(typeId, null, needsUuid),
@@ -187,6 +361,7 @@ internal static class ProjectileDefinitionHydrationVerification
       new ProjectileCombatDefinition(2, 0.5f, true, false)
       {
         Ranged = true,
+        Trap = isTrap,
       },
       new ProjectilePenetrationDefinition(3, 5, true)
       {

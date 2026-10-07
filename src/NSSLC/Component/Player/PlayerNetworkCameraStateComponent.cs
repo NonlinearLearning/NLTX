@@ -20,6 +20,11 @@ public sealed class PlayerNetworkCameraStateComponent
     NetCameraTarget = cameraTarget;
   }
 
+  public void ApplyNetworkCameraTarget(Vector2? cameraTarget)
+  {
+    SetCameraTarget(cameraTarget);
+  }
+
   internal void SetLastSyncedCameraTarget(Vector2? cameraTarget)
   {
     LastSyncedNetCameraTarget = cameraTarget;

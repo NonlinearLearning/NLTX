@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\NSSLC\Component\Player\Terraria.Player.csproj" />
+    <ProjectReference Include="..\..\src\NSSLC\Component\Relationships\Terraria.Relationships.csproj" />
   </ItemGroup>
 </Project>

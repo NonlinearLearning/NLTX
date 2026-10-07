@@ -10,7 +10,8 @@ public struct ProjectilePresentationStateComponent
     bool isPreviewDisplayDoll = false,
     int drawLayer = 0,
     bool usesOwnerLight = false,
-    bool hide = false)
+    bool hide = false,
+    int trailingMode = -1)
   {
     Alpha = alpha;
     GlowMask = glowMask;
@@ -20,6 +21,7 @@ public struct ProjectilePresentationStateComponent
     DrawLayer = drawLayer;
     UsesOwnerLight = usesOwnerLight;
     Hide = hide;
+    TrailingMode = trailingMode;
   }
 
   public int Alpha;
@@ -30,6 +32,11 @@ public struct ProjectilePresentationStateComponent
   public int DrawLayer;
   public bool UsesOwnerLight;
   public bool Hide;
+  public int TrailingMode;
 
-  public readonly float Opacity => 1.0f - (float)Alpha / 255.0f;
+  public float Opacity
+  {
+    readonly get => 1.0f - (float)Alpha / 255.0f;
+    set => Alpha = (int)System.Math.Clamp((1.0f - value) * 255.0f, 0.0f, 255.0f);
+  }
 }

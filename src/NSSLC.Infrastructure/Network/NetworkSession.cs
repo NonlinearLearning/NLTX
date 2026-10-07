@@ -57,8 +57,9 @@ public sealed class NetworkSession {
         return false;
       }
       module = BinaryPrimitives.ReadUInt16LittleEndian(body.Span);
-      if (module is 4 or 7 or 9 or 10 or 12 or 13) {
-        int offset = module == 12 ? 3 : 2;
+      ushort logicalModule = _gateway.ResolveModuleId(module.Value);
+      if (logicalModule is 4 or 7 or 9 or 10 or 12 or 13) {
+        int offset = logicalModule == 12 ? 3 : 2;
         if (body.Length <= offset) {
           return false;
         }
@@ -68,7 +69,8 @@ public sealed class NetworkSession {
     PacketPolicy? policy = _gateway.FindPolicy(id, module, action, out _selected);
     if (policy is null || (policy.AllowedStages & stage) == 0
         || (policy.RequiresHost && !Context().IsHost)) {
-      _gateway.Record(new(Identity, "AdmissionRejected", id));
+      _gateway.Record(new(Identity, "AdmissionRejected", id, ModuleId: module,
+          Action: action, BodyLength: body.Length));
       return false;
     }
     var key = (id, module, action);
@@ -83,7 +85,8 @@ public sealed class NetworkSession {
     }
     if (rate.Count >= policy.MaximumPerWindow
         || body.Length > policy.MaximumBytesPerWindow - rate.Bytes) {
-      _gateway.Record(new(Identity, "RateLimitExceeded", id));
+      _gateway.Record(new(Identity, "RateLimitExceeded", id, ModuleId: module,
+          Action: action, BodyLength: body.Length));
       return false;
     }
     rate.Count++;
@@ -95,7 +98,18 @@ public sealed class NetworkSession {
   internal NetworkSessionContext Context() {
     lock (_gate) {
       return new(Identity, Connection.ProfileKey, _stage,
-          _binding ?? throw new PacketProtocolException("SenderNotBound"), _isHost);
+          _binding ?? throw new PacketProtocolException("SenderNotBound"), _isHost,
+          _gateway.CaptureWorldRuntimeId());
+    }
+  }
+
+  internal bool Matches(NetworkSessionContext context) {
+    lock (_gate) {
+      return _stage is not (NetworkSessionStage.Closing or NetworkSessionStage.Closed)
+          && _stage == context.Stage
+          && Identity == context.Connection
+          && Connection.ProfileKey == context.ProfileKey
+          && _binding == context.Actor;
     }
   }
 
@@ -128,12 +142,12 @@ public sealed class NetworkSession {
     return true;
   }
 
-  internal void SetHost() {
+  internal void SetHost(bool isHost) {
     lock (_gate) {
       if (_stage is NetworkSessionStage.Closing or NetworkSessionStage.Closed) {
         throw new PacketProtocolException("SessionClosed");
       }
-      _isHost = true;
+      _isHost = isHost;
     }
   }
 
@@ -200,6 +214,9 @@ public sealed class NetworkSession {
       }
       if (dispatch.Kind == PacketDispatchKind.AllActiveExceptSender) {
         return _stage == NetworkSessionStage.Active && Identity != sender.Connection;
+      }
+      if (dispatch.Kind == PacketDispatchKind.AllActive) {
+        return _stage == NetworkSessionStage.Active;
       }
       if (dispatch.Kind == PacketDispatchKind.SectionSubscribers) {
         return _stage == NetworkSessionStage.Active && _interest is not null

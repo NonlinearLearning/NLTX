@@ -7,29 +7,85 @@ namespace Terraria.WorldGeneration.Components;
 // crossSubsystemOwner: integration-review
 public sealed class TownHousingRegistryComponent
 {
-  public Dictionary<TownHousingResidentKey, TilePosition> RoomsByResidentKey { get; } = new();
+  private readonly List<TownHousingResidentKey> _roomAssignmentOrder = new();
+  private ulong _revision;
+  private TownHousingKeyMode _residentKeyMode = TownHousingKeyMode.Unresolved;
 
-  public HashSet<TownHousingResidentKey> HomelessResidentKeys { get; } = new();
+  internal object SyncRoot { get; } = new();
 
-  public ulong Revision { get; private set; }
+  internal Dictionary<TownHousingResidentKey, TilePosition> RoomsByResidentKey { get; } = new();
 
-  public TownHousingKeyMode ResidentKeyMode { get; private set; } =
-    TownHousingKeyMode.Unresolved;
+  internal HashSet<TownHousingResidentKey> HomelessResidentKeys { get; } = new();
 
-  public int AssignedRoomCount => RoomsByResidentKey.Count;
+  public ulong Revision
+  {
+    get
+    {
+      lock (SyncRoot)
+      {
+        return _revision;
+      }
+    }
+  }
 
-  public int HomelessResidentCount => HomelessResidentKeys.Count;
+  public TownHousingKeyMode ResidentKeyMode
+  {
+    get
+    {
+      lock (SyncRoot)
+      {
+        return _residentKeyMode;
+      }
+    }
+  }
 
-  public bool IsEmpty =>
-    RoomsByResidentKey.Count == 0 && HomelessResidentKeys.Count == 0;
+  internal List<TownHousingResidentKey> RoomAssignmentOrder => _roomAssignmentOrder;
+
+  public int AssignedRoomCount
+  {
+    get
+    {
+      lock (SyncRoot)
+      {
+        return RoomsByResidentKey.Count;
+      }
+    }
+  }
+
+  public int HomelessResidentCount
+  {
+    get
+    {
+      lock (SyncRoot)
+      {
+        return HomelessResidentKeys.Count;
+      }
+    }
+  }
+
+  public bool IsEmpty
+  {
+    get
+    {
+      lock (SyncRoot)
+      {
+        return RoomsByResidentKey.Count == 0 && HomelessResidentKeys.Count == 0;
+      }
+    }
+  }
 
   internal void SetResidentKeyMode(TownHousingKeyMode mode)
   {
-    ResidentKeyMode = mode;
+    _residentKeyMode = mode;
+  }
+
+  internal void EnsureRevisionCanAdvance()
+  {
+    _ = checked(_revision + 1);
   }
 
   internal void AdvanceRevision()
   {
-    Revision = checked(Revision + 1);
+    _revision = checked(_revision + 1);
   }
 }

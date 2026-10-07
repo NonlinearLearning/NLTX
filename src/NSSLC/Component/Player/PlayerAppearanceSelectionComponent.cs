@@ -15,4 +15,5 @@ public sealed class PlayerAppearanceSelectionComponent
   // Version4 stores hideMisc as BitsByte; byte preserves its packed representation
   // until the protocol type is available in NLTX.
   public byte HideMiscBits { get; internal set; }
+
 }

@@ -12,7 +12,7 @@ namespace Terraria.NonAuthoritative.Persistence;
   WorldFileTreeTopsSection.SectionId,
   MinimumSupportedFormatVersion,
   MaximumSupportedFormatVersion,
-  WorldLoadSectionRequirement.Optional)]
+  WorldLoadSectionRequirement.Required)]
 public sealed class WorldTreeTopsLoadApi :
   IWorldLoadApi<WorldTreeTopsStateComponent, WorldFileTreeTopsSection, IReadOnlyList<int>>
 {
@@ -28,15 +28,34 @@ public sealed class WorldTreeTopsLoadApi :
     ArgumentNullException.ThrowIfNull(ownerContext);
     if (!section.IsPresent)
     {
-      return WorldLoadPrepareResult<IReadOnlyList<int>>.Prepared(Array.Empty<int>());
+      return WorldLoadPrepareResult<IReadOnlyList<int>>.Rejected(
+        WorldLoadApiFailure.Create(
+          "MissingTreeTopsSection",
+          "The world TreeTops section is required for this format version."));
     }
 
     IReadOnlyList<int> source = section.Value.Variations;
-    int count = Math.Min(source.Count, ownerContext.AreaCount);
-    int[] variations = new int[count];
-    for (int index = 0; index < count; index++)
+    if (source.Count > ownerContext.AreaCount)
     {
-      variations[index] = source[index];
+      return WorldLoadPrepareResult<IReadOnlyList<int>>.Rejected(
+        WorldLoadApiFailure.Create(
+          "InvalidTreeTopsCount",
+          "The world TreeTops section contains more styles than world areas."));
+    }
+
+    int[] variations = new int[source.Count];
+    for (int index = 0; index < variations.Length; index++)
+    {
+      int style = source[index];
+      if (!WorldTreeTopsSystem.IsValidStyle(index, style))
+      {
+        return WorldLoadPrepareResult<IReadOnlyList<int>>.Rejected(
+          WorldLoadApiFailure.Create(
+            "InvalidTreeTopsStyle",
+            $"The world TreeTops section contains invalid style {style} for area {index}."));
+      }
+
+      variations[index] = style;
     }
 
     return WorldLoadPrepareResult<IReadOnlyList<int>>.Prepared(

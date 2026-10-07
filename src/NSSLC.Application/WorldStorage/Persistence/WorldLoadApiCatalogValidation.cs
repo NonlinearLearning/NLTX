@@ -121,6 +121,19 @@ internal static class WorldLoadApiCatalogValidation
       byApiId.Add(descriptor.ApiId, descriptor);
     }
 
+    foreach (string sectionId in new SortedSet<string>(availableSections, StringComparer.Ordinal))
+    {
+      if (consumedSectionIds.Contains(sectionId))
+      {
+        continue;
+      }
+
+      failure = WorldLoadApiFailure.Create(
+        "UnconsumedSection",
+        $"World section '{sectionId}' has no registered load API.");
+      return false;
+    }
+
     var indegree = new Dictionary<string, int>(StringComparer.Ordinal);
     var dependents = new Dictionary<string, List<string>>(StringComparer.Ordinal);
     foreach (string apiId in apiIds)

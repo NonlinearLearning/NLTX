@@ -1,4 +1,5 @@
 using System;
+using System.Threading;
 
 namespace Terraria.WorldGeneration.Components;
 
@@ -62,7 +63,35 @@ public sealed class WorldTransformTransactionComponent
       EnsureRevisionCanAdvance();
       _activeCount--;
       _revision++;
+      if (_activeCount == 0)
+      {
+        Monitor.PulseAll(_sync);
+      }
+
       return _activeCount;
+    }
+  }
+
+  internal void WaitUntilIdle(CancellationToken cancellationToken)
+  {
+    using CancellationTokenRegistration registration = cancellationToken.Register(
+      static state => ((WorldTransformTransactionComponent)state!).PulseWaiters(),
+      this);
+    lock (_sync)
+    {
+      while (_activeCount > 0)
+      {
+        cancellationToken.ThrowIfCancellationRequested();
+        Monitor.Wait(_sync);
+      }
+    }
+  }
+
+  private void PulseWaiters()
+  {
+    lock (_sync)
+    {
+      Monitor.PulseAll(_sync);
     }
   }
 

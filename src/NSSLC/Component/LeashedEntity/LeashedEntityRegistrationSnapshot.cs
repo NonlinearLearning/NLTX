@@ -1,4 +1,4 @@
-using EntityEcs.Components;
+using Terraria.Relationships;
 using Terraria.WorldStorage;
 
 namespace Terraria.LeashedEntity;
@@ -9,20 +9,22 @@ namespace Terraria.LeashedEntity;
 public sealed record LeashedEntityRegistrationSnapshot
 {
   public LeashedEntityRegistrationSnapshot(
-    EntityId runtimeEntityId,
+    EntityReference runtimeEntityReference,
     LeashedEntityStateComponent state,
     LeashedEntityLegacySlotComponent legacySlot,
     LeashedEntityLifecycleComponent lifecycle,
-    LeashedEntitySectionMembershipComponent sectionMembership)
+    LeashedEntitySectionMembershipComponent sectionMembership,
+    LeashedEntityAnchorRelationComponent anchorRelation)
   {
-    RuntimeEntityId = runtimeEntityId;
+    RuntimeEntityReference = runtimeEntityReference;
     State = state;
     LegacySlot = legacySlot;
     Lifecycle = lifecycle;
     SectionMembership = sectionMembership;
+    AnchorRelation = anchorRelation;
   }
 
-  public EntityId RuntimeEntityId { get; init; }
+  public EntityReference RuntimeEntityReference { get; init; }
 
   public LeashedEntityStateComponent State { get; init; }
 
@@ -32,7 +34,8 @@ public sealed record LeashedEntityRegistrationSnapshot
 
   public LeashedEntitySectionMembershipComponent SectionMembership { get; init; }
 
-  public LeashedEntityHandle Handle =>
-    new(RuntimeEntityId, LegacySlot.Slot, LegacySlot.SlotGeneration);
-}
+  public LeashedEntityAnchorRelationComponent AnchorRelation { get; init; }
 
+  public LeashedEntityHandle Handle =>
+    new(RuntimeEntityReference, LegacySlot.Slot, LegacySlot.SlotGeneration);
+}

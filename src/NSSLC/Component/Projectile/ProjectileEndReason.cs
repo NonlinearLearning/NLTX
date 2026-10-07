@@ -7,4 +7,5 @@ public enum ProjectileEndReason : byte
   HitLimitReached,
   DestroyedByCollision,
   NetworkTermination,
+  WorldBoundary,
 }

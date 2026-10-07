@@ -1,4 +1,4 @@
-using EntityEcs.Components;
+using Terraria.Relationships;
 using Terraria.WorldStorage;
 
 namespace Terraria.LeashedEntity;
@@ -15,6 +15,5 @@ public readonly record struct LeashedAnchorCommand(
   LeashedAnchorCommandKind Kind,
   TileEntityId AnchorId,
   TileCoordinate Position,
-  EntityId? RuntimeEntityId,
+  EntityReference? RuntimeEntityReference,
   int? ItemType);
-

@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Terraria.WorldGeneration.Components;
 
 namespace Terraria.WorldGeneration.Housing;
@@ -12,5 +14,9 @@ public readonly record struct HousingRoomEvaluationResult(
   bool HasStinkbug,
   bool HasEchoStinkbug)
 {
+  public IReadOnlyList<TilePosition> VisitedTiles { get; init; } = Array.Empty<TilePosition>();
+
+  public IReadOnlyList<int> ClassifiedTileTypes { get; init; } = Array.Empty<int>();
+
   public bool HasRoomBounds => RoomTileCount > 0;
 }

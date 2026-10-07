@@ -6,6 +6,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\NSSLC\Component\WorldSession\Terraria.WorldSession.csproj" />
+    <ProjectReference Include="..\..\NSSLC\Component\SpatialSimulation\Terraria.SpatialSimulation.csproj" />
     <EmbeddedResource Include="Configuration\Terraria.GameContent.WorldBuilding.Configuration.json"
                       LogicalName="NSSLC.WorldGeneration.GameContent.WorldBuilding.Configuration.json" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />

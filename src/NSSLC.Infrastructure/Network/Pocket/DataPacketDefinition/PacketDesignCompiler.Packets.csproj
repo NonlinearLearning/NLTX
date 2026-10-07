@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>NetWork.PacketDesignCompiler.Packets</AssemblyName>
+    <RootNamespace>Terraria.NetWork.Prototype.PacketDesignCompiler.Sample</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../PacketDesignCompiler.Core.csproj" />
+    <ProjectReference Include="../Generator/PacketDesignCompiler.Generator.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <Compile Include="Definitions/**/*.cs" />
+    <Compile Include="Packets/**/*.cs" />
+    <Compile Include="Codecs/**/*.cs" />
+    <Compile Include="Shared/**/*.cs" />
+  </ItemGroup>
+</Project>

@@ -24,6 +24,12 @@ public sealed class GeneratedWorld {
   public IReadOnlyList<GeneratedChest> Chests { get; }
   public IReadOnlyList<GeneratedNpc> Npcs { get; }
   public IReadOnlyList<CompletedGenerationPass> Passes { get; }
+  public GeneratedWorldSettings Settings { get; }
+  public IReadOnlyList<bool> FrameImportant { get; }
+  public IReadOnlyList<bool> CompressionBatching { get; }
+  public IReadOnlyList<GeneratedSign> Signs { get; }
+  public IReadOnlyList<GeneratedTileEntity> TileEntities { get; }
+  public string ManifestJson { get; }
 
   internal GeneratedWorld() {
     _tiles = Main.tile;
@@ -34,6 +40,13 @@ public sealed class GeneratedWorld {
     Surface = Main.worldSurface;
     RockLayer = Main.rockLayer;
     Crimson = WorldGen.crimson;
+    Settings = new GeneratedWorldSettings();
+    FrameImportant = Array.AsReadOnly(Main.tileFrameImportant.ToArray());
+    CompressionBatching = Array.AsReadOnly(ID.TileID.Sets.AllowsSaveCompressionBatching.ToArray());
+    Signs = Array.AsReadOnly(Main.sign.Where(sign => sign is not null && sign.text is not null)
+        .Select(sign => new GeneratedSign(sign.x, sign.y, sign.text)).ToArray());
+    TileEntities = TileEntity.CreateSnapshot();
+    ManifestJson = WorldGen.Manifest.Serialize();
     Chests = Array.AsReadOnly(Main.chest.Where(chest => chest != null)
       .Select(chest => new GeneratedChest(chest.x, chest.y, chest.name ?? "",
         Array.AsReadOnly(chest.item.Select(item =>
@@ -41,7 +54,8 @@ public sealed class GeneratedWorld {
       .ToArray());
     Npcs = Array.AsReadOnly(Main.npc.Where(npc => npc.active)
       .Select(npc => new GeneratedNpc(npc.type, npc.GivenName ?? "", npc.position.X,
-        npc.position.Y, npc.homeTileX, npc.homeTileY, npc.homeless)).ToArray());
+        npc.position.Y, npc.homeTileX, npc.homeTileY, npc.homeless,
+        npc.townNPC, npc.townNpcVariationIndex, npc.homelessDespawn)).ToArray());
     Passes = Array.AsReadOnly(WorldGenerator.PassResults
       .Select(pass => new CompletedGenerationPass(pass.Name, pass.DurationMs, pass.Skipped,
         pass.RandNext))
@@ -59,6 +73,10 @@ public sealed class GeneratedWorld {
 public sealed record GeneratedItem(int Type, int Stack, byte Prefix);
 public sealed record GeneratedChest(int X, int Y, string Name, IReadOnlyList<GeneratedItem> Items);
 public sealed record GeneratedNpc(int Type, string Name, float X, float Y,
-                                 int HomeX, int HomeY, bool Homeless);
+                                 int HomeX, int HomeY, bool Homeless,
+                                 bool IsTownNpc = true, int Variation = 0,
+                                 bool HomelessDespawn = false);
+public sealed record GeneratedSign(int X, int Y, string Text);
+public sealed record GeneratedTileEntity(int Id, int X, int Y, int TileType);
 public sealed record CompletedGenerationPass(string Name, int DurationMs, bool Skipped,
                                             int RandNext);

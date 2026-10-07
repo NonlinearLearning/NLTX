@@ -268,14 +268,18 @@ Assert(
   staleCommit.RejectedAsStale,
   "A second revenge commit using the old marker revision must be rejected as stale.");
 
+var teleportRuntimeId = new EntityRuntimeId(Guid.NewGuid());
 EntityReference sourceEndpoint = new(
-  Guid.Parse("10000000-0000-0000-0000-000000000001"),
+  new EntityUuid(Guid.Parse("10000000-0000-0000-0000-000000000001")),
+  teleportRuntimeId,
   EntityReferenceScope.Any);
 EntityReference destinationEndpoint = new(
-  Guid.Parse("10000000-0000-0000-0000-000000000002"),
+  new EntityUuid(Guid.Parse("10000000-0000-0000-0000-000000000002")),
+  teleportRuntimeId,
   EntityReferenceScope.Any);
 EntityReference player = new(
-  Guid.Parse("20000000-0000-0000-0000-000000000001"),
+  new EntityUuid(Guid.Parse("20000000-0000-0000-0000-000000000001")),
+  teleportRuntimeId,
   EntityReferenceScope.Player);
 TeleportEndpointSnapshot sourceSnapshot = new(
   sourceEndpoint,
@@ -390,7 +394,8 @@ TeleportTransitionRequest identityRequest = teleportRequest with
 {
   CommandId = Guid.Parse("30000000-0000-0000-0000-000000000005"),
   SourceEndpoint = new EntityReference(
-    Guid.Parse("10000000-0000-0000-0000-000000000099"),
+    new EntityUuid(Guid.Parse("10000000-0000-0000-0000-000000000099")),
+    teleportRuntimeId,
     EntityReferenceScope.Any),
 };
 TeleportCommitResult identityRejected = readyTeleportSystem.Commit(

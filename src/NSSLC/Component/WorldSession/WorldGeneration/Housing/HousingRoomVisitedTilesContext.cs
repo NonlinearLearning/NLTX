@@ -7,6 +7,7 @@ namespace Terraria.WorldGeneration.Housing;
 public sealed class HousingRoomVisitedTilesContext
 {
   private readonly HashSet<TilePosition> _visitedTiles = new();
+  private readonly List<TilePosition> _visitedTilesInOrder = new();
   private readonly TilePosition _startPosition;
 
   public HousingRoomVisitedTilesContext(
@@ -41,9 +42,17 @@ public sealed class HousingRoomVisitedTilesContext
 
   public bool IsAtTileLimit => NumRoomTiles >= MaxRoomTiles;
 
+  public bool HasReachedRoomSizeLimit =>
+    RoomX2 - RoomX1 >= MaxRoomSize || RoomY2 - RoomY1 >= MaxRoomSize;
+
   public bool Contains(TilePosition position)
   {
     return _visitedTiles.Contains(position);
+  }
+
+  public IReadOnlyList<TilePosition> CreateSnapshot()
+  {
+    return Array.AsReadOnly(_visitedTilesInOrder.ToArray());
   }
 
   public bool WouldExceedRoomSize(TilePosition position)
@@ -61,29 +70,50 @@ public sealed class HousingRoomVisitedTilesContext
       nextY2 - nextY1 >= MaxRoomSize;
   }
 
-  public bool TryAdd(TilePosition position)
+  public bool IsWithinSearchWindow(TilePosition position)
   {
-    if (IsAtTileLimit || WouldExceedRoomSize(position) ||
-        !_visitedTiles.Add(position))
+    return Math.Abs((long)position.X - _startPosition.X) <= MaxRoomSize &&
+      Math.Abs((long)position.Y - _startPosition.Y) <= MaxRoomSize;
+  }
+
+  public bool TryMarkVisited(TilePosition position)
+  {
+    if (IsAtTileLimit || !IsWithinSearchWindow(position) || !_visitedTiles.Add(position))
     {
       return false;
     }
 
+    _visitedTilesInOrder.Add(position);
+    NumRoomTiles++;
+    return true;
+  }
+
+  public void IncludeInRoomBounds(TilePosition position)
+  {
     if (NumRoomTiles == 0)
     {
       RoomX1 = position.X;
       RoomX2 = position.X;
       RoomY1 = position.Y;
       RoomY2 = position.Y;
-    }
-    else
-    {
-      RoomX1 = Math.Min(RoomX1, position.X);
-      RoomX2 = Math.Max(RoomX2, position.X);
-      RoomY1 = Math.Min(RoomY1, position.Y);
-      RoomY2 = Math.Max(RoomY2, position.Y);
+      return;
     }
 
+    RoomX1 = Math.Min(RoomX1, position.X);
+    RoomX2 = Math.Max(RoomX2, position.X);
+    RoomY1 = Math.Min(RoomY1, position.Y);
+    RoomY2 = Math.Max(RoomY2, position.Y);
+  }
+
+  public bool TryAdd(TilePosition position)
+  {
+    if (IsAtTileLimit || WouldExceedRoomSize(position) || !_visitedTiles.Add(position))
+    {
+      return false;
+    }
+
+    _visitedTilesInOrder.Add(position);
+    IncludeInRoomBounds(position);
     NumRoomTiles++;
     return true;
   }
@@ -91,6 +121,7 @@ public sealed class HousingRoomVisitedTilesContext
   public void Clear()
   {
     _visitedTiles.Clear();
+    _visitedTilesInOrder.Clear();
     NumRoomTiles = 0;
     ResetBounds();
   }

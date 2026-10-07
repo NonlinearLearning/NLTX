@@ -1,6 +1,8 @@
 using System.Numerics;
 using Terraria.Player;
+using Terraria.Player.Mount;
 using Terraria.Player.Presentation;
+using Terraria.Relationships;
 
 VerifyPoseAndAnimation();
 VerifyNetworkCamera();
@@ -447,8 +449,10 @@ static void VerifyEventAndShoppingZoneProperties()
 
 static void VerifyInteractionAndSelectionProperties()
 {
-  ItemEntityRef firstItem = new(Guid.Parse("11111111-1111-1111-1111-111111111111"));
-  ItemEntityRef secondItem = new(Guid.Parse("22222222-2222-2222-2222-222222222222"));
+  ItemEntityRef firstItem = CreateItemReference(
+    "11111111-1111-1111-1111-111111111111");
+  ItemEntityRef secondItem = CreateItemReference(
+    "22222222-2222-2222-2222-222222222222");
   IReadOnlyList<ItemEntityRef> inventory = new[] { firstItem, secondItem };
   PlayerInteractionAndSelectionPropertiesInput input = new(
     Direction: -1,
@@ -491,6 +495,14 @@ static void VerifyInteractionAndSelectionProperties()
     "C14 must reject floating for a non-floating active mount.");
   Require(new PlayerVoidVaultStateChangeCommand(true).Enabled,
     "C14 must expose vault mutation as an explicit command intent.");
+}
+
+static ItemEntityRef CreateItemReference(string entityId)
+{
+  return ItemEntityRef.FromReference(new EntityReference(
+    new EntityUuid(Guid.Parse(entityId)),
+    new EntityRuntimeId(Guid.Parse("33333333-3333-3333-3333-333333333333")),
+    EntityReferenceScope.Item));
 }
 
 static void VerifyAbilityAndPresentationProperties()

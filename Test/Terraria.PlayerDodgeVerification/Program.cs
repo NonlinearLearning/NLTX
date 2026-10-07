@@ -1,4 +1,5 @@
 using Terraria.Player;
+using Terraria.Relationships;
 
 static void Assert(bool condition, string message)
 {
@@ -19,8 +20,10 @@ static void AssertEqual<T>(T expected, T actual, string message)
 
 var component = new PlayerDodgeAndImmunityStateComponent();
 var system = new PlayerDodgeCommitSystem(component);
-var itemReference = new ItemEntityRef(
-  Guid.Parse("40000000-0000-0000-0000-000000000001"));
+var itemReference = ItemEntityRef.FromReference(new EntityReference(
+  new EntityUuid(Guid.Parse("40000000-0000-0000-0000-000000000001")),
+  new EntityRuntimeId(Guid.Parse("40000000-0000-0000-0000-000000000002")),
+  EntityReferenceScope.Item));
 
 Assert(!component.BlackBelt, "Black belt must start inactive.");
 Assert(component.BrainOfConfusionItem.IsEmpty,

@@ -46,7 +46,7 @@ public sealed class PlayerInventoryCommitSystem
         PlayerInventoryCommitRejectionReason.EmptyCommand);
     }
 
-    if (incoming.Entity.IsEmpty)
+    if (incoming.Entity.IsEmpty || !HasCurrentMutationRevision(incoming))
     {
       return PlayerInventoryCommitResult.Rejected(
         remainingStack,
@@ -133,6 +133,13 @@ public sealed class PlayerInventoryCommitSystem
           : PlayerInventoryCommitRejectionReason.NoSpace);
     }
 
+    if (!existingItem.IsEmpty && !HasCurrentMutationRevision(existingItem))
+    {
+      return PlayerInventoryCommitResult.Rejected(
+        remainingStack,
+        PlayerInventoryCommitRejectionReason.ItemLookupFailed);
+    }
+
     int acceptedStack = CalculateAcceptedStack(incoming, existingItem);
     if (acceptedStack <= 0)
     {
@@ -160,7 +167,9 @@ public sealed class PlayerInventoryCommitSystem
       acceptedStack,
       remainingAfterCommit,
       existingItem.IsEmpty ? 0 : existingItem.Stack,
-      existingStackAfter);
+      existingStackAfter,
+      incoming.MutationRevision,
+      existingItem.IsEmpty ? default : existingItem.MutationRevision);
 
     if (!_commitPort.TryApply(plan))
     {
@@ -206,6 +215,7 @@ public sealed class PlayerInventoryCommitSystem
       if (!_itemQuery.TryGetItem(entity, out PlayerInventoryItemSnapshot item) ||
         item.Entity != entity ||
         item.IsEmpty ||
+        !HasCurrentMutationRevision(item) ||
         item.MaximumStack <= 0 ||
         item.Stack > item.MaximumStack)
       {
@@ -480,6 +490,12 @@ public sealed class PlayerInventoryCommitSystem
     ItemEntityRef item)
   {
     return snapshot.Items.Any(existing => existing.Entity == item);
+  }
+
+  private static bool HasCurrentMutationRevision(PlayerInventoryItemSnapshot item)
+  {
+    return item.MutationRevision.IsAssigned &&
+      item.MutationRevision.ItemReference == item.Entity.Reference;
   }
 
   private static bool ContainsType(

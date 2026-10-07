@@ -16,13 +16,13 @@ internal static class OwnerTimeoutVerification {
     var lateResult = new TaskCompletionSource<PacketHandlingResult>(
         TaskCreationOptions.RunContinuationsAsynchronously);
     gateway.Register(new PacketPolicy(30, NetworkSessionStage.Active),
-        new RecordingHandler<Packet30Packet>((_, _, _) => {
+        new RecordingHandler<TogglePVPPacket>((_, _, _) => {
           entered.TrySetResult();
           return new ValueTask<PacketHandlingResult>(lateResult.Task);
         }));
     await using var peer = new GatewayPeer(gateway, profile);
     await peer.JoinAsync();
-    peer.Receive(new Packet30Packet());
+    peer.Receive(new TogglePVPPacket());
     await entered.Task.WaitAsync(TimeSpan.FromSeconds(5));
     time.Advance(TimeSpan.FromSeconds(3));
     await peer.Run.WaitAsync(TimeSpan.FromSeconds(5));
@@ -30,7 +30,7 @@ internal static class OwnerTimeoutVerification {
         "A handler ignoring cancellation must not prevent deadline cleanup or binding release.");
     int sentBeforeLateResult = peer.Transport.FrameCount;
     lateResult.TrySetResult(new PacketHandlingResult(true, new[] {
-      new OutboundDispatch(new Packet16Packet(), PacketDispatchKind.Single,
+      new OutboundDispatch(new PlayerLifeManaPacket(), PacketDispatchKind.Single,
           new[] { peer.Connection.Identity })
     }));
     await gateway.DisposeAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(5));

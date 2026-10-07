@@ -63,7 +63,23 @@ public sealed class WorldRecoveryOutcome
 
   public WorldLoadApiExecutionResult? ApiExecution { get; }
 
+  /// <summary>
+  /// Gets whether API execution reached commit and may have partially changed its owner. The
+  /// recovery coordinator discards an unpublished candidate and resets the active world only when
+  /// publication may have changed it.
+  /// </summary>
   public bool RequiresWorldReset => ApiExecution?.Stage == WorldLoadApiStage.Commit;
+
+  /// <summary>
+  /// Gets whether failed execution left this candidate unsafe to reuse for a retry.
+  /// </summary>
+  /// <remarks>
+  /// A commit failure may have changed owner state; a cleanup failure may have left prepared
+  /// resources unreleased. Recovery discards an unpublished candidate and resets only a world
+  /// whose publication may have changed the active state.
+  /// </remarks>
+  public bool RequiresCandidateDiscard =>
+    RequiresWorldReset || ApiExecution?.CleanupException is not null;
 
   public bool CanPublishWorldLoaded =>
     (Status is WorldRecoveryStatus.Loaded or WorldRecoveryStatus.RecoveredFromBackup) &&

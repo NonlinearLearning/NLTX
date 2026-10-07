@@ -6,6 +6,20 @@ if (args.Length != 1) {
   throw new ArgumentException("Expected the generated output directory.");
 }
 string output = Path.GetFullPath(args[0]);
+// Compilation validates the global input model's shape. Values are never emitted;
+// the gateway process initializes its own model with the host's real protocol tables.
+_ = new ProtocolInputs(
+    frameImportant: Array.Empty<bool>(),
+    allowsSaveCompressionBatching: Array.Empty<bool>(),
+    tileEntityCodecs: PacketTileEntityCodecsV4.Create(),
+    isServer: true,
+    catchableTypes: Array.Empty<bool>(),
+    lifeWidthResolver: static (_, _, _) => 4,
+    needsUuid: static _ => false,
+    slotCount: 0,
+    moduleCodecs: Packet82KnownModuleCodecsV4.Create(),
+    tagEffectNpcSlotCount: 0,
+    tagEffectUsesProcTimes: static _ => false);
 ProtocolManifest protocol = PacketAllDefinitions.CreateProtocol();
 CompilationResult result = new PacketDesignCompiler().Compile(protocol);
 if (!result.Success) {
@@ -19,34 +33,22 @@ source.AppendLine("namespace NSSLC.Infrastructure.Network;");
 source.AppendLine("public static class TerrariaProtocolProfile {");
 source.AppendLine($"  public const string Fingerprint = \"{result.InputFingerprint}\";");
 source.AppendLine("  public static ProtocolProfile Create(ProtocolFacts facts) {");
+source.AppendLine("    System.ArgumentNullException.ThrowIfNull(facts);");
+source.AppendLine("    facts.FreezePacketInputs();");
 source.AppendLine("    var bindings = new System.Collections.Generic.List<PacketBinding>();");
 foreach (PacketIr packet in result.Packets) {
   string type = TypeRef.From(packet.PacketType).CSharpName;
-  string baseName = packet.GeneratedName!;
-  string artifact = result.Artifacts.Single(item => item.PacketId == packet.PacketId
-      && item.Source.Contains("class " + baseName + "PacketCodecReader")).Source;
+  string registration = protocol.Packets.Single(item =>
+      packet.GeneratedName == protocol.Name + "_" + item.Name).Name;
+  string factory = $"global::Terraria.NetWork.Generated.{protocol.Name}Protocol.Packets.{registration}";
   foreach (PacketDirectionValue direction in Enum.GetValues<PacketDirectionValue>()) {
     if (((int)packet.WireDirection & (int)direction) == 0) {
       continue;
     }
     string dir = "PacketDirection." + direction;
-    string dependencies = "";
-    if (!packet.DependencyModel.Inputs.IsEmpty) {
-      string values = string.Join(", ", packet.DependencyModel.Inputs
-          .OrderBy(input => input.Name, StringComparer.Ordinal)
-          .Select(input => $"facts.Get<{input.ValueType.CSharpName}>"
-              + $"({packet.MessageId}, {dir}, \"{input.Name}\")"));
-      dependencies = $"dependencies{packet.MessageId}_{direction}";
-      source.AppendLine($"    var {dependencies} = new global::Terraria.NetWork.Generated.{baseName}Dependencies({values});");
-    }
-    bool readFacts = artifact.Contains("ReadOnlyMemory<byte> frame, " + baseName + "Dependencies")
-        || artifact.Contains("ReadOnlyMemory<byte> buffer, " + baseName + "Dependencies");
-    bool writeFacts = artifact.Contains(baseName + "PacketCodecWriter(" + baseName + "Dependencies");
-    string readArguments = readFacts ? "body, " + dependencies : "body";
-    string writeArguments = writeFacts ? dependencies : "";
     source.AppendLine($"    bindings.Add(new PacketBinding<{type}>({packet.MessageId}, {dir},");
-    source.AppendLine($"        body => new global::Terraria.NetWork.Generated.{baseName}PacketCodecReader({readArguments}).ReadFrameDetailed(),");
-    source.AppendLine($"        value => new global::Terraria.NetWork.Generated.{baseName}PacketCodecWriter({writeArguments}).TryWrite(value))); ");
+    source.AppendLine($"        body => {factory}.CreateReader(body).ReadFrameDetailed(),");
+    source.AppendLine($"        value => {factory}.CreateWriter().TryWrite(value)));");
   }
 }
 source.AppendLine("    return new ProtocolProfile(\"TerrariaV4:\" + Fingerprint + \":\" + facts.Version, \"Terraria319\", bindings);");

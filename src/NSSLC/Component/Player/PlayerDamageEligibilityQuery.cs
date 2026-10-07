@@ -7,6 +7,13 @@ public static class PlayerDamageEligibilityQuery
     PlayerDodgeAndImmunityStateComponent component)
   {
     ArgumentNullException.ThrowIfNull(component);
+    return Evaluate(in input, component.ShadowDodge);
+  }
+
+  public static PlayerDamageEligibilityResult Evaluate(
+    in PlayerDamageEligibilityInput input,
+    bool shadowDodgeActive)
+  {
 
     if (input.SourceId == Guid.Empty)
     {
@@ -30,7 +37,7 @@ public static class PlayerDamageEligibilityQuery
 
     return new PlayerDamageEligibilityResult(
       IsEligible: true,
-      UsesShadowDodge: input.Dodgeable && component.ShadowDodge,
+      UsesShadowDodge: input.Dodgeable && shadowDodgeActive,
       RejectionReason: PlayerDamageEligibilityRejectionReason.None);
   }
 

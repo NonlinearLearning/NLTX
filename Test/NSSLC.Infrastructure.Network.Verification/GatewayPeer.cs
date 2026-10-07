@@ -38,21 +38,21 @@ internal sealed class GatewayPeer : IAsyncDisposable {
   }
 
   public async Task JoinAsync(string? password = null) {
-    Receive(new Packet1Packet { Version = "Terraria319" });
+    Receive(new HelloPacket { Version = "Terraria319" });
     await Verify.EventuallyAsync(() => Session.Stage is NetworkSessionStage.AwaitPlayerData
         or NetworkSessionStage.AwaitPassword, "Hello did not progress to authentication or player data.");
     if (password is not null) {
-      Receive(new Packet38Packet { Password = password });
+      Receive(new SendPasswordPacket { Password = password });
       await Verify.EventuallyAsync(() => Session.Stage == NetworkSessionStage.AwaitPlayerData,
           "Correct password did not bind the session.");
     }
-    Receive(new Packet6Packet());
+    Receive(new RequestWorldDataPacket());
     await Verify.EventuallyAsync(() => Session.Stage == NetworkSessionStage.AwaitSectionRequest,
         "The world-data owner did not confirm its state transition.");
-    Receive(new Packet8Packet());
+    Receive(new SpawnTileDataPacket());
     await Verify.EventuallyAsync(() => Session.Stage == NetworkSessionStage.Synchronizing,
         "The section owner did not confirm its state transition.");
-    Receive(new Packet12Packet());
+    Receive(new PlayerSpawnPacket());
     await Verify.EventuallyAsync(() => Session.Stage == NetworkSessionStage.Active,
         "The spawn owner did not confirm active admission.");
   }

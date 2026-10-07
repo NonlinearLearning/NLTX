@@ -8,4 +8,17 @@ public sealed class PlayerBuffComponent
 
   // Buff immunity is distinct from damage immunity timers.
   public HashSet<ContentId<BuffDefinition>> ImmuneBuffTypes { get; } = [];
+
+  internal void SetNetworkBuff(ushort buffType, int durationTicks)
+  {
+    ContentId<BuffDefinition> type = new(buffType);
+    for (int index = 0; index < Slots.Length; index++)
+    {
+      if (Slots[index].Type == type || Slots[index].IsEmpty)
+      {
+        Slots[index] = new BuffSlot(type, durationTicks);
+        return;
+      }
+    }
+  }
 }

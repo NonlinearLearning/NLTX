@@ -5,17 +5,15 @@ namespace Terraria.Projectile;
 public struct ProjectileGeometryStateComponent
 {
   public ProjectileGeometryStateComponent(
-    float scale = 1.0f,
-    bool reflected = false)
-    : this(0, 0, scale, reflected)
+    float scale = 1.0f)
+    : this(0, 0, scale)
   {
   }
 
   public ProjectileGeometryStateComponent(
     int width,
     int height,
-    float scale = 1.0f,
-    bool reflected = false)
+    float scale = 1.0f)
   {
     if (width < 0)
     {
@@ -35,11 +33,9 @@ public struct ProjectileGeometryStateComponent
     Width = width;
     Height = height;
     Scale = scale;
-    Reflected = reflected;
   }
 
   public int Width;
   public int Height;
   public float Scale;
-  public bool Reflected;
 }

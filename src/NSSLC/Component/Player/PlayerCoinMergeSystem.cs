@@ -128,7 +128,8 @@ public sealed class PlayerCoinMergeSystem
     ItemEntityRef sourceEntity =
       _inventory.MainInventorySlots[sourceSlotIndex];
     if (sourceEntity.IsEmpty ||
-      !_itemQuery.TryGetItem(sourceEntity, out PlayerInventoryItemSnapshot source))
+      !_itemQuery.TryGetItem(sourceEntity, out PlayerInventoryItemSnapshot source) ||
+      !HasCurrentMutationRevision(source, sourceEntity))
     {
       rejectionReason = PlayerCoinMergeRejectionReason.ItemLookupFailed;
       return false;
@@ -157,7 +158,8 @@ public sealed class PlayerCoinMergeSystem
       if (destinationEntity.IsEmpty ||
         !_itemQuery.TryGetItem(
           destinationEntity,
-          out PlayerInventoryItemSnapshot destination))
+          out PlayerInventoryItemSnapshot destination) ||
+        !HasCurrentMutationRevision(destination, destinationEntity))
       {
         continue;
       }
@@ -176,7 +178,9 @@ public sealed class PlayerCoinMergeSystem
         destinationEntity,
         upgradedTypeId,
         destination.Stack,
-        destination.Stack + 1);
+        destination.Stack + 1,
+        source.MutationRevision,
+        destination.MutationRevision);
       return true;
     }
 
@@ -188,7 +192,18 @@ public sealed class PlayerCoinMergeSystem
       DestinationItem: ItemEntityRef.None,
       UpgradedSourceTypeId: upgradedTypeId,
       DestinationStackBefore: 0,
-      DestinationStackAfter: 0);
+      DestinationStackAfter: 0,
+      SourceMutationRevision: source.MutationRevision,
+      DestinationMutationRevision: default);
     return true;
+  }
+
+  private static bool HasCurrentMutationRevision(
+    PlayerInventoryItemSnapshot item,
+    ItemEntityRef reference)
+  {
+    return item.Entity == reference &&
+      item.MutationRevision.IsAssigned &&
+      item.MutationRevision.ItemReference == reference.Reference;
   }
 }
