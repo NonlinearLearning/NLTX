@@ -1,3 +1,4 @@
+using Arch.Core;
 using EntityEcs;
 using Terraria.Relationships;
 using Terraria.WorldGeneration.Components;
@@ -13,7 +14,10 @@ public sealed class LoadedWorldSession : IDisposable {
 
   private readonly EntityIdentityRegistry _identityRegistry;
   private readonly EntityRuntime _entityRuntime;
+  private readonly World _ecsWorld;
+  private readonly Entity _worldStateEntity;
   private readonly WorldStorageRoot _storage;
+  private readonly int _ownerThreadId;
   private readonly WorldSessionRestoreState _world = new();
   private readonly WorldLoadLifecycleComponent _lifecycle = new();
   private readonly WorldDimensionCompatibilityState _dimensionCompatibility = new();
@@ -24,9 +28,33 @@ public sealed class LoadedWorldSession : IDisposable {
   public LoadedWorldSession(
       EntityIdentityRegistry? identityRegistry = null,
       int maximumWorldItemSlots = int.MaxValue) {
-    _identityRegistry = identityRegistry ?? new EntityIdentityRegistry();
-    _entityRuntime = new EntityRuntime(_identityRegistry);
-    _storage = new WorldStorageRoot(_entityRuntime, maximumWorldItemSlots);
+    _ownerThreadId = Environment.CurrentManagedThreadId;
+    _ecsWorld = Arch.Core.World.Create();
+
+    try {
+      _worldStateEntity = _ecsWorld.Create(
+          _world.TileMetrics,
+          _world.TownHousing,
+          _world.Descriptor,
+          _world.Rules,
+          _world.TimeWeather,
+          _world.Progression,
+          _world.Appearance,
+          _world.History,
+          _world.Milestones,
+          _world.SeasonPolicy,
+          _lifecycle,
+          _dimensionCompatibility,
+          _treeTops);
+      WorldRuntimeId = new EntityRuntimeId(Guid.NewGuid());
+      _identityRegistry = identityRegistry ?? new EntityIdentityRegistry();
+      _entityRuntime = new EntityRuntime(_identityRegistry, WorldRuntimeId);
+      _storage = new WorldStorageRoot(_entityRuntime, maximumWorldItemSlots);
+    }
+    catch {
+      Arch.Core.World.Destroy(_ecsWorld);
+      throw;
+    }
   }
 
   public EntityRuntime EntityRuntime {
@@ -36,7 +64,21 @@ public sealed class LoadedWorldSession : IDisposable {
     }
   }
   /// <summary>Immutable session token used to reject requests queued across world replacement.</summary>
-  public EntityRuntimeId WorldRuntimeId => _entityRuntime.RuntimeId;
+  public EntityRuntimeId WorldRuntimeId { get; }
+  public World ArchWorld {
+    get {
+      ThrowIfDisposed();
+      VerifyOwnerThread();
+      return _ecsWorld;
+    }
+  }
+  public Entity WorldStateEntity {
+    get {
+      ThrowIfDisposed();
+      VerifyOwnerThread();
+      return _worldStateEntity;
+    }
+  }
   public EntityIdentityRegistry IdentityRegistry => _identityRegistry;
   public WorldStorageRoot Storage {
     get {
@@ -122,11 +164,18 @@ public sealed class LoadedWorldSession : IDisposable {
     _entityRuntime.EnsureCanDispose();
     _storage.Dispose();
     _entityRuntime.Dispose();
+    Arch.Core.World.Destroy(_ecsWorld);
     _isDisposed = true;
   }
 
   private void ThrowIfDisposed() {
     ObjectDisposedException.ThrowIf(_isDisposed, this);
+  }
+
+  private void VerifyOwnerThread() {
+    if (_ownerThreadId != Environment.CurrentManagedThreadId) {
+      throw new InvalidOperationException("World session access is restricted to its owner thread.");
+    }
   }
 
   private bool HasDefaultTreeTopStyles() {
