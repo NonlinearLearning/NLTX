@@ -53,6 +53,8 @@ A8 删除未执行。旧框架引用仍在 production candidates 与测试中；
 
 ## 交接与回滚点
 
+场景级 owner、失败恢复、保存边界及前置状态见 [`host-scenario-ownership-readiness.md`](host-scenario-ownership-readiness.md)。总验收仅接受本报告的 T5 partial baseline，不构成 T1–T4 通过或 A6–A8 实施授权。
+
 下一 owner（T1–T4 / 总验收）：
 
 1. 提供并验收 T1–T4 handoff，确认 API、身份、lifecycle、relationships、query 与网络物品线的集成契约。
