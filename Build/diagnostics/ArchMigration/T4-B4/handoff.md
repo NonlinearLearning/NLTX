@@ -8,6 +8,7 @@
 | Overall prerequisite status | blocked-by-prerequisite |
 | Acceptance mode | compile-only |
 | Baseline | `9bdde4eb7b316e27d78eb6463da68355dafd6fb9` |
+| Evidence commit | `9550753cb35344e44d3132bce8cfb6a37e943d10` |
 | Branch | `codex/arch-migration-t4` |
 | Date | 2026-10-08 |
 
@@ -24,11 +25,10 @@ or admission command was run after the rule changed.
 
 ## Result
 
-The isolated `Arch.System 1.1.0` / `Arch 2.1.0` probe project compiles for `net10.0`. Incremental
-builds also compile the affected Application, Simulation, Network, NetworkServer, Items, and
-selected verification projects. All local builds exited 0. The Simulation closure emitted 17
-warnings from `NSSLC.WorldGeneration` and 0 errors; the other listed local builds emitted 0
-warnings and 0 errors.
+The isolated `Arch.System 1.1.0` / `Arch 2.1.0` probe project compiles for `net10.0`. All 10
+locally recorded incremental builds exited 0: nine reported 0 warnings / 0 errors, and the
+Simulation closure reported 17 warnings / 0 errors from `NSSLC.WorldGeneration`. The exact
+project counts and outputs are listed below and in [build-log.md](build-log.md).
 
 The main acceptance owner separately reported its T4 production closure at 0 errors / 6 warnings.
 That log was not present in this worktree, so this handoff preserves both scopes: the local
@@ -45,11 +45,20 @@ Exact commands, exit codes, warning/error counts, output paths, and artifact has
 [build-log.md](build-log.md) and [source-hashes.md](source-hashes.md). Outputs are under
 `Build/bin/`; intermediates and restored packages are under `Build/obj/` and `Build/packages/`.
 
-The simulation host build is the only local build in this batch with warnings:
+Local incremental build matrix:
 
 | Project | Exit | Warnings / errors | Output |
 | --- | ---: | ---: | --- |
+| `Terraria.Arch.SystemVerification` | 0 | 0 / 0 | `Build/bin/Terraria.Arch.SystemVerification/Debug/net10.0/Terraria.Arch.SystemVerification.dll` |
 | `NSSLC.Tools.Simulation` | 0 | 17 / 0 | `Build/bin/NSSLC.Tools.Simulation/Debug/net10.0/NSSLC.Tools.Simulation.dll` |
+| `NSSLC.Tools.NetworkServer` | 0 | 0 / 0 | `Build/bin/NSSLC.Tools.NetworkServer/Debug/net10.0/NSSLC.Tools.NetworkServer.dll` |
+| `Terraria.Items` | 0 | 0 / 0 | `Build/bin/Terraria.Items/Debug/net10.0/Terraria.Items.dll` |
+| `NSSLC.Application` | 0 | 0 / 0 | `Build/bin/NSSLC.Application/Debug/net10.0/NSSLC.Application.dll` |
+| `NSSLC.Infrastructure.Network` | 0 | 0 / 0 | `Build/bin/NSSLC.Infrastructure.Network/Debug/net10.0/NSSLC.Infrastructure.Network.dll` |
+| `Terraria.Items.Verification` | 0 | 0 / 0 | `Build/bin/Terraria.Items.Verification/Debug/net10.0/Terraria.Items.Verification.dll` |
+| `Terraria.Items.NetworkOwner.Verification` | 0 | 0 / 0 | `Build/bin/Terraria.Items.NetworkOwner.Verification/Debug/net10.0/Terraria.Items.NetworkOwner.Verification.dll` |
+| `NSSLC.Infrastructure.Network.Verification` | 0 | 0 / 0 | `Build/bin/NSSLC.Infrastructure.Network.Verification/Debug/net10.0/NSSLC.Infrastructure.Network.Verification.dll` |
+| `Terraria.NpcAi.Verification` | 0 | 0 / 0 | `Build/bin/Terraria.NpcAi.Verification/Debug/net10.0/Terraria.NpcAi.Verification.dll` |
 
 The warning set came from `NSSLC.WorldGeneration` dependency sources. No warning was reported
 against the new Arch verification project. See the full console result summarized in
@@ -65,6 +74,8 @@ run is historical and does not count as current behavior acceptance.
 ## Uncompiled or unverified scope
 
 - No T4 production System was switched to `Arch.System`, `World.Query`, or Arch component access.
+- T4 production remains on the custom `EntityRuntime` path; T2 World/identity and T3 lifecycle/
+  relationship production contracts are not integrated in this checkout.
 - No production Query/ref-to-structural-change boundary is accepted from this build-only gate.
 - No queued cross-world/stale request was exercised under the Arch entity model; T2/T3 production
   contracts remain prerequisites.
@@ -79,14 +90,22 @@ run is historical and does not count as current behavior acceptance.
 
 ## Changed files and commit
 
-Production changes: none. New source is limited to the isolated probe at
-`Test/Terraria.Arch.SystemVerification/`. T4-B4 reports are limited to
-`Build/diagnostics/ArchMigration/T4-B4/`; the existing T4 handoff was amended to point here.
+Production changes: none. The evidence commit is
+`9550753cb35344e44d3132bce8cfb6a37e943d10`, based on baseline
+`9bdde4eb7b316e27d78eb6463da68355dafd6fb9`. Its changed files are:
 
-Commit: recorded in the final response after commit creation.
+- `Test/Terraria.Arch.SystemVerification/Terraria.Arch.SystemVerification.csproj`
+- `Test/Terraria.Arch.SystemVerification/Program.cs`
+- `Build/diagnostics/ArchMigration/T4/handoff.md`
+- `Build/diagnostics/ArchMigration/T4-B4/build-log.md`
+- `Build/diagnostics/ArchMigration/T4-B4/failure-audit.md`
+- `Build/diagnostics/ArchMigration/T4-B4/handoff.md`
+- `Build/diagnostics/ArchMigration/T4-B4/source-hashes.md`
+- `Build/diagnostics/ArchMigration/T4-B4/system-concept-map.md`
 
-The six untracked user plan files remain untouched and unstaged. Build output and package caches
-are not part of the commit.
+This handoff alignment changes documentation only; it does not change the compiled source inputs,
+so no additional build was run. The six untracked user plan files remain untouched and unstaged.
+Build output and package caches are not part of the commit.
 
 ## Next owner action
 

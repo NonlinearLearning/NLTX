@@ -19,8 +19,10 @@ current acceptance. No runtime command was run after that steering.
 T4-B4 remains partial and T4 remains blocked by T2/T3 production contracts. The compile-only
 handoff, build log, phase concept map, failure record, and artifact hashes are in
 [T4-B4](../T4-B4/handoff.md). This amendment supersedes the earlier B4 sample-test wording as the
-current gate; it does not claim query/ref, network, item, lifecycle, serialization, admission, or
-host behavior is verified.
+current gate; the probe and B4 reports are recorded in commit
+`9550753cb35344e44d3132bce8cfb6a37e943d10`, based on `9bdde4eb7b316e27d78eb6463da68355dafd6fb9`.
+It does not claim query/ref, network, item, lifecycle, serialization, admission, or host behavior
+is verified.
 
 ## Goal and result
 
