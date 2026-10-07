@@ -33,9 +33,9 @@ No production source or Context constraint changed. The T4 checkout still uses c
 ## Dependency evidence
 
 - T1: the T1 worktree has an isolated Arch probe and diagnostics, but no handoff.md/API behavior matrix was present when inspected. The latest thread snapshot was active/in progress and still diagnosing a CommandBuffer behavior assertion. Per the user's instruction, this handoff does not wait for T1.
-- T2: Build/diagnostics/ArchMigration/T2/handoff.md exists, hash recorded in source-hashes.md, but declares status partial and production signature migration blocked by missing T1. It documents the intended World/session token and identity validation order, and explicitly leaves component Get/TryGet/ref/Set/Add/Remove and QueryDescription semantics unproven. Its isolated probe commit 57f2c75b3f05bdb713bf421ae1ec7c2161f805e2 does not switch this T4 checkout's production signatures.
-- T3: docs/architecture/execution/2026-10-08-arch-migration-track-t3-lifecycle-relationships-execution.md and T3-command-index.json exist in the T3 worktree. The report declares partial and Arch prerequisite blocked-by-prerequisite; it describes current custom-runtime lifecycle evidence, not production Arch signatures. T3 commit f0a34c4a5e7707978cafd3ed1184ad053f53598f is in another worktree and does not provide an integrated Arch API to this branch.
-- Consequently T1 query/ref behavior, T2 production World/identity access signatures and T3 Arch lifecycle/relationship resolution remain missing from the current T4 production checkout. T4-B1 implementation is blocked-by-prerequisite.
+- T2: The current accepted checkpoint is `a1efd50` and remains `partial`. Its production World/identity contract is not integrated into this T4 checkout; T4 must continue to treat the production access signatures as unavailable here.
+- T3: The current accepted checkpoint is `7e472d2`, an isolated compile-only result that remains `partial`. Its Arch lifecycle/relationship production contract is not integrated into this T4 checkout.
+- Consequently, T2 production World/identity access and T3 Arch lifecycle/relationship resolution remain unavailable in the current T4 production checkout. T4-B1 production implementation is `blocked-by-prerequisite`.
 
 ## Validation and tests
 
@@ -72,7 +72,7 @@ Accepted B0/B1 commit: `9bdde4eb7b316e27d78eb6463da68355dafd6fb9`.
 - The transient packet-29 rejection probe above did not complete T4-B2; protocol rejection closes the gateway session, and no nonfatal rejection contract was implemented.
 - Packet 29 stale/missing/inactive/duplicate terminate currently returns accepted no-op after ignoring TryTerminateNetwork false; re-evaluate once T2/T3 contracts are integrated.
 - No T4-B3 owner-specific item mutation conflict replacement or quantity conservation verification. Existing WorldItemReservationSystem is a separate named domain protocol; RuntimeItemRegistry still composes generic component revisions.
-- No T4-B4 approximately 10% T4 core tests were run.
+- Historical plan item only: the approximately 10% T4 core behavior-test sample was not run. It is inapplicable to the current accepted compile-only gate and remains runtime-unverified, not passed.
 - No full Simulation/NetworkServer integration, cross-world stale request proof, Arch ref/structural boundary proof, pickup expiry/duplicate proof, or DTO/wire proof.
 
 ## Next owner action
