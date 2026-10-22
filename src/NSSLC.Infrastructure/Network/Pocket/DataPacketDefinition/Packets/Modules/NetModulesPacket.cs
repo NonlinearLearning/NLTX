@@ -37,6 +37,7 @@ public sealed record Packet82CreativePowerData(ushort PowerId, object? Value);
 public sealed record Packet82SharedTogglePowerState(bool Enabled);
 
 public sealed record Packet82PerPlayerTogglePowerState(bool[] EnabledPlayers);
+public sealed record Packet82PerPlayerToggleUpdatePowerState(byte Player, bool Enabled);
 public sealed record Packet82SharedSliderPowerState(float Value);
 
 public sealed record Packet82PerPlayerSliderPowerState(byte Player, float Value);
@@ -65,6 +66,9 @@ public sealed record Packet82BannerData(
         short? BannerId,
         int? KillCount,
         ushort? ClaimableCount);
+
+public sealed record Packet82BannerClaimRequestData(short BannerId, ushort Amount);
+public sealed record Packet82BannerClaimResponseData(short BannerId, ushort Amount, bool Granted);
 
 public sealed record Packet82EmptyModuleData;
 public sealed record Packet82CreativeUnlockData(short ItemId, ushort SacrificeCount);

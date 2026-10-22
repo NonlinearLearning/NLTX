@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Immutable;
 
-using EntityEcs.Components;
+using Terraria.Arch.Components;
 using NSSLC.WorldGeneration;
 using Terraria.SpatialSimulation;
 

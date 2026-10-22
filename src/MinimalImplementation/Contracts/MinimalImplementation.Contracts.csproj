@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>MinimalImplementation.Contracts</AssemblyName>
+    <RootNamespace>MinimalImplementation.Contracts</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="Persistence\*.cs" />
+    <Compile Include="Persistence\WorldData\*.cs" />
+    <Compile Include="Items\*.cs" />
+    <Compile Include="WorldStorage\*.cs" />
+  </ItemGroup>
+</Project>

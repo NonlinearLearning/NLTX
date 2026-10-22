@@ -40,15 +40,16 @@ public sealed partial class ProtocolInputs
         ArgumentNullException.ThrowIfNull(needsUuid);
         ArgumentNullException.ThrowIfNull(moduleCodecs);
         ArgumentNullException.ThrowIfNull(tagEffectUsesProcTimes);
-        FrameImportant = frameImportant;
-        AllowsSaveCompressionBatching = allowsSaveCompressionBatching;
+        FrameImportant = frameImportant.ToArray();
+        AllowsSaveCompressionBatching = allowsSaveCompressionBatching.ToArray();
         TileEntityCodecs = tileEntityCodecs;
         IsServer = isServer;
-        CatchableTypes = catchableTypes;
+        CatchableTypes = catchableTypes.ToArray();
         LifeWidthResolver = lifeWidthResolver;
         NeedsUuid = needsUuid;
         SlotCount = slotCount;
-        ModuleCodecs = moduleCodecs;
+        ModuleCodecs = new System.Collections.ObjectModel.ReadOnlyDictionary<ushort, IPacket82ModuleWireCodec>(
+            new Dictionary<ushort, IPacket82ModuleWireCodec>(moduleCodecs));
         TagEffectNpcSlotCount = tagEffectNpcSlotCount;
         TagEffectUsesProcTimes = tagEffectUsesProcTimes;
         // Publish only a complete model; concurrent constructors must not replace it.

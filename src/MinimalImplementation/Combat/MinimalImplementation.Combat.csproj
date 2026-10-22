@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>MinimalImplementation.Combat</AssemblyName>
+    <RootNamespace>MinimalImplementation.Combat</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Contracts\MinimalImplementation.Contracts.csproj" />
+    <ProjectReference Include="..\..\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj" />
+    <Compile Include="**\*.cs" Exclude="obj\**\*.cs;bin\**\*.cs" />
+  </ItemGroup>
+</Project>

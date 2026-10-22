@@ -3,12 +3,18 @@ using Terraria.NonAuthoritative.Persistence;
 
 namespace Terraria.NonAuthoritative.WorldStorage;
 
-/// <summary>Maps a captured generated world to all sections of a standard WorldFile 319.</summary>
+/// <summary>Maps a captured generated world to all sections of a standard WorldFile 326.</summary>
 public static class GeneratedWorldDocumentProjection {
   public static WorldPersistenceDocument Create(GeneratedWorld world, string worldName,
-      Guid uniqueId, DateTime creationTime, ulong generatorVersion = 0) {
+      Guid uniqueId, DateTime creationTime, WorldFileTilePayloadSection tiles,
+      WorldFileTileEntitySection tileEntities, ulong generatorVersion = 0) {
     ArgumentNullException.ThrowIfNull(world);
+    ArgumentNullException.ThrowIfNull(tiles);
+    ArgumentNullException.ThrowIfNull(tileEntities);
     ArgumentException.ThrowIfNullOrWhiteSpace(worldName);
+    if (tiles.MaxTilesX != world.Width || tiles.MaxTilesY != world.Height) {
+      throw new ArgumentException("Generated tile dimensions do not match the world.", nameof(tiles));
+    }
     GeneratedWorldSettings settings = world.Settings;
     var sections = new List<WorldPersistenceSection>();
     Add(sections, WorldFileHeaderSection.SectionId, new WorldFileHeaderSection(
@@ -167,7 +173,7 @@ public static class GeneratedWorldDocumentProjection {
         new WorldFileTreeTopsSection(settings.TreeTops));
     Add(sections, WorldFileSpawnSection.SectionId, new WorldFileSpawnSection(
         Array.Empty<WorldFileExtraSpawnPoint>(), false, false, false, world.ManifestJson));
-    Add(sections, WorldFileTilePayloadSection.SectionId, new WorldFileTileCodec().Encode(world));
+    Add(sections, WorldFileTilePayloadSection.SectionId, tiles);
     Add(sections, WorldFileChestSection.SectionId, new WorldFileChestSection(world.Chests
         .Select(chest => new WorldFileChestRecord(chest.X, chest.Y, chest.Name, chest.Items
             .Select(item => new WorldFileChestItem(item.Stack, item.Type, item.Prefix))
@@ -181,7 +187,7 @@ public static class GeneratedWorldDocumentProjection {
     Add(sections, WorldFileNpcSection.SectionId, new WorldFileNpcSection(
         Array.Empty<int>(), townNpcs, savedNpcs));
     Add(sections, WorldFileTileEntitySection.SectionId,
-        WorldFileTileEntityCodec.EncodeGenerated(world.TileEntities));
+        tileEntities);
     Add(sections, WorldFilePressurePlateSection.SectionId, WorldFilePressurePlateSection.Empty);
     Add(sections, WorldFileTownManagerSection.SectionId, new WorldFileTownManagerSection(
         world.Npcs.Where(npc => !npc.Homeless).Select(npc => new WorldFileTownRoomRecord(
@@ -190,7 +196,7 @@ public static class GeneratedWorldDocumentProjection {
     Add(sections, WorldFileCreativePowersSection.SectionId, WorldFileCreativePowersSection.Empty);
     Add(sections, WorldFileFooterSection.SectionId,
         new WorldFileFooterSection(true, worldName, world.WorldId));
-    return new WorldPersistenceDocument(319, sections);
+    return new WorldPersistenceDocument(WorldFileFormatConstants.LatestWritableVersion, sections);
   }
 
   private static WorldFileNpcRecord MapNpc(GeneratedNpc npc) {

@@ -25,10 +25,12 @@ public sealed class WorldFileDocumentEncoder : IWorldSaveEncoder
     ArgumentNullException.ThrowIfNull(document);
     try
     {
-      if (document.FormatVersion != WorldFileFormatConstants.LatestWritableVersion)
+      if (document.FormatVersion < WorldFileFormatConstants.MinimumWritableInputVersion ||
+          document.FormatVersion > WorldFileFormatConstants.LatestWritableVersion)
       {
         return Failed(
-          $"Only WorldFile version {WorldFileFormatConstants.LatestWritableVersion} can be encoded.");
+          $"Only WorldFile versions {WorldFileFormatConstants.MinimumWritableInputVersion} " +
+          $"through {WorldFileFormatConstants.LatestWritableVersion} can be encoded.");
       }
 
       if (!document.TryGetSection<WorldFileHeaderSection>(
@@ -1232,6 +1234,8 @@ public sealed class WorldFileDocumentEncoder : IWorldSaveEncoder
     }
 
     writer.Write(spawn.DualDungeonsSeed);
+    writer.Write(spawn.MoreLightningSeed);
+    writer.Write(spawn.NoLightningSeed);
     writer.Write(spawn.WorldManifestJson ?? string.Empty);
   }
 
@@ -1477,12 +1481,6 @@ public sealed class WorldFileDocumentEncoder : IWorldSaveEncoder
     if (spawn.ExtraSpawnPoints.Count > WorldFileFormatConstants.MaxExtraSpawnPoints)
     {
       throw new InvalidDataException("The world spawn section contains too many points.");
-    }
-
-    if (spawn.MoreLightningSeed || spawn.NoLightningSeed)
-    {
-      throw new InvalidDataException(
-        "WorldFile version 319 cannot encode lightning seed flags introduced in version 323.");
     }
 
     if (spawn.WorldManifestJson is not null &&

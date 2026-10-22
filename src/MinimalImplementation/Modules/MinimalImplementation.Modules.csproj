@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>MinimalImplementation.Modules</AssemblyName>
+    <RootNamespace>MinimalImplementation.Server.Modules</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Contracts\MinimalImplementation.Contracts.csproj" />
+    <ProjectReference Include="..\Protocol\MinimalImplementation.Protocol.csproj" />
+    <ProjectReference Include="..\..\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj" />
+    <Compile Include="*.cs" />
+    <Compile Include="Bestiary\*.cs" />
+    <Compile Include="Banners\*.cs" />
+    <Compile Include="Effects\*.cs" />
+    <Compile Include="Events\*.cs" />
+    <Compile Include="Protocol\*.cs" />
+    <Compile Include="Social\*.cs" />
+    <Compile Include="Social\Chat\*.cs" />
+    <Compile Include="Social\Ping\*.cs" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>MinimalImplementation.Persistence</AssemblyName>
+    <RootNamespace>MinimalImplementation.Persistence</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Contracts\MinimalImplementation.Contracts.csproj" />
+    <Compile Include="WorldDocumentSaveRequest.cs" />
+    <Compile Include="WorldDocumentSaveResult.cs" />
+    <Compile Include="WorldDocumentSaver.cs" />
+    <Compile Include="WorldBackupPolicy.cs" />
+    <Compile Include="WorldDocumentBackupStatus.cs" />
+    <Compile Include="WorldDocumentLoadSource.cs" />
+    <Compile Include="WorldDocumentRecoveryResult.cs" />
+    <Compile Include="WorldDocumentRecoveryLoader.cs" />
+    <Compile Include="WorldDocumentRecoveryCoordinator.cs" />
+    <Compile Include="WorldDocumentSaveSnapshot.cs" />
+    <Compile Include="IWorldCommitQueue.cs" />
+    <Compile Include="WorldDocumentSaveCoordinator.cs" />
+    <Compile Include="WorldInitialDocumentBuilder.cs" />
+    <Compile Include="WorldCreationRequest.cs" />
+    <Compile Include="WorldCreationCoordinator.cs" />
+    <Compile Include="CreativeWorldPowerSnapshot.cs" />
+    <Compile Include="CreativeWorldPowerDocumentCodec.cs" />
+    <Compile Include="ServerTickPhase.cs" />
+    <Compile Include="IServerTickPhaseOwner.cs" />
+    <Compile Include="WorldTickScheduler.cs" />
+    <Compile Include="IWorldHostStopBoundary.cs" />
+    <Compile Include="WorldStopResult.cs" />
+    <Compile Include="WorldStopCoordinator.cs" />
+    <Compile Include="WorldLoadContext.cs" />
+    <Compile Include="IWorldStateParticipant.cs" />
+    <Compile Include="WorldLoadStage.cs" />
+    <Compile Include="WorldLoadResult.cs" />
+    <Compile Include="WorldLoadCoordinator.cs" />
+  </ItemGroup>
+</Project>

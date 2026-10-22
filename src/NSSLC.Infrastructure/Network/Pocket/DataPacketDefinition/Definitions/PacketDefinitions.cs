@@ -1305,8 +1305,11 @@ internal static class PacketDefinitions
         graph.Field(SyncItemPacket.Members.Prefix);
         graph.Field(SyncItemPacket.Members.StateFlags);
         graph.Field(SyncItemPacket.Members.ItemType);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(24, 24))
-            .FunctionName(PacketItemSyncCodec.WriteFields)
+        graph.Field(SyncItemPacket.Members.Shimmered);
+        graph.Field(SyncItemPacket.Members.ShimmerTime);
+        graph.Field(SyncItemPacket.Members.EnemyGrabDelayTime);
+        graph.FunctionDeclaration(lengthRange: new ByteRange(24, 30))
+            .FunctionName(PacketItemSyncCodec.WriteCurrentFields)
             .ParameterList(
                 SyncItemPacket.Members.ItemIndex,
                 SyncItemPacket.Members.PositionX,
@@ -1316,7 +1319,10 @@ internal static class PacketDefinitions
                 SyncItemPacket.Members.Stack,
                 SyncItemPacket.Members.Prefix,
                 SyncItemPacket.Members.StateFlags,
-                SyncItemPacket.Members.ItemType
+                SyncItemPacket.Members.ItemType,
+                SyncItemPacket.Members.Shimmered,
+                SyncItemPacket.Members.ShimmerTime,
+                SyncItemPacket.Members.EnemyGrabDelayTime
             )
             .Sizeof(
                 SyncItemPacket.Members.ItemIndex,
@@ -1327,10 +1333,13 @@ internal static class PacketDefinitions
                 SyncItemPacket.Members.Stack,
                 SyncItemPacket.Members.Prefix,
                 SyncItemPacket.Members.StateFlags,
-                SyncItemPacket.Members.ItemType
+                SyncItemPacket.Members.ItemType,
+                SyncItemPacket.Members.Shimmered,
+                SyncItemPacket.Members.ShimmerTime,
+                SyncItemPacket.Members.EnemyGrabDelayTime
             );
-        graph.FunctionDeclaration(lengthRange: new ByteRange(24, 24))
-            .FunctionName(PacketItemSyncCodec.ReadFields)
+        graph.FunctionDeclaration(lengthRange: new ByteRange(24, 30))
+            .FunctionName(PacketItemSyncCodec.ReadCurrentFields)
             .ReturnValue(
                 SyncItemPacket.Members.ItemIndex,
                 SyncItemPacket.Members.PositionX,
@@ -1340,7 +1349,10 @@ internal static class PacketDefinitions
                 SyncItemPacket.Members.Stack,
                 SyncItemPacket.Members.Prefix,
                 SyncItemPacket.Members.StateFlags,
-                SyncItemPacket.Members.ItemType
+                SyncItemPacket.Members.ItemType,
+                SyncItemPacket.Members.Shimmered,
+                SyncItemPacket.Members.ShimmerTime,
+                SyncItemPacket.Members.EnemyGrabDelayTime
             );
         return graph.Build();
     }
@@ -1351,27 +1363,39 @@ internal static class PacketDefinitions
             .ExternalDependencies();
         graph.Field(ItemOwnerPacket.Members.ItemIndex);
         graph.Field(ItemOwnerPacket.Members.ReservedForPlayer);
+        graph.Field(ItemOwnerPacket.Members.TimeToKeepReservation);
+        graph.Field(ItemOwnerPacket.Members.GrabDelayPlayer);
+        graph.Field(ItemOwnerPacket.Members.GrabDelayTime);
         graph.Field(ItemOwnerPacket.Members.PositionX);
         graph.Field(ItemOwnerPacket.Members.PositionY);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(11, 11))
+        graph.FunctionDeclaration(lengthRange: new ByteRange(14, 22))
             .FunctionName(ItemOwnerPacket.Write)
             .ParameterList(
                 ItemOwnerPacket.Members.ItemIndex,
                 ItemOwnerPacket.Members.ReservedForPlayer,
+                ItemOwnerPacket.Members.TimeToKeepReservation,
+                ItemOwnerPacket.Members.GrabDelayPlayer,
+                ItemOwnerPacket.Members.GrabDelayTime,
                 ItemOwnerPacket.Members.PositionX,
                 ItemOwnerPacket.Members.PositionY
             )
             .Sizeof(
                 ItemOwnerPacket.Members.ItemIndex,
                 ItemOwnerPacket.Members.ReservedForPlayer,
+                ItemOwnerPacket.Members.TimeToKeepReservation,
+                ItemOwnerPacket.Members.GrabDelayPlayer,
+                ItemOwnerPacket.Members.GrabDelayTime,
                 ItemOwnerPacket.Members.PositionX,
                 ItemOwnerPacket.Members.PositionY
             );
-        graph.FunctionDeclaration(lengthRange: new ByteRange(11, 11))
+        graph.FunctionDeclaration(lengthRange: new ByteRange(14, 22))
             .FunctionName(ItemOwnerPacket.Read)
             .ReturnValue(
                 ItemOwnerPacket.Members.ItemIndex,
                 ItemOwnerPacket.Members.ReservedForPlayer,
+                ItemOwnerPacket.Members.TimeToKeepReservation,
+                ItemOwnerPacket.Members.GrabDelayPlayer,
+                ItemOwnerPacket.Members.GrabDelayTime,
                 ItemOwnerPacket.Members.PositionX,
                 ItemOwnerPacket.Members.PositionY
             );
@@ -1397,7 +1421,7 @@ internal static class PacketDefinitions
     internal static PacketGraphManifest CreateSyncProjectilePacket()
     {
         var graph = new PacketGraph<SyncProjectilePacket>(27, wireDirection: WireDirection.Bidirectional)
-            .ExternalDependencies(ProtocolInputs.Members.NeedsUuid);
+            .ExternalDependencies();
         graph.Field(SyncProjectilePacket.Members.Identity);
         graph.Field(SyncProjectilePacket.Members.Position);
         graph.Field(SyncProjectilePacket.Members.Velocity);
@@ -1409,9 +1433,8 @@ internal static class PacketDefinitions
         graph.Field(SyncProjectilePacket.Members.Damage);
         graph.Field(SyncProjectilePacket.Members.Knockback);
         graph.Field(SyncProjectilePacket.Members.OriginalDamage);
-        graph.Field(SyncProjectilePacket.Members.ProjectileUuid);
         graph.Field(SyncProjectilePacket.Members.Ai2);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(22, 47))
+        graph.FunctionDeclaration(lengthRange: new ByteRange(23, 46))
             .FunctionName(SyncProjectilePacket.Write)
             .ParameterList(
                 SyncProjectilePacket.Members.Identity,
@@ -1425,9 +1448,7 @@ internal static class PacketDefinitions
                 SyncProjectilePacket.Members.Damage,
                 SyncProjectilePacket.Members.Knockback,
                 SyncProjectilePacket.Members.OriginalDamage,
-                SyncProjectilePacket.Members.ProjectileUuid,
-                SyncProjectilePacket.Members.Ai2,
-                ProtocolInputs.Members.NeedsUuid
+                SyncProjectilePacket.Members.Ai2
             )
             .Sizeof(
                 SyncProjectilePacket.Members.Identity,
@@ -1441,10 +1462,9 @@ internal static class PacketDefinitions
                 SyncProjectilePacket.Members.Damage,
                 SyncProjectilePacket.Members.Knockback,
                 SyncProjectilePacket.Members.OriginalDamage,
-                SyncProjectilePacket.Members.ProjectileUuid,
                 SyncProjectilePacket.Members.Ai2
             );
-        graph.FunctionDeclaration(lengthRange: new ByteRange(22, 47))
+        graph.FunctionDeclaration(lengthRange: new ByteRange(23, 46))
             .FunctionName(SyncProjectilePacket.Read)
             .ReturnValue(
                 SyncProjectilePacket.Members.Identity,
@@ -1458,7 +1478,6 @@ internal static class PacketDefinitions
                 SyncProjectilePacket.Members.Damage,
                 SyncProjectilePacket.Members.Knockback,
                 SyncProjectilePacket.Members.OriginalDamage,
-                SyncProjectilePacket.Members.ProjectileUuid,
                 SyncProjectilePacket.Members.Ai2
             );
         return graph.Build();
@@ -1507,13 +1526,23 @@ internal static class PacketDefinitions
             .ExternalDependencies();
         graph.Field(KillProjectilePacket.Members.ProjectileIdentity);
         graph.Field(KillProjectilePacket.Members.Owner);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(3, 3))
+        graph.Field(KillProjectilePacket.Members.Position);
+        graph.FunctionDeclaration(lengthRange: new ByteRange(12, 12))
             .FunctionName(KillProjectilePacket.Write)
-            .ParameterList(KillProjectilePacket.Members.ProjectileIdentity, KillProjectilePacket.Members.Owner)
-            .Sizeof(KillProjectilePacket.Members.ProjectileIdentity, KillProjectilePacket.Members.Owner);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(3, 3))
+            .ParameterList(
+                KillProjectilePacket.Members.ProjectileIdentity,
+                KillProjectilePacket.Members.Owner,
+                KillProjectilePacket.Members.Position)
+            .Sizeof(
+                KillProjectilePacket.Members.ProjectileIdentity,
+                KillProjectilePacket.Members.Owner,
+                KillProjectilePacket.Members.Position);
+        graph.FunctionDeclaration(lengthRange: new ByteRange(12, 12))
             .FunctionName(KillProjectilePacket.Read)
-            .ReturnValue(KillProjectilePacket.Members.ProjectileIdentity, KillProjectilePacket.Members.Owner);
+            .ReturnValue(
+                KillProjectilePacket.Members.ProjectileIdentity,
+                KillProjectilePacket.Members.Owner,
+                KillProjectilePacket.Members.Position);
         return graph.Build();
     }
 
@@ -1741,13 +1770,17 @@ internal static class PacketDefinitions
         var graph = new PacketGraph<ReleaseItemOwnershipPacket>(39, wireDirection: WireDirection.Bidirectional)
             .ExternalDependencies();
         graph.Field(ReleaseItemOwnershipPacket.Members.ItemIndex);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(2, 2))
+        graph.Field(ReleaseItemOwnershipPacket.Members.ForceAssignToServer);
+        graph.FunctionDeclaration(lengthRange: new ByteRange(3, 3))
             .FunctionName(ReleaseItemOwnershipPacket.Write)
-            .ParameterList(ReleaseItemOwnershipPacket.Members.ItemIndex)
-            .Sizeof(ReleaseItemOwnershipPacket.Members.ItemIndex);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(2, 2))
+            .ParameterList(ReleaseItemOwnershipPacket.Members.ItemIndex,
+                ReleaseItemOwnershipPacket.Members.ForceAssignToServer)
+            .Sizeof(ReleaseItemOwnershipPacket.Members.ItemIndex,
+                ReleaseItemOwnershipPacket.Members.ForceAssignToServer);
+        graph.FunctionDeclaration(lengthRange: new ByteRange(3, 3))
             .FunctionName(ReleaseItemOwnershipPacket.Read)
-            .ReturnValue(ReleaseItemOwnershipPacket.Members.ItemIndex);
+            .ReturnValue(ReleaseItemOwnershipPacket.Members.ItemIndex,
+                ReleaseItemOwnershipPacket.Members.ForceAssignToServer);
         return graph.Build();
     }
 
@@ -2593,8 +2626,11 @@ internal static class PacketDefinitions
         graph.Field(InstancedItemPacket.Members.Prefix);
         graph.Field(InstancedItemPacket.Members.StateFlags);
         graph.Field(InstancedItemPacket.Members.ItemType);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(24, 24))
-            .FunctionName(PacketItemSyncCodec.WriteFields)
+        graph.Field(InstancedItemPacket.Members.Shimmered);
+        graph.Field(InstancedItemPacket.Members.ShimmerTime);
+        graph.Field(InstancedItemPacket.Members.EnemyGrabDelayTime);
+        graph.FunctionDeclaration(lengthRange: new ByteRange(24, 30))
+            .FunctionName(PacketItemSyncCodec.WriteCurrentFields)
             .ParameterList(
                 InstancedItemPacket.Members.ItemIndex,
                 InstancedItemPacket.Members.PositionX,
@@ -2604,7 +2640,10 @@ internal static class PacketDefinitions
                 InstancedItemPacket.Members.Stack,
                 InstancedItemPacket.Members.Prefix,
                 InstancedItemPacket.Members.StateFlags,
-                InstancedItemPacket.Members.ItemType
+                InstancedItemPacket.Members.ItemType,
+                InstancedItemPacket.Members.Shimmered,
+                InstancedItemPacket.Members.ShimmerTime,
+                InstancedItemPacket.Members.EnemyGrabDelayTime
             )
             .Sizeof(
                 InstancedItemPacket.Members.ItemIndex,
@@ -2615,10 +2654,13 @@ internal static class PacketDefinitions
                 InstancedItemPacket.Members.Stack,
                 InstancedItemPacket.Members.Prefix,
                 InstancedItemPacket.Members.StateFlags,
-                InstancedItemPacket.Members.ItemType
+                InstancedItemPacket.Members.ItemType,
+                InstancedItemPacket.Members.Shimmered,
+                InstancedItemPacket.Members.ShimmerTime,
+                InstancedItemPacket.Members.EnemyGrabDelayTime
             );
-        graph.FunctionDeclaration(lengthRange: new ByteRange(24, 24))
-            .FunctionName(PacketItemSyncCodec.ReadFields)
+        graph.FunctionDeclaration(lengthRange: new ByteRange(24, 30))
+            .FunctionName(PacketItemSyncCodec.ReadCurrentFields)
             .ReturnValue(
                 InstancedItemPacket.Members.ItemIndex,
                 InstancedItemPacket.Members.PositionX,
@@ -2628,7 +2670,10 @@ internal static class PacketDefinitions
                 InstancedItemPacket.Members.Stack,
                 InstancedItemPacket.Members.Prefix,
                 InstancedItemPacket.Members.StateFlags,
-                InstancedItemPacket.Members.ItemType
+                InstancedItemPacket.Members.ItemType,
+                InstancedItemPacket.Members.Shimmered,
+                InstancedItemPacket.Members.ShimmerTime,
+                InstancedItemPacket.Members.EnemyGrabDelayTime
             );
         return graph.Build();
     }
@@ -4221,14 +4266,15 @@ internal static class PacketDefinitions
     {
         var graph = new PacketGraph<QuickStackChestsRequestPacket>(85, wireDirection: WireDirection.ClientToServer)
             .ExternalDependencies();
+        graph.Field(QuickStackChestsRequestPacket.Members.ItemSlots);
         graph.Field(QuickStackChestsRequestPacket.Members.SmartStack);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(1, 1))
+        graph.FunctionDeclaration(lengthRange: new ByteRange(5, PacketFrameLimits.MaximumPayloadBytes))
             .FunctionName(QuickStackChestsRequestPacket.Write)
-            .ParameterList(QuickStackChestsRequestPacket.Members.SmartStack)
-            .Sizeof(QuickStackChestsRequestPacket.Members.SmartStack);
-        graph.FunctionDeclaration(lengthRange: new ByteRange(1, 1))
+            .ParameterList(QuickStackChestsRequestPacket.Members.ItemSlots, QuickStackChestsRequestPacket.Members.SmartStack)
+            .Sizeof(QuickStackChestsRequestPacket.Members.ItemSlots, QuickStackChestsRequestPacket.Members.SmartStack);
+        graph.FunctionDeclaration(lengthRange: new ByteRange(5, PacketFrameLimits.MaximumPayloadBytes))
             .FunctionName(QuickStackChestsRequestPacket.Read)
-            .ReturnValue(QuickStackChestsRequestPacket.Members.SmartStack);
+            .ReturnValue(QuickStackChestsRequestPacket.Members.ItemSlots, QuickStackChestsRequestPacket.Members.SmartStack);
         return graph.Build();
     }
 
@@ -4236,6 +4282,14 @@ internal static class PacketDefinitions
     {
         var graph = new PacketGraph<QuickStackChestsResponsePacket>(85, wireDirection: WireDirection.ServerToClient)
             .ExternalDependencies();
+        graph.Field(QuickStackChestsResponsePacket.Members.BlockedChestIndexes);
+        graph.FunctionDeclaration(lengthRange: new ByteRange(sizeof(int), PacketFrameLimits.MaximumPayloadBytes))
+            .FunctionName(QuickStackChestsResponsePacket.Write)
+            .ParameterList(QuickStackChestsResponsePacket.Members.BlockedChestIndexes)
+            .Sizeof(QuickStackChestsResponsePacket.Members.BlockedChestIndexes);
+        graph.FunctionDeclaration(lengthRange: new ByteRange(sizeof(int), PacketFrameLimits.MaximumPayloadBytes))
+            .FunctionName(QuickStackChestsResponsePacket.Read)
+            .ReturnValue(QuickStackChestsResponsePacket.Members.BlockedChestIndexes);
         return graph.Build();
     }
 

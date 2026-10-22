@@ -53,18 +53,26 @@ public static class NetworkTextCodec
             if (current.Text is null || current.Substitutions is null)
                 throw new PacketWireFormatException("NetworkText text and substitutions cannot be null.");
 
-            writer.WriteByte((byte)current.Mode);
-            WriteString(writer, current.Text, budget);
             if (current.Mode == NetworkTextMode.Literal)
             {
                 if (current.Substitutions.Count != 0)
                     throw new PacketWireFormatException("Literal NetworkText cannot contain substitutions.");
+            }
+            else if (current.Substitutions.Count > byte.MaxValue)
+            {
+                throw new PacketWireFormatException(
+                    "NetworkText cannot encode more than 255 substitutions for one node.");
+            }
+
+            writer.WriteByte((byte)current.Mode);
+            WriteString(writer, current.Text, budget);
+            if (current.Mode == NetworkTextMode.Literal)
+            {
                 continue;
             }
 
             writer.WriteByte(unchecked((byte)current.Substitutions.Count));
-            int serializedCount = current.Substitutions.Count & 0xFF;
-            for (int index = serializedCount - 1; index >= 0; index--)
+            for (int index = current.Substitutions.Count - 1; index >= 0; index--)
                 pending.Push(current.Substitutions[index]);
         }
     }
@@ -84,16 +92,8 @@ public static class NetworkTextCodec
 
     private static void WriteString(PacketWireWriter writer, string value, Budget budget)
     {
-        byte[] utf8 = System.Text.Encoding.UTF8.GetBytes(value);
-        budget.AddBytes(utf8.Length);
-        uint length = (uint)utf8.Length;
-        while (length >= 0x80)
-        {
-            writer.WriteByte((byte)(length | 0x80));
-            length >>= 7;
-        }
-        writer.WriteByte((byte)length);
-        writer.WriteBytes(utf8);
+        budget.AddBytes(System.Text.Encoding.UTF8.GetByteCount(value));
+        writer.WriteString(value);
     }
 
     private static string ReadString(PacketWireReader reader, Budget budget)
@@ -136,9 +136,12 @@ public static class NetworkTextCodec
 
         public void AddBytes(int count)
         {
-            _bytes = checked(_bytes + count);
-            if (_bytes > MaximumTextBytes)
+            if (count > MaximumTextBytes - _bytes)
+            {
                 throw new PacketWireFormatException("NetworkText byte budget exceeded.");
+            }
+
+            _bytes += count;
         }
     }
 

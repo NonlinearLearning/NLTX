@@ -2,8 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using NSSLC.WorldGeneration.Geometry;
-using Terraria.WorldGeneration.Components;
-using Terraria.WorldGeneration.Systems;
+using NSSLC.WorldGeneration.Runtime.Components;
+using NSSLC.WorldGeneration.Runtime.Systems;
 
 namespace NSSLC.WorldGeneration
 {
@@ -202,7 +202,7 @@ namespace NSSLC.WorldGeneration.GameContent
     private const int _minimumKnownNpcNetId = -65;
 
     public dynamic maxItems;
-    private TownHousingRegistryComponent _registry;
+    private GenerationHousingRegistryState _registry;
 
     public bool HasRoom(int npcType, out NSSLC.WorldGeneration.Geometry.Point roomPosition)
     {
@@ -324,12 +324,12 @@ namespace NSSLC.WorldGeneration.GameContent
       TownHousingRegistrySystem.Clear(Registry);
     }
 
-    public void Bind(TownHousingRegistryComponent registry)
+    public void Bind(GenerationHousingRegistryState registry)
     {
       _registry = registry ?? throw new ArgumentNullException(nameof(registry));
     }
 
-    private TownHousingRegistryComponent Registry =>
+    private GenerationHousingRegistryState Registry =>
       _registry ?? NSSLC.WorldGeneration.Main.ActiveWorldSession.TownHousing;
   }
 

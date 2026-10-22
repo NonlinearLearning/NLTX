@@ -4,6 +4,12 @@
 结构已按领域完成物理整理，具体移动记录见 [document-move-map.tsv](document-move-map.tsv)
 和 [CR-2026-09-18](cr/CR-2026-09-18-docs-md-structure-reorganization.md)。
 
+当前源码基线已于 2026-10-09 按用户要求收敛为 68 个 L0/L1 组件定义；
+`src/NSSLC.Infrastructure/` 整棵目录受到保护，完整保留。当前范围与验证见
+[组件定义清理记录](cr/CR-2026-10-09-components-only-cleanup.md) 和
+[组件定义清单](reviews/audits/2026-10-09-components-only-inventory.md)。既有运行迁移材料
+保留为历史依据，不代表删除后的系统、应用层或宿主仍存在。
+
 ## 先读什么
 
 1. [文档信息架构与管理方案](document-architecture.md)：定义分类、命名、路径归属和后续迁移门禁。
@@ -66,8 +72,9 @@ docs/
 | 计划、任务和 PRD | `plans/` | 计划不等于实施证据；完成状态必须有执行或验收材料支撑 |
 | 架构决策和变更控制 | `architecture/decisions/`、`cr/` | 路径搬迁、范围变更和例外都应有可追溯记录 |
 | Entity 运行时组织迁移 | [代码设计](architecture/2026-10-06-entity-organization-design.md)、[执行文档](architecture/execution/2026-10-06-entity-organization-execution.md) | 按源码行为映射、单写切换和真实宿主验收逐批推进 |
-| 自定义 ECS 转向 Arch | [执行计划](plans/2026-10-07-custom-ecs-to-arch-execution-plan.md)、[官方 API 研究](research/2026-10-07-arch-api-migration-research.md) | 允许破坏旧 ECS API；采用 Arch 2.1.0 原生 World/Entity/Query，分批验收并退出旧框架；当前仅完成计划 |
-| 人工复核与返工要求 | `reviews/human/`、`reviews/audits/` | 人工意见不覆盖源码和调用证据，需要在结论中标注证据范围 |
+| L0/L1 组件定义基线与历史 Arch 迁移 | [组件定义清理记录](cr/CR-2026-10-09-components-only-cleanup.md)、[组件定义清单](reviews/audits/2026-10-09-components-only-inventory.md)、[L0/L1 基本玩法组件执行计划](plans/2026-10-08-arch-l1-basic-game-components-execution-plan.md)、[全量执行计划](plans/2026-10-07-custom-ecs-to-arch-execution-plan.md)、[官方 API 研究](research/2026-10-07-arch-api-migration-research.md) | 当前活动源码只保留 68 个组件及字段配套定义，保护整个 NSSLC.Infrastructure；系统和运行入口已退出，Arch 运行迁移计划保留为历史材料 |
+| 人工复核与返工要求 | `reviews/human/`、`reviews/audits/`、[组件筛选反例](reviews/human/组件筛选反例.md) | 人工意见不覆盖源码和调用证据，需要在结论中标注证据范围 |
+| 简单游戏组件分级 | [487 个组件的静态分级审核](reviews/audits/2026-10-08-simple-game-component-grading.md)、[L1 实施记录](reviews/audits/2026-10-08-simple-game-l1-implementation.md) | L0–L4 证据、L1 删除结果和验证记录 |
 
 ## 管理规则
 

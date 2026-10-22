@@ -3,7 +3,8 @@ namespace Terraria.NonAuthoritative.WorldStorage;
 internal static class WorldFileFormatConstants
 {
   internal const int MinimumVersion = 88;
-  internal const int LatestWritableVersion = 319;
+  internal const int MinimumWritableInputVersion = 319;
+  internal const int LatestWritableVersion = 326;
   internal const int LatestReadableVersion = 326;
   internal const int MaximumGameMode = 3;
   internal const int MaxSectionPointers = 11;

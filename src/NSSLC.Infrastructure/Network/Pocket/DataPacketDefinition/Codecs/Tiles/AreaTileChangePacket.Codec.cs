@@ -26,7 +26,7 @@ public sealed partial class AreaTileChangePacket
             throw new PacketWireFormatException($"Packet 20 slope {tile.Slope} does not fit in three bits.");
         }
 
-        bool hasLiquid = tile.LiquidAmount > 0;
+        bool hasLiquid = tile.LiquidAmount > 0 && isServer;
         byte flags1 = 0;
         Set(ref flags1, 0, tile.Active);
         Set(ref flags1, 2, tile.Wall > 0);
@@ -38,8 +38,8 @@ public sealed partial class AreaTileChangePacket
         byte flags2 = (byte)(tile.Slope << 4);
         Set(ref flags2, 0, tile.Wire2);
         Set(ref flags2, 1, tile.Wire3);
-        Set(ref flags2, 2, tile.Active && tile.TileColor > 0);
-        Set(ref flags2, 3, tile.Wall > 0 && tile.WallColor > 0);
+        Set(ref flags2, 2, tile.Active && (tile.TileColorPresent || tile.TileColor > 0));
+        Set(ref flags2, 3, tile.Wall > 0 && (tile.WallColorPresent || tile.WallColor > 0));
         Set(ref flags2, 7, tile.Wire4);
         byte flags3 = 0;
         Set(ref flags3, 0, tile.FullbrightBlock);
@@ -65,8 +65,6 @@ public sealed partial class AreaTileChangePacket
 
         if (tile.Wall > 0)
             writer.WriteUInt16(tile.Wall);
-        // The reference sender gates the flag on server mode, but emits liquid
-        // payload bytes whenever the amount is nonzero.
         if (hasLiquid)
         {
             writer.WriteByte(tile.LiquidAmount);
@@ -78,6 +76,13 @@ public sealed partial class AreaTileChangePacket
     {
         ArgumentNullException.ThrowIfNull(frameImportant);
         int tileCount = width * height;
+        const int minimumTileBytes = 3;
+        if (tileCount > reader.Remaining / minimumTileBytes)
+        {
+            throw new PacketWireTruncationException(
+                $"Packet 20 requires at least {tileCount * minimumTileBytes} tile bytes.", reader);
+        }
+
         var tiles = new Packet20Tile[tileCount];
         for (int index = 0; index < tileCount; index++)
         {
@@ -101,9 +106,15 @@ public sealed partial class AreaTileChangePacket
                 InvisibleWall = Has(flags3, 3)
             };
             if (Has(flags2, 2))
+            {
                 tile.TileColor = reader.ReadByte();
+                tile.TileColorPresent = true;
+            }
             if (Has(flags2, 3))
+            {
                 tile.WallColor = reader.ReadByte();
+                tile.WallColorPresent = true;
+            }
             if (tile.Active)
             {
                 tile.TileType = reader.ReadUInt16();
@@ -111,6 +122,7 @@ public sealed partial class AreaTileChangePacket
                 {
                     tile.FrameX = reader.ReadInt16();
                     tile.FrameY = reader.ReadInt16();
+                    tile.FramePresent = true;
                 }
             }
 
@@ -120,6 +132,7 @@ public sealed partial class AreaTileChangePacket
             {
                 tile.LiquidAmount = reader.ReadByte();
                 tile.LiquidType = reader.ReadByte();
+                tile.LiquidPresent = true;
             }
 
             tiles[index] = tile;

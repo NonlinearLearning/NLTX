@@ -29,6 +29,7 @@ public sealed class GeneratedWorld {
   public IReadOnlyList<bool> CompressionBatching { get; }
   public IReadOnlyList<GeneratedSign> Signs { get; }
   public IReadOnlyList<GeneratedTileEntity> TileEntities { get; }
+  public TileEntityStoreSnapshot EntityContents { get; }
   public string ManifestJson { get; }
 
   internal GeneratedWorld() {
@@ -46,6 +47,7 @@ public sealed class GeneratedWorld {
     Signs = Array.AsReadOnly(Main.sign.Where(sign => sign is not null && sign.text is not null)
         .Select(sign => new GeneratedSign(sign.x, sign.y, sign.text)).ToArray());
     TileEntities = TileEntity.CreateSnapshot();
+    EntityContents = TileEntity.CreatePersistenceSnapshot();
     ManifestJson = WorldGen.Manifest.Serialize();
     Chests = Array.AsReadOnly(Main.chest.Where(chest => chest != null)
       .Select(chest => new GeneratedChest(chest.x, chest.y, chest.name ?? "",

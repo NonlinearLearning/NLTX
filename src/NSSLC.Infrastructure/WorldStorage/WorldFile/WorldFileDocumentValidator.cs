@@ -397,7 +397,7 @@ public sealed class WorldFileDocumentValidator : IWorldPersistenceDocumentValida
           "the supported bounds.");
       }
 
-      if (document.FormatVersion == WorldFileFormatConstants.LatestWritableVersion &&
+      if (document.FormatVersion >= WorldFileFormatConstants.MinimumWritableInputVersion &&
           tileEntities.EntityCount > 0)
       {
         try

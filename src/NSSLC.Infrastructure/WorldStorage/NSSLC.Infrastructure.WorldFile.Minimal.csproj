@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>NSSLC.Infrastructure.WorldFile.Minimal</AssemblyName>
+    <RootNamespace>Terraria.NonAuthoritative</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\MinimalImplementation\Contracts\MinimalImplementation.Contracts.csproj" />
+    <ProjectReference Include="..\WorldGeneration\NSSLC.WorldGeneration.csproj" />
+    <Compile Include="Generation\GeneratedWorldDocumentProjection.cs" />
+    <Compile Include="Platform\WorldFileStoreAdapter.cs" />
+    <Compile Include="WorldFile\WorldFileDocumentDecoder.cs" />
+    <Compile Include="WorldFile\WorldFileDocumentEncoder.cs" />
+    <Compile Include="WorldFile\WorldFileDocumentValidator.cs" />
+    <Compile Include="WorldFile\WorldFileFormatConstants.cs" />
+    <Compile Include="WorldFile\WorldFileTileEntityCodec.cs" />
+  </ItemGroup>
+</Project>

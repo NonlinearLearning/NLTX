@@ -1,10 +1,10 @@
 using System;
 using NSSLC.WorldGeneration;
 using NSSLC.WorldGeneration.ID;
-using Terraria.WorldGeneration.Components;
-using Terraria.WorldGeneration.Housing;
+using NSSLC.WorldGeneration.Runtime.Components;
+using NSSLC.WorldGeneration.Runtime.Housing;
 
-namespace Terraria.WorldGeneration.Adapters;
+namespace NSSLC.WorldGeneration.Runtime.Adapters;
 
 /// <summary>Reads the legacy Main tile grid as explicit housing-validation facts.</summary>
 internal sealed class LegacyHousingTileSource : IHousingTileSource, IHousingRoomScoreTileSource

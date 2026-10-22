@@ -1,7 +1,7 @@
 using NSSLC.WorldGeneration;
-using Terraria.WorldGeneration.Components;
+using NSSLC.WorldGeneration.Runtime.Components;
 
-namespace Terraria.WorldGeneration.Adapters;
+namespace NSSLC.WorldGeneration.Runtime.Adapters;
 
 /// <summary>Projects world-scoped tile metrics into legacy counters and network updates.</summary>
 internal static class LegacyWorldTileMetricsProjection

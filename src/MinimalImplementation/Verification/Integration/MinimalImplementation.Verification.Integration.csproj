@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>MinimalImplementation.Verification.Integration</AssemblyName>
+    <RootNamespace>MinimalImplementation.Verification.Integration</RootNamespace>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\MinimalImplementation.Server.csproj" />
+    <ProjectReference Include="..\..\Contracts\MinimalImplementation.Contracts.csproj" />
+    <ProjectReference Include="..\..\Persistence\MinimalImplementation.Persistence.csproj" />
+    <ProjectReference Include="..\..\Protocol\MinimalImplementation.Protocol.csproj" />
+    <ProjectReference Include="..\..\..\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldFile.Minimal.csproj" />
+    <Compile Include="Program.cs" />
+    <Compile Include="PlayerLuckRouterProbe.cs" />
+    <Compile Include="CreativePermissionProbe.cs" />
+    <Compile Include="RuntimeStartupProbe.cs" />
+  </ItemGroup>
+</Project>

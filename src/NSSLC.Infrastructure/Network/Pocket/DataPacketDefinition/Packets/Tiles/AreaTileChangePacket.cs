@@ -18,10 +18,14 @@ public struct Packet20Tile
     public short FrameX { get; set; }
     public short FrameY { get; set; }
     public byte TileColor { get; set; }
+    public bool TileColorPresent { get; set; }
     public ushort Wall { get; set; }
     public byte WallColor { get; set; }
+    public bool WallColorPresent { get; set; }
     public byte LiquidAmount { get; set; }
     public byte LiquidType { get; set; }
+    public bool LiquidPresent { get; set; }
+    public bool FramePresent { get; set; }
     public bool Wire { get; set; }
     public bool HalfBrick { get; set; }
     public bool Actuator { get; set; }

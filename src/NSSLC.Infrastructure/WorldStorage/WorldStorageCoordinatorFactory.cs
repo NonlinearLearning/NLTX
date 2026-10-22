@@ -203,7 +203,7 @@ public static class WorldStorageCoordinatorFactory
 
     while (session is not null)
     {
-      session.EntityRuntime.EnsureCanDispose();
+      session.EntityLifecycleRegistry.EnsureCanDispose();
       LoadedWorldSession? exchanged = Interlocked.CompareExchange(
         ref _activeGeneratedWorldSession,
         null,
@@ -893,7 +893,7 @@ public static class WorldStorageCoordinatorFactory
 
       try
       {
-        pending.Previous?.EntityRuntime.EnsureCanDispose();
+        pending.Previous?.EntityLifecycleRegistry.EnsureCanDispose();
       }
       catch (InvalidOperationException exception)
       {

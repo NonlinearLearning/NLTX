@@ -2843,5 +2843,21 @@ public static partial class Main {
     tileFrameImportant[653] = true;
     tileFrameImportant[723] = true;
     tileFrameImportant[724] = true;
+    // Main initializes these rules through a range and AddEchoFurnitureTile calls.
+    // Preserve those writes alongside the imported direct assignments above.
+    for (int tileId = 435; tileId <= 439; tileId++) {
+      tileFrameImportant[tileId] = true;
+      tileSolidTop[tileId] = true;
+      tileSolid[tileId] = true;
+      tileNoAttach[tileId] = true;
+      tileTable[tileId] = true;
+      tileLavaDeath[tileId] = true;
+      tileNoSunLight[tileId] = false;
+    }
+    foreach (int tileId in new[] { 647, 648, 706, 650, 649, 652, 651, 693, 694 }) {
+      tileFrameImportant[tileId] = true;
+      tileNoFail[tileId] = true;
+      tileObsidianKill[tileId] = true;
+    }
   }
 }

@@ -29,9 +29,12 @@ public static class PacketTileEntityCodecsV4
         new FixedTileEntityCodec((byte)PacketTileEntityType.FoodPlatter, static (writer, data, _) => WriteItem(writer, Require<PacketItemStack>(data)),
             static (reader, _) => ReadItem(reader)),
         new FixedTileEntityCodec((byte)PacketTileEntityType.TeleportationPylon, static (_, _, _) => { }, static (_, _) => null),
-        new FixedTileEntityCodec((byte)PacketTileEntityType.DeadCellsDisplayJar, static (_, _, _) => { }, static (_, _) => null),
-        new FixedTileEntityCodec((byte)PacketTileEntityType.KiteAnchor, static (_, _, _) => { }, static (_, _) => null),
-        new FixedTileEntityCodec((byte)PacketTileEntityType.CritterAnchor, static (_, _, _) => { }, static (_, _) => null)
+        new FixedTileEntityCodec((byte)PacketTileEntityType.DeadCellsDisplayJar, static (writer, data, _) => WriteItem(writer, Require<PacketItemStack>(data)),
+            static (reader, _) => ReadItem(reader)),
+        new FixedTileEntityCodec((byte)PacketTileEntityType.KiteAnchor, static (writer, data, _) => writer.WriteInt16(Require<short>(data)),
+            static (reader, _) => reader.ReadInt16()),
+        new FixedTileEntityCodec((byte)PacketTileEntityType.CritterAnchor, static (writer, data, _) => writer.WriteInt16(Require<short>(data)),
+            static (reader, _) => reader.ReadInt16())
     ]);
 
     private static T Require<T>(object? data) => data is T value

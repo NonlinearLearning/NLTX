@@ -13,8 +13,6 @@ public sealed partial class SyncItemPacket
     public short ItemType { get; set; }
 
     // Steam 1.4.5.8 conditionally appends these values when StateFlags bit 2/3 is set.
-    // The generated TerrariaV4 codec keeps its legacy 24-byte base layout; the Steam
-    // profile uses SteamItemPacketCodec to read and write the conditional extension.
     public bool? Shimmered { get; set; }
     public float? ShimmerTime { get; set; }
     public byte? EnemyGrabDelayTime { get; set; }

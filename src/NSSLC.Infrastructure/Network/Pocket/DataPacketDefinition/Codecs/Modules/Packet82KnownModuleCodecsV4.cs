@@ -5,7 +5,6 @@ namespace Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
 [PacketSharedFunction]
 public static class Packet82KnownModuleCodecsV4
 {
-    private const int MaximumBannerTypes = 293;
 
     public static IReadOnlyDictionary<ushort, IPacket82ModuleWireCodec> Create() => Create(
     [
@@ -19,7 +18,7 @@ public static class Packet82KnownModuleCodecsV4
         new ModuleCodec<Packet82TeleportPylonData>(Packet82ModuleId.TeleportPylon, WriteTeleportPylon, ReadTeleportPylon),
         new ModuleCodec<Packet82ParticlesData>(Packet82ModuleId.Particles, WriteParticles, ReadParticles),
         new ModuleCodec<Packet82PermissionData>(Packet82ModuleId.CreativePowerPermissions, WritePermission, ReadPermission),
-        new ModuleCodec<Packet82BannerData>(Packet82ModuleId.Banners, WriteBanners, ReadBanners),
+        new ModuleCodec<object>(Packet82ModuleId.Banners, WriteBanners, ReadBanners),
         new ModuleCodec<Packet82EmptyModuleData>(Packet82ModuleId.CraftingRequests, WriteEmpty, ReadEmpty),
         new ModuleCodec<Packet82TagEffectData>(Packet82ModuleId.TagEffectState, WriteTagEffect, ReadTagEffect),
         new ModuleCodec<Packet82LeashedData>(Packet82ModuleId.LeashedEntity, WriteLeashed, ReadLeashed),
@@ -309,13 +308,10 @@ public static class Packet82KnownModuleCodecsV4
                 break;
             case 5:
             case 11:
-                WritePerPlayerToggles(writer, Require<Packet82PerPlayerTogglePowerState>(payload.Value));
+                WritePerPlayerToggles(writer, payload.Value);
                 break;
             case 6:
             case 7:
-                if (payload.Value is not null)
-                    throw new PacketWireFormatException("These Version4 slider powers have no registered network payload.");
-                break;
             case 8:
             case 12:
                 writer.WriteSingle(Require<Packet82SharedSliderPowerState>(payload.Value).Value);
@@ -338,49 +334,60 @@ public static class Packet82KnownModuleCodecsV4
             0 or 9 or 10 or 13 => new Packet82SharedTogglePowerState(reader.ReadBoolean()),
             1 or 2 or 3 or 4 => null,
             5 or 11 => ReadPerPlayerToggles(reader),
-            6 or 7 => null,
-            8 or 12 => new Packet82SharedSliderPowerState(reader.ReadSingle()),
+            6 or 7 or 8 or 12 => new Packet82SharedSliderPowerState(reader.ReadSingle()),
             14 => new Packet82PerPlayerSliderPowerState(reader.ReadByte(), reader.ReadSingle()),
             _ => throw new PacketWireFormatException($"Unknown Version4 creative power id {powerId}.")
         };
         return new Packet82CreativePowerData(powerId, value);
     }
 
-    private static void WritePerPlayerToggles(PacketWireWriter writer, Packet82PerPlayerTogglePowerState state)
-    {
-        if (state.EnabledPlayers is null || state.EnabledPlayers.Length != 255)
-            throw new PacketWireFormatException("Per-player creative toggles require exactly 255 player states.");
-        writer.WriteByte(0);
-        for (int byteIndex = 0; byteIndex < 32; byteIndex++)
-        {
-            byte bits = 0;
-            for (int bitIndex = 0; bitIndex < 8; bitIndex++)
-            {
-                int playerIndex = byteIndex * 8 + bitIndex;
-                if (playerIndex < state.EnabledPlayers.Length && state.EnabledPlayers[playerIndex])
-                    bits |= (byte)(1 << bitIndex);
-            }
-            writer.WriteByte(bits);
+    private static void WritePerPlayerToggles(PacketWireWriter writer, object? value) {
+      if (value is Packet82PerPlayerToggleUpdatePowerState update) {
+        writer.WriteByte(1);
+        writer.WriteByte(update.Player);
+        writer.WriteBoolean(update.Enabled);
+        return;
+      }
+
+      Packet82PerPlayerTogglePowerState state = Require<Packet82PerPlayerTogglePowerState>(value);
+      if (state.EnabledPlayers is null || state.EnabledPlayers.Length != 255) {
+        throw new PacketWireFormatException(
+            "Per-player creative toggles require exactly 255 player states.");
+      }
+
+      writer.WriteByte(0);
+      for (int byteIndex = 0; byteIndex < 32; byteIndex++) {
+        byte bits = 0;
+        for (int bitIndex = 0; bitIndex < 8; bitIndex++) {
+          int playerIndex = byteIndex * 8 + bitIndex;
+          if (playerIndex < state.EnabledPlayers.Length && state.EnabledPlayers[playerIndex]) {
+            bits |= (byte)(1 << bitIndex);
+          }
         }
+        writer.WriteByte(bits);
+      }
     }
 
-    private static Packet82PerPlayerTogglePowerState ReadPerPlayerToggles(PacketWireReader reader)
-    {
-        byte action = reader.ReadByte();
-        if (action != 0)
-            throw new PacketWireFormatException($"Unknown per-player creative toggle action {action}.");
-        var enabled = new bool[255];
-        for (int byteIndex = 0; byteIndex < 32; byteIndex++)
-        {
-            byte bits = reader.ReadByte();
-            int firstPlayer = byteIndex * 8;
-            int validBits = Math.Min(8, enabled.Length - firstPlayer);
-            if (validBits < 8 && (bits & ~((1 << validBits) - 1)) != 0)
-                throw new PacketWireFormatException("Per-player creative toggle has bits outside the 255-player table.");
-            for (int bitIndex = 0; bitIndex < validBits; bitIndex++)
-                enabled[firstPlayer + bitIndex] = (bits & (1 << bitIndex)) != 0;
+    private static object ReadPerPlayerToggles(PacketWireReader reader) {
+      byte action = reader.ReadByte();
+      if (action == 1) {
+        return new Packet82PerPlayerToggleUpdatePowerState(reader.ReadByte(), reader.ReadBoolean());
+      }
+
+      if (action != 0) {
+        throw new PacketWireFormatException($"Unknown per-player creative toggle action {action}.");
+      }
+
+      var enabled = new bool[255];
+      for (int byteIndex = 0; byteIndex < 32; byteIndex++) {
+        byte bits = reader.ReadByte();
+        int firstPlayer = byteIndex * 8;
+        int validBits = Math.Min(8, enabled.Length - firstPlayer);
+        for (int bitIndex = 0; bitIndex < validBits; bitIndex++) {
+          enabled[firstPlayer + bitIndex] = (bits & (1 << bitIndex)) != 0;
         }
-        return new Packet82PerPlayerTogglePowerState(enabled);
+      }
+      return new Packet82PerPlayerTogglePowerState(enabled);
     }
 
     private static void WriteParticles(PacketWireWriter writer, Packet82ParticlesData payload)
@@ -423,72 +430,92 @@ public static class Packet82KnownModuleCodecsV4
         return new Packet82PermissionData(action, powerId, level);
     }
 
-    private static void WriteBanners(PacketWireWriter writer, Packet82BannerData payload)
-    {
-        if (payload.Action == 0
-            && (payload.KillCounts?.Count != MaximumBannerTypes
-                || payload.ClaimableCounts?.Count != MaximumBannerTypes))
-        {
-            throw new PacketWireFormatException(
-                $"Version4 full banner state requires exactly {MaximumBannerTypes} entries in each table.");
-        }
+    private static void WriteBanners(PacketWireWriter writer, object data) {
+      if (data is Packet82BannerClaimRequestData request) {
+        writer.WriteByte(3);
+        writer.WriteInt16(request.BannerId);
+        writer.WriteUInt16(request.Amount);
+        return;
+      }
 
-        writer.WriteByte(payload.Action);
-        switch (payload.Action)
-        {
-            case 0:
-                WriteCount(writer, payload.KillCounts?.Count ?? throw Missing("kill-count array"));
-                foreach (int count in payload.KillCounts!) writer.WriteInt32(count);
-                WriteCount(writer, payload.ClaimableCounts?.Count ?? throw Missing("claimable-count array"));
-                foreach (ushort count in payload.ClaimableCounts!) writer.WriteUInt16(count);
-                break;
-            case 1:
-                writer.WriteInt16(payload.BannerId ?? throw Missing("banner ID"));
-                writer.WriteInt32(payload.KillCount ?? throw Missing("kill count"));
-                break;
-            case 2:
-                writer.WriteInt16(payload.BannerId ?? throw Missing("banner ID"));
-                writer.WriteUInt16(payload.ClaimableCount ?? throw Missing("claimable count"));
-                break;
-            default:
-                throw new PacketWireFormatException($"Unknown Packet 82 banner action {payload.Action}.");
-        }
+      if (data is Packet82BannerClaimResponseData response) {
+        writer.WriteByte(4);
+        writer.WriteInt16(response.BannerId);
+        writer.WriteUInt16(response.Amount);
+        writer.WriteBoolean(response.Granted);
+        return;
+      }
+
+      Packet82BannerData payload = Require<Packet82BannerData>(data);
+      writer.WriteByte(payload.Action);
+      switch (payload.Action) {
+        case 0:
+          WriteCount(writer, payload.KillCounts?.Count ?? throw Missing("kill-count array"));
+          foreach (int count in payload.KillCounts!) {
+            writer.WriteInt32(count);
+          }
+          WriteCount(writer, payload.ClaimableCounts?.Count ?? throw Missing("claimable-count array"));
+          foreach (ushort count in payload.ClaimableCounts!) {
+            writer.WriteUInt16(count);
+          }
+          break;
+        case 1:
+          writer.WriteInt16(payload.BannerId ?? throw Missing("banner ID"));
+          writer.WriteInt32(payload.KillCount ?? throw Missing("kill count"));
+          break;
+        case 2:
+          writer.WriteInt16(payload.BannerId ?? throw Missing("banner ID"));
+          writer.WriteUInt16(payload.ClaimableCount ?? throw Missing("claimable count"));
+          break;
+        default:
+          throw new PacketWireFormatException($"Unknown Packet 82 banner action {payload.Action}.");
+      }
     }
 
-    private static Packet82BannerData ReadBanners(PacketWireReader reader)
-    {
-        byte action = reader.ReadByte();
-        switch (action)
-        {
-            case 0:
-            {
-                int killCount = ReadCount(reader, "kill-count");
-                if (killCount != MaximumBannerTypes)
-                    throw new PacketWireFormatException($"Version4 banner kill table must contain exactly {MaximumBannerTypes} entries.");
-                var kills = new int[killCount];
-                for (int index = 0; index < kills.Length; index++) kills[index] = reader.ReadInt32();
-                int claimCount = ReadCount(reader, "claimable-count");
-                if (claimCount != MaximumBannerTypes)
-                    throw new PacketWireFormatException($"Version4 banner claim table must contain exactly {MaximumBannerTypes} entries.");
-                var claims = new ushort[claimCount];
-                for (int index = 0; index < claims.Length; index++) claims[index] = reader.ReadUInt16();
-                return new Packet82BannerData(action, kills, claims, null, null, null);
-            }
-            case 1:
-            {
-                short bannerId = reader.ReadInt16();
-                int killCount = reader.ReadInt32();
-                return new Packet82BannerData(action, null, null, bannerId, killCount, null);
-            }
-            case 2:
-            {
-                short bannerId = reader.ReadInt16();
-                ushort claimableCount = reader.ReadUInt16();
-                return new Packet82BannerData(action, null, null, bannerId, null, claimableCount);
-            }
-            default:
-                throw new PacketWireFormatException($"Unknown Packet 82 banner action {action}.");
+    private static object ReadBanners(PacketWireReader reader) {
+      byte action = reader.ReadByte();
+      switch (action) {
+        case 0: {
+          int killCount = ReadCount(reader, "kill-count");
+          if (reader.Remaining < sizeof(short)
+              || killCount > (reader.Remaining - sizeof(short)) / sizeof(int)) {
+            throw new PacketWireFormatException("The banner kill table exceeds its bounded body.");
+          }
+
+          var kills = new int[killCount];
+          for (int index = 0; index < kills.Length; index++) {
+            kills[index] = reader.ReadInt32();
+          }
+
+          int claimCount = ReadCount(reader, "claimable-count");
+          if (claimCount > reader.Remaining / sizeof(ushort)) {
+            throw new PacketWireFormatException("The banner claim table exceeds its bounded body.");
+          }
+
+          var claims = new ushort[claimCount];
+          for (int index = 0; index < claims.Length; index++) {
+            claims[index] = reader.ReadUInt16();
+          }
+          return new Packet82BannerData(action, kills, claims, null, null, null);
         }
+        case 1: {
+          short bannerId = reader.ReadInt16();
+          int killCount = reader.ReadInt32();
+          return new Packet82BannerData(action, null, null, bannerId, killCount, null);
+        }
+        case 2: {
+          short bannerId = reader.ReadInt16();
+          ushort claimableCount = reader.ReadUInt16();
+          return new Packet82BannerData(action, null, null, bannerId, null, claimableCount);
+        }
+        case 3:
+          return new Packet82BannerClaimRequestData(reader.ReadInt16(), reader.ReadUInt16());
+        case 4:
+          return new Packet82BannerClaimResponseData(
+              reader.ReadInt16(), reader.ReadUInt16(), reader.ReadBoolean());
+        default:
+          throw new PacketWireFormatException($"Unknown Packet 82 banner action {action}.");
+      }
     }
 
     private static void WriteLeashed(PacketWireWriter writer, Packet82LeashedData payload)

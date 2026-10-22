@@ -4,4 +4,5 @@ public sealed partial class KillProjectilePacket
 {
     public short ProjectileIdentity { get; set; }
     public byte Owner { get; set; }
+    public PacketVector2 Position { get; set; }
 }

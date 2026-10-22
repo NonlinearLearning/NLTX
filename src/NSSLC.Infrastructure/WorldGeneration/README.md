@@ -125,7 +125,8 @@ JSON 文件为统计和哈希报告，不包含完整地块载荷。
 `GeneratedWorldDocumentProjection.Create` 已在正式 `WorldStorage/Generation/` 边界
 将生成结果转换为完整的 27 个逻辑存档区段。`WorldStorage/WorldFile/WorldFileTileCodec`
 实现 WorldFile 319 的四级地块标志头和纵向游程压缩，输出
-`WorldFileTilePayloadSection` 接受的载荷。世界生成库只捕获创建结果，不依赖存储项目。
+`WorldFileTilePayloadSection` 接受的载荷。WorldFile encoder 将生成文档写为版本 326；
+世界生成库只捕获创建结果，不依赖存储项目。
 
 保存复用 `WorldSaveCoordinator`、正式文件适配器和 WorldFile encoder；加载复用
 `WorldLoadCoordinator`、正式 decoder/validator 和生成的 API catalog。
@@ -206,7 +207,8 @@ dotnet run --project src/NSSLC.Tools.WorldGeneration/NSSLC.Tools.WorldGeneration
 比较的是 `.wld` 实际持久化字段；非重要地块 frame、墙 framing 缓存和液体处理队列
 等运行缓存不参与比较。
 
-当前完整生成世界的加载组合支持 WorldFile 319。CreativePowers 接受标准新世界的
+当前完整生成世界的加载组合支持 WorldFile 326；encoder 也会把 319 至 326 的已解码文档
+统一写为 326。CreativePowers 接受标准新世界的
 空载荷，非空内容明确拒绝。真实生成的上述两场景没有标牌或 TileEntity；另行通过
 包含 1 个标牌、9 种空内容 TileEntity、额外出生点和 NPC 历史的诊断样例验证加载。
 这不包含原 Terraria 程序加载验证，也不代表完整游戏模拟或服务器接入已经完成。

@@ -32,10 +32,10 @@ using NSSLC.WorldGeneration.Testing;
 using NSSLC.WorldGeneration.UI;
 using NSSLC.WorldGeneration.Utilities;
 using NSSLC.WorldGeneration.WorldBuilding;
-using Terraria.WorldGeneration.Adapters;
-using Terraria.WorldGeneration.Components;
-using Terraria.WorldGeneration.Housing;
-using Terraria.WorldGeneration.Systems;
+using NSSLC.WorldGeneration.Runtime.Adapters;
+using NSSLC.WorldGeneration.Runtime.Components;
+using NSSLC.WorldGeneration.Runtime.Housing;
+using NSSLC.WorldGeneration.Runtime.Systems;
 
 namespace NSSLC.WorldGeneration;
 
@@ -4174,7 +4174,7 @@ public partial class WorldGen
 	// The legacy API resolves to the current world's scratch counts on each access.
 	public static int[] tileCounts =>
 		WorldTileMetricsSystem.GetMutableTileCounts(CurrentWorldTileMetrics);
-	private static WorldTileMetricsComponent CurrentWorldTileMetrics => Main.ActiveWorldSession.TileMetrics;
+	private static GenerationTileMetricsState CurrentWorldTileMetrics => Main.ActiveWorldSession.TileMetrics;
 	private static readonly IWorldTileMetricsTileSource _worldTileMetricsTileSource =
 		new MainWorldTileMetricsTileSource();
 
@@ -4473,7 +4473,7 @@ public partial class WorldGen
 	public static UnifiedRandom genRand => Main.rand;
 
 	public static double oceanLevel =>
-		Terraria.WorldGeneration.Metrics.WorldOceanLevelQuery.Evaluate(
+		NSSLC.WorldGeneration.Runtime.Metrics.WorldOceanLevelQuery.Evaluate(
 			Main.worldSurface,
 			Main.rockLayer);
 
@@ -71362,7 +71362,7 @@ private static bool GenerateWorldCore(GenerationProgress customProgressObject, W
 		CountTiles(CurrentWorldTileMetrics, X);
 	}
 
-	private static void CountTiles(WorldTileMetricsComponent metrics, int X)
+	private static void CountTiles(GenerationTileMetricsState metrics, int X)
 	{
 		int[] tileCounts = WorldTileMetricsSystem.GetMutableTileCounts(metrics);
 		if (X == 0)
@@ -71407,12 +71407,12 @@ private static bool GenerateWorldCore(GenerationProgress customProgressObject, W
 
 	public static void ResetWorldTileMetrics()
 	{
-		WorldTileMetricsComponent metrics = CurrentWorldTileMetrics;
+		GenerationTileMetricsState metrics = CurrentWorldTileMetrics;
 		WorldTileMetricsSystem.Reset(metrics);
 		LegacyWorldTileMetricsProjection.Reset();
 	}
 
-	private static void PublishPendingTileMetrics(WorldTileMetricsComponent metrics)
+	private static void PublishPendingTileMetrics(GenerationTileMetricsState metrics)
 	{
 		WorldTileMetricsSnapshot snapshot =
 			WorldTileMetricsSystem.CreatePendingSnapshot(metrics);
@@ -71434,7 +71434,7 @@ private static bool GenerateWorldCore(GenerationProgress customProgressObject, W
 	}
 	public static void AddUpAlignmentCounts(bool clearCounts = false)
 	{
-		WorldTileMetricsComponent metrics = CurrentWorldTileMetrics;
+		GenerationTileMetricsState metrics = CurrentWorldTileMetrics;
 		WorldTileMetricsSystem.AccumulateAlignmentCounts(
 			metrics,
 			WorldTileMetricsSystem.GetMutableTileCounts(metrics),
@@ -71701,7 +71701,7 @@ private static bool GenerateWorldCore(GenerationProgress customProgressObject, W
 		UpdateLunarApocalypse();
 		if (Main.netMode != 1)
 		{
-			WorldTileMetricsComponent metrics = CurrentWorldTileMetrics;
+			GenerationTileMetricsState metrics = CurrentWorldTileMetrics;
 			if (WorldTileMetricsSystem.AdvanceCadence(
 					metrics,
 					Main.maxTilesX,

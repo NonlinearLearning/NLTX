@@ -323,8 +323,16 @@ public sealed class PacketWireWriter
     public void WriteString(string value)
     {
         ArgumentNullException.ThrowIfNull(value);
+        int byteCount = Encoding.UTF8.GetByteCount(value);
+        int prefixLength = 1;
+        for (uint length = (uint)byteCount; length >= 0x80; length >>= 7)
+        {
+            prefixLength++;
+        }
+
+        EnsureCanWrite((long)prefixLength + byteCount);
         byte[] bytes = Encoding.UTF8.GetBytes(value);
-        uint remaining = (uint)bytes.Length;
+        uint remaining = (uint)byteCount;
         while (remaining >= 0x80)
         {
             WriteByte((byte)(remaining | 0x80));
@@ -341,7 +349,7 @@ public sealed class PacketWireWriter
         _stream.Write(value);
     }
 
-    private void EnsureCanWrite(int count)
+    private void EnsureCanWrite(long count)
     {
         if ((long)BytesWritten + count > _maximumBytes)
         {

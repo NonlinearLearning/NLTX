@@ -17,14 +17,8 @@ public sealed partial class SyncProjectilePacket
         short? damage,
         float? knockback,
         short? originalDamage,
-        short? projectileUuid,
-        float ai2,
-        Func<short, bool> needsUuid)
+        float ai2)
     {
-        ArgumentNullException.ThrowIfNull(needsUuid);
-        bool hasUuid = needsUuid(projectileType);
-        if (hasUuid != projectileUuid.HasValue)
-            throw new PacketWireFormatException("Packet 27 projectile UUID presence must match the projectile type protocol fact.");
         byte flags1 = 0;
         Set(ref flags1, 0, ai0 != 0f);
         Set(ref flags1, 1, ai1 != 0f);
@@ -33,13 +27,12 @@ public sealed partial class SyncProjectilePacket
         Set(ref flags1, 4, damage is not null and not 0);
         Set(ref flags1, 5, knockback is not null and not 0f);
         Set(ref flags1, 6, originalDamage is not null and not 0);
-        Set(ref flags1, 7, hasUuid);
         byte flags2 = 0;
         Set(ref flags2, 0, ai2 != 0f);
-        writer.WriteInt16(identity);
+        uint key = (uint)(owner | ((identity & 0x3ff) << 8));
+        writer.WriteUInt32(key);
         WriteVector2(writer, position);
         WriteVector2(writer, velocity);
-        writer.WriteByte(owner);
         writer.WriteInt16(projectileType);
         writer.WriteByte(flags1);
         if ((flags1 & (1 << 2)) != 0)
@@ -56,8 +49,6 @@ public sealed partial class SyncProjectilePacket
             writer.WriteSingle(knockback!.Value);
         if (Has(flags1, 6))
             writer.WriteInt16(originalDamage!.Value);
-        if (Has(flags1, 7))
-            writer.WriteInt16(projectileUuid!.Value);
         if ((flags2 & 1) != 0)
             writer.WriteSingle(ai2);
     }
@@ -74,13 +65,13 @@ public sealed partial class SyncProjectilePacket
         short? Damage,
         float? Knockback,
         short? OriginalDamage,
-        short? ProjectileUuid,
         float Ai2) Read(PacketWireReader reader)
     {
-        short identity = reader.ReadInt16();
+        uint key = reader.ReadUInt32();
+        short identity = checked((short)((key >> 8) & 0x3ff));
         PacketVector2 position = ReadVector2(reader);
         PacketVector2 velocity = ReadVector2(reader);
-        byte owner = reader.ReadByte();
+        byte owner = (byte)(key & 0xff);
         short type = reader.ReadInt16();
         byte flags1 = reader.ReadByte();
         byte flags2 = Has(flags1, 2) ? reader.ReadByte() : (byte)0;
@@ -90,9 +81,8 @@ public sealed partial class SyncProjectilePacket
         short? damage = Has(flags1, 4) ? reader.ReadInt16() : null;
         float? knockback = Has(flags1, 5) ? reader.ReadSingle() : null;
         short? originalDamage = Has(flags1, 6) ? reader.ReadInt16() : null;
-        short? uuid = Has(flags1, 7) ? reader.ReadInt16() : null;
         float ai2 = Has(flags2, 0) ? reader.ReadSingle() : 0f;
-        return (Identity: identity, Position: position, Velocity: velocity, Owner: owner, ProjectileType: type, Ai0: ai0, Ai1: ai1, BannerId: bannerId, Damage: damage, Knockback: knockback, OriginalDamage: originalDamage, ProjectileUuid: uuid, Ai2: ai2);
+        return (Identity: identity, Position: position, Velocity: velocity, Owner: owner, ProjectileType: type, Ai0: ai0, Ai1: ai1, BannerId: bannerId, Damage: damage, Knockback: knockback, OriginalDamage: originalDamage, Ai2: ai2);
     }
 
     private static bool Has(byte flags, int bit) => (flags & (1 << bit)) != 0;

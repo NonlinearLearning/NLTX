@@ -5,8 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using NSSLC.WorldGeneration.ID;
 using NSSLC.WorldGeneration.WorldBuilding;
-using Terraria.WorldSession.Components;
-using Terraria.WorldGeneration.Systems;
+using NSSLC.WorldGeneration.Runtime;
+using NSSLC.WorldGeneration.Runtime.Systems;
 
 namespace NSSLC.WorldGeneration;
 
@@ -48,7 +48,7 @@ public static partial class Main {
 
   private static WorldLoadHandlerRegistration _worldLoadHandlerRegistration;
   private static bool _objectDataInitialized;
-  private static WorldSessionRestoreState _activeWorldSession = CreateWorldSession();
+  private static GenerationRuntimeState _activeWorldSession = CreateWorldSession();
   public static bool onlyShimmerOceanWorldsGeneration;
   public static bool onlyShimmerOceanWorlds;
   public static bool Setting_UseReducedMaxLiquids;
@@ -59,11 +59,11 @@ public static partial class Main {
   public static int anglerQuest;
   public static string worldName = "Generated World";
   public static NSSLC.WorldGeneration.Geometry.Vector2 screenPosition;
-  public static WorldSessionRestoreState ActiveWorldSession =>
+  public static GenerationRuntimeState ActiveWorldSession =>
     Volatile.Read(ref _activeWorldSession);
   public static bool ShouldShowInvisibleBlocksAndWalls() => true;
 
-  public static void SetActiveWorldSession(WorldSessionRestoreState session) {
+  public static void SetActiveWorldSession(GenerationRuntimeState session) {
     ArgumentNullException.ThrowIfNull(session);
     WorldGen.RunWorldLifecycleMutation(() => {
       WorldTileMetricsSystem.EnsureTileTypeCount(session.TileMetrics, TileID.Count);
@@ -71,8 +71,8 @@ public static partial class Main {
     });
   }
 
-  private static WorldSessionRestoreState CreateWorldSession() {
-    var session = new WorldSessionRestoreState();
+  private static GenerationRuntimeState CreateWorldSession() {
+    var session = new GenerationRuntimeState();
     WorldTileMetricsSystem.EnsureTileTypeCount(session.TileMetrics, TileID.Count);
     return session;
   }

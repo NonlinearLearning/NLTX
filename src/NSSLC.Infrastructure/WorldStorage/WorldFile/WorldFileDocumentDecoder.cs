@@ -16,7 +16,7 @@ namespace Terraria.NonAuthoritative.WorldStorage;
 /// party/sandstorm/defender-event/background/event/tree-tops/seasonal/npc-unlocks/time-policy/
 /// spawn prefix and the bounded Tile payload, Chest/Sign/NPC/WeightedPressurePlates/TownManager/
 /// Bestiary/Footer sections. TileEntity and CreativePowers are retained as bounded raw payloads.
-/// It does not expand Tile into runtime objects, read an exploration map, or write any ECS store.
+/// It does not expand Tile into runtime objects, read an exploration map, or write runtime component state.
 /// More section decoders can be added behind the same application port.
 /// </remarks>
 public sealed class WorldFileDocumentDecoder : IWorldPersistenceDocumentDecoder
