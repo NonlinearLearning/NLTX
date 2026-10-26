@@ -38,7 +38,6 @@ public sealed class WorldInteractionSystem : BaseSystem<ArchWorld, EcsServerTick
   public override void Update(in EcsServerTickContext context) {
     long tick = context.Tick;
     QueryDescription query = new QueryDescription()
-        .WithAll<WorldInteractionCapabilityComponent>()
         .WithAll<WorldInteractionRequestComponent>()
         .WithAll<WorldInteractionResultComponent>();
 

@@ -129,9 +129,11 @@ public sealed class MovementUpdateSystem : BaseSystem<World, EcsServerTickContex
 
 - `AttributeTickSystem`：查询 `AttributeSetComponent`，推进限时属性修饰器；
 - `GravityTickSystem`：查询完整重力组合，推进修饰器并写入 `GravityStateComponent`。
+- `WorldTickSystem`：接收 `EcsServerTickContext`，推进 `WorldRuntime` 的世界时间和版本；
+  通常注册在 `Simulation`，并把 `WorldInteractionSystem` 放在 `Commit`。
 
-这两个适配器只负责把已有计算规则接到 Arch 查询。它们不会推断装备、Buff、输入、世界
-查询或网络状态，也不会替代 `SpatialSimulationSystem` 的空间提交边界。
+这些适配器只负责把领域状态接到 Arch 的 Tick 生命周期。它们不会推断装备、Buff、输入或
+网络状态，也不会替代 `SpatialSimulationSystem` 的空间提交边界。
 
 `EcsServer` 不规定所有系统都必须每 Tick 修改组件。请求型操作可以由服务器在独占提交阶段
 直接调用领域系统；持续模拟系统则由宿主在每轮调用 `Update`。添加/移除组件和销毁实体属于

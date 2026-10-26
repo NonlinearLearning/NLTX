@@ -1,7 +1,13 @@
 # 世界交互能力
 
-本目录提供实体访问世界的共享能力边界。它使用 Arch 的实体句柄定位调用者，但不把地图
-数组、文件对象或服务器世界所有者放进组件。
+本目录提供实体访问世界的共享能力边界和 NSSLC 的最小可运行世界 owner。它使用 Arch 的
+实体句柄定位调用者，但不把地图拆成“一 tile 一个实体”。
+
+`WorldRuntime` 组合 `WorldRuntimeStateComponent` 与 `WorldTileStorageComponent`，实现
+`IWorldInteractionWorld` 和 `ISpatialWorldQuery`。因此基础运行可以直接读取、放置、破坏
+tile，推进显式 ECS Tick，并为移动系统提供实心 tile 碰撞和液体接触查询。持久化、网络
+广播、掉落、多格物体、斜坡和完整液体传播仍由外部 adapter 负责，不能从这个最小 owner
+推断已实现。
 
 ## 协作关系
 
@@ -11,7 +17,7 @@ Arch Entity
        └─ WorldInteractionSystem.TryAcquire
             └─ WorldInteractionAccess（短期令牌）
                  └─ IWorldInteractionWorld
-                      └─ 权威世界所有者 / 规则 / 掉落 / 广播
+                      └─ WorldRuntime / 外部权威世界所有者
 ```
 
 ## Arch World 请求流
@@ -27,10 +33,15 @@ WorldInteractionResultComponent
 宿主把 `WorldInteractionSystem` 注册到 `EcsServerPhase.Commit`：
 
 ```csharp
-WorldInteractionSystem worldSystem = new(ecsWorld, worldPort);
+WorldRuntime world = new(width: 256, height: 128);
+WorldInteractionSystem worldSystem = new(ecsWorld, world);
+WorldTickSystem worldTick = new(ecsWorld, world);
 EcsServer server = EcsServer.Create(
     ecsWorld,
-    [new(EcsServerPhase.Commit, worldSystem)]);
+    [
+      new(EcsServerPhase.Simulation, worldTick),
+      new(EcsServerPhase.Commit, worldSystem)
+    ]);
 ```
 
 请求由提交阶段通过 Arch `World.Query` 消费。每个实体每次更新最多处理一个仍处于
@@ -50,10 +61,11 @@ Entity player = ecsWorld.Create(
 ```
 
 请求组件只保存一次操作的 Tick、坐标、类型和请求编号；系统只消费当前 Tick 的请求，旧请求
-会写入拒绝结果。组件不保存 tile 数组、WorldFile、地图
-副本或长期 Arch 实体引用。`IWorldInteractionWorld` 仍是 tile/wall/liquid 数据、坐标规则、
-掉落、dirty section 和广播的权威端口。Arch `World` 管理的是交互实体和请求状态，不是整张
-密集 tile map。
+会写入拒绝结果。组件不保存 tile 数组、WorldFile、地图副本或长期 Arch 实体引用。实体即使
+缺少 `WorldInteractionCapabilityComponent`，也会收到明确的权限拒绝结果并结束请求。
+`IWorldInteractionWorld` 是 tile/wall/liquid 数据、坐标规则、掉落、dirty section 和广播
+的权威端口；`WorldRuntime` 只覆盖基础 tile、碰撞和液体接触行为。Arch `World` 管理的是
+交互实体和请求状态，不是整张密集 tile map。
 
 `WorldInteractionCapabilityComponent` 是实体的授权声明。它只保存
 `WorldInteractionPermission` 位：读取方块、破坏方块和放置方块。实体没有这个组件时，
