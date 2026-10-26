@@ -6,7 +6,7 @@ namespace MinimalImplementation.Combat.Identity;
 public readonly record struct CombatEntityIdentity(
   EntityUuid Id,
   long WorldScope,
-  long Generation)
+  long Generation)//WorldScope 用来拒绝旧世界留下的操作。Generation 通常用于解决编号复用。这两个都是重复的
 {
   public bool IsValid => Id.IsValid && WorldScope > 0 && Generation > 0;
 }

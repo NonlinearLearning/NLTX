@@ -1,0 +1,11 @@
+This directory contains code adapted from CrashKonijn GOAP.
+Repository: https://github.com/crashkonijn/GOAP
+Revision: 7fb29cfe59dc61aa8cf1f69880d3ef95fc29126c
+License: Apache License, Version 2.0 (full text in LICENSE.txt).
+
+NLTX modifications: namespaces; Unity platform dependencies replaced with .NET
+collections, System.Numerics, synchronous execution and explicit per-agent ports;
+configuration and entity integration adapters; execution cleanup and current-tick
+context fixes. See SOURCES.md and ../README.md for scope and differences.
+
+This port does not imply endorsement by CrashKonijn or full Unity API compatibility.
