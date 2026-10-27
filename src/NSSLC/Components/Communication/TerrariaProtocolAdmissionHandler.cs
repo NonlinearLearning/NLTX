@@ -81,7 +81,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
       CommunicationSessionComponent session)
   {
     string version = ReadString(payload);
-    if (!string.Equals(version, _options.ProtocolVersion, StringComparison.Ordinal))
+    if (!IsCompatibleVersion(version))
     {
       ServerLog.Warning(
           "ecs.protocol.version_rejected",
@@ -96,6 +96,31 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
 
     ServerLog.Info("ecs.protocol.player_info", $"epoch={session.Epoch.Value} slot=0");
     return [CreateIntent(PlayerInfoMessageId, [0, 0], session)];
+  }
+
+  private bool IsCompatibleVersion(string version)
+  {
+    if (string.Equals(version, _options.ProtocolVersion, StringComparison.Ordinal))
+    {
+      return true;
+    }
+
+    if (!_options.AcceptCompatibleTerrariaVersions ||
+        !version.StartsWith("Terraria", StringComparison.Ordinal) ||
+        version.Length == "Terraria".Length)
+    {
+      return false;
+    }
+
+    for (int index = "Terraria".Length; index < version.Length; index++)
+    {
+      if (!char.IsAsciiDigit(version[index]))
+      {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private IReadOnlyList<OutboundPacketIntent> HandlePlayerData(

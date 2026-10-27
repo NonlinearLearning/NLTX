@@ -5,6 +5,13 @@ public sealed class TerrariaProtocolOptions
 {
   public string ProtocolVersion { get; init; } = "Terraria319";
 
+  /// <summary>
+  /// Accepts newer Terraria build labels while the bounded Version4 join layout remains shared.
+  /// This is required for clients such as Terraria326 connecting to the Terraria319-compatible
+  /// generated packet profile.
+  /// </summary>
+  public bool AcceptCompatibleTerrariaVersions { get; init; } = true;
+
   public int WorldWidth { get; init; } = 256;
 
   public int WorldHeight { get; init; } = 128;
