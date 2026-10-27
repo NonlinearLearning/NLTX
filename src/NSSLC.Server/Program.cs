@@ -17,15 +17,22 @@ namespace NSSLC.Server;
 
 internal static class Program
 {
-  private const int WorldWidth = 256;
-  private const int WorldHeight = 128;
   private const float TickDeltaTime = 1f / 60f;
   private const int ListenPort = 7777;
 
-  public static async Task<int> Main()
+  public static async Task<int> Main(string[] args)
   {
+    LoadedServerWorld loadedWorld = ServerWorldLoader.Load(
+        args.Length > 0 ? args[0] : null);
+    int worldWidth = loadedWorld.Header.MaxTilesX;
+    int worldHeight = loadedWorld.Header.MaxTilesY;
     using ArchWorld ecsWorld = ArchWorld.Create();
-    WorldRuntime worldRuntime = new(WorldWidth, WorldHeight);
+    WorldRuntime worldRuntime = new(worldWidth, worldHeight);
+    WorldInteractionResult worldLoad = worldRuntime.Load(loadedWorld.Tiles);
+    if (!worldLoad.Succeeded)
+    {
+      throw new InvalidDataException($"The decoded world could not be published: {worldLoad.Failure}");
+    }
     EntityRuntimeRegistry entities = new(worldScope: 1);
     ProjectileRuntimeRegistry projectiles = new(entities);
     CombatAttackDefinitionCatalog attackDefinitions = CreateAttackDefinitions();
@@ -105,7 +112,26 @@ internal static class Program
         projectileLifecycle,
         communication,
         worldTick,
-        worldInteractions);
+        worldInteractions,
+        new TerrariaProtocolOptions
+        {
+          WorldWidth = worldWidth,
+          WorldHeight = worldHeight,
+          SpawnTileX = loadedWorld.Environment.SpawnTileX,
+          SpawnTileY = loadedWorld.Environment.SpawnTileY,
+          WorldName = loadedWorld.Header.WorldName,
+          WorldId = loadedWorld.Header.WorldId,
+          WorldGuid = loadedWorld.Header.UniqueId ?? Guid.Empty,
+          WorldGeneratorVersion = loadedWorld.Header.WorldGeneratorVersion ?? 0,
+          GameMode = loadedWorld.Header.GameMode,
+          WorldSurface = checked((short)loadedWorld.Environment.WorldSurface),
+          RockLayer = checked((short)loadedWorld.Environment.RockLayer),
+          WorldTime = checked((int)loadedWorld.Environment.Time),
+          DayTime = loadedWorld.Environment.DayTime,
+          MoonPhase = checked((byte)loadedWorld.Environment.MoonPhase),
+          WorldTiles = loadedWorld.Tiles,
+          FrameImportant = loadedWorld.FrameImportant.ToArray()
+        });
     using EcsServer server = EcsServer.Create(ecsWorld, registrations);
     server.Initialize();
 
@@ -121,7 +147,9 @@ internal static class Program
       await communication!.StartAsync(shutdown.Token).ConfigureAwait(false);
       ServerLog.Info(
           "ecs.server.ready",
-          $"listen=127.0.0.1:{ListenPort} world={WorldWidth}x{WorldHeight}");
+          $"listen=127.0.0.1:{ListenPort} world={worldWidth}x{worldHeight} " +
+          $"path={ServerLog.Quote(loadedWorld.Path)} spawn={loadedWorld.Environment.SpawnTileX}," +
+          $"{loadedWorld.Environment.SpawnTileY}");
       await RunTicksAsync(server, shutdown.Token).ConfigureAwait(false);
     }
     catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
@@ -156,7 +184,8 @@ internal static class Program
       ProjectileLifecycleSystem projectileLifecycle,
       CommunicationHostRuntime communication,
       WorldTickSystem worldTick,
-      WorldInteractionSystem worldInteractions)
+      WorldInteractionSystem worldInteractions,
+      TerrariaProtocolOptions protocolOptions)
   {
     List<EcsServerSystemRegistration> registrations = [];
     registrations.AddRange(CommunicationSystemRegistration.CreateGame(
@@ -164,7 +193,8 @@ internal static class Program
         entities,
         attackIntents,
         attackDefinitions,
-        communication.OutboundPort));
+        communication.OutboundPort,
+        protocolOptions: protocolOptions));
     registrations.AddRange(CombatSystemRegistration.Create(
         world,
         entities,

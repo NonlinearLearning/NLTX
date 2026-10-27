@@ -9,5 +9,8 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\NSSLC\Terraria.Components.csproj" />
+    <ProjectReference Include="..\MinimalImplementation\World\MinimalImplementation.World.csproj" />
+    <ProjectReference Include="..\MinimalImplementation\Contracts\MinimalImplementation.Contracts.csproj" />
+    <ProjectReference Include="..\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldFile.Minimal.csproj" />
   </ItemGroup>
 </Project>

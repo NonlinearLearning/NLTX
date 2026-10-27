@@ -2,6 +2,8 @@ using System.Buffers.Binary;
 using System.IO.Compression;
 using System.Text;
 using Terraria.Diagnostics;
+using Terraria.Liquid;
+using Terraria.World;
 
 namespace Terraria.Communication;
 
@@ -157,7 +159,9 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     }
 
     ServerLog.Info("ecs.protocol.initial_spawn", $"epoch={session.Epoch.Value}");
-    int sectionCount = (_options.WorldWidth + 199) / 200;
+    const int sectionHeight = 50;
+    int sectionCount = ((_options.WorldWidth + 199) / 200) *
+        ((_options.WorldHeight + sectionHeight - 1) / sectionHeight);
     var responses = new List<OutboundPacketIntent>(sectionCount + 2)
     {
       // MinimalImplementation repeats packet 7 immediately before section transfer. Terraria
@@ -165,13 +169,17 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
       CreateIntent(WorldDataMessageId, CreateWorldDataPayload(), session),
       CreateIntent(StatusTextSizeMessageId, CreateStatusPayload(sectionCount), session)
     };
-    for (int startX = 0; startX < _options.WorldWidth; startX += 200)
+    for (int startY = 0; startY < _options.WorldHeight; startY += sectionHeight)
     {
-      int width = Math.Min(200, _options.WorldWidth - startX);
-      responses.Add(CreateIntent(
-          TileSectionMessageId,
-          CreateEmptyTileSectionPayload(startX, width, _options.WorldHeight),
-          session));
+      int height = Math.Min(sectionHeight, _options.WorldHeight - startY);
+      for (int startX = 0; startX < _options.WorldWidth; startX += 200)
+      {
+        int width = Math.Min(200, _options.WorldWidth - startX);
+        responses.Add(CreateIntent(
+            TileSectionMessageId,
+            CreateTileSectionPayload(startX, startY, width, height),
+            session));
+      }
     }
 
     responses.Add(CreateIntent(InitialSpawnMessageId, Array.Empty<byte>(), session));
@@ -196,20 +204,20 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
   private byte[] CreateWorldDataPayload()
   {
     using var stream = new MemoryStream();
-    WriteInt32(stream, 0);
-    stream.WriteByte(1); // day time
-    stream.WriteByte(0); // moon phase
+    WriteInt32(stream, _options.WorldTime);
+    stream.WriteByte(_options.DayTime ? (byte)1 : (byte)0);
+    stream.WriteByte(_options.MoonPhase);
     WriteInt16(stream, checked((short)_options.WorldWidth));
     WriteInt16(stream, checked((short)_options.WorldHeight));
     WriteInt16(stream, checked((short)_options.SpawnTileX));
     WriteInt16(stream, checked((short)_options.SpawnTileY));
-    WriteInt16(stream, checked((short)(_options.WorldHeight / 2)));
-    WriteInt16(stream, checked((short)(_options.WorldHeight * 3 / 4)));
-    WriteInt32(stream, 1);
+    WriteInt16(stream, _options.WorldSurface);
+    WriteInt16(stream, _options.RockLayer);
+    WriteInt32(stream, _options.WorldId);
     WriteString(stream, _options.WorldName);
-    stream.WriteByte(0); // classic world
-    stream.Write(new byte[16]);
-    WriteUInt64(stream, 0);
+    stream.WriteByte(checked((byte)_options.GameMode));
+    stream.Write((_options.WorldGuid == Guid.Empty ? new byte[16] : _options.WorldGuid.ToByteArray()));
+    WriteUInt64(stream, _options.WorldGeneratorVersion);
     stream.WriteByte(0);
     stream.Write(new byte[13]);
     stream.Write(new byte[3]);
@@ -246,17 +254,15 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     return stream.ToArray();
   }
 
-  private static byte[] CreateEmptyTileSectionPayload(int startX, int width, int height)
+  private byte[] CreateTileSectionPayload(int startX, int startY, int width, int height)
   {
     using var body = new MemoryStream();
     WriteInt32(body, startX);
-    WriteInt32(body, 0);
+    WriteInt32(body, startY);
     WriteInt16(body, checked((short)width));
     WriteInt16(body, checked((short)height));
 
-    int tileCount = checked(width * height);
-    body.WriteByte(0x80); // Long RLE run; the tile is empty and has no optional fields.
-    WriteInt16(body, checked((short)(tileCount - 1)));
+    WriteTiles(body, startX, startY, width, height);
     WriteInt16(body, 0); // zero chest count
     WriteInt16(body, 0); // zero sign count
     WriteInt16(body, 0); // zero tile-entity count
@@ -269,6 +275,89 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     }
 
     return compressed.ToArray();
+  }
+
+  private void WriteTiles(Stream body, int startX, int startY, int width, int height)
+  {
+    WorldTileState[] tiles = new WorldTileState[checked(width * height)];
+    for (int y = 0; y < height; y++)
+    {
+      for (int x = 0; x < width; x++)
+      {
+        int worldX = startX + x;
+        int worldY = startY + y;
+        tiles[y * width + x] = _options.WorldTiles is null
+            ? WorldTileState.Empty
+            : _options.WorldTiles[worldY * _options.WorldWidth + worldX];
+      }
+    }
+
+    int index = 0;
+    while (index < tiles.Length)
+    {
+      WorldTileState tile = tiles[index];
+      int repeat = 0;
+      while (index + repeat + 1 < tiles.Length && repeat < short.MaxValue &&
+          tiles[index + repeat + 1] == tile)
+      {
+        repeat++;
+      }
+
+      WriteTile(body, tile, repeat);
+      index += repeat + 1;
+    }
+  }
+
+  private void WriteTile(Stream stream, WorldTileState tile, int repeat)
+  {
+    byte flags1 = 0;
+    byte flags2 = 0;
+    byte flags3 = 0;
+    byte flags4 = 0;
+    if (tile.Active) flags1 |= 2;
+    if (tile.Wall != 0) flags1 |= 4;
+    if (tile.HasLiquid)
+    {
+      flags1 |= tile.Liquid switch
+      {
+        LiquidContactFlags.Water => (byte)8,
+        LiquidContactFlags.Lava => (byte)16,
+        LiquidContactFlags.Honey => (byte)24,
+        LiquidContactFlags.Shimmer => (byte)8,
+        _ => (byte)0
+      };
+    }
+
+    bool frameImportant = tile.Active && _options.FrameImportant is not null &&
+        tile.Type < _options.FrameImportant.Count && _options.FrameImportant[tile.Type];
+    if (tile.Active && tile.Type > byte.MaxValue) flags1 |= 0x20;
+    if (tile.Wall > byte.MaxValue) flags3 |= 0x40;
+    if (repeat > byte.MaxValue) flags1 |= 0x80;
+    else if (repeat > 0) flags1 |= 0x40;
+    if (flags3 != 0) flags2 |= 1;
+    if (flags2 != 0) flags1 |= 1;
+    stream.WriteByte(flags1);
+    if ((flags1 & 1) != 0) stream.WriteByte(flags2);
+    if ((flags2 & 1) != 0) stream.WriteByte(flags3);
+    if ((flags3 & 1) != 0) stream.WriteByte(flags4);
+    if (tile.Active)
+    {
+      stream.WriteByte((byte)tile.Type);
+      if (tile.Type > byte.MaxValue) stream.WriteByte((byte)(tile.Type >> 8));
+      if (frameImportant)
+      {
+        WriteInt16(stream, tile.FrameX);
+        WriteInt16(stream, tile.FrameY);
+      }
+    }
+    if (tile.Wall != 0)
+    {
+      stream.WriteByte((byte)tile.Wall);
+      if (tile.Wall > byte.MaxValue) stream.WriteByte((byte)(tile.Wall >> 8));
+    }
+    if (tile.HasLiquid) stream.WriteByte(tile.LiquidAmount);
+    if (repeat > byte.MaxValue) WriteInt16(stream, checked((short)repeat));
+    else if (repeat > 0) stream.WriteByte((byte)repeat);
   }
 
   private static OutboundPacketIntent CreateIntent(
@@ -335,6 +424,13 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
   {
     Span<byte> buffer = stackalloc byte[2];
     BinaryPrimitives.WriteInt16LittleEndian(buffer, value);
+    stream.Write(buffer);
+  }
+
+  private static void WriteUInt16(Stream stream, ushort value)
+  {
+    Span<byte> buffer = stackalloc byte[2];
+    BinaryPrimitives.WriteUInt16LittleEndian(buffer, value);
     stream.Write(buffer);
   }
 

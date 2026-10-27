@@ -1,5 +1,7 @@
 namespace Terraria.Communication;
 
+using Terraria.World;
+
 /// <summary>Small authoritative facts needed by the Version4 join handshake.</summary>
 public sealed class TerrariaProtocolOptions
 {
@@ -22,6 +24,28 @@ public sealed class TerrariaProtocolOptions
 
   public string WorldName { get; init; } = "NSSLC";
 
+  public int WorldId { get; init; } = 1;
+
+  public Guid WorldGuid { get; init; } = Guid.Empty;
+
+  public ulong WorldGeneratorVersion { get; init; }
+
+  public int GameMode { get; init; }
+
+  public short WorldSurface { get; init; }
+
+  public short RockLayer { get; init; }
+
+  public int WorldTime { get; init; }
+
+  public bool DayTime { get; init; } = true;
+
+  public byte MoonPhase { get; init; }
+
+  public IReadOnlyList<WorldTileState>? WorldTiles { get; init; }
+
+  public IReadOnlyList<bool>? FrameImportant { get; init; }
+
   public void Validate()
   {
     ArgumentException.ThrowIfNullOrWhiteSpace(ProtocolVersion);
@@ -32,6 +56,18 @@ public sealed class TerrariaProtocolOptions
         SpawnTileY < 0 || SpawnTileY >= WorldHeight)
     {
       throw new ArgumentOutOfRangeException(nameof(WorldWidth));
+    }
+
+    if (WorldTiles is not null && WorldTiles.Count != checked(WorldWidth * WorldHeight))
+    {
+      throw new ArgumentException(
+          "The world tile payload does not match the configured dimensions.",
+          nameof(WorldTiles));
+    }
+
+    if (FrameImportant is not null && FrameImportant.Count == 0)
+    {
+      throw new ArgumentException("The frame importance table cannot be empty.", nameof(FrameImportant));
     }
   }
 }

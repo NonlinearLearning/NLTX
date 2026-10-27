@@ -27,7 +27,7 @@ public sealed class WorldFileTilePayloadDecoder
     if (section.MaxTilesX <= 0 || section.MaxTilesY <= 0 || tileCount > MaximumTileCount ||
         tileCount > maximumSnapshotBytes / 32 || section.CompressedPayload.IsEmpty ||
         section.CompressedPayload.Length > MaximumPayloadBytes ||
-        section.FrameImportant.Count != WorldFacts.TileCount)
+        section.FrameImportant.Count < WorldFacts.TileCount)
     {
       throw new InvalidDataException("The tile dimensions, facts or payload exceed P03 limits.");
     }

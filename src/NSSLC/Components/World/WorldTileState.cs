@@ -18,10 +18,6 @@ public readonly record struct WorldTileState(
 
   public bool IsValid {
     get {
-      if (Active && Type == 0) {
-        return false;
-      }
-
       const LiquidContactFlags knownLiquids =
           LiquidContactFlags.Water |
           LiquidContactFlags.Honey |

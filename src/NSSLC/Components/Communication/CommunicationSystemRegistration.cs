@@ -20,7 +20,8 @@ public static class CommunicationSystemRegistration
       CombatAttackIntentBuffer attackIntents,
       CombatAttackDefinitionCatalog attackDefinitions,
       ICommunicationOutboundPort outbound,
-      GameCommunicationOptions? options = null)
+      GameCommunicationOptions? options = null,
+      TerrariaProtocolOptions? protocolOptions = null)
   {
     ArgumentNullException.ThrowIfNull(runtimeResolver);
     ArgumentNullException.ThrowIfNull(attackIntents);
@@ -33,7 +34,8 @@ public static class CommunicationSystemRegistration
                 runtimeResolver,
                 attackIntents,
                 attackDefinitions,
-                options)),
+                options),
+            protocolOptions),
         outbound);
   }
 
