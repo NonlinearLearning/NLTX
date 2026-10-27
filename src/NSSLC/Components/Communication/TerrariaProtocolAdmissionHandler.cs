@@ -34,8 +34,6 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
   private readonly TerrariaProtocolOptions _options;
   private readonly IReadOnlyList<PreparedTileSection> _initialSections;
   private readonly IReadOnlyDictionary<(int X, int Y), PreparedTileSection> _sections;
-  private readonly object _sectionGate = new();
-  private readonly Dictionary<SessionEpoch, HashSet<(int X, int Y)>> _sentSections = [];
 
   public TerrariaProtocolAdmissionHandler(
       ICommunicationPacketHandler gameplay,
@@ -57,14 +55,6 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     if (packet.Envelope.Epoch != session.Epoch || tick < 0)
     {
       return Array.Empty<OutboundPacketIntent>();
-    }
-
-    if (session.Stage is CommunicationSessionStage.Closing or CommunicationSessionStage.Closed)
-    {
-      lock (_sectionGate)
-      {
-        _sentSections.Remove(session.Epoch);
-      }
     }
 
     byte messageId = packet.Envelope.MessageId;
@@ -190,7 +180,6 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     };
     foreach (PreparedTileSection section in _initialSections)
     {
-      TryMarkSectionSent(session.Epoch, section.SectionX, section.SectionY);
       responses.Add(CreateIntent(TileSectionMessageId, section.Payload, session));
     }
 
@@ -262,30 +251,21 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
 
     int sectionX = BinaryPrimitives.ReadUInt16LittleEndian(payload);
     int sectionY = BinaryPrimitives.ReadUInt16LittleEndian(payload[2..]);
-    if (!_sections.TryGetValue((sectionX, sectionY), out PreparedTileSection? section) ||
-        !TryMarkSectionSent(session.Epoch, sectionX, sectionY))
+    if (!_sections.TryGetValue((sectionX, sectionY), out PreparedTileSection? section))
     {
+      ServerLog.Warning(
+          "ecs.protocol.section_rejected",
+          $"epoch={session.Epoch.Value} section={sectionX},{sectionY} reason=out_of_bounds");
       return Array.Empty<OutboundPacketIntent>();
     }
 
+    ServerLog.Info(
+        "ecs.protocol.section_request",
+        $"epoch={session.Epoch.Value} section={sectionX},{sectionY}");
     return [
       CreateIntent(StatusTextSizeMessageId, CreateStatusPayload(1), session),
       CreateIntent(TileSectionMessageId, section.Payload, session)
     ];
-  }
-
-  private bool TryMarkSectionSent(SessionEpoch epoch, int sectionX, int sectionY)
-  {
-    lock (_sectionGate)
-    {
-      if (!_sentSections.TryGetValue(epoch, out HashSet<(int X, int Y)>? sent))
-      {
-        sent = [];
-        _sentSections.Add(epoch, sent);
-      }
-
-      return sent.Add((sectionX, sectionY));
-    }
   }
 
   private static IReadOnlyList<OutboundPacketIntent> HandleSpawn(
