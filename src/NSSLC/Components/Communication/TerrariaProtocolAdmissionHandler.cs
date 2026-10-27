@@ -1,4 +1,5 @@
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
 using Terraria.Diagnostics;
@@ -30,6 +31,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
 
   private readonly ICommunicationPacketHandler _gameplay;
   private readonly TerrariaProtocolOptions _options;
+  private readonly IReadOnlyList<PreparedTileSection> _initialSections;
 
   public TerrariaProtocolAdmissionHandler(
       ICommunicationPacketHandler gameplay,
@@ -38,6 +40,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     _gameplay = gameplay ?? throw new ArgumentNullException(nameof(gameplay));
     _options = options ?? new TerrariaProtocolOptions();
     _options.Validate();
+    _initialSections = PrepareInitialSections();
   }
 
   public IReadOnlyList<OutboundPacketIntent> Handle(
@@ -159,9 +162,11 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     }
 
     ServerLog.Info("ecs.protocol.initial_spawn", $"epoch={session.Epoch.Value}");
-    const int sectionHeight = 50;
-    int sectionCount = ((_options.WorldWidth + 199) / 200) *
-        ((_options.WorldHeight + sectionHeight - 1) / sectionHeight);
+    // Terraria's Version4 section grid is 200x150. Keeping the protocol-native height is
+    // important for join latency: a 50-tile height triples the number of compressed streams the
+    // client must inflate and validate before it can send packet 12 (2016 sections for this
+    // world instead of 672).
+    int sectionCount = _initialSections.Count;
     var responses = new List<OutboundPacketIntent>(sectionCount + 2)
     {
       // MinimalImplementation repeats packet 7 immediately before section transfer. Terraria
@@ -169,21 +174,40 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
       CreateIntent(WorldDataMessageId, CreateWorldDataPayload(), session),
       CreateIntent(StatusTextSizeMessageId, CreateStatusPayload(sectionCount), session)
     };
+    foreach (PreparedTileSection section in _initialSections)
+    {
+      responses.Add(CreateIntent(TileSectionMessageId, section.Payload, session));
+    }
+
+    responses.Add(CreateIntent(InitialSpawnMessageId, Array.Empty<byte>(), session));
+    return responses.AsReadOnly();
+  }
+
+  private IReadOnlyList<PreparedTileSection> PrepareInitialSections()
+  {
+    const int sectionHeight = 150;
+    long started = Stopwatch.GetTimestamp();
+    var sections = new List<PreparedTileSection>(
+        ((_options.WorldWidth + 199) / 200) *
+        ((_options.WorldHeight + sectionHeight - 1) / sectionHeight));
+    long totalBytes = 0;
     for (int startY = 0; startY < _options.WorldHeight; startY += sectionHeight)
     {
       int height = Math.Min(sectionHeight, _options.WorldHeight - startY);
       for (int startX = 0; startX < _options.WorldWidth; startX += 200)
       {
         int width = Math.Min(200, _options.WorldWidth - startX);
-        responses.Add(CreateIntent(
-            TileSectionMessageId,
-            CreateTileSectionPayload(startX, startY, width, height),
-            session));
+        byte[] payload = CreateTileSectionPayload(startX, startY, width, height);
+        sections.Add(new PreparedTileSection(payload));
+        totalBytes += payload.Length;
       }
     }
 
-    responses.Add(CreateIntent(InitialSpawnMessageId, Array.Empty<byte>(), session));
-    return responses.AsReadOnly();
+    ServerLog.Info(
+        "ecs.protocol.world_cache_ready",
+        $"sections={sections.Count} compressedBytes={totalBytes} " +
+        $"elapsedMs={Stopwatch.GetElapsedTime(started).TotalMilliseconds:F0}");
+    return Array.AsReadOnly(sections.ToArray());
   }
 
   private static IReadOnlyList<OutboundPacketIntent> HandleSpawn(
@@ -372,6 +396,8 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
         payload,
         CommitVersion.Initial);
   }
+
+  private sealed record PreparedTileSection(byte[] Payload);
 
   private static string ReadString(ReadOnlySpan<byte> payload)
   {
