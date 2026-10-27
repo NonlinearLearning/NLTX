@@ -13,7 +13,7 @@
 | [Version4InboundRouter](Version4InboundRouter.cs) | 从已解码消息分派到领域入口 | Session 认证、各 partial 路由 |
 | [DefaultServerTickPhaseOwners](DefaultServerTickPhaseOwners.cs) | 为默认运行实例组合 Tick owners | Player、Combat、World、Inventory、Modules |
 | [ServerOutboundDeliveryPump](ServerOutboundDeliveryPump.cs) | 在提交窗口外发送并将回执送回 | DeliverySettlement、ServerLoop |
-| [ServerLog](ServerLog.cs) | 输出时间、级别、事件名与单行诊断内容 | 运行、路由及诊断边界 |
+| [ServerLog](../../NSSLC/Components/Diagnostics/README.md) | 输出时间、级别、事件名与单行诊断内容 | 运行、路由及诊断边界 |
 
 ## 启动时怎样协作
 

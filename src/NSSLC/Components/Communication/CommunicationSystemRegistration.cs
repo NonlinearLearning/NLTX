@@ -27,12 +27,13 @@ public static class CommunicationSystemRegistration
     ArgumentNullException.ThrowIfNull(attackDefinitions);
     return Create(
         world,
-        new GameCommunicationAdapter(
-            world,
-            runtimeResolver,
-            attackIntents,
-            attackDefinitions,
-            options),
+        new TerrariaProtocolAdmissionHandler(
+            new GameCommunicationAdapter(
+                world,
+                runtimeResolver,
+                attackIntents,
+                attackDefinitions,
+                options)),
         outbound);
   }
 

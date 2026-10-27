@@ -4,7 +4,10 @@ namespace Terraria.Communication;
 public enum CommunicationSessionStage : byte
 {
   Connected = 0,
-  Active = 1,
-  Closing = 2,
-  Closed = 3
+  AwaitPlayerData = 1,
+  AwaitSectionRequest = 2,
+  Synchronizing = 3,
+  Active = 4,
+  Closing = 5,
+  Closed = 6
 }

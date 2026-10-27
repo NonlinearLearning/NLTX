@@ -70,6 +70,21 @@ public sealed class CommunicationSessionIngress
     return session.TryAdvance(CommunicationSessionStage.Active);
   }
 
+  public bool TryGetStage(SessionEpoch epoch, out CommunicationSessionStage stage)
+  {
+    if (_sessions.TryGetValue(epoch, out ArchEntity entity) &&
+        _world.IsAlive(entity) &&
+        _world.TryGet(entity, out CommunicationSessionComponent? session) &&
+        session is not null)
+    {
+      stage = session.Stage;
+      return true;
+    }
+
+    stage = CommunicationSessionStage.Closed;
+    return false;
+  }
+
   public bool TryBindPlayer(SessionEpoch epoch, EntityRuntimeHandle player)
   {
     if (!_sessions.TryGetValue(epoch, out ArchEntity entity) ||

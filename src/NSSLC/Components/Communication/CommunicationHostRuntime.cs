@@ -1,6 +1,7 @@
 using System.Net;
 using Arch.Core;
 using ArchWorld = Arch.Core.World;
+using Terraria.Diagnostics;
 using Terraria.Entity;
 
 namespace Terraria.Communication;
@@ -8,10 +9,16 @@ namespace Terraria.Communication;
 /// <summary>
 /// Composes the TCP host, ECS session ingress and outbound delivery pump for one server host.
 /// </summary>
+/// <remarks>
+/// Session lifecycle callbacks run at the host/ECS boundary. They may create or release domain
+/// entities, but packet handling remains queued for the registered ECS preparation system.
+/// </remarks>
 public sealed class CommunicationHostRuntime : IAsyncDisposable
 {
   private readonly TcpCommunicationHost _host;
   private readonly CommunicationOutboundDeliveryPump _delivery;
+  private readonly Func<SessionEpoch, ValueTask>? _onSessionOpened;
+  private readonly Func<ConnectionClosed, ValueTask>? _onSessionClosed;
   private ulong _nextEpoch;
 
   public CommunicationHostRuntime(
@@ -20,10 +27,14 @@ public sealed class CommunicationHostRuntime : IAsyncDisposable
       int outboundCapacity = 128,
       TcpListenerAdapterOptions? listenerOptions = null,
       PacketTcpConnectionOptions? connectionOptions = null,
-      TimeProvider? timeProvider = null)
+      TimeProvider? timeProvider = null,
+      Func<SessionEpoch, ValueTask>? onSessionOpened = null,
+      Func<ConnectionClosed, ValueTask>? onSessionClosed = null)
   {
     ArgumentNullException.ThrowIfNull(world);
     ArgumentNullException.ThrowIfNull(endpoint);
+    _onSessionOpened = onSessionOpened;
+    _onSessionClosed = onSessionClosed;
     Ingress = new CommunicationSessionIngress(world);
     _host = new TcpCommunicationHost(
         endpoint,
@@ -31,7 +42,7 @@ public sealed class CommunicationHostRuntime : IAsyncDisposable
         CreateEnvelope,
         EnqueueInboundAsync,
         CloseSessionAsync,
-        static exception => ValueTask.FromException(exception),
+        HandleConnectionFailureAsync,
         listenerOptions,
         connectionOptions,
         timeProvider,
@@ -69,8 +80,11 @@ public sealed class CommunicationHostRuntime : IAsyncDisposable
     return SessionEpoch.Create(value);
   }
 
-  private static InboundPacketEnvelope CreateEnvelope(InboundRawFrame frame)
+  private InboundPacketEnvelope CreateEnvelope(InboundRawFrame frame)
   {
+    CommunicationSessionStage stage = Ingress.TryGetStage(frame.Epoch, out CommunicationSessionStage current)
+        ? current
+        : CommunicationSessionStage.Connected;
     return new InboundPacketEnvelope(
         frame.Epoch,
         frame.Sequence,
@@ -78,7 +92,7 @@ public sealed class CommunicationHostRuntime : IAsyncDisposable
         frame.Frame.MessageId,
         frame.Frame.ModuleId,
         frame.Frame.FrameBytes,
-        CommunicationSessionStage.Active.ToString(),
+        stage.ToString(),
         null,
         null,
         null);
@@ -98,14 +112,32 @@ public sealed class CommunicationHostRuntime : IAsyncDisposable
   private ValueTask CloseSessionAsync(ConnectionClosed closed)
   {
     Ingress.TryClose(closed);
+    return _onSessionClosed is null
+        ? ValueTask.CompletedTask
+        : _onSessionClosed(closed);
+  }
+
+  private static ValueTask HandleConnectionFailureAsync(Exception exception)
+  {
+    // A single peer reset or malformed frame belongs to that connection. Do not fault the
+    // listener task: the host must continue accepting later Terraria clients on port 7777.
+    ServerLog.Warning(
+        "ecs.connection.failed",
+        $"type={exception.GetType().Name} detail={ServerLog.Quote(exception.Message)}");
     return ValueTask.CompletedTask;
   }
 
-  private ValueTask OpenSessionAsync(SessionEpoch epoch)
+  private async ValueTask OpenSessionAsync(SessionEpoch epoch)
   {
-    return Ingress.TryOpen(epoch, out _) && Ingress.TryActivate(epoch)
-        ? ValueTask.CompletedTask
-        : ValueTask.FromException(
-            new InvalidOperationException("The communication session epoch is already open."));
+    if (!Ingress.TryOpen(epoch, out _))
+    {
+      throw new InvalidOperationException(
+          "The communication session epoch is already open.");
+    }
+
+    if (_onSessionOpened is not null)
+    {
+      await _onSessionOpened(epoch).ConfigureAwait(false);
+    }
   }
 }

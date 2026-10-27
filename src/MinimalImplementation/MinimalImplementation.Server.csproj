@@ -20,6 +20,7 @@
     <ProjectReference Include="Mechanisms\MinimalImplementation.Mechanisms.csproj" />
     <ProjectReference Include="..\NSSLC.Infrastructure\Network\Pocket\DataPacketDefinition\PacketDesignCompiler.Packets.csproj" />
     <ProjectReference Include="..\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldFile.Minimal.csproj" />
+    <ProjectReference Include="..\NSSLC\Terraria.Components.csproj" />
     <ProjectReference Include="Protocol\MinimalImplementation.Protocol.csproj" />
     <Compile Include="Program.cs" />
     <Compile Include="Host\*.cs" />
