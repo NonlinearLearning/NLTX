@@ -27,11 +27,15 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
   private const byte InitialSpawnMessageId = 49;
   private const byte PlayerSpawnMessageId = 12;
   private const byte TileSectionMessageId = 10;
+  private const byte RequestSectionMessageId = 159;
   private const byte FinishedConnectingMessageId = 129;
 
   private readonly ICommunicationPacketHandler _gameplay;
   private readonly TerrariaProtocolOptions _options;
   private readonly IReadOnlyList<PreparedTileSection> _initialSections;
+  private readonly IReadOnlyDictionary<(int X, int Y), PreparedTileSection> _sections;
+  private readonly object _sectionGate = new();
+  private readonly Dictionary<SessionEpoch, HashSet<(int X, int Y)>> _sentSections = [];
 
   public TerrariaProtocolAdmissionHandler(
       ICommunicationPacketHandler gameplay,
@@ -40,7 +44,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     _gameplay = gameplay ?? throw new ArgumentNullException(nameof(gameplay));
     _options = options ?? new TerrariaProtocolOptions();
     _options.Validate();
-    _initialSections = PrepareInitialSections();
+    _sections = PrepareInitialSections(out _initialSections);
   }
 
   public IReadOnlyList<OutboundPacketIntent> Handle(
@@ -55,6 +59,14 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
       return Array.Empty<OutboundPacketIntent>();
     }
 
+    if (session.Stage is CommunicationSessionStage.Closing or CommunicationSessionStage.Closed)
+    {
+      lock (_sectionGate)
+      {
+        _sentSections.Remove(session.Epoch);
+      }
+    }
+
     byte messageId = packet.Envelope.MessageId;
     try
     {
@@ -67,8 +79,10 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
         CommunicationSessionStage.AwaitSectionRequest =>
             HandleSectionRequest(packet.Frame.Payload.Span, messageId, session),
         CommunicationSessionStage.Synchronizing =>
-            HandleSpawn(packet.Frame.Payload.Span, messageId, session),
-        CommunicationSessionStage.Active => _gameplay.Handle(packet, session, tick),
+            HandleSynchronizing(packet.Frame.Payload.Span, messageId, session),
+        CommunicationSessionStage.Active => messageId == RequestSectionMessageId
+            ? HandleSectionRequest(packet.Frame.Payload.Span, session)
+            : _gameplay.Handle(packet, session, tick),
         _ => Array.Empty<OutboundPacketIntent>()
       };
     }
@@ -176,6 +190,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     };
     foreach (PreparedTileSection section in _initialSections)
     {
+      TryMarkSectionSent(session.Epoch, section.SectionX, section.SectionY);
       responses.Add(CreateIntent(TileSectionMessageId, section.Payload, session));
     }
 
@@ -183,7 +198,8 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     return responses.AsReadOnly();
   }
 
-  private IReadOnlyList<PreparedTileSection> PrepareInitialSections()
+  private IReadOnlyDictionary<(int X, int Y), PreparedTileSection> PrepareInitialSections(
+      out IReadOnlyList<PreparedTileSection> initialSections)
   {
     const int sectionHeight = 150;
     long started = Stopwatch.GetTimestamp();
@@ -198,7 +214,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
       {
         int width = Math.Min(200, _options.WorldWidth - startX);
         byte[] payload = CreateTileSectionPayload(startX, startY, width, height);
-        sections.Add(new PreparedTileSection(payload));
+        sections.Add(new PreparedTileSection(startX / 200, startY / sectionHeight, payload));
         totalBytes += payload.Length;
       }
     }
@@ -207,7 +223,69 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
         "ecs.protocol.world_cache_ready",
         $"sections={sections.Count} compressedBytes={totalBytes} " +
         $"elapsedMs={Stopwatch.GetElapsedTime(started).TotalMilliseconds:F0}");
-    return Array.AsReadOnly(sections.ToArray());
+    IReadOnlyList<PreparedTileSection> prepared = Array.AsReadOnly(sections.ToArray());
+    initialSections = SelectInitialSections(prepared, _options.SpawnTileX, _options.SpawnTileY);
+    return prepared.ToDictionary(section => (section.SectionX, section.SectionY));
+  }
+
+  private static IReadOnlyList<PreparedTileSection> SelectInitialSections(
+      IReadOnlyList<PreparedTileSection> sections, int spawnTileX, int spawnTileY)
+  {
+    int centerX = spawnTileX / 200;
+    int centerY = spawnTileY / 150;
+    return sections.Where(section =>
+        Math.Abs(section.SectionX - centerX) <= 2 &&
+        Math.Abs(section.SectionY - centerY) <= 1).ToArray();
+  }
+
+  private IReadOnlyList<OutboundPacketIntent> HandleSynchronizing(
+      ReadOnlySpan<byte> payload,
+      byte messageId,
+      CommunicationSessionComponent session)
+  {
+    if (messageId == RequestSectionMessageId)
+    {
+      return HandleSectionRequest(payload, session);
+    }
+
+    return HandleSpawn(payload, messageId, session);
+  }
+
+  private IReadOnlyList<OutboundPacketIntent> HandleSectionRequest(
+      ReadOnlySpan<byte> payload,
+      CommunicationSessionComponent session)
+  {
+    if (payload.Length != 4 || !session.IsConnected)
+    {
+      return Array.Empty<OutboundPacketIntent>();
+    }
+
+    int sectionX = BinaryPrimitives.ReadUInt16LittleEndian(payload);
+    int sectionY = BinaryPrimitives.ReadUInt16LittleEndian(payload[2..]);
+    if (!_sections.TryGetValue((sectionX, sectionY), out PreparedTileSection? section) ||
+        !TryMarkSectionSent(session.Epoch, sectionX, sectionY))
+    {
+      return Array.Empty<OutboundPacketIntent>();
+    }
+
+    return [
+      CreateIntent(StatusTextSizeMessageId, CreateStatusPayload(1), session),
+      CreateIntent(TileSectionMessageId, section.Payload, session)
+    ];
+  }
+
+  private bool TryMarkSectionSent(SessionEpoch epoch, int sectionX, int sectionY)
+  {
+    lock (_sectionGate)
+    {
+      if (!_sentSections.TryGetValue(epoch, out HashSet<(int X, int Y)>? sent))
+      {
+        sent = [];
+        _sentSections.Add(epoch, sent);
+      }
+
+      return sent.Add((sectionX, sectionY));
+    }
   }
 
   private static IReadOnlyList<OutboundPacketIntent> HandleSpawn(
@@ -397,7 +475,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
         CommitVersion.Initial);
   }
 
-  private sealed record PreparedTileSection(byte[] Payload);
+  private sealed record PreparedTileSection(int SectionX, int SectionY, byte[] Payload);
 
   private static string ReadString(ReadOnlySpan<byte> payload)
   {
