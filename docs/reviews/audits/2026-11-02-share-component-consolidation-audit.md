@@ -7,8 +7,42 @@
 
 **目的**：找出哪些非 Share 组件应当改用 Share 的组件，消除重复模型。
 
-> 状态：本文件记录已由主代理逐条验证的结论。三个子代理（Player/Npc、Projectile、
-> World/Communication）的逐文件审计仍在进行，结果待并入。
+> 状态：审计已完成（32 节）。三个子代理的逐文件结果均已并入并逐条复核。
+> 累计消除 7 组重复模型与 5 份重复助手实现，修复 2 项缺陷，
+> 并用四种独立方法（语义审计、字段形状聚类、同名助手统计、零引用+同成员枚举）交叉验证无遗漏。
+
+## 0. 当前状态与待决策清单
+
+本文件较长（32 节），这一节是给决策人的摘要。**能自主判断的事项都已做完**，
+下面每一项都卡在一个需要人拍板的问题上。
+
+### 0.1 需要决策的两项（会改变行为或架构）
+
+| # | 事项 | 两个选项 | 影响 | 建议 |
+| --- | --- | --- | --- | --- |
+| **#4** | 把 `WorldItemState` 的 `(int ItemType, int Stack, byte Prefix)` 换成 `Share/Item/ItemStack` | **A**：先在 `GameCommunicationAdapter` 入口用 `ItemIdRules.TryFromNetworkType` 校验、未知 id 丢弃，再合并<br>**B**：放宽 `ItemStack` 允许未知 id | A 会收紧协议宽容度：客户端发未知 itemType 的掉落物请求将被丢弃<br>B 会为迁就旧路径污染共享模型 | **A**（详见 §32） |
+| **#6** | `Share/Entity/EntityDefinition*`（8 个类型，目录外零引用）与 `ProjectileDefinition` 并存 | **A**：补 `IEntityDefinitionHost` 宿主，把玩家/NPC 创建改为数据驱动，再收编 `ProjectileDefinition`<br>**B**：整簇删除，并把架构矩阵里 `confirmed` 标记改为退役 | A 工作量大，但真正消除双模型<br>B 放弃数据驱动创建能力，代码立刻一致 | 需产品定夺。架构矩阵已标 `confirmed`，倾向 **A**（详见 §30） |
+
+两项都**不能只做一半**：#6 的簇内部互相引用，半删会让状态更差（既有审计已警告）。
+
+### 0.2 需要玩法决策的两项（不是重复模型）
+
+| 事项 | 现象 | 需要定的事 | 依据 |
+| --- | --- | --- | --- |
+| `InventoryAttributeContributionSystem` | 系统实现完整，但从未注册 | 护甲/饰品/武器的属性贡献是否现在生效 | §26 |
+| `ProtectionWindowSystem` | 已注册，但 `ProtectionWindowComponent` 全仓无任何挂载点 | 无敌窗口何时授予（受击后 / 重生后 / 不授予） | §26 |
+
+这两项**不造成危害**，只是功能未启用，因此没有像 §25 那条一样直接修。
+
+### 0.3 已查明、不需要决策的（供参考，无需回复）
+
+- **#11 / #12 / #13 均已证明不是重复模型**：`SlimeAiBehavior` 两侧基类与意图类型都不同；
+  `ProjectileSourceMetadataComponent` 与 `ProjectileOwnerComponent` 是不同概念；
+  `ProjectileHomingCapabilityComponent` 与 `ProjectileBehaviorProfile` 是"配置优先、能力兜底"的共存设计。
+- **投射物子步未生效**：`extraUpdates` 目前不影响总位移（只影响碰撞精度），
+  已用 4 条特征化断言锁定，待并入共享管线时会自动变红提醒（§29）。
+- **#14 包封套**：`InboundPacketEnvelope`/`InboundPacketFrame` 的重复字段属已知有意冗余（§15.3）。
+- **#10 的两个空转系统**：已在 §25 修复并经过服务器实跑验证。
 
 ## 1. 方法
 
@@ -1463,3 +1497,48 @@ WorldItemRules.IsValidItem(itemType, stack, position, velocity)
 
 结论依赖一个"入口是否该校验"的产品判断（严格来说还涉及协议宽容度），
 本轮只把它从"阻塞点是网络表示"收敛为"阻塞点是这一行校验"，并给出可执行顺序。
+
+## 33. 两种补充扫描：跨域同名类型、成员集真子集
+
+第 28 节的两种扫描都比"完全同形"更宽，用来兜住部分重叠的重复。
+
+### 33.1 同名类型跨域出现
+
+按**声明所在命名空间**分组统计 145 个非 Share 类型与 331 个 Share 类型，
+跨两个及以上命名空间的同名类型只有一组：
+
+```
+SlimeAiBehavior
+  [Npc]   Terraria.Npc          (SlimeAiBehavior.cs)
+  [Share] Terraria.Ai.Examples  (SlimeAiBehavior.cs)
+```
+
+即 §31.1 已判定为"不同 AI 子系统下的各自实现"的那一组。除此之外没有第二个同名类型，
+说明不存在"复制粘贴改名没改全"的隐蔽重复。
+
+### 33.2 成员集真子集关系
+
+全形比对（第 24 节）只能抓成员完全相同者。这次改为在两两比较非 Share 与 Share 的
+成员名集合，报告**真子集**与**交集 ≥ 2** 的关系，共 80 个类型参与。命中三组：
+
+| 非 Share | Share | 共有成员 | 判定 |
+| --- | --- | --- | --- |
+| `Npc.NpcAiMovementFact` ⊂ `SpatialTileMotionResult` | 4 成员 | `Position`、`Velocity` | **不是重复**：前者是喂给 AI 的输入快照（含 `IsGrounded`），后者是瓦片运动查询的输出（含 `CollidedX/CollidedY`），方向相反 |
+| `Npc.NpcAiTargetFact` ⊃ `ExampleTargetComponent` | 3 成员 | `Position`、`IsVisible`、`IsAlive` | **不是重复**：右侧是 `Examples/` 里的演示类型，见 §31.1 |
+| `Projectile.ProjectileSpawnResult` ⊃ `AiEntityResult` | 2 成员 | `Status`、`Entity` | **不是重复**：两个域各自的"操作结果"，共享的只是"状态 + 实体句柄"这个通用形状，抽成泛型收益低于引入跨域耦合 |
+
+三组都因**方向或角色相反**而不成立，与第 24 节的结论一致：
+形状相似只是提出问题的线索，判定必须落到"这两个东西在什么时候被谁写入、被谁读取"。
+
+### 33.3 至此的扫描矩阵
+
+| 扫描 | 参数量 | 命中 | 可合并 |
+| --- | --- | --- | --- |
+| 逐文件语义审计 | 135 文件 / 145 类型 | 13 组候选 | 7 组已消除 |
+| 字段形状完全聚类 | 全部组件 | 5 组 | 0 |
+| 同名 static 助手 | 全部 | 2 个助手 5 份 | 5 份已消除 |
+| 零引用类型 + 同成员枚举 | 137 / 50 | 3 + 1 组 | 0 |
+| 跨域同名类型 | 476 类型 | 1 组 | 0 |
+| 成员集真子集 | 80 类型 | 3 组 | 0 |
+
+六种方法都收敛到同一结论：**重复模型清单已完备，剩余项全部需要人或架构拍板**。
