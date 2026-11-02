@@ -3,6 +3,8 @@ using Arch.System;
 using ArchWorld = Arch.Core.World;
 using ArchEntity = Arch.Core.Entity;
 using Terraria.Entity;
+using Terraria.Inventory;
+using Terraria.Item;
 using Terraria.Relationships;
 
 namespace Terraria.Player;
@@ -16,11 +18,16 @@ namespace Terraria.Player;
 public sealed class PlayerInputRequestSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   private readonly IEntityRuntimeResolver _resolver;
+  private readonly InventorySystem _inventories;
 
-  public PlayerInputRequestSystem(ArchWorld ecsWorld, IEntityRuntimeResolver resolver)
+  public PlayerInputRequestSystem(
+      ArchWorld ecsWorld,
+      IEntityRuntimeResolver resolver,
+      InventorySystem inventories)
       : base(ecsWorld ?? throw new ArgumentNullException(nameof(ecsWorld)))
   {
     _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
+    _inventories = inventories ?? throw new ArgumentNullException(nameof(inventories));
   }
 
   public override void Update(in EcsServerTickContext context)
@@ -52,9 +59,18 @@ public sealed class PlayerInputRequestSystem : BaseSystem<ArchWorld, EcsServerTi
 
         break;
       case PlayerInputRequestKind.SetInventorySlot:
-        if (World.Has<PlayerInventoryComponent>(player))
+        if (World.Has<InventoryComponent>(player))
         {
-          World.Get<PlayerInventoryComponent>(player).Set(request.Slot, request.InventorySlot);
+          ItemStack stack = default;
+          // 与迁移前的 PlayerInventorySlot.IsEmpty 对齐：ItemType<=0 或 Stack<=0 都表示空槽。
+          if (request.ItemType > 0 &&
+              request.Stack > 0 &&
+              ItemIdRules.TryFromNetworkType(request.ItemType, out ItemId itemId))
+          {
+            stack = new ItemStack(itemId, request.Stack, request.Prefix);
+          }
+
+          _inventories.TrySetSlotValue(player, request.Slot, stack);
         }
 
         break;

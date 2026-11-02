@@ -32,10 +32,7 @@ public sealed class PlayerCombatResultSystem : BaseSystem<ArchWorld, EcsServerTi
         in _query,
         (ArchEntity entity) =>
         {
-          if (_handles.TryGetHandle(entity, out EntityRuntimeHandle source))
-          {
-            _ = resultQueue.ConsumeResults(source);
-          }
+          _ = CombatResultDrain.Drain(resultQueue, _handles, entity);
         });
   }
 }

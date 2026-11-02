@@ -70,7 +70,7 @@ public sealed class SpatialSimulationSystem
 
     if (gravityCapability.Enabled && movement.Mode != MovementMode.Flight)
     {
-      velocity = ApplyGravity(velocity, gravity, deltaTime);
+      velocity = GravityIntegration.Apply(velocity, gravity, deltaTime);
     }
 
     SpatialTileMotionResult motion = tileCollision.Enabled
@@ -152,19 +152,6 @@ public sealed class SpatialSimulationSystem
     Vector2 delta = target - current;
     float length = delta.Length();
     return length <= distance || length == 0f ? target : current + delta / length * distance;
-  }
-
-  private static Vector2 ApplyGravity(
-      Vector2 velocity,
-      GravityStateComponent gravity,
-      float deltaTime)
-  {
-    float direction = gravity.Direction == GravityDirection.Reversed ? -1f : 1f;
-    velocity.Y = Math.Clamp(
-        velocity.Y + gravity.GravityMagnitude * direction * deltaTime,
-        -gravity.MaxFallSpeed,
-        gravity.MaxFallSpeed);
-    return velocity;
   }
 
   private static GroundingComponent ResolveGrounding(

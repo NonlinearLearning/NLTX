@@ -107,6 +107,59 @@ public sealed partial class InventorySystem {
     return InventoryTransferResult.Success(inserted);
   }
 
+  /// <summary>
+  /// Overwrites one slot with the supplied value stack, or clears the slot when the stack is
+  /// empty. This is the value-oriented entry point for callers that own slot contents without a
+  /// backing item entity, such as a protocol adapter projecting a client's inventory.
+  /// </summary>
+  /// <remarks>
+  /// 与 <see cref="TryInsert(ArchEntity, in ItemStack, int?)"/> 的区别在于语义：插入寻找可用槽位并
+  /// 允许部分成交，本方法只作用于调用方指定的槽位，且不做跨槽合并。
+  /// </remarks>
+  public InventoryTransferResult TrySetSlotValue(
+      ArchEntity inventoryEntity,
+      int slotIndex,
+      in ItemStack stack) {
+    InventoryTransferFailure failure = GetInventory(inventoryEntity, out InventoryComponent inventory);
+    if (failure != InventoryTransferFailure.None) {
+      return InventoryTransferResult.Rejected(failure);
+    }
+
+    InventorySlot[] plan = inventory.CaptureSlots();
+    int position = FindPosition(plan, slotIndex);
+    if (position < 0) {
+      return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidSlot);
+    }
+
+    InventorySlotDefinition definition = plan[position].Definition;
+    if (plan[position].ContainsEntity) {
+      return InventoryTransferResult.Rejected(InventoryTransferFailure.SlotRequiresEntity);
+    }
+
+    if (stack.IsEmpty) {
+      plan[position] = new InventorySlot(definition, null);
+      inventory.CommitSlots(plan);
+      return InventoryTransferResult.Success(0);
+    }
+
+    failure = GetDefinition(stack, out ItemDefinition item);
+    if (failure != InventoryTransferFailure.None) {
+      return InventoryTransferResult.Rejected(failure);
+    }
+
+    if (!definition.Accepts(item)) {
+      return InventoryTransferResult.Rejected(InventoryTransferFailure.NoCompatibleSlot);
+    }
+
+    if (stack.Quantity > Math.Min(definition.MaxStackSize, item.MaxStack)) {
+      return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidQuantity);
+    }
+
+    plan[position] = new InventorySlot(definition, stack);
+    inventory.CommitSlots(plan);
+    return InventoryTransferResult.Success(stack.Quantity);
+  }
+
   /// <summary>Removes a value stack. Retained entities must use TryTakeEntity.</summary>
   public InventoryTransferResult TryRemove(
       ArchEntity inventoryEntity,

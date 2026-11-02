@@ -5,6 +5,7 @@ using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 using Terraria.Combat;
 using Terraria.Entity;
+using Terraria.Inventory;
 using Terraria.Movement;
 using Terraria.Player;
 using Terraria.Relationships;
@@ -291,7 +292,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
       CommunicationSessionComponent session,
       ReadOnlySpan<byte> payload)
   {
-    if (payload.Length != 9 || !_world.Has<PlayerInventoryComponent>(player))
+    if (payload.Length != 9 || !_world.Has<InventoryComponent>(player))
     {
       throw new ArgumentException("Packet 5 has an invalid length.", nameof(payload));
     }
@@ -308,12 +309,14 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
       throw new ArgumentOutOfRangeException(nameof(payload));
     }
 
-    // PlayerInventoryComponent 归 Player 域所有：这里只提交槽位意图。
+    // 玩家库存归 Share/玩家域所有：这里只提交槽位意图，不写入。
     PlayerInputs.Enqueue(new PlayerInputRequest(
         PlayerInputRequestKind.SetInventorySlot,
         Player: playerHandle,
         Slot: slot,
-        InventorySlot: new PlayerInventorySlot(itemType, stack, prefix, (flags & 1) != 0)));
+        ItemType: itemType,
+        Stack: stack,
+        Prefix: prefix));
     return [new OutboundPacketIntent(
         [session.Epoch],
         null,

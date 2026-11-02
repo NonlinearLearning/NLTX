@@ -562,6 +562,14 @@ internal readonly record struct LiquidStepOutcome(
     bool Changed);
 
 /// <summary>One tile the liquid pass rewrote, with enough state for the caller to journal it.</summary>
+/// <remarks>
+/// 液面步进的内部产物，只有坐标与前后状态——它是"这一步改写了什么"，不是"要投影给客户端
+/// 什么"。调用方（<c>WorldRuntime</c>）负责把它投影成 <c>Terraria.World.WorldMutation</c>，
+/// 那一步才补上掉落信息。
+///
+/// 刻意不直接复用 <c>WorldMutation</c>：那会让液面逻辑依赖世界投影模型，并被迫携带
+/// 它不产生也不关心的掉落字段。
+/// </remarks>
 internal readonly record struct LiquidTileChange(
     WorldTileCoordinate Coordinate,
     WorldTileState Previous,

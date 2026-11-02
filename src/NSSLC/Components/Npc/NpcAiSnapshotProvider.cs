@@ -7,6 +7,7 @@ using ArchWorld = Arch.Core.World;
 using Terraria.Ai;
 using Terraria.Combat;
 using Terraria.Entity;
+using Terraria.Inventory;
 using Terraria.Movement;
 using Terraria.Physics;
 using Terraria.Player;
@@ -24,7 +25,7 @@ public sealed class NpcAiSnapshotProvider : IAiSnapshotProvider<ArchEntity>
       EntityFactionComponent,
       LifeComponent,
       LocationComponent,
-      PlayerInventoryComponent>();
+      InventoryComponent>();
 
   public NpcAiSnapshotProvider(ArchWorld world)
   {

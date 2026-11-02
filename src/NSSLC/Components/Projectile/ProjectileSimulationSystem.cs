@@ -82,7 +82,7 @@ public sealed class ProjectileSimulationSystem
             "The projectile gravity direction is unresolved.");
       }
 
-      nextVelocity = ApplyGravity(nextVelocity, gravity, deltaTime);
+      nextVelocity = GravityIntegration.Apply(nextVelocity, gravity, deltaTime);
     }
 
     int substepCount = kinematics.SubstepCount;
@@ -157,14 +157,6 @@ public sealed class ProjectileSimulationSystem
       bool collidedX, bool collidedY, int completedSubsteps)
   {
     return new ProjectileMotionResult(location, velocity, collidedX, collidedY, completedSubsteps);
-  }
-
-  private static Vector2 ApplyGravity(Vector2 velocity, GravityStateComponent gravity,
-      float deltaTime)
-  {
-    float direction = gravity.Direction == GravityDirection.Reversed ? -1f : 1f;
-    float vertical = velocity.Y + gravity.GravityMagnitude * direction * deltaTime;
-    return new Vector2(velocity.X, Math.Clamp(vertical, -gravity.MaxFallSpeed, gravity.MaxFallSpeed));
   }
 
   private static bool IsFinite(Vector2 value)

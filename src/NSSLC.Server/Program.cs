@@ -9,6 +9,8 @@ using Terraria.Combat;
 using Terraria.Communication;
 using Terraria.Diagnostics;
 using Terraria.Entity;
+using Terraria.Inventory;
+using Terraria.Item;
 using Terraria.Liquid;
 using Terraria.Movement;
 using Terraria.Npc;
@@ -27,6 +29,9 @@ internal static class Program
 {
   private const float TickDeltaTime = 1f / 60f;
   private const int ListenPort = 7777;
+  // 参考客户端主背包宽度与宽松堆叠上限；逐物品 maxStack 数据尚未引入。
+  private const int PlayerInventorySlotCount = 59;
+  private const int MaxInventoryStack = short.MaxValue;
 
   public static async Task<int> Main(string[] args)
   {
@@ -37,6 +42,8 @@ internal static class Program
     using ArchWorld ecsWorld = ArchWorld.Create();
     WorldRuntime worldRuntime = new(worldWidth, worldHeight);
     WorldItemStore worldItems = new();
+    ItemDefinitionRegistry itemDefinitions = BuildItemDefinitions();
+    InventorySystem inventories = new(ecsWorld, itemDefinitions);
     WorldInteractionResult worldLoad = worldRuntime.Load(loadedWorld.Tiles);
     if (!worldLoad.Succeeded)
     {
@@ -190,6 +197,7 @@ internal static class Program
         worldTick,
         worldInteractions,
         worldItems,
+        inventories,
         npcAiAdapter,
         spatialSimulation,
         attributeTick,
@@ -261,6 +269,45 @@ internal static class Program
     return 0;
   }
 
+  /// <summary>
+  /// 玩家主背包槽位定义表。Share/Inventory 由定义表驱动槽位，这里按参考客户端的主背包宽度声明，
+  /// 分类放开为 Any 以保持迁移前的"任意物品可入任意格"行为。
+  /// </summary>
+  private static InventorySlotDefinition[] PlayerInventorySlots()
+  {
+    InventorySlotDefinition[] slots = new InventorySlotDefinition[PlayerInventorySlotCount];
+    for (int index = 0; index < PlayerInventorySlotCount; index++)
+    {
+      slots[index] = new InventorySlotDefinition(
+          index,
+          InventorySlotKind.General,
+          ItemCategoryMask.Any,
+          MaxInventoryStack);
+    }
+
+    return slots;
+  }
+
+  /// <summary>
+  /// 为物品表中每个已知 id 注册一条宽松定义。Share/Inventory 要求每次写入都有定义可用，
+  /// 而参考客户端的逐物品 maxStack/分类数据尚未引入，因此先与迁移前行为保持一致。
+  /// </summary>
+  private static ItemDefinitionRegistry BuildItemDefinitions()
+  {
+    ItemDefinitionRegistry registry = new();
+    foreach (ItemId itemId in Enum.GetValues<ItemId>())
+    {
+      if (itemId == ItemId.None)
+      {
+        continue;
+      }
+
+      registry.Register(new ItemDefinition(itemId, MaxInventoryStack, ItemCategoryMask.Any));
+    }
+
+    return registry;
+  }
+
   private static IReadOnlyList<EcsServerSystemRegistration> BuildRegistrations(
       ArchWorld world,
       EntityRuntimeRegistry entities,
@@ -272,6 +319,7 @@ internal static class Program
       WorldTickSystem worldTick,
       WorldInteractionSystem worldInteractions,
       WorldItemStore worldItems,
+      InventorySystem inventories,
       NpcAiIntentAdapter npcAiAdapter,
       SpatialSimulationCoordinatorSystem spatialSimulation,
       AttributeTickSystem attributeTick,
@@ -285,7 +333,7 @@ internal static class Program
     // 必须排在本阶段最前：准备阶段收包写出的玩家输入要在任何移动/属性系统读取前落地。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
-        new PlayerInputRequestSystem(world, entities)));
+        new PlayerInputRequestSystem(world, entities, inventories)));
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Projection,
         npcProjection));
@@ -352,7 +400,7 @@ internal static class Program
         // 即使内容侧已注册定义，TryApply 也会被准入拒绝。
         new BuffReceptionCapabilityComponent(BuffReceptionMode.AllowAll),
         new LocationComponent(spawnPosition),
-        new PlayerInventoryComponent(),
+        new InventoryComponent(PlayerInventorySlots()),
         Terraria.Movement.VelocityComponent.Stationary,
         new ColliderComponent(new Vector2(16f, 32f)),
         new EntityCollisionCapabilityComponent(Enabled: true, Layer: 1, Mask: uint.MaxValue),

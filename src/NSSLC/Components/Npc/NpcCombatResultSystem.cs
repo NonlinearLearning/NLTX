@@ -33,12 +33,8 @@ public sealed class NpcCombatResultSystem : BaseSystem<ArchWorld, EcsServerTickC
         in _query,
         (ArchEntity entity, ref NpcBehaviorStateComponent state) =>
         {
-          if (!_handles.TryGetHandle(entity, out EntityRuntimeHandle source))
-          {
-            return;
-          }
-
-          IReadOnlyList<CombatDamageResult> results = resultQueue.ConsumeResults(source);
+          IReadOnlyList<CombatDamageResult> results =
+              CombatResultDrain.Drain(resultQueue, _handles, entity);
           for (int index = 0; index < results.Count; index++)
           {
             if (results[index].Result.Applied)

@@ -1,4 +1,5 @@
 using System;
+using Terraria.Physics;
 
 namespace Terraria.World;
 
@@ -70,6 +71,11 @@ public sealed class WorldRuntimeStateComponent
   public ulong WorldEpoch { get; private set; }
 
   public long Revision { get; private set; }
+
+  /// <summary>
+  /// 投影到共享空间查询用的世界版本。投影只在这里定义一次，避免调用点各自重写。
+  /// </summary>
+  public SpatialWorldRevision SpatialRevision => new(WorldEpoch, Revision);
 
   public long LastTick { get; private set; }
 

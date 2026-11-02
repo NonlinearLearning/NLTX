@@ -102,7 +102,7 @@ public sealed class WorldRuntime :
     {
       lock (_gate)
       {
-        return new SpatialWorldRevision(State.WorldEpoch, State.Revision);
+        return State.SpatialRevision;
       }
     }
   }
@@ -407,18 +407,13 @@ public sealed class WorldRuntime :
   {
     lock (_gate)
     {
-      WorldTileMotionResult result = WorldTileMotionSolver.Move(
+      return WorldTileMotionSolver.Move(
           this,
           position,
           velocity,
           colliderSize,
           capability,
           gravityDirection);
-      return new SpatialTileMotionResult(
-          result.Position,
-          result.Velocity,
-          result.CollidedX,
-          result.CollidedY);
     }
   }
 
@@ -440,7 +435,7 @@ public sealed class WorldRuntime :
 
   private SpatialWorldRevision CurrentRevisionUnsafe()
   {
-    return new SpatialWorldRevision(State.WorldEpoch, State.Revision);
+    return State.SpatialRevision;
   }
 
   private static bool IsValidTile(WorldTileState tile)

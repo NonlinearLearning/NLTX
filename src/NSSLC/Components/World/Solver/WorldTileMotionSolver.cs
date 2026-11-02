@@ -18,7 +18,7 @@ public static class WorldTileMotionSolver
   private const int CollisionSearchIterations = 12;
 
   /// <summary>Resolves one movement query against the tile grid.</summary>
-  public static WorldTileMotionResult Move(
+  public static SpatialTileMotionResult Move(
       IWorldTileGrid grid,
       Vector2 position,
       Vector2 velocity,
@@ -30,12 +30,12 @@ public static class WorldTileMotionSolver
     if (!IsFinite(position) || !IsFinite(velocity) || !IsFinite(colliderSize) ||
         colliderSize.X <= 0f || colliderSize.Y <= 0f)
     {
-      return new WorldTileMotionResult(position, Vector2.Zero, false, false);
+      return new SpatialTileMotionResult(position, Vector2.Zero, false, false);
     }
 
     if (!capability.Enabled)
     {
-      return new WorldTileMotionResult(position + velocity, velocity, false, false);
+      return new SpatialTileMotionResult(position + velocity, velocity, false, false);
     }
 
     Vector2 current = ClampToWorld(grid, position, colliderSize);
@@ -84,7 +84,7 @@ public static class WorldTileMotionSolver
     Vector2 resultingVelocity = new(
         collidedX ? 0f : velocity.X,
         collidedY ? 0f : velocity.Y);
-    return new WorldTileMotionResult(current, resultingVelocity, collidedX, collidedY);
+    return new SpatialTileMotionResult(current, resultingVelocity, collidedX, collidedY);
   }
 
   private static bool TrySnapToGround(

@@ -7,6 +7,8 @@ using Terraria.Ai;
 using Terraria.Combat;
 using Terraria.Communication;
 using Terraria.Entity;
+using Terraria.Inventory;
+using Terraria.Item;
 using Terraria.Liquid;
 using Terraria.Movement;
 using Terraria.Npc;
@@ -23,7 +25,8 @@ ArchEntity player = world.Create(
     new EntityFactionComponent(Faction.Friendly),
     new LifeComponent(100, 100),
     new LocationComponent(new Vector2(300f, 100f)),
-    new PlayerInventoryComponent());
+    new InventoryComponent([
+        new InventorySlotDefinition(0, InventorySlotKind.General, ItemCategoryMask.Any, 9999)]));
 ArchEntity guide = CreateNpc(world, entities, new Vector2(20f, 100f), isSlime: false);
 ArchEntity slime = CreateNpc(world, entities, new Vector2(100f, 100f), isSlime: true);
 
