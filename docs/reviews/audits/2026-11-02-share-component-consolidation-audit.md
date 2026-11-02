@@ -191,9 +191,9 @@
 | # | 重复组 | 说明 |
 | --- | --- | --- |
 | 10 | `PlayerCombatResultSystem` ↔ `NpcCombatResultSystem` | **已消除且接线已修**（第 17.2 节抽出 `CombatResultDrain`；第 25 节补挂玩家死亡/重生状态，两个系统不再匹配 0 实体） |
-| 11 | `Npc/SlimeAiBehavior` ↔ `Share/AI/Examples/SlimeAiBehavior` | 同名同概念双实现 |
+| 11 | `Npc/SlimeAiBehavior` ↔ `Share/AI/Examples/SlimeAiBehavior` | **判断需修正**（第 31.1 节）：基类与意图类型都不同（`AiBehavior<NpcAiIntent>` vs `HtnAiBehavior<SlimeContext, ExampleAiIntent>`），Examples 侧是 HTN 子系统的演示且被 `MinimalVerification` 使用，不是重复实现 |
 | 12 | ~~`ProjectileSourceMetadataComponent` ↔ `ProjectileOwnerComponent`~~ | **判断错误，已撤销**：前者是字符串溯源 `(SourceKind, SourceId, SourceRevision)`，后者是 `EntityRuntimeHandle`，不同概念，不是重复模型。仅"写入后从未被读取"成立，见 16.2 |
-| 13 | `ProjectileHomingCapabilityComponent` ↔ `ProjectileBehaviorProfile` | 前者从未挂到实体，制导恒不生效 |
+| 13 | `ProjectileHomingCapabilityComponent` ↔ `ProjectileBehaviorProfile` | **已查明机制**（第 31.2 节）：`ProjectileHomingAiBehavior` 在 `snapshot.Get` 与 `requirements.Contains` 两处都要求该组件，而全仓无人挂载，因此即使接上 AI 注册制导也不生效 |
 | 14 | `InboundPacketEnvelope` / `InboundPacketFrame` | 包头字段存了两遍；**已核实后建议不合并**，见 15.3 |
 
 ### 8.3 修正：Projectile 的战斗一侧并不重复
@@ -1358,3 +1358,58 @@ PASS substep-does-not-scale-distance | expected=(302,400) actual=(302,400)（子
 ### 30.4 本轮未改动任何代码
 
 结论是"不删"，因此没有代码变更；仅新增本节记录与交叉引用。
+
+## 31. #11 判断修正、#13 机制查明
+
+### 31.1 #11 的两个 `SlimeAiBehavior` 不是重复实现
+
+第 10 节把 `Npc/SlimeAiBehavior` 与 `Share/AI/Examples/SlimeAiBehavior` 记为"同名同概念双实现"。
+逐字核对后这个判断需要修正：
+
+| | `Terraria.Npc.SlimeAiBehavior` | `Terraria.Ai.Examples.SlimeAiBehavior` |
+| --- | --- | --- |
+| 基类 | `AiBehavior<NpcAiIntent>` | `HtnAiBehavior<SlimeContext, ExampleAiIntent>` |
+| 意图类型 | `NpcAiIntent` | `ExampleAiIntent` |
+| 用途 | 生产用史莱姆 AI，经 `NpcAiRegistration` 挂到 NPC | HTN 规划子系统（`AttackAction`、`DefeatEnemyGoal`、`EnemyAliveKey`、`SlimeDomain`）的演示 |
+| 消费方 | `NpcAiRegistration`、`Program.cs:526` | `Test/Terraria.NpcAi.MinimalVerification/SharedApiUsage.cs` |
+
+两者基类不同、意图类型不同，一个走简单行为绑定、一个走 HTN 目标规划。
+Examples 侧**不是死代码**：全仓唯一 `using Terraria.Ai.Examples` 的正是
+`MinimalVerification` 的 `SharedApiUsage.cs`，而该工程可构建并通过。
+
+所以这是"同一题材在两个 AI 子系统下的各自实现"，属演示与生产的对照，
+不构成可合并的重复模型。这与第 12 节 `ProjectileSourceMetadataComponent` 的判断属同类更正。
+
+### 31.2 #13 制导能力恒不生效的确切机制
+
+`ProjectileHomingAiBehavior` 在两处要求 `ProjectileHomingCapabilityComponent`：
+
+```csharp
+// 第 41-42 行：取参数
+ProjectileHomingCapabilityComponent capability = snapshot.Get<ProjectileHomingCapabilityComponent>();
+// 第 82 行：需求校验
+!requirements.Contains<ProjectileHomingCapabilityComponent>() || ...
+```
+
+而全仓对该组件的出现只有这 3 处读取 + 1 处类型声明，**没有任何挂载点**。
+所以即使把 `ProjectileAiRegistration` 接上、把 AI 系统注册起来，制导行为仍会在需求校验处被拒。
+
+同时 `ProjectileDefinition` 的构造函数里没有转向速率之类的字段，
+无法从内容定义推导出该能力——因此这不是"忘了挂"，而是**定义链缺一个字段**。
+
+正确顺序是：先给 `ProjectileDefinition` 增加制导参数（或复用 `ProjectileBehaviorProfile` 的
+`TurnRate` 作为唯一来源），再在生成时据定义挂载该组件。前者属内容模型扩展，需要设计确认。
+
+注意 `ProjectileHomingAiBehavior` 第 67 行已经写成
+`float turnRate = _profile.TurnRate > 0f ? _profile.TurnRate : capability.TurnRate;`——
+即它已经预留了"配置优先、能力兜底"的取法。这说明原设计意图就是两者共存：
+Profile 是内容侧默认值，Capability 是实例侧覆盖。所以 #13 也不该用"合并成一份"来解决，
+而是补上实例侧能力的挂载来源。
+
+### 31.3 两项的结论
+
+- #11：**撤销**"重复实现"的判断，保留两侧。
+- #13：**不是重复模型**，是"实例侧能力缺挂载来源"；需要给定义链加字段，属内容模型扩展。
+
+两项都从"待决策"收敛为"已查明且不需要合并"。至此第 10 节表格里
+真正需要合并决策的只剩 #4（世界掉落物）与 #6（EntityDefinition 二选一）。
