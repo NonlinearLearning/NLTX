@@ -632,3 +632,92 @@ if (_handles.TryGetHandle(          if (!_handles.TryGetHandle(
 
 注意：这次只消除了重复实现，**没有修** 15.2 说的接线缺口——
 两个系统在生产里依然匹配 0 个实体，那需要先定意图。
+
+## 18. 已执行：投射物接入共享空间管线
+
+第 16 节证明投射物子系统完全休眠。本轮先补上其中可以在 `Terraria.Components` 内完成的一半：
+**让 `TrySpawn` 产出的实体真正可被共享空间管线驱动。**
+
+### 18.1 改动
+
+`ProjectileLifecycleSystem.TrySpawn` 在创建实体后追加十项空间组件（`Location`、`Velocity`、
+`Collider` 原本就有）：`GroundingComponent.Airborne`、`MovementCapabilityComponent`、
+`GravityCapabilityComponent`、`GravityConfigurationComponent`、`GravityDirectionStateComponent`、
+`GravityModifierCollectionComponent`、`GravityStateComponent`、`TileCollisionCapabilityComponent`、
+`LiquidInteractionCapabilityComponent`、`MovementIntent`。
+
+这样 `SpatialSimulationCoordinatorSystem` 的查询能匹配到投射物，并且回调里六次 `TryGet`
+全部命中，投射物由共享管线位移与碰撞，**不需要注册 `ProjectileSimulationSystem` 这份平行副本**——
+正符合"用 Share 的组件取代两套模型"的目标。
+
+### 18.2 两个不显然的点
+
+**（一）Arch 的泛型 `Create` 有类型参数上限。** 原调用 19 项已接近上限，直接加到 28 项时
+编译器退化到 `ComponentType` 重载，报出 58 条"无法从 X 转换为 ComponentType"的错误。
+改法是先 `Create` 原有 19 项，再 `Add` 那十项（放在原来的 try 块内，失败时仍旧销毁实体）。
+
+**（二）`acceleration` 必须为 0，否则投射物会被逐帧减速到静止。**
+`SpatialSimulationSystem.ResolveFreeVelocity` 的逻辑是：
+
+```csharp
+Vector2 desired = intent.HasDesiredVelocity ? intent.DesiredVelocity : current;
+return MoveTowards(current, desired, movement.Acceleration * deltaTime);
+```
+
+而 `MovementIntent.Stop(tick)` 的实现是 `new MovementIntent(Vector2.Zero, tick, priority)`，
+`hasDesiredVelocity` 取默认值 **true**——也就是说目标速度明确为零，不是"没有意图"。
+若 `acceleration > 0`，`MoveTowards` 会把当前速度按每帧 `acceleration * deltaTime` 拉向零，
+投射物飞出去就停住了。取 `acceleration = 0` 时移动距离为 0，速度原样保留，正好是匀速直线。
+
+同时用 `MovementMode.Flight`：`SpatialSimulationSystem` 只在
+`gravityCapability.Enabled && movement.Mode != MovementMode.Flight` 时施加重力，
+Flight 模式直接跳过，投射物不会下坠。`maximumSpeed` 取 0 让钳制分支整体失效
+（代码只在 `> 0` 时生效），避免快投射物被限速。
+
+这三个取值都由 `Test/Terraria.Projectile.Verification` 逐条断言，其中
+`intent-is-stop-with-zero-desired` 特意固定了"`Stop` 的目标速度是零"这一前提，
+防止有人日后改掉它而让减速 bug 悄悄复活。
+
+### 18.3 仍然缺的一半：没有生产者
+
+以上只解决了"生成出来的投射物能飞"。**`TrySpawn` 至今零外部调用**（第 16.1 节），
+所以服务器里仍然一个投射物都不会被创建。补生产者需要决定"哪些协议事件应当生成投射物"，
+这落在 `Terraria.Components` 之外的适配层（`MinimalImplementation` 的 `ProjectileManager`
+负责处理投射物包），属于需要产品判断的一步，本轮未做。
+
+逐类型重力也仍然缺席：`ProjectileDefinition` 没有任何重力或瓦片碰撞内容字段，
+现在所有投射物一律匀速直线。要做箭矢抛物线，需要先给定义加字段——这是第 10 节 #6
+待决策项的一部分。
+
+### 18.4 顺带消除：死掉的 `Terraria.Combat.VelocityComponent` 兼容垫片
+
+写验证时编译器报出
+`"VelocityComponent"是"Terraria.Combat.VelocityComponent"和"Terraria.Movement.VelocityComponent"之间的不明确的引用`。
+查出 `Share/Physics/Movement/CombatVelocityComponent.cs` 里确实还有第二个 `VelocityComponent`：
+
+```csharp
+[Obsolete("Use Terraria.Movement.VelocityComponent for authoritative spatial state.")]
+public readonly record struct VelocityComponent(Vector2 LinearVelocity)
+{
+  public Terraria.Movement.VelocityComponent ToMovementVelocity() { ... }
+}
+```
+
+它的文档注释自称是"Compatibility projection for callers that still use the former velocity namespace"。
+即这是一个**显式声明的重复类型**，为迁移期兼容而保留。
+
+核实消费者（三条独立证据）：
+
+1. `ToMovementVelocity` 在全仓零引用。
+2. `Terraria.Components` 全量重建（`-t:Rebuild`）**0 条 CS0618**——使用 `[Obsolete]` 类型必然告警。
+3. `NSSLC.Server`、`MinimalVerification`、`queueprobe` 全部重建同样 0 条 CS0618。
+
+并且全仓没有任何 `#pragma warning disable CS0618` 或 `NoWarn` 屏蔽，证据链完整。
+
+结论：这个兼容垫片已经没有任何调用方，属于"为兼容而保留、但兼容对象早已消失"的死类型，
+**已删除**。这是第 6 组被消除的重复模型，也是唯一一组由代码自身显式声明为重复的。
+删除后全部工程 0 错误，四个验证全过。
+
+`SpatialSimulationCoordinatorSystem` 等处的
+`using MovementVelocityComponent = Terraria.Movement.VelocityComponent;` 别名写法
+现在已无必要（歧义源已消失），但保留它没有成本，本轮未动，避免和主线改动混在一起。

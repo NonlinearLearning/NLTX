@@ -7,6 +7,7 @@ using Terraria.Combat;
 using Terraria.Ai;
 using Terraria.Attributes;
 using Terraria.Entity;
+using Terraria.Liquid;
 using Terraria.Movement;
 using Terraria.Physics;
 using Terraria.Relationships;
@@ -103,6 +104,42 @@ public sealed class ProjectileLifecycleSystem
 
     try
     {
+      // 空间运动组件分两步添加：Arch 的泛型 Create 有类型参数上限，原来 19 项就已接近，
+      // 再塞 9 项会超出上限，编译器退化到 ComponentType 重载后全盘报错。
+      //
+      // 这一组是共享 SpatialSimulationCoordinatorSystem 的前置条件：查询要求
+      // Location/Velocity/Collider/Grounding，回调里再 TryGet
+      // MovementCapability/GravityCapability/GravityState/TileCollisionCapability/
+      // LiquidInteractionCapability/MovementIntent。缺任何一项都会被静默跳过，
+      // 投射物就永远不动。
+      _world.Add(
+          entity,
+          GroundingComponent.Airborne,
+          // acceleration 必须为 0：MovementIntent.Stop 的 HasDesiredVelocity 为 true、
+          // 目标速度为零，非零加速度会让 MoveTowards 把投射物逐帧减速到静止。
+          // maximumSpeed 取 0 表示不钳制（SpatialSimulationSystem 只在 >0 时生效）。
+          new MovementCapabilityComponent(
+              enabled: true,
+              maximumSpeed: 0f,
+              acceleration: 0f,
+              canJump: false,
+              jumpSpeed: 0f,
+              mode: MovementMode.Flight),
+          // Flight 模式跳过重力积分，因此投射物按出生速度匀速直线飞行。
+          // 逐类型重力需要 ProjectileDefinition 增加内容字段，届时再从定义取值；
+          // 现在定义里没有重力，硬编码一个有值才是凭空造内容。
+          new GravityCapabilityComponent(Enabled: false, CanToggleDirection: false),
+          new GravityConfigurationComponent(),
+          new GravityDirectionStateComponent(GravityDirection.Normal),
+          new GravityModifierCollectionComponent(),
+          new GravityStateComponent(0.4f, 10f, GravityDirection.Normal, false, false),
+          new TileCollisionCapabilityComponent(Enabled: true),
+          new LiquidInteractionCapabilityComponent(
+              Enabled: true,
+              AffectedLiquids: LiquidContactFlags.Water | LiquidContactFlags.Honey |
+                  LiquidContactFlags.Lava | LiquidContactFlags.Shimmer),
+          MovementIntent.Stop(tick: 0));
+
       _registry.RegisterProjectile(handle, entity);
       return new ProjectileSpawnResult(
           ProjectileLifecycleStatus.Applied, handle, entity, null);
