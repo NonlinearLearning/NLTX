@@ -4,7 +4,9 @@ using ArchWorld = Arch.Core.World;
 using Terraria.Diagnostics;
 using Terraria.Entity;
 
-namespace Terraria.Communication;
+using Terraria.Communication;
+
+namespace Terraria.Network;
 
 /// <summary>
 /// Composes the TCP host, ECS session ingress and outbound delivery pump for one server host.

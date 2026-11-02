@@ -1,4 +1,6 @@
-namespace Terraria.Communication;
+using Terraria.Communication;
+
+namespace Terraria.Network;
 
 public sealed record TcpListenerAdapterOptions
 {

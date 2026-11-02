@@ -1,7 +1,9 @@
 using System.Net.Sockets;
 using System.Threading.Channels;
 
-namespace Terraria.Communication;
+using Terraria.Communication;
+
+namespace Terraria.Network;
 
 /// <summary>
 /// Delivers committed outbound intents outside the ECS update and reports local transport

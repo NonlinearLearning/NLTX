@@ -14,7 +14,9 @@ using Terraria.Physics;
 using Terraria.Relationships;
 using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
 
-namespace Terraria.Communication;
+using Terraria.Communication;
+
+namespace Terraria.Network;
 
 /// <summary>
 /// Projects authoritative NPC entities into the Version4 packet-23 representation.

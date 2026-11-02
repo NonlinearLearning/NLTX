@@ -1,6 +1,8 @@
 using System;
 
-namespace Terraria.Npc;
+using Terraria.Npc;
+
+namespace Terraria.Network;
 
 /// <summary>
 /// Identifies the client-side slot used to project one authoritative NPC.

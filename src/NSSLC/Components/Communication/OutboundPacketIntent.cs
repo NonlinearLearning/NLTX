@@ -10,15 +10,13 @@ public sealed record OutboundPacketIntent
   public byte MessageId { get; }
   public ReadOnlyMemory<byte> Payload { get; }
   public CommitVersion CommitVersion { get; }
-  public OutboundDeliveryToken? DeliveryToken { get; }
 
   public OutboundPacketIntent(
     IReadOnlyCollection<SessionEpoch> targetEpochs,
     SessionEpoch? ignoreEpoch,
     byte messageId,
     ReadOnlyMemory<byte> payload,
-    CommitVersion commitVersion,
-    OutboundDeliveryToken? deliveryToken = null)
+    CommitVersion commitVersion)
   {
     ArgumentNullException.ThrowIfNull(targetEpochs);
     if (targetEpochs.Count == 0)
@@ -40,13 +38,6 @@ public sealed record OutboundPacketIntent
     MessageId = messageId;
     Payload = payload.ToArray();
     CommitVersion = commitVersion;
-    if (deliveryToken is not null && !TargetEpochs.Contains(deliveryToken.Target))
-    {
-      throw new ArgumentException(
-        "An outbound delivery token must identify one of the intent targets.",
-        nameof(deliveryToken));
-    }
 
-    DeliveryToken = deliveryToken;
   }
 }

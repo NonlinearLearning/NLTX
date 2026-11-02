@@ -1,7 +1,9 @@
 using System.Net.Sockets;
 using System.Threading.Channels;
 
-namespace Terraria.Communication;
+using Terraria.Communication;
+
+namespace Terraria.Network;
 
 public sealed class PacketTcpConnection : IAsyncDisposable
 {
@@ -817,9 +819,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
 
     var closed = new ConnectionClosed(
       _epoch,
-      _closeReason ?? "LocalShutdown",
-      new PacketSequence(Interlocked.Read(ref _receiveSequence)),
-      LastSendCertainty);
+      _closeReason ?? "LocalShutdown");
     await _onClosed(closed).ConfigureAwait(false);
   }
 

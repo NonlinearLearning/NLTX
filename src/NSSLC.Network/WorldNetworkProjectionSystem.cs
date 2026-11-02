@@ -6,7 +6,9 @@ using ArchWorld = Arch.Core.World;
 using Terraria.Entity;
 using Terraria.World;
 
-namespace Terraria.Communication;
+using Terraria.Communication;
+
+namespace Terraria.Network;
 
 /// <summary>
 /// Projects committed world mutations into the small server-to-client packets understood by the

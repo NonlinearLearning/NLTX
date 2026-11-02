@@ -12,6 +12,7 @@ using Terraria.Entity;
 using Terraria.Liquid;
 using Terraria.Movement;
 using Terraria.Npc;
+using Terraria.Network;
 using Terraria.Physics;
 using Terraria.Player;
 using Terraria.Projectile;

@@ -2,7 +2,9 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 
-namespace Terraria.Communication;
+using Terraria.Communication;
+
+namespace Terraria.Network;
 
 /// <summary>Assembles bounded Version4 frames from arbitrary TCP receive chunks.</summary>
 public sealed class PacketFrameAssembler : IDisposable

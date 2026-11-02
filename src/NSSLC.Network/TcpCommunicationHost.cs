@@ -1,7 +1,9 @@
 using System.Net;
 using System.Net.Sockets;
 
-namespace Terraria.Communication;
+using Terraria.Communication;
+
+namespace Terraria.Network;
 
 /// <summary>Owns the TCP listener and delegates each framed connection to communication callbacks.</summary>
 public sealed class TcpCommunicationHost : ICommunicationTransportPort, IAsyncDisposable
@@ -224,7 +226,15 @@ public sealed class TcpCommunicationHost : ICommunicationTransportPort, IAsyncDi
   private ValueTask HandleFrameAsync(InboundRawFrame frame, CancellationToken cancellationToken)
   {
     InboundPacketEnvelope envelope = _createEnvelope(frame);
-    return _onPacket(new InboundCommunicationPacket(envelope, frame.Frame), cancellationToken);
+    return _onPacket(
+        new InboundCommunicationPacket(
+            envelope,
+            new InboundPacketFrame(
+                frame.Frame.MessageId,
+                frame.Frame.ModuleId,
+                frame.Frame.FrameBytes,
+                frame.Frame.Payload)),
+        cancellationToken);
   }
 
   private ValueTask HandleClosedAsync(SessionEpoch epoch, ConnectionClosed closed)

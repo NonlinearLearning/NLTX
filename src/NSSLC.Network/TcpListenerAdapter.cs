@@ -2,7 +2,9 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 
-namespace Terraria.Communication;
+using Terraria.Communication;
+
+namespace Terraria.Network;
 
 /// <summary>Owns a TCP listener and the accepted sockets for each callback lifetime.</summary>
 public sealed class TcpListenerAdapter : IAsyncDisposable
