@@ -420,3 +420,4 @@ docs/reviews/audits/2026-11-01-share-wiring-audit.md	reviews	audit	active	true	s
 docs/reviews/audits/2026-11-01-ecs-system-input-audit.md	reviews	audit	active	true	src/NSSLC/Components/**	-	Context/约束/ECS系统输入边界约束.md	ecs-system-input-audit	2026-11-01	updated-2026-11-01
 docs/plans/2026-11-02-ecs-system-input-boundary-execution-plan.md	plans	plan	active	true	plans	-	docs/reviews/audits/2026-11-01-ecs-system-input-audit.md	plans	2026-11-02	created-2026-11-02
 docs/plans/2026-11-02-network-domain-extraction-plan.md	plans	plan	completed	true	plans	-	-	plans	2026-11-02	created-2026-11-02
+docs/reviews/audits/2026-11-02-share-component-consolidation-audit.md	reviews	audit	active	true	src/NSSLC/Components/**	-	-	components-share-consolidation	2026-11-03	created-2026-11-02

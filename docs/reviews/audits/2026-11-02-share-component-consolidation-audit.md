@@ -1181,3 +1181,59 @@ Share 物理域的实现，这正是目标里"非 Share 的组件是否可以使
 - `projVerification` 30 PASS / 0 FAIL
 - `worldprobe` 195 行与基线完全一致
 - `tickprobe` 8 行不变
+
+## 28. 第三与第四种独立复查：零引用类型、同成员枚举
+
+第 24 节用"字段形状聚类"做过一次独立复查。本轮再做两种，方法与结论如下。
+
+### 28.1 零引用公开类型扫描
+
+对 `Components` 下非 Share 的 **137 个公开类型**逐个统计全仓（`src` + `Test` + `Build`，
+共 3082 个 `.cs`）引用，排除自身声明文件。结果只有 3 个零引用：
+
+| 类型 | 判定 |
+| --- | --- |
+| `ProjectileAiRegistration` | 投射物 AI 的绑定入口。迁移未走到 AI 步骤，属"能力已写、尚未接"，不删 |
+| `ProjectileBounceStateComponent` | 弹跳状态组件，无人挂载也无人读取。属投射物特性集的一部分，迁移期间保留 |
+| `ProjectileHitImmunity` | **误报**：它与 `ProjectileHitImmunityStateComponent` 同文件，被后者持有 |
+
+三个都不是重复模型，因此本轮不删任何类型。这里刻意保守——第 1 轮我曾把
+`PlayerAttackIntentAdapter` 误判为死代码删除，后查明它是外部程序集的公开接缝。
+
+### 28.2 同成员枚举扫描
+
+50 个枚举按成员名分组，只有一组重合：`WorldInteractionOperation` 与
+`WorldInteractionPermission` 成员名都是 `None / ReadTile / BreakTile / PlaceTile`。
+
+看似重复，实测**不是**：
+
+```csharp
+public enum WorldInteractionOperation : byte { None = 0, ReadTile = 1, BreakTile = 2, PlaceTile = 3 }   // 有序选择器
+[Flags] public enum WorldInteractionPermission : byte { None = 0, ReadTile = 1, BreakTile = 2, PlaceTile = 4 }  // 位掩码
+```
+
+- 前者表达"这一次请求要做什么"，是单值选择器，值连续，适合 switch 与序列化。
+- 后者表达"这个实体被允许做什么"，是位掩码，`WorldInteractionCapabilityComponent.Allows` 按位判断。
+- 数值从第三个成员起就分道扬镳（3 vs 4），合并任何一方都会破坏另一方的前提。
+- `WorldInteractionSystem` 第 76/87/100 行做"操作 → 权限"的显式映射，那是两个概念的翻译，
+  不是重复实现。
+
+判定：保留两者。与第 18 节 `WorldMutation` / `LiquidTileChange` 的结论同类——
+**同名成员不等于同一概念**。
+
+### 28.3 审计文档已登记进清单
+
+`docs/document-manifest.tsv` 第 421 行新增本审计条目，字段数与全表一致（11 列），
+`migrationAction` 记为 `created-2026-11-02`。diff 为纯新增 1 行，无删改。
+
+### 28.4 四种独立方法的一致结论
+
+| 方法 | 节 | 结论 |
+| --- | --- | --- |
+| 逐文件语义审计 | 1–18 | 13 组候选，7 组已消除，6 组需决策 |
+| 字段形状聚类 | 24 | 5 组形状相同，全部不构成可合并 |
+| 同名 static 助手统计 | 27 | 2 个助手共 5 份重复，已消除 |
+| 零引用类型 + 同成员枚举 | 28 | 无可合并项 |
+
+后三种方法都独立地没有推翻前一种的结论，也没有发现被遗漏的重复。
+这构成"重复模型清单已完备"的交叉证据。
