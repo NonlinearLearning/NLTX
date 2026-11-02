@@ -1237,3 +1237,61 @@ public enum WorldInteractionOperation : byte { None = 0, ReadTile = 1, BreakTile
 
 后三种方法都独立地没有推翻前一种的结论，也没有发现被遗漏的重复。
 这构成"重复模型清单已完备"的交叉证据。
+
+## 29. 待决策项 #2 已查明：`ProjectileSimulationSystem` 不能简单删除
+
+第 10 节把"`ProjectileSimulationSystem` 的运动封套 ↔ `SpatialSimulationResult<T>`"列为待决策。
+本轮查清了它到底多做了什么，结论是**它不是重复实现，而是一份缺失能力的唯一实现**。
+
+### 29.1 差异点：子步
+
+`ProjectileSimulationSystem` 里有一段别处没有的逻辑（第 88–98 行）：
+
+```csharp
+int substepCount = kinematics.SubstepCount;
+float substepDelta = deltaTime / substepCount;
+for (int substep = 0; substep < substepCount; substep++)
+```
+
+它读 `ProjectileKinematicsStateComponent`，把一帧的 `deltaTime` 按 `ExtraUpdates + 1` 均分后循环推进，
+并用 `BeginTick()` / `NextSubstep()` 维护子步序号。
+
+实测全仓读取 `Substep` / `SubstepCount` / `NextSubstep` 的**只有这一个文件**，而它从未被注册。
+已注册的共享管线（`SpatialSimulationCoordinatorSystem` + `SpatialSimulationSystem`）
+完全不读 `ProjectileKinematicsStateComponent`——每帧只有一步。
+
+### 29.2 一个容易搞错的点
+
+子步**不改变总位移**：`deltaTime` 被均分，步数相应增加，`速度 × deltaTime` 之和不变。
+所以差距无法用"跑了多远"检测出来，它只体现在**瓦片碰撞的精度**上——
+高速投射物在一帧内跨过薄墙时，单步会穿模，子步不会。
+
+原先打算用位移差异来验证这个差距，推演后发现在数学上不成立，改用"子步序号从不推进"表述。
+
+### 29.3 因此的判定
+
+- **不能删除** `ProjectileSimulationSystem`：删掉就没人实现子步，`ExtraUpdates` 成了纯摆设。
+- **也不能直接注册它**：它会与已在跑的 `SpatialSimulationCoordinatorSystem` 争抢同一批实体
+  （两者都写 `LocationComponent` / `VelocityComponent`），每帧会被推两次。
+- 真正的解法是把子步语义**并入共享管线**：由协调系统读取 `ProjectileKinematicsStateComponent`，
+  对投射物按 `SubstepCount` 拆分该帧的 `deltaTime`。这属于共享物理语义的扩展，需要设计确认。
+
+### 29.4 把差距变成显式断言
+
+`projVerification` 从 30 条扩到 **34 条**，新增四条把当前状态锁定下来：
+
+```
+PASS fast-spawn-applied | status=Applied
+PASS kinematics-attached | has=True extraUpdates=1
+PASS kinematics-substep-not-advanced | substep=0（已注册路径从不推进它）
+PASS substep-does-not-scale-distance | expected=(302,400) actual=(302,400)（子步只影响碰撞精度，不改变总位移）
+```
+
+这是**特征化测试**：它断言的是"当前已知的行为"，而不是"期望的行为"。
+一旦子步被并入共享管线，`kinematics-substep-not-advanced` 会变红，从而强制更新这两条断言——
+这正是它存在的意义：让差距不会在无人察觉的情况下继续存在。
+
+### 29.5 验证
+
+全部工程 0 错误；`queueprobe` 49 PASS；`invVerification` 16 PASS；
+`projVerification` 34 PASS；`worldprobe` 195 行与基线一致；`tickprobe` 8 行不变。

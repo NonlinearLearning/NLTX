@@ -248,6 +248,58 @@ Check(
     afterVelocity == new Vector2(6f, -3f),
     $"velocity=({afterVelocity.X},{afterVelocity.Y})");
 
+// ---- 已知差距：extraUpdates 子步在已注册路径上不生效 ----
+// ProjectileSimulationSystem 是组件域里唯一实现子步的代码（把 deltaTime 按 SubstepCount 均分后循环），
+// 但它从未被注册；已注册的共享管线完全不读 ProjectileKinematicsStateComponent。
+// 注意子步不改变总位移（dt 被均分、步数相应增加），只影响瓦片碰撞的精度，
+// 因此这里用"子步序号从不推进"表述差距，而不能用位移检测。
+ProjectileDefinitionCatalog fastCatalog = new();
+ProjectileDefinitionId fastId = new("probe.arrow.fast");
+fastCatalog.Register(new ProjectileDefinition(
+    fastId,
+    new AiBehaviorSelectionComponent("Straight", "arrow.default"),
+    new ProjectileKinematicsStateComponent(extraUpdates: 1),
+    new ProjectileLifetimeStateComponent(remainingTicks: 120),
+    new AttributeSetComponent(),
+    new ProjectileCollisionPolicyComponent(
+        CollideWithTiles: true,
+        IgnoreOwner: true),
+    new EntityCollisionCapabilityComponent(Enabled: true, Layer: 1, Mask: uint.MaxValue),
+    new CombatAttackDefinitionId("probe.attack")));
+fastCatalog.Seal();
+ProjectileLifecycleSystem fastLifecycle = new(world, fastCatalog, registry);
+
+ProjectileSpawnResult fastResult = fastLifecycle.TrySpawn(new ProjectileSpawnRequest(
+    fastId,
+    ownerHandle,
+    new ProjectileSourceMetadataComponent("probe", "fast-1"),
+    position: new Vector2(300f, 400f),
+    velocity: new Vector2(4f, 0f),
+    collider: new ColliderComponent(new Vector2(8f, 8f)),
+    size: new EntitySizeComponent(8, 8),
+    faction: Faction.Hostile));
+Check("fast-spawn-applied", fastResult.Status == ProjectileLifecycleStatus.Applied, $"status={fastResult.Status}");
+
+bool fastHasKinematics = world.Has<ProjectileKinematicsStateComponent>(fastResult.Entity);
+Check(
+    "kinematics-attached",
+    fastHasKinematics &&
+        world.Get<ProjectileKinematicsStateComponent>(fastResult.Entity).ExtraUpdates == 1,
+    $"has={fastHasKinematics} extraUpdates={(fastHasKinematics ? world.Get<ProjectileKinematicsStateComponent>(fastResult.Entity).ExtraUpdates : -1)}");
+
+Vector2 fastBefore = world.Get<LocationComponent>(fastResult.Entity).Coordinates;
+intentSystem.Update(new EcsServerTickContext(world, 13, 0.5f));
+coordinator.Update(new EcsServerTickContext(world, 13, 0.5f));
+Vector2 fastAfter = world.Get<LocationComponent>(fastResult.Entity).Coordinates;
+Check(
+    "kinematics-substep-not-advanced",
+    world.Get<ProjectileKinematicsStateComponent>(fastResult.Entity).Substep == 0,
+    $"substep={world.Get<ProjectileKinematicsStateComponent>(fastResult.Entity).Substep}（已注册路径从不推进它）");
+Check(
+    "substep-does-not-scale-distance",
+    fastAfter == fastBefore + new Vector2(4f, 0f) * 0.5f,
+    $"expected=({fastBefore.X + 2f},{fastBefore.Y}) actual=({fastAfter.X},{fastAfter.Y})（子步只影响碰撞精度，不改变总位移）");
+
 Console.WriteLine();
 Console.WriteLine(
     failures == 0
