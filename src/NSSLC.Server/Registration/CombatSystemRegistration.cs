@@ -43,6 +43,10 @@ public static class CombatSystemRegistration
 
     return Array.AsReadOnly(new EcsServerSystemRegistration[]
     {
+      // 生成接缝放在 Preparation：新投射物当帧就能被 Simulation 相位的空间协调系统驱动。
+      new EcsServerSystemRegistration(
+          EcsServerPhase.Preparation,
+          new ProjectileSpawnRequestSystem(world, projectileLifecycle)),
       new EcsServerSystemRegistration(EcsServerPhase.Simulation, physicsContacts),
       new EcsServerSystemRegistration(
           EcsServerPhase.Simulation,

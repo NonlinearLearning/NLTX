@@ -99,6 +99,7 @@ internal static class Program
     _ = ecsWorld.Create(new CombatDamageResultQueueComponent());
     // 投射物终止队列挂在世界级实体上，生命周期、命中适配器与寿命推进共享同一组件。
     _ = ecsWorld.Create(new ProjectileTerminationQueueComponent());
+    _ = ecsWorld.Create(new ProjectileSpawnQueueComponent());
     // 世界物品变更请求队列：跨域只表达意图，由 World 域自己执行。
     _ = ecsWorld.Create(new WorldItemRequestQueueComponent());
     // 生命恢复请求队列：Player 决定复活，Combat 执行满血写入。

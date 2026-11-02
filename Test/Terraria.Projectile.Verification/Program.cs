@@ -152,6 +152,37 @@ Check(
     velocity.LinearVelocity == new Vector2(6f, -3f),
     $"velocity=({velocity.LinearVelocity.X},{velocity.LinearVelocity.Y})");
 
+// ---- 生成接缝：请求入队 -> 系统排空 -> 实体生成 ----
+ArchEntity queueEntity = world.Create(new ProjectileSpawnQueueComponent());
+ProjectileSpawnQueueComponent spawnQueue = world.Get<ProjectileSpawnQueueComponent>(queueEntity);
+ProjectileSpawnRequest queuedRequest = new(
+    definitionId,
+    ownerHandle,
+    new ProjectileSourceMetadataComponent("probe", "queued-1"),
+    position: new Vector2(10f, 20f),
+    velocity: new Vector2(-2f, 5f),
+    collider: new ColliderComponent(new Vector2(8f, 8f)),
+    size: new EntitySizeComponent(8, 8),
+    faction: Faction.Hostile);
+spawnQueue.Enqueue(queuedRequest, tick: 7);
+Check("queue-accepts", spawnQueue.Count == 1, $"count={spawnQueue.Count}");
+
+ProjectileSpawnRequestSystem spawnSystem = new(world, lifecycle);
+spawnSystem.Update(new EcsServerTickContext(world, 7, 1f / 60f));
+Check(
+    "queue-spawned-one",
+    spawnSystem.Results.Count == 1 &&
+        spawnSystem.Results[0].Status == ProjectileLifecycleStatus.Applied,
+    $"results={spawnSystem.Results.Count} status={(spawnSystem.Results.Count == 1 ? spawnSystem.Results[0].Status.ToString() : "n/a")}");
+Check("queue-drained", spawnQueue.Count == 0, $"count={spawnQueue.Count}");
+
+// 接缝产出的实体同样必须是可模拟的，否则"接上生产者"只是换了个地方不生效
+bool queuedSimulatable = spawnSystem.Results.Count == 1 &&
+    world.IsAlive(spawnSystem.Results[0].Entity) &&
+    world.Has<GroundingComponent>(spawnSystem.Results[0].Entity) &&
+    world.Has<MovementCapabilityComponent>(spawnSystem.Results[0].Entity);
+Check("queued-entity-simulatable", queuedSimulatable, "Grounding + MovementCapability");
+
 Console.WriteLine();
 Console.WriteLine(
     failures == 0

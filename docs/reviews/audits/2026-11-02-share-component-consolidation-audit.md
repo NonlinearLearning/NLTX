@@ -768,3 +768,57 @@ public readonly record struct VelocityComponent(Vector2 LinearVelocity)
   不必急着接生产者；此时任何合并都缺乏验证手段。
 
 这个判断无法从代码推断，需要产品意图。
+
+## 20. 已执行：投射物迁移第 1 步（生成接缝）
+
+方向已定：**组件域投射物取代 `MinimalImplementation.Combat.Projectiles`，分步迁移。**
+第 1 步只建立接缝，不改任何现有行为——旧实现照旧在跑，组件域获得一个可被驱动、
+可被验证的入口。
+
+### 20.1 改动
+
+新增三个文件（照 `ProjectileTerminationQueue*` 的同形模式）：
+
+- `ProjectileSpawnQueueComponent`：tick 作用域的生成请求队列，`Enqueue`/`Drain`/`BeginTick`，
+  挂在一个专职的世界级实体上。
+- `ProjectileSpawnQueue`：`internal static Require(world)`，经 `SingletonComponent<T>` 定位。
+- `ProjectileSpawnRequestSystem`：排空队列并逐条调用 `TrySpawn`，结果保留在
+  `Results` 里，失败不抛出也不静默丢弃。
+
+接线两处：`CombatSystemRegistration` 以 **Preparation** 相位注册该系统
+（生成的实体当帧即可被 Simulation 相位的空间协调系统驱动）；
+`Program.cs` 在终止队列实体旁创建 `ProjectileSpawnQueueComponent` 实体。
+
+### 20.2 这一步的边界
+
+- **没有**改变任何现有行为：旧 `ProjectileManager` 仍是唯一真正的生成方，无人向新队列入队。
+- **没有**动 `ProjectileSimulationSystem` 的去留——等运动职责迁移时再定（第 19.3 节）。
+- 现在的能力：任何一方调用 `ProjectileSpawnQueue.Enqueue(...)`，当帧就会得到装配完整、
+  可被共享管线驱动的投射物实体。这为下一步"旧实现双写"提供了落点。
+
+### 20.3 验证
+
+`Test/Terraria.Projectile.Verification` 从 18 条扩到 **22 条**，新增四条覆盖接缝：
+
+```
+PASS queue-accepts | count=1
+PASS queue-spawned-one | results=1 status=Applied
+PASS queue-drained | count=0
+PASS queued-entity-simulatable | Grounding + MovementCapability
+```
+
+最后一条是关键：接缝产出的实体必须同样可模拟，否则"接上生产者"只是把不生效挪了个地方。
+
+回归：全部工程 0 错误；`queueprobe` 49 PASS；`invVerification` 16 PASS；
+`worldprobe` 195 行与基线一致；`tickprobe` 8 行不变。
+
+### 20.4 后续步骤（按依赖顺序）
+
+1. **旧实现双写**：`MinimalImplementation.ProjectileManager.Commit`（生成提交处）在成功后
+   向新队列入队，让组件域开始接收真实流量，同时两个模型可以对照。
+2. **同步/投影迁移**：`ProjectileView`/`ProjectileSyncPreparation` 的职责搬到组件域。
+3. **运动迁移**：确定 `ProjectileSimulationSystem` 的下场——并入共享
+   `SpatialSimulationCoordinatorSystem`（第 18 节已证明可行）或保留并注册。
+4. **退役旧实现**：以上对齐后删除 `MinimalImplementation.Combat.Projectiles`。
+
+每一步都应保持"旧路径仍可回退"，直到第 4 步。
