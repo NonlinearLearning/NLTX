@@ -949,3 +949,32 @@ PASS public-seam-rejects-negative-tick | threw=True
 
 回归：全部工程 0 错误；`queueprobe` 49 PASS；`invVerification` 16 PASS；
 `worldprobe` 195 行与基线一致；`MinimalVerification` PASS。
+
+## 23. 已执行：投射物碰撞策略去掉重复的能力声明
+
+`ProjectileCollisionPolicyComponent` 原本有四个标志，实测读取方如下：
+
+| 标志 | 读取方 |
+| --- | --- |
+| `CollideWithTiles` | `ProjectileSimulationSystem.cs:94` |
+| `IgnoreOwner` | `ProjectileDamageRequestSystem.cs:74` |
+| `CollideWithEntities` | **无**（只有声明与构造处） |
+| `IgnoreSameFaction` | **无**（只有声明与构造处） |
+
+后两个是把别处已有的模型在投射物实例上又声明了一遍：
+
+- `CollideWithEntities` 与共享的 `EntityCollisionCapabilityComponent` 重复。而且
+  `ProjectileDefinition` 本来就**单独**携带后者（`Collision` 属性），也就是说同一份
+  "是否参与实体碰撞"在定义与实例上各有一个真相来源。
+- `IgnoreSameFaction` 属于阵营关系判定，归 `Terraria.Combat.DamageRelationSystem` 负责。
+  让每个投射物实例自己声明，等于把一处全局规则复制成 N 份实例状态。
+
+两个字段都已删除，策略类型现在只剩 `CollideWithTiles` 与 `IgnoreOwner` 两个投射物特有判定。
+这是第 7 组被消除的重复模型。
+
+**行为不变的依据**：两者在全仓（`src` + `Test` + `Build`）除声明与构造处外零出现，
+没有任何读取路径，因此删除不可能改变运行结果。
+
+验证：全部工程 0 错误；`queueprobe` 49 PASS；`invVerification` 16 PASS；
+`projVerification` 30 PASS；`worldprobe` 195 行与基线一致；`tickprobe` 8 行不变；
+`MinimalVerification` PASS。

@@ -43,9 +43,7 @@ catalog.Register(new ProjectileDefinition(
     new AttributeSetComponent(),
     new ProjectileCollisionPolicyComponent(
         CollideWithTiles: true,
-        CollideWithEntities: true,
-        IgnoreOwner: true,
-        IgnoreSameFaction: false),
+        IgnoreOwner: true),
     new EntityCollisionCapabilityComponent(Enabled: true, Layer: 1, Mask: uint.MaxValue),
     new CombatAttackDefinitionId("probe.attack")));
 catalog.Seal();
