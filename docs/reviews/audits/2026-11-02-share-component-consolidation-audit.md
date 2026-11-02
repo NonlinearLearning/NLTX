@@ -190,7 +190,7 @@
 
 | # | 重复组 | 说明 |
 | --- | --- | --- |
-| 10 | `PlayerCombatResultSystem` ↔ `NpcCombatResultSystem` | **重复实现已消除**（第 17.2 节，抽出 `CombatResultDrain`）；但两者在服务器里仍匹配 0 实体——**接线缺口未修**，见 15.2 |
+| 10 | `PlayerCombatResultSystem` ↔ `NpcCombatResultSystem` | **已消除且接线已修**（第 17.2 节抽出 `CombatResultDrain`；第 25 节补挂玩家死亡/重生状态，两个系统不再匹配 0 实体） |
 | 11 | `Npc/SlimeAiBehavior` ↔ `Share/AI/Examples/SlimeAiBehavior` | 同名同概念双实现 |
 | 12 | ~~`ProjectileSourceMetadataComponent` ↔ `ProjectileOwnerComponent`~~ | **判断错误，已撤销**：前者是字符串溯源 `(SourceKind, SourceId, SourceRevision)`，后者是 `EntityRuntimeHandle`，不同概念，不是重复模型。仅"写入后从未被读取"成立，见 16.2 |
 | 13 | `ProjectileHomingCapabilityComponent` ↔ `ProjectileBehaviorProfile` | 前者从未挂到实体，制导恒不生效 |
@@ -631,7 +631,7 @@ if (_handles.TryGetHandle(          if (!_handles.TryGetHandle(
 重构后 49 条断言全过。
 
 注意：这次只消除了重复实现，**没有修** 15.2 说的接线缺口——
-两个系统在生产里依然匹配 0 个实体，那需要先定意图。
+两个系统在生产里依然匹配 0 个实体——已在第 25 节修复（玩家实体补挂死亡与重生状态）。
 
 ## 18. 已执行：投射物接入共享空间管线
 
@@ -1026,3 +1026,70 @@ new DamageContact(fact.Contact.Point, fact.Contact.Normal)
 
 这也给出一条可复用的判据：**形状相同 ≠ 重复**。判定必须同时满足
 同语义、同生命周期、且合并后不新增层间依赖。
+
+## 25. 已执行：修复审计 #10 的接线缺口（玩家伤害结果队列无界增长）
+
+15.2 节记录了两个已注册但查询永远匹配 0 实体的系统。本轮把成因查到了底并修掉。
+
+### 25.1 成因
+
+`Program.cs` 的 `CreatePlayer` 挂了 `LifeComponent(current: 100, maximum: 100)`，
+但**没有挂** `PlayerDeathStateComponent` 与 `PlayerRespawnStateComponent`。而：
+
+- `PlayerDeathRespawnSystem` 的查询是 `WithAll<LifeComponent, PlayerDeathStateComponent, PlayerRespawnStateComponent>()`
+- `PlayerCombatResultSystem` 的查询是 `WithAll<PlayerDeathStateComponent>()`
+
+两个查询都要求玩家身上不存在的组件，于是永远匹配 0 个实体。
+
+### 25.2 后果：不是"功能没开"，是内存无界增长
+
+`PlayerCombatResultSystem` 的循环体是：
+
+```csharp
+_ = CombatResultDrain.Drain(resultQueue, _handles, entity);
+```
+
+它**只排空、不施加伤害**（结果被丢弃）。所以这个系统不跑并不会"少扣血"，
+而是 `CombatDamageResultQueueComponent` 里的玩家伤害结果**永不排空**——
+对局越久堆得越多。这是真实的内存泄漏，不只是功能缺失。
+
+`PlayerDeathRespawnSystem` 的缺失则确实只是功能未生效。
+
+### 25.3 修法
+
+`CreatePlayer` 补挂两项，并新增常量：
+
+```csharp
+private const int PlayerRespawnDelayTicks = 600;   // 10 秒，与参考客户端默认重生时间一致
+...
+new PlayerDeathStateComponent(),
+new PlayerRespawnStateComponent(PlayerRespawnDelayTicks),
+```
+
+安全性依据：对**存活**玩家，`PlayerDeathRespawnSystem` 三个分支都是提前返回
+（`!life.IsAlive && !death.IsDead` 为假；`life.IsAlive && death.IsDead` 为假；
+`!death.IsDead` 为真直接返回），因此正常帧是空操作，只在 life 归零后才登记死亡与重生计划。
+
+同一个 `CreatePlayer` 里已有同类先例的注释——`AttributeTickSystem` 与 `BuffTickSystem`
+曾因缺组件而匹配 0 实体，说明"补组件让已注册系统生效"是本仓库既定的维护方式。
+
+### 25.4 验证
+
+- **真实运行**：用 `Build/diagnostics/.../SC091/World/primary.wld` 作为世界文件启动服务器，
+  连续运行 20 秒无未处理异常，正常输出 `ecs.npc.spawned` → `ecs.protocol.world_cache_ready`
+  → `ecs.server.ready`。说明两个系统在 tick 循环里对队列实体的 `Require` 都成功。
+- **系统行为**：`queueprobe` 已有四条相关断言覆盖死亡与重生语义（本轮全部通过）：
+  ```
+  PASS respawn-restore-same-tick | t1.life=0 t1.dead=True t2.life=100 t2.deadCleared=True t2.respawnCancelled=True
+  PASS respawn-restore-needs-order | 顺序颠倒后 t2.life=0（证明同帧保证来自注册顺序）t3.life=100
+  ```
+- **回归**：全部工程 0 错误；`queueprobe` 49 PASS；`invVerification` 16 PASS；
+  `projVerification` 30 PASS；`worldprobe` 195 行与基线一致；`tickprobe` 8 行不变；
+  `MinimalVerification` PASS。
+
+### 25.5 说明
+
+这一项是**缺陷修复**，不是重复模型消除。它之所以留在审计里，是因为 #10 的重复实现
+（`PlayerCombatResultSystem` ↔ `NpcCombatResultSystem`）虽已在 17.2 节抽出
+`CombatResultDrain` 消除，但接线缺口会让那次消除无法在真实服务器里生效——
+重复代码删了、生产路径却从未执行过，等于没验证。

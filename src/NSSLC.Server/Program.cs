@@ -33,6 +33,10 @@ internal static class Program
   private const int PlayerInventorySlotCount = 59;
   private const int MaxInventoryStack = short.MaxValue;
 
+  /// <summary>重生延迟（tick）。600 tick = 10 秒，与参考客户端的默认重生时间一致。</summary>
+  /// <remarks>可由 <c>PlayerRespawnStateComponent.ConfigureDelay</c> 在运行时调整。</remarks>
+  private const int PlayerRespawnDelayTicks = 600;
+
   public static async Task<int> Main(string[] args)
   {
     LoadedServerWorld loadedWorld = ServerWorldLoader.Load(
@@ -393,6 +397,12 @@ internal static class Program
         new EntityIdentityComponent(id),
         new EntityFactionComponent(Faction.Friendly),
         new LifeComponent(current: 100, maximum: 100),
+        // 没有这两项时 PlayerDeathRespawnSystem 与 PlayerCombatResultSystem 在真实服务器中
+        // 匹配 0 个实体：前者永不处理死亡，后者永不排空 CombatDamageResultQueue，
+        // 对局越久玩家伤害结果堆积越多（与 AttributeTickSystem 那次的成因同类）。
+        // 对存活玩家 PlayerDeathRespawnSystem 是空操作，只在 life 归零后才登记死亡与重生计划。
+        new PlayerDeathStateComponent(),
+        new PlayerRespawnStateComponent(PlayerRespawnDelayTicks),
         // 属性基值取自参考客户端默认值（statDefense 0、moveSpeed 1），与 null 路径等价；
         // 没有这两项时 AttributeTickSystem 与 BuffTickSystem 在真实服务器中匹配 0 个实体。
         playerAttributes,
