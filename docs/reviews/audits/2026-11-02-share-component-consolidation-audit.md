@@ -1093,3 +1093,48 @@ new PlayerRespawnStateComponent(PlayerRespawnDelayTicks),
 （`PlayerCombatResultSystem` ↔ `NpcCombatResultSystem`）虽已在 17.2 节抽出
 `CombatResultDrain` 消除，但接线缺口会让那次消除无法在真实服务器里生效——
 重复代码删了、生产路径却从未执行过，等于没验证。
+
+## 26. 系统接线全量核对：27 个系统，2 处未接通
+
+第 25 节修掉了两个"已注册但匹配 0 实体"的系统。本轮把这套检查推广到**全部**系统，
+确认是否还有同类。
+
+### 26.1 方法
+
+1. 枚举 `Terraria.Components` 下所有 `BaseSystem<ArchWorld, EcsServerTickContext>` 派生类：**27 个**。
+2. 定位注册点。共有三处，其中不少条目是变量透传而非 `new`，只看 `new XxxSystem(` 会漏：
+   - `Program.cs`：13 处（含 `npcProjection`、`worldTick`、`npcAiAdapter`、`gravityTick`、
+     `attributeTick`、`buffTick`、`spatialSimulation`、`worldInteractions` 等透传变量）
+   - `CombatSystemRegistration.cs`：15 处
+   - `CommunicationSystemRegistration.cs`：3 处
+3. 对已注册系统，验证其查询所需组件是否在生产代码里真的被挂到实体上。
+
+### 26.2 结论
+
+**26 个已注册，1 个从未注册。** 已注册的里 1 个永远匹配不到实体。
+
+| 系统 | 状态 | 后果 |
+| --- | --- | --- |
+| `InventoryAttributeContributionSystem`（Share/Inventory） | **从未注册** | 每 tick 从库存重建装备/饰品/武器的属性贡献这段逻辑永不执行，`AttributeSourceCategory.Equipment / Accessory / Weapon` 的加成永远不会生效 |
+| `ProtectionWindowSystem`（Share/Combat，注册在 Commit） | 已注册但**所需组件从不挂载** | `ProtectionWindowComponent` 在生产代码里只有读取方（`CombatDamageSystem.cs:107`、`DamageAdmissionSystem` 的可选参数），没有任何挂载点，因此该查询恒为 0 实体，无敌窗口既不会创建也不会过期 |
+
+其余 25 个系统的查询所需组件都能在真实实体上凑齐（玩家、NPC、投射物或专职队列实体）。
+
+### 26.3 为什么本轮没有直接补
+
+两条都**不造成危害**——不像第 25 节那条会无界堆积。不运行它们的效果只是"功能未启用"，
+属于迁移期的正常状态，而不是缺陷：
+
+- 补 `InventoryAttributeContributionSystem` 会让护甲/饰品真正参与属性计算，这是玩法生效，
+  需要确认属性重建与 `AttributeTickSystem` 的顺序约定。
+- 补 `ProtectionWindowComponent` 需要先定义"什么时候授予无敌窗口"（受击后？重生后？），
+  这是玩法规则。
+
+两者都需要产品判断，故只记录不执行。
+
+### 26.4 方法修正（避免误报）
+
+有些系统有**多个查询**，例如 `PhysicsContactCaptureSystem` 用 `_query`（实体组件）与
+`_queueQuery`（队列组件）两个独立查询。若按"文件里出现过的所有 `WithAll`"粗暴合并，
+会把队列组件误当成实体必须同时具备的组件，从而误报"永远匹配 0 实体"。
+判定必须**按查询逐个**进行。
