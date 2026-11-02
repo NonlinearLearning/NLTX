@@ -1413,3 +1413,53 @@ Profile 是内容侧默认值，Capability 是实例侧覆盖。所以 #13 也�
 
 两项都从"待决策"收敛为"已查明且不需要合并"。至此第 10 节表格里
 真正需要合并决策的只剩 #4（世界掉落物）与 #6（EntityDefinition 二选一）。
+
+## 32. 待决策项 #4 已定位到确切分歧点：校验语义不一致
+
+第 10 节把"世界掉落物 `WorldItemState` ↔ `Share/Item`"记为待决策，阻塞点是"400 槽网络表示"。
+本轮把它查到了具体的一行代码上。
+
+### 32.1 物品身份三元组在全仓有四个表示
+
+| # | 表示 | 形态 | 角色 |
+| --- | --- | --- | --- |
+| 1 | `Share/Item/ItemStack` | `(ItemId, int Quantity, byte Prefix)` | 组件域值对象 |
+| 2 | `World/WorldItemState` | `(int ItemType, int Stack, byte Prefix, …)` | 权威世界掉落物 |
+| 3 | `MinimalImplementation/Contracts/Items/ItemState` | `(int Type, byte Prefix, int Stack)` | 旧运行期契约 |
+| 4 | `MinimalImplementation/Contracts/…/WorldFileChestItem` | `(int stack, int type, byte prefix)` | 世界文件持久化 |
+
+3 与 4 必须保留原始 `int`——它们分别对应磁盘与世界文件字段，是有边界约束的字节表示
+（`WorldFileChestItem` 还把 stack 钳在 `short` 范围内）。真正的重复只在 1 与 2 之间。
+
+### 32.2 1 ↔ 2 为什么现在换不了
+
+`WorldItemState` 唯一的构造点是 `WorldItemStore.TryCreate`（第 43 行），它在构造前调用：
+
+```csharp
+WorldItemRules.IsValidItem(itemType, stack, position, velocity)
+// → itemType > 0 && stack > 0 && 位置/速度有限
+```
+
+而 `ItemStack` 的构造函数要求 `ItemIdRules.IsKnown(itemId)`。
+
+**分歧就在这**：`WorldItemStore` 接受任意正整数 itemType，`ItemStack` 只接受已知 `ItemId`。
+所以直接把三个字段换成 `ItemStack` **不是无损的**——它会把"任意正整数"收紧成"已知物品"。
+
+而未知 id 是可达的：`GameCommunicationAdapter` 第 378/391 行把客户端包里的 `itemType`
+原样塞进 `WorldItemRequest`，中间没有任何 `ItemIdRules.TryFromNetworkType` 校验。
+
+### 32.3 两个方案
+
+| 方案 | 动作 | 评价 |
+| --- | --- | --- |
+| **A. 先收紧再合并**（推荐） | 在 `GameCommunicationAdapter` 处理世界物品包时用 `ItemIdRules.TryFromNetworkType` 校验，未知 id 直接丢弃；随后把 `WorldItemState` 的三个字段换成 `ItemStack` | 权威状态里不再可能出现客户端编造的物品 id；重复模型被真正消除 |
+| B. 放宽 `ItemStack` | 让共享值对象允许未知 id | **不推荐**：为迁就旧路径污染共享模型，等于把问题从一处搬到另一处 |
+
+推荐 A 的理由：目前客户端可以往服务端权威状态里塞任意正整数 itemType，服务端会照单全收、
+后续还会把它投影给所有客户端。这本身就该在入口处拒绝，与是否合并模型无关。
+换句话说，#4 的正确顺序是**先补入口校验，再合并模型**，而不是在模型层做兼容。
+
+### 32.4 本轮未改动代码
+
+结论依赖一个"入口是否该校验"的产品判断（严格来说还涉及协议宽容度），
+本轮只把它从"阻塞点是网络表示"收敛为"阻塞点是这一行校验"，并给出可执行顺序。
