@@ -1295,3 +1295,66 @@ PASS substep-does-not-scale-distance | expected=(302,400) actual=(302,400)（子
 
 全部工程 0 错误；`queueprobe` 49 PASS；`invVerification` 16 PASS；
 `projVerification` 34 PASS；`worldprobe` 195 行与基线一致；`tickprobe` 8 行不变。
+
+## 30. 待决策项 #6 的一半已闭合，另一半被证明**不该删**
+
+### 30.1 投射物 AI 层不是重复，是对 Share/AI 的组合
+
+`ProjectileBehaviorProfile` / `ProjectileBehaviorCatalog` / `ProjectileAiRegistration`
+初看像是与 `Share/AI` 重复的"第二套 AI 模型"。逐个读下来不是：
+
+- 它们直接使用 Share 的 `Terraria.Ai` 类型：`AiSystem<ProjectileAiIntent>`、`AiBehavior<TIntent>`、
+  `AiBehaviorSelectionComponent`、`AiBehaviorProfileId`、`AiRequirements`。
+- `ProjectileBehaviorProfile` 只是把"行为类型 + 参数 + 需求"打成不可变的值对象；
+  `ProjectileBehaviorCatalog` 是按 `ProfileId` 索引并带唯一性/类型一致性校验的目录；
+  `ProjectileAiRegistration` 负责把 `Straight` 与 `Homing` 两个实现注册进 `AiSystem`。
+- 实测 `Share/AI` 下**没有**任何等价目录/注册表类型（没有 `*Catalog` / `*Registry` / `*Profile`），
+  所以这不是重复实现，而是投射物域在 Share/AI 之上补的一层。
+
+结论：这一半的"两套模型"不成立，投射物 AI 已经是"非 Share 使用 Share"的正面例子。
+
+### 30.2 `Share/Entity` 定义簇：外部零引用，但**不是死代码**
+
+实测该簇 8 个类型在 `src` + `Test` + `Build` 中、目录外的引用数全为 0：
+
+| 类型 | 目录内引用 | 目录外引用 |
+| --- | --- | --- |
+| `EntityComponentSet` | 6 | **0** |
+| `EntityComponentValue` | 10 | **0** |
+| `EntityDefinition` | 16 | **0** |
+| `EntityDefinitionBuilder` | 7 | **0** |
+| `EntityDefinitionId` | 10 | **0** |
+| `EntityDefinitionRegistry` | 3 | **0** |
+| `EntityDefinitionSystem` | 2 | **0** |
+| `IEntityDefinitionHost` | 3 | **0** |
+
+按前几轮的做法，零引用就该进删除清单。**这里不成立**，有三条反证：
+
+1. `docs/architecture/2026-10-24-nsslc-atomic-components-and-client-system-matrix.md`
+   把 `EntityDefinitionId`、`EntityDefinition` 标为 **confirmed**，把 `EntityDefinitionRegistry`
+   标为"不可变定义目录 / confirmed"。这是已确认的架构方向，不是遗留垃圾。
+2. `docs/reviews/audits/2026-11-01-share-wiring-audit.md` 已经把这一簇判为
+   「闭合的死簇，要么整簇接上，要么整簇删除；**半删会让状态更差**」，并给出 A（补宿主）/ B（整簇删）两个方案。
+3. 该簇缺的恰恰只是一环：`EntityDefinitionSystem` 依赖 `IEntityDefinitionHost` 的实现，
+   而全仓没有任何实现，因此它"无法构造"——是**缺宿主**，不是没人要。
+
+### 30.3 因此的结论
+
+- **不能删**：删除会与 confirmed 的架构矩阵直接冲突。
+- **不能只删一半**：簇内部互相引用，半删留下更糟的状态。
+- 这是本次审计里唯一一个"零引用但不可删"的案例，也说明**零引用只是必要条件，不是充分条件**。
+  前面 27 节那 5 份重复助手能删，是因为它们有活着的等价替代；这里没有替代，删掉就是放弃能力。
+
+真正的解法是二选一，且必须同步修订架构矩阵：
+
+| 方案 | 动作 | 代价 |
+| --- | --- | --- |
+| A. 补宿主 | 为 `EntityRuntimeRegistry` 实现 `IEntityDefinitionHost`，把玩家/NPC 创建改为数据驱动，随后 `ProjectileDefinition` 收编进该框架 | 需要定义数据与创建流程迁移，工作量最大，但消除两套模型 |
+| B. 整簇退役 | 删除 8 个类型，并**同时**把架构矩阵里 `confirmed` 标记改为退役 | 放弃数据驱动创建能力，但代码立刻一致 |
+
+在选定之前，`ProjectileDefinition` 与 `EntityDefinition*` 并存是**已记录的已知双模型**，
+不是遗漏。
+
+### 30.4 本轮未改动任何代码
+
+结论是"不删"，因此没有代码变更；仅新增本节记录与交叉引用。
