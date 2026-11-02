@@ -978,3 +978,51 @@ PASS public-seam-rejects-negative-tick | threw=True
 验证：全部工程 0 错误；`queueprobe` 49 PASS；`invVerification` 16 PASS；
 `projVerification` 30 PASS；`worldprobe` 195 行与基线一致；`tickprobe` 8 行不变；
 `MinimalVerification` PASS。
+
+## 24. 结构级重复的独立复查：零可合并项
+
+第 1–18 节都是按**名字与语义**逐个读文件的审计。为验证"没有漏掉改过名字的同一模型"，
+本轮换了独立的第二种查法：**按字段形状聚类**——不管叫什么，字段类型序列完全相同就成组。
+
+### 24.1 方法
+
+- **主构造函数式**（`public record struct X(...)`）：43 个 ≥2 字段的组件。
+- **属性式**（`public T Prop { get; }`）：67 个 ≥2 属性的组件。
+
+两次扫描各自的输出按规范化后的类型序列分组。
+
+### 24.2 结果：5 组形状相同，全部不合并
+
+| 形状 | 组内类型 | 判定 |
+| --- | --- | --- |
+| `bool\|bool` | `Projectile.ProjectileCollisionPolicyComponent` / `Share.GravityCapabilityComponent` | 形状偶然相同，语义无关（碰撞策略 vs 重力能力）。**不合并** |
+| `EntityRuntimeHandle\|long` | `ProjectileHitImmunityStateComponent` / `ProjectileHitImmunity` | 同一文件内的嵌套值记录，前者持有后者列表，不是两个组件。**误报** |
+| `int\|int` | `ProjectileKinematicsStateComponent` / `EntitySizeComponent` / `WorldTileStorageComponent` | `(ExtraUpdates, Substep)` vs `(宽, 高)` vs 瓦片存储维度，语义无关。**误报** |
+| `LiquidContactFlags\|byte` | `Share.LiquidContactComponent` / `Share.SpatialLiquidContact` | 后者是世界查询边界的输出 DTO，且带显式 `ToComponent()`。属于刻意的查询边界类型。**不合并** |
+| `Vector2\|Vector2` | `Share.DamageContact` / `Share.EntityCollisionContact` | 见 24.3。**不合并** |
+
+### 24.3 `DamageContact` 与 `EntityCollisionContact` 值得单独说明
+
+两者形状与语义都是"接触点 + 法线"，且确实存在重复代价——`ProjectileDamageRequestSystem.cs:91`
+正在逐字段搬运：
+
+```csharp
+new DamageContact(fact.Contact.Point, fact.Contact.Normal)
+```
+
+看起来该合并。但实测依赖方向：
+
+- `Share/Combat` 下对 `Terraria.Physics` 的引用：**0 处**
+- `Share/Physics` 下对 `Terraria.Combat` 的引用：**0 处**
+
+两层是**刻意互相解耦**的。合并会凭空造出一条 `Terraria.Combat → Terraria.Physics` 的层间依赖。
+而那条逐字段搬运恰好位于非 Share 的 `Terraria.Projectile` 里——**适配器负责跨域翻译**，
+这正是六边形边界要求的职责分配。所以它是解耦的代价，不是重复实现。
+
+### 24.4 结论
+
+结构级复查**没有发现任何被名字掩盖的遗漏**。第 10 节列出的剩余项全部是语义或产品判断
+（运动封套、世界掉落物、内容定义模型、零实体接线、制导能力、包封套），不是漏掉的结构重复。
+
+这也给出一条可复用的判据：**形状相同 ≠ 重复**。判定必须同时满足
+同语义、同生命周期、且合并后不新增层间依赖。
