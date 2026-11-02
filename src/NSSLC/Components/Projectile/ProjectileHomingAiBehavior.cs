@@ -64,7 +64,7 @@ public sealed class ProjectileHomingAiBehavior : AiBehavior<ProjectileAiIntent>
         ? velocity.LinearVelocity
         : Vector2.Normalize(offset) * maximumSpeed;
     float turnRate = _profile.TurnRate > 0f ? _profile.TurnRate : capability.TurnRate;
-    Vector2 nextVelocity = MoveTowards(velocity.LinearVelocity, desired, turnRate * deltaTime);
+    Vector2 nextVelocity = Terraria.Physics.SimulationVector.MoveTowards(velocity.LinearVelocity, desired, turnRate * deltaTime);
     output.Emit(new ProjectileAiIntent(
         ProjectileAiIntentKind.AdjustVelocity, nextVelocity, target.Revision));
   }
@@ -88,12 +88,4 @@ public sealed class ProjectileHomingAiBehavior : AiBehavior<ProjectileAiIntent>
     }
   }
 
-  private static Vector2 MoveTowards(Vector2 current, Vector2 target, float distance)
-  {
-    Vector2 delta = target - current;
-    float length = delta.Length();
-    return length <= distance || length == 0f
-        ? target
-        : current + delta / length * distance;
-  }
 }

@@ -129,7 +129,7 @@ public sealed class SpatialSimulationSystem
     float maximum = movement.MaximumSpeed;
     desired.X = Math.Clamp(desired.X, -maximum, maximum);
     desired.Y = Math.Clamp(desired.Y, -maximum, maximum);
-    return MoveTowards(current, desired, movement.Acceleration * deltaTime);
+    return Terraria.Physics.SimulationVector.MoveTowards(current, desired, movement.Acceleration * deltaTime);
   }
 
   private static Vector2 ResolveFreeVelocity(
@@ -144,14 +144,7 @@ public sealed class SpatialSimulationSystem
       desired = Vector2.Normalize(desired) * movement.MaximumSpeed;
     }
 
-    return MoveTowards(current, desired, movement.Acceleration * deltaTime);
-  }
-
-  private static Vector2 MoveTowards(Vector2 current, Vector2 target, float distance)
-  {
-    Vector2 delta = target - current;
-    float length = delta.Length();
-    return length <= distance || length == 0f ? target : current + delta / length * distance;
+    return Terraria.Physics.SimulationVector.MoveTowards(current, desired, movement.Acceleration * deltaTime);
   }
 
   private static GroundingComponent ResolveGrounding(

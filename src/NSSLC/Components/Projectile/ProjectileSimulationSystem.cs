@@ -60,7 +60,7 @@ public sealed class ProjectileSimulationSystem
     Vector2 nextVelocity = intent.Kind == ProjectileAiIntentKind.AdjustVelocity
         ? intent.DesiredVelocity
         : velocity.LinearVelocity;
-    if (!IsFinite(nextVelocity))
+    if (!Terraria.Physics.SimulationVector.IsFinite(nextVelocity))
     {
       return Reject(frame.Revision, location, new VelocityComponent(nextVelocity), lifetime,
           kinematics, ProjectileSimulationStatus.Rejected,
@@ -159,8 +159,4 @@ public sealed class ProjectileSimulationSystem
     return new ProjectileMotionResult(location, velocity, collidedX, collidedY, completedSubsteps);
   }
 
-  private static bool IsFinite(Vector2 value)
-  {
-    return float.IsFinite(value.X) && float.IsFinite(value.Y);
-  }
 }

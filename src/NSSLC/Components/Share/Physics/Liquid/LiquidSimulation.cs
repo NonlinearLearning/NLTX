@@ -488,7 +488,7 @@ internal sealed class LiquidSimulation
       LiquidInteractionCapabilityComponent capability)
   {
     if (!capability.Enabled || capability.AffectedLiquids == LiquidContactFlags.None ||
-        !IsFinite(position) || !IsFinite(colliderSize) ||
+        !Terraria.Physics.SimulationVector.IsFinite(position) || !Terraria.Physics.SimulationVector.IsFinite(colliderSize) ||
         colliderSize.X <= 0f || colliderSize.Y <= 0f)
     {
       return new SpatialLiquidContact(LiquidContactFlags.None, 0);
@@ -549,10 +549,6 @@ internal sealed class LiquidSimulation
     return new SpatialLiquidContact(flags, amount);
   }
 
-  private static bool IsFinite(Vector2 value)
-  {
-    return float.IsFinite(value.X) && float.IsFinite(value.Y);
-  }
 }
 
 /// <summary>Result of one bounded liquid pass.</summary>

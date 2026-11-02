@@ -1138,3 +1138,46 @@ new PlayerRespawnStateComponent(PlayerRespawnDelayTicks),
 `_queueQuery`（队列组件）两个独立查询。若按"文件里出现过的所有 `WithAll`"粗暴合并，
 会把队列组件误当成实体必须同时具备的组件，从而误报"永远匹配 0 实体"。
 判定必须**按查询逐个**进行。
+
+## 27. 已执行：同名助手重复实现的消除
+
+第 1 轮消除的 `ApplyGravity` 重复说明这类问题真实存在。本轮用机械方式把这一类扫了一遍：
+**统计所有 `private`/`internal static` 助手的方法名，找出在多个文件里重复定义的**。
+
+### 27.1 扫描结果
+
+| 助手 | 重复处数 | 分布 | 处理 |
+| --- | --- | --- | --- |
+| `IsFinite(Vector2)` | **4 份逐字节相同** | `Communication/GameCommunicationAdapter`、`Projectile/ProjectileSimulationSystem`、`Share/Physics/Liquid/LiquidSimulation`、`World/Solver/WorldTileMotionSolver` | **已消除** |
+| `MoveTowards` | **2 份逐字节相同** | `Projectile/ProjectileHomingAiBehavior`、`Share/Physics/SpatialSimulation/SpatialSimulationSystem` | **已消除** |
+| `IsFinite(Vector3)` | 1 份 | `Share/AI/Goap/Resolver/GraphResolver` | 不合并（类型不同） |
+| `IsDefined` | 2 份 | `Share/GravityConfigurationComponent`、`Share/GravityDirectionStateComponent` | 保留（各自校验各自的重力方向成员，语义不同） |
+| `SelectOverride`、`ToBoundedInt`、`Validate` | 各 2 份 | 均在 Share 内部 | 保留（同名但校验对象不同） |
+
+### 27.2 改动
+
+新增 `Share/Physics/SimulationVector.cs`（`internal static class`，两个方法），
+6 个文件删除各自的私有副本并改为调用它。命名上刻意避开 `Helper`/`Utils`/`Math` 这类
+无语义词，遵守文件组织约束里"避免无语义泛化命名"的要求。
+
+公式与原来**逐字符一致**，包括 `length <= distance || length == 0f` 的比较顺序与
+`current + delta / length * distance` 的运算顺序，因此浮点结果不会变化。
+
+规模：6 个文件，`+7 / −37`，另加 1 个新文件。
+
+### 27.3 为什么这算"非 Share 使用 Share 的产物"
+
+`MoveTowards` 原本在 `Projectile` 域与 `Share/Physics` 里各有一份——同一份运动学语义
+被投射物域重新实现了一次。消除后，非 Share 的 `ProjectileHomingAiBehavior` 直接复用
+Share 物理域的实现，这正是目标里"非 Share 的组件是否可以使用 Share 下的组件"在代码级的表现。
+
+### 27.4 验证
+
+行为不变由两点保证：公式逐字符相同；全部回归通过。
+
+- 全部工程 0 错误
+- `queueprobe` 49 PASS / 0 FAIL
+- `invVerification` 16 PASS / 0 FAIL
+- `projVerification` 30 PASS / 0 FAIL
+- `worldprobe` 195 行与基线完全一致
+- `tickprobe` 8 行不变

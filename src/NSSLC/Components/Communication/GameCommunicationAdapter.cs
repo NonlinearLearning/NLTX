@@ -355,7 +355,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
     }
 
     if (offset != payload.Length || stack < 0 || itemType < 0 ||
-        !IsFinite(position) || !IsFinite(velocity))
+        !Terraria.Physics.SimulationVector.IsFinite(position) || !Terraria.Physics.SimulationVector.IsFinite(velocity))
     {
       throw new ArgumentException("Packet 21 contains invalid item facts.", nameof(payload));
     }
@@ -453,11 +453,6 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
     {
       throw new ArgumentOutOfRangeException(nameof(value));
     }
-  }
-
-  private static bool IsFinite(Vector2 value)
-  {
-    return float.IsFinite(value.X) && float.IsFinite(value.Y);
   }
 
   private void ValidateVelocity(Vector2 value)

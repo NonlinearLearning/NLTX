@@ -27,7 +27,7 @@ public static class WorldTileMotionSolver
       GravityDirection gravityDirection)
   {
     ArgumentNullException.ThrowIfNull(grid);
-    if (!IsFinite(position) || !IsFinite(velocity) || !IsFinite(colliderSize) ||
+    if (!Terraria.Physics.SimulationVector.IsFinite(position) || !Terraria.Physics.SimulationVector.IsFinite(velocity) || !Terraria.Physics.SimulationVector.IsFinite(colliderSize) ||
         colliderSize.X <= 0f || colliderSize.Y <= 0f)
     {
       return new SpatialTileMotionResult(position, Vector2.Zero, false, false);
@@ -323,11 +323,6 @@ public static class WorldTileMotionSolver
         0,
         grid.Height - 1);
     return new TileRange(minX, maxX, minY, maxY);
-  }
-
-  private static bool IsFinite(Vector2 value)
-  {
-    return float.IsFinite(value.X) && float.IsFinite(value.Y);
   }
 
   private readonly record struct TileRange(int MinX, int MaxX, int MinY, int MaxY);
