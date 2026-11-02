@@ -887,3 +887,65 @@ PASS velocity-unchanged-no-deceleration | velocity=(6,-3)
 "组件齐备"不等于"能跑"。本轮之前的所有断言都是在检查**静态结构**，而缺陷在**动态前置条件**里。
 只有真正跑一次模拟、比较位置与速度，才能发现意图 tick 这种跨帧状态问题。
 后续迁移步骤（同步/投影、运动职责）必须同样以"跑一遍并比对结果"为准，不能停在结构断言。
+
+## 22. 已执行：发布公开入队接缝，并厘清第 2 步的依赖边界
+
+第 20.4 节把"旧实现双写"列为迁移第 2 步。本轮先补齐它**必需的缺失件**，同时查清了
+它真正的依赖代价。
+
+### 22.1 公开接缝
+
+新增 `ProjectileSpawnRequests`（`public static`）：
+
+```csharp
+public static void Enqueue(ArchWorld world, in ProjectileSpawnRequest request, long tick)
+```
+
+原因是现有入队路径不可用：队列组件挂在专职世界级实体上，定位它的
+`ProjectileSpawnQueue` 是 `internal`，外部程序集不该依赖这个单例定位约定。
+现在外部只需 `world` + 请求 + tick 即可入队，负 tick 会抛 `ArgumentOutOfRangeException`
+而不是静默入队。
+
+这与仓库既有约定一致：**组件库发布能力，宿主决定接线**。
+
+### 22.2 第 2 步的依赖代价（实测）
+
+`MinimalImplementation.Combat.csproj` 的全部 ProjectReference 只有一条：
+
+```xml
+<ProjectReference Include="..\Contracts\MinimalImplementation.Contracts.csproj" />
+```
+
+**它不引用 `Terraria.Components`。** 因此"让 `ProjectileManager.Commit` 直接向新队列入队"
+意味着给旧移植层新增一条指向新 ECS 领域的项目引用——这是 legacy → new 的依赖方向，
+属于架构边界决策，不是一次普通改动。
+
+对照：`NSSLC.Server.csproj` **同时**引用了 `Terraria.Components` 与
+`MinimalImplementation.World` / `Contracts`，即宿主层本来就横跨两边。
+
+### 22.3 由此得出的建议
+
+第 2 步不要改 `MinimalImplementation.Combat`，改为**在宿主层架桥**：
+
+- `MinimalImplementation.Combat` 保持零新依赖（旧层不需要知道 ECS 域存在）。
+- 由 `NSSLC.Server` 侧观察旧实现的生成提交，转调 `ProjectileSpawnRequests.Enqueue`。
+- 这样"双写"成为宿主的一个接线动作，可随时摘除，符合第 20.4 节
+  "每一步都保持旧路径可回退"的要求。
+
+具体落点需要先弄清 `ProjectileManager.Commit` 的调用链在服务器里由谁驱动
+（`MinimalImplementation.Server` 还是 `NSSLC.Server` 的适配层），这属于第 2 步的实现细节，
+本轮未展开。
+
+### 22.4 验证
+
+`projVerification` 从 26 条扩到 **30 条**，新增四条覆盖公开接缝：
+
+```
+PASS public-seam-enqueues | count=1
+PASS public-seam-spawned | results=1 status=Applied
+PASS public-seam-drained | count=0
+PASS public-seam-rejects-negative-tick | threw=True
+```
+
+回归：全部工程 0 错误；`queueprobe` 49 PASS；`invVerification` 16 PASS；
+`worldprobe` 195 行与基线一致；`MinimalVerification` PASS。

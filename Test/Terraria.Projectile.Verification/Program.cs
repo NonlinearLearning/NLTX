@@ -183,6 +183,40 @@ bool queuedSimulatable = spawnSystem.Results.Count == 1 &&
     world.Has<MovementCapabilityComponent>(spawnSystem.Results[0].Entity);
 Check("queued-entity-simulatable", queuedSimulatable, "Grounding + MovementCapability");
 
+// ---- 公开接缝：不依赖 internal 单例定位约定即可入队（迁移期旧实现需要这条路） ----
+ProjectileSpawnRequest publicRequest = new(
+    definitionId,
+    ownerHandle,
+    new ProjectileSourceMetadataComponent("probe", "public-1"),
+    position: new Vector2(50f, 60f),
+    velocity: new Vector2(0f, 4f),
+    collider: new ColliderComponent(new Vector2(8f, 8f)),
+    size: new EntitySizeComponent(8, 8),
+    faction: Faction.Hostile);
+ProjectileSpawnRequests.Enqueue(world, publicRequest, tick: 9);
+Check("public-seam-enqueues", spawnQueue.Count == 1, $"count={spawnQueue.Count}");
+
+spawnSystem.Update(new EcsServerTickContext(world, 9, 1f / 60f));
+Check(
+    "public-seam-spawned",
+    spawnSystem.Results.Count == 1 &&
+        spawnSystem.Results[0].Status == ProjectileLifecycleStatus.Applied,
+    $"results={spawnSystem.Results.Count} status={(spawnSystem.Results.Count == 1 ? spawnSystem.Results[0].Status.ToString() : "n/a")}");
+Check("public-seam-drained", spawnQueue.Count == 0, $"count={spawnQueue.Count}");
+
+// 负 tick 必须被拒绝而不是静默入队
+bool rejectedNegativeTick = false;
+try
+{
+  ProjectileSpawnRequests.Enqueue(world, publicRequest, tick: -1);
+}
+catch (ArgumentOutOfRangeException)
+{
+  rejectedNegativeTick = true;
+}
+
+Check("public-seam-rejects-negative-tick", rejectedNegativeTick, $"threw={rejectedNegativeTick}");
+
 // ---- 真实位移验证：共享协调系统确实会搬运投射物 ----
 // 前面的断言只证明"组件齐备"，这里证明"齐备之后真的会动"，同时用实际速度反证
 // acceleration=0 那个决定——若加速度非零，速度会被拉向 MovementIntent.Stop 的零目标。
