@@ -47,6 +47,11 @@ public static class CombatSystemRegistration
       new EcsServerSystemRegistration(
           EcsServerPhase.Preparation,
           new ProjectileSpawnRequestSystem(world, projectileLifecycle)),
+      // 必须排在生成之后：同帧新生成的投射物也要拿到当帧意图，否则会被
+      // SpatialSimulationSystem 的 intent.Tick != frame.Tick 校验拒绝。
+      new EcsServerSystemRegistration(
+          EcsServerPhase.Preparation,
+          new ProjectileMovementIntentSystem(world)),
       new EcsServerSystemRegistration(EcsServerPhase.Simulation, physicsContacts),
       new EcsServerSystemRegistration(
           EcsServerPhase.Simulation,

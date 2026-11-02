@@ -822,3 +822,68 @@ PASS queued-entity-simulatable | Grounding + MovementCapability
 4. **退役旧实现**：以上对齐后删除 `MinimalImplementation.Combat.Projectiles`。
 
 每一步都应保持"旧路径仍可回退"，直到第 4 步。
+
+## 21. 自我纠错：第 18 节的接线其实只在第 0 帧有效
+
+第 18 节我声称"投射物接上就能跑"，依据是组件齐备的断言。本轮把断言升级为**真实位移验证**后，
+第一次运行就红了：
+
+```
+FAIL coordinator-moved-projectile | moveCount=0 before=(100,200) after=(100,200)
+FAIL movement-is-velocity-times-dt | expected=(103,198.5) actual=(100,200)
+```
+
+`moveCount = 0` 说明协调系统连 `Move` 都没调用——查询虽然匹配到了实体，但模拟被前置校验拦下。
+
+### 21.1 根因
+
+`SpatialSimulationSystem.Simulate` 的第一道校验（`SpatialSimulationSystem.cs:26`）：
+
+```csharp
+if (intent.Tick != frame.Tick)
+{
+  return Rejected(..., SpatialSimulationStatus.Conflict,
+      "The movement intent belongs to another simulation tick.");
+}
+```
+
+而我在 `TrySpawn` 里写的是 `MovementIntent.Stop(tick: 0)`。**意图 tick 恒为 0，于是投射物
+只在 tick 0 那一帧能被模拟，其它每一帧都被拒绝。** 换句话说，第 18 节的接线在真实服务器里
+（tick 从 1 开始递增）等于完全没接。
+
+### 21.2 为什么 NPC 没这个问题
+
+NPC 侧有 `NpcAiIntentAdapter.cs:151` 每帧写入 `MovementIntent.Stop(tick)`，玩家侧由输入写入。
+投射物没有任何意图生产者——它压根不是意图驱动的。缺的不是一次赋值，而是"每帧都要有"。
+
+### 21.3 修法
+
+新增 `ProjectileMovementIntentSystem`（Preparation 相位）：每个 tick 为所有
+`disposition.IsActive` 且带 `GroundingComponent` 的投射物写入 `MovementIntent.Stop(tick)`。
+
+注册顺序上**必须排在生成系统之后**，这样同帧新生成的投射物也能拿到当帧意图，
+当帧就能被 Simulation 相位驱动。
+
+这里写 `Stop` 仍是刻意的：投射物不追求目标速度，配合生成时的 `acceleration = 0` 与
+`MovementMode.Flight`，速度原样保留，表现为匀速直线。
+
+### 21.4 修正后的验证
+
+`projVerification` 从 22 条扩到 **26 条**，其中四条是针对这个缺陷的：
+
+```
+PASS intent-refreshed-to-current-tick | intentTick=8
+PASS coordinator-moved-projectile | moveCount=2 before=(100,200) after=(103,198.5)
+PASS movement-is-velocity-times-dt | expected=(103,198.5) actual=(103,198.5)
+PASS velocity-unchanged-no-deceleration | velocity=(6,-3)
+```
+
+位移恰好等于 `速度 × deltaTime`（`(6,-3) × 0.5`），且速度未被改变——同时反证了
+第 18.2 节"`acceleration` 必须为 0"那个决定：若加速度非零，速度会被拉向
+`MovementIntent.Stop` 的零目标，速度断言会红。
+
+### 21.5 教训
+
+"组件齐备"不等于"能跑"。本轮之前的所有断言都是在检查**静态结构**，而缺陷在**动态前置条件**里。
+只有真正跑一次模拟、比较位置与速度，才能发现意图 tick 这种跨帧状态问题。
+后续迁移步骤（同步/投影、运动职责）必须同样以"跑一遍并比对结果"为准，不能停在结构断言。

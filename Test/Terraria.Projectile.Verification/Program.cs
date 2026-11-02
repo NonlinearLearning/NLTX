@@ -183,9 +183,69 @@ bool queuedSimulatable = spawnSystem.Results.Count == 1 &&
     world.Has<MovementCapabilityComponent>(spawnSystem.Results[0].Entity);
 Check("queued-entity-simulatable", queuedSimulatable, "Grounding + MovementCapability");
 
+// ---- 真实位移验证：共享协调系统确实会搬运投射物 ----
+// 前面的断言只证明"组件齐备"，这里证明"齐备之后真的会动"，同时用实际速度反证
+// acceleration=0 那个决定——若加速度非零，速度会被拉向 MovementIntent.Stop 的零目标。
+ProbeSpatialWorld probeWorld = new();
+SpatialSimulationCoordinatorSystem coordinator = new(world, probeWorld);
+// 生产顺序：先刷新意图，再由协调系统模拟。缺了这一步，投射物的意图 tick 会停在生成时的
+// 0，被 intent.Tick != frame.Tick 校验永久拒绝——这正是本条验证要防住的回归。
+ProjectileMovementIntentSystem intentSystem = new(world);
+intentSystem.Update(new EcsServerTickContext(world, 8, 0.5f));
+Check(
+    "intent-refreshed-to-current-tick",
+    world.Get<MovementIntent>(projectile).Tick == 8,
+    $"intentTick={world.Get<MovementIntent>(projectile).Tick}");
+
+Vector2 beforePosition = world.Get<LocationComponent>(projectile).Coordinates;
+coordinator.Update(new EcsServerTickContext(world, 8, 0.5f));
+Vector2 afterPosition = world.Get<LocationComponent>(projectile).Coordinates;
+Vector2 afterVelocity = world.Get<VelocityComponent>(projectile).LinearVelocity;
+
+Check(
+    "coordinator-moved-projectile",
+    probeWorld.MoveCount > 0 && afterPosition != beforePosition,
+    $"moveCount={probeWorld.MoveCount} before=({beforePosition.X},{beforePosition.Y}) after=({afterPosition.X},{afterPosition.Y})");
+Vector2 expectedPosition = beforePosition + new Vector2(6f, -3f) * 0.5f;
+Check(
+    "movement-is-velocity-times-dt",
+    afterPosition == expectedPosition,
+    $"expected=({expectedPosition.X},{expectedPosition.Y}) actual=({afterPosition.X},{afterPosition.Y})");
+Check(
+    "velocity-unchanged-no-deceleration",
+    afterVelocity == new Vector2(6f, -3f),
+    $"velocity=({afterVelocity.X},{afterVelocity.Y})");
+
 Console.WriteLine();
 Console.WriteLine(
     failures == 0
         ? "PASS: projectile spawn produces a spatial-simulatable entity."
         : $"FAIL: {failures} check(s) failed.");
 return failures == 0 ? 0 : 1;
+
+/// <summary>自由移动的 <see cref="ISpatialWorldQuery"/> 桩：不查询瓦片，位移直接等于位移量。</summary>
+internal sealed class ProbeSpatialWorld : ISpatialWorldQuery
+{
+  public SpatialWorldRevision Revision => SpatialWorldRevision.Initial;
+
+  public int MoveCount { get; private set; }
+
+  public SpatialTileMotionResult Move(
+      Vector2 position,
+      Vector2 velocity,
+      Vector2 colliderSize,
+      TileCollisionCapabilityComponent capability,
+      GravityDirection gravityDirection)
+  {
+    MoveCount++;
+    return new SpatialTileMotionResult(position + velocity, velocity, false, false);
+  }
+
+  public SpatialLiquidContact GetLiquidContact(
+      Vector2 position,
+      Vector2 colliderSize,
+      LiquidInteractionCapabilityComponent capability)
+  {
+    return new SpatialLiquidContact(LiquidContactFlags.None, 0);
+  }
+}
