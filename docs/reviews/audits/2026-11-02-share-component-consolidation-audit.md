@@ -182,7 +182,7 @@
 | 4 | `WorldItemState`/`WorldItemStore`/`WorldItemRules` ↔ `Share/Item` | 待决策；容器层是「400 槽表 vs ECS 实体」架构分歧 |
 | 5 | `WorldRuntimeStateComponent.(WorldEpoch, Revision)` ↔ `SpatialWorldRevision` | **已消除**（第 13 节）；投影表达式原先写了两遍，现收为单点 |
 | 6 | `ProjectileDefinition`/`ProjectileDefinitionCatalog` ↔ `Share/Entity/EntityDefinition*` | 待决策；**Share 侧才是 0 消费者的死抽象**，不能机械替换 |
-| 7 | `ProjectileCollisionPolicyComponent` 的 4 个 bool 中 3 个 ↔ 共享能力/关系组件 | 待处理；`CollideWithEntities`、`IgnoreSameFaction` 全仓无人读取 |
+| 7 | `ProjectileCollisionPolicyComponent` 的 4 个 bool 中 2 个 ↔ 共享能力/关系组件 | **已消除**（第 23 节）：`CollideWithEntities`、`IgnoreSameFaction` 已删除；`CollideWithTiles` 是投射物特有问题，保留 |
 | 8 | `PlayerInteractionCapability` ↔ `WorldInteractionPermission` | **已消除**（第 9 节）；Player 侧 0 消费者，已删除 |
 | 9 | `WorldMutation` ↔ `LiquidTileChange` | **已处理**（第 17.1 节）：确认不是同一概念，加区分注释而非合并 |
 
