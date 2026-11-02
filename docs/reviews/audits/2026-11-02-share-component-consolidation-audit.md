@@ -689,6 +689,10 @@ Flight 模式直接跳过，投射物不会下坠。`maximumSpeed` 取 0 让钳�
 现在所有投射物一律匀速直线。要做箭矢抛物线，需要先给定义加字段——这是第 10 节 #6
 待决策项的一部分。
 
+**补充（见第 19 节）**：生产者缺席的根因不是"漏了调用"，而是
+`MinimalImplementation.Combat.Projectiles` 里已经有一套正在跑的完整投射物实现。
+在迁移边界确定之前贸然接生产者，会让系统从两套变成三套。
+
 ### 18.4 顺带消除：死掉的 `Terraria.Combat.VelocityComponent` 兼容垫片
 
 写验证时编译器报出
@@ -721,3 +725,46 @@ public readonly record struct VelocityComponent(Vector2 LinearVelocity)
 `SpatialSimulationCoordinatorSystem` 等处的
 `using MovementVelocityComponent = Terraria.Movement.VelocityComponent;` 别名写法
 现在已无必要（歧义源已消失），但保留它没有成本，本轮未动，避免和主线改动混在一起。
+
+## 19. 投射物"两套模型"的真实边界（重要修正）
+
+第 18.3 节说"还缺生产者"。追查生产者落在何处时，发现了比"缺一个调用方"更根本的情况。
+
+### 19.1 存在两个完整的投射物子系统
+
+| | `Terraria.Projectile`（`src/NSSLC/Components/Projectile`） | `MinimalImplementation.Combat.Projectiles` |
+| --- | --- | --- |
+| 文件数 | 43 | 62 |
+| 状态 | **完全未接线**：`TrySpawn` 零调用（第 16.1 节） | **在跑**：包处理、同步、运动、碰撞、命中、追踪齐全 |
+| 关键类型 | `ProjectileLifecycleSystem`、`ProjectileSimulationSystem`、`ProjectileDefinition`、`ProjectileDefinitionCatalog` | `ProjectileManager`、`ProjectileMovementService`、`ProjectileCollisionService`、`ProjectileNpcCombatService`、同名 `ProjectileDefinition`、同名 `ProjectileDefinitionCatalog` |
+| 命名空间 | `Terraria.Projectile` | `MinimalImplementation.Combat.Projectiles` |
+
+两边的 `ProjectileDefinition`、`ProjectileDefinitionCatalog` 同名同职责，但是不同的类型、不同的程序集。
+
+### 19.2 这意味着什么
+
+1. **组件域内的"投射物两套模型"（第 8.1 节 #2、#6）不是主要矛盾。**
+   真正的两套是"旧实现在跑、新域没接"，中间横着迁移边界。把组件域的投射物接上生产者，
+   如果不以退役 `MinimalImplementation` 版本为前提，结果会是**三套**并存而不是一套。
+
+2. **第 18 节的接线仍然有价值，但它证明的是"接上就能跑"，不是"已经接上"。**
+   现在的能力是：任何调用方调用 `TrySpawn`，拿到的投射物都会被共享空间管线正确地
+   位移与碰撞。生产者缺席是迁移决策，不是缺陷修复。
+
+3. **这也是为什么 `ProjectileSimulationSystem` 这份平行副本一直没被注册。**
+   它不是"忘了注册"，而是在等迁移方式确定：要么把它的职责并入共享
+   `SpatialSimulationCoordinatorSystem`（第 18 节已证明可行），要么随旧实现一起退役。
+
+### 19.3 由此调整的建议
+
+第 10 节里 #2（运动封套）与 #6（`ProjectileDefinition` ↔ Share `EntityDefinition*`）的
+真正前置问题不是"合并到哪边"，而是：
+
+> 组件域的投射物是否要取代 `MinimalImplementation.Combat.Projectiles`？
+
+- 若**要取代**：则应先把旧实现的包处理/同步/运动逐个迁到组件域，`ProjectileSimulationSystem`
+  与 Share 空间管线的取舍在迁移中自然确定。
+- 若**暂不取代**：组件域的投射物就是"已具备能力的备用实现"，`TrySpawn` 零调用是合理状态，
+  不必急着接生产者；此时任何合并都缺乏验证手段。
+
+这个判断无法从代码推断，需要产品意图。
