@@ -1,4 +1,4 @@
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>Result returned after the shared Buff system attempts an application.</summary>
 public readonly record struct BuffApplicationResult(

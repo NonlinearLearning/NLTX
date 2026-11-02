@@ -15,11 +15,6 @@ namespace Terraria.World;
 /// owned by <see cref="IWorldInteractionWorld"/>.
 /// </remarks>
 public sealed class WorldInteractionSystem : BaseSystem<ArchWorld, EcsServerTickContext> {
-  private const WorldInteractionPermission KnownPermissions =
-      WorldInteractionPermission.ReadTile |
-      WorldInteractionPermission.BreakTile |
-      WorldInteractionPermission.PlaceTile;
-
   private readonly IWorldInteractionWorld _world;
 
   public WorldInteractionSystem(ArchWorld ecsWorld, IWorldInteractionWorld world)
@@ -65,7 +60,7 @@ public sealed class WorldInteractionSystem : BaseSystem<ArchWorld, EcsServerTick
       WorldInteractionPermission requested,
       out WorldInteractionAccess access) {
     access = default;
-    if (!IsKnownPermissionSet(requested) || !TryGetCapability(entity, out
+    if (!WorldInteractionPermissionRules.IsKnown(requested) || !TryGetCapability(entity, out
             WorldInteractionCapabilityComponent capability) || !capability.Allows(requested)) {
       return false;
     }
@@ -127,18 +122,14 @@ public sealed class WorldInteractionSystem : BaseSystem<ArchWorld, EcsServerTick
       return false;
     }
 
-    return IsKnownPermissionSet(capability.Permissions);
+    return WorldInteractionPermissionRules.IsKnown(capability.Permissions);
   }
 
   private WorldInteractionResultComponent ProcessRequest(
       ArchEntity entity,
       in WorldInteractionRequestComponent request) {
-    WorldInteractionPermission permission = request.Operation switch {
-      WorldInteractionOperation.ReadTile => WorldInteractionPermission.ReadTile,
-      WorldInteractionOperation.BreakTile => WorldInteractionPermission.BreakTile,
-      WorldInteractionOperation.PlaceTile => WorldInteractionPermission.PlaceTile,
-      _ => WorldInteractionPermission.None
-    };
+    WorldInteractionPermission permission =
+        WorldInteractionPermissionRules.RequiredFor(request.Operation);
 
     if (permission == WorldInteractionPermission.None ||
         !TryAcquire(entity, permission, out WorldInteractionAccess access)) {
@@ -177,10 +168,5 @@ public sealed class WorldInteractionSystem : BaseSystem<ArchWorld, EcsServerTick
         : WorldInteractionResultComponent.Rejected(
             in request,
             operationResult.Failure ?? "The world rejected the operation.");
-  }
-
-  private static bool IsKnownPermissionSet(WorldInteractionPermission permissions) {
-    return permissions != WorldInteractionPermission.None &&
-        (permissions & ~KnownPermissions) == WorldInteractionPermission.None;
   }
 }

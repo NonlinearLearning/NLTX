@@ -4,11 +4,34 @@
 `ISpatialWorldQuery`，所以不会把 `WorldOwner`、Tile 数组、Arch `World` 或网络连接带入
 组件。
 
+## 目录结构
+
+按物理子领域划分文件夹，每个子领域像 `Liquid/` 一样集中管理：
+
+```text
+Physics/
+  CollisionGeometry/    # 碰撞几何：占什么形状、能否相撞、交点与法线怎么算
+  SpatialQuery/         # 空间查询：向谁询问世界、以什么版本为准、输入帧与输出值
+  SpatialSimulation/    # 空间模拟：一帧内位置/速度/接地如何计算并唯一提交
+  ContactFact/          # 接触事实：本 tick 有哪些接触、如何交给下游
+  Liquid/               # 液体：接触规则与 tile 级流动运算
+  Movement/             # 运动与重力：速度积累、重力修正、移动意图解析
+```
+
+划分依据见
+`docs/reviews/audits/2026-10-31-physics-classification-index.md`。目录只表达归属，
+全部文件的 C# 命名空间仍为 `Terraria.Physics`（`Liquid/` 为 `Terraria.Liquid`，
+`Movement/` 为 `Terraria.Movement`）。
+
+`Movement/` 于 2026-11-01 从 `Share/Movement/` 整体并入，命名空间未变。它提供
+空间模拟所读写的速度状态与重力修正，但本身不写位置；位置提交仍只由
+`SpatialSimulationCoordinatorSystem` 完成。
+
 ## 状态与能力
 
 ```text
-Entity.LocationComponent
-Movement.VelocityComponent
+Movement/LocationComponent（Terraria.Entity）
+Movement/VelocityComponent（Terraria.Movement）
 ColliderComponent
 GroundingComponent
 LiquidContactComponent
@@ -21,6 +44,11 @@ EntityCollisionCapabilityComponent
 LiquidInteractionCapabilityComponent
         ↑ 定义实体可以采用哪些规则
 ```
+
+位置与速度组件都已归入 `Movement/`；写入仍只由 `SpatialSimulationCoordinatorSystem`
+完成，`Movement/` 自身不写位置。旧的 `Terraria.Combat.VelocityComponent` 是零消费者的
+`[Obsolete]` 迁移投影，存放于 `Movement/CombatVelocityComponent.cs`，只作提示用途；同源的
+`Terraria.Combat.PositionComponent` 已于 2026-11-01 删除。
 
 能力组件只声明配置和资格，不保存系统实例、回调或世界引用。`ColliderComponent` 只描述
 形状、尺寸和偏移，碰撞响应由系统计算。

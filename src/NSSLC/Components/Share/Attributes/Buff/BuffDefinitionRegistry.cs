@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>Explicit registry for immutable shared Buff definitions.</summary>
 public sealed class BuffDefinitionRegistry

@@ -1,8 +1,10 @@
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
+using ArchEntity = Arch.Core.Entity;
 using Terraria.Combat;
 using Terraria.Entity;
+using Terraria.Relationships;
 
 namespace Terraria.Player;
 
@@ -11,19 +13,25 @@ namespace Terraria.Player;
 /// </summary>
 public sealed class PlayerDeathRespawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
+  private readonly IEntityRuntimeHandleResolver _handles;
   private readonly QueryDescription _query = new QueryDescription()
       .WithAll<LifeComponent, PlayerDeathStateComponent, PlayerRespawnStateComponent>();
 
-  public PlayerDeathRespawnSystem(ArchWorld world) : base(world)
+  public PlayerDeathRespawnSystem(ArchWorld world, IEntityRuntimeHandleResolver handles)
+      : base(world)
   {
+    _handles = handles ?? throw new ArgumentNullException(nameof(handles));
   }
 
   public override void Update(in EcsServerTickContext context)
   {
     long tick = context.Tick;
+    // 在查询之外解析队列实体：Require 内部本身要跑一次查询。
+    LifeRestoreRequestQueueComponent restores = LifeRestoreRequestQueue.Require(World);
     World.Query(
         in _query,
-        (ref LifeComponent life,
+        (ArchEntity entity,
+            ref LifeComponent life,
             ref PlayerDeathStateComponent death,
             ref PlayerRespawnStateComponent respawn) =>
         {
@@ -44,7 +52,12 @@ public sealed class PlayerDeathRespawnSystem : BaseSystem<ArchWorld, EcsServerTi
             return;
           }
 
-          life = life.WithCurrent(life.Maximum);
+          // LifeComponent 归 Combat 域所有：这里只表达"恢复到满血"的意图。
+          if (_handles.TryGetHandle(entity, out EntityRuntimeHandle handle))
+          {
+            restores.Enqueue(handle);
+          }
+
           death.Clear();
           respawn.Cancel();
         });

@@ -7,7 +7,7 @@ namespace Terraria.Item;
 /// Stores immutable item definitions and never stores runtime item entities.
 /// </summary>
 public sealed class ItemDefinitionRegistry {
-  private readonly Dictionary<ItemDefinitionId, ItemDefinition> _definitions = [];
+  private readonly Dictionary<ItemId, ItemDefinition> _definitions = [];
 
   public IReadOnlyCollection<ItemDefinition> Definitions => _definitions.Values;
 
@@ -19,11 +19,11 @@ public sealed class ItemDefinitionRegistry {
     }
   }
 
-  public bool TryGet(ItemDefinitionId id, out ItemDefinition definition) {
+  public bool TryGet(ItemId id, out ItemDefinition definition) {
     return _definitions.TryGetValue(id, out definition!);
   }
 
-  public ItemDefinition Get(ItemDefinitionId id) {
+  public ItemDefinition Get(ItemId id) {
     if (!TryGet(id, out ItemDefinition definition)) {
       throw new KeyNotFoundException($"Item definition {id} is not registered.");
     }

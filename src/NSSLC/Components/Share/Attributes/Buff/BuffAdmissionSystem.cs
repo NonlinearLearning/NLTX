@@ -1,7 +1,6 @@
 using System;
-using Terraria.Combat;
 
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>Checks shared Buff reception rules without mutating entity state.</summary>
 public static class BuffAdmissionSystem

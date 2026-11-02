@@ -2,10 +2,9 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Attributes;
 using Terraria.Entity;
 
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>Advances active shared Buffs for entities with a complete Buff composition.</summary>
 public sealed class BuffTickSystem : BaseSystem<ArchWorld, EcsServerTickContext>

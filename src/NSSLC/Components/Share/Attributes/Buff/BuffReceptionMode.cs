@@ -1,4 +1,4 @@
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>Controls which shared Buff definitions an entity may receive.</summary>
 public enum BuffReceptionMode : byte

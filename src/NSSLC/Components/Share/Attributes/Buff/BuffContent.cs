@@ -1,0 +1,66 @@
+using System;
+
+namespace Terraria.Attributes;
+
+/// <summary>
+/// 参考客户端药水表的 Buff 内容样例，用于填充空的 <see cref="BuffDefinitionRegistry"/>。
+/// </summary>
+/// <remarks>
+/// 每一项都直接取自参考客户端源码，不做推测：
+/// <list type="bullet">
+/// <item><c>Terraria/Player.cs:10038</c> 再生：<c>lifeRegen += 4</c>（Buff 2）</item>
+/// <item><c>Terraria/Player.cs:10041</c> 迅捷：<c>moveSpeed += 0.25f</c>（Buff 3）</item>
+/// <item><c>Terraria/Player.cs:10049</c> 铁皮：<c>statDefense += 8</c>（Buff 5）</item>
+/// <item><c>Terraria/Item.cs:4826</c>、<c>:4840</c>、<c>:4868</c> 三者时长均为 28800 tick</item>
+/// </list>
+/// 客户端把这些效果直接写进 <c>Player</c> 的字段，这里改写为共有的 <see cref="AttributeContribution"/>，
+/// 因此同一份内容可以同时被 Buff 与装备等来源复用。
+/// </remarks>
+public static class BuffContent {
+  /// <summary>
+  /// 三种药水共有的时长，单位为 tick：28800 / 60 = 480 秒 = 8 分钟。
+  /// </summary>
+  public const int PotionDurationTicks = 28800;
+
+  /// <summary>铁皮药水：防御 +8。</summary>
+  public static BuffDefinition Ironskin { get; } = new(
+      new BuffEffectId("buff.ironskin"),
+      new BuffId("buff.ironskin"),
+      PotionDurationTicks,
+      contributions:
+      [
+        new AttributeContribution(AttributeKind.Defense, AttributeModifierOperation.Additive, 8f)
+      ]);
+
+  /// <summary>迅捷药水：移动速度 +25%。</summary>
+  public static BuffDefinition Swiftness { get; } = new(
+      new BuffEffectId("buff.swiftness"),
+      new BuffId("buff.swiftness"),
+      PotionDurationTicks,
+      contributions:
+      [
+        new AttributeContribution(
+            AttributeKind.MovementSpeed, AttributeModifierOperation.Additive, 0.25f)
+      ]);
+
+  /// <summary>再生药水：生命再生 +4。</summary>
+  public static BuffDefinition Regeneration { get; } = new(
+      new BuffEffectId("buff.regeneration"),
+      new BuffId("buff.regeneration"),
+      PotionDurationTicks,
+      contributions:
+      [
+        new AttributeContribution(
+            AttributeKind.LifeRegeneration, AttributeModifierOperation.Additive, 4f)
+      ]);
+
+  /// <summary>
+  /// 把全部样例注册到给定注册表。
+  /// </summary>
+  public static void RegisterAll(BuffDefinitionRegistry registry) {
+    ArgumentNullException.ThrowIfNull(registry);
+    registry.Register(Ironskin);
+    registry.Register(Swiftness);
+    registry.Register(Regeneration);
+  }
+}

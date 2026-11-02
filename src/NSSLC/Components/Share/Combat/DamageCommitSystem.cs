@@ -25,7 +25,6 @@ public sealed class DamageCommitSystem
   public DamageCommitResult TryCommit(
       in DamageRequest request,
       in DamageMitigationResult mitigation,
-      AttributeSetComponent? targetAttributes,
       out DamageAppliedReceipt receipt)
   {
     receipt = default;
@@ -63,8 +62,7 @@ public sealed class DamageCommitSystem
       return DamageCommitResult.TargetUnavailable;
     }
 
-    ref LifeComponent life = ref _world.Get<LifeComponent>(target);
-    if (!life.Equals(request.ExpectedTargetLife))
+    ref LifeComponent life = ref _world.Get<LifeComponent>(target);    if (!life.Equals(request.ExpectedTargetLife))
     {
       return DamageCommitResult.TargetChanged;
     }
@@ -75,12 +73,14 @@ public sealed class DamageCommitSystem
     }
 
     LifeComponent before = life;
-    if (targetAttributes is not null && mitigation.ShieldAbsorbedDamage > 0)
+    if (mitigation.ShieldAbsorbedDamage > 0)
     {
-      int consumed = AttributeSystem.ConsumeShield(
-          targetAttributes,
-          mitigation.ShieldAbsorbedDamage);
-      if (consumed != mitigation.ShieldAbsorbedDamage)
+      // 护盾池的唯一写入点是 Attributes 域：Combat 只提交请求并读取结果。
+      AttributeShieldConsumeResult shield = AttributeShieldCommands.Apply(
+          _world,
+          target,
+          new AttributeShieldConsumeRequestComponent(mitigation.ShieldAbsorbedDamage));
+      if (shield.HasAttributes && shield.Consumed != mitigation.ShieldAbsorbedDamage)
       {
         return DamageCommitResult.TargetChanged;
       }
@@ -97,14 +97,5 @@ public sealed class DamageCommitSystem
         mitigation,
         request.Tick);
     return DamageCommitResult.Applied;
-  }
-
-  /// <summary>Compatibility overload for callers that have no target Attributes capability.</summary>
-  public DamageCommitResult TryCommit(
-      in DamageRequest request,
-      in DamageMitigationResult mitigation,
-      out DamageAppliedReceipt receipt)
-  {
-    return TryCommit(in request, in mitigation, targetAttributes: null, out receipt);
   }
 }

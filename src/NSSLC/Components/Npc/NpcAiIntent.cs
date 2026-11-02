@@ -16,7 +16,8 @@ public readonly record struct NpcAiIntent
       float stateSlot0 = 0f,
       float stateSlot1 = 0f,
       EntityRuntimeHandle attackTarget = default,
-      ulong attackDefinitionKey = 0)
+      ulong attackDefinitionKey = 0,
+      bool jumpRequested = false)
   {
     if (!Enum.IsDefined(kind) || !Enum.IsDefined(phase))
     {
@@ -44,6 +45,7 @@ public readonly record struct NpcAiIntent
     Kind = kind;
     Phase = phase;
     DesiredVelocity = desiredVelocity;
+    JumpRequested = jumpRequested;
     ActionPhase = actionPhase;
     StateSlot0 = stateSlot0;
     StateSlot1 = stateSlot1;
@@ -56,6 +58,9 @@ public readonly record struct NpcAiIntent
   public NpcBehaviorPhase Phase { get; }
 
   public Vector2 DesiredVelocity { get; }
+
+  /// <summary>Requests a jump through the movement system on the current tick.</summary>
+  public bool JumpRequested { get; }
 
   public int ActionPhase { get; }
 

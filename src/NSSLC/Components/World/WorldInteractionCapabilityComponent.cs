@@ -4,7 +4,6 @@ namespace Terraria.World;
 public readonly record struct WorldInteractionCapabilityComponent(
     WorldInteractionPermission Permissions) {
   public bool Allows(WorldInteractionPermission permission) {
-    return permission != WorldInteractionPermission.None &&
-        (Permissions & permission) == permission;
+    return WorldInteractionPermissionRules.Allows(Permissions, permission);
   }
 }

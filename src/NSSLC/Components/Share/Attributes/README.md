@@ -6,6 +6,44 @@
 `AttributeSetComponent` 保存，保护窗口由共享 `ProtectionWindowComponent` 保存。装备关系由 Inventory 持有，属性系统只接收物品/效果提交的贡献；
 状态效果的免疫、刷新、叠层、周期行为和其他非数值行为仍留在各自领域。
 
+## 子域划分
+
+根层是十四类泛 Buff 形态的**共有抽象**（属性键、贡献、来源描述符、集合、计算、生命周期）。
+形态专属的部分留在两个子域：
+
+| 子域 | 承载 | 形态数 |
+| --- | --- | --- |
+| `Buff/` | 真正走 Buff 列表的形态：限时、永久、食物 | 3 |
+| `Contribution/` | 独立管线形态：套装、饰品、前缀、附魔、召唤物、坐骑、幸运值、旗帜、潜行、状态布尔、冷却 | 11 |
+
+两个子域都不定义自己的贡献类型或写入函数，只使用根层的共有类型。子域之间的差别是
+**状态 owner 与期限语义**不同，不是计算规则不同。详见各自的 README。
+
+## 共有抽象
+
+十四类形态都以"某个来源提出若干条数值贡献"的形式进入属性系统，因此共有四件事，
+各自对应一个根层类型：
+
+| 类型 | 形态 | 职责 |
+| --- | --- | --- |
+| `AttributeContribution` | readonly record struct | 一条贡献：属性键 + 运算 + 数值 + 优先级 |
+| `AttributeSourceDescriptor` | readonly record struct | 来源身份 + 来源分类 + 剩余期限（`-1` 永久） |
+| `AttributeContributionSet` | sealed class | 一个来源的一组贡献，整体加入或整体撤销 |
+| `AttributeContributionSystem` | static class | 翻译贡献并委托 `AttributeSystem` 增删 |
+
+`AttributeSetComponent` 仍是唯一的 ECS 状态组件；上述四个类型是定义侧与写入侧的值对象，
+不进入实体存储。
+
+```csharp
+AttributeContributionSet set = new(
+    new AttributeSourceDescriptor(sourceId: 7001, AttributeSourceCategory.Buff),
+    [new AttributeContribution(AttributeKind.Defense, AttributeModifierOperation.Additive, 5f)]);
+
+AttributeContributionSystem.Apply(attributes, set);
+```
+
+`Apply` 会先按 `SourceId` 撤销旧贡献再写入，因此同一来源重复登记是替换而非叠加。
+
 ## 能力门槛
 
 只有声明 `AttributeSetComponent` 的实体才拥有属性系统能力。宿主查询实体时应先查询这个
@@ -44,8 +82,18 @@ Buff 请求应被拒绝或按定义转为无效结果，不能隐式创建组件
 | `Enemy` | 普通敌怪来源实体提供的属性贡献 |
 | `Npc` | NPC 来源实体提供的属性贡献 |
 | `FriendlyCreature` | 友好生物、召唤物或同伴来源提供的贡献 |
+| `SetBonus` | 护甲套装效果的贡献 |
+| `Prefix` | 物品前缀（修饰词）的贡献 |
+| `Imbue` | 武器附魔（药剂瓶）的贡献 |
+| `Pet` | 召唤物、宠物或光照宠的贡献 |
+| `Mount` | 坐骑的贡献 |
+| `Environment` | 世界环境来源，例如怪物旗帜与幸运值 |
+| `StatusFlag` | 布尔状态标记镜像与潜行 |
+| `Cooldown` | 冷却与恢复窗口 |
 
 Boss 和 Enemy 是否同时适用由来源创建者决定；这个枚举不会偷偷推断客户端的实体分类。
+`Contribution/` 子域的十一类形态通过
+`AttributeContributionSystem.ToSourceCategory` 映射到上表后六项。
 
 ## 计算规则
 
@@ -90,6 +138,10 @@ Projectile 命中边界也使用相同的数值聚合：`ProjectilePenetrationLi
 `AttributeSystem.Advance` 每推进一个 tick 就减少限时修饰器的剩余时间，并移除到期项。
 `RemoveSource` 和 `RemoveSourceCategory` 用于来源失效时清理列表。组件、计算器和系统不执行
 网络、文件、UI、日志、伤害、治疗、召唤物生成或周期事件。
+
+同一个期限只能有一个推进点。`BuffListComponent.AdvanceOneTick` 是 Buff 期限的唯一推进点，
+因此 `BuffSystem` 写入的修饰器一律为永久修饰器，过期时按 `SourceId` 整体撤销。这消除的是
+重复状态：实测两个推进点同时启用时二者同步到期，但只要只启用其中一个，两份期限就会分叉。
 
 属性系统取代 Player 私有的 Buff/Debuff 状态仅适用于数值贡献：例如防御、抗性、耐力、
 伤害倍率、移动速度或生命恢复率都应成为带有明确 `SourceId` 和期限的

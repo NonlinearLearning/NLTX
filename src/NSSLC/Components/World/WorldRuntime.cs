@@ -19,10 +19,14 @@ namespace Terraria.World;
 public sealed class WorldRuntime :
     IWorldInteractionWorld,
     ISpatialWorldQuery,
-    ISpatialWorldRevisionSource
+    ISpatialWorldRevisionSource,
+    IWorldTileGrid,
+    IWorldProjectionSource
 {
-  private const int CollisionSearchIterations = 12;
   private readonly object _gate = new();
+  private readonly Dictionary<WorldTileCoordinate, WorldMutation> _pendingMutations = [];
+  private readonly LiquidSimulation _liquid;
+  private readonly LiquidTileStorageBinding _liquidStorage;
 
   public WorldRuntime(
       int width,
@@ -48,9 +52,14 @@ public sealed class WorldRuntime :
 
     State = state;
     Tiles = tiles;
+    _liquid = new LiquidSimulation(tiles.Count);
+    _liquidStorage = new LiquidTileStorageBinding(state, tiles);
   }
 
   public WorldRuntimeStateComponent State { get; }
+
+  /// <summary>Edge length of one tile in world units.</summary>
+  public float TileSize => State.TileSize;
 
   public WorldTileStorageComponent Tiles { get; }
 
@@ -143,6 +152,10 @@ public sealed class WorldRuntime :
 
       Tiles.Replace(candidate);
 
+      _pendingMutations.Clear();
+      _liquid.Reset();
+      _liquid.SeedUnsettled(_liquidStorage);
+
       return WorldInteractionResult.Success();
     }
   }
@@ -175,6 +188,8 @@ public sealed class WorldRuntime :
       }
 
       Tiles.TryWrite(coordinate, tile);
+      RecordMutationUnsafe(coordinate, current, tile);
+      EnqueueLiquidNeighborsUnsafe(coordinate, urgent: true);
       return WorldInteractionResult.Success();
     }
   }
@@ -196,7 +211,7 @@ public sealed class WorldRuntime :
         return WorldInteractionResult.Rejected("The tile coordinate is outside the world.");
       }
 
-      if (!current.Active)
+      if (!WorldTileTransitionRules.CanBreak(current))
       {
         return WorldInteractionResult.Rejected("The target tile is already empty.");
       }
@@ -206,9 +221,13 @@ public sealed class WorldRuntime :
         return WorldInteractionResult.Rejected(failure!);
       }
 
-      Tiles.TryWrite(
-          coordinate,
-          current with { Active = false, Type = 0, FrameX = 0, FrameY = 0 });
+      WorldTileState next = WorldTileTransitionRules.Broken(current);
+      Tiles.TryWrite(coordinate, next);
+      int dropItemType = WorldTileDropRules.TryGetDrop(current, out int itemType)
+          ? itemType
+          : 0;
+      RecordMutationUnsafe(coordinate, current, next, dropItemType);
+      EnqueueLiquidNeighborsUnsafe(coordinate, urgent: true);
       return WorldInteractionResult.Success();
     }
   }
@@ -230,7 +249,7 @@ public sealed class WorldRuntime :
         return WorldInteractionResult.Rejected("The tile coordinate is outside the world.");
       }
 
-      if (current.Active)
+      if (!WorldTileTransitionRules.CanPlace(current))
       {
         return WorldInteractionResult.Rejected("The target tile is occupied.");
       }
@@ -240,9 +259,10 @@ public sealed class WorldRuntime :
         return WorldInteractionResult.Rejected(failure!);
       }
 
-      Tiles.TryWrite(
-          coordinate,
-          current with { Active = true, Type = tileType, FrameX = 0, FrameY = 0, Style = style });
+      WorldTileState next = WorldTileTransitionRules.Placed(current, tileType, style);
+      Tiles.TryWrite(coordinate, next);
+      RecordMutationUnsafe(coordinate, current, next);
+      EnqueueLiquidNeighborsUnsafe(coordinate, urgent: true);
       return WorldInteractionResult.Success();
     }
   }
@@ -253,26 +273,9 @@ public sealed class WorldRuntime :
       LiquidContactFlags liquid,
       byte amount)
   {
-    const LiquidContactFlags knownLiquids =
-        LiquidContactFlags.Water |
-        LiquidContactFlags.Honey |
-        LiquidContactFlags.Lava |
-        LiquidContactFlags.Shimmer;
-    byte liquidValue = (byte)liquid;
-    if ((liquid & ~knownLiquids) != LiquidContactFlags.None ||
-        (liquidValue != 0 && (liquidValue & (liquidValue - 1)) != 0))
+    if (!LiquidBlockingRules.TryNormalize(liquid, amount, out liquid, out string? failure))
     {
-      return WorldInteractionResult.Rejected("The supplied liquid kind is not supported.");
-    }
-
-    if (liquid == LiquidContactFlags.None && amount > 0)
-    {
-      return WorldInteractionResult.Rejected("A nonzero liquid amount requires a liquid kind.");
-    }
-
-    if (amount == 0)
-    {
-      liquid = LiquidContactFlags.None;
+      return WorldInteractionResult.Rejected(failure!);
     }
 
     lock (_gate)
@@ -287,14 +290,112 @@ public sealed class WorldRuntime :
         return WorldInteractionResult.Success();
       }
 
-      if (!State.TryAdvanceRevision(out string? failure))
+      if (!State.TryAdvanceRevision(out string? revisionFailure))
       {
-        return WorldInteractionResult.Rejected(failure!);
+        return WorldInteractionResult.Rejected(revisionFailure!);
       }
 
-      Tiles.TryWrite(coordinate, current with { Liquid = liquid, LiquidAmount = amount });
+      WorldTileState next = WorldTileTransitionRules.WithLiquid(current, liquid, amount);
+      Tiles.TryWrite(coordinate, next);
+      RecordMutationUnsafe(coordinate, current, next);
+      EnqueueLiquidNeighborsUnsafe(coordinate, urgent: true);
       return WorldInteractionResult.Success();
     }
+  }
+
+  /// <summary>Runs a bounded authoritative liquid step and records its tile changes.</summary>
+  public int AdvanceLiquidSimulation(
+      int operationBudget = LiquidSimulation.DefaultOperationBudget)
+  {
+    if (operationBudget <= 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(operationBudget));
+    }
+
+    lock (_gate)
+    {
+      // Reserve the revision before mutating tiles: the original algorithm refused to write at
+      // all when the revision was exhausted, so a failed step must leave tiles untouched.
+      if (!CanAdvanceRevision() && HasQueuedLiquid())
+      {
+        return 0;
+      }
+
+      List<LiquidTileChange> changed = [];
+      LiquidStepOutcome outcome = _liquid.Step(_liquidStorage, operationBudget, changed);
+      if (!outcome.Changed)
+      {
+        return 0;
+      }
+
+      if (!State.TryAdvanceRevision(out _))
+      {
+        return 0;
+      }
+
+      for (int index = 0; index < changed.Count; index++)
+      {
+        LiquidTileChange change = changed[index];
+        RecordMutationUnsafe(change.Coordinate, change.Previous, change.Current);
+      }
+
+      return outcome.Operations;
+    }
+  }
+
+  private bool CanAdvanceRevision() =>
+      WorldTimeAdvanceSolver.CanAdvanceRevision(State.Revision);
+
+  private bool HasQueuedLiquid() => _liquid.HasQueuedWork;
+
+  /// <summary>Returns and clears mutations after a projection has found a live recipient.</summary>
+  public IReadOnlyList<WorldMutation> DrainPendingMutations()
+  {
+    lock (_gate)
+    {
+      if (_pendingMutations.Count == 0)
+      {
+        return Array.Empty<WorldMutation>();
+      }
+
+      WorldMutation[] mutations = _pendingMutations.Values.ToArray();
+      _pendingMutations.Clear();
+      return mutations;
+    }
+  }
+
+  /// <summary>Queues a coordinate and its neighbours for the next liquid pass.</summary>
+  private void EnqueueLiquidNeighborsUnsafe(WorldTileCoordinate coordinate, bool urgent = false)
+  {
+    _liquid.EnqueueWithNeighbors(_liquidStorage, coordinate, urgent);
+  }
+
+  private void RecordMutationUnsafe(
+      WorldTileCoordinate coordinate,
+      WorldTileState previous,
+      WorldTileState current,
+      int dropItemType = 0)
+  {
+    if (!WorldMutationRules.IsRecordable(previous, current))
+    {
+      return;
+    }
+
+    if (_pendingMutations.TryGetValue(coordinate, out WorldMutation existing))
+    {
+      if (WorldMutationRules.Cancels(existing, current))
+      {
+        _pendingMutations.Remove(coordinate);
+        return;
+      }
+
+      _pendingMutations[coordinate] = WorldMutationRules.Merge(existing, current, dropItemType);
+      return;
+    }
+
+    _pendingMutations.Add(
+        coordinate,
+        WorldMutationRules.Create(coordinate, previous, current, dropItemType));
   }
 
   public SpatialTileMotionResult Move(
@@ -304,51 +405,20 @@ public sealed class WorldRuntime :
       TileCollisionCapabilityComponent capability,
       GravityDirection gravityDirection)
   {
-    if (!IsFinite(position) || !IsFinite(velocity) || !IsFinite(colliderSize) ||
-        colliderSize.X <= 0f || colliderSize.Y <= 0f)
-    {
-      return new SpatialTileMotionResult(position, Vector2.Zero, false, false);
-    }
-
-    if (!capability.Enabled)
-    {
-      return new SpatialTileMotionResult(position + velocity, velocity, false, false);
-    }
-
     lock (_gate)
     {
-      Vector2 current = ClampToWorld(position, colliderSize);
-      bool collidedX = false;
-      bool collidedY = false;
-
-      if (velocity.X != 0f)
-      {
-        float resolvedX = MoveAxis(
-            current,
-            velocity.X,
-            colliderSize,
-            horizontal: true,
-            capability,
-            out collidedX);
-        current.X = resolvedX;
-      }
-
-      if (velocity.Y != 0f)
-      {
-        float resolvedY = MoveAxis(
-            current,
-            velocity.Y,
-            colliderSize,
-            horizontal: false,
-            capability,
-            out collidedY);
-        current.Y = resolvedY;
-      }
-
-      Vector2 resultingVelocity = new(
-          collidedX ? 0f : velocity.X,
-          collidedY ? 0f : velocity.Y);
-      return new SpatialTileMotionResult(current, resultingVelocity, collidedX, collidedY);
+      WorldTileMotionResult result = WorldTileMotionSolver.Move(
+          this,
+          position,
+          velocity,
+          colliderSize,
+          capability,
+          gravityDirection);
+      return new SpatialTileMotionResult(
+          result.Position,
+          result.Velocity,
+          result.CollidedX,
+          result.CollidedY);
     }
   }
 
@@ -357,230 +427,15 @@ public sealed class WorldRuntime :
       Vector2 colliderSize,
       LiquidInteractionCapabilityComponent capability)
   {
-    if (!capability.Enabled || capability.AffectedLiquids == LiquidContactFlags.None ||
-        !IsFinite(position) || !IsFinite(colliderSize) ||
-        colliderSize.X <= 0f || colliderSize.Y <= 0f)
-    {
-      return new SpatialLiquidContact(LiquidContactFlags.None, 0);
-    }
-
-    double worldWidth = (double)State.Width * State.TileSize;
-    double worldHeight = (double)State.Height * State.TileSize;
-    if ((double)position.X + colliderSize.X <= 0d ||
-        (double)position.Y + colliderSize.Y <= 0d ||
-        position.X >= worldWidth || position.Y >= worldHeight)
-    {
-      return new SpatialLiquidContact(LiquidContactFlags.None, 0);
-    }
-
     lock (_gate)
     {
-      TileRange range = GetTileRange(position, colliderSize);
-      LiquidContactFlags flags = LiquidContactFlags.None;
-      byte amount = 0;
-      for (int y = range.MinY; y <= range.MaxY; y++)
-      {
-        for (int x = range.MinX; x <= range.MaxX; x++)
-        {
-          WorldTileState tile = Tiles.ReadUnchecked(new WorldTileCoordinate(x, y));
-          if (!tile.HasLiquid)
-          {
-            continue;
-          }
-
-          float tileTop = y * State.TileSize;
-          float liquidTop = tileTop + State.TileSize -
-              State.TileSize * tile.LiquidAmount / byte.MaxValue;
-          bool overlapsLiquid = position.Y < tileTop + State.TileSize &&
-              position.Y + colliderSize.Y > liquidTop &&
-              position.X < (x + 1) * State.TileSize &&
-              position.X + colliderSize.X > x * State.TileSize;
-          if (!overlapsLiquid)
-          {
-            continue;
-          }
-
-          LiquidContactFlags accepted = tile.Liquid & capability.AffectedLiquids;
-          flags |= accepted;
-          if (accepted != LiquidContactFlags.None)
-          {
-            amount = Math.Max(amount, tile.LiquidAmount);
-          }
-        }
-      }
-
-      return new SpatialLiquidContact(flags, amount);
+      return LiquidSimulation.GetContact(
+          _liquidStorage,
+          State.TileSize,
+          position,
+          colliderSize,
+          capability);
     }
-  }
-
-  private float MoveAxis(
-      Vector2 current,
-      float delta,
-      Vector2 colliderSize,
-      bool horizontal,
-      TileCollisionCapabilityComponent capability,
-      out bool collided)
-  {
-    float value = horizontal ? current.X : current.Y;
-    float remaining = delta;
-    float maximumStep = Math.Max(1f, State.TileSize);
-    collided = false;
-    while (MathF.Abs(remaining) > 0.0001f)
-    {
-      float step = MathF.CopySign(MathF.Min(MathF.Abs(remaining), maximumStep), remaining);
-      float target = value + step;
-      Vector2 position = current;
-      if (horizontal)
-      {
-        position.X = value;
-      }
-      else
-      {
-        position.Y = value;
-      }
-
-      float resolved = ResolveAxis(position, target, colliderSize, horizontal, capability);
-      if (MathF.Abs(resolved - target) > 0.0001f)
-      {
-        value = resolved;
-        collided = true;
-        break;
-      }
-
-      value = resolved;
-      remaining -= step;
-      if (horizontal)
-      {
-        current.X = value;
-      }
-      else
-      {
-        current.Y = value;
-      }
-    }
-
-    return value;
-  }
-
-  private float ResolveAxis(
-      Vector2 current,
-      float target,
-      Vector2 colliderSize,
-      bool horizontal,
-      TileCollisionCapabilityComponent capability)
-  {
-    Vector2 currentPosition = current;
-    if (horizontal)
-    {
-      currentPosition.X = current.X;
-    }
-    else
-    {
-      currentPosition.Y = current.Y;
-    }
-
-    if (Collides(currentPosition, colliderSize, capability))
-    {
-      return horizontal ? current.X : current.Y;
-    }
-
-    Vector2 targetPosition = currentPosition;
-    if (horizontal)
-    {
-      targetPosition.X = target;
-    }
-    else
-    {
-      targetPosition.Y = target;
-    }
-
-    if (!Collides(targetPosition, colliderSize, capability))
-    {
-      return target;
-    }
-
-    float safe = horizontal ? current.X : current.Y;
-    float blocked = target;
-    for (int iteration = 0; iteration < CollisionSearchIterations; iteration++)
-    {
-      float middle = safe + (blocked - safe) / 2f;
-      Vector2 probe = currentPosition;
-      if (horizontal)
-      {
-        probe.X = middle;
-      }
-      else
-      {
-        probe.Y = middle;
-      }
-
-      if (Collides(probe, colliderSize, capability))
-      {
-        blocked = middle;
-      }
-      else
-      {
-        safe = middle;
-      }
-    }
-
-    return safe;
-  }
-
-  private bool Collides(
-      Vector2 position,
-      Vector2 colliderSize,
-      TileCollisionCapabilityComponent capability)
-  {
-    float worldWidth = (float)((double)State.Width * State.TileSize);
-    float worldHeight = (float)((double)State.Height * State.TileSize);
-    if (position.X < 0f || position.Y < 0f ||
-        position.X + colliderSize.X > worldWidth ||
-        position.Y + colliderSize.Y > worldHeight)
-    {
-      return true;
-    }
-
-    TileRange range = GetTileRange(position, colliderSize);
-    for (int y = range.MinY; y <= range.MaxY; y++)
-    {
-      for (int x = range.MinX; x <= range.MaxX; x++)
-      {
-        WorldTileState tile = Tiles.ReadUnchecked(new WorldTileCoordinate(x, y));
-        if (tile.Active)
-        {
-          return true;
-        }
-      }
-    }
-
-    return false;
-  }
-
-  private Vector2 ClampToWorld(Vector2 position, Vector2 colliderSize)
-  {
-    float worldWidth = (float)((double)State.Width * State.TileSize);
-    float worldHeight = (float)((double)State.Height * State.TileSize);
-    return new Vector2(
-        Math.Clamp(position.X, 0f, Math.Max(0f, worldWidth - colliderSize.X)),
-        Math.Clamp(position.Y, 0f, Math.Max(0f, worldHeight - colliderSize.Y)));
-  }
-
-  private TileRange GetTileRange(Vector2 position, Vector2 colliderSize)
-  {
-    int minX = (int)Math.Clamp(
-        Math.Floor((double)position.X / State.TileSize), 0, State.Width - 1);
-    int minY = (int)Math.Clamp(
-        Math.Floor((double)position.Y / State.TileSize), 0, State.Height - 1);
-    int maxX = (int)Math.Clamp(
-        Math.Floor(((double)position.X + colliderSize.X - 0.0001d) / State.TileSize),
-        0,
-        State.Width - 1);
-    int maxY = (int)Math.Clamp(
-        Math.Floor(((double)position.Y + colliderSize.Y - 0.0001d) / State.TileSize),
-        0,
-        State.Height - 1);
-    return new TileRange(minX, maxX, minY, maxY);
   }
 
   private SpatialWorldRevision CurrentRevisionUnsafe()
@@ -593,10 +448,14 @@ public sealed class WorldRuntime :
     return tile.IsValid;
   }
 
-  private static bool IsFinite(Vector2 value)
-  {
-    return float.IsFinite(value.X) && float.IsFinite(value.Y);
-  }
+  int IWorldTileGrid.Width => State.Width;
 
-  private readonly record struct TileRange(int MinX, int MaxX, int MinY, int MaxY);
+  int IWorldTileGrid.Height => State.Height;
+
+  int IWorldTileGrid.TileSize => State.TileSize;
+
+  WorldTileState IWorldTileGrid.ReadTile(WorldTileCoordinate coordinate)
+  {
+    return Tiles.ReadUnchecked(coordinate);
+  }
 }

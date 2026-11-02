@@ -14,23 +14,21 @@ namespace Terraria.Npc;
 public sealed class NpcCombatResultSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   private readonly IEntityRuntimeHandleResolver _handles;
-  private readonly CombatDamageRequestBuffer _results;
   private readonly QueryDescription _query = new QueryDescription().WithAll<
       NpcBehaviorStateComponent>();
 
   public NpcCombatResultSystem(
       ArchWorld world,
-      IEntityRuntimeHandleResolver handles,
-      CombatDamageRequestBuffer results)
+      IEntityRuntimeHandleResolver handles)
       : base(world ?? throw new ArgumentNullException(nameof(world)))
   {
     _handles = handles ?? throw new ArgumentNullException(nameof(handles));
-    _results = results ?? throw new ArgumentNullException(nameof(results));
   }
 
   public override void Update(in EcsServerTickContext context)
   {
     long tick = context.Tick;
+    CombatDamageResultQueueComponent resultQueue = CombatDamageResultQueue.Require(World);
     World.Query(
         in _query,
         (ArchEntity entity, ref NpcBehaviorStateComponent state) =>
@@ -40,7 +38,7 @@ public sealed class NpcCombatResultSystem : BaseSystem<ArchWorld, EcsServerTickC
             return;
           }
 
-          IReadOnlyList<CombatDamageResult> results = _results.ConsumeResults(source);
+          IReadOnlyList<CombatDamageResult> results = resultQueue.ConsumeResults(source);
           for (int index = 0; index < results.Count; index++)
           {
             if (results[index].Result.Applied)

@@ -13,7 +13,6 @@ namespace Terraria.Projectile;
 public sealed class ProjectileDamageResultSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   private readonly IEntityRuntimeHandleResolver _runtime;
-  private readonly CombatDamageRequestBuffer _buffer;
   private readonly ProjectileHitResolutionSystem _projectileHits;
   private readonly QueryDescription _query = new QueryDescription()
       .WithAll<ProjectileDispositionStateComponent>();
@@ -21,25 +20,24 @@ public sealed class ProjectileDamageResultSystem : BaseSystem<ArchWorld, EcsServ
   public ProjectileDamageResultSystem(
       ArchWorld world,
       IEntityRuntimeHandleResolver runtime,
-      CombatDamageRequestBuffer buffer,
       ProjectileHitResolutionSystem projectileHits)
       : base(world ?? throw new ArgumentNullException(nameof(world)))
   {
     _runtime = runtime ?? throw new ArgumentNullException(nameof(runtime));
-    _buffer = buffer ?? throw new ArgumentNullException(nameof(buffer));
     _projectileHits = projectileHits ?? throw new ArgumentNullException(nameof(projectileHits));
   }
 
   public override void Update(in EcsServerTickContext context)
   {
     List<IReadOnlyList<CombatDamageResult>> captured = [];
+    CombatDamageResultQueueComponent resultQueue = CombatDamageResultQueue.Require(World);
     World.Query(
         in _query,
         (ArchEntity entity, ref ProjectileDispositionStateComponent disposition) =>
         {
           if (disposition.IsActive && _runtime.TryGetHandle(entity, out EntityRuntimeHandle source))
           {
-            IReadOnlyList<CombatDamageResult> results = _buffer.ConsumeResults(source);
+            IReadOnlyList<CombatDamageResult> results = resultQueue.ConsumeResults(source);
             if (results.Count > 0)
             {
               captured.Add(results);

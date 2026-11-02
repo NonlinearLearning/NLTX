@@ -29,11 +29,15 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
   private const byte TileSectionMessageId = 10;
   private const byte RequestSectionMessageId = 159;
   private const byte FinishedConnectingMessageId = 129;
+  private const int SectionWidth = 200;
+  private const int SectionHeight = 150;
+  private const int TilePixelSize = 16;
 
   private readonly ICommunicationPacketHandler _gameplay;
   private readonly TerrariaProtocolOptions _options;
   private readonly IReadOnlyList<PreparedTileSection> _initialSections;
   private readonly IReadOnlyDictionary<(int X, int Y), PreparedTileSection> _sections;
+  private readonly IReadOnlyList<bool> _frameImportant;
 
   public TerrariaProtocolAdmissionHandler(
       ICommunicationPacketHandler gameplay,
@@ -42,6 +46,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     _gameplay = gameplay ?? throw new ArgumentNullException(nameof(gameplay));
     _options = options ?? new TerrariaProtocolOptions();
     _options.Validate();
+    _frameImportant = CreateFrameImportance(_options.FrameImportant);
     _sections = PrepareInitialSections(out _initialSections);
   }
 
@@ -70,9 +75,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
             HandleSectionRequest(packet.Frame.Payload.Span, messageId, session),
         CommunicationSessionStage.Synchronizing =>
             HandleSynchronizing(packet.Frame.Payload.Span, messageId, session),
-        CommunicationSessionStage.Active => messageId == RequestSectionMessageId
-            ? HandleSectionRequest(packet.Frame.Payload.Span, session)
-            : _gameplay.Handle(packet, session, tick),
+        CommunicationSessionStage.Active => HandleActivePacket(packet, session, tick),
         _ => Array.Empty<OutboundPacketIntent>()
       };
     }
@@ -173,13 +176,11 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     int sectionCount = _initialSections.Count;
     var responses = new List<OutboundPacketIntent>(sectionCount + 2)
     {
-      // MinimalImplementation repeats packet 7 immediately before section transfer. Terraria
-      // uses this second world header as the synchronization baseline for packet 10.
-      CreateIntent(WorldDataMessageId, CreateWorldDataPayload(), session),
       CreateIntent(StatusTextSizeMessageId, CreateStatusPayload(sectionCount), session)
     };
     foreach (PreparedTileSection section in _initialSections)
     {
+      session.MarkWorldSectionSent(section.SectionX, section.SectionY);
       responses.Add(CreateIntent(TileSectionMessageId, section.Payload, session));
     }
 
@@ -190,20 +191,19 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
   private IReadOnlyDictionary<(int X, int Y), PreparedTileSection> PrepareInitialSections(
       out IReadOnlyList<PreparedTileSection> initialSections)
   {
-    const int sectionHeight = 150;
     long started = Stopwatch.GetTimestamp();
     var sections = new List<PreparedTileSection>(
-        ((_options.WorldWidth + 199) / 200) *
-        ((_options.WorldHeight + sectionHeight - 1) / sectionHeight));
+        ((_options.WorldWidth + SectionWidth - 1) / SectionWidth) *
+        ((_options.WorldHeight + SectionHeight - 1) / SectionHeight));
     long totalBytes = 0;
-    for (int startY = 0; startY < _options.WorldHeight; startY += sectionHeight)
+    for (int startY = 0; startY < _options.WorldHeight; startY += SectionHeight)
     {
-      int height = Math.Min(sectionHeight, _options.WorldHeight - startY);
-      for (int startX = 0; startX < _options.WorldWidth; startX += 200)
+      int height = Math.Min(SectionHeight, _options.WorldHeight - startY);
+      for (int startX = 0; startX < _options.WorldWidth; startX += SectionWidth)
       {
-        int width = Math.Min(200, _options.WorldWidth - startX);
+        int width = Math.Min(SectionWidth, _options.WorldWidth - startX);
         byte[] payload = CreateTileSectionPayload(startX, startY, width, height);
-        sections.Add(new PreparedTileSection(startX / 200, startY / sectionHeight, payload));
+        sections.Add(new PreparedTileSection(startX / SectionWidth, startY / SectionHeight, payload));
         totalBytes += payload.Length;
       }
     }
@@ -220,8 +220,8 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
   private static IReadOnlyList<PreparedTileSection> SelectInitialSections(
       IReadOnlyList<PreparedTileSection> sections, int spawnTileX, int spawnTileY)
   {
-    int centerX = spawnTileX / 200;
-    int centerY = spawnTileY / 150;
+    int centerX = spawnTileX / SectionWidth;
+    int centerY = spawnTileY / SectionHeight;
     return sections.Where(section =>
         Math.Abs(section.SectionX - centerX) <= 2 &&
         Math.Abs(section.SectionY - centerY) <= 1).ToArray();
@@ -238,6 +238,123 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     }
 
     return HandleSpawn(payload, messageId, session);
+  }
+
+  private IReadOnlyList<OutboundPacketIntent> HandleActivePacket(
+      InboundCommunicationPacket packet,
+      CommunicationSessionComponent session,
+      long tick)
+  {
+    if (packet.Envelope.MessageId == RequestSectionMessageId)
+    {
+      return HandleSectionRequest(packet.Frame.Payload.Span, session);
+    }
+
+    IReadOnlyList<OutboundPacketIntent> gameplayIntents = _gameplay.Handle(packet, session, tick);
+    if (packet.Envelope.MessageId != GameCommunicationAdapter.PlayerControlsMessageId ||
+        !TryReadPlayerPosition(packet.Frame.Payload.Span, out float positionX, out float positionY))
+    {
+      return gameplayIntents;
+    }
+
+    IReadOnlyList<OutboundPacketIntent> sectionIntents =
+        CreateMovementSectionIntents(positionX, positionY, session);
+    if (sectionIntents.Count == 0)
+    {
+      return gameplayIntents;
+    }
+
+    var combined = new List<OutboundPacketIntent>(gameplayIntents.Count + sectionIntents.Count);
+    combined.AddRange(gameplayIntents);
+    combined.AddRange(sectionIntents);
+    return combined.AsReadOnly();
+  }
+
+  private IReadOnlyList<OutboundPacketIntent> CreateMovementSectionIntents(
+      float positionX,
+      float positionY,
+      CommunicationSessionComponent session)
+  {
+    int tileX = ToTileCoordinate(positionX, _options.WorldWidth);
+    int tileY = ToTileCoordinate(positionY, _options.WorldHeight);
+    int centerX = tileX / SectionWidth;
+    int centerY = tileY / SectionHeight;
+    var sections = new List<PreparedTileSection>(9);
+    for (int sectionY = centerY - 1; sectionY <= centerY + 1; sectionY++)
+    {
+      for (int sectionX = centerX - 1; sectionX <= centerX + 1; sectionX++)
+      {
+        if (!_sections.TryGetValue((sectionX, sectionY), out PreparedTileSection? section) ||
+            session.HasSentWorldSection(sectionX, sectionY))
+        {
+          continue;
+        }
+
+        sections.Add(section);
+      }
+    }
+
+    if (sections.Count == 0)
+    {
+      return Array.Empty<OutboundPacketIntent>();
+    }
+
+    ServerLog.Info(
+        "ecs.protocol.movement_sections",
+        $"epoch={session.Epoch.Value} tile={tileX},{tileY} " +
+        $"center={centerX},{centerY} count={sections.Count}");
+    var responses = new List<OutboundPacketIntent>(sections.Count + 1)
+    {
+      CreateIntent(StatusTextSizeMessageId, CreateStatusPayload(sections.Count), session)
+    };
+    foreach (PreparedTileSection section in sections)
+    {
+      session.MarkWorldSectionSent(section.SectionX, section.SectionY);
+      responses.Add(CreateIntent(TileSectionMessageId, section.Payload, session));
+    }
+
+    return responses.AsReadOnly();
+  }
+
+  private static int ToTileCoordinate(float position, int worldSize)
+  {
+    if (!float.IsFinite(position))
+    {
+      return 0;
+    }
+
+    float tilePosition = position / TilePixelSize;
+    if (tilePosition <= 0f)
+    {
+      return 0;
+    }
+
+    if (tilePosition >= worldSize - 1)
+    {
+      return worldSize - 1;
+    }
+
+    return (int)tilePosition;
+  }
+
+  private static bool TryReadPlayerPosition(
+      ReadOnlySpan<byte> payload,
+      out float positionX,
+      out float positionY)
+  {
+    positionX = 0;
+    positionY = 0;
+    const int positionOffset = 6;
+    if (payload.Length < positionOffset + sizeof(float) * 2)
+    {
+      return false;
+    }
+
+    positionX = BitConverter.Int32BitsToSingle(
+        BinaryPrimitives.ReadInt32LittleEndian(payload[positionOffset..]));
+    positionY = BitConverter.Int32BitsToSingle(
+        BinaryPrimitives.ReadInt32LittleEndian(payload[(positionOffset + sizeof(float))..]));
+    return float.IsFinite(positionX) && float.IsFinite(positionY);
   }
 
   private IReadOnlyList<OutboundPacketIntent> HandleSectionRequest(
@@ -262,6 +379,7 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     ServerLog.Info(
         "ecs.protocol.section_request",
         $"epoch={session.Epoch.Value} section={sectionX},{sectionY}");
+    session.MarkWorldSectionSent(sectionX, sectionY);
     return [
       CreateIntent(StatusTextSizeMessageId, CreateStatusPayload(1), session),
       CreateIntent(TileSectionMessageId, section.Payload, session)
@@ -323,6 +441,8 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     WriteUInt64(stream, 0);
     WriteSingle(stream, 0);
     stream.WriteByte(0);
+    WriteInt16(stream, 0);
+    WriteInt16(stream, 0);
     return stream.ToArray();
   }
 
@@ -361,33 +481,31 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
 
   private void WriteTiles(Stream body, int startX, int startY, int width, int height)
   {
-    WorldTileState[] tiles = new WorldTileState[checked(width * height)];
+    // Packet 10 is serialized in y-major order. This is independent from the column-major
+    // order used by the .wld tile payload codec.
     for (int y = 0; y < height; y++)
     {
       for (int x = 0; x < width; x++)
       {
         int worldX = startX + x;
         int worldY = startY + y;
-        tiles[y * width + x] = _options.WorldTiles is null
-            ? WorldTileState.Empty
-            : _options.WorldTiles[worldY * _options.WorldWidth + worldX];
+        WorldTileState tile = ReadWorldTile(worldX, worldY);
+        int repeat = 0;
+
+        WriteTile(body, tile, repeat);
       }
     }
+  }
 
-    int index = 0;
-    while (index < tiles.Length)
+  private WorldTileState ReadWorldTile(int worldX, int worldY)
+  {
+    if (_options.WorldTiles is null)
     {
-      WorldTileState tile = tiles[index];
-      int repeat = 0;
-      while (index + repeat + 1 < tiles.Length && repeat < short.MaxValue &&
-          tiles[index + repeat + 1] == tile)
-      {
-        repeat++;
-      }
-
-      WriteTile(body, tile, repeat);
-      index += repeat + 1;
+      return WorldTileState.Empty;
     }
+
+    WorldTileState source = _options.WorldTiles[worldY * _options.WorldWidth + worldX];
+    return source;
   }
 
   private void WriteTile(Stream stream, WorldTileState tile, int repeat)
@@ -396,9 +514,27 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     byte flags2 = 0;
     byte flags3 = 0;
     byte flags4 = 0;
-    if (tile.Active) flags1 |= 2;
-    if (tile.Wall != 0) flags1 |= 4;
-    if (tile.HasLiquid)
+    bool hasTileColor = tile.Active && tile.TileColor != 0;
+    bool hasWallColor = tile.Wall != 0 && tile.WallColor != 0;
+    bool hasLiquid = tile.LiquidAmount != 0;
+    bool hasHighTileType = tile.Active && tile.Type > byte.MaxValue;
+    bool hasHighWall = tile.Wall > byte.MaxValue;
+    if (tile.Active)
+    {
+      flags1 |= 0x02;
+    }
+
+    if (tile.Wall != 0)
+    {
+      flags1 |= 0x04;
+    }
+
+    if (hasHighTileType)
+    {
+      flags1 |= 0x20;
+    }
+
+    if (hasLiquid)
     {
       flags1 |= tile.Liquid switch
       {
@@ -406,18 +542,113 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
         LiquidContactFlags.Lava => (byte)16,
         LiquidContactFlags.Honey => (byte)24,
         LiquidContactFlags.Shimmer => (byte)8,
-        _ => (byte)0
+        _ => throw new InvalidDataException("The world contains an unknown liquid type.")
       };
     }
 
-    bool frameImportant = tile.Active && _options.FrameImportant is not null &&
-        tile.Type < _options.FrameImportant.Count && _options.FrameImportant[tile.Type];
-    if (tile.Active && tile.Type > byte.MaxValue) flags1 |= 0x20;
-    if (tile.Wall > byte.MaxValue) flags3 |= 0x40;
-    if (repeat > byte.MaxValue) flags1 |= 0x80;
-    else if (repeat > 0) flags1 |= 0x40;
-    if (flags3 != 0) flags2 |= 1;
-    if (flags2 != 0) flags1 |= 1;
+    if ((tile.Wires & 0x01) != 0)
+    {
+      flags2 |= 0x02;
+    }
+
+    if ((tile.Wires & 0x02) != 0)
+    {
+      flags2 |= 0x04;
+    }
+
+    if ((tile.Wires & 0x04) != 0)
+    {
+      flags2 |= 0x08;
+    }
+
+    int slopeCode = tile.HalfBlock ? 1 : tile.Slope == 0 ? 0 : tile.Slope + 1;
+    if (slopeCode > 8)
+    {
+      throw new InvalidDataException("The world contains an invalid tile slope.");
+    }
+
+    flags2 |= (byte)(slopeCode << 4);
+    if (tile.Actuator)
+    {
+      flags3 |= 0x02;
+    }
+
+    if (tile.Inactive)
+    {
+      flags3 |= 0x04;
+    }
+
+    if (hasTileColor)
+    {
+      flags3 |= 0x08;
+    }
+
+    if (hasWallColor)
+    {
+      flags3 |= 0x10;
+    }
+
+    if ((tile.Wires & 0x08) != 0)
+    {
+      flags3 |= 0x20;
+    }
+
+    if (hasHighWall)
+    {
+      flags3 |= 0x40;
+    }
+
+    if (hasLiquid && tile.Liquid == LiquidContactFlags.Shimmer)
+    {
+      flags3 |= 0x80;
+    }
+
+    if ((tile.TileHeader3 & 0x20) != 0)
+    {
+      flags4 |= 0x02;
+    }
+
+    if ((tile.TileHeader3 & 0x40) != 0)
+    {
+      flags4 |= 0x04;
+    }
+
+    if ((tile.TileHeader3 & 0x80) != 0)
+    {
+      flags4 |= 0x08;
+    }
+
+    if ((tile.WallHeader & 0x80) != 0)
+    {
+      flags4 |= 0x10;
+    }
+
+    if (flags4 != 0)
+    {
+      flags3 |= 0x01;
+    }
+
+    if (flags3 != 0)
+    {
+      flags2 |= 0x01;
+    }
+
+    if (flags2 != 0)
+    {
+      flags1 |= 0x01;
+    }
+
+    bool frameImportant = tile.Active && tile.Type < _frameImportant.Count &&
+        _frameImportant[tile.Type];
+    if (repeat > byte.MaxValue)
+    {
+      flags1 |= 0x80;
+    }
+    else if (repeat > 0)
+    {
+      flags1 |= 0x40;
+    }
+
     stream.WriteByte(flags1);
     if ((flags1 & 1) != 0) stream.WriteByte(flags2);
     if ((flags2 & 1) != 0) stream.WriteByte(flags3);
@@ -425,21 +656,37 @@ public sealed class TerrariaProtocolAdmissionHandler : ICommunicationPacketHandl
     if (tile.Active)
     {
       stream.WriteByte((byte)tile.Type);
-      if (tile.Type > byte.MaxValue) stream.WriteByte((byte)(tile.Type >> 8));
+      if (hasHighTileType) stream.WriteByte((byte)(tile.Type >> 8));
       if (frameImportant)
       {
         WriteInt16(stream, tile.FrameX);
         WriteInt16(stream, tile.FrameY);
       }
+
+      if (hasTileColor)
+      {
+        stream.WriteByte(tile.TileColor);
+      }
     }
+
     if (tile.Wall != 0)
     {
       stream.WriteByte((byte)tile.Wall);
-      if (tile.Wall > byte.MaxValue) stream.WriteByte((byte)(tile.Wall >> 8));
+      if (hasWallColor)
+      {
+        stream.WriteByte(tile.WallColor);
+      }
     }
-    if (tile.HasLiquid) stream.WriteByte(tile.LiquidAmount);
+
+    if (hasLiquid) stream.WriteByte(tile.LiquidAmount);
+    if (hasHighWall) stream.WriteByte((byte)(tile.Wall >> 8));
     if (repeat > byte.MaxValue) WriteInt16(stream, checked((short)repeat));
     else if (repeat > 0) stream.WriteByte((byte)repeat);
+  }
+
+  private static IReadOnlyList<bool> CreateFrameImportance(IReadOnlyList<bool>? source)
+  {
+    return source is null ? new bool[753] : Array.AsReadOnly(source.ToArray());
   }
 
   private static OutboundPacketIntent CreateIntent(

@@ -28,23 +28,23 @@ public sealed class ProjectileLifecycleSystem
   private readonly ArchWorld _world;
   private readonly ProjectileDefinitionCatalog _definitions;
   private readonly ProjectileRuntimeRegistry _registry;
-  private readonly ProjectileTerminationBuffer _terminations;
+  private ProjectileTerminationQueueComponent? _terminations;
 
   public ProjectileLifecycleSystem(
       ArchWorld world,
       ProjectileDefinitionCatalog definitions,
-      ProjectileRuntimeRegistry registry,
-      ProjectileTerminationBuffer? terminations = null)
+      ProjectileRuntimeRegistry registry)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
     _definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
     _registry = registry ?? throw new ArgumentNullException(nameof(registry));
-    _terminations = terminations ?? new ProjectileTerminationBuffer();
   }
 
-  internal ProjectileTerminationBuffer Terminations => _terminations;
+  private ProjectileTerminationQueueComponent Terminations =>
+      _terminations ??= ProjectileTerminationQueue.Require(_world);
 
-  internal bool SharesRuntimeRegistryWith(
+  /// <summary>Whether this lifecycle shares its runtime registry with the given adapters.</summary>
+  public bool SharesRuntimeRegistryWith(
       IEntityRuntimeResolver resolver,
       IEntityRuntimeHandleResolver handleResolver)
   {
@@ -162,7 +162,7 @@ public sealed class ProjectileLifecycleSystem
           ProjectileLifecycleStatus.AlreadyTerminated, handle, reason, null);
     }
 
-    _terminations.Enqueue(handle, reason, tick);
+    Terminations.Enqueue(handle, reason, tick);
     return new ProjectileTerminationResult(
         ProjectileLifecycleStatus.Applied, handle, reason, null);
   }

@@ -47,9 +47,11 @@ Inventory 是共享的持有能力。`InventoryComponent` 通过槽位定义组�
 提交实际位置。AI 返回的是 `MoveTo`、`Jump`、`BeginAttack` 等请求数据，不能直接修改
 `LocationComponent`。
 
-`Entity/PositionComponent` 和 `Entity/VelocityComponent` 仅保留为旧调用方的过渡投影，均已
-标记为过时，并转换到 `LocationComponent` 与 `Movement.VelocityComponent`。新的实体定义和
-系统不应再把它们作为权威组件加入组合。
+`Terraria.Combat.VelocityComponent` 仅保留为旧调用方的过渡投影，已标记为过时，并转换到
+`LocationComponent` 与 `Movement.VelocityComponent`。新的实体定义和系统不应再把它作为
+权威组件加入组合。同源的 `Terraria.Combat.PositionComponent` 已于 2026-11-01 删除：它同样
+是零消费者的过时投影，而位置已有 `LocationComponent` 唯一权威，留下迁移壳只会让后来者误以为
+存在第二条位置写入路径。
 
 重力属性使用 `Movement/Gravity*` 类型表达。`GravityConfigurationComponent` 保存基础值，
 `GravityModifierCollectionComponent` 保存带来源和时限的活动修饰器，

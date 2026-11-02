@@ -54,8 +54,7 @@ public sealed class WorldTileStorageComponent
 
   public bool Contains(WorldTileCoordinate coordinate)
   {
-    return coordinate.X >= 0 && coordinate.X < Width &&
-        coordinate.Y >= 0 && coordinate.Y < Height;
+    return WorldTileIndexRules.Contains(Width, Height, coordinate);
   }
 
   public bool TryRead(WorldTileCoordinate coordinate, out WorldTileState tile)
@@ -115,21 +114,16 @@ public sealed class WorldTileStorageComponent
 
   internal bool TryGetIndex(WorldTileCoordinate coordinate, out int index)
   {
-    if (!Contains(coordinate))
-    {
-      index = -1;
-      return false;
-    }
-
-    index = checked(coordinate.Y * Width + coordinate.X);
-    return true;
+    return WorldTileIndexRules.TryGetIndex(Width, Height, coordinate, out index);
   }
 
   internal WorldTileState ReadUnchecked(WorldTileCoordinate coordinate)
   {
-    lock (_gate)
-    {
-      return _tiles[checked(coordinate.Y * Width + coordinate.X)];
-    }
+    return _tiles[WorldTileIndexRules.ToIndex(Width, coordinate)];
+  }
+
+  internal void WriteUnchecked(WorldTileCoordinate coordinate, WorldTileState tile)
+  {
+    _tiles[WorldTileIndexRules.ToIndex(Width, coordinate)] = tile;
   }
 }

@@ -24,6 +24,11 @@ internal sealed class LoadedServerWorld
 internal static class ServerWorldLoader
 {
   private const int MaximumWorldFileBytes = 256 * 1024 * 1024;
+  private static readonly int[] LatestClientFrameImportantTileIds =
+  [
+    435, 436, 437, 438, 439,
+    647, 648, 649, 650, 651, 652, 693, 694, 706, 753
+  ];
 
   public static LoadedServerWorld Load(string? requestedPath)
   {
@@ -82,7 +87,15 @@ internal static class ServerWorldLoader
           tile.FrameY,
           liquid,
           tile.LiquidAmount,
-          tile.TileColor);
+          tile.TileColor,
+          tile.WallColor,
+          (byte)tile.Wires,
+          tile.Actuator,
+          tile.Inactive,
+          tile.HalfBlock,
+          tile.Slope,
+          tile.TileHeader3,
+          tile.WallHeader);
     }
 
     return new LoadedServerWorld
@@ -91,8 +104,25 @@ internal static class ServerWorldLoader
       Header = header,
       Environment = environment,
       Tiles = Array.AsReadOnly(tiles),
-      FrameImportant = tilePayload.FrameImportant
+      FrameImportant = CreateLatestClientFrameImportance(tilePayload.FrameImportant)
     };
+  }
+
+  private static IReadOnlyList<bool> CreateLatestClientFrameImportance(
+      IReadOnlyList<bool> persistedFrameImportant)
+  {
+    var result = new bool[Math.Max(754, persistedFrameImportant.Count)];
+    for (int index = 0; index < persistedFrameImportant.Count; index++)
+    {
+      result[index] = persistedFrameImportant[index];
+    }
+
+    foreach (int tileType in LatestClientFrameImportantTileIds)
+    {
+      result[tileType] = true;
+    }
+
+    return Array.AsReadOnly(result);
   }
 
   private static string ResolvePath(string? requestedPath)

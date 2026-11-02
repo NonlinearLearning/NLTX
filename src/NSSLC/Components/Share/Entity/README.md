@@ -50,8 +50,10 @@ AI、Combat、Item、Liquid、Movement、Physics 和 World 系统不会因为注
 运行时句柄或可变实例状态。实体实例仍由 ECS 运行时以身份和组件集合表达。
 
 空间实体使用 `LocationComponent`、`Movement.VelocityComponent` 和
-`Physics.ColliderComponent`。旧的 `PositionComponent`/`Entity.VelocityComponent` 只作
-迁移投影，不应再加入新原型。
+`Physics.ColliderComponent`。这三个类型已随物理大类归位：
+`LocationComponent`、以及旧的 `PositionComponent`/`VelocityComponent` 迁移投影，
+于 2026-11-01 移入 `Physics/Movement/`（命名空间保持不变）。
+它们不再位于本目录，本域只保留身份、定义、运行时句柄与 ECS 入口。
 
 ```text
 EntityDefinition（例如 Slime）

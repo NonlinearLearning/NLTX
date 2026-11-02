@@ -2,17 +2,17 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>Immutable content definition used by the shared Buff system.</summary>
 public sealed class BuffDefinition
 {
   public BuffDefinition(
       BuffEffectId effect,
-      Terraria.Combat.BuffId immunityKey,
+      BuffId immunityKey,
       int durationTicks,
       int maximumStacks = 1,
-      IEnumerable<BuffAttributeModifierDefinition>? modifiers = null)
+      IEnumerable<AttributeContribution>? contributions = null)
   {
     if (string.IsNullOrWhiteSpace(effect.Value))
     {
@@ -40,16 +40,16 @@ public sealed class BuffDefinition
     DurationTicks = durationTicks;
     MaximumStacks = maximumStacks;
     Modifiers = Array.AsReadOnly(
-        (modifiers ?? Array.Empty<BuffAttributeModifierDefinition>()).ToArray());
+        (contributions ?? Array.Empty<AttributeContribution>()).ToArray());
   }
 
   public BuffEffectId Effect { get; }
 
-  public Terraria.Combat.BuffId ImmunityKey { get; }
+  public BuffId ImmunityKey { get; }
 
   public int DurationTicks { get; }
 
   public int MaximumStacks { get; }
 
-  public IReadOnlyList<BuffAttributeModifierDefinition> Modifiers { get; }
+  public IReadOnlyList<AttributeContribution> Modifiers { get; }
 }

@@ -18,28 +18,29 @@ namespace Terraria.Combat;
 /// </remarks>
 public sealed class CombatAttackRequestSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
-  private readonly CombatAttackIntentBuffer _intents;
-  private readonly CombatDamageRequestBuffer _requests;
   private readonly CombatAttackDefinitionCatalog _definitions;
   private readonly IEntityRuntimeResolver _resolver;
 
   public CombatAttackRequestSystem(
       ArchWorld world,
-      CombatAttackIntentBuffer intents,
-      CombatDamageRequestBuffer requests,
       CombatAttackDefinitionCatalog definitions,
       IEntityRuntimeResolver resolver)
       : base(world ?? throw new ArgumentNullException(nameof(world)))
   {
-    _intents = intents ?? throw new ArgumentNullException(nameof(intents));
-    _requests = requests ?? throw new ArgumentNullException(nameof(requests));
     _definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
     _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
   }
 
   public override void Update(in EcsServerTickContext context)
   {
-    IReadOnlyList<CombatAttackIntent> intents = _intents.Drain(context.Tick);
+    IReadOnlyList<CombatAttackIntent> intents =
+        CombatAttackIntentQueue.Require(World).Drain(context.Tick);
+    if (intents.Count == 0)
+    {
+      return;
+    }
+
+    CombatDamageRequestQueueComponent requests = CombatDamageRequestQueue.Require(World);
     for (int index = 0; index < intents.Count; index++)
     {
       CombatAttackIntent intent = intents[index];
@@ -68,7 +69,7 @@ public sealed class CombatAttackRequestSystem : BaseSystem<ArchWorld, EcsServerT
           intent.Cause,
           intent.Contact,
           intent.RequestId);
-      _requests.Enqueue(in request);
+      requests.Enqueue(in request);
     }
   }
 }

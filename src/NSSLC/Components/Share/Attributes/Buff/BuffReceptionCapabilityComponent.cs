@@ -1,9 +1,8 @@
 using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
-using Terraria.Combat;
 
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>Declares participation in the shared Buff admission path.</summary>
 /// <remarks>

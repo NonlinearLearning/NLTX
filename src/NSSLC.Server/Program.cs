@@ -3,15 +3,22 @@ using System.Numerics;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
+using Terraria.Ai;
+using Terraria.Attributes;
 using Terraria.Combat;
 using Terraria.Communication;
 using Terraria.Diagnostics;
 using Terraria.Entity;
+using Terraria.Liquid;
 using Terraria.Movement;
+using Terraria.Npc;
 using Terraria.Physics;
+using Terraria.Player;
 using Terraria.Projectile;
+using Terraria.Server;
 using Terraria.Relationships;
 using Terraria.World;
+using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
 
 namespace NSSLC.Server;
 
@@ -28,17 +35,72 @@ internal static class Program
     int worldHeight = loadedWorld.Header.MaxTilesY;
     using ArchWorld ecsWorld = ArchWorld.Create();
     WorldRuntime worldRuntime = new(worldWidth, worldHeight);
+    WorldItemStore worldItems = new();
     WorldInteractionResult worldLoad = worldRuntime.Load(loadedWorld.Tiles);
     if (!worldLoad.Succeeded)
     {
       throw new InvalidDataException($"The decoded world could not be published: {worldLoad.Failure}");
     }
+    int guideSpawnTileX = loadedWorld.Environment.SpawnTileX;
+    int slimeSpawnTileX = guideSpawnTileX + 3;
+    int guideSurfaceTileY = FindSpawnSurfaceTileY(
+        worldRuntime,
+        guideSpawnTileX,
+        loadedWorld.Environment.SpawnTileY,
+        colliderWidth: 18f);
+    int slimeSurfaceTileY = FindSpawnSurfaceTileY(
+        worldRuntime,
+        slimeSpawnTileX,
+        loadedWorld.Environment.SpawnTileY,
+        colliderWidth: 24f);
+    float guideSurfaceY = guideSurfaceTileY * WorldRuntimeStateComponent.DefaultTileSize;
+    float slimeSurfaceY = slimeSurfaceTileY * WorldRuntimeStateComponent.DefaultTileSize;
+    Vector2 playerSpawnPosition = new(
+        guideSpawnTileX * WorldRuntimeStateComponent.DefaultTileSize,
+        guideSurfaceY - 48f);
     EntityRuntimeRegistry entities = new(worldScope: 1);
+    using NpcAiRuntime npcAi = new(ecsWorld);
+    ArchEntity guide = CreateNpc(
+        ecsWorld,
+        entities,
+        new Vector2(guideSpawnTileX * 16f, guideSurfaceY),
+        isSlime: false,
+        networkSlot: 0,
+        networkType: 22);
+    ArchEntity slime = CreateNpc(
+        ecsWorld,
+        entities,
+        new Vector2(slimeSpawnTileX * 16f, slimeSurfaceY),
+        isSlime: true,
+        networkSlot: 1,
+        networkType: 1);
+    npcAi.AttachGuide(guide);
+    npcAi.AttachSlime(slime);
+    ServerLog.Info(
+        "ecs.npc.spawned",
+        $"guide=world-spawn:{loadedWorld.Environment.SpawnTileX},{loadedWorld.Environment.SpawnTileY} " +
+        $"slime=world-spawn+3tiles:{loadedWorld.Environment.SpawnTileX + 3}," +
+        $"{loadedWorld.Environment.SpawnTileY} guideSurfaceTileY={guideSurfaceTileY} " +
+        $"slimeSurfaceTileY={slimeSurfaceTileY}");
     ProjectileRuntimeRegistry projectiles = new(entities);
     CombatAttackDefinitionCatalog attackDefinitions = CreateAttackDefinitions();
-    CombatAttackIntentBuffer attackIntents = new();
-    CombatDamageRequestBuffer damageRequests = new();
-    PhysicsContactBuffer contacts = new();
+    // 攻击意图队列挂在专用世界级实体上，各域生产者按组件查询，宿主不再持有队列对象。
+    _ = ecsWorld.Create(new CombatAttackIntentQueueComponent());
+    // 伤害请求与结果队列各自挂在专用世界级实体上，跨域只通过组件传递。
+    _ = ecsWorld.Create(new CombatDamageRequestQueueComponent());
+    _ = ecsWorld.Create(new CombatDamageResultQueueComponent());
+    // 投射物终止队列挂在世界级实体上，生命周期、命中适配器与寿命推进共享同一组件。
+    _ = ecsWorld.Create(new ProjectileTerminationQueueComponent());
+    // 世界物品变更请求队列：跨域只表达意图，由 World 域自己执行。
+    _ = ecsWorld.Create(new WorldItemRequestQueueComponent());
+    // 生命恢复请求队列：Player 决定复活，Combat 执行满血写入。
+    _ = ecsWorld.Create(new LifeRestoreRequestQueueComponent());
+    // 玩家输入请求队列：Communication 只翻译意图，Player 域执行坐标与物品栏写入。
+    _ = ecsWorld.Create(new PlayerInputRequestQueueComponent());
+    // 移动意图请求队列：输入适配器与 NPC AI 都只提交意图，由 Movement 域统一写入。
+    _ = ecsWorld.Create(new MovementIntentRequestQueueComponent());
+    // 接触事实队列挂在专用世界级实体上，宿主不再持有队列对象。
+    _ = ecsWorld.Create(new PhysicsContactQueueComponent());
     ProjectileDefinitionCatalog projectileDefinitions = new();
     projectileDefinitions.Seal();
     ProjectileLifecycleSystem projectileLifecycle = new(
@@ -49,10 +111,22 @@ internal static class Program
     PhysicsContactCaptureSystem physicsContacts = new(
         ecsWorld,
         worldRuntime,
-        entities,
-        contacts);
+        entities);
     WorldTickSystem worldTick = new(ecsWorld, worldRuntime);
     WorldInteractionSystem worldInteractions = new(ecsWorld, worldRuntime);
+    BuffDefinitionRegistry buffDefinitions = new();
+    // 注册参考客户端药水表的三条样例，避免注册表为空导致 TryApply 恒返回 UnknownDefinition。
+    BuffContent.RegisterAll(buffDefinitions);
+    AttributeTickSystem attributeTick = new(ecsWorld);
+    BuffTickSystem buffTick = new(ecsWorld, new BuffSystem(buffDefinitions));
+    GravityTickSystem gravityTick = new(ecsWorld);
+    NpcAiIntentAdapter npcAiAdapter = new(
+        ecsWorld,
+        npcAi.Entities,
+        npcAi.Snapshots,
+        entities,
+        attackDefinitions);
+    SpatialSimulationCoordinatorSystem spatialSimulation = new(ecsWorld, worldRuntime);
     Dictionary<SessionEpoch, EntityRuntimeHandle> sessions = [];
     object lifecycleGate = new();
 
@@ -64,7 +138,10 @@ internal static class Program
         {
           lock (lifecycleGate)
           {
-            EntityRuntimeHandle handle = CreatePlayer(ecsWorld, entities);
+            EntityRuntimeHandle handle = CreatePlayer(
+                ecsWorld,
+                entities,
+                playerSpawnPosition);
             if (!communication!.Ingress.TryBindPlayer(epoch, handle))
             {
               entities.Remove(handle, out ArchEntity entity);
@@ -104,15 +181,25 @@ internal static class Program
     IReadOnlyList<EcsServerSystemRegistration> registrations = BuildRegistrations(
         ecsWorld,
         entities,
-        attackIntents,
         attackDefinitions,
-        damageRequests,
         physicsContacts,
         projectileHits,
         projectileLifecycle,
         communication,
         worldTick,
         worldInteractions,
+        worldItems,
+        npcAiAdapter,
+        spatialSimulation,
+        attributeTick,
+        buffTick,
+        gravityTick,
+        new NpcNetworkProjectionSystem(ecsWorld),
+        new WorldNetworkProjectionSystem(
+            ecsWorld,
+            worldRuntime,
+            worldItems,
+            loadedWorld.FrameImportant),
         new TerrariaProtocolOptions
         {
           WorldWidth = worldWidth,
@@ -176,25 +263,49 @@ internal static class Program
   private static IReadOnlyList<EcsServerSystemRegistration> BuildRegistrations(
       ArchWorld world,
       EntityRuntimeRegistry entities,
-      CombatAttackIntentBuffer attackIntents,
       CombatAttackDefinitionCatalog attackDefinitions,
-      CombatDamageRequestBuffer damageRequests,
       PhysicsContactCaptureSystem physicsContacts,
       ProjectileHitResolutionSystem projectileHits,
       ProjectileLifecycleSystem projectileLifecycle,
       CommunicationHostRuntime communication,
       WorldTickSystem worldTick,
       WorldInteractionSystem worldInteractions,
+      WorldItemStore worldItems,
+      NpcAiIntentAdapter npcAiAdapter,
+      SpatialSimulationCoordinatorSystem spatialSimulation,
+      AttributeTickSystem attributeTick,
+      BuffTickSystem buffTick,
+      GravityTickSystem gravityTick,
+      NpcNetworkProjectionSystem npcProjection,
+      WorldNetworkProjectionSystem worldProjection,
       TerrariaProtocolOptions protocolOptions)
   {
     List<EcsServerSystemRegistration> registrations = [];
+    // 必须排在本阶段最前：准备阶段收包写出的玩家输入要在任何移动/属性系统读取前落地。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        new PlayerInputRequestSystem(world, entities)));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Projection,
+        npcProjection));
+    // 世界物品请求跑两遍：投影之前一遍，消化准备阶段收包产生的请求（保持同帧生效）；
+    // 投影之后一遍，消化投影自身写出的掉落物请求。队列取空后为空，跑两遍无副作用。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Projection,
+        new WorldItemRequestSystem(world, worldItems)));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Projection,
+        worldProjection));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Projection,
+        new WorldItemRequestSystem(world, worldItems)));
     registrations.AddRange(CommunicationSystemRegistration.CreateGame(
         world,
         entities,
-        attackIntents,
         attackDefinitions,
         communication.OutboundPort,
-        protocolOptions: protocolOptions));
+        protocolOptions: protocolOptions,
+        worldItems: worldItems));
     registrations.AddRange(CombatSystemRegistration.Create(
         world,
         entities,
@@ -202,25 +313,45 @@ internal static class Program
         physicsContacts,
         projectileHits,
         projectileLifecycle,
-        attackDefinitions,
-        damageRequests,
-        attackIntents: attackIntents));
+        attackDefinitions));
     registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, worldTick));
+    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, npcAiAdapter));
+    // 重力投影必须先于空间求解刷新，SpatialSimulationCoordinatorSystem 直接读取 GravityStateComponent。
+    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, gravityTick));
+    // 属性与 Buff 的期限在 Commit 之前推进，使本 tick 内新加的来源获得完整时长。
+    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, attributeTick));
+    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, buffTick));
+    // 必须紧邻空间求解之前：本帧由 AI 与输入适配器提交的意图要在求解读取前落地。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        new MovementIntentRequestSystem(world, entities)));
+    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, spatialSimulation));
     registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Commit, worldInteractions));
     return registrations.AsReadOnly();
   }
 
   private static EntityRuntimeHandle CreatePlayer(
       ArchWorld world,
-      EntityRuntimeRegistry entities)
+      EntityRuntimeRegistry entities,
+      Vector2 spawnPosition)
   {
     EntityUuid id = EntityUuid.Create();
     EntityRuntimeHandle handle = entities.Allocate(id);
+    AttributeSetComponent playerAttributes = new();
+    PlayerAttributeBaseline.Apply(playerAttributes);
     ArchEntity entity = world.Create(
         new EntityIdentityComponent(id),
         new EntityFactionComponent(Faction.Friendly),
         new LifeComponent(current: 100, maximum: 100),
-        new LocationComponent(Vector2.Zero),
+        // 属性基值取自参考客户端默认值（statDefense 0、moveSpeed 1），与 null 路径等价；
+        // 没有这两项时 AttributeTickSystem 与 BuffTickSystem 在真实服务器中匹配 0 个实体。
+        playerAttributes,
+        new BuffListComponent(),
+        // 没有这份能力时 BuffAdmissionSystem.Check 返回 MissingReceptionCapability，
+        // 即使内容侧已注册定义，TryApply 也会被准入拒绝。
+        new BuffReceptionCapabilityComponent(BuffReceptionMode.AllowAll),
+        new LocationComponent(spawnPosition),
+        new PlayerInventoryComponent(),
         Terraria.Movement.VelocityComponent.Stationary,
         new ColliderComponent(new Vector2(16f, 32f)),
         new EntityCollisionCapabilityComponent(Enabled: true, Layer: 1, Mask: uint.MaxValue),
@@ -238,6 +369,108 @@ internal static class Program
     {
       entities.Register(handle, entity);
       return handle;
+    }
+    catch
+    {
+      if (world.IsAlive(entity))
+      {
+        world.Destroy(entity);
+      }
+
+      throw;
+    }
+  }
+
+  private static int FindSpawnSurfaceTileY(
+      WorldRuntime world,
+      int spawnTileX,
+      int spawnTileY,
+      float colliderWidth)
+  {
+    int firstColumn = Math.Clamp(spawnTileX, 0, world.State.Width - 1);
+    int lastColumn = Math.Clamp(
+        (int)MathF.Floor((spawnTileX * world.State.TileSize + colliderWidth - 0.0001f) /
+            world.State.TileSize),
+        firstColumn,
+        world.State.Width - 1);
+    int surface = world.State.Height - 1;
+    for (int x = firstColumn; x <= lastColumn; x++)
+    {
+      int candidate = Math.Clamp(spawnTileY, 0, world.State.Height - 1);
+      while (candidate < world.State.Height &&
+          (!world.TryReadTile(new WorldTileCoordinate(x, candidate), out WorldTileState tile) ||
+              !tile.Active))
+      {
+        candidate++;
+      }
+
+      if (candidate >= world.State.Height)
+      {
+        continue;
+      }
+
+      while (candidate > 0 &&
+          world.TryReadTile(new WorldTileCoordinate(x, candidate - 1),
+              out WorldTileState above) &&
+          above.Active)
+      {
+        candidate--;
+      }
+
+      surface = Math.Min(surface, candidate);
+    }
+
+    return surface == world.State.Height - 1
+        ? Math.Clamp(spawnTileY, 0, world.State.Height - 1)
+        : surface;
+  }
+
+  private static ArchEntity CreateNpc(
+      ArchWorld world,
+      EntityRuntimeRegistry entities,
+      Vector2 position,
+      bool isSlime,
+      byte networkSlot,
+      short networkType)
+  {
+    EntityUuid id = EntityUuid.Create();
+    EntityRuntimeHandle handle = entities.Allocate(id);
+    ArchEntity entity = world.Create(
+        new EntityIdentityComponent(id),
+        new EntityFactionComponent(isSlime ? Faction.Hostile : Faction.Friendly),
+        new LifeComponent(isSlime ? 50 : 250, isSlime ? 50 : 250),
+        new LocationComponent(position - new Vector2(0f, isSlime ? 18f : 40f)),
+        MovementVelocityComponent.Stationary,
+        new ColliderComponent(isSlime ? new Vector2(24f, 18f) : new Vector2(18f, 40f)),
+        GroundingComponent.Airborne,
+        new EntityCollisionCapabilityComponent(Enabled: true, Layer: 1, Mask: uint.MaxValue),
+        new MovementCapabilityComponent(
+            enabled: true,
+            maximumSpeed: isSlime ? 2.5f : 1f,
+            acceleration: isSlime ? 12f : 8f,
+            canJump: true,
+            jumpSpeed: isSlime ? 6f : 5f),
+        new GravityCapabilityComponent(Enabled: true, CanToggleDirection: false),
+        new GravityConfigurationComponent(),
+        new GravityDirectionStateComponent(GravityDirection.Normal),
+        new GravityModifierCollectionComponent(),
+        new GravityStateComponent(0.4f, 10f, GravityDirection.Normal, false, false),
+        new TileCollisionCapabilityComponent(Enabled: true),
+        new LiquidInteractionCapabilityComponent(
+            Enabled: true,
+            AffectedLiquids: LiquidContactFlags.Water | LiquidContactFlags.Honey |
+                LiquidContactFlags.Lava | LiquidContactFlags.Shimmer),
+        MovementIntent.Stop(tick: 0),
+        new NpcBehaviorStateComponent(),
+        new NpcNetworkIdentityComponent(networkSlot, generation: 1, netId: networkType),
+        isSlime ? AiComponent.For<SlimeAiBehavior>() : AiComponent.For<GuideAiBehavior>(),
+        new AiBehaviorSelectionComponent(
+            isSlime ? "Slime" : "Guide",
+            isSlime ? "slime.default" : "guide.default"));
+    try
+    {
+      entities.Register(handle, entity);
+      return entity;
     }
     catch
     {

@@ -16,26 +16,22 @@ public sealed class ProjectileHitResolutionSystem
 {
   private readonly ArchWorld _world;
   private readonly IEntityRuntimeResolver _resolver;
-  private ProjectileTerminationBuffer _terminations;
-
-  internal ProjectileTerminationBuffer Terminations => _terminations;
-
-  internal void AttachTerminationBuffer(ProjectileTerminationBuffer terminations)
-  {
-    ArgumentNullException.ThrowIfNull(terminations);
-    // The adapter is created before registration; registration selects the lifecycle-owned buffer.
-    _terminations = terminations;
-  }
+  private ProjectileTerminationQueueComponent? _terminations;
 
   public ProjectileHitResolutionSystem(
       ArchWorld world,
-      IEntityRuntimeResolver resolver,
-      ProjectileTerminationBuffer? terminations = null)
+      IEntityRuntimeResolver resolver)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
     _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
-    _terminations = terminations ?? new ProjectileTerminationBuffer();
   }
+
+  /// <summary>
+  /// World-scoped termination queue, resolved on first use so construction order never decides
+  /// which instance a system observes.
+  /// </summary>
+  private ProjectileTerminationQueueComponent Terminations =>
+      _terminations ??= ProjectileTerminationQueue.Require(_world);
 
   public ProjectileHitAdmissionResult CheckAdmission(
       EntityRuntimeHandle projectile,
@@ -53,7 +49,7 @@ public sealed class ProjectileHitResolutionSystem
       return ProjectileHitAdmissionResult.ProjectileUnavailable;
     }
 
-    if (_terminations.Contains(projectile, tick))
+    if (Terminations.Contains(projectile, tick))
     {
       return ProjectileHitAdmissionResult.ProjectileInactive;
     }
@@ -156,11 +152,10 @@ public sealed class ProjectileHitResolutionSystem
       if (penetration.HasReachedLimit(penetrationLimit))
       {
         terminationReason = ProjectileTerminationReason.HitLimitReached;
-        _terminations.Enqueue(
+        Terminations.Enqueue(
             projectileHandle,
             ProjectileTerminationReason.HitLimitReached,
-            tick);
-      }
+            tick);      }
     }
 
     return ProjectileHitAdmissionResult.Accepted;

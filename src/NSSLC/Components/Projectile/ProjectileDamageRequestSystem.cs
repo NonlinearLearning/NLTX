@@ -15,27 +15,23 @@ namespace Terraria.Projectile;
 public sealed class ProjectileDamageRequestSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   private readonly ProjectileHitResolutionSystem _projectileHits;
-  private readonly CombatAttackIntentBuffer _intents;
   private readonly IEntityRuntimeHandleResolver _handles;
-  private readonly PhysicsContactBuffer _contacts;
   private readonly QueryDescription _query = new QueryDescription().WithAll<
       ProjectileDispositionStateComponent,
       ProjectileOwnerComponent,
       ProjectileCollisionPolicyComponent,
       ProjectileAttackDefinitionReferenceComponent>();
+  private readonly QueryDescription _contactQueueQuery =
+      new QueryDescription().WithAll<PhysicsContactQueueComponent>();
 
   public ProjectileDamageRequestSystem(
       ArchWorld world,
       ProjectileHitResolutionSystem projectileHits,
-      CombatAttackIntentBuffer intents,
-      IEntityRuntimeHandleResolver handles,
-      PhysicsContactBuffer contacts)
+      IEntityRuntimeHandleResolver handles)
       : base(world ?? throw new ArgumentNullException(nameof(world)))
   {
     _projectileHits = projectileHits ?? throw new ArgumentNullException(nameof(projectileHits));
-    _intents = intents ?? throw new ArgumentNullException(nameof(intents));
     _handles = handles ?? throw new ArgumentNullException(nameof(handles));
-    _contacts = contacts ?? throw new ArgumentNullException(nameof(contacts));
   }
 
   public override void Update(in EcsServerTickContext context)
@@ -52,7 +48,8 @@ public sealed class ProjectileDamageRequestSystem : BaseSystem<ArchWorld, EcsSer
           }
         });
 
-    IReadOnlyList<PhysicsContactFact> facts = _contacts.Drain();
+    IReadOnlyList<PhysicsContactFact> facts = DrainContacts();
+    CombatAttackIntentQueueComponent attackIntents = CombatAttackIntentQueue.Require(World);
     for (int index = 0; index < facts.Count; index++)
     {
       PhysicsContactFact fact = facts[index];
@@ -85,7 +82,7 @@ public sealed class ProjectileDamageRequestSystem : BaseSystem<ArchWorld, EcsSer
         continue;
       }
 
-      _intents.Enqueue(
+      attackIntents.Enqueue(
           projectileHandle,
           targetHandle,
           World.Get<ProjectileAttackDefinitionReferenceComponent>(projectile).DefinitionId,
@@ -93,5 +90,26 @@ public sealed class ProjectileDamageRequestSystem : BaseSystem<ArchWorld, EcsSer
           DamageCause.Projectile,
           new DamageContact(fact.Contact.Point, fact.Contact.Normal));
     }
+  }
+
+  private IReadOnlyList<PhysicsContactFact> DrainContacts()
+  {
+    ArchEntity queueEntity = default;
+    bool found = false;
+    World.Query(
+        in _contactQueueQuery,
+        (ArchEntity entity) =>
+        {
+          queueEntity = entity;
+          found = true;
+        });
+
+    if (!found)
+    {
+      throw new InvalidOperationException(
+          "A PhysicsContactQueueComponent entity must exist before projectile contacts are consumed.");
+    }
+
+    return World.Get<PhysicsContactQueueComponent>(queueEntity).Drain();
   }
 }

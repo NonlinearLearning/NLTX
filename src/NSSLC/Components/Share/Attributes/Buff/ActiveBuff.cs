@@ -1,13 +1,13 @@
 using System;
 
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>One active Buff instance owned by the shared Buff list.</summary>
 public readonly record struct ActiveBuff
 {
   public ActiveBuff(
       BuffEffectId effect,
-      Terraria.Combat.BuffId immunityKey,
+      BuffId immunityKey,
       long sourceId,
       int remainingTicks,
       int stacks)
@@ -47,7 +47,7 @@ public readonly record struct ActiveBuff
 
   public BuffEffectId Effect { get; }
 
-  public Terraria.Combat.BuffId ImmunityKey { get; }
+  public BuffId ImmunityKey { get; }
 
   public long SourceId { get; }
 

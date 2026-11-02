@@ -23,8 +23,8 @@ public sealed class WorldTickSystem : BaseSystem<ArchWorld, EcsServerTickContext
     _world = world ?? throw new ArgumentNullException(nameof(world));
   }
 
-  public WorldRuntime WorldRuntime => _world;
-
+  // 不暴露 _world：任何持有本系统的域都能借它取回具体 WorldRuntime 并调用 TryBreakTile，
+  // 那正是输入边界约束要堵住的跨域写路径。
   public WorldTickResult LastResult { get; private set; } = WorldTickResult.NotRun;
 
   public override void Update(in EcsServerTickContext context)
@@ -34,5 +34,7 @@ public sealed class WorldTickSystem : BaseSystem<ArchWorld, EcsServerTickContext
     {
       throw new InvalidOperationException(LastResult.Failure);
     }
+
+    _world.AdvanceLiquidSimulation();
   }
 }

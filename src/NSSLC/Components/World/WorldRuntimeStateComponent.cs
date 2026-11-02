@@ -86,80 +86,53 @@ public sealed class WorldRuntimeStateComponent
       float deltaTime,
       out string? failure)
   {
-    failure = null;
-    if (tick < 0 ||
-        (LastTick < 0
-            ? tick != 0
-            : LastTick == long.MaxValue || tick != LastTick + 1))
+    if (!WorldTimeAdvanceSolver.TryAdvance(
+        LastTick,
+        Revision,
+        TotalTimeSeconds,
+        TimeOfDaySeconds,
+        DayLengthSeconds,
+        tick,
+        deltaTime,
+        out WorldTimeAdvance advance,
+        out failure))
     {
-      failure = "The world tick must advance by exactly one logical step.";
       return false;
     }
 
-    if (!float.IsFinite(deltaTime) || deltaTime <= 0f)
-    {
-      failure = "The world delta time must be finite and positive.";
-      return false;
-    }
-
-    if (Revision == long.MaxValue)
-    {
-      failure = "The world revision is exhausted.";
-      return false;
-    }
-
-    double nextTotal = TotalTimeSeconds + deltaTime;
-    if (!double.IsFinite(nextTotal))
-    {
-      failure = "The world time is exhausted.";
-      return false;
-    }
-
-    double nextTimeOfDay = TimeOfDaySeconds + deltaTime;
-    nextTimeOfDay %= DayLengthSeconds;
-    if (nextTimeOfDay < 0d)
-    {
-      nextTimeOfDay += DayLengthSeconds;
-    }
-
-    LastTick = tick;
-    TotalTimeSeconds = nextTotal;
-    TimeOfDaySeconds = nextTimeOfDay;
-    DayTime = nextTimeOfDay < DayLengthSeconds / 2d;
-    Revision++;
+    LastTick = advance.Tick;
+    TotalTimeSeconds = advance.TotalTimeSeconds;
+    TimeOfDaySeconds = advance.TimeOfDaySeconds;
+    DayTime = advance.DayTime;
+    Revision = advance.Revision;
     return true;
   }
 
   internal bool TryAdvanceRevision(out string? failure)
   {
-    failure = null;
-    if (Revision == long.MaxValue)
+    if (!WorldTimeAdvanceSolver.TryIncrementRevision(Revision, out long next, out failure))
     {
-      failure = "The world revision is exhausted.";
       return false;
     }
 
-    Revision++;
+    Revision = next;
     return true;
   }
 
   internal bool TryReload(out string? failure)
   {
-    failure = null;
-    if (WorldEpoch == ulong.MaxValue)
+    if (!WorldTimeAdvanceSolver.TryBeginReload(
+        WorldEpoch,
+        Revision,
+        out ulong nextEpoch,
+        out long nextRevision,
+        out failure))
     {
-      failure = "The world epoch is exhausted.";
       return false;
     }
 
-    if (Revision == long.MaxValue)
-    {
-      failure = "The world revision is exhausted.";
-      return false;
-    }
-
-    WorldEpoch++;
-    Revision++;
+    WorldEpoch = nextEpoch;
+    Revision = nextRevision;
     TotalTimeSeconds = 0d;
     TimeOfDaySeconds = 0d;
     DayTime = true;

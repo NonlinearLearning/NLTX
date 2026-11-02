@@ -12,23 +12,21 @@ namespace Terraria.Projectile;
 public sealed class ProjectileTerminationCommitSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   private readonly ProjectileLifecycleSystem _lifecycle;
-  private readonly ProjectileTerminationBuffer _terminations;
 
   public ProjectileTerminationCommitSystem(
       ArchWorld world,
       ProjectileLifecycleSystem lifecycle,
-      IEntityRuntimeHandleResolver registry,
-      ProjectileTerminationBuffer terminations)
+      IEntityRuntimeHandleResolver registry)
       : base(world ?? throw new ArgumentNullException(nameof(world)))
   {
     _lifecycle = lifecycle ?? throw new ArgumentNullException(nameof(lifecycle));
     ArgumentNullException.ThrowIfNull(registry);
-    _terminations = terminations ?? throw new ArgumentNullException(nameof(terminations));
   }
 
   public override void Update(in EcsServerTickContext context)
   {
-    IReadOnlyList<ProjectileTerminationRequest> pending = _terminations.Drain(context.Tick);
+    IReadOnlyList<ProjectileTerminationRequest> pending =
+        ProjectileTerminationQueue.Require(World).Drain(context.Tick);
     Dictionary<EntityRuntimeHandle, ProjectileTerminationRequest> unique = [];
     for (int index = 0; index < pending.Count; index++)
     {

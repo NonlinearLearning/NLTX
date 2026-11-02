@@ -291,7 +291,7 @@ public sealed partial class InventorySystem {
       return InventoryTransferFailure.InvalidItemStack;
     }
 
-    if (!_definitions.TryGet(stack.DefinitionId, out definition)) {
+    if (!_definitions.TryGet(stack.ItemId, out definition)) {
       return InventoryTransferFailure.MissingItemDefinition;
     }
 

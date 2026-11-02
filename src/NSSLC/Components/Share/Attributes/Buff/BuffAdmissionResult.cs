@@ -1,4 +1,4 @@
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>Outcome of checking whether a Buff may be applied to one entity.</summary>
 public enum BuffAdmissionResult : byte

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Combat;
+namespace Terraria.Attributes;
 
 /// <summary>Stable definition identifier for an immunity entry.</summary>
 public readonly record struct BuffId {

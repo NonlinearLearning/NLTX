@@ -23,8 +23,6 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
 {
   private readonly AiEntitySystem<ArchEntity, NpcAiIntent> _ai;
   private readonly IAiSnapshotProvider<ArchEntity> _snapshots;
-  private readonly EcsServerCommandBuffer _commands;
-  private readonly CombatAttackIntentBuffer _attackIntents;
   private readonly IEntityRuntimeHandleResolver _runtimeHandles;
   private readonly CombatAttackDefinitionCatalog _attackDefinitions;
   private readonly QueryDescription _query;
@@ -33,24 +31,23 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
       ArchWorld world,
       AiEntitySystem<ArchEntity, NpcAiIntent> ai,
       IAiSnapshotProvider<ArchEntity> snapshots,
-      EcsServerCommandBuffer commands,
-      CombatAttackIntentBuffer attackIntents,
       IEntityRuntimeHandleResolver runtimeHandles,
       CombatAttackDefinitionCatalog attackDefinitions)
       : base(world)
   {
     ArgumentNullException.ThrowIfNull(ai);
     ArgumentNullException.ThrowIfNull(snapshots);
-    ArgumentNullException.ThrowIfNull(commands);
     _ai = ai;
     _snapshots = snapshots;
-    _commands = commands;
-    _attackIntents = attackIntents ?? throw new ArgumentNullException(nameof(attackIntents));
     _runtimeHandles = runtimeHandles ?? throw new ArgumentNullException(nameof(runtimeHandles));
     _attackDefinitions = attackDefinitions ??
         throw new ArgumentNullException(nameof(attackDefinitions));
     _query = new QueryDescription()
-        .WithAll<AiComponent, AiBehaviorSelectionComponent, NpcBehaviorStateComponent>();
+        .WithAll<
+            AiComponent,
+            AiBehaviorSelectionComponent,
+            NpcBehaviorStateComponent,
+            MovementIntent>();
   }
 
   public override void Update(in EcsServerTickContext context)
@@ -60,19 +57,23 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
     ArchWorld world = context.World;
     AiEntitySystem<ArchEntity, NpcAiIntent> ai = _ai;
     IAiSnapshotProvider<ArchEntity> snapshots = _snapshots;
-    EcsServerCommandBuffer commands = _commands;
+    // 在查询之外解析队列实体：Require 内部本身要跑一次查询，放进 Query 回调会形成嵌套查询。
+    CombatAttackIntentQueueComponent attackIntents = CombatAttackIntentQueue.Require(World);
+    MovementIntentRequestQueueComponent movementIntents = MovementIntentRequestQueue.Require(World);
     world.Query(
         in _query,
         (ArchEntity entity,
             ref AiComponent aiComponent,
             ref AiBehaviorSelectionComponent behavior,
-            ref NpcBehaviorStateComponent state) =>
+            ref NpcBehaviorStateComponent state,
+            ref MovementIntent movementIntent) =>
         {
           if (!aiComponent.Enabled || !ai.IsAttached(entity))
           {
             return;
           }
 
+          _ = _runtimeHandles.TryGetHandle(entity, out EntityRuntimeHandle entityHandle);
           AiEntityResult<ArchEntity, NpcAiIntent> result = ai.Calculate(
               entity,
               in aiComponent,
@@ -80,17 +81,26 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
               deltaTime);
           foreach (NpcAiIntent intent in result.Result.Intents)
           {
-            ApplyIntent(entity, tick, intent, ref state, commands);
+            ApplyIntent(
+                entity,
+                entityHandle,
+                tick,
+                intent,
+                attackIntents,
+                movementIntents,
+                ref state);
           }
         });
   }
 
   private void ApplyIntent(
       ArchEntity entity,
+      EntityRuntimeHandle entityHandle,
       long tick,
       NpcAiIntent intent,
-      ref NpcBehaviorStateComponent state,
-      EcsServerCommandBuffer commands)
+      CombatAttackIntentQueueComponent attackIntents,
+      MovementIntentRequestQueueComponent movementIntents,
+      ref NpcBehaviorStateComponent state)
   {
     switch (intent.Kind)
     {
@@ -113,7 +123,7 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
             intent.StateSlot1);
         if (intent.Phase == NpcBehaviorPhase.Attack)
         {
-          TryQueueAttack(entity, tick, intent);
+          TryQueueAttack(entity, tick, intent, attackIntents);
         }
         break;
       case NpcAiIntentKind.CancelCombatAction:
@@ -126,21 +136,30 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
             intent.StateSlot1);
         break;
       case NpcAiIntentKind.Move:
-        MovementIntent movementIntent = new MovementIntent(
-            intent.DesiredVelocity,
-            tick,
-            source: MovementIntentSource.Ai);
-        SetMovementIntent(entity, movementIntent, commands);
+        // MovementIntent 归 Movement 域所有：这里只提交意图。
+        movementIntents.Enqueue(new MovementIntentRequest(
+            entityHandle,
+            new MovementIntent(
+                intent.DesiredVelocity,
+                tick,
+                jumpRequested: intent.JumpRequested,
+                source: MovementIntentSource.Ai)));
         break;
       case NpcAiIntentKind.StopMovement:
-        SetMovementIntent(entity, MovementIntent.Stop(tick), commands);
+        movementIntents.Enqueue(new MovementIntentRequest(
+            entityHandle,
+            MovementIntent.Stop(tick)));
         break;
       default:
         throw new ArgumentOutOfRangeException(nameof(intent.Kind));
     }
   }
 
-  private void TryQueueAttack(ArchEntity source, long tick, NpcAiIntent intent)
+  private void TryQueueAttack(
+      ArchEntity source,
+      long tick,
+      NpcAiIntent intent,
+      CombatAttackIntentQueueComponent attackIntents)
   {
     if (!intent.AttackTarget.IsValid || intent.AttackDefinitionKey == 0 ||
         !_attackDefinitions.TryGet(intent.AttackDefinitionKey, out CombatAttackDefinition? definition))
@@ -153,7 +172,7 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
       return;
     }
 
-    _attackIntents.Enqueue(
+    attackIntents.Enqueue(
         sourceHandle,
         intent.AttackTarget,
         definition.Id,
@@ -161,18 +180,4 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
         DamageCause.NpcAttack);
   }
 
-  private void SetMovementIntent(
-      ArchEntity entity,
-      MovementIntent movementIntent,
-      EcsServerCommandBuffer commands)
-  {
-    if (World.Has<MovementIntent>(entity))
-    {
-      ref MovementIntent currentIntent = ref World.Get<MovementIntent>(entity);
-      currentIntent = movementIntent;
-      return;
-    }
-
-    commands.Add(entity, movementIntent);
-  }
 }

@@ -9,6 +9,41 @@ tile，推进显式 ECS Tick，并为移动系统提供实心 tile 碰撞和液�
 广播、掉落、多格物体、斜坡和完整液体传播仍由外部 adapter 负责，不能从这个最小 owner
 推断已实现。
 
+## 职责分层（2026-11-01）
+
+本域按角色再分三层。目录只表达职责，全部文件的 C# 命名空间仍为 `Terraria.World`：
+
+```text
+World/
+  Contract/   # World 定义的接口：IWorldInteractionWorld、IWorldTileGrid
+  Model/      # World 定义的数据模型：坐标、tile 事实、结果、mutation、时间推进值、运动结果
+  Solver/     # 纯运算：运动、时间推进、tile 转移、mutation 归并、掉落表、索引、权限、物品
+  *.cs        # 更新驱动：WorldRuntime、WorldTickSystem、WorldInteractionSystem、存储与组件
+```
+
+### 运算与更新的边界
+
+- `Solver/` 中的类型只做计算。输入是 `Model/` 的值与 `Contract/` 的只读端口；它们不持有锁、
+  不写存储、不推进 revision、不读 Arch 世界。
+- 更新驱动只做四件事：加锁、判断时机、写存储、推进 revision 并记录 mutation 和管理队列。
+- 本域对外暴露的接口一律返回 `Model/` 中定义的模型。例外是 `ISpatialWorldQuery` 与
+  `ISpatialWorldRevisionSource`：这两个端口属于 `Terraria.Physics`，由本域实现，因此 `Move`
+  和 `GetLiquidContact` 返回 Physics 侧结果。域内运算结果仍是 `WorldTileMotionResult` 这类
+  World 模型，由 `WorldRuntime` 投影过去。
+
+| 运算类型 | 承担的规则 | 调用方 |
+| --- | --- | --- |
+| `WorldTileMotionSolver` | 分轴移动、二分回退、接地吸附、世界边界钳制 | `WorldRuntime.Move` |
+| `WorldTimeAdvanceSolver` | tick/delta/revision 校验、昼夜推进、epoch 递增 | `WorldRuntimeStateComponent`、`WorldRuntime` |
+| `WorldTileTransitionRules` | 破坏/放置/液体写入后的 tile 值，可否破坏或放置 | `WorldRuntime` |
+| `WorldMutationRules` | 变更是否记录、抵消或归并 | `WorldRuntime.RecordMutationUnsafe` |
+| `WorldTileDropRules` | 单 tile 掉落表 | `WorldRuntime.TryBreakTile` |
+| `WorldTileIndexRules` | 边界判断与行主序索引 | `WorldTileStorageComponent` |
+| `WorldInteractionPermissionRules` | 操作到权限的映射、权限位校验 | `WorldInteractionSystem`、`WorldInteractionCapabilityComponent` |
+| `WorldItemRules` | 物品合法性、可否变更、空槽选择、revision 递增 | `WorldItemStore` |
+
+行为等价以确定性转录比对为依据：改造前后 195 行输出逐字节相同。
+
 ## 协作关系
 
 ```text

@@ -1,8 +1,6 @@
 using System;
-using Terraria.Attributes;
-using Terraria.Combat;
 
-namespace Terraria.StatusEffects;
+namespace Terraria.Attributes;
 
 /// <summary>
 /// Owns active shared Buff application, refresh, stacking and expiry.
@@ -110,16 +108,16 @@ public sealed class BuffSystem
       BuffDefinition definition,
       ActiveBuff activeBuff)
   {
-    foreach (BuffAttributeModifierDefinition modifier in definition.Modifiers)
-    {
-      attributes.AddModifier(new AttributeModifier(
-          modifier.Attribute,
-          AttributeSourceCategory.Buff,
-          modifier.Operation,
-          modifier.Value * activeBuff.Stacks,
-          activeBuff.SourceId,
-          modifier.Priority,
-          activeBuff.RemainingTicks));
-    }
+    // 期限由 BuffListComponent 单一持有并推进，过期时按来源整体撤销。
+    // 因此来源描述符为永久（remainingTicks: -1），避免同一个期限被存两份。
+    AttributeSourceDescriptor source = new(
+        activeBuff.SourceId,
+        AttributeSourceCategory.Buff,
+        AttributeSourceDescriptor.PermanentTicks);
+
+    AttributeContributionSystem.Apply(
+        attributes,
+        new AttributeContributionSet(source, definition.Modifiers),
+        activeBuff.Stacks);
   }
 }

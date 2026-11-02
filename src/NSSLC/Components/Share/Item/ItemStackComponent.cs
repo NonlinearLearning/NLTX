@@ -36,7 +36,7 @@ public sealed class ItemStackComponent {
       return false;
     }
 
-    taken = new ItemStack(Stack.DefinitionId, quantity, Stack.Prefix);
+    taken = new ItemStack(Stack.ItemId, quantity, Stack.Prefix);
     Stack = Stack.WithQuantity(Stack.Quantity - quantity);
     return true;
   }

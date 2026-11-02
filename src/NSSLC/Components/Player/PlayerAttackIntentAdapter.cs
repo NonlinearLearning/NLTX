@@ -1,4 +1,5 @@
 using System;
+using ArchWorld = Arch.Core.World;
 using Terraria.Combat;
 using Terraria.Relationships;
 
@@ -9,11 +10,11 @@ namespace Terraria.Player;
 /// </summary>
 public sealed class PlayerAttackIntentAdapter
 {
-  private readonly CombatAttackIntentBuffer _intents;
+  private readonly ArchWorld _world;
 
-  public PlayerAttackIntentAdapter(CombatAttackIntentBuffer intents)
+  public PlayerAttackIntentAdapter(ArchWorld world)
   {
-    _intents = intents ?? throw new ArgumentNullException(nameof(intents));
+    _world = world ?? throw new ArgumentNullException(nameof(world));
   }
 
   public long Submit(
@@ -23,7 +24,7 @@ public sealed class PlayerAttackIntentAdapter
       long tick,
       DamageContact? contact = null)
   {
-    return _intents.Enqueue(
+    return CombatAttackIntentQueue.Require(_world).Enqueue(
         source,
         target,
         definitionId,

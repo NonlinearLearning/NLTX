@@ -6,31 +6,30 @@ namespace Terraria.Item;
 /// A value object for an item stack that does not require an ECS entity.
 /// </summary>
 public readonly record struct ItemStack {
-  public ItemStack(ItemDefinitionId definitionId, int quantity, byte prefix = 0) {
-    if (!definitionId.IsValid) {
-      throw new ArgumentException("An item stack requires a valid definition id.", nameof(definitionId));
+  public ItemStack(ItemId itemId, int quantity, byte prefix = 0) {
+    if (!ItemIdRules.IsKnown(itemId)) {
+      throw new ArgumentException("An item stack requires a known item id.", nameof(itemId));
     }
 
     if (quantity <= 0) {
       throw new ArgumentOutOfRangeException(nameof(quantity));
     }
 
-    DefinitionId = definitionId;
+    ItemId = itemId;
     Quantity = quantity;
     Prefix = prefix;
   }
 
-  public ItemDefinitionId DefinitionId { get; }
+  public ItemId ItemId { get; }
 
   public int Quantity { get; }
 
   public byte Prefix { get; }
 
-  public bool IsEmpty => !DefinitionId.IsValid || Quantity <= 0;
+  public bool IsEmpty => !ItemIdRules.IsKnown(ItemId) || Quantity <= 0;
 
   public bool CanStackWith(in ItemStack other) {
-    return !IsEmpty && !other.IsEmpty && DefinitionId == other.DefinitionId &&
-        Prefix == other.Prefix;
+    return !IsEmpty && !other.IsEmpty && ItemId == other.ItemId && Prefix == other.Prefix;
   }
 
   public ItemStack WithQuantity(int quantity) {
@@ -38,6 +37,6 @@ public readonly record struct ItemStack {
       throw new ArgumentOutOfRangeException(nameof(quantity));
     }
 
-    return quantity == 0 ? default : new ItemStack(DefinitionId, quantity, Prefix);
+    return quantity == 0 ? default : new ItemStack(ItemId, quantity, Prefix);
   }
 }

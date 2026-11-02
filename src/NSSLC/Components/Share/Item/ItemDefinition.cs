@@ -11,12 +11,12 @@ namespace Terraria.Item;
 /// </summary>
 public sealed class ItemDefinition {
   public ItemDefinition(
-      ItemDefinitionId id,
+      ItemId id,
       int maxStack,
       ItemCategoryMask categories = ItemCategoryMask.General,
       IEnumerable<ItemAttributeModifierDefinition>? attributeModifiers = null) {
-    if (!id.IsValid) {
-      throw new ArgumentException("An item definition requires a valid id.", nameof(id));
+    if (!ItemIdRules.IsKnown(id)) {
+      throw new ArgumentException("An item definition requires a known item id.", nameof(id));
     }
 
     if (maxStack <= 0) {
@@ -40,7 +40,7 @@ public sealed class ItemDefinition {
     AttributeModifiers = new ReadOnlyCollection<ItemAttributeModifierDefinition>(modifiers);
   }
 
-  public ItemDefinitionId Id { get; }
+  public ItemId Id { get; }
 
   public int MaxStack { get; }
 

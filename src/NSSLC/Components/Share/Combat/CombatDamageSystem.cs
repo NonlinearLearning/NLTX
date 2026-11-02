@@ -146,7 +146,6 @@ public sealed class CombatDamageSystem
     DamageCommitResult committed = _commit.TryCommit(
         in request,
         in mitigation,
-        targetAttributes,
         out DamageAppliedReceipt receipt);
     return committed switch
     {

@@ -170,6 +170,6 @@ public sealed class InventoryAttributeContributionSystem
       stack = world.Get<ItemStackComponent>(itemEntity).Stack;
     }
 
-    return !stack.IsEmpty && definitions.TryGet(stack.DefinitionId, out definition);
+    return !stack.IsEmpty && definitions.TryGet(stack.ItemId, out definition);
   }
 }
