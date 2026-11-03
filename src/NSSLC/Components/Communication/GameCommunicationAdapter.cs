@@ -360,6 +360,14 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
       throw new ArgumentException("Packet 21 contains invalid item facts.", nameof(payload));
     }
 
+    // 包 21 携带的是协议 itemType。未知类型无法进入权威模型，因此在这里丢弃，
+    // 而不是先写进状态再投影给所有客户端。stack 为 0 表示"清除该槽位"，
+    // 不携带物品身份，不参与校验。
+    if (stack > 0 && !Terraria.Item.ItemIdRules.TryFromNetworkType(itemType, out _))
+    {
+      return Array.Empty<OutboundPacketIntent>();
+    }
+
     if (!_world.Has<LocationComponent>(player))
     {
       return Array.Empty<OutboundPacketIntent>();

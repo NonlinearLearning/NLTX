@@ -253,10 +253,10 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
     WriteSingle(stream, mutation.Item.Position.Y);
     WriteSingle(stream, mutation.Item.Velocity.X);
     WriteSingle(stream, mutation.Item.Velocity.Y);
-    WriteInt16(stream, checked((short)Math.Clamp(mutation.Item.Stack, 1, short.MaxValue)));
-    stream.WriteByte(mutation.Item.Prefix);
+    WriteInt16(stream, checked((short)Math.Clamp(mutation.Item.Item.Quantity, 1, short.MaxValue)));
+    stream.WriteByte(mutation.Item.Item.Prefix);
     stream.WriteByte(0);
-    WriteInt16(stream, checked((short)mutation.Item.ItemType));
+    WriteInt16(stream, Terraria.Item.ItemIdRules.ToNetworkType(mutation.Item.Item.ItemId));
     return stream.ToArray();
   }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 using Terraria.Communication;
+using Terraria.Item;
 
 namespace Terraria.World;
 
@@ -15,6 +16,10 @@ namespace Terraria.World;
 public static class WorldItemRules
 {
   /// <summary>True when a new item may occupy a slot with the supplied facts.</summary>
+  /// <remarks>
+  /// 物品类型必须是 <see cref="ItemId" /> 里的已知值：权威世界状态只保存共享
+  /// <see cref="ItemStack" /> 能表达的身份，未知类型在此拒绝而不是先存下再试图投影。
+  /// </remarks>
   public static bool IsValidItem(
       int itemType,
       int stack,
@@ -22,6 +27,7 @@ public static class WorldItemRules
       Vector2 velocity)
   {
     return itemType > 0 && stack > 0 &&
+        ItemIdRules.TryFromNetworkType(itemType, out _) &&
         IsValidPosition(position) && IsValidVelocity(velocity);
   }
 

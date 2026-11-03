@@ -1,5 +1,6 @@
 using System.Numerics;
 using Terraria.Communication;
+using Terraria.Item;
 
 namespace Terraria.World;
 
@@ -27,7 +28,8 @@ public sealed class WorldItemStore : IWorldItemProjectionSource, IWorldItemQuery
       out WorldItemState item)
   {
     item = default!;
-    if (!WorldItemRules.IsValidItem(itemType, stack, position, velocity))
+    if (!WorldItemRules.IsValidItem(itemType, stack, position, velocity) ||
+        !ItemIdRules.TryFromNetworkType(itemType, out ItemId itemId))
     {
       return false;
     }
@@ -42,9 +44,7 @@ public sealed class WorldItemStore : IWorldItemProjectionSource, IWorldItemQuery
 
       item = new WorldItemState(
           slot,
-          itemType,
-          stack,
-          prefix,
+          new ItemStack(itemId, stack, prefix),
           position,
           velocity,
           reservedFor,
@@ -133,9 +133,11 @@ public sealed class WorldItemStore : IWorldItemProjectionSource, IWorldItemQuery
       out WorldItemState? item)
   {
     item = null;
+    // stack 为 0 表示清除槽位，不携带物品身份；否则类型必须是已知 ItemId。
+    bool hasRequestedId = ItemIdRules.TryFromNetworkType(itemType, out ItemId requestedId);
     if (!WorldItemRules.IsValidPosition(position) ||
         !WorldItemRules.IsValidVelocity(velocity) ||
-        (stack > 0 && itemType <= 0))
+        (stack > 0 && (itemType <= 0 || !hasRequestedId)))
     {
       return false;
     }
@@ -151,20 +153,21 @@ public sealed class WorldItemStore : IWorldItemProjectionSource, IWorldItemQuery
       if (stack <= 0)
       {
         _items.Remove(slot);
-        WorldItemState retired = current with { Stack = 0, Revision = NextRevisionUnsafe() };
+        WorldItemState retired = current with { Item = default, Revision = NextRevisionUnsafe() };
         _pending.Enqueue(new WorldItemMutation(WorldItemChangeKind.Retire, retired, actor));
         item = retired;
         return true;
       }
 
-      if (itemType != current.ItemType || prefix != current.Prefix || stack > current.Stack)
+      if (requestedId != current.Item.ItemId || prefix != current.Item.Prefix ||
+          stack > current.Item.Quantity)
       {
         return false;
       }
 
       WorldItemState next = current with
       {
-        Stack = stack,
+        Item = new ItemStack(requestedId, stack, prefix),
         Position = position,
         Velocity = velocity,
         Revision = NextRevisionUnsafe()
@@ -188,7 +191,7 @@ public sealed class WorldItemStore : IWorldItemProjectionSource, IWorldItemQuery
       }
 
       _items.Remove(slot);
-      retired = current with { Stack = 0, Revision = NextRevisionUnsafe() };
+      retired = current with { Item = default, Revision = NextRevisionUnsafe() };
       _pending.Enqueue(new WorldItemMutation(WorldItemChangeKind.Retire, retired, actor));
       return true;
     }
