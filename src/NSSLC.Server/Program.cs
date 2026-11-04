@@ -131,6 +131,9 @@ internal static class Program
     // 注册参考客户端药水表的三条样例，避免注册表为空导致 TryApply 恒返回 UnknownDefinition。
     BuffContent.RegisterAll(buffDefinitions);
     AttributeTickSystem attributeTick = new(ecsWorld);
+    // 装备/饰品/武器的属性贡献由库存事实重建。它必须排在所有读取 AttributeSetComponent
+    // 的系统之前，否则本 tick 内换装要到下一 tick 才生效。
+    InventoryAttributeContributionSystem attributeContributions = new(ecsWorld, itemDefinitions);
     BuffTickSystem buffTick = new(ecsWorld, new BuffSystem(buffDefinitions));
     GravityTickSystem gravityTick = new(ecsWorld);
     NpcAiIntentAdapter npcAiAdapter = new(
@@ -206,6 +209,7 @@ internal static class Program
         npcAiAdapter,
         spatialSimulation,
         attributeTick,
+        attributeContributions,
         buffTick,
         gravityTick,
         new NpcNetworkProjectionSystem(ecsWorld),
@@ -328,6 +332,7 @@ internal static class Program
       NpcAiIntentAdapter npcAiAdapter,
       SpatialSimulationCoordinatorSystem spatialSimulation,
       AttributeTickSystem attributeTick,
+      InventoryAttributeContributionSystem attributeContributions,
       BuffTickSystem buffTick,
       GravityTickSystem gravityTick,
       NpcNetworkProjectionSystem npcProjection,
@@ -339,6 +344,11 @@ internal static class Program
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
         new PlayerInputRequestSystem(world, entities, inventories)));
+    // 属性贡献重建紧随输入落地之后：包里的换装在本 tick 就要影响 AttributeSetComponent，
+    // 而下面 CombatSystemRegistration 里的投射物命中结算会读取它。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        attributeContributions));
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Projection,
         npcProjection));

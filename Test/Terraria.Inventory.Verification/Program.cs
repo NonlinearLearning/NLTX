@@ -1,5 +1,6 @@
 using System.Numerics;
 using Arch.Core;
+using Terraria.Attributes;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 using Terraria.Entity;
@@ -213,10 +214,71 @@ using (ArchWorld inputWorld = ArchWorld.Create())
       $"isEmpty={cleared.IsEmpty}");
 }
 
+// ---- 阶段 3：装备槽 → 属性贡献 ----
+// InventoryAttributeContributionSystem 此前从未注册，护甲/饰品/武器的属性贡献完全不生效。
+// 这里固定三件事：护甲槽的物品把定义里的修饰器写进 AttributeSetComponent；清空槽位后
+// 该来源的修饰器被移除；General 槽位即使放着同一件物品也不产生 Equipment 贡献。
+using (ArchWorld attributeWorld = ArchWorld.Create())
+{
+  ItemId armorItem = ItemId.Torch;
+  ItemDefinitionRegistry attributeDefinitions = new();
+  attributeDefinitions.Register(new ItemDefinition(
+      armorItem,
+      1,
+      ItemCategoryMask.Any,
+      [
+          new ItemAttributeModifierDefinition(
+              AttributeKind.Defense,
+              AttributeSourceCategory.Equipment,
+              AttributeModifierOperation.Additive,
+              4f)
+      ]));
+
+  InventorySystem attributeInventories = new(attributeWorld, attributeDefinitions);
+  InventorySlotDefinition[] wearerSlots =
+  [
+      new(0, InventorySlotKind.Armor, ItemCategoryMask.Any, BigMaxStack),
+      new(1, InventorySlotKind.General, ItemCategoryMask.Any, BigMaxStack)
+  ];
+  ArchEntity wearer = attributeWorld.Create(
+      new InventoryComponent(wearerSlots),
+      new AttributeSetComponent());
+  InventoryAttributeContributionSystem contributions =
+      new(attributeWorld, attributeDefinitions);
+  AttributeSetComponent wornAttributes = attributeWorld.Get<AttributeSetComponent>(wearer);
+
+  contributions.Update(new EcsServerTickContext(attributeWorld, 1, 1f / 60f));
+  Check(
+      "no-equipment-no-contribution",
+      AttributeCalculator.Resolve(wornAttributes, AttributeKind.Defense) == 0f,
+      $"defense={AttributeCalculator.Resolve(wornAttributes, AttributeKind.Defense)}");
+
+  _ = attributeInventories.TrySetSlotValue(wearer, 0, new ItemStack(armorItem, 1));
+  contributions.Update(new EcsServerTickContext(attributeWorld, 2, 1f / 60f));
+  Check(
+      "armor-slot-contributes-defense",
+      AttributeCalculator.Resolve(wornAttributes, AttributeKind.Defense) == 4f,
+      $"defense={AttributeCalculator.Resolve(wornAttributes, AttributeKind.Defense)}");
+
+  _ = attributeInventories.TrySetSlotValue(wearer, 0, default);
+  contributions.Update(new EcsServerTickContext(attributeWorld, 3, 1f / 60f));
+  Check(
+      "cleared-armor-slot-removes-contribution",
+      AttributeCalculator.Resolve(wornAttributes, AttributeKind.Defense) == 0f,
+      $"defense={AttributeCalculator.Resolve(wornAttributes, AttributeKind.Defense)}");
+
+  _ = attributeInventories.TrySetSlotValue(wearer, 1, new ItemStack(armorItem, 1));
+  contributions.Update(new EcsServerTickContext(attributeWorld, 4, 1f / 60f));
+  Check(
+      "general-slot-does-not-contribute",
+      AttributeCalculator.Resolve(wornAttributes, AttributeKind.Defense) == 0f,
+      "General 槽位里的同一物品不产生 Equipment 贡献");
+}
+
 Console.WriteLine();
 Console.WriteLine(
     failures == 0
-        ? "PASS: single inventory model — TrySetSlotValue contract and player input path."
+        ? "PASS: single inventory model — TrySetSlotValue contract, player input path and equipment contributions."
         : $"FAIL: {failures} check(s) failed.");
 return failures == 0 ? 0 : 1;
 
