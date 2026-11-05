@@ -79,6 +79,16 @@ internal static class Program
         guideSpawnTileX * WorldRuntimeStateComponent.DefaultTileSize,
         guideSurfaceY - 48f);
     EntityRuntimeRegistry entities = new(worldScope: 1);
+    // 实体定义框架的宿主与生成器：玩家创建走 EntityDefinitionSystem，不再是调用处逐个 new 组件。
+    EntityDefinitionRegistry entityDefinitions = new();
+    PlayerEntityDefinition.Register(
+        entityDefinitions,
+        PlayerInventorySlotCount,
+        MaxInventoryStack,
+        PlayerRespawnDelayTicks);
+    EntityDefinitionSystem<ArchEntity> entitySpawner = new(
+        entityDefinitions,
+        new ArchEntityDefinitionHost(ecsWorld, entities));
     using NpcAiRuntime npcAi = new(ecsWorld);
     ArchEntity guide = CreateNpc(
         ecsWorld,
@@ -165,6 +175,7 @@ internal static class Program
             EntityRuntimeHandle handle = CreatePlayer(
                 ecsWorld,
                 entities,
+                entitySpawner,
                 playerSpawnPosition);
             if (!communication!.Ingress.TryBindPlayer(epoch, handle))
             {
@@ -287,25 +298,6 @@ internal static class Program
   }
 
   /// <summary>
-  /// 玩家主背包槽位定义表。Share/Inventory 由定义表驱动槽位，这里按参考客户端的主背包宽度声明，
-  /// 分类放开为 Any 以保持迁移前的"任意物品可入任意格"行为。
-  /// </summary>
-  private static InventorySlotDefinition[] PlayerInventorySlots()
-  {
-    InventorySlotDefinition[] slots = new InventorySlotDefinition[PlayerInventorySlotCount];
-    for (int index = 0; index < PlayerInventorySlotCount; index++)
-    {
-      slots[index] = new InventorySlotDefinition(
-          index,
-          InventorySlotKind.General,
-          ItemCategoryMask.Any,
-          MaxInventoryStack);
-    }
-
-    return slots;
-  }
-
-  /// <summary>
   /// 为物品表中每个已知 id 注册一条宽松定义。Share/Inventory 要求每次写入都有定义可用，
   /// 而参考客户端的逐物品 maxStack/分类数据尚未引入，因此先与迁移前行为保持一致。
   /// </summary>
@@ -406,61 +398,18 @@ internal static class Program
   private static EntityRuntimeHandle CreatePlayer(
       ArchWorld world,
       EntityRuntimeRegistry entities,
+      EntityDefinitionSystem<ArchEntity> entitySpawner,
       Vector2 spawnPosition)
   {
-    EntityUuid id = EntityUuid.Create();
-    EntityRuntimeHandle handle = entities.Allocate(id);
-    AttributeSetComponent playerAttributes = new();
-    PlayerAttributeBaseline.Apply(playerAttributes);
-    ArchEntity entity = world.Create(
-        new EntityIdentityComponent(id),
-        new EntityFactionComponent(Faction.Friendly),
-        new LifeComponent(current: 100, maximum: 100),
-        // 没有这两项时 PlayerDeathRespawnSystem 与 PlayerCombatResultSystem 在真实服务器中
-        // 匹配 0 个实体：前者永不处理死亡，后者永不排空 CombatDamageResultQueue，
-        // 对局越久玩家伤害结果堆积越多（与 AttributeTickSystem 那次的成因同类）。
-        // 对存活玩家 PlayerDeathRespawnSystem 是空操作，只在 life 归零后才登记死亡与重生计划。
-        new PlayerDeathStateComponent(),
-        new PlayerRespawnStateComponent(PlayerRespawnDelayTicks),
-        // 属性基值取自参考客户端默认值（statDefense 0、moveSpeed 1），与 null 路径等价；
-        // 没有这两项时 AttributeTickSystem 与 BuffTickSystem 在真实服务器中匹配 0 个实体。
-        playerAttributes,
-        new BuffListComponent(),
-        // 没有这份能力时 BuffAdmissionSystem.Check 返回 MissingReceptionCapability，
-        // 即使内容侧已注册定义，TryApply 也会被准入拒绝。
-        new BuffReceptionCapabilityComponent(BuffReceptionMode.AllowAll),
-        new LocationComponent(spawnPosition),
-        // 受击后无敌窗口的载体。没有它时 ProtectionWindowSystem 在真实服务器中匹配 0 个实体，
-        // 伤害协调器也不会为受击目标开始计时。
-        new Terraria.Combat.ProtectionWindowComponent(),
-        new InventoryComponent(PlayerInventorySlots()),
-        Terraria.Movement.VelocityComponent.Stationary,
-        new ColliderComponent(new Vector2(16f, 32f)),
-        new EntityCollisionCapabilityComponent(Enabled: true, Layer: 1, Mask: uint.MaxValue),
-        MovementIntent.Stop(tick: 0),
-        new WorldInteractionCapabilityComponent(
-            WorldInteractionPermission.ReadTile |
-            WorldInteractionPermission.BreakTile |
-            WorldInteractionPermission.PlaceTile),
-        WorldInteractionRequestComponent.ReadTile(
-            requestId: 0,
-            tick: 0,
-            coordinate: new WorldTileCoordinate(0, 0)),
-        new WorldInteractionResultComponent());
-    try
+    ArchEntity entity = entitySpawner.Spawn(PlayerEntityDefinition.Id);
+    // 出生坐标属于实例级输入，定义里只有占位值，这里在创建后立即覆盖。
+    world.Set(entity, new LocationComponent(spawnPosition));
+    if (!entities.TryGetHandle(entity, out EntityRuntimeHandle handle))
     {
-      entities.Register(handle, entity);
-      return handle;
+      throw new InvalidOperationException("玩家实体创建后未登记运行时句柄。");
     }
-    catch
-    {
-      if (world.IsAlive(entity))
-      {
-        world.Destroy(entity);
-      }
 
-      throw;
-    }
+    return handle;
   }
 
   private static int FindSpawnSurfaceTileY(
