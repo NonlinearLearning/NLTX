@@ -1603,26 +1603,33 @@ SlimeAiBehavior
 
 | 检查 | 结果 |
 | --- | --- |
-| 13 个可构建工程 | 0 错误 |
+| 14 个可构建工程 | 0 错误 |
 | `queueprobe` | 49 PASS / 0 FAIL |
 | `Terraria.Inventory.Verification` | 20 PASS |
 | `Terraria.Projectile.Verification` | 35 PASS |
 | `Terraria.WorldItem.Verification` | 16 PASS |
 | `Terraria.Combat.ProtectionWindow.Verification` | 5 PASS |
 | `Terraria.EntityDefinition.Verification` | 6 PASS |
+| 玩家组件集合探针（`Build/playerprobe`） | 6 PASS，18/18 组件与迁移前一致 |
+| NPC 组件集合探针（`Build/npcprobe`） | 7 PASS，21/21 组件与迁移前一致 |
 | `worldprobe` | 195 行，与基准零差异 |
 | `tickprobe` | 8 行，与基准零差异 |
 
-### 34.6 仍未完成（明确列出，避免误判为已完成）
+### 34.6 三轮内的追加收尾
 
-1. **NPC 创建仍未数据驱动**：`Program.CreateNpc` 依旧是 inline 装配。宿主已具备能力，下一步把
-   NPC 也搬进 `EntityDefinition`；否则"玩家走定义、NPC 走 inline"仍是两套路径。
-2. **#4 的装备数据没填**：玩家 59 个槽位全是 `InventorySlotKind.General`，`BuildItemDefinitions()`
+- **NPC 创建已数据驱动**：`NpcEntityDefinition` 提供向导/史莱姆两份定义，`CreateNpc` 只剩
+  生成 + 覆盖出生坐标 + 写入网络标识三步，不再需要 `EntityRuntimeRegistry` 参数（句柄由宿主登记）。
+  探针核对 21/21 组件与两种 NPC 的阵营/生命/碰撞体/最大速度/AI 行为类型/行为与档案 id/出生偏移/
+  网络槽位全部一致。至此玩家、NPC、投射物三条创建路径都走 `EntityDefinitionSystem`。
+
+### 34.7 仍未完成（明确列出，避免误判为已完成）
+
+1. **#4 的装备数据没填**：玩家 59 个槽位全是 `InventorySlotKind.General`，`BuildItemDefinitions()`
    也没有注册任何 `AttributeModifiers`。因此属性贡献系统虽已注册、单测能过，真实对局里装备仍
    不产生属性——这是数据问题，不是接线问题。
-3. **定义簇的命名空间错位**：`EntityDefinition*` 与 `IEntityDefinitionHost` 仍在
+2. **定义簇的命名空间错位**：`EntityDefinition*` 与 `IEntityDefinitionHost` 仍在
    `namespace Terraria.Combat`，但文件位于 `Share/Entity`、语义属于实体域。收编后它们已被真实
    使用，迁移到 `Terraria.Entity` 才不会有第二个"看起来像 Combat 的东西"。
-4. **`ProjectileDefinition` 保留**：它是内容定义（运动学/生命周期/攻击引用），不是实体装配的平行
+3. **`ProjectileDefinition` 保留**：它是内容定义（运动学/生命周期/攻击引用），不是实体装配的平行
    模型；收编后它的静态组合已由 `EntityDefinition` 表达。若继续"只留一套"，方向是把内容定义并进
    `EntityDefinition` 的内容字段，而不是删掉它。

@@ -1,4 +1,4 @@
-namespace Terraria.Combat;
+namespace Terraria.Entity;
 
 /// <summary>
 /// Platform adapter that atomically creates or destroys an ECS entity from a definition.

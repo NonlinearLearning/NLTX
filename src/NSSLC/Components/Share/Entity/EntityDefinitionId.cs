@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Combat;
+namespace Terraria.Entity;
 
 /// <summary>
 /// Stable business identifier for an entity definition, not a runtime entity identity.

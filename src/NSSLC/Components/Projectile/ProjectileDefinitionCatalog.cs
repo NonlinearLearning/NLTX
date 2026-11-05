@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Terraria.Combat;
+using Terraria.Entity;
 
 namespace Terraria.Projectile;
 

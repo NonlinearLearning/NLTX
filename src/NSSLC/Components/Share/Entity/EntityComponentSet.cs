@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Terraria.Combat;
+namespace Terraria.Entity;
 
 /// <summary>
 /// Independent component values produced for one entity instance. The host adapts this set to Arch.

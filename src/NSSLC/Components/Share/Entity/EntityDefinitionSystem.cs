@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Combat;
+namespace Terraria.Entity;
 
 /// <summary>
 /// Coordinates immutable definitions with a platform ECS creation boundary.

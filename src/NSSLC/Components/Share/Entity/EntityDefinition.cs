@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Terraria.Ai;
 
-namespace Terraria.Combat;
+namespace Terraria.Entity;
 
 /// <summary>
 /// Immutable business definition for an entity's initial component composition.

@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Terraria.Ai;
 
-namespace Terraria.Combat;
+namespace Terraria.Entity;
 
 /// <summary>
 /// Builds one immutable entity definition and validates its composition contract.
