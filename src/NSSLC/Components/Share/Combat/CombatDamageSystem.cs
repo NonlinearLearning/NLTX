@@ -23,11 +23,21 @@ public sealed class CombatDamageSystem
   private readonly DamageRelationSystem _relations;
   private readonly DamageMitigationSystem _mitigation;
   private readonly DamageCommitSystem _commit;
+  private readonly int _protectionWindowTicks;
 
-  public CombatDamageSystem(ArchWorld world, IEntityRuntimeResolver resolver)
+  public CombatDamageSystem(
+      ArchWorld world,
+      IEntityRuntimeResolver resolver,
+      int protectionWindowTicks = 0)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
     _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
+    if (protectionWindowTicks < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(protectionWindowTicks));
+    }
+
+    _protectionWindowTicks = protectionWindowTicks;
     _admission = new DamageAdmissionSystem();
     _relations = new DamageRelationSystem();
     _mitigation = new DamageMitigationSystem();
@@ -147,6 +157,14 @@ public sealed class CombatDamageSystem
         in request,
         in mitigation,
         out DamageAppliedReceipt receipt);
+    // 受击成功后授予无敌窗口。该组件是目标侧能力：只有挂了 ProtectionWindowComponent 的
+    // 实体才会开始计时，所以这里不需要区分玩家与 NPC。
+    if (committed == DamageCommitResult.Applied && _protectionWindowTicks > 0 &&
+        _world.Has<ProtectionWindowComponent>(target))
+    {
+      _world.Get<ProtectionWindowComponent>(target).Start(_protectionWindowTicks);
+    }
+
     return committed switch
     {
       DamageCommitResult.Applied => DamageProcessResult.Accepted(in receipt),

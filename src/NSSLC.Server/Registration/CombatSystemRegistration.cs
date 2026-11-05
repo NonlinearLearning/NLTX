@@ -25,7 +25,8 @@ public static class CombatSystemRegistration
       PhysicsContactCaptureSystem physicsContacts,
       ProjectileHitResolutionSystem projectileHits,
       ProjectileLifecycleSystem projectileLifecycle,
-      CombatAttackDefinitionCatalog attackDefinitions)
+      CombatAttackDefinitionCatalog attackDefinitions,
+      int protectionWindowTicks)
   {
     ArgumentNullException.ThrowIfNull(world);
     ArgumentNullException.ThrowIfNull(resolver);
@@ -34,6 +35,7 @@ public static class CombatSystemRegistration
     ArgumentNullException.ThrowIfNull(projectileHits);
     ArgumentNullException.ThrowIfNull(projectileLifecycle);
     ArgumentNullException.ThrowIfNull(attackDefinitions);
+    ArgumentOutOfRangeException.ThrowIfNegative(protectionWindowTicks);
 
     if (!projectileLifecycle.SharesRuntimeRegistryWith(resolver, handleResolver))
     {
@@ -62,12 +64,17 @@ public static class CombatSystemRegistration
               world,
               projectileHits,
               handleResolver)),
+      // 无敌窗口的推进必须排在本阶段最前：本帧受击新开的窗口若在同帧被推进，
+      // 实际保护时长会少一个 tick。
+      new EcsServerSystemRegistration(
+          EcsServerPhase.Commit,
+          new ProtectionWindowSystem(world)),
       new EcsServerSystemRegistration(
           EcsServerPhase.Commit,
           new CombatAttackRequestSystem(world, attackDefinitions, resolver)),
       new EcsServerSystemRegistration(
           EcsServerPhase.Commit,
-          new CombatDamageRequestSystem(world, resolver)),
+          new CombatDamageRequestSystem(world, resolver, protectionWindowTicks)),
       new EcsServerSystemRegistration(
           EcsServerPhase.Commit,
           new ProjectileDamageResultSystem(
@@ -88,10 +95,7 @@ public static class CombatSystemRegistration
       new EcsServerSystemRegistration(
           EcsServerPhase.Commit,
           new ProjectileTerminationCommitSystem(
-              world, projectileLifecycle, handleResolver)),
-      new EcsServerSystemRegistration(
-          EcsServerPhase.Commit,
-          new ProtectionWindowSystem(world))
+              world, projectileLifecycle, handleResolver))
     });
   }
 }

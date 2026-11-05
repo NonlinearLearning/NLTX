@@ -14,10 +14,14 @@ public sealed class CombatDamageRequestSystem : BaseSystem<ArchWorld, EcsServerT
 
   public CombatDamageRequestSystem(
       ArchWorld world,
-      IEntityRuntimeResolver resolver)
+      IEntityRuntimeResolver resolver,
+      int protectionWindowTicks = 0)
       : base(world ?? throw new ArgumentNullException(nameof(world)))
   {
-    _combat = new CombatDamageSystem(World, resolver ?? throw new ArgumentNullException(nameof(resolver)));
+    _combat = new CombatDamageSystem(
+        World,
+        resolver ?? throw new ArgumentNullException(nameof(resolver)),
+        protectionWindowTicks);
   }
 
   public override void Update(in EcsServerTickContext context)

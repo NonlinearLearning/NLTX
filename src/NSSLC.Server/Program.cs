@@ -37,6 +37,14 @@ internal static class Program
   /// <remarks>可由 <c>PlayerRespawnStateComponent.ConfigureDelay</c> 在运行时调整。</remarks>
   private const int PlayerRespawnDelayTicks = 600;
 
+  /// <summary>受击后无敌窗口时长（tick）。60 tick = 1 秒。</summary>
+  /// <remarks>
+  /// 参考客户端受击后的短无敌多在 60 tick 量级（同类量级还有 120/240）。
+  /// 其受击路径在 <c>Hurt</c> 内部按伤害来源分别计算，本仓库未逐行对齐，
+  /// 因此这里作为宿主层可调常量暴露，便于后续按手感调整。
+  /// </remarks>
+  private const int PlayerHurtProtectionTicks = 60;
+
   public static async Task<int> Main(string[] args)
   {
     LoadedServerWorld loadedWorld = ServerWorldLoader.Load(
@@ -377,7 +385,8 @@ internal static class Program
         physicsContacts,
         projectileHits,
         projectileLifecycle,
-        attackDefinitions));
+        attackDefinitions,
+        PlayerHurtProtectionTicks));
     registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, worldTick));
     registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, npcAiAdapter));
     // 重力投影必须先于空间求解刷新，SpatialSimulationCoordinatorSystem 直接读取 GravityStateComponent。
@@ -421,6 +430,9 @@ internal static class Program
         // 即使内容侧已注册定义，TryApply 也会被准入拒绝。
         new BuffReceptionCapabilityComponent(BuffReceptionMode.AllowAll),
         new LocationComponent(spawnPosition),
+        // 受击后无敌窗口的载体。没有它时 ProtectionWindowSystem 在真实服务器中匹配 0 个实体，
+        // 伤害协调器也不会为受击目标开始计时。
+        new Terraria.Combat.ProtectionWindowComponent(),
         new InventoryComponent(PlayerInventorySlots()),
         Terraria.Movement.VelocityComponent.Stationary,
         new ColliderComponent(new Vector2(16f, 32f)),
