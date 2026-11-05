@@ -79,27 +79,29 @@ internal static class Program
         guideSpawnTileX * WorldRuntimeStateComponent.DefaultTileSize,
         guideSurfaceY - 48f);
     EntityRuntimeRegistry entities = new(worldScope: 1);
-    // 实体定义框架的宿主与生成器：玩家创建走 EntityDefinitionSystem，不再是调用处逐个 new 组件。
+    // 实体定义框架的宿主与生成器：玩家与 NPC 创建都走 EntityDefinitionSystem，
+    // 不再是调用处逐个 new 组件。
     EntityDefinitionRegistry entityDefinitions = new();
     PlayerEntityDefinition.Register(
         entityDefinitions,
         PlayerInventorySlotCount,
         MaxInventoryStack,
         PlayerRespawnDelayTicks);
+    NpcEntityDefinition.Register(entityDefinitions);
     EntityDefinitionSystem<ArchEntity> entitySpawner = new(
         entityDefinitions,
         new ArchEntityDefinitionHost(ecsWorld, entities));
     using NpcAiRuntime npcAi = new(ecsWorld);
     ArchEntity guide = CreateNpc(
         ecsWorld,
-        entities,
+                entitySpawner,
         new Vector2(guideSpawnTileX * 16f, guideSurfaceY),
         isSlime: false,
         networkSlot: 0,
         networkType: 22);
     ArchEntity slime = CreateNpc(
         ecsWorld,
-        entities,
+                entitySpawner,
         new Vector2(slimeSpawnTileX * 16f, slimeSurfaceY),
         isSlime: true,
         networkSlot: 1,
@@ -458,60 +460,23 @@ internal static class Program
 
   private static ArchEntity CreateNpc(
       ArchWorld world,
-      EntityRuntimeRegistry entities,
+      EntityDefinitionSystem<ArchEntity> entitySpawner,
       Vector2 position,
       bool isSlime,
       byte networkSlot,
       short networkType)
   {
-    EntityUuid id = EntityUuid.Create();
-    EntityRuntimeHandle handle = entities.Allocate(id);
-    ArchEntity entity = world.Create(
-        new EntityIdentityComponent(id),
-        new EntityFactionComponent(isSlime ? Faction.Hostile : Faction.Friendly),
-        new LifeComponent(isSlime ? 50 : 250, isSlime ? 50 : 250),
-        new LocationComponent(position - new Vector2(0f, isSlime ? 18f : 40f)),
-        MovementVelocityComponent.Stationary,
-        new ColliderComponent(isSlime ? new Vector2(24f, 18f) : new Vector2(18f, 40f)),
-        GroundingComponent.Airborne,
-        new EntityCollisionCapabilityComponent(Enabled: true, Layer: 1, Mask: uint.MaxValue),
-        new MovementCapabilityComponent(
-            enabled: true,
-            maximumSpeed: isSlime ? 2.5f : 1f,
-            acceleration: isSlime ? 12f : 8f,
-            canJump: true,
-            jumpSpeed: isSlime ? 6f : 5f),
-        new GravityCapabilityComponent(Enabled: true, CanToggleDirection: false),
-        new GravityConfigurationComponent(),
-        new GravityDirectionStateComponent(GravityDirection.Normal),
-        new GravityModifierCollectionComponent(),
-        new GravityStateComponent(0.4f, 10f, GravityDirection.Normal, false, false),
-        new TileCollisionCapabilityComponent(Enabled: true),
-        new LiquidInteractionCapabilityComponent(
-            Enabled: true,
-            AffectedLiquids: LiquidContactFlags.Water | LiquidContactFlags.Honey |
-                LiquidContactFlags.Lava | LiquidContactFlags.Shimmer),
-        MovementIntent.Stop(tick: 0),
-        new NpcBehaviorStateComponent(),
-        new NpcNetworkIdentityComponent(networkSlot, generation: 1, netId: networkType),
-        isSlime ? AiComponent.For<SlimeAiBehavior>() : AiComponent.For<GuideAiBehavior>(),
-        new AiBehaviorSelectionComponent(
-            isSlime ? "Slime" : "Guide",
-            isSlime ? "slime.default" : "guide.default"));
-    try
-    {
-      entities.Register(handle, entity);
-      return entity;
-    }
-    catch
-    {
-      if (world.IsAlive(entity))
-      {
-        world.Destroy(entity);
-      }
-
-      throw;
-    }
+    ArchEntity entity = entitySpawner.Spawn(
+        isSlime ? NpcEntityDefinition.SlimeId : NpcEntityDefinition.GuideId);
+    // 出生坐标与网络标识属于实例级输入，定义里只有占位值。
+    world.Set(
+        entity,
+        new LocationComponent(
+            position - new Vector2(0f, NpcEntityDefinition.SpawnOffsetY(isSlime))));
+    world.Add(
+        entity,
+        new NpcNetworkIdentityComponent(networkSlot, generation: 1, netId: networkType));
+    return entity;
   }
 
   private static CombatAttackDefinitionCatalog CreateAttackDefinitions()
