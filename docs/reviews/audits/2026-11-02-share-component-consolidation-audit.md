@@ -1621,15 +1621,15 @@ SlimeAiBehavior
   生成 + 覆盖出生坐标 + 写入网络标识三步，不再需要 `EntityRuntimeRegistry` 参数（句柄由宿主登记）。
   探针核对 21/21 组件与两种 NPC 的阵营/生命/碰撞体/最大速度/AI 行为类型/行为与档案 id/出生偏移/
   网络槽位全部一致。至此玩家、NPC、投射物三条创建路径都走 `EntityDefinitionSystem`。
+- **定义簇命名空间已归位**：8 个类型从 `namespace Terraria.Combat` 迁到 `Terraria.Entity`
+  （文件本来就在 `Share/Entity`）。`EntityFactionComponent`/`EntityIdentityComponent`/
+  `EntitySizeComponent` 仍留在 Combat：它们是组件而非定义簇，迁移属于另一次组件域整理。
 
 ### 34.7 仍未完成（明确列出，避免误判为已完成）
 
 1. **#4 的装备数据没填**：玩家 59 个槽位全是 `InventorySlotKind.General`，`BuildItemDefinitions()`
    也没有注册任何 `AttributeModifiers`。因此属性贡献系统虽已注册、单测能过，真实对局里装备仍
    不产生属性——这是数据问题，不是接线问题。
-2. **定义簇的命名空间错位**：`EntityDefinition*` 与 `IEntityDefinitionHost` 仍在
-   `namespace Terraria.Combat`，但文件位于 `Share/Entity`、语义属于实体域。收编后它们已被真实
-   使用，迁移到 `Terraria.Entity` 才不会有第二个"看起来像 Combat 的东西"。
-3. **`ProjectileDefinition` 保留**：它是内容定义（运动学/生命周期/攻击引用），不是实体装配的平行
+2. **`ProjectileDefinition` 保留**：它是内容定义（运动学/生命周期/攻击引用），不是实体装配的平行
    模型；收编后它的静态组合已由 `EntityDefinition` 表达。若继续"只留一套"，方向是把内容定义并进
    `EntityDefinition` 的内容字段，而不是删掉它。
