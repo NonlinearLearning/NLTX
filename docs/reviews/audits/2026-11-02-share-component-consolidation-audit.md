@@ -11,10 +11,12 @@
 > 累计消除 7 组重复模型与 5 份重复助手实现，修复 2 项缺陷，
 > 并用四种独立方法（语义审计、字段形状聚类、同名助手统计、零引用+同成员枚举）交叉验证无遗漏。
 
-## 0. 当前状态与待决策清单
+## 0. 决策结果与当前状态
 
-本文件较长（32 节），这一节是给决策人的摘要。**能自主判断的事项都已做完**，
-下面每一项都卡在一个需要人拍板的问题上。
+本文件较长（34 节），这一节是给决策人的摘要。
+
+> **本节四项待决事项均已给出决策并落地**，逐项结果见 §34。
+> 下面两张表保留为当时的决策依据记录，不再代表当前状态。
 
 ### 0.1 需要决策的两项（会改变行为或架构）
 
@@ -1542,3 +1544,85 @@ SlimeAiBehavior
 | 成员集真子集 | 80 类型 | 3 组 | 0 |
 
 六种方法都收敛到同一结论：**重复模型清单已完备，剩余项全部需要人或架构拍板**。
+
+## 34. 决策落地与收尾（第 31–33 轮）
+
+§0 的四项待决事项全部得到决策并已实现。本节记录决策、改动与验证，并把仍未完成的部分
+明确列成后续项，避免"看起来做完了"。
+
+### 34.1 决策与落地对照
+
+| 事项 | 决策 | 落地 | 提交 |
+| --- | --- | --- | --- |
+| #4 未知 itemType | 拒绝未知，随后合并 `ItemStack` | 入口校验 + `WorldItemState.Item` 改为 `ItemStack` | `06da105` |
+| #4 属性贡献 | 现在注册 | `InventoryAttributeContributionSystem` 注册到 Simulation | `c48ff7c` |
+| 无敌窗口 | 受击后授予 | 伤害提交成功后开窗 + `CreatePlayer` 挂载组件 | `4da1bee` |
+| #6 定义簇 | **A** 补宿主并收编 | 宿主 + 玩家创建数据驱动 + 投射物收编 | `d4b0da1`、`d9f9c84` |
+
+### 34.2 受击无敌窗口
+
+- 时长 `PlayerHurtProtectionTicks = 60`（1 秒），作为宿主层可调常量。参考客户端受击后的短无敌
+  在 60/120/240 这一档，但 `Player.Hurt` 内部按来源分别计算，本仓库未逐行对齐，因此注释里
+  如实标注了这一点，而不是假称"与参考客户端一致"。
+- 开窗点在 `CombatDamageSystem` 的 `DamageCommitResult.Applied` 分支之后：只有真正提交了伤害
+  才计时，被拒绝的请求不会留下无敌帧。
+- **推进顺序修正**：`ProtectionWindowSystem` 原先排在 Commit 阶段最后，本帧新开的窗口会被同帧
+  推进一次，实际保护少一个 tick。现移到 Commit 最前，保护时长与配置值严格相等。
+- 验证：`Test/Terraria.Combat.ProtectionWindow.Verification`，5 条断言——首次受击生效并计时、
+  窗口内二次受击以 `ProtectionWindowActive` 被拒、系统确实在推进且到期、到期后伤害恢复。
+
+### 34.3 实体定义宿主与玩家创建
+
+- `IEntityDefinitionHost` 此前没有任何实现，`EntityDefinitionSystem` 连构造函数都调不通，这才是
+  那 8 个类型目录外零引用的真实原因；直接删除会连带丢掉"数据驱动创建"这条能力。
+- 新增 `ArchEntityDefinitionHost`：按定义生成实体、写入全部组件、按 `EntityIdentityComponent`
+  登记运行时句柄；任一步抛出都会销毁已建实体；销毁时同时摘句柄与实体。
+- **Arch 2.1.0 的 `World.AddRange(Entity, Span<object>)` 对"新建实体 + 一批组件"会越界**
+  （`BitSet.AsSpan` 抛 `IndexOutOfRangeException`）。改为按组件类型缓存泛型 `World.Add<T>`
+  委托，每种类型只反射一次。
+- 玩家创建改为 `PlayerEntityDefinition` 驱动：原先 `CreatePlayer` 里的 18 项 inline 组件清单
+  搬进不可变定义，槽位数/堆叠上限/重生延迟由组合根传入，定义不写死数值；出生坐标属于实例级
+  输入，创建后用 `World.Set` 覆盖。
+- 验证：新增 `Test/Terraria.EntityDefinition.Verification`（6 条）；并用探针逐项核对玩家组件
+  集合 18/18 与迁移前一致（`Build/playerprobe`，属构建产物、不入库）。
+
+### 34.4 投射物收编
+
+`ProjectileLifecycleSystem.TrySpawn` 里那 29 个组件的装配不再硬编码：
+
+- `ProjectileEntityDefinitions` 把与实例无关的 22 项表达成 `EntityDefinition`（身份由工厂每次
+  新建，运动学/生命周期/碰撞策略/攻击引用/11 项空间前置条件来自内容定义）。
+- `ProjectileDefinitionCatalog.Register` 成对登记内容定义与实体组合定义，避免"有内容但没有
+  生成路径"的中间态。
+- `TrySpawn` 只剩 7 项实例级写入（位置/速度/阵营/归属/尺寸/碰撞体/来源），句柄登记与回滚交给
+  宿主；失败时先摘句柄再销毁实体。
+- 顺带消掉了原注释里的"泛型 Create 有类型参数上限"两段式装配：定义逐项装配，绕开该限制。
+- 验证：投射物断言 34 → 35（新增组件完整性聚合检查），全绿。
+
+### 34.5 本轮验证矩阵
+
+| 检查 | 结果 |
+| --- | --- |
+| 13 个可构建工程 | 0 错误 |
+| `queueprobe` | 49 PASS / 0 FAIL |
+| `Terraria.Inventory.Verification` | 20 PASS |
+| `Terraria.Projectile.Verification` | 35 PASS |
+| `Terraria.WorldItem.Verification` | 16 PASS |
+| `Terraria.Combat.ProtectionWindow.Verification` | 5 PASS |
+| `Terraria.EntityDefinition.Verification` | 6 PASS |
+| `worldprobe` | 195 行，与基准零差异 |
+| `tickprobe` | 8 行，与基准零差异 |
+
+### 34.6 仍未完成（明确列出，避免误判为已完成）
+
+1. **NPC 创建仍未数据驱动**：`Program.CreateNpc` 依旧是 inline 装配。宿主已具备能力，下一步把
+   NPC 也搬进 `EntityDefinition`；否则"玩家走定义、NPC 走 inline"仍是两套路径。
+2. **#4 的装备数据没填**：玩家 59 个槽位全是 `InventorySlotKind.General`，`BuildItemDefinitions()`
+   也没有注册任何 `AttributeModifiers`。因此属性贡献系统虽已注册、单测能过，真实对局里装备仍
+   不产生属性——这是数据问题，不是接线问题。
+3. **定义簇的命名空间错位**：`EntityDefinition*` 与 `IEntityDefinitionHost` 仍在
+   `namespace Terraria.Combat`，但文件位于 `Share/Entity`、语义属于实体域。收编后它们已被真实
+   使用，迁移到 `Terraria.Entity` 才不会有第二个"看起来像 Combat 的东西"。
+4. **`ProjectileDefinition` 保留**：它是内容定义（运动学/生命周期/攻击引用），不是实体装配的平行
+   模型；收编后它的静态组合已由 `EntityDefinition` 表达。若继续"只留一套"，方向是把内容定义并进
+   `EntityDefinition` 的内容字段，而不是删掉它。
