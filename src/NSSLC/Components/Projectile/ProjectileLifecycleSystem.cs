@@ -29,6 +29,7 @@ public sealed class ProjectileLifecycleSystem
   private readonly ArchWorld _world;
   private readonly ProjectileDefinitionCatalog _definitions;
   private readonly ProjectileRuntimeRegistry _registry;
+  private readonly EntityDefinitionSystem<ArchEntity> _spawner;
   private ProjectileTerminationQueueComponent? _terminations;
 
   public ProjectileLifecycleSystem(
@@ -39,6 +40,10 @@ public sealed class ProjectileLifecycleSystem
     _world = world ?? throw new ArgumentNullException(nameof(world));
     _definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
     _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+    // 生成走共享的实体定义宿主：内容定义在目录里已经和实体组合定义成对登记。
+    _spawner = new EntityDefinitionSystem<ArchEntity>(
+        _definitions.EntityDefinitions,
+        new ArchEntityDefinitionHost(_world, _registry.EntityRegistry));
   }
 
   private ProjectileTerminationQueueComponent Terminations =>
@@ -72,81 +77,35 @@ public sealed class ProjectileLifecycleSystem
           "The projectile owner is not registered in the current world.");
     }
 
-    EntityUuid id = EntityUuid.Create();
-    EntityRuntimeHandle handle = _registry.Allocate(id);
-    EntityIdentityComponent identity = new(id);
-    EntityFactionComponent faction = new(request.Faction);
-    LocationComponent location = new(request.Position);
-    MovementVelocityComponent velocity = new(request.Velocity);
-    ProjectileOwnerComponent owner = new(request.Owner);
-    ProjectileDispositionStateComponent disposition =
-        new(ProjectileDisposition.Active);
-    ArchEntity entity = _world.Create(
-        identity,
-        faction,
-        request.Size,
-        location,
-        velocity,
-        request.Collider,
-        definition.Collision,
-        owner,
-        request.Source,
-        definition.Behavior,
-        new ProjectileBehaviorStateComponent(0),
-        definition.Kinematics,
-        definition.Lifetime,
-        new ProjectilePenetrationStateComponent(),
-        definition.Attributes.Clone(),
-        new ProjectileHitImmunityStateComponent(),
-        definition.CollisionPolicy,
-        new ProjectileAttackDefinitionReferenceComponent(definition.AttackDefinitionId),
-        disposition);
+    EntityDefinition entityDefinition = _definitions.GetEntityDefinition(request.DefinitionId);
+    ArchEntity entity = _spawner.Spawn(entityDefinition.Id);
+    if (!_registry.TryGetHandle(entity, out EntityRuntimeHandle handle))
+    {
+      throw new InvalidOperationException("投射物实体创建后未登记运行时句柄。");
+    }
 
     try
     {
-      // 空间运动组件分两步添加：Arch 的泛型 Create 有类型参数上限，原来 19 项就已接近，
-      // 再塞 9 项会超出上限，编译器退化到 ComponentType 重载后全盘报错。
-      //
-      // 这一组是共享 SpatialSimulationCoordinatorSystem 的前置条件：查询要求
-      // Location/Velocity/Collider/Grounding，回调里再 TryGet
-      // MovementCapability/GravityCapability/GravityState/TileCollisionCapability/
-      // LiquidInteractionCapability/MovementIntent。缺任何一项都会被静默跳过，
-      // 投射物就永远不动。
+      // 实例级输入：出生位置、速度、阵营、归属、尺寸与碰撞体只有调用方知道；
+      // 静态组合（身份、运动学、生命周期、碰撞策略、攻击定义引用、空间前置条件）
+      // 已由内容定义配对登记的 EntityDefinition 提供。
       _world.Add(
           entity,
-          GroundingComponent.Airborne,
-          // acceleration 必须为 0：MovementIntent.Stop 的 HasDesiredVelocity 为 true、
-          // 目标速度为零，非零加速度会让 MoveTowards 把投射物逐帧减速到静止。
-          // maximumSpeed 取 0 表示不钳制（SpatialSimulationSystem 只在 >0 时生效）。
-          new MovementCapabilityComponent(
-              enabled: true,
-              maximumSpeed: 0f,
-              acceleration: 0f,
-              canJump: false,
-              jumpSpeed: 0f,
-              mode: MovementMode.Flight),
-          // Flight 模式跳过重力积分，因此投射物按出生速度匀速直线飞行。
-          // 逐类型重力需要 ProjectileDefinition 增加内容字段，届时再从定义取值；
-          // 现在定义里没有重力，硬编码一个有值才是凭空造内容。
-          new GravityCapabilityComponent(Enabled: false, CanToggleDirection: false),
-          new GravityConfigurationComponent(),
-          new GravityDirectionStateComponent(GravityDirection.Normal),
-          new GravityModifierCollectionComponent(),
-          new GravityStateComponent(0.4f, 10f, GravityDirection.Normal, false, false),
-          new TileCollisionCapabilityComponent(Enabled: true),
-          new LiquidInteractionCapabilityComponent(
-              Enabled: true,
-              AffectedLiquids: LiquidContactFlags.Water | LiquidContactFlags.Honey |
-                  LiquidContactFlags.Lava | LiquidContactFlags.Shimmer),
-          MovementIntent.Stop(tick: 0));
+          new EntityFactionComponent(request.Faction),
+          request.Size,
+          new LocationComponent(request.Position),
+          new MovementVelocityComponent(request.Velocity),
+          new ProjectileOwnerComponent(request.Owner),
+          request.Source,
+          request.Collider);
 
-      _registry.RegisterProjectile(handle, entity);
       return new ProjectileSpawnResult(
           ProjectileLifecycleStatus.Applied, handle, entity, null);
     }
     catch
     {
       // Creation rollback is structural transaction cleanup; normal termination is committed below.
+      _registry.Remove(handle, out _);
       if (_world.IsAlive(entity))
       {
         _world.Destroy(entity);

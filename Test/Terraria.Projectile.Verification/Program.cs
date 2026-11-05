@@ -82,6 +82,40 @@ if (!spawned)
 
 ArchEntity projectile = result.Entity;
 
+// 定义侧与实例侧组件的完整清单：收编到 EntityDefinition 之后仍然一项不少。
+// 这份清单对应 TrySpawn 迁移前的组件类型集合，少任何一项都说明装配被静默丢掉。
+(string Name, bool Present)[] spawnComponents =
+[
+  ("EntityIdentityComponent", world.Has<EntityIdentityComponent>(projectile)),
+  ("EntityFactionComponent", world.Has<EntityFactionComponent>(projectile)),
+  ("EntitySizeComponent", world.Has<EntitySizeComponent>(projectile)),
+  ("EntityCollisionCapabilityComponent", world.Has<EntityCollisionCapabilityComponent>(projectile)),
+  ("AiBehaviorSelectionComponent", world.Has<AiBehaviorSelectionComponent>(projectile)),
+  ("ProjectileBehaviorStateComponent", world.Has<ProjectileBehaviorStateComponent>(projectile)),
+  ("ProjectileKinematicsStateComponent", world.Has<ProjectileKinematicsStateComponent>(projectile)),
+  ("ProjectileLifetimeStateComponent", world.Has<ProjectileLifetimeStateComponent>(projectile)),
+  ("ProjectilePenetrationStateComponent", world.Has<ProjectilePenetrationStateComponent>(projectile)),
+  ("ProjectileHitImmunityStateComponent", world.Has<ProjectileHitImmunityStateComponent>(projectile)),
+  ("ProjectileCollisionPolicyComponent", world.Has<ProjectileCollisionPolicyComponent>(projectile)),
+  ("ProjectileAttackDefinitionReferenceComponent", world.Has<ProjectileAttackDefinitionReferenceComponent>(projectile)),
+  ("ProjectileDispositionStateComponent", world.Has<ProjectileDispositionStateComponent>(projectile)),
+  ("AttributeSetComponent", world.Has<AttributeSetComponent>(projectile)),
+  ("ProjectileOwnerComponent", world.Has<ProjectileOwnerComponent>(projectile)),
+  ("ProjectileSourceMetadataComponent", world.Has<ProjectileSourceMetadataComponent>(projectile)),
+  ("MovementIntent", world.Has<MovementIntent>(projectile))
+];
+
+string[] missingComponents = Array.ConvertAll(
+    Array.FindAll(spawnComponents, static component => !component.Present),
+    static component => component.Name);
+Check(
+    "spawn-carries-definition-and-instance-components",
+    missingComponents.Length == 0,
+    missingComponents.Length == 0
+        ? $"{spawnComponents.Length}/{spawnComponents.Length} 组件齐全"
+        : "缺失: " + string.Join(", ", missingComponents));
+
+
 // 协调系统的查询要求（WithAll）
 Check("has-location", world.Has<LocationComponent>(projectile), "LocationComponent");
 Check("has-velocity", world.Has<VelocityComponent>(projectile), "VelocityComponent");
