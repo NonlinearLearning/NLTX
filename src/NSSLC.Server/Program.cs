@@ -23,6 +23,8 @@ using Terraria.Relationships;
 using Terraria.World;
 using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
 
+using Terraria.Chat;
+
 namespace NSSLC.Server;
 
 internal static class Program
@@ -49,6 +51,11 @@ internal static class Program
   {
     LoadedServerWorld loadedWorld = ServerWorldLoader.Load(
         args.Length > 0 ? args[0] : null);
+    ServerLog.Info(
+        "ecs.world.tile-entities",
+        $"chests={loadedWorld.TileEntities.ChestCount} signs={loadedWorld.TileEntities.SignCount} " +
+        $"tileEntities={loadedWorld.TileEntities.TileEntityCount} " +
+        $"pylons={loadedWorld.TileEntities.CountTileEntities(WorldTileEntityKind.TeleportationPylon)}");
     int worldWidth = loadedWorld.Header.MaxTilesX;
     int worldHeight = loadedWorld.Header.MaxTilesY;
     using ArchWorld ecsWorld = ArchWorld.Create();
@@ -126,6 +133,19 @@ internal static class Program
     _ = ecsWorld.Create(new ProjectileSpawnQueueComponent());
     // 世界物品变更请求队列：跨域只表达意图，由 World 域自己执行。
     _ = ecsWorld.Create(new WorldItemRequestQueueComponent());
+    // 世界物品拾取请求队列：World 只提出"这件物品可以捡"，Inventory 决定能收下多少。
+    _ = ecsWorld.Create(new InventoryPickupRequestQueueComponent());
+    // 刷怪事实队列：NPC 域创建实体，Network 域分配客户端槽位。
+    _ = ecsWorld.Create(new NpcSpawnFactQueueComponent());
+    // 箱子/告示牌/Tile 实体交互：Communication 只提交意图，World 域持有并执行。
+    _ = ecsWorld.Create(new WorldTileEntityRequestQueueComponent());
+    _ = ecsWorld.Create(new WorldTileEntityResultQueueComponent());
+    // 物品使用意图与结果：Communication 只提交意图，Player 域执行使用/弹药/通道。
+    _ = ecsWorld.Create(new PlayerItemUseRequestQueueComponent());
+    _ = ecsWorld.Create(new PlayerItemUseFactQueueComponent());
+    // 聊天意图与广播事实：Communication 收文本帧，Chat 域判定，Network 投影成文本模块包。
+    _ = ecsWorld.Create(new ChatMessageRequestQueueComponent());
+    _ = ecsWorld.Create(new ChatBroadcastQueueComponent());
     // 生命恢复请求队列：Player 决定复活，Combat 执行满血写入。
     _ = ecsWorld.Create(new LifeRestoreRequestQueueComponent());
     // 玩家输入请求队列：Communication 只翻译意图，Player 域执行坐标与物品栏写入。
@@ -163,6 +183,36 @@ internal static class Program
         entities,
         attackDefinitions);
     SpatialSimulationCoordinatorSystem spatialSimulation = new(ecsWorld, worldRuntime);
+    // 刷怪表：目前只有史莱姆可被创建，表中权重与网络类型即 Version4 的出生判定常量。
+    NpcSpawnTable npcSpawnTable = new(
+    [
+      new NpcSpawnCandidate(
+          NpcEntityDefinition.SlimeId,
+          NetworkType: 1,
+          AiComponent.For<SlimeAiBehavior>(),
+          Weight: 1),
+    ]);
+    // 困难模式/血月/日食的推进尚未建模，这里只带入存档头与时间事实。
+    NpcSpawnEnvironment npcSpawnEnvironment = new(
+        HardMode: false,
+        WorldSurfaceTileY: (int)loadedWorld.Environment.WorldSurface,
+        RockLayerTileY: (int)loadedWorld.Environment.RockLayer,
+        UnderworldTileY: Math.Clamp(
+            worldHeight - 205,
+            (int)loadedWorld.Environment.RockLayer,
+            worldHeight),
+        DayTime: loadedWorld.Environment.DayTime,
+        BloodMoon: false,
+        Eclipse: false);
+    NpcSpawnSystem npcSpawn = new(
+        ecsWorld,
+        worldRuntime,
+        entities,
+        entitySpawner,
+        npcAi,
+        npcSpawnTable,
+        npcSpawnEnvironment,
+        worldSeed: WorldSeed(loadedWorld.Header.UniqueId));
     Dictionary<SessionEpoch, EntityRuntimeHandle> sessions = [];
     object lifecycleGate = new();
 
@@ -217,6 +267,7 @@ internal static class Program
 
     IReadOnlyList<EcsServerSystemRegistration> registrations = BuildRegistrations(
         ecsWorld,
+        worldRuntime,
         entities,
         attackDefinitions,
         physicsContacts,
@@ -229,6 +280,11 @@ internal static class Program
         inventories,
         npcAiAdapter,
         spatialSimulation,
+        npcSpawn,
+        loadedWorld.TileEntities,
+        CreateItemUseDefinitions(),
+        new ChatStore(),
+        CreateChatCommands(),
         attributeTick,
         attributeContributions,
         buffTick,
@@ -319,8 +375,78 @@ internal static class Program
     return registry;
   }
 
+  /// <summary>
+  /// 物品使用表：射速、动画、连射、通道与弹药。数值取自参考客户端对应物品的
+  /// <c>useTime/useAnimation/autoReuse/channel/useAmmo</c> 量级，尚未逐物品从物品表导入。
+  /// </summary>
+  /// <remarks>
+  /// 只登记少量示范物品：表格结构（每 id 一条不可变档案）才是本次引入的能力，
+  /// 全表导入需要物品表数据，属于后续工作。蓝量（<c>ManaCost</c>）随档案传递但暂不扣减。
+  /// </remarks>
+  private static ItemUseDefinitionCatalog CreateItemUseDefinitions()
+  {
+    ItemUseDefinitionCatalog definitions = new();
+    definitions.Register(new ItemUseDefinition(
+        ItemId.Torch,
+        UseTime: 15,
+        UseAnimation: 15,
+        AutoReuse: true,
+        Channel: false,
+        UseAmmo: ItemId.None,
+        ConsumeAmmo: false,
+        ManaCost: 0));
+    definitions.Register(new ItemUseDefinition(
+        ItemId.CopperBow,
+        UseTime: 25,
+        UseAnimation: 25,
+        AutoReuse: false,
+        Channel: false,
+        UseAmmo: ItemId.WoodenArrow,
+        ConsumeAmmo: true,
+        ManaCost: 0));
+    definitions.Register(new ItemUseDefinition(
+        ItemId.MagicMissile,
+        UseTime: 12,
+        UseAnimation: 12,
+        AutoReuse: true,
+        Channel: true,
+        UseAmmo: ItemId.None,
+        ConsumeAmmo: false,
+        ManaCost: 10));
+    definitions.Seal();
+    return definitions;
+  }
+
+  /// <summary>
+  /// 聊天命令表：名字对齐参考客户端的命令类（<c>SayChatCommand</c>、<c>HelpCommand</c>、
+  /// <c>ListPlayersCommand</c>、<c>RollCommand</c>）。属性名在参考 dump 中被裁剪，这里统一用小写。
+  /// </summary>
+  private static ChatCommandCatalog CreateChatCommands()
+  {
+    ChatCommandCatalog commands = new();
+    commands.Register(new ChatCommandDefinition(
+        ChatCommandRules.DefaultCommandName,
+        "Say something in world chat.",
+        RequiresOperator: false));
+    commands.Register(new ChatCommandDefinition(
+        "help",
+        "List the commands this server understands.",
+        RequiresOperator: false));
+    commands.Register(new ChatCommandDefinition(
+        "playing",
+        "Show how many players are online.",
+        RequiresOperator: false));
+    commands.Register(new ChatCommandDefinition(
+        "roll",
+        "Roll a number from 1 to 100.",
+        RequiresOperator: false));
+    commands.Seal();
+    return commands;
+  }
+
   private static IReadOnlyList<EcsServerSystemRegistration> BuildRegistrations(
       ArchWorld world,
+      WorldRuntime worldRuntime,
       EntityRuntimeRegistry entities,
       CombatAttackDefinitionCatalog attackDefinitions,
       PhysicsContactCaptureSystem physicsContacts,
@@ -333,6 +459,11 @@ internal static class Program
       InventorySystem inventories,
       NpcAiIntentAdapter npcAiAdapter,
       SpatialSimulationCoordinatorSystem spatialSimulation,
+      NpcSpawnSystem npcSpawn,
+      WorldTileEntityStore tileEntities,
+      ItemUseDefinitionCatalog itemUseDefinitions,
+      ChatStore chatStore,
+      ChatCommandCatalog chatCommands,
       AttributeTickSystem attributeTick,
       InventoryAttributeContributionSystem attributeContributions,
       BuffTickSystem buffTick,
@@ -354,6 +485,10 @@ internal static class Program
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Projection,
         npcProjection));
+    // 聊天投影紧挨 NPC 投影：两者都只写 outbound 意图，顺序不影响语义。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Projection,
+        new ChatNetworkProjectionSystem(world, entities)));
     // 世界物品请求跑两遍：投影之前一遍，消化准备阶段收包产生的请求（保持同帧生效）；
     // 投影之后一遍，消化投影自身写出的掉落物请求。队列取空后为空，跑两遍无副作用。
     registrations.Add(new EcsServerSystemRegistration(
@@ -382,6 +517,40 @@ internal static class Program
         attackDefinitions,
         PlayerHurtProtectionTicks));
     registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, worldTick));
+    // 世界物品 tick 紧跟世界时间推进：本 tick 的重力/碰撞结果不依赖后续系统，
+    // 但拾取请求必须在同一 tick 的 Inventory 步骤之前入队。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        new WorldItemTickSystem(
+            world,
+            worldItems,
+            worldRuntime,
+            worldRuntime,
+            entities,
+            MaxInventoryStack)));
+    // 拾取请求由 Inventory 域结算并回写 Consume 请求；投影阶段之前跑完，同帧内一致。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        new InventoryPickupRequestSystem(world, entities, inventories)));
+    // 刷怪在移动求解之前跑：本 tick 创建的 NPC 从下一 tick 起由 AI 与空间求解驱动，
+    // 避免在同一个 tick 里对新实体重复计算移动。
+    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, npcSpawn));
+    // 槽位分配必须早于 Projection 阶段的 NpcNetworkProjectionSystem，否则新 NPC 本 tick 不可见。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        new NpcNetworkIdentitySystem(world)));
+    // 箱子/告示牌意图在投影之前落地，开箱状态与文本改动同 tick 可被读取。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        new WorldTileEntityRequestSystem(world, tileEntities)));
+    // 物品使用在投影之前：本 tick 的射击事实留给投射物/战斗域消费。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        new PlayerItemUseSystem(world, entities, itemUseDefinitions, inventories)));
+    // 聊天：能力组件决定谁能说话，系统的广播事实交给 Projection 阶段的聊天投影。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        new ChatSystem(world, entities, chatCommands, chatStore)));
     registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, npcAiAdapter));
     // 重力投影必须先于空间求解刷新，SpatialSimulationCoordinatorSystem 直接读取 GravityStateComponent。
     registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, gravityTick));
@@ -487,6 +656,18 @@ internal static class Program
         new DamagePayload(baseDamage: 10, type: DamageType.Melee)));
     definitions.Seal();
     return definitions;
+  }
+
+  /// <summary>把存档 GUID 折成一个确定性的世界种子，供刷怪随机流使用。</summary>
+  /// <remarks>同一存档重放同一 tick 序列会得到同一批出生结果，便于比对日志与回放。</remarks>
+  private static long WorldSeed(Guid? uniqueId)
+  {
+    if (uniqueId is not Guid id || id == Guid.Empty)
+    {
+      return 1;
+    }
+
+    return BitConverter.ToInt64(id.ToByteArray(), 0);
   }
 
   private static async Task RunTicksAsync(EcsServer server, CancellationToken cancellationToken)

@@ -8,7 +8,7 @@
     <RootNamespace>Terraria.NonAuthoritative</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\MinimalImplementation\Contracts\MinimalImplementation.Contracts.csproj" />
+    <ProjectReference Include="..\WorldData\NSSLC.Infrastructure.WorldData.csproj" />
     <ProjectReference Include="..\WorldGeneration\NSSLC.WorldGeneration.csproj" />
     <Compile Include="Generation\GeneratedWorldDocumentProjection.cs" />
     <Compile Include="Platform\WorldFileStoreAdapter.cs" />

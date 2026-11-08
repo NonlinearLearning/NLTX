@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyName>NSSLC.Infrastructure.WorldData</AssemblyName>
+    <RootNamespace>Terraria.NonAuthoritative</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- 领域 → 基础设施方向留给调用方；这里只用世界域的公开事实表（WorldFacts）。 -->
+    <ProjectReference Include="..\..\NSSLC\Terraria.Components.csproj" />
+  </ItemGroup>
+</Project>

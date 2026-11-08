@@ -1,6 +1,7 @@
 using System;
 using System.Numerics;
 using Terraria.Attributes;
+using Terraria.Chat;
 using Terraria.Combat;
 using Terraria.Entity;
 using Terraria.Inventory;
@@ -55,6 +56,8 @@ public static class PlayerEntityDefinition
         // 伤害协调器也不会为受击目标开始计时。
         .Add(() => new ProtectionWindowComponent())
         .Add(() => new InventoryComponent(CreateInventory(inventorySlotCount, maxStack)))
+        // 声明这份能力，玩家就能在聊天里说话（Chat 域只认这个组件，不查会话或实体类别）。
+        .Add(() => ChatSenderComponent.Player())
         .Add(() => MovementVelocityComponent.Stationary)
         .Add(() => new ColliderComponent(new Vector2(16f, 32f)))
         .Add(() => new EntityCollisionCapabilityComponent(

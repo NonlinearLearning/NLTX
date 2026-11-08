@@ -1,4 +1,5 @@
-using MinimalImplementation.Server.World;
+using Terraria.WorldData;
+using Terraria.Item;
 using Terraria.Liquid;
 using Terraria.NonAuthoritative.Persistence;
 using Terraria.NonAuthoritative.WorldStorage;
@@ -19,6 +20,9 @@ internal sealed class LoadedServerWorld
   public required IReadOnlyList<WorldRuntimeTile> Tiles { get; init; }
 
   public required IReadOnlyList<bool> FrameImportant { get; init; }
+
+  /// <summary>箱子、告示牌与 Tile 实体：世界文件里已有的服务器运算数据。</summary>
+  public required WorldTileEntityStore TileEntities { get; init; }
 }
 
 internal static class ServerWorldLoader
@@ -65,12 +69,12 @@ internal static class ServerWorldLoader
         decoded.Document,
         WorldFileTilePayloadSection.SectionId);
     WorldFacts facts = WorldFacts.CreateVersion4();
-    IReadOnlyList<MinimalImplementation.Server.World.WorldTile> decodedTiles =
+    IReadOnlyList<WorldTile> decodedTiles =
         new WorldFileTilePayloadDecoder().Decode(tilePayload, facts);
     var tiles = new WorldRuntimeTile[decodedTiles.Count];
     for (int index = 0; index < decodedTiles.Count; index++)
     {
-      MinimalImplementation.Server.World.WorldTile tile = decodedTiles[index];
+      WorldTile tile = decodedTiles[index];
       LiquidContactFlags liquid = tile.LiquidAmount == 0 ? LiquidContactFlags.None : tile.LiquidType switch
       {
         LiquidType.Water => LiquidContactFlags.Water,
@@ -104,8 +108,83 @@ internal static class ServerWorldLoader
       Header = header,
       Environment = environment,
       Tiles = Array.AsReadOnly(tiles),
-      FrameImportant = CreateLatestClientFrameImportance(tilePayload.FrameImportant)
+      FrameImportant = CreateLatestClientFrameImportance(tilePayload.FrameImportant),
+      TileEntities = LoadTileEntities(decoded.Document)
     };
+  }
+
+  /// <summary>解码世界文件里的箱子、告示牌与 Tile 实体段。</summary>
+  /// <remarks>
+  /// 三段在参考客户端里都参与服务器运算：箱子内容与告示牌文本要能读改，Tile 实体决定传送塔、
+  /// 训练假人、物品展示框等位置。缺段视为空表，与参考实现"没有记录就没有实体"一致。
+  /// </remarks>
+  private static WorldTileEntityStore LoadTileEntities(WorldPersistenceDocument document)
+  {
+    WorldFileChestSection chestSection =
+        Optional<WorldFileChestSection>(document, WorldFileChestSection.SectionId)
+        ?? WorldFileChestSection.Empty;
+    WorldFileSignSection signSection =
+        Optional<WorldFileSignSection>(document, WorldFileSignSection.SectionId)
+        ?? WorldFileSignSection.Empty;
+    WorldFileTileEntitySection tileEntitySection =
+        Optional<WorldFileTileEntitySection>(document, WorldFileTileEntitySection.SectionId)
+        ?? new WorldFileTileEntitySection(0, ReadOnlyMemory<byte>.Empty);
+
+    var chests = new List<WorldChestState>(chestSection.Chests.Count);
+    for (int index = 0; index < chestSection.Chests.Count; index++)
+    {
+      WorldFileChestRecord record = chestSection.Chests[index];
+      WorldChestState chest = new(
+          (short)index,
+          new WorldTileCoordinate(record.X, record.Y),
+          record.Name);
+      for (int slot = 0; slot < record.Items.Count && slot < WorldChestState.SlotCount; slot++)
+      {
+        WorldFileChestItem item = record.Items[slot];
+        if (item.IsEmpty || !ItemIdRules.TryFromNetworkType(item.Type, out ItemId itemId))
+        {
+          continue;
+        }
+
+        chest.TrySetItem(slot, new ItemStack(itemId, item.Stack, item.Prefix));
+      }
+
+      chests.Add(chest);
+    }
+
+    var signs = new List<WorldSignState>(signSection.Signs.Count);
+    for (int index = 0; index < signSection.Signs.Count; index++)
+    {
+      WorldFileSignRecord record = signSection.Signs[index];
+      signs.Add(new WorldSignState(
+          (short)index,
+          new WorldTileCoordinate(record.X, record.Y),
+          record.Text));
+    }
+
+    WorldTileEntityState[] entities = [];
+    if (tileEntitySection.EntityCount > 0 &&
+        !WorldTileEntityRecordDecoder.TryDecode(
+            tileEntitySection.SerializedRecords,
+            tileEntitySection.EntityCount,
+            out entities,
+            out string failure))
+    {
+      throw new InvalidDataException($"The tile entity section could not be decoded: {failure}");
+    }
+
+    WorldTileEntityStore store = new();
+    store.Load(chests, signs, entities);
+    return store;
+  }
+
+  private static TSection? Optional<TSection>(WorldPersistenceDocument document, string sectionId)
+      where TSection : class
+  {
+    return document.TryGetSection(sectionId, out WorldLoadSection<TSection> section) &&
+        section.IsPresent
+        ? section.Value
+        : null;
   }
 
   private static IReadOnlyList<bool> CreateLatestClientFrameImportance(

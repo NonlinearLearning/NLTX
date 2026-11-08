@@ -11,6 +11,8 @@ using Terraria.Player;
 using Terraria.Relationships;
 using Terraria.World;
 
+using Terraria.Chat;
+
 namespace Terraria.Communication;
 
 /// <summary>
@@ -33,6 +35,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
   public const byte ReleaseItemOwnershipMessageId = 39;
   public const byte SyncItemDespawnMessageId = 151;
   public const byte DamageNpcMessageId = 28;
+  public const byte NetModulesMessageId = 82;
 
   private readonly ArchWorld _world;
   private readonly IEntityRuntimeResolver _runtimeResolver;
@@ -42,6 +45,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
   private WorldItemRequestQueueComponent? _itemRequests;
   private PlayerInputRequestQueueComponent? _playerInputs;
   private MovementIntentRequestQueueComponent? _movementIntents;
+  private ChatMessageRequestQueueComponent? _chatRequests;
 
   public GameCommunicationAdapter(
       ArchWorld world,
@@ -83,6 +87,14 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
   private MovementIntentRequestQueueComponent MovementIntents =>
       _movementIntents ??= MovementIntentRequestQueue.Require(_world);
 
+  /// <summary>
+  /// Chat request queue, resolved on first use. Packet handling runs inside a
+  /// <see cref="World.Query"/> callback, so the queue must already exist — resolving it here keeps
+  /// that resolution out of the session query.
+  /// </summary>
+  private ChatMessageRequestQueueComponent ChatRequests =>
+      _chatRequests ??= ChatMessageRequestQueue.Require(_world);
+
   public IReadOnlyList<OutboundPacketIntent> Handle(
       InboundCommunicationPacket packet,
       CommunicationSessionComponent session,
@@ -115,6 +127,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
         SyncItemDespawnMessageId => ApplyWorldItemRetirement(
             player, session, payload),
         DamageNpcMessageId => ApplyDamageNpc(playerHandle, payload, tick),
+        NetModulesMessageId => ApplyChatMessage(player, playerHandle, payload),
         _ => Array.Empty<OutboundPacketIntent>()
       };
     }
@@ -450,6 +463,28 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
           Actor: session.Epoch));
     }
 
+    return Array.Empty<OutboundPacketIntent>();
+  }
+
+  /// <summary>Packet 82 (NetModules) carrying the text module: one client chat line.</summary>
+  /// <remarks>
+  /// The line is accepted only when the sender declares <see cref="ChatSenderComponent"/>; the Chat
+  /// domain owns sanitizing, command dispatch and delivery. The inbound frame is a text-command name
+  /// plus the typed text — see <see cref="ChatNetTextFrame"/> for the provenance of that layout.
+  /// </remarks>
+  private IReadOnlyList<OutboundPacketIntent> ApplyChatMessage(
+      ArchEntity player,
+      EntityRuntimeHandle playerHandle,
+      ReadOnlySpan<byte> payload)
+  {
+    if (!_world.Has<ChatSenderComponent>(player) ||
+        !ChatNetTextFrame.TryDecodeClientMessage(payload, out string commandName, out string text) ||
+        !ChatChannelRules.TryResolve(commandName, out ChatChannel channel))
+    {
+      return Array.Empty<OutboundPacketIntent>();
+    }
+
+    ChatRequests.Enqueue(new ChatMessageRequest(playerHandle, channel, text));
     return Array.Empty<OutboundPacketIntent>();
   }
 
