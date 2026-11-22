@@ -52,7 +52,7 @@
 枚举身份稳定；生产代码中已无写入，也没有任何读取路径（当前护盾读 `ShieldPoolComponent`，
 冷却读 `CooldownComponent`，呼吸读 `BreathComponent`，坐骑身份读 `MountStateComponent`）。
 删除这些枚举成员会把其后的键整体前移，改变已有序列化身份，因此本轮保留并在
-[执行计划](../../../docs/plans/2026-11-20-attribute-system-execution-plan.md) 记为技术债。
+[执行计划](../../../../docs/plans/2026-11-20-attribute-system-execution-plan.md) 记为技术债。
 
 ```csharp
 AttributeContributionSet set = new(

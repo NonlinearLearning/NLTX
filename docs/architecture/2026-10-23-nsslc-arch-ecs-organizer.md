@@ -55,11 +55,11 @@ Arch Core 负责实体、组件存储和查询。它不会从组件自动发现�
 
 实现文件位于：
 
-- `src/NSSLC/Entity/System/EcsServer.cs`
-- `src/NSSLC/Entity/System/EcsServerPhase.cs`
-- `src/NSSLC/Entity/System/EcsServerSystemRegistration.cs`
-- `src/NSSLC/Entity/System/EcsServerTickContext.cs`
-- `src/NSSLC/Entity/Command/EcsServerCommandBuffer.cs`
+- `src/NSSLC/Share/Entity/System/EcsServer.cs`
+- `src/NSSLC/Share/Entity/System/EcsServerPhase.cs`
+- `src/NSSLC/Share/Entity/System/EcsServerSystemRegistration.cs`
+- `src/NSSLC/Share/Entity/System/EcsServerTickContext.cs`
+- `src/NSSLC/Share/Entity/Command/EcsServerCommandBuffer.cs`
 
 阶段化装配：
 

@@ -18,7 +18,7 @@
 
 ## 基线（2026-11-22）
 
-- 活动项目 `src/NSSLC/Terraria.Components.csproj`（net10.0）；`src/NSSLC/` 直挂 17 个领域，无 `Components/`、`Share/` 中间层。
+- 活动项目 `src/NSSLC/Terraria.Components.csproj`（net10.0）；`src/NSSLC/` 分两层：`Share/` 收 AI、Attributes、Combat、Entity、Inventory、Item、Physics 七个共享能力域，其余领域直挂项目根，无 `Components/` 中间层。
 - 服务器 `src/NSSLC.Server`，`--manual-ai` 监听 `127.0.0.1:7777`；13 个验证项目按 `Test/<生产边界>/<项目>/` 落位 → [规则](../Test/README.md)
 - `src/NSSLC.Infrastructure/` 整体受保护：仅 `Diagnostics/` 参与当前编译，其余旧项目不随组件库编译。
 
@@ -28,6 +28,7 @@
 
 ## 最近轮次
 
+- **2026-11-23 恢复 NSSLC 的 Share 收容层**：按 git 历史把七个共享能力域收进 `src/NSSLC/Share/`，命名空间与公共 API 不变，14 个验证项目全通过 → [CR](../docs/cr/CR-2026-11-23-nsslc-share-layer-restore.md)
 - **2026-11-22 服务器诊断日志迁出共享组件域**：日志端口与控制台适配器移入基础设施侧独立工程，命名空间、公共 API 与输出格式不变 → [CR](../docs/cr/CR-2026-11-22-diagnostics-to-infrastructure.md)
 - **2026-11-22 NSSLC 领域内按 ECS 职责分目录**：移除 `Model` 式收容目录，19 个领域（含语义子域）的组件、命令、查询与系统附属文件分别归入 Component/Command/Query/System，主系统文件留在领域根
   - 未闭合：`Communication` 迁出由并行任务收尾；扁平目录出现首个系统时需补建四类目录 → [CR](../docs/cr/CR-2026-11-22-nsslc-ecs-role-directory-layout.md)
@@ -37,17 +38,14 @@
   - 未闭合：服务器仍持有旧程序集，需重启复验 → [CR](../docs/cr/CR-2026-11-22-nsslc-domain-directory-flatten.md)
 - **2026-11-22 调试工具客户端操作手册**：新增工具链总入口（启动参数、HeadlessPacketProxy、`-networktest` 契约、RawNpcMonitor、npcprobe）
   - 未闭合：客户端重建 193 错误与 `Lighting.Clear()` 夹具限制 → [手册](调试工具/调试工具客户端操作手册.md)
-- **2026-11-22 项目文件组织从 ECS 约束拆出**：仓库与项目层落位规则独立成文，AGENTS.md 新增对应条目
-  - 未闭合：无 → [CR](../docs/cr/CR-2026-11-22-project-file-organization-split.md)
+- **2026-11-22 项目文件组织从 ECS 约束拆出**：仓库与项目层落位规则独立成文 → [CR](../docs/cr/CR-2026-11-22-project-file-organization-split.md)
 - **2026-11-22 Test 按生产边界重组**：13 个验证项目改两层布局、去统一后缀，13/13 构建并运行通过
   - 未闭合：`Build/bin/` 仍有旧项目名产物目录 → [规则](../Test/README.md)
-- **2026-11-22 NPC 同步出站优先级隔离**：出站按 realtime / normal 分道、队列与配额独立，Tick 内投影与 Tile drain 有界
-  - 未闭合：待最新客户端实测抖动；Realtime 配额与 Tile 限流为保守默认值 → [CR](../docs/cr/CR-2026-11-22-npc-sync-outbound-priority.md)
-- **2026-11-22 属性与状态效果边界收敛（B0–B9）**：属性只算数值，生命/护盾/冷却/身份/行为状态归各自 owner，跨域变更走请求组件
-  - 未闭合：见技术债；Inventory 属性桥接 deferred → [计划](../docs/plans/2026-11-20-attribute-system-execution-plan.md)
 
 ## 更早轮次
 
+- 11-22 NPC 同步出站优先级隔离（realtime / normal 分道，配额与 Tile 限流为保守默认值） → [CR](../docs/cr/CR-2026-11-22-npc-sync-outbound-priority.md)
+- 11-22 属性与状态效果边界收敛 B0–B9（Inventory 属性桥接 deferred） → [计划](../docs/plans/2026-11-20-attribute-system-execution-plan.md)
 - 11-20 ECS Commit / Projection 边界收敛（NPC 身份 bind 与会话走 Commit 阶段 CommandBuffer） → [计划](../docs/plans/2026-11-08-ecs-architecture-remediation-master-plan.md)
 - 11-17 手写史莱姆 AI 主动状态（昼夜、当前/最大生命、相对地表位置） → [CR](../docs/cr/CR-2026-10-22-npc-ai-damage-test.md)
 - 11-09 ECS command buffer deferred 实体生命周期 → [计划](../docs/plans/2026-11-08-ecs-command-buffer-commit-plan.md)

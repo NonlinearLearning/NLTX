@@ -1,7 +1,9 @@
 # NSSLC 共享组件领域
 
-`src/NSSLC` 是 `Terraria.Components.csproj` 的共享组件与领域契约源码根。所有 ECS 领域
-直接位于项目根目录，不再经过 `Components/` 或 `Share/` 收容层；目录只表达领域归属，
+`src/NSSLC` 是 `Terraria.Components.csproj` 的共享组件与领域契约源码根。ECS 领域按
+归属分两层落位：端别无关的共享能力域收在 `Share/`（`AI`、`Attributes`、`Combat`、
+`Entity`、`Inventory`、`Item`、`Physics`），其余领域直接位于项目根目录；`Components/`
+收容层不再存在。目录只表达领域归属，
 C# 命名空间保持原样，目录移动不改变公共 API。这里的代码遵循参考 ECS 项目中稳定的
 分层方式：组件是数据，定义是原型，系统拥有规则，运行时存储负责实体和组件关联。需要
 Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；它不复制最新客户端的业务
@@ -9,35 +11,43 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 
 ## 目录
 
+### `Share/` 下的共享能力域
+
 | 目录 | 内容 |
 | --- | --- |
-| [AI](AI/README.md) | HTN/GOAP 统一计算契约、AI 绑定和有序意图 |
-| [Attributes](Attributes/README.md) | 基础属性、来源分类、限时属性修饰器、Buff 与状态效果 |
+| [AI](Share/AI/README.md) | HTN/GOAP 统一计算契约、AI 绑定和有序意图 |
+| [Attributes](Share/Attributes/README.md) | 基础属性、来源分类、限时属性修饰器、Buff 与状态效果 |
+| [Combat](Share/Combat/README.md) | 生命、伤害、减伤、保护窗口和战斗状态组件 |
+| [Entity](Share/Entity/README.md) | 实体定义、组件组合、初始化契约、实体生命周期边界和 Arch 组织入口 |
+| [Inventory](Share/Inventory/README.md) | 广义库存能力、槽位规则和跨实体物品转移 |
+| [Item](Share/Item/README.md) | 物品定义、无实体物品堆和实体化物品状态 |
+| [Physics](Share/Physics/README.md) | 碰撞体、空间查询与模拟、接触事实、液体和运动/重力 |
+
+### 项目根下的领域
+
+| 目录 | 内容 |
+| --- | --- |
 | [Chat](Chat/) | 聊天请求、命令分派、有界历史和广播队列 |
-| [Combat](Combat/README.md) | 生命、伤害、减伤、保护窗口和战斗状态组件 |
-| [Communication](Communication/) | 通信会话准入、Commit、出站缓冲和协议适配 |
-| [Entity](Entity/README.md) | 实体定义、组件组合、初始化契约、实体生命周期边界和 Arch 组织入口 |
-| [Inventory](Inventory/README.md) | 广义库存能力、槽位规则和跨实体物品转移 |
-| [Item](Item/README.md) | 物品定义、无实体物品堆和实体化物品状态 |
 | [ItemUse](ItemUse/) | 玩家物品使用请求、门闸和内容侧使用定义 |
 | [Npc](Npc/) | NPC AI 事实、意图、引导行为和运行时适配 |
 | [NpcSpawn](NpcSpawn/) | 刷怪预算、区域规则、随机数和刷怪事实 |
-| [Physics](Physics/README.md) | 碰撞体、空间查询与模拟、接触事实、液体和运动/重力 |
 | [Player](Player/) | 玩家输入请求、战斗结果、死亡与重生状态 |
 | [Projectile](Projectile/) | 投射物行为、生命周期、AI 与战斗接线 |
 | [TileEntity](TileEntity/) | 箱子、告示牌等 Tile 实体记录与请求/结果队列 |
 | [World](World/README.md) | 世界运行时、Tile 存储、交互请求和投影合同 |
 | [WorldItem](WorldItem/) | 世界物品存储、请求队列和 tick 系统 |
 
-`Attributes/Buff`、`Attributes/Contribution`、`Physics/CollisionGeometry`、
-`Physics/ContactFact`、`Physics/Liquid`、`Physics/Movement`、`Physics/SpatialQuery` 和
-`Physics/SpatialSimulation` 是领域内按稳定职责划分的子目录。`Movement` 与 `Liquid` 的
-命名空间分别为 `Terraria.Movement` 和 `Terraria.Liquid`，与父目录 `Terraria.Physics`
-不同；这是目录与命名空间解耦的既定事实，不在目录移动时顺手修正。
+`Share/Attributes/Buff`、`Share/Attributes/Contribution`、`Share/Physics/CollisionGeometry`、
+`Share/Physics/ContactFact`、`Share/Physics/Liquid`、`Share/Physics/Movement`、
+`Share/Physics/SpatialQuery` 和 `Share/Physics/SpatialSimulation` 是领域内按稳定职责划分的
+子目录。`Movement` 与 `Liquid` 的命名空间分别为 `Terraria.Movement` 和 `Terraria.Liquid`，
+与父目录 `Terraria.Physics` 不同；这是目录与命名空间解耦的既定事实，不在目录移动时顺手修正。
 
 服务器诊断日志不是 ECS 领域状态，已迁到
 [NSSLC.Infrastructure/Diagnostics](../NSSLC.Infrastructure/Diagnostics/README.md)，由
-`NSSLC.Infrastructure.Diagnostics.csproj` 编译；本表只列 ECS 领域。
+`NSSLC.Infrastructure.Diagnostics.csproj` 编译；通信域已迁到
+[NSSLC.Network/Communication](../NSSLC.Network/Communication/)。本表只列
+`Terraria.Components.csproj` 编译的 ECS 领域。
 
 ## 领域内目录
 
@@ -51,9 +61,10 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 | `Query/` | 查询：只读查询接口与只读端口 |
 | `System/` | 系统附属文件：规则、求解器、运行时与存储服务、定义与编目、事实/结果/快照、枚举与值对象 |
 
-没有 `*System.cs` 的目录（`Item`、`Session`、`Physics`、`Physics/Liquid`、
-`Physics/SpatialQuery`、`ItemUse/Content`、`Attributes/Contribution`）保持扁平，不建空的
-四类目录。`AI/Goap`、`AI/Htn` 是移植库，`AI/Examples` 是示例集，三者保留来源结构。
+没有 `*System.cs` 的目录（`Share/Item`、`Session`、`Share/Physics`、`Share/Physics/Liquid`、
+`Share/Physics/SpatialQuery`、`ItemUse/Content`、`Share/Attributes/Contribution`）保持扁平，
+不建空的四类目录。`Share/AI/Goap`、`Share/AI/Htn` 是移植库，`Share/AI/Examples` 是示例集，
+三者保留来源结构。
 规则正文见 [ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md) §3.4。
 
 ## 一次实体更新
@@ -88,20 +99,20 @@ Inventory 是共享的持有能力。`InventoryComponent` 通过槽位定义组�
 是零消费者的过时投影，而位置已有 `LocationComponent` 唯一权威，留下迁移壳只会让后来者误以为
 存在第二条位置写入路径。
 
-重力属性使用 `Physics/Movement/Gravity*` 类型表达。`GravityConfigurationComponent` 保存基础值，
+重力属性使用 `Share/Physics/Movement/Gravity*` 类型表达。`GravityConfigurationComponent` 保存基础值，
 `GravityModifierCollectionComponent` 保存带来源和时限的活动修饰器，
 `GravityModifierCalculator` 计算本帧投影，`GravityModifierSystem` 管理时限和方向切换。
 重力方向是离散状态，方向切换资格是能力，二者不应通过普通数值加减表示。移动、碰撞、跳跃
 和网络系统仍由宿主消费 `GravityStateComponent`，当前共享层没有替换原版玩家运行时。
 
-属性修饰使用 `Attributes/AttributeSetComponent` 作为能力门槛。组件内部以 `List` 保存基础
+属性修饰使用 `Share/Attributes/AttributeSetComponent` 作为能力门槛。组件内部以 `List` 保存基础
 值和活动修饰器，并通过 `AttributeCalculator` 按加算、乘算、覆盖的固定顺序计算当前值；
 `AttributeSystem` 负责来源移除和时限推进。Buff、装备、饰品、武器、Boss、敌怪、NPC 和
 友好生物只是来源分类，不构成实体继承树。Buff 的周期行为和战斗系统的受击结算仍由各自
 领域负责。Player 不拥有装备槽或 Buff/Debuff 数值的私有状态组件；服务器的
 `AttributeSetComponent` 保存 Player 基础防御和基础抗性，`ProtectionWindowComponent` 保存保护窗口，Inventory 与 Buff
 的数值贡献由 `AttributeModifier` 聚合，保护窗口由 Combat 规则消费。生命池不进入属性系统；当前生命、最大生命、最小生命和存活状态由
-`Combat/LifeComponent` 单独承载。`LifeRegeneration` 仅可表示恢复速率贡献，不能表示生命池
+`Share/Combat/LifeComponent` 单独承载。`LifeRegeneration` 仅可表示恢复速率贡献，不能表示生命池
 本身。
 
 ## 风格和命名
@@ -119,7 +130,7 @@ Inventory 是共享的持有能力。`InventoryComponent` 通过槽位定义组�
 实体写入。`InventorySystem` 是显式的 Arch 交互入口，负责其声明的库存不变量。实体删除、
 组件移除和世界卸载时，宿主先停止相关运行态，消费清理结果，再释放绑定和索引。
 
-`Entity/EcsServer` 提供可选的 Arch.System 组织边界：它保存一个 Arch `World` 和一个
+`Share/Entity/EcsServer` 提供可选的 Arch.System 组织边界：它保存一个 Arch `World` 和一个
 按注册顺序执行的 `Group<EcsServerTickContext>`，由服务器宿主显式调用 `Initialize` 和
 `Update`。它不创建服务器时钟、后台任务、网络连接或持久化流程。未实现 Arch.System 适配器
 的领域仍由宿主通过各自的共享 API 调用；加入 `EcsServer` 不会自动让所有已注册系统运行。

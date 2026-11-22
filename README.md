@@ -1,10 +1,11 @@
 # NLTX 组件定义
 
 活动项目为 [Terraria.Components.csproj](src/NSSLC/Terraria.Components.csproj)，目标框架为
-`net10.0`。源码按 ECS 领域直接放在 `src/NSSLC/` 下（`AI`、`Attributes`、`Chat`、
-`Combat`、`Communication`、`Entity`、`Inventory`、`Item`、`ItemUse`、
-`Npc`、`NpcSpawn`、`Physics`、`Player`、`Projectile`、`TileEntity`、`World`、
-`WorldItem`），不再经过 `Components/` 或 `Share/` 中间层。目录只表达领域归属，C# 命名
+`net10.0`。源码按 ECS 领域放在 `src/NSSLC/` 下：端别无关的共享能力域收在 `Share/`
+（`AI`、`Attributes`、`Combat`、`Entity`、`Inventory`、`Item`、`Physics`），其余领域
+（`Chat`、`Communication`、`ItemUse`、`Npc`、`NpcSpawn`、`Player`、`Projectile`、
+`TileEntity`、`World`、`WorldItem`、`Session`）直接位于项目根目录，不经过 `Components/`
+中间层。目录只表达领域归属，C# 命名
 空间保持原样，移动目录不改变公共 API。项目引用 `Arch` 与 `Arch.System` 包，不引用其他
 生产项目。服务器诊断日志不是 ECS 领域，位于
 [NSSLC.Infrastructure/Diagnostics](src/NSSLC.Infrastructure/Diagnostics/README.md)。

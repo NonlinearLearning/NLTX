@@ -13,7 +13,7 @@
 3. 玩家选择的普通重力方向作为离散状态；
 4. 重力方向覆盖作为带优先级和时限的状态效果。
 
-实现位于 `src/NSSLC/Physics/Movement/`（原 `Share/Movement/`，
+实现位于 `src/NSSLC/Share/Physics/Movement/`（原 `Share/Movement/`，
 2026-11-01 并入 Physics 大类），不改写 `D:/TRbackup/最新的客户端`，
 也不声称已经替换原版 `Player.Update` 的移动逻辑。当前项目没有已接入的玩家移动运行时，
 因此本次交付实现了可独立调用的组件、纯求值器和状态系统，供后续移动系统消费。
