@@ -712,8 +712,8 @@ Combat candidate/receipt。不要把 Manager 原样改名为
 
 | 结论 | 状态 | 依据 |
 | --- | --- | --- |
-| NSSLC 有阶段、身份和空间提交基础合同 | confirmed（合同层） | Share Entity/Physics/Movement 源码和 README |
-| NSSLC Projectile 基础实现 | partial | Share/Projectile 组件、行为目录、AI 意图、纯模拟、Arch 生命周期、碰撞候选、Combat 命中/生命提交和穿透/免疫已实现；宿主 Tick 装配仍 partial |
+| NSSLC 有阶段、身份和空间提交基础合同 | confirmed（合同层） | NSSLC Entity/Physics/Movement 源码和 README |
+| NSSLC Projectile 基础实现 | partial | NSSLC Projectile 组件、行为目录、AI 意图、纯模拟、Arch 生命周期、碰撞候选、Combat 命中/生命提交和穿透/免疫已实现；宿主 Tick 装配仍 partial |
 | MinimalImplementation 有 Projectile 领域骨架 | partial | Projectiles 目录、Manager、services、Host owner |
 | MinimalImplementation 默认串完整运动/碰撞/命中链 | partial（未成立） | README 和 Host owner 表明默认链主要是 AI + expiry |
 | 最新客户端有 Projectile 行为事实 | confirmed（参考范围） | Projectile.cs |
@@ -721,7 +721,7 @@ Combat candidate/receipt。不要把 Manager 原样改名为
 | 新设计已接入并通过运行时测试 | partial | 生产项目构建和脱离生产目录的 Arch/Combat 冒烟通过；完整宿主 Tick/行为等价测试仍未运行 |
 
 本次实现没有修改 `src/NSSLC.Infrastructure`，没有恢复旧 Projectile 文件，也没有加入网络
-协议。已新增 Share/Projectile 生命周期、候选、命中提交和实现说明；宿主 Tick 注册、完整
+协议。已新增 NSSLC Projectile 生命周期、候选、命中提交和实现说明；宿主 Tick 注册、完整
 Tile/反弹策略和旧客户端行为等价仍需后续按文档边界接入。
 
 

@@ -635,8 +635,8 @@ Combat 核心不依赖 ProjectileHitCandidate
 ## 12. 相关文档
 
 - [Projectile ECS 系统设计](../architecture/2026-10-24-projectile-ecs-system-design.md)
-- [Projectile 实现说明](../architecture/2026-10-25-projectile-implementation.md)
-- [Player、NPC、Projectile 共享组件合并](../architecture/2026-10-26-shared-component-consolidation.md)
+- [Projectile 实现说明](../reviews/audits/2026-10-25-projectile-implementation.md)
+- [Player、NPC、Projectile 共享组件合并](../reviews/audits/2026-10-26-shared-component-consolidation.md)
 - [生命组件边界](../cr/CR-2026-10-23-life-component-boundary.md)
 - [ECS System 拆分技能](../../.agents/skills/ecs-system/SKILL.md)
 

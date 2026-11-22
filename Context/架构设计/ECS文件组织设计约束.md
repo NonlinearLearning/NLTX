@@ -42,6 +42,9 @@
   Events/
 ```
 
+本节禁止的是**代码根层**的横向切分；单个领域内部的四类职责目录由 §3.4 规定，两者不冲突：
+领域始终是第一层归属，职责目录只在领域内部出现。
+
 ### 2.2 小目录扁平化
 
 领域规模较小时，文件直接放在领域目录中；不要为目录模板完整性创建空的
@@ -83,17 +86,22 @@ PascalCase，避免无语义的 `Misc`、`Data`、`Helper`、`Utility`、`Utils`
 
 ### 3.2 组件文件
 
-组件直接放在所属领域目录，除非该领域已经满足第 2.3 节的子目录条件：
+组件先按领域归属，再按 §3.4 归入该领域的 `Component/`：
 
 ```text
 <代码根>/
   Entity/
-    EntityIdentityComponent.cs
-    LocationComponent.cs
-  Movement/
-    VelocityComponent.cs
+    EntityDefinitionSystem.cs
+    Component/
+      EntityIdentityComponent.cs
+      EntitySizeComponent.cs
   Physics/
-    ColliderComponent.cs
+    Movement/
+      MovementIntentRequestSystem.cs
+      Component/
+        VelocityComponent.cs
+    Liquid/                   # 无 *System.cs 的小领域保持扁平
+      LiquidComponent.cs
 ```
 
 组件目录只放持续的实体或世界状态。组件不因包含相似字段就跨领域合并，也不承载跨实体
@@ -101,22 +109,44 @@ PascalCase，避免无语义的 `Misc`、`Data`、`Helper`、`Utility`、`Utils`
 
 ### 3.3 查询文件
 
-查询与其主要读取的能力领域放在一起。小型查询直接放领域根目录：
+查询与其主要读取的能力领域放在一起。领域有 `*System.cs` 时进入该领域的 `Query/`；
+没有系统的查询型目录保持扁平，不再单独建 `Queries/`、`Geometry/`、`SpatialIndex/`：
 
 ```text
+World/
+  WorldTickSystem.cs
+  Query/
+    IWorldTileReader.cs
+    IWorldTileGrid.cs
 Physics/
-  ColliderComponent.cs
-  EntityGeometryQuery.cs
-  EntitySpatialQuery.cs
+  SpatialQuery/              # 无系统的查询型子域，保持扁平
+    ISpatialWorldQuery.cs
+    SpatialFrame.cs
 ```
 
-当查询数量、访问边界或实现职责稳定分化后，才允许增加 `Queries/`、`Geometry/` 或
-`SpatialIndex/` 等子目录；子目录名称必须表达真实职责，不得只重复技术后缀。
+### 3.4 系统与其他职责
 
-### 3.4 其他职责
+领域目录采用固定的四类职责目录，领域根只保留 `*System.cs` 主系统文件和 `README.md`：
 
-本约束不强制规定 System、Event、Command、Snapshot、Definition 的统一目录名称。它们
-仍必须遵循领域优先和按需细分原则：先归属领域，再根据实际规模决定是否建立职责子目录。
+| 目录 | 承接内容 |
+| --- | --- |
+| `Component/` | 组件：挂在实体或世界上、跨 tick 持续的状态 |
+| `Command/` | 命令：请求、意图、命令/请求队列及其种类标识 |
+| `Query/` | 查询：只读查询接口与只读端口 |
+| `System/` | 系统附属文件：规则、求解器、运行时与存储服务、定义与编目、事实/结果/快照、枚举与值对象 |
+
+目录名固定为单数 PascalCase：`Component`、`Command`、`Query`、`System`。没有
+`*System.cs` 的目录不建这四类目录，保持扁平（§2.2），其文件继续按领域语义留在原位。
+
+语义子域（`Physics/Movement`、`Attributes/Buff` 等）视为独立领域，按同一规则再分；
+父领域根只放父领域自己的 `*System.cs`。第三方移植目录（`AI/Goap`、`AI/Htn`）和示例
+目录（`AI/Examples`）保留来源结构，不按本节拆分，必须在目录 README 或 `SOURCES.md`
+标注来源。
+
+禁止在领域内再用 `Model`、`Data`、`Helper`、`Utility`、`Misc` 等无语义收容目录分层；
+`Contract`、`Solver`、`Content` 这类职责词不是本约束的目录名，历史内容按上表归位。
+`*System.cs` 不得下沉到 `System/` 中，主系统文件与它的附属文件必须能从路径上区分。
+
 某个项目若需要跨领域统一的调度或注册入口，应在该项目的架构文档中单独声明，不能由
 文件枚举顺序隐式决定执行顺序。
 
@@ -147,6 +177,9 @@ Physics/
 每次新增、移动、拆分或合并 ECS 领域内文件时，必须检查：
 
 - [ ] 领域目录表达了游戏能力或规则，而不是只有技术类别。
+- [ ] 领域根只放 `*System.cs` 主系统文件与 `README.md`；其余文件按 §3.4 归入
+      `Component/`、`Command/`、`Query/`、`System/`，无系统的目录保持扁平。
+- [ ] 没有残留 `Model/`、`Data/`、`Solver/`、`Contract/` 等旧职责目录名。
 - [ ] 小领域没有为了模板完整性创建空职责子目录。
 - [ ] 新增子目录有稳定职责、规模或依赖边界依据。
 - [ ] 共享组件按能力归属，没有按实体类别复制同义状态。

@@ -10,6 +10,7 @@
   <ItemGroup>
     <ProjectReference Include="..\NSSLC\Terraria.Components.csproj" />
     <ProjectReference Include="..\NSSLC.Network\NSSLC.Network.csproj" />
+    <ProjectReference Include="..\NSSLC.Infrastructure\Diagnostics\NSSLC.Infrastructure.Diagnostics.csproj" />
     <ProjectReference Include="..\NSSLC.Infrastructure\WorldData\NSSLC.Infrastructure.WorldData.csproj" />
     <ProjectReference Include="..\NSSLC.Infrastructure\WorldStorage\NSSLC.Infrastructure.WorldFile.Minimal.csproj" />
     <None Update="Content\Prototypes\**\*.json" CopyToOutputDirectory="PreserveNewest" />

@@ -1,7 +1,7 @@
+using Terraria.Session;
 using System.Net;
 using System.Net.Sockets;
 
-using Terraria.Communication;
 
 namespace Terraria.Network;
 
@@ -114,6 +114,35 @@ public sealed class TcpCommunicationHost : ICommunicationTransportPort, IAsyncDi
     }
 
     return receipts.AsReadOnly();
+  }
+
+  /// <summary>开启所有已连接会话的 tick 批：批闭合前不允许写普通流量。</summary>
+  public void BeginTickBatch(long tick)
+  {
+    foreach (PacketTcpConnection connection in SnapshotConnections())
+    {
+      connection.BeginTickBatch(tick);
+    }
+  }
+
+  /// <summary>闭合所有已连接会话的 tick 批，放行普通流量。</summary>
+  public ValueTask SealTickBatchAsync(long tick, CancellationToken cancellationToken = default)
+  {
+    _ = cancellationToken;
+    foreach (PacketTcpConnection connection in SnapshotConnections())
+    {
+      _ = connection.SealTickBatch(tick);
+    }
+
+    return ValueTask.CompletedTask;
+  }
+
+  private PacketTcpConnection[] SnapshotConnections()
+  {
+    lock (_gate)
+    {
+      return [.. _connections.Values];
+    }
   }
 
   public ValueTask CloseAsync(SessionEpoch epoch)

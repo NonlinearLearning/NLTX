@@ -3,9 +3,9 @@ using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
 using Terraria.Chat;
-using Terraria.Communication;
 using Terraria.Entity;
 using Terraria.Relationships;
+using Terraria.Session;
 
 namespace Terraria.Network;
 

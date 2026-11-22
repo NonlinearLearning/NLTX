@@ -81,6 +81,7 @@ Realtime 延迟随 Tile 流量单调上升（2.07 → 4.38 ms），且 Tile 队�
 | `src/NSSLC/Components/Communication/CommunicationSessionSystems.cs` | 投影改为 peek→submit→dequeue，每会话每 tick 最多 `DefaultMaximumIntentsPerTick = 256` 条，遇到拒绝立即停止本轮 | Tick 内的工作量有界、顺序不乱、不丢包 |
 | `src/NSSLC/Components/World/Contract/IWorldProjectionSource.cs`、`WorldRuntime.cs` | `DrainPendingMutations(int maximum)`：只取至多 maximum 条，其余留在世界侧继续与后续变更按坐标合并 | Tile 洪水不会把 Tick 拖长；未发送的变更不会丢失 |
 | `src/NSSLC.Network/WorldNetworkProjectionSystem.cs` | 每 tick 至多取 `DefaultMaximumTileMutationsPerTick = 128` 条 Tile 变更 | 同上 |
+| `src/NSSLC.Server/ServerTickPacing.cs`、`Program.RunTicksAsync` | 用 `Stopwatch` 单调网格取代 `PeriodicTimer`；超时丢弃错过格点而不再补发；暴露 `tick_skipped` / `tick_slow` | 包 23 的到达节拍不再在 10/25 ms 之间摆动 |
 
 设计取舍：
 
@@ -122,7 +123,7 @@ Realtime 延迟随 Tile 流量单调上升（2.07 → 4.38 ms），且 Tile 队�
 
 ### 5.1 全量回归
 
-用户同期把 `Test/` 重组为 `Test/<生产边界>/<验证项目>/`，旧路径全部作废。按新布局对全部 13 个
+用户同期把 `Test/` 重组为 `Test/<生产边界>/<验证项目>/`，旧路径全部作废。按新布局对全部 14 个
 验证项目逐个 `dotnet build` + `dotnet run --no-build --no-restore`：
 
 | 项目 | build | run | FAIL 行数 |
@@ -140,26 +141,128 @@ Realtime 延迟随 Tile 流量单调上升（2.07 → 4.38 ms），且 Tile 队�
 | Terraria.Projectile | 0 | 0 | 0 |
 | Terraria.TileEntity | 0 | 0 | 0 |
 | Terraria.WorldItem | 0 | 0 | 0 |
+| Terraria.Server.TickCadence | 0 | 0 | 0 |
 
-13/13 退出码 0，无 FAIL 行。构建（均输出到 `Build/bin/`）：
+14/14 退出码 0，共 263 条 PASS、0 条 FAIL（2026-11-22 22:02 复跑，含本轮新增的 Terraria.Server.TickCadence）。
+构建（均输出到 `Build/bin/`）：
 
 
 - `dotnet build src\NSSLC.Network\NSSLC.Network.csproj`：退出码 0，0 警告 0 错误。
 - `dotnet build src\NSSLC.Server\NSSLC.Server.csproj`：退出码 0，0 错误；19 条既存警告全部来自
-  未修改的 `NSSLC.WorldGeneration`。
+  未改动的 `src/NSSLC.Infrastructure/WorldGeneration`。
 - 监听冒烟：`dotnet Build\bin\NSSLC.Server\Debug\net10.0\NSSLC.Server.dll Build\runtime\CommunicationGameTest-20261027\world.wld --manual-ai`
   12 秒后主动停止，日志 `Build/runtime/server-smoke-outbound-2026-11-22.log` 出现
   `ecs.server.ready ai=manual listen=127.0.0.1:7777`，stderr 为空。
 
-## 6. 未完成与风险
+## 6. 线路级复核（2026-11-22 21:45–22:02）
 
-- 未做原版客户端的画面验收：需要用户用最新客户端实际观察史莱姆抖动是否消失。本轮只证明了
-  出站排队结构缺陷已被消除、Realtime 投递延迟不再随 Tile 流量增长。
+用 `Build/runtime/RawNpcMonitor`，配合 `HeadlessPacketProxy`（`7778→7777`）与直连两种方式，
+在 5–6 秒观察窗口内统计包 23 的实际到达间隔。
+
+### 6.1 采集条件
+
+| 项 | 值 |
+| --- | --- |
+| 服务器 | `--manual-ai`，`ecs.server.ready` 后接入 |
+| 世界 A | `src/World/科研.wld`（8400×2400，液体活跃） |
+| 世界 B | `Build/runtime/CommunicationGameTest-20261027/world.wld`（1×753，**零包 20**） |
+| 客户端 | `RawNpcMonitor`（裸 socket，逐帧时间戳，`ServerAuthoritative` 位独立解码） |
+| 证据 | `Build/runtime/raw-npc-monitor{,-light,-direct,-fixed-light,-instr-light}-2026-11-22.jsonl`、`wire-cadence-proxy-2026-11-22.log` |
+
+两种采集方式（经代理 / 直连）得到同一分布，说明差异不是代理引入的。
+
+### 6.2 世界 A：Tile 洪水下的隔离效果
+
+5 秒窗口内收到 **39,864 条包 20**（≈8018/s），每 tick 的包 20 簇大小中位数正好 **128**，
+与 `DefaultMaximumTileMutationsPerTick` 一致——限流生效且未丢变更。
+
+| 指标 | 值 |
+| --- | --- |
+| 包 23 条数 | 624（312 × 2 NPC，全部到达，无丢弃） |
+| 间隔 p50 / p90 / p95 / p99 | 15.58 / 17.3 / 18.6 / 31.2 ms |
+| 间隔 ≥25 ms 的次数 | 9（每次窗口内夹 **127** 条包 20；正常窗口平均 63 条） |
+| `ServerAuthoritative` | 全部为 `true` |
+
+即：极端 Tile 洪水下 Realtime 帧仍在 ~16 ms 节拍内，只有 9 次被挤后一个周期。
+
+### 6.3 世界 B：零 Tile 流量暴露的第二个成因
+
+**关键发现**：在完全无 Tile 更新的世界里，节拍依旧不规则（p50 15.8 / p90 23.7 / p95 26.0 ms，
+标准差 7.1 ms），说明剩余抖动与 Tile 队列无关，而在 tick 调度本身。
+
+原 `PeriodicTimer(1000/60 ms)` 的行为：某次 tick 超时后，到期信号已经置位，
+`WaitForNextTickAsync` 立刻返回，于是错过的格点被**合并成补发**，包 23 的间隔在 10 ms 与 25 ms
+之间摆动；客户端在权威模式下不插值，这种摆动直接等于画面抖动。
+
+修复（`src/NSSLC.Server/ServerTickPacing.cs` + `Program.RunTicksAsync`）：
+
+- 用 `Stopwatch` 单调网格取代 `PeriodicTimer`；尾部 ≤2 ms 忙等，避免 15.6 ms 系统定时器粒度主导节拍。
+- 超时后**丢弃**错过的格点并推进到严格未来的格点，绝不零间隔补发；丢弃次数以
+  `ecs.server.tick_skipped` 告警计数暴露（按秒节流，带累计值）。
+- 单次 `Update` 超过 12 ms 时输出 `ecs.server.tick_slow`（同样按秒节流，带窗口内最大值），
+  把"服务器卡顿"与"投递延迟"分开定位。
+- 网格语义由 `Test/NSSLC.Server/Terraria.Server.TickCadence` 的 6 项确定性检查锁定
+  （未超时推进一格、零余量按错过处理、超时 1.5/2.5 周期分别丢 1/2 格、返回值严格未来、永不零间隔补发）。
+
+| 世界 B 指标（5–6 s 窗口） | 改造前 PeriodicTimer | 改造后网格调度（终版） |
+| --- | --- | --- |
+| p50 | 15.8 ms | **16.66 ms**（正好等于 1/60 s） |
+| p90 | 23.7 ms | 22.1 ms |
+| p95 | 26.0 ms | 24.8 ms |
+| p99 | 31.8 ms | 27.5–30.2 ms |
+| 标准差 | 7.1 ms | 4.8–6.1 ms |
+
+终版复测（`Build/runtime/raw-npc-monitor-final-light-2026-11-22.jsonl`）里 p50 已经精确等于
+60 Hz 周期，说明稳态 tick 网格本身没有偏差；剩下的长尾来自两处，本轮只定位不改动：
+
+- 该世界液面活跃时 `Update` 偶尔超过一个周期（`tick_slow` 12–24 ms），这些时刻按设计丢弃格点，
+  于是出现 33 ms 的整周期缺口；
+- ECS 投影 → 投递泵 → 连接队列 → socket 的异步链路，以及测量端逐帧落盘，都会引入毫秒级抖动。
+
+两级告警按秒节流（5 秒窗口内各 5 条），避免重负载世界把日志淹没
+（`Build/runtime/server-smoke-tickpacing-throttled-2026-11-22.log`）。
+
+
+### 6.4 工具缺陷修复（随本轮一并处理）
+
+- `HeadlessPacketProxy` 两个中继方向并发写同一个 `StreamWriter`，触发
+  `InvalidOperationException: The stream is currently in use by a previous operation`，导致抓包
+  恒定在包 7 之后断开。已用 `SemaphoreSlim` 串行化日志写入（`Build/runtime/HeadlessPacketProxy/Program.cs`）。
+- 该工程目录下残留 2026-11-20 的旧 `obj/`（含生成的 `AssemblyInfo.cs`），与重定向后的中间目录
+  重复，构建报 `CS0579`；删除残留后 0 警告 0 错误。
+- `RawNpcMonitor` 增加端口/窗口/输出路径参数与窗口到期取消的正常收尾，支持直连测量。
+
+## 6.5 tick 批仲裁（2026-11-22 23:00 P0 落地）
+
+在出站侧把数据按“客户端是否需要每 tick 看到”分两类：实时快照类（包 23）为 A，其余共用一条 B
+队列。投影每 tick 开批、闭合；连接在同一批内不接受普通流量，闭合标记随实时通道下发，因此批内帧
+一定先于闭合。带外结论：
+
+| 同 tick 两条包 23 的相邻关系 | 改造前 | 改造后 |
+| --- | --- | --- |
+| 完全连续 | 0.0% | 52.4% |
+| 中间夹 1 条其它帧 | 49.9% | 0.0% |
+| 中间夹 ≥2 条 | 50.1% | 47.6% |
+
+即“单个 Tile 帧把快照切断”已消除；剩余 48.4% 源于该世界整 tick 超时跳格（`tick_slow` 13–19 ms），
+属负载层而非排队层。重负载世界包 23 间隔 p50 17.7 / p90 31.8 ms，轻量世界仍为 16.66 ms。
+批计数已上线：`ecs.outbound.batch` 每秒最多一条，输出 `batchesPerSec` / `framesPerSec` / `batchSize` / `batchWaitP99Ms` / `mandatoryDropped` / `batchSuperseded`。实测 `batchSize≈1.4`、`batchWaitP99Ms≈1.0`，即批闭合到放行普通流量的等待在 1 ms 量级，不构成新的阻塞点。
+
+详见 [执行计划](../plans/2026-11-22-outbound-tick-batch-execution-plan.md) 第 12 节。
+
+## 7. 未完成与风险
+
+- 未做原版客户端的画面验收：需要用户用最新客户端实际观察史莱姆抖动是否消失。本轮已把证据推进到
+  线路级（包 23 到达间隔分布），但"画面是否还抖"仍要人眼确认。联机验收步骤见
+  `Context/调试工具/调试工具客户端操作手册.md`；抓包判读用其 §7.2（筛 `S2C id=23` 的到达间隔，
+  对照同期 `S2C id=20` 计数），修复后包 23 间隔应与包 20 洪峰解耦。
+- 残余 ±4 ms 量级方差位于 ECS 投影 → 投递泵 → 连接队列 → socket 的异步链路。要再压缩需要让
+  realtime 帧在 tick 线程上同步写出（跨 `NSSLC.Network` 的架构变更），本轮未做。
 - Realtime 配额与 Tile 限流取的是保守默认值（32 帧 / 128 KB / 16 次准入；每 tick 256 条 ECS
   意图、128 条 Tile 变更）。大规模液体或爆炸场景若仍观察到 Tile 延迟，可再调这两个常量。
 - 本轮期间 `Test/` 被用户重组为 `Test/<生产边界>/<验证项目>/` 的两级布局，旧路径全部作废。
-  本次新增的验证项目最终落在 `Test/NSSLC.Network/Terraria.Network.OutboundOrdering`，
-  并在 `Test/manifest.tsv` 登记为 `transport`。历史 CR 里出现的旧 `Test/*.Verification`
+  本次新增的验证项目最终落在 `Test/NSSLC.Network/Terraria.Network.OutboundOrdering`。
+  历史 CR 里出现的旧 `Test/*.Verification`
   路径按 `Test/README.md` 的迁移对照表换算。
 
 

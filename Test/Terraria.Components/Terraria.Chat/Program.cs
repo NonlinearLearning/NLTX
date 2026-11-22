@@ -4,7 +4,7 @@ using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 using Terraria.Chat;
 using Terraria.Combat;
-using Terraria.Communication;
+using Terraria.Session;
 using Terraria.Entity;
 using Terraria.Relationships;
 
@@ -143,7 +143,7 @@ commands.Register(new ChatCommandDefinition("admin", "operator only", true));
 commands.Seal();
 
 ChatStore store = new();
-ChatSystem system = new(world, registry, commands, store);
+ChatSystem system = new(world, registry, new EmptySessionPlayers(), commands, store);
 ChatMessageRequestQueueComponent requests = ChatMessageRequestQueue.Require(world);
 ChatBroadcastQueueComponent broadcasts = ChatBroadcastQueue.Require(world);
 
@@ -292,4 +292,18 @@ static bool BytesEqual(byte[] left, byte[] right)
   }
 
   return true;
+}
+
+/// <summary>聊天验证只测命令与广播，在线人数固定为空名录。</summary>
+internal sealed class EmptySessionPlayers : ISessionPlayerSource
+{
+  public void Collect(List<SessionPlayer> destination)
+  {
+    destination.Clear();
+  }
+
+  public SessionPlayer[] Snapshot()
+  {
+    return [];
+  }
 }

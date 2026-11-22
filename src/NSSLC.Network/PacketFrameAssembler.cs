@@ -2,7 +2,6 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 
-using Terraria.Communication;
 
 namespace Terraria.Network;
 

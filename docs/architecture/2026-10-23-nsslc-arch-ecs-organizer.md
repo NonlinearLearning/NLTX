@@ -55,11 +55,11 @@ Arch Core 负责实体、组件存储和查询。它不会从组件自动发现�
 
 实现文件位于：
 
-- `src/NSSLC/Components/Share/Entity/EcsServer.cs`
-- `src/NSSLC/Components/Share/Entity/EcsServerPhase.cs`
-- `src/NSSLC/Components/Share/Entity/EcsServerSystemRegistration.cs`
-- `src/NSSLC/Components/Share/Entity/EcsServerTickContext.cs`
-- `src/NSSLC/Components/Share/Entity/EcsServerCommandBuffer.cs`
+- `src/NSSLC/Entity/System/EcsServer.cs`
+- `src/NSSLC/Entity/System/EcsServerPhase.cs`
+- `src/NSSLC/Entity/System/EcsServerSystemRegistration.cs`
+- `src/NSSLC/Entity/System/EcsServerTickContext.cs`
+- `src/NSSLC/Entity/Command/EcsServerCommandBuffer.cs`
 
 阶段化装配：
 
@@ -106,7 +106,7 @@ Arch `CommandBuffer` 不是业务事务，也不负责身份注册、权限、�
   不因为拥有组件就每 Tick 全量扫描。
 - `Movement`、`Physics`、`AI`、`Combat`、`Item`、`Inventory`、`Liquid` 和 `World` 的完整
   Arch 系统必须按各自合同分批接入；组织入口存在不表示这些系统已经实现。
-- 网络、文件、WorldFile、日志和平台资源属于宿主、应用或基础设施边界，不放进 Share 组织者。
+- 网络、文件、WorldFile、日志和平台资源属于宿主、应用或基础设施边界，不放进 NSSLC 共享组织者。
 - 同一个 Arch `World` 只能由一个权威服务器循环推进，禁止旧循环和 `EcsServer` 双写。
 
 ## 当前批次状态

@@ -1366,7 +1366,7 @@ PASS substep-does-not-scale-distance | expected=(302,400) actual=(302,400)（子
 
 按前几轮的做法，零引用就该进删除清单。**这里不成立**，有三条反证：
 
-1. `docs/architecture/2026-10-24-nsslc-atomic-components-and-client-system-matrix.md`
+1. `docs/reviews/audits/2026-10-24-nsslc-atomic-components-and-client-system-matrix.md`
    把 `EntityDefinitionId`、`EntityDefinition` 标为 **confirmed**，把 `EntityDefinitionRegistry`
    标为"不可变定义目录 / confirmed"。这是已确认的架构方向，不是遗留垃圾。
 2. `docs/reviews/audits/2026-11-01-share-wiring-audit.md` 已经把这一簇判为

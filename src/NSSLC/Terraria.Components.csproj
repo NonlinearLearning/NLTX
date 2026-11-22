@@ -8,6 +8,22 @@
   <ItemGroup>
     <PackageReference Include="Arch" Version="2.1.0" />
     <PackageReference Include="Arch.System" Version="1.1.0" />
-    <Compile Include="Components/**/*.cs" />
+    <Compile Include="AI/**/*.cs" />
+    <Compile Include="Attributes/**/*.cs" />
+    <Compile Include="Chat/**/*.cs" />
+    <Compile Include="Combat/**/*.cs" />
+    <Compile Include="Entity/**/*.cs" />
+    <Compile Include="Inventory/**/*.cs" />
+    <Compile Include="Item/**/*.cs" />
+    <Compile Include="ItemUse/**/*.cs" />
+    <Compile Include="Npc/**/*.cs" />
+    <Compile Include="NpcSpawn/**/*.cs" />
+    <Compile Include="Physics/**/*.cs" />
+    <Compile Include="Player/**/*.cs" />
+    <Compile Include="Projectile/**/*.cs" />
+    <Compile Include="Session/**/*.cs" />
+    <Compile Include="TileEntity/**/*.cs" />
+    <Compile Include="World/**/*.cs" />
+    <Compile Include="WorldItem/**/*.cs" />
   </ItemGroup>
 </Project>

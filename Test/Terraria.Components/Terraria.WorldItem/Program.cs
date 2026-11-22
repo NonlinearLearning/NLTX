@@ -4,7 +4,8 @@ using System.Numerics;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 using Terraria.Combat;
-using Terraria.Communication;
+using Terraria.Network;
+using Terraria.Session;
 using Terraria.Entity;
 using Terraria.Inventory;
 using Terraria.Item;
@@ -305,7 +306,7 @@ WorldItemTickSystem fallTick = new(
     fallStore,
     fallRuntime,
     fallRuntime,
-    fallEntities,
+    new SessionPlayerSource(fallWorld, fallEntities),
     maximumStackSize: 99);
 for (int tick = 0; tick < 90; tick++)
 {
@@ -406,7 +407,7 @@ WorldItemTickSystem pickupTick = new(
     pickupStore,
     pickupRuntime,
     pickupRuntime,
-    pickupEntities,
+    new SessionPlayerSource(pickupWorld, pickupEntities),
     maximumStackSize: 99);
 InventoryPickupRequestSystem pickupRequests = new(pickupWorld, pickupEntities, inventories);
 WorldItemRequestSystem worldRequests = new(pickupWorld, pickupStore);
@@ -462,7 +463,7 @@ WorldItemTickSystem voidTick = new(
     voidStore,
     voidRuntime,
     voidRuntime,
-    voidEntities,
+    new SessionPlayerSource(voidWorld, voidEntities),
     maximumStackSize: 99);
 for (int tick = 0; tick < 5; tick++)
 {

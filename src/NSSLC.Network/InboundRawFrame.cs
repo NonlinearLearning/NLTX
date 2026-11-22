@@ -1,10 +1,10 @@
-using Terraria.Communication;
+using Terraria.Session;
 
 namespace Terraria.Network;
 
 /// <summary>Associates one received frame with its session-owned sequence and timestamp.</summary>
 public sealed record InboundRawFrame(
-  SessionEpoch Epoch,
-  PacketSequence Sequence,
-  DateTimeOffset ReceivedAt,
-  RawPacketFrame Frame);
+    SessionEpoch Epoch,
+    PacketSequence Sequence,
+    DateTimeOffset ReceivedAt,
+    RawPacketFrame Frame);

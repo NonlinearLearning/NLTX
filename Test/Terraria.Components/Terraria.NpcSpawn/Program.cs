@@ -5,7 +5,8 @@ using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 using Terraria.Ai;
 using Terraria.Combat;
-using Terraria.Communication;
+using Terraria.Network;
+using Terraria.Session;
 using Terraria.Entity;
 using Terraria.Liquid;
 using Terraria.Movement;
@@ -239,7 +240,7 @@ NpcSpawnEnvironment spawnEnvironment = new(
 NpcSpawnSystem spawnSystem = new(
     spawnWorld,
     spawnRuntime,
-    spawnEntities,
+    new SessionPlayerSource(spawnWorld, spawnEntities),
     spawner,
     ai,
     table,

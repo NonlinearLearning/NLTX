@@ -632,7 +632,7 @@ ProjectileDamageRequestSystem 不调用 EntityCollisionSystem.TryGetContact
 8. 未覆盖的连续 Sweep、网络、客户端、反射/吸血实际效果和 Registry 历史上界被单独记录，
    不被本计划的通过结果掩盖。
 
-实施记录见 [Physics、Combat 与 Projectile 边界收敛实施记录](../architecture/2026-10-26-physics-combat-projectile-boundary-implementation.md)。当前计划已进入实现阶段。生产项目、三个 focused smoke 项目和静态门禁已通过；宿主实际
+实施记录见 [Physics、Combat 与 Projectile 边界收敛实施记录](../reviews/audits/2026-10-26-physics-combat-projectile-boundary-implementation.md)。当前计划已进入实现阶段。生产项目、三个 focused smoke 项目和静态门禁已通过；宿主实际
 注册入口仍只证明 `CombatSystemRegistration` 的局部合同，连续 Sweep、网络、客户端、反射/吸血
 副作用和 Registry 历史上界仍保留为未决技术债，不能据此宣称完整游戏运行时闭环。
 

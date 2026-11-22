@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.Net;
 using System.Numerics;
 using Arch.Core;
@@ -6,7 +7,7 @@ using ArchWorld = Arch.Core.World;
 using Terraria.Ai;
 using Terraria.Attributes;
 using Terraria.Combat;
-using Terraria.Communication;
+using Terraria.Session;
 using Terraria.Diagnostics;
 using Terraria.Entity;
 using Terraria.Inventory;
@@ -30,7 +31,20 @@ namespace NSSLC.Server;
 
 internal static class Program
 {
-  private const float TickDeltaTime = 1f / 60f;
+  private const float TickDeltaTime = 1f / ServerTickPacing.TargetTicksPerSecond;
+
+  /// <summary>等待尾段的忙等阈值（毫秒）；超过此值先用粗粒度定时器。</summary>
+  private const double WaitSpinThresholdMilliseconds = 2d;
+
+  /// <summary>忙等时每次 <see cref="Thread.SpinWait"/> 的迭代次数。</summary>
+  private const int SpinIterations = 100;
+
+  /// <summary>单次 tick 的更新耗时告警阈值（毫秒）。</summary>
+  private const double SlowTickThresholdMilliseconds = 12d;
+
+  /// <summary>同一诊断的最小告警间隔，单位是 <see cref="Stopwatch"/> 时间戳（1 秒）。</summary>
+  private static readonly long _logThrottleTimestamp = Stopwatch.Frequency;
+
   private const int ListenPort = 7777;
   // 参考客户端主背包宽度与宽松堆叠上限；逐物品 maxStack 数据尚未引入。
   private const int PlayerInventorySlotCount = 59;
@@ -96,6 +110,8 @@ internal static class Program
         guideSpawnTileX * WorldRuntimeStateComponent.DefaultTileSize,
         guideSurfaceY - 48f);
     EntityRuntimeRegistry entities = new(worldScope: 1);
+    // 会话玩家名录：领域侧只认 ISessionPlayerSource 只读端口，实现在网络程序集。
+    SessionPlayerSource sessionPlayers = new(ecsWorld, entities);
     // 实体定义框架的宿主与生成器：玩家与 NPC 创建都走 EntityDefinitionSystem，
     // 不再是调用处逐个 new 组件。
     EntityDefinitionRegistry entityDefinitions = new();
@@ -250,7 +266,7 @@ internal static class Program
     NpcSpawnSystem npcSpawn = new(
         ecsWorld,
         worldRuntime,
-        entities,
+        sessionPlayers,
         entitySpawner,
         npcAi,
         npcSpawnTable,
@@ -271,6 +287,7 @@ internal static class Program
         ecsWorld,
         worldRuntime,
         entities,
+        sessionPlayers,
         attackDefinitions,
         physicsContacts,
         projectileHits,
@@ -344,7 +361,7 @@ internal static class Program
           $"world={worldWidth}x{worldHeight} " +
           $"path={ServerLog.Quote(loadedWorld.Path)} spawn={loadedWorld.Environment.SpawnTileX}," +
           $"{loadedWorld.Environment.SpawnTileY}");
-      await RunTicksAsync(server, shutdown.Token).ConfigureAwait(false);
+      await RunTicksAsync(server, worldTick, shutdown.Token).ConfigureAwait(false);
     }
     catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
     {
@@ -537,6 +554,7 @@ internal static class Program
       ArchWorld world,
       WorldRuntime worldRuntime,
       EntityRuntimeRegistry entities,
+      SessionPlayerSource sessionPlayers,
       CombatAttackDefinitionCatalog attackDefinitions,
       PhysicsContactCaptureSystem physicsContacts,
       ProjectileHitResolutionSystem projectileHits,
@@ -642,7 +660,7 @@ internal static class Program
             worldItems,
             worldRuntime,
             worldRuntime,
-            entities,
+            sessionPlayers,
             MaxInventoryStack),
         after: [EcsServerRegistrationKeys.WorldTick],
         reason: "World-item motion follows the world clock and produces same-tick pickup facts."));
@@ -679,7 +697,7 @@ internal static class Program
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
         EcsServerRegistrationKeys.ChatDomain,
-        new ChatSystem(world, entities, chatCommands, chatStore)));
+        new ChatSystem(world, entities, sessionPlayers, chatCommands, chatStore)));
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
         EcsServerRegistrationKeys.NpcAiIntent,
@@ -923,13 +941,89 @@ internal static class Program
     return BitConverter.ToInt64(id.ToByteArray(), 0);
   }
 
-  private static async Task RunTicksAsync(EcsServer server, CancellationToken cancellationToken)
+  /// <summary>按固定 60 Hz 网格推进 ECS 服务器 tick。</summary>
+  /// <remarks>
+  /// 快照节拍优先于追赶速度：某次 tick 超时会丢弃错过的格点（模拟整体变慢），而不是立刻补发
+  /// 下一条 tick——补发会让包 23 在 10/25 ms 之间摆动，而客户端在权威模式下不做插值。
+  /// </remarks>
+  private static async Task RunTicksAsync(
+      EcsServer server,
+      WorldTickSystem worldTick,
+      CancellationToken cancellationToken)
   {
-    using PeriodicTimer timer = new(TimeSpan.FromMilliseconds(1000d / 60d));
+    long period = ServerTickPacing.PeriodTimestamp;
+    long deadline = Stopwatch.GetTimestamp();
     long tick = 0;
-    while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+    long skippedTotal = 0;
+    long lastSkipLog = -_logThrottleTimestamp;
+    long lastSlowLog = -_logThrottleTimestamp;
+    double slowestMilliseconds = 0d;
+    while (!cancellationToken.IsCancellationRequested)
     {
+      await WaitForDeadlineAsync(deadline, cancellationToken).ConfigureAwait(false);
+      long updateStart = Stopwatch.GetTimestamp();
       server.Update(tick++, TickDeltaTime);
+      long now = Stopwatch.GetTimestamp();
+      double updateMilliseconds = (now - updateStart) * 1000d / Stopwatch.Frequency;
+      if (updateMilliseconds > SlowTickThresholdMilliseconds)
+      {
+        slowestMilliseconds = Math.Max(slowestMilliseconds, updateMilliseconds);
+        if (now - lastSlowLog >= _logThrottleTimestamp)
+        {
+          ServerLog.Warning(
+              "ecs.server.tick_slow",
+              $"elapsedMs={updateMilliseconds:F1} maxMs={slowestMilliseconds:F1} tick={tick} " +
+              $"prep={server.LastPreparationMilliseconds:F1} " +
+              $"sim={server.LastSimulationMilliseconds:F1} " +
+              $"commit={server.LastCommitMilliseconds:F1} " +
+              $"proj={server.LastProjectionMilliseconds:F1} " +
+              $"clock={worldTick.LastClockMilliseconds:F2} " +
+              $"liquid={worldTick.LastLiquidMilliseconds:F2} " +
+              $"liquidOps={worldTick.LastLiquidOperations} " +
+              $"top=[{string.Join(' ', server.DescribeSlowestSystems())}]");
+          slowestMilliseconds = 0d;
+          lastSlowLog = now;
+        }
+      }
+
+      deadline = ServerTickPacing.AdvanceDeadline(deadline, now, period, out long skipped);
+      if (skipped > 0)
+      {
+        skippedTotal += skipped;
+        if (now - lastSkipLog >= _logThrottleTimestamp)
+        {
+          // 重负载世界每个 tick 都可能丢格点；按秒节流，只报累计值，避免告警淹没日志。
+          ServerLog.Warning(
+              "ecs.server.tick_skipped",
+              $"skipped={skipped} total={skippedTotal} tick={tick}");
+          lastSkipLog = now;
+        }
+      }
     }
+  }
+
+  /// <summary>等待到指定格点；尾部用忙等换取亚毫秒精度。</summary>
+  private static async Task WaitForDeadlineAsync(long deadline, CancellationToken cancellationToken)
+  {
+    long remaining = deadline - Stopwatch.GetTimestamp();
+    while (remaining > 0)
+    {
+      double remainingMilliseconds = remaining * 1000d / Stopwatch.Frequency;
+      if (remainingMilliseconds > WaitSpinThresholdMilliseconds)
+      {
+        // 粗粒度定时器负责大部分等待，尾部交给忙等，避免 15.6 ms 的系统定时器粒度主导节拍。
+        TimeSpan delay = TimeSpan.FromMilliseconds(
+            remainingMilliseconds - WaitSpinThresholdMilliseconds);
+        await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
+      }
+      else
+      {
+        Thread.SpinWait(SpinIterations);
+      }
+
+      remaining = deadline - Stopwatch.GetTimestamp();
+    }
+
+    cancellationToken.ThrowIfCancellationRequested();
   }
 }

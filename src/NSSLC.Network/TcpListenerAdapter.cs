@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Net;
 using System.Net.Sockets;
 
-using Terraria.Communication;
 
 namespace Terraria.Network;
 

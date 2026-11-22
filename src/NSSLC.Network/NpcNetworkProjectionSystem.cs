@@ -14,7 +14,6 @@ using Terraria.Physics;
 using Terraria.Relationships;
 using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
 
-using Terraria.Communication;
 
 namespace Terraria.Network;
 

@@ -18,7 +18,7 @@ Commit port   在 revision/world version 校验后集中写入
 Projection    读取提交结果并生成网络或存档数据
 ```
 
-共享代码位于 `src/NSSLC/Components/Share`，采用 `LocationComponent` 作为公共位置名称，
+共享代码位于 `src/NSSLC/` 的 `Physics` 等领域，采用 `LocationComponent` 作为公共位置名称，
 `VelocityComponent` 位于 `Terraria.Movement`，`ColliderComponent` 位于
 `Terraria.Physics`。它没有复制最新客户端的字段、协议包命名或客户端业务对象。
 

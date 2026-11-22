@@ -23,9 +23,9 @@
    `Build/bin/<项目名>/` 落盘（见 [Directory.Build.props](../Directory.Build.props)），
    重名会合并产物目录。
 
-3. **项目名跟生产目录，不跟命名空间。** `Components/NpcSpawn/` 下的代码仍是
-   `namespace Terraria.Npc`，`Components/ItemUse/` 仍是 `Terraria.Player`，
-   `Components/TileEntity/` 和 `Components/WorldItem/` 仍是 `Terraria.World`。这是目录与
+3. **项目名跟生产目录，不跟命名空间。** `src/NSSLC/NpcSpawn/` 下的代码仍是
+   `namespace Terraria.Npc`，`src/NSSLC/ItemUse/` 仍是 `Terraria.Player`，
+   `src/NSSLC/TileEntity/` 和 `src/NSSLC/WorldItem/` 仍是 `Terraria.World`。这是目录与
    命名空间解耦的既定事实（见 [项目文件组织设计约束](../Context/架构设计/项目文件组织设计约束.md)
    第 5 节）；测试名若跟命名空间，会退回拆目录之前的旧域。
 
@@ -41,8 +41,8 @@
 
 ## 类型与意图
 
-验证类型和审计意图**不进路径**，只进 [manifest.tsv](manifest.tsv) 与 `Program.cs` 头注释。
-`type` 只留四档：
+验证类型和审计意图**不进路径**，写在各项目 `Program.cs` 的头注释里。描述类型时只留四档，
+避免各自造词：
 
 | type | 含义 |
 | --- | --- |
@@ -77,9 +77,8 @@ Get-ChildItem Test -Recurse -Filter *.csproj | ForEach-Object {
 - [ ] 落在一级边界目录下，目录名与该边界生产项目一致。
 - [ ] 项目名 = `Terraria.<生产领域目录>[.<目标>]`，与生产项目、其他验证项目都不重名。
 - [ ] csproj 引用按 `Test/<边界>/<项目>` 深度写 `../../../src/...`。
-- [ ] `Program.cs` 头注释写明「固定几件事」，与下面的 `PASS` 检查逐条对应。
+- [ ] `Program.cs` 头注释写明「固定几件事」与验证类型，与下面的 `PASS` 检查逐条对应。
 - [ ] 成功返回 0、失败返回 1，最后一行给出结论。
-- [ ] 在 [manifest.tsv](manifest.tsv) 补一行。
 - [ ] 只构建受影响项目，并记录命令、退出码、告警/错误数和产物路径。
 
 ## 迁移对照（2026-11-22）

@@ -1,11 +1,13 @@
 # NLTX 组件定义
 
-当前源码基线保留 [L0/L1 计划](docs/plans/2026-10-08-arch-l1-basic-game-components-execution-plan.md)
-第 3.1 节列出的 68 个组件：6 个 L0、62 个 L1。
-
 活动项目为 [Terraria.Components.csproj](src/NSSLC/Terraria.Components.csproj)，目标框架为
-`net10.0`。项目只编译 `src/NSSLC/Component/` 中的组件及其字段必需的枚举、值类型，
-没有项目引用或 NuGet 包引用。
+`net10.0`。源码按 ECS 领域直接放在 `src/NSSLC/` 下（`AI`、`Attributes`、`Chat`、
+`Combat`、`Communication`、`Entity`、`Inventory`、`Item`、`ItemUse`、
+`Npc`、`NpcSpawn`、`Physics`、`Player`、`Projectile`、`TileEntity`、`World`、
+`WorldItem`），不再经过 `Components/` 或 `Share/` 中间层。目录只表达领域归属，C# 命名
+空间保持原样，移动目录不改变公共 API。项目引用 `Arch` 与 `Arch.System` 包，不引用其他
+生产项目。服务器诊断日志不是 ECS 领域，位于
+[NSSLC.Infrastructure/Diagnostics](src/NSSLC.Infrastructure/Diagnostics/README.md)。
 
 ```powershell
 dotnet build src/NSSLC/Terraria.Components.csproj --nologo --verbosity minimal
@@ -13,14 +15,11 @@ dotnet build src/NSSLC/Terraria.Components.csproj --nologo --verbosity minimal
 
 编译输出位于 `Build/bin/Terraria.Components/Debug/net10.0/`。
 
-组件保留数据字段、常量和初始化值。原来的 ECS 系统、运行时存储、应用协调、游戏宿主、
-网络接线、兼容别名及对应验证程序已退出当前活动源码。旧公共 API、程序集、解决方案
-项目组合和运行行为不提供兼容保证。
+领域清单、子目录边界和共享组件归属见 [src/NSSLC/README.md](src/NSSLC/README.md)。组织
+规则见 [ECS 文件组织设计约束](Context/架构设计/ECS文件组织设计约束.md) 与
+[项目文件组织设计约束](Context/架构设计/项目文件组织设计约束.md)。
 
 用户明确保护 `src/NSSLC.Infrastructure/` 整棵目录：其中源码、项目、参考材料和已有修改
-完整保留，不纳入上述删除范围，也不参与当前组件库的编译。该目录的旧项目可能继续引用
-已经删除的项目；这次保留文件并不代表其原有项目仍可编译或运行。
-
-完整组件路径见 [组件定义清单](docs/reviews/audits/2026-10-09-components-only-inventory.md)，
-范围、验证证据和恢复方式见
-[组件定义清理记录](docs/cr/CR-2026-10-09-components-only-cleanup.md)。
+完整保留，不纳入当前组件库的编译。该目录的旧项目可能继续引用已经删除的项目；保留文件
+并不代表其原有项目仍可编译或运行。唯一例外是 `Diagnostics/`：它是当前服务器与网络工程
+正式引用的日志工程；该目录其余内容未因这次移入而被改动或修复。

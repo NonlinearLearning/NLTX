@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using ArchWorld = Arch.Core.World;
-using Terraria.Communication;
+using Terraria.Session;
 using Terraria.Entity;
 using Terraria.Item;
 using Terraria.World;

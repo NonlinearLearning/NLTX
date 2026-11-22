@@ -1,6 +1,5 @@
 using System.Buffers.Binary;
 
-using Terraria.Communication;
 
 namespace Terraria.Network;
 

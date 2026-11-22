@@ -62,6 +62,7 @@ docs/
 - 一份文档只有一个 canonical 路径；历史证据正文不改写，移动/删除/合并需要 `cr/` 里有
   对应记录。最近的整理记录：
   [CR-2026-11-22-docs-cleanup-and-merge](cr/CR-2026-11-22-docs-cleanup-and-merge.md)、
-  [CR-2026-11-22-remove-docs-index](cr/CR-2026-11-22-remove-docs-index.md)。
+  [CR-2026-11-22-remove-docs-index](cr/CR-2026-11-22-remove-docs-index.md)、
+  [CR-2026-11-22-nsslc-domain-directory-flatten](cr/CR-2026-11-22-nsslc-domain-directory-flatten.md)。
 - `component-decomposition/archive/` 是归档区，内容不再更新，结论以 `review-round-2/` 为准。
 - 状态与证据范围以各文档正文头部为准；目录位置不代表完成状态，"设计"不等于"已实现"。

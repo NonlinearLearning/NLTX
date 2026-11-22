@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 using Terraria.Combat;
-using Terraria.Communication;
 using Terraria.Entity;
 using Terraria.Inventory;
 using Terraria.Item;

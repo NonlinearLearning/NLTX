@@ -1,0 +1,1 @@
+using Terraria.Entity;using Terraria.Relationships;using Terraria.Session;namespace Terraria.Network;public interface ICommunicationSessionPlayerLifecycle{  EntityRuntimeHandle CreatePlayer(SessionEpoch epoch, EcsServerCommandBuffer commands);  void DestroyPlayer(      SessionEpoch epoch,      EntityRuntimeHandle player,      EcsServerCommandBuffer commands);}

@@ -1,10 +1,24 @@
+using Terraria.Session;
 using System.Net.Sockets;
 using System.Threading.Channels;
 
-using Terraria.Communication;
 
 namespace Terraria.Network;
 
+/// <summary>
+/// One TCP connection with a single writer. Realtime frames are taken before normal frames, and a
+/// tick batch keeps normal frames out until its seal marker is consumed.
+/// </summary>
+/// <remarks>
+/// 四条铁律（修改本类型时必须保持）：
+/// <list type="number">
+/// <item>一帧在一个 <c>SendFrameAsync</c> 调用内写完；允许底层分段 <c>Socket.SendAsync</c>，
+/// 但期间不得切换到别的帧，因此线路上永远没有半帧或被交叉的帧。</item>
+/// <item>Tick 批一旦开启，普通流量不得出队，直到闭合标记被写线程取到。</item>
+/// <item>闭合标记必须与批内帧走同一条有序通道的尾部，否则会提前放行。</item>
+/// <item>写失败即 <c>RequestStop</c>，连接不可复用；绝不在半帧之后续写。</item>
+/// </list>
+/// </remarks>
 public sealed class PacketTcpConnection : IAsyncDisposable
 {
   private readonly object _lifecycleGate = new();
@@ -18,6 +32,9 @@ public sealed class PacketTcpConnection : IAsyncDisposable
   private readonly PacketFrameAssembler _assembler;
   private readonly Channel<PendingSend> _sendQueue;
   private readonly Channel<PendingSend> _realtimeSendQueue;
+  // tick 批门：批开启期间禁止写线程取普通流量。闭合时向实时队列写入一个零负载标记，
+  // 借同一条有序通道唤醒等待者并放行普通流量。
+  private bool _tickBatchOpen;
   private readonly SemaphoreSlim _sendFrameSlots;
   private readonly SemaphoreSlim _realtimeSendFrameSlots;
   private readonly ConnectionByteBudget _sendBudget;
@@ -560,6 +577,14 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       while (await TryReadPendingAsync(cancellationToken).ConfigureAwait(false)
           is PendingSend pending)
       {
+        if (pending.IsBatchSeal)
+        {
+          // 闭合标记：放行普通流量即可，本身不写任何字节。
+          Volatile.Write(ref _tickBatchOpen, false);
+          pending.Release();
+          continue;
+        }
+
         SendReceipt receipt;
         try
         {
@@ -634,7 +659,8 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       Task<bool>? realtimeWait = realtimeCompleted || _realtimeSendQueue.Reader.Completion.IsCompleted
         ? null
         : _realtimeSendQueue.Reader.WaitToReadAsync(cancellationToken).AsTask();
-      Task<bool>? normalWait = normalCompleted || _sendQueue.Reader.Completion.IsCompleted
+      Task<bool>? normalWait = normalCompleted || _sendQueue.Reader.Completion.IsCompleted ||
+          Volatile.Read(ref _tickBatchOpen)
         ? null
         : _sendQueue.Reader.WaitToReadAsync(cancellationToken).AsTask();
 
@@ -681,7 +707,40 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       return realtime;
     }
 
+    // tick 批未闭合时普通流量一律不出队：批内帧必须连续写完，不被 Tile 帧切断。
+    if (Volatile.Read(ref _tickBatchOpen))
+    {
+      return null;
+    }
+
     return _sendQueue.Reader.TryRead(out PendingSend? normal) ? normal : null;
+  }
+
+  /// <summary>开启 tick 批：此后普通流量暂停出队，直到闭合标记被写线程取到。</summary>
+  public void BeginTickBatch(long tick)
+  {
+    _ = tick;
+    Volatile.Write(ref _tickBatchOpen, true);
+  }
+
+  /// <summary>
+  /// 闭合 tick 批。标记走实时通道尾部，因此一定在本批帧之后被取到；写入失败时立即放行
+  /// 普通流量，避免连接因为一个丢失的标记永久停发。
+  /// </summary>
+  public ValueTask SealTickBatch(long tick)
+  {
+    _ = tick;
+    lock (_lifecycleGate)
+    {
+      if (!_stopRequested && !_disposed &&
+          _realtimeSendQueue.Writer.TryWrite(PendingSend.CreateBatchSeal()))
+      {
+        return ValueTask.CompletedTask;
+      }
+    }
+
+    Volatile.Write(ref _tickBatchOpen, false);
+    return ValueTask.CompletedTask;
   }
 
   private async Task<SendReceipt> SendFrameAsync(
@@ -950,10 +1009,19 @@ public sealed class PacketTcpConnection : IAsyncDisposable
 
   private sealed class PendingSend
   {
-    private readonly ConnectionByteBudget.Lease _byteLease;
-    private readonly ConnectionByteBudget.Lease _rawLease;
-    private readonly SemaphoreSlim _frameSlots;
+    private readonly ConnectionByteBudget.Lease? _byteLease;
+    private readonly ConnectionByteBudget.Lease? _rawLease;
+    private readonly SemaphoreSlim? _frameSlots;
     private int _bytesSubmitted;
+
+    private PendingSend()
+    {
+      FrameBytes = [];
+      Sequence = new PacketSequence(0);
+      AdmissionDeadline = new CancellationTokenSource();
+      AdmissionDeadline.Cancel();
+      IsBatchSeal = true;
+    }
 
     public PendingSend(
       byte[] frameBytes,
@@ -975,11 +1043,16 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       CallerCancellation = callerCancellation;
     }
 
+    public static PendingSend CreateBatchSeal() => new();
+
     public byte[] FrameBytes { get; }
     public PacketSequence Sequence { get; }
     public CancellationTokenSource AdmissionDeadline { get; }
     public long AdmissionStarted { get; }
     public CancellationToken CallerCancellation { get; }
+
+    /// <summary>为 true 表示这是一个零负载的 tick 批闭合标记，不写字节、不占配额。</summary>
+    public bool IsBatchSeal { get; }
     public int BytesSubmitted => Volatile.Read(ref _bytesSubmitted);
     public TaskCompletionSource<SendReceipt> Completion { get; } =
       new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -991,9 +1064,14 @@ public sealed class PacketTcpConnection : IAsyncDisposable
 
     public void Release()
     {
-      _rawLease.Dispose();
-      _byteLease.Dispose();
-      _frameSlots.Release();
+      _rawLease?.Dispose();
+      _byteLease?.Dispose();
+      _frameSlots?.Release();
+      if (IsBatchSeal)
+      {
+        // 标记不参与写入期限；随释放一并回收，避免每 tick 泄漏一个 CancellationTokenSource。
+        AdmissionDeadline.Dispose();
+      }
     }
   }
 }

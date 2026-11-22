@@ -1,4 +1,3 @@
-using Terraria.Communication;
 
 namespace Terraria.Network;
 

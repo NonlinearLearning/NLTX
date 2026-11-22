@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using ArchWorld = Arch.Core.World;
 using Terraria.Combat;
-using Terraria.Communication;
+using Terraria.Network;
 using Terraria.Entity;
 using Terraria.Relationships;
 using Terraria.World;

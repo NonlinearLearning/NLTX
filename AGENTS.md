@@ -8,6 +8,11 @@
 - 开始任务前，阅读 [当前上下文](Context/progress.md)。
 - 所有变更，先阅读 [开发协作与变更约束](Context/约束/开发协作与变更约束.md)。
 
+## Progress 记录
+
+- 新增、改写、降级或清理 `Context/progress.md` 条目，或判断某段信息该不该进 progress 前，阅读
+  [progress 信息保存约束](Context/约束/progress信息保存约束.md)。
+
 ## Project File Organization
 
 - 新增、移动、拆分、合并或重命名项目、目录或文档，或调整 `src/` 生产与参考源码边界、
