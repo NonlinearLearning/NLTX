@@ -2,7 +2,7 @@
 
 ## 范围
 
-本次将《[Version4 玩家玩法与能力系统组件字段设计](../../component-decomposition/baseline/Version4玩家玩法与能力系统组件字段设计.md)》
+本次将《[Version4 玩家玩法与能力系统组件字段设计](../../component-decomposition/archive/baseline/Version4玩家玩法与能力系统组件字段设计.md)》
 中的 13 个状态组件落入 `src/Player` 的 `Terraria.Player` 项目。实现只交付状态、兼容字段和
 只读派生属性，不包含 System、Query、网络 Adapter、存档 Projection 或测试。
 

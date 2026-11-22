@@ -11,8 +11,7 @@ public sealed class TcpCommunicationHost : ICommunicationTransportPort, IAsyncDi
   private readonly object _gate = new();
   private readonly TcpListenerAdapter _listener;
   private readonly Func<SessionEpoch> _allocateEpoch;
-  private readonly Func<InboundRawFrame, InboundPacketEnvelope> _createEnvelope;
-  private readonly Func<InboundCommunicationPacket, CancellationToken, ValueTask> _onPacket;
+  private readonly Func<InboundRawFrame, CancellationToken, ValueTask> _onPacket;
   private readonly Func<ConnectionClosed, ValueTask> _onClosed;
   private readonly Func<Exception, ValueTask> _onConnectionFailure;
   private readonly Func<SessionEpoch, ValueTask>? _onConnected;
@@ -27,8 +26,7 @@ public sealed class TcpCommunicationHost : ICommunicationTransportPort, IAsyncDi
   public TcpCommunicationHost(
       IPEndPoint endpoint,
       Func<SessionEpoch> allocateEpoch,
-      Func<InboundRawFrame, InboundPacketEnvelope> createEnvelope,
-      Func<InboundCommunicationPacket, CancellationToken, ValueTask> onPacket,
+      Func<InboundRawFrame, CancellationToken, ValueTask> onPacket,
       Func<ConnectionClosed, ValueTask> onClosed,
       Func<Exception, ValueTask> onConnectionFailure,
       TcpListenerAdapterOptions? listenerOptions = null,
@@ -38,13 +36,11 @@ public sealed class TcpCommunicationHost : ICommunicationTransportPort, IAsyncDi
   {
     ArgumentNullException.ThrowIfNull(endpoint);
     ArgumentNullException.ThrowIfNull(allocateEpoch);
-    ArgumentNullException.ThrowIfNull(createEnvelope);
     ArgumentNullException.ThrowIfNull(onPacket);
     ArgumentNullException.ThrowIfNull(onClosed);
     ArgumentNullException.ThrowIfNull(onConnectionFailure);
     _listener = new TcpListenerAdapter(endpoint, listenerOptions);
     _allocateEpoch = allocateEpoch;
-    _createEnvelope = createEnvelope;
     _onPacket = onPacket;
     _onClosed = onClosed;
     _onConnectionFailure = onConnectionFailure;
@@ -225,16 +221,7 @@ public sealed class TcpCommunicationHost : ICommunicationTransportPort, IAsyncDi
 
   private ValueTask HandleFrameAsync(InboundRawFrame frame, CancellationToken cancellationToken)
   {
-    InboundPacketEnvelope envelope = _createEnvelope(frame);
-    return _onPacket(
-        new InboundCommunicationPacket(
-            envelope,
-            new InboundPacketFrame(
-                frame.Frame.MessageId,
-                frame.Frame.ModuleId,
-                frame.Frame.FrameBytes,
-                frame.Frame.Payload)),
-        cancellationToken);
+    return _onPacket(frame, cancellationToken);
   }
 
   private ValueTask HandleClosedAsync(SessionEpoch epoch, ConnectionClosed closed)

@@ -8,5 +8,6 @@ public enum ProjectileLifecycleStatus : byte
   DefinitionUnknown = 2,
   OwnerUnavailable = 3,
   StaleReference = 4,
-  AlreadyTerminated = 5
+  AlreadyTerminated = 5,
+  Deferred = 6
 }

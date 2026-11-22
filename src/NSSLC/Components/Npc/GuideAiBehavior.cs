@@ -13,6 +13,8 @@ namespace Terraria.Npc;
 /// </summary>
 public sealed class GuideAiBehavior : AiBehavior<NpcAiIntent>
 {
+  private const float SimulationTicksPerSecond = 60f;
+
   private static readonly AiRequirements Requirements = AiRequirements.Empty
       .Require<NpcAiMovementFact>();
   private float _modeTime;
@@ -51,7 +53,7 @@ public sealed class GuideAiBehavior : AiBehavior<NpcAiIntent>
     }
     _blockedLastTick = blocked;
     Vector2 desired = _walking
-        ? new Vector2(_direction * 1.0f, 0f)
+        ? new Vector2(_direction * SimulationTicksPerSecond, 0f)
         : Vector2.Zero;
     output.Emit(new NpcAiIntent(
         NpcAiIntentKind.SetBehaviorState,

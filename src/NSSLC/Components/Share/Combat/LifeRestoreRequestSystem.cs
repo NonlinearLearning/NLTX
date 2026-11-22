@@ -26,10 +26,11 @@ public sealed class LifeRestoreRequestSystem : BaseSystem<ArchWorld, EcsServerTi
   {
     // 在查询之外解析队列实体：Require 内部本身要跑一次查询。
     LifeRestoreRequestQueueComponent queue = LifeRestoreRequestQueue.Require(World);
-    IReadOnlyList<EntityRuntimeHandle> pending = queue.Drain();
+    IReadOnlyList<LifeRestoreRequest> pending = queue.Drain();
     for (int index = 0; index < pending.Count; index++)
     {
-      EntityRuntimeHandle handle = pending[index];
+      LifeRestoreRequest request = pending[index];
+      EntityRuntimeHandle handle = request.Target;
       if (!_resolver.TryResolve(handle, out ArchEntity entity) ||
           entity == ArchEntity.Null || !World.IsAlive(entity) ||
           !World.Has<LifeComponent>(entity))
@@ -38,7 +39,10 @@ public sealed class LifeRestoreRequestSystem : BaseSystem<ArchWorld, EcsServerTi
       }
 
       ref LifeComponent life = ref World.Get<LifeComponent>(entity);
-      life = life.WithCurrent(life.Maximum);
+      int nextCurrent = request.Amount == 0
+          ? life.Maximum
+          : Math.Min(life.Maximum, life.Current + request.Amount);
+      life = life.WithCurrent(nextCurrent);
     }
   }
 }

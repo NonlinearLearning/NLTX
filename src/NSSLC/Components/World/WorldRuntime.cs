@@ -18,6 +18,7 @@ namespace Terraria.World;
 /// </remarks>
 public sealed class WorldRuntime :
     IWorldInteractionWorld,
+    IWorldTileReader,
     ISpatialWorldQuery,
     ISpatialWorldRevisionSource,
     IWorldTileGrid,
@@ -348,9 +349,13 @@ public sealed class WorldRuntime :
 
   private bool HasQueuedLiquid() => _liquid.HasQueuedWork;
 
-  /// <summary>Returns and clears mutations after a projection has found a live recipient.</summary>
-  public IReadOnlyList<WorldMutation> DrainPendingMutations()
+  /// <summary>
+  /// Returns and clears up to <paramref name="maximum"/> pending mutations. Anything above the
+  /// bound stays queued and is merged with later changes to the same coordinate.
+  /// </summary>
+  public IReadOnlyList<WorldMutation> DrainPendingMutations(int maximum)
   {
+    ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximum);
     lock (_gate)
     {
       if (_pendingMutations.Count == 0)
@@ -358,8 +363,22 @@ public sealed class WorldRuntime :
         return Array.Empty<WorldMutation>();
       }
 
-      WorldMutation[] mutations = _pendingMutations.Values.ToArray();
-      _pendingMutations.Clear();
+      int take = Math.Min(maximum, _pendingMutations.Count);
+      var mutations = new List<WorldMutation>(take);
+      foreach (WorldMutation mutation in _pendingMutations.Values)
+      {
+        mutations.Add(mutation);
+        if (mutations.Count == take)
+        {
+          break;
+        }
+      }
+
+      for (int index = 0; index < mutations.Count; index++)
+      {
+        _pendingMutations.Remove(mutations[index].Coordinate);
+      }
+
       return mutations;
     }
   }

@@ -17,7 +17,8 @@ public readonly record struct NpcAiIntent
       float stateSlot1 = 0f,
       EntityRuntimeHandle attackTarget = default,
       ulong attackDefinitionKey = 0,
-      bool jumpRequested = false)
+      bool jumpRequested = false,
+      float jumpSpeed = 0f)
   {
     if (!Enum.IsDefined(kind) || !Enum.IsDefined(phase))
     {
@@ -25,7 +26,8 @@ public readonly record struct NpcAiIntent
     }
 
     if (!float.IsFinite(desiredVelocity.X) || !float.IsFinite(desiredVelocity.Y) ||
-        !float.IsFinite(stateSlot0) || !float.IsFinite(stateSlot1))
+        !float.IsFinite(stateSlot0) || !float.IsFinite(stateSlot1) ||
+        !float.IsFinite(jumpSpeed) || jumpSpeed < 0f)
     {
       throw new ArgumentOutOfRangeException(nameof(desiredVelocity));
     }
@@ -46,6 +48,7 @@ public readonly record struct NpcAiIntent
     Phase = phase;
     DesiredVelocity = desiredVelocity;
     JumpRequested = jumpRequested;
+    JumpSpeed = jumpSpeed;
     ActionPhase = actionPhase;
     StateSlot0 = stateSlot0;
     StateSlot1 = stateSlot1;
@@ -61,6 +64,9 @@ public readonly record struct NpcAiIntent
 
   /// <summary>Requests a jump through the movement system on the current tick.</summary>
   public bool JumpRequested { get; }
+
+  /// <summary>Optional jump speed in world units per second.</summary>
+  public float JumpSpeed { get; }
 
   public int ActionPhase { get; }
 

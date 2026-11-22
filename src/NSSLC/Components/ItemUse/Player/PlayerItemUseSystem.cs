@@ -53,16 +53,35 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
     }
 
     PlayerItemUseFactQueueComponent facts = Facts;
+    Dictionary<ArchEntity, PlayerItemUseStateComponent> pendingStates = [];
     for (int index = 0; index < requests.Count; index++)
     {
-      Apply(requests[index], context.Tick, facts);
+      Apply(requests[index], context.Tick, facts, pendingStates);
+    }
+
+    foreach (KeyValuePair<ArchEntity, PlayerItemUseStateComponent> pending in pendingStates)
+    {
+      if (World.Has<PlayerItemUseStateComponent>(pending.Key))
+      {
+        World.Get<PlayerItemUseStateComponent>(pending.Key) = pending.Value;
+      }
+      else if (context.Commands is not null)
+      {
+        context.Commands.Add(pending.Key, pending.Value);
+      }
+      else
+      {
+        throw new InvalidOperationException(
+            "Player item-use state creation requires the ECS command buffer.");
+      }
     }
   }
 
   private void Apply(
       in PlayerItemUseRequest request,
       long tick,
-      PlayerItemUseFactQueueComponent facts)
+      PlayerItemUseFactQueueComponent facts,
+      Dictionary<ArchEntity, PlayerItemUseStateComponent> pendingStates)
   {
     if (!_resolver.TryResolve(request.Player, out ArchEntity player) ||
         player == ArchEntity.Null || !World.IsAlive(player))
@@ -70,20 +89,17 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
       return;
     }
 
-    // 状态组件按需挂载：玩家实体由 Communication 创建，使用门闸属于 Player 域的附加状态。
-    if (!World.Has<PlayerItemUseStateComponent>(player))
-    {
-      World.Add(player, PlayerItemUseStateComponent.Idle);
-    }
-
-    PlayerItemUseStateComponent state = World.Get<PlayerItemUseStateComponent>(player);
+    // 状态组件按需挂载：同一 tick 内重复请求先在本地合并，最后统一 Add。
+    PlayerItemUseStateComponent state = World.Has<PlayerItemUseStateComponent>(player)
+        ? World.Get<PlayerItemUseStateComponent>(player)
+        : pendingStates.GetValueOrDefault(player, PlayerItemUseStateComponent.Idle);
     if (request.Kind == PlayerItemUseRequestKind.ReleaseUse)
     {
-      Release(request, state, player, tick, facts);
+      Release(request, state, player, tick, facts, pendingStates);
       return;
     }
 
-    Begin(request, state, player, tick, facts);
+    Begin(request, state, player, tick, facts, pendingStates);
   }
 
   private void Release(
@@ -91,10 +107,11 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
       in PlayerItemUseStateComponent state,
       ArchEntity player,
       long tick,
-      PlayerItemUseFactQueueComponent facts)
+      PlayerItemUseFactQueueComponent facts,
+      Dictionary<ArchEntity, PlayerItemUseStateComponent> pendingStates)
   {
     bool wasChanneling = state.Channeling;
-    World.Get<PlayerItemUseStateComponent>(player) = state with { Channeling = false };
+    SetState(player, state with { Channeling = false }, pendingStates);
     facts.Enqueue(new PlayerItemUseFact(
         request.Player,
         state.Slot,
@@ -110,7 +127,8 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
       in PlayerItemUseStateComponent state,
       ArchEntity player,
       long tick,
-      PlayerItemUseFactQueueComponent facts)
+      PlayerItemUseFactQueueComponent facts,
+      Dictionary<ArchEntity, PlayerItemUseStateComponent> pendingStates)
   {
     if (!World.Has<InventoryComponent>(player))
     {
@@ -163,13 +181,16 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
     }
 
     bool continuous = state.Channeling && definition.Channel;
-    World.Get<PlayerItemUseStateComponent>(player) = new PlayerItemUseStateComponent(
-        request.Slot,
-        ItemUseRules.ComputeReadyTick(tick, definition.UseTime),
-        tick,
-        definition.Channel,
-        stack.ItemId,
-        ammoItemId);
+    SetState(
+        player,
+        new PlayerItemUseStateComponent(
+            request.Slot,
+            ItemUseRules.ComputeReadyTick(tick, definition.UseTime),
+            tick,
+            definition.Channel,
+            stack.ItemId,
+            ammoItemId),
+        pendingStates);
     facts.Enqueue(new PlayerItemUseFact(
         request.Player,
         request.Slot,
@@ -217,5 +238,20 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
         tick,
         Continuous: false,
         outcome));
+  }
+
+  private void SetState(
+      ArchEntity player,
+      in PlayerItemUseStateComponent state,
+      Dictionary<ArchEntity, PlayerItemUseStateComponent> pendingStates)
+  {
+    if (World.Has<PlayerItemUseStateComponent>(player))
+    {
+      World.Get<PlayerItemUseStateComponent>(player) = state;
+    }
+    else
+    {
+      pendingStates[player] = state;
+    }
   }
 }

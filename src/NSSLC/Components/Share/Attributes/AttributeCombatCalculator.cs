@@ -72,16 +72,9 @@ public static class AttributeCombatCalculator
     return Math.Max(0f, Resolve(attributes, AttributeKind.ElementalPenetration));
   }
 
-  public static int ResolveShield(AttributeSetComponent? attributes)
+  public static int ResolveShield(ShieldPoolComponent? shield)
   {
-    // Shield is a current runtime pool. Capacity and recharge modifiers belong to MaxShield;
-    // consuming this value must not reapply a modifier on every hit.
-    if (attributes is null || !attributes.TryGetBaseValue(AttributeKind.Shield, out float value))
-    {
-      return 0;
-    }
-
-    return ToBoundedInt(value);
+    return shield?.Current ?? 0;
   }
 
   public static int ResolveMaxShield(AttributeSetComponent? attributes)

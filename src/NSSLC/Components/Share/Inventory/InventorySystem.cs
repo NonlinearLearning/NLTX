@@ -1,6 +1,7 @@
 using System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
+using Terraria.Entity;
 using Terraria.Item;
 
 namespace Terraria.Inventory;
@@ -27,7 +28,8 @@ public sealed partial class InventorySystem {
   public InventoryTransferResult TryInsert(
       ArchEntity inventoryEntity,
       ArchEntity itemEntity,
-      int? targetSlotIndex = null) {
+      int? targetSlotIndex = null,
+      EcsServerCommandBuffer? commands = null) {
     InventoryTransferFailure failure = GetInventory(inventoryEntity, out InventoryComponent inventory);
     if (failure != InventoryTransferFailure.None) {
       return InventoryTransferResult.Rejected(failure);
@@ -43,7 +45,7 @@ public sealed partial class InventorySystem {
     }
 
     if (_world.Has<InventoryComponent>(itemEntity)) {
-      return TryStoreEntity(inventoryEntity, itemEntity, targetSlotIndex);
+      return TryStoreEntity(inventoryEntity, itemEntity, targetSlotIndex, commands);
     }
 
     ItemStack stack = item.Stack;
@@ -65,7 +67,10 @@ public sealed partial class InventorySystem {
 
     // Complete all allocation and rule checks before mutating the item or inventory.
     if (inserted == stack.Quantity) {
-      _world.Destroy(itemEntity);
+      commands?.Destroy(itemEntity);
+      if (commands is null) {
+        _world.Destroy(itemEntity);
+      }
     } else {
       item.Replace(stack.WithQuantity(stack.Quantity - inserted));
     }
@@ -266,7 +271,9 @@ public sealed partial class InventorySystem {
   }
 
   /// <summary>Removes the capability only after all stored values and entities are taken out.</summary>
-  public InventoryTransferResult TryRemoveInventoryComponent(ArchEntity entity) {
+  public InventoryTransferResult TryRemoveInventoryComponent(
+      ArchEntity entity,
+      EcsServerCommandBuffer? commands = null) {
     InventoryTransferFailure failure = GetInventory(entity, out InventoryComponent inventory);
     if (failure != InventoryTransferFailure.None) {
       return InventoryTransferResult.Rejected(failure);
@@ -276,7 +283,10 @@ public sealed partial class InventorySystem {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.InventoryNotEmpty);
     }
 
-    _world.Remove<InventoryComponent>(entity);
+    commands?.Remove<InventoryComponent>(entity);
+    if (commands is null) {
+      _world.Remove<InventoryComponent>(entity);
+    }
     return InventoryTransferResult.Success(0);
   }
 

@@ -26,6 +26,8 @@ public readonly record struct AttributeContribution
           "Unknown attribute kind.");
     }
 
+    AttributeKindMetadata.ValidateNumericContribution(attribute);
+
     if (!Enum.IsDefined(operation))
     {
       throw new ArgumentOutOfRangeException(

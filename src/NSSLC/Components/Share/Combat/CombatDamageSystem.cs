@@ -113,6 +113,21 @@ public sealed class CombatDamageSystem
       return DamageProcessResult.Rejected(DamageRejectionReason.InvalidRequest);
     }
 
+    if (_world.Has<DamageImmunityComponent>(target) ||
+        (_world.Has<DamageImmunityStatusComponent>(target) &&
+         _world.Get<DamageImmunityStatusComponent>(target).IsActive))
+    {
+      return DamageProcessResult.Rejected(DamageRejectionReason.TargetImmune);
+    }
+
+    // 属性能力必须由实体组合显式声明：没有 AttributeSetComponent 的战斗实体在定义层就是
+    // 不完整的，而不是靠 null fallback 得到一套隐式默认属性。
+    if (!_world.Has<AttributeSetComponent>(source) ||
+        !_world.Has<AttributeSetComponent>(target))
+    {
+      return DamageProcessResult.Rejected(DamageRejectionReason.MissingAttributeCapability);
+    }
+
     LifeComponent targetLife = _world.Get<LifeComponent>(target);
     ProtectionWindowComponent? protection = _world.Has<ProtectionWindowComponent>(target)
         ? _world.Get<ProtectionWindowComponent>(target)
@@ -136,17 +151,17 @@ public sealed class CombatDamageSystem
       return DamageProcessResult.Rejected(DamageRejectionReason.RelationRejected);
     }
 
-    AttributeSetComponent? sourceAttributes = _world.Has<AttributeSetComponent>(source)
-        ? _world.Get<AttributeSetComponent>(source)
-        : null;
-    AttributeSetComponent? targetAttributes = _world.Has<AttributeSetComponent>(target)
-        ? _world.Get<AttributeSetComponent>(target)
+    AttributeSetComponent sourceAttributes = _world.Get<AttributeSetComponent>(source);
+    AttributeSetComponent targetAttributes = _world.Get<AttributeSetComponent>(target);
+    ShieldPoolComponent? targetShield = _world.Has<ShieldPoolComponent>(target)
+        ? _world.Get<ShieldPoolComponent>(target)
         : null;
     DamagePayload payload = request.Payload;
     DamageMitigationResult mitigation = _mitigation.Calculate(
         in payload,
         sourceAttributes,
         targetAttributes,
+        targetShield,
         targetLife);
     if (!mitigation.HasEffect)
     {

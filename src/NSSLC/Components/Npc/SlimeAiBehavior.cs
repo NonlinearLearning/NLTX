@@ -1,5 +1,4 @@
-using System;
-using System.Numerics;
+using System.Collections.Generic;
 using Terraria.Ai;
 
 namespace Terraria.Npc;
@@ -15,8 +14,12 @@ public sealed class SlimeAiBehavior : AiBehavior<NpcAiIntent>
 {
   private static readonly AiRequirements Requirements = AiRequirements.Empty
       .Require<NpcAiMovementFact>()
-      .Require<NpcAiTargetFact>();
-  private float _jumpTime;
+      .Require<NpcAiTargetFact>()
+      .Require<NpcAiLifeFact>()
+      .Require<NpcAiWorldFact>();
+  private float _jumpTimer = -100f;
+  private float _direction = 1f;
+  private bool _initialized;
 
   public SlimeAiBehavior() : base(Requirements)
   {
@@ -29,48 +32,32 @@ public sealed class SlimeAiBehavior : AiBehavior<NpcAiIntent>
   {
     NpcAiMovementFact movement = snapshot.Get<NpcAiMovementFact>();
     NpcAiTargetFact target = snapshot.Get<NpcAiTargetFact>();
-    _jumpTime += deltaTime;
-    bool shouldJump = movement.IsGrounded && _jumpTime >= 1.6f;
-    if (shouldJump)
+    NpcAiLifeFact life = snapshot.Get<NpcAiLifeFact>();
+    NpcAiWorldFact world = snapshot.Get<NpcAiWorldFact>();
+    IReadOnlyList<NpcAiIntent> intents = SlimeAiRules.Calculate(
+        movement,
+        target,
+        life,
+        world,
+        _jumpTimer,
+        _initialized,
+        _direction,
+        deltaTime);
+    NpcAiIntent state = intents[0];
+    _jumpTimer = state.StateSlot1;
+    _direction = state.StateSlot0;
+    _initialized = state.ActionPhase > 0;
+    foreach (NpcAiIntent intent in intents)
     {
-      _jumpTime = 0f;
+      output.Emit(intent);
     }
-
-    float direction = target.IsUsable
-        ? MathF.Sign(target.Position.X - movement.Position.X)
-        : 0f;
-    Vector2 desired;
-    if (target.IsUsable)
-    {
-      desired = new Vector2(direction * 2.5f, 0f);
-    }
-    else
-    {
-      desired = movement.IsGrounded
-          ? Vector2.Zero
-          : new Vector2(movement.Velocity.X * 0.93f, 0f);
-    }
-    NpcBehaviorPhase phase = target.IsUsable
-        ? NpcBehaviorPhase.Chase
-        : NpcBehaviorPhase.Idle;
-    output.Emit(new NpcAiIntent(
-        NpcAiIntentKind.SetBehaviorState,
-        phase,
-        desiredVelocity: desired,
-        jumpRequested: shouldJump,
-        stateSlot0: direction,
-        stateSlot1: _jumpTime));
-    output.Emit(new NpcAiIntent(
-        NpcAiIntentKind.Move,
-        phase,
-        desiredVelocity: desired,
-        jumpRequested: shouldJump,
-        stateSlot0: direction,
-        stateSlot1: _jumpTime));
   }
 
   protected override void StopCore(AiOutput<NpcAiIntent> output)
   {
+    _jumpTimer = -100f;
+    _direction = 1f;
+    _initialized = false;
     output.Emit(new NpcAiIntent(NpcAiIntentKind.StopMovement));
   }
 }

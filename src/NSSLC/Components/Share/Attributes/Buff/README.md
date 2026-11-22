@@ -13,25 +13,42 @@
 
 本子域负责：效果标识、免疫键、剩余时间、层数、准入判定、刷新与叠层、过期移除。
 
-本子域**不**负责：效果的具体表现（周期伤害、治疗、击退、召唤物维护）、
-接收策略的内容来源、属性数值的最终结算。这些由 Buff 定义、Combat 与
-调用方各自承担。
+本子域不直接提交生命、伤害或网络状态，但定义可以同时声明数值贡献、行为贡献和周期效果。
+行为由对应行为组件保存，由目标域系统通过请求组件提交伤害或治疗。
+
+## 定义的四类内容
+
+| 内容 | 类型 | 用途 |
+| --- | --- | --- |
+| 数值贡献 | `AttributeContribution[]` | 进入 `AttributeSetComponent`，随来源整体撤销 |
+| 行为贡献 | `BuffBehaviorContribution[]` | 物化为 `InvisibilityComponent`、`StunComponent`、`DamageImmunityStatusComponent` 等 |
+| 周期效果 | `BuffPeriodicEffect[]` | 物化为 `LifeRegenerationComponent` / `DamageOverTimeComponent`，再由周期系统产生请求 |
+| 即时效果 | 尚未建模 | 迁移债；当前用明确请求组件表达 |
+
+`BuffBehaviorKind` 是行为分类键，不是属性键：行为不会以浮点 `StatusFlag` 写进属性系统。
 
 ## 与根层的关系
 
-Buff 定义不持有自己的贡献类型。`BuffDefinition` 直接用根层共有的
-`IReadOnlyList<AttributeContribution>`，写入时通过
+Buff 定义不持有自己的数值贡献类型。`BuffDefinition` 直接用根层共有的
+`IReadOnlyList<AttributeContribution>`，并额外声明 `Behaviors` 与 `PeriodicEffects`，写入时通过
 `AttributeSourceDescriptor` + `AttributeContributionSet` +
 `AttributeContributionSystem` 走同一条路径，与十一类独立管线形态共用一套机制。
 
 ## 写入闭包
 
 ```text
-BuffApplyIntent
-    → BuffAdmissionSystem       检查接收能力、免疫、来源
-    → BuffSystem                更新 BuffListComponent、增删 AttributeModifier
-    → AttributeSystem           计算并推进属性
+BuffApplyRequestComponent                  （跨域输入，挂在目标实体上）
+    → BuffApplyRequestSystem               （Attributes 域消费，移除请求）
+        → BuffAdmissionSystem              检查接收能力、免疫、来源
+        → BuffSystem                       更新 BuffListComponent、增删 AttributeModifier
+    → BuffTickSystem                       推进唯一期限
+    → StatusEffectBehaviorSystem           按来源同步行为组件
+    → StatusEffectPeriodicSystem           产生 Life / Combat 请求
+    → LifeRestoreRequestSystem / CombatDamageRequestSystem
 ```
+
+`BuffSystem.TryApply` 只允许 `BuffApplyRequestSystem` 调用；外部域不得直接取用可变
+`BuffListComponent` 或 `AttributeSetComponent`。
 
 ## 计时期限的唯一持有者
 
@@ -62,3 +79,14 @@ Buff 剩余与修饰器剩余会保持同步（10→9→…→1，同一 tick �
 | `BuffImmunityComponent` | 免疫表 |
 | `BuffSystem` | 应用、刷新、叠层、过期 |
 | `BuffTickSystem` | ECS 推进适配 |
+| `BuffApplyRequestComponent` | 跨域应用意图（目标实体持有的请求组件） |
+| `BuffApplyRequestSystem` | Attributes 域消费请求的唯一入口 |
+| `BuffBehaviorContribution` / `BuffBehaviorKind` | 行为贡献声明与分类键 |
+| `BuffPeriodicEffect` | 周期效果声明 |
+| `LifeRegenerationComponent` | 周期治疗行为状态（按来源） |
+| `DamageOverTimeComponent` | 周期伤害行为状态（按来源） |
+| `InvisibilityComponent` | 隐身行为状态（按来源） |
+| `StunComponent` | 眩晕 / 移动限制行为状态（按来源） |
+| `DamageImmunityStatusComponent` | 状态来源提供的伤害免疫 |
+| `StatusEffectBehaviorSystem` | 行为贡献 → 具体行为组件 |
+| `StatusEffectPeriodicSystem` | 行为组件 → Life / Combat 请求 |

@@ -2,7 +2,7 @@
 
 ## 1. 文档目的
 
-本文承接《[Version4 内容定义目录组件化拆分报告](../../component-decomposition/baseline/Version4内容定义目录组件化拆分报告.md)》，
+本文承接《[Version4 内容定义目录组件化拆分报告](../../component-decomposition/archive/baseline/Version4内容定义目录组件化拆分报告.md)》，
 只定义“内容定义目录”相关组件、不可变定义记录、索引和投影的数据形状。
 
 本文不定义 System、Query、Command 的算法，不定义测试，也不直接修改现有 C# 源码。所有字段

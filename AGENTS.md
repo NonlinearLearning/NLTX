@@ -8,9 +8,15 @@
 - 开始任务前，阅读 [当前上下文](Context/progress.md)。
 - 所有变更，先阅读 [开发协作与变更约束](Context/约束/开发协作与变更约束.md)。
 
+## Project File Organization
+
+- 新增、移动、拆分、合并或重命名项目、目录或文档，或调整 `src/` 生产与参考源码边界、
+  `Shared/Server/Client` 端别拆分、`Test/` 与 `Build/` 落位前，阅读
+  [项目文件组织设计约束](Context/架构设计/项目文件组织设计约束.md)。
+
 ## ECS File Organization
 
-- 新增、移动、拆分、合并或重命名 ECS、领域模型、测试及相关文件前，阅读
+- 在 ECS 领域目录内新增、移动、拆分、合并或重命名组件、查询、系统、领域模型文件前，阅读
   [ECS 文件组织设计约束](Context/架构设计/ECS文件组织设计约束.md)。
 
 ## ECS Entity Organization
@@ -41,6 +47,11 @@
 
 - 修改命令式 C#、ECS 系统、后台任务或协议适配器前，阅读
   [副作用隔离规范（草案）](Context/约束/非函数式编码副作用隔离规范.md)。
+
+## Test 验证项目
+
+- 新增、移动或重命名 `Test/` 下的验证项目，或要确定某个改动该跑哪些验证前，阅读
+  [Test 验证项目组织](Test/README.md)。
 
 ## Build And Verification
 

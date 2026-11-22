@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | [Version4 非权威逐成员库存](../../migration/ledgers/Version4非权威模拟系统字段属性逐成员源码声明-更细子系统拆分-去除ID类文件.md) | 原始基线 SHA-256 `B944441D92D5103F218B766A3E354200794528A19E65A862E44C2B40A36F1196`；20 个原始分区，4,542 条基线成员记录、349 个细分库存组 | 完整来源基线；本次工作范围筛选为 P01–P15、P18，共 3,415 条成员记录；基线本身不证明行为 Owner |
 | [非权威分区工作包](../../migration/ledgers/non-authoritative-component-partitions/) | 当前纳入范围为 P01–P15、P18；P16、P17、P19、P20 已移除 | 每份保留报告声明细分组不是 Component/System；成员语义与写入闭包仍待补证 |
-| [权威模拟子系统审查](../../component-decomposition/baseline/Version4权威游戏模拟子系统全量审查报告-2026-09-05.md) | 32 个一级责任面及其分层；其中 21 个位于 `authoritative-simulation` 层 | Version4 的候选边界审查；不代表当前 NLTX 已迁移 |
+| [权威模拟子系统审查](../../component-decomposition/archive/baseline/Version4权威游戏模拟子系统全量审查报告-2026-09-05.md) | 32 个一级责任面及其分层；其中 21 个位于 `authoritative-simulation` 层 | Version4 的候选边界审查；不代表当前 NLTX 已迁移 |
 | [权威子系统索引](../../migration/ledgers/Version4子系统索引.json) | 系统职责、相邻责任和 Version4 证据路径 | 用于责任面交叉映射，不单独证明非权威库存成员的唯一写者 |
 
 权威基线把责任分为权威模拟、运行时基础设施/适配器、客户端表现/工具和外部依赖等层。报告明确指出，UI、音频、粒子、SceneMetrics 等表现或派生对象不因消费模拟数据而拥有权威状态；存档和网络也属于独立适配/生命周期责任。权威模拟系统与基础设施的调用关系不等于所有权归属。

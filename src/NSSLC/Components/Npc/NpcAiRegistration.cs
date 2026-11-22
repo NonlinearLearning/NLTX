@@ -12,14 +12,14 @@ public sealed class NpcAiRuntime : IDisposable
   private readonly AiSystem<NpcAiIntent> _system;
   private bool _disposed;
 
-  public NpcAiRuntime(ArchWorld world)
+  public NpcAiRuntime(ArchWorld world, NpcAiSnapshotProvider? snapshots = null)
   {
     ArgumentNullException.ThrowIfNull(world);
     _system = new AiSystem<NpcAiIntent>();
     _system.Register<GuideAiBehavior>();
     _system.Register<SlimeAiBehavior>();
     Entities = new AiEntitySystem<ArchEntity, NpcAiIntent>(_system);
-    Snapshots = new NpcAiSnapshotProvider(world);
+    Snapshots = snapshots ?? new NpcAiSnapshotProvider(world);
   }
 
   public AiEntitySystem<ArchEntity, NpcAiIntent> Entities { get; }
@@ -40,6 +40,14 @@ public sealed class NpcAiRuntime : IDisposable
   {
     ObjectDisposedException.ThrowIf(_disposed, this);
     Entities.Attach(entity, component);
+  }
+
+  public bool TryDetach(
+      ArchEntity entity,
+      out AiEntityResult<ArchEntity, NpcAiIntent> result)
+  {
+    ObjectDisposedException.ThrowIf(_disposed, this);
+    return Entities.TryDetach(entity, out result);
   }
 
   public void Dispose()

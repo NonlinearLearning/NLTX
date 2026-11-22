@@ -5,12 +5,11 @@ using Terraria.Entity;
 
 namespace Terraria.World;
 
-/// <summary>Applies the world-item changes other domains requested.</summary>
+/// <summary>Applies the world-item changes other domains requested at the Commit barrier.</summary>
 /// <remarks>
-/// Registered twice per tick: once before the network projection, so a request raised while
-/// handling an inbound packet in the preparation phase is applied in the same tick; and once after
-/// it, so a drop requested by the projection itself is also applied in that same tick. Both passes
-/// drain the same queue, and a drained queue is empty, so running it twice is harmless.
+/// Projection systems may enqueue intents, but this system is the sole owner that mutates the
+/// authoritative <see cref="WorldItemStore"/>. Requests emitted during Projection are therefore
+/// drained on the next tick's Commit pass.
 /// </remarks>
 public sealed class WorldItemRequestSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {

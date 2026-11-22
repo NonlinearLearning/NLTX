@@ -12,14 +12,20 @@ namespace Terraria.World;
 /// <remarks>
 /// The system is intended for the NSSLC Commit phase. It consumes one pending request per entity
 /// through the Arch World query API and writes the result component in place. The tile map remains
-/// owned by <see cref="IWorldInteractionWorld"/>.
+/// owned by the world owner; reads use IWorldTileReader and writes use IWorldInteractionWorld.
 /// </remarks>
 public sealed class WorldInteractionSystem : BaseSystem<ArchWorld, EcsServerTickContext> {
+  private readonly IWorldTileReader _tileReader;
   private readonly IWorldInteractionWorld _world;
 
-  public WorldInteractionSystem(ArchWorld ecsWorld, IWorldInteractionWorld world)
+  public WorldInteractionSystem(
+      ArchWorld ecsWorld,
+      IWorldTileReader tileReader,
+      IWorldInteractionWorld world)
       : base(ecsWorld ?? throw new ArgumentNullException(nameof(ecsWorld))) {
+    ArgumentNullException.ThrowIfNull(tileReader);
     ArgumentNullException.ThrowIfNull(world);
+    _tileReader = tileReader;
     _world = world;
   }
 
@@ -78,7 +84,7 @@ public sealed class WorldInteractionSystem : BaseSystem<ArchWorld, EcsServerTick
       return false;
     }
 
-    return _world.TryReadTile(coordinate, out tile);
+    return _tileReader.TryReadTile(coordinate, out tile);
   }
 
   public WorldInteractionResult TryBreakTile(

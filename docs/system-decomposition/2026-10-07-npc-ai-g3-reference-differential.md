@@ -5,7 +5,7 @@
 产物类型：evidence  
 状态：active  
 范围：G3/A4 的可重复真实来源输出差分；Eye of Cthulhu `type=4/netID=4/aiStyle=4` 冲刺切片、Blue Slime `type=1/netID=1/aiStyle=1` 与 Mother Slime `type=16/netID=16/aiStyle=1` 的有限移动切片  
-证据入口：[差分 verifier 与运行脚本](../../Test/Terraria.NpcAi.ReferenceVerification/README.md)、[机器报告](../../Build/diagnostics/NpcAiReferenceVerification/20261007T072353828Z/differential-report.json)、[来源构建 provenance](../../Build/diagnostics/NpcAiReferenceVerification/20261007T072353828Z/source-build-provenance.json)、[Eye profile](../../src/NSSLC/Component/Npc/NpcEyeOfCthulhuProfile.cs)、[Blue Slime profile](../../src/NSSLC/Component/Npc/NpcBlueSlimeProfile.cs)、[Mother Slime profile](../../src/NSSLC/Component/Npc/NpcMotherSlimeProfile.cs)、[F1 checkpoint](../migration/ledgers/2026-10-07-npc-ai-f1-eye-of-cthulhu-checkpoint.md)  
+证据入口：[差分 verifier 与运行脚本](../../Test/Terraria.NpcAi.ReferenceVerification/README.md)、[机器报告](../../Build/diagnostics/NpcAiReferenceVerification/20261007T072353828Z/differential-report.json)、[来源构建 provenance](../../Build/diagnostics/NpcAiReferenceVerification/20261007T072353828Z/source-build-provenance.json)、[Eye profile](../../src/NSSLC/Component/Npc/NpcEyeOfCthulhuProfile.cs)、[Blue Slime profile](../../src/NSSLC/Component/Npc/NpcBlueSlimeProfile.cs)、[Mother Slime profile](../../src/NSSLC/Component/Npc/NpcMotherSlimeProfile.cs)、[F1 checkpoint](../migration/ledgers/2026-10-07-npc-ai-session-checkpoint-ledger.md)  
 canonical 路径：docs/system-decomposition/2026-10-07-npc-ai-g3-reference-differential.md
 
 本检查点证明来源行为切片可以从只读参考产物和 pinned 源码副本重复采样，并记录与生产 profile 的实际差异。2026-10-07 的最新 32 场景/182 tick 运行确认 Eye、Blue Slime 与 Mother Slime 已建模状态和速度均匹配；仍有 3 个 `netUpdate` 可观察差异，来自 profile 尚未建模的 `directionY` 目标朝向同步。它不声明这些有限 profile、完整 NPC AI 或 F1 已实现原版等价。

@@ -21,6 +21,13 @@ namespace NSSLC.Server;
 /// </remarks>
 public static class NpcEntityDefinition
 {
+  private const float SimulationTicksPerSecond = 60f;
+  private const float GravityUnitsPerSecondSquared =
+      SimulationTicksPerSecond * SimulationTicksPerSecond;
+  private const float VelocityUnitsPerSecond = SimulationTicksPerSecond;
+  private const float SlimeMaximumSpeedPerTick = 3f;
+  private const float SlimeAccelerationPerTickSquared = 5f;
+
   public static readonly EntityDefinitionId GuideId = new("npc.guide");
 
   public static readonly EntityDefinitionId SlimeId = new("npc.slime");
@@ -45,6 +52,8 @@ public static class NpcEntityDefinition
         .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
         .Add(() => new EntityFactionComponent(Faction.Friendly))
         .Add(() => new LifeComponent(current: 250, maximum: 250))
+        .Add(() => new ShieldPoolComponent())
+        .Add(() => CreateAttributes(maximumLife: 250))
         // 出生坐标由调用方写入，这里只放占位值。
         .Add(() => new LocationComponent(Vector2.Zero))
         .Add(() => MovementVelocityComponent.Stationary)
@@ -56,15 +65,22 @@ public static class NpcEntityDefinition
             Mask: uint.MaxValue))
         .Add(() => new MovementCapabilityComponent(
             enabled: true,
-            maximumSpeed: 1f,
-            acceleration: 8f,
+            maximumSpeed: 1f * VelocityUnitsPerSecond,
+            acceleration: 0.07f * GravityUnitsPerSecondSquared,
             canJump: true,
-            jumpSpeed: 5f))
+            jumpSpeed: 5f * VelocityUnitsPerSecond))
         .Add(() => new GravityCapabilityComponent(Enabled: true, CanToggleDirection: false))
-        .Add(() => new GravityConfigurationComponent())
+        .Add(() => new GravityConfigurationComponent(
+            baseGravityMagnitude: 0.4f * GravityUnitsPerSecondSquared,
+            baseMaxFallSpeed: 10f * VelocityUnitsPerSecond))
         .Add(() => new GravityDirectionStateComponent(GravityDirection.Normal))
         .Add(() => new GravityModifierCollectionComponent())
-        .Add(() => new GravityStateComponent(0.4f, 10f, GravityDirection.Normal, false, false))
+        .Add(() => new GravityStateComponent(
+            0.4f * GravityUnitsPerSecondSquared,
+            10f * VelocityUnitsPerSecond,
+            GravityDirection.Normal,
+            false,
+            false))
         .Add(() => new TileCollisionCapabilityComponent(Enabled: true))
         .Add(() => new LiquidInteractionCapabilityComponent(
             Enabled: true,
@@ -82,7 +98,10 @@ public static class NpcEntityDefinition
     return new EntityDefinitionBuilder(SlimeId)
         .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
         .Add(() => new EntityFactionComponent(Faction.Hostile))
-        .Add(() => new LifeComponent(current: 50, maximum: 50))
+        .Add(() => new LifeComponent(current: 25, maximum: 25))
+        .Add(() => new ShieldPoolComponent())
+        .Add(() => CreateAttributes(maximumLife: 25))
+        .Add(() => new DamageImmunityComponent())
         .Add(() => new LocationComponent(Vector2.Zero))
         .Add(() => MovementVelocityComponent.Stationary)
         .Add(() => new ColliderComponent(new Vector2(24f, 18f)))
@@ -93,15 +112,22 @@ public static class NpcEntityDefinition
             Mask: uint.MaxValue))
         .Add(() => new MovementCapabilityComponent(
             enabled: true,
-            maximumSpeed: 2.5f,
-            acceleration: 12f,
+            maximumSpeed: SlimeMaximumSpeedPerTick * VelocityUnitsPerSecond,
+            acceleration: SlimeAccelerationPerTickSquared * GravityUnitsPerSecondSquared,
             canJump: true,
-            jumpSpeed: 6f))
+            jumpSpeed: 6f * VelocityUnitsPerSecond))
         .Add(() => new GravityCapabilityComponent(Enabled: true, CanToggleDirection: false))
-        .Add(() => new GravityConfigurationComponent())
+        .Add(() => new GravityConfigurationComponent(
+            baseGravityMagnitude: 0.4f * GravityUnitsPerSecondSquared,
+            baseMaxFallSpeed: 10f * VelocityUnitsPerSecond))
         .Add(() => new GravityDirectionStateComponent(GravityDirection.Normal))
         .Add(() => new GravityModifierCollectionComponent())
-        .Add(() => new GravityStateComponent(0.4f, 10f, GravityDirection.Normal, false, false))
+        .Add(() => new GravityStateComponent(
+            0.4f * GravityUnitsPerSecondSquared,
+            10f * VelocityUnitsPerSecond,
+            GravityDirection.Normal,
+            false,
+            false))
         .Add(() => new TileCollisionCapabilityComponent(Enabled: true))
         .Add(() => new LiquidInteractionCapabilityComponent(
             Enabled: true,
@@ -112,5 +138,12 @@ public static class NpcEntityDefinition
         .WithAi<SlimeAiBehavior>()
         .Add(() => new AiBehaviorSelectionComponent("Slime", "slime.default"))
         .Build();
+  }
+
+  private static AttributeSetComponent CreateAttributes(int maximumLife)
+  {
+    AttributeSetComponent attributes = new();
+    PlayerAttributeBaseline.Apply(attributes, maximumLife);
+    return attributes;
   }
 }

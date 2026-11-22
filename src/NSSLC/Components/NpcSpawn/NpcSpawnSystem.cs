@@ -40,7 +40,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
   private readonly IWorldTileGrid _tiles;
   private readonly IEntityRuntimeResolver _resolver;
   private readonly EntityDefinitionSystem<ArchEntity> _spawner;
-  private readonly NpcAiRuntime _ai;
+  private readonly NpcAiRuntime? _ai;
   private readonly NpcSpawnTable _table;
   private readonly long _worldSeed;
   private readonly List<SessionPlayer> _players = [];
@@ -56,7 +56,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
       IWorldTileGrid tiles,
       IEntityRuntimeResolver resolver,
       EntityDefinitionSystem<ArchEntity> spawner,
-      NpcAiRuntime ai,
+      NpcAiRuntime? ai,
       NpcSpawnTable table,
       NpcSpawnEnvironment environment,
       long worldSeed)
@@ -65,7 +65,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
     _tiles = tiles ?? throw new ArgumentNullException(nameof(tiles));
     _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
     _spawner = spawner ?? throw new ArgumentNullException(nameof(spawner));
-    _ai = ai ?? throw new ArgumentNullException(nameof(ai));
+    _ai = ai;
     _table = table ?? throw new ArgumentNullException(nameof(table));
     if (!environment.IsValid)
     {
@@ -140,7 +140,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
       }
 
       NpcSpawnCandidate candidate = _table.Select(random.Next(_table.TotalWeight));
-      Spawn(ground, candidate, tileSize, facts);
+      Spawn(ground, candidate, tileSize, facts, context.Commands);
       // Version4 每个 tick 最多成功一次刷怪。
       return;
     }
@@ -150,8 +150,41 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
       WorldTileCoordinate groundTile,
       NpcSpawnCandidate candidate,
       float tileSize,
-      NpcSpawnFactQueueComponent facts)
+      NpcSpawnFactQueueComponent facts,
+      EcsServerCommandBuffer? commands)
   {
+    if (commands is not null)
+    {
+      EcsServerEntityCreationTicket ticket =
+          _spawner.SpawnDeferred(candidate.DefinitionId, commands);
+      Vector2 deferredSize = ticket.GetInitial<ColliderComponent>().Size;
+      commands.Set(
+          ticket.BufferedEntity,
+          new LocationComponent(new Vector2(
+              groundTile.X * tileSize + (tileSize - deferredSize.X) / 2f,
+              groundTile.Y * tileSize - deferredSize.Y)));
+      commands.Set(ticket.BufferedEntity, MovementVelocityComponent.Stationary);
+      // Publish the creation fact while the buffered entity is still owned by this command
+      // buffer. The Commit identity system can bind the slot before playback; the callback below
+      // is reserved for work that needs the resolved Arch entity.
+      NpcSpawnedFact deferredFact = new(ticket.BufferedEntity, candidate.NetworkType);
+      facts.Enqueue(deferredFact);
+      commands.RegisterOnDiscard(() => facts.Remove(ticket.BufferedEntity));
+      commands.RegisterAfterPlayback(_ =>
+      {
+        if (ticket.IsAborted)
+        {
+          facts.Remove(ticket.BufferedEntity);
+          return;
+        }
+
+        ArchEntity npc = ticket.Resolve();
+        facts.Replace(deferredFact, npc);
+        _ai?.Attach(npc, candidate.Ai);
+      });
+      return;
+    }
+
     ArchEntity npc = _spawner.Spawn(candidate.DefinitionId);
     Vector2 size = World.Get<ColliderComponent>(npc).Size;
     // 贴地：底边对齐地面瓦片顶边，水平在建制宽度内居中。
@@ -161,7 +194,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
             groundTile.X * tileSize + (tileSize - size.X) / 2f,
             groundTile.Y * tileSize - size.Y)));
     World.Set(npc, MovementVelocityComponent.Stationary);
-    _ai.Attach(npc, candidate.Ai);
+    _ai?.Attach(npc, candidate.Ai);
     facts.Enqueue(new NpcSpawnedFact(npc, candidate.NetworkType));
   }
 

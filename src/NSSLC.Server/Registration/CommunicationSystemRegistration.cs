@@ -28,7 +28,11 @@ public static class CommunicationSystemRegistration
       ICommunicationOutboundPort outbound,
       IWorldItemQuery worldItems,
       GameCommunicationOptions? options = null,
-      TerrariaProtocolOptions? protocolOptions = null)
+      TerrariaProtocolOptions? protocolOptions = null,
+      CommunicationSessionIngress? ingress = null,
+      ICommunicationSessionPlayerLifecycle? playerLifecycle = null,
+      CommunicationIngressPreparationSystem? preparation = null,
+      IEnumerable<string>? outboundProjectionDependencies = null)
   {
     ArgumentNullException.ThrowIfNull(runtimeResolver);
     ArgumentNullException.ThrowIfNull(attackDefinitions);
@@ -43,7 +47,11 @@ public static class CommunicationSystemRegistration
                 worldItems,
                 options),
             protocolOptions),
-        outbound);
+        outbound,
+        ingress,
+        playerLifecycle,
+        preparation,
+        outboundProjectionDependencies);
   }
 
   public static IReadOnlyList<EcsServerSystemRegistration> Create(
@@ -51,17 +59,64 @@ public static class CommunicationSystemRegistration
       ICommunicationPacketHandler packetHandler,
       ICommunicationOutboundPort outbound)
   {
+    return Create(world, packetHandler, outbound, null, null);
+  }
+
+  public static IReadOnlyList<EcsServerSystemRegistration> Create(
+      ArchWorld world,
+      ICommunicationPacketHandler packetHandler,
+      ICommunicationOutboundPort outbound,
+      CommunicationSessionIngress? ingress,
+      ICommunicationSessionPlayerLifecycle? playerLifecycle,
+      CommunicationIngressPreparationSystem? preparation = null,
+      IEnumerable<string>? outboundProjectionDependencies = null)
+  {
     ArgumentNullException.ThrowIfNull(world);
     ArgumentNullException.ThrowIfNull(packetHandler);
     ArgumentNullException.ThrowIfNull(outbound);
-    return Array.AsReadOnly(new EcsServerSystemRegistration[]
+    List<EcsServerSystemRegistration> registrations = [];
+    if (preparation is null && ingress is not null)
     {
-      new EcsServerSystemRegistration(
+      preparation = new CommunicationIngressPreparationSystem(
+          world,
+          ingress,
+          playerLifecycle);
+    }
+
+    if (preparation is not null)
+    {
+      registrations.Add(new EcsServerSystemRegistration(
           EcsServerPhase.Preparation,
-          new CommunicationSessionTickSystem(world, packetHandler)),
-      new EcsServerSystemRegistration(
-          EcsServerPhase.Projection,
-          new CommunicationOutboundProjectionSystem(world, outbound))
-    });
+          EcsServerRegistrationKeys.CommunicationIngressPreparation,
+          preparation));
+    }
+
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Preparation,
+        EcsServerRegistrationKeys.CommunicationSessionTick,
+        new CommunicationSessionTickSystem(world, packetHandler),
+        after: preparation is null
+            ? null
+            : [EcsServerRegistrationKeys.CommunicationIngressPreparation],
+        reason: preparation is null
+            ? null
+            : "Ingress facts must be captured before session packet handling reads them."));
+    if (preparation is not null)
+    {
+      registrations.Add(new EcsServerSystemRegistration(
+          EcsServerPhase.Commit,
+          EcsServerRegistrationKeys.CommunicationSessionCommit,
+          new CommunicationSessionCommitSystem(world, preparation)));
+    }
+
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Projection,
+        EcsServerRegistrationKeys.CommunicationOutboundProjection,
+        new CommunicationOutboundProjectionSystem(world, outbound),
+        after: outboundProjectionDependencies,
+        reason: outboundProjectionDependencies is null
+            ? null
+            : "All gameplay outbound projections must populate session buffers before delivery."));
+    return registrations.AsReadOnly();
   }
 }

@@ -16,6 +16,7 @@ namespace Terraria.World;
 public static class WorldTileMotionSolver
 {
   private const int CollisionSearchIterations = 12;
+  private static readonly WorldFacts TileFacts = WorldFacts.CreateVersion4();
 
   /// <summary>Resolves one movement query against the tile grid.</summary>
   public static SpatialTileMotionResult Move(
@@ -75,6 +76,7 @@ public static class WorldTileMotionSolver
         grid,
         ref current,
         colliderSize,
+        capability,
         gravityDirection,
         velocity.Y))
     {
@@ -91,6 +93,7 @@ public static class WorldTileMotionSolver
       IWorldTileGrid grid,
       ref Vector2 position,
       Vector2 colliderSize,
+      TileCollisionCapabilityComponent capability,
       GravityDirection gravityDirection,
       float verticalVelocity)
   {
@@ -120,7 +123,7 @@ public static class WorldTileMotionSolver
       for (int y = Math.Max(0, minY - 1); y <= Math.Min(grid.Height - 1, minY + 1); y++)
       {
         WorldTileState tile = grid.ReadTile(new WorldTileCoordinate(x, y));
-        if (!tile.Active)
+        if (!BlocksMovement(tile, capability))
         {
           continue;
         }
@@ -144,6 +147,29 @@ public static class WorldTileMotionSolver
     }
 
     return false;
+  }
+
+  private static bool BlocksMovement(
+      WorldTileState tile,
+      TileCollisionCapabilityComponent capability)
+  {
+    if (!tile.Active || tile.Inactive)
+    {
+      return false;
+    }
+
+    if (tile.Type >= TileFacts.Solid.Count)
+    {
+      return true;
+    }
+
+    bool solidTop = TileFacts.SolidTop[tile.Type];
+    if (capability.FallThroughPlatforms && solidTop)
+    {
+      return false;
+    }
+
+    return TileFacts.Solid[tile.Type] || solidTop;
   }
 
   private static float MoveAxis(
@@ -283,7 +309,7 @@ public static class WorldTileMotionSolver
       for (int x = range.MinX; x <= range.MaxX; x++)
       {
         WorldTileState tile = grid.ReadTile(new WorldTileCoordinate(x, y));
-        if (tile.Active)
+        if (BlocksMovement(tile, capability))
         {
           return true;
         }

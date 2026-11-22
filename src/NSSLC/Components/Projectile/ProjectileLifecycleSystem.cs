@@ -57,7 +57,9 @@ public sealed class ProjectileLifecycleSystem
     return _registry.SharesRegistryWith(resolver, handleResolver);
   }
 
-  public ProjectileSpawnResult TrySpawn(in ProjectileSpawnRequest request)
+  public ProjectileSpawnResult TrySpawn(
+      in ProjectileSpawnRequest request,
+      EcsServerCommandBuffer? commands = null)
   {
     if (!_definitions.TryGet(request.DefinitionId, out ProjectileDefinition? definition))
     {
@@ -75,6 +77,34 @@ public sealed class ProjectileLifecycleSystem
           default,
           ArchEntity.Null,
           "The projectile owner is not registered in the current world.");
+    }
+
+    if (commands is not null)
+    {
+      if (commands.IsPlayedBack)
+      {
+        throw new InvalidOperationException(
+            "Projectile creation cannot be deferred after the ECS commit barrier.");
+      }
+
+      EntityDefinition deferredDefinition = _definitions.GetEntityDefinition(request.DefinitionId);
+      EcsServerEntityCreationTicket ticket =
+          _spawner.SpawnDeferred(deferredDefinition.Id, commands);
+      ArchEntity bufferedEntity = ticket.BufferedEntity;
+      commands.Add(bufferedEntity, new EntityFactionComponent(request.Faction));
+      commands.Add(bufferedEntity, request.Size);
+      commands.Add(bufferedEntity, new LocationComponent(request.Position));
+      commands.Add(bufferedEntity, new MovementVelocityComponent(request.Velocity));
+      commands.Add(bufferedEntity, new ProjectileOwnerComponent(request.Owner));
+      commands.Add(bufferedEntity, request.Source);
+      commands.Add(bufferedEntity, request.Collider);
+
+      return new ProjectileSpawnResult(
+          ProjectileLifecycleStatus.Deferred,
+          ticket.RuntimeHandle!.Value,
+          ArchEntity.Null,
+          "Projectile creation is pending the current tick commit barrier.",
+          ticket);
     }
 
     EntityDefinition entityDefinition = _definitions.GetEntityDefinition(request.DefinitionId);
@@ -200,7 +230,8 @@ public sealed class ProjectileLifecycleSystem
 
   internal ProjectileTerminationResult CommitTermination(
       EntityRuntimeHandle handle,
-      ProjectileTerminationReason reason)
+      ProjectileTerminationReason reason,
+      EcsServerCommandBuffer? commands = null)
   {
     if (!_registry.TryResolve(handle, out ArchEntity entity))
     {
@@ -227,7 +258,11 @@ public sealed class ProjectileLifecycleSystem
 
     disposition = new ProjectileDispositionStateComponent(ProjectileDisposition.Terminated);
     _registry.Remove(handle, out _);
-    _world.Destroy(entity);
+    commands?.Destroy(entity);
+    if (commands is null)
+    {
+      _world.Destroy(entity);
+    }
     _registry.MarkTerminated(handle);
     return new ProjectileTerminationResult(
         ProjectileLifecycleStatus.Applied, handle, reason, null);

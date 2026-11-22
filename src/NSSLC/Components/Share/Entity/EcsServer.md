@@ -2,23 +2,33 @@
 
 `Terraria.Entity.EcsServer` 是 NSSLC 的 Arch 运行时组织边界。它使用
 `Arch.System.Group<EcsServerTickContext>`
-保存一组已注册的 `ISystem<EcsServerTickContext>`，并按构造时的顺序调用每个系统的
+保存一组已注册的 `ISystem<EcsServerTickContext>`，并按验证后的稳定调度顺序调用每个系统的
 `Initialize`、`BeforeUpdate`、`Update` 和 `AfterUpdate`。
 
 需要明确阶段时，使用 `EcsServer.Create` 和 `EcsServerSystemRegistration`。阶段按照
-`EcsServerPhase` 的顺序执行，同一阶段内仍按注册顺序执行：
+`EcsServerPhase` 的顺序执行；同一阶段内先验证 `Before` / `After` 依赖，再进行稳定拓扑排序。
+没有依赖的节点保持原注册顺序，因此增加一条局部依赖不会重排无关系统：
 
 ```csharp
 EcsServer server = EcsServer.Create(
     world,
     [
-      new(EcsServerPhase.Preparation, inputSystem),
-      new(EcsServerPhase.Simulation, attributeSystem),
-      new(EcsServerPhase.Simulation, gravitySystem),
-      new(EcsServerPhase.Simulation, spatialSimulationCoordinatorSystem),
-      new(EcsServerPhase.Projection, replicationSystem)
+      new(EcsServerPhase.Preparation, "input.capture", inputSystem),
+      new(EcsServerPhase.Simulation, "attributes.rebuild", attributeSystem,
+          after: ["player.input.apply"],
+          reason: "Same-tick equipment input must be visible to attribute readers."),
+      new(EcsServerPhase.Simulation, "movement.gravity", gravitySystem),
+      new(EcsServerPhase.Simulation, "movement.spatial", spatialSimulationCoordinatorSystem,
+          after: ["movement.gravity"]),
+      new(EcsServerPhase.Projection, "network.replication", replicationSystem)
     ]);
 ```
+
+Key 由组合根定义，是稳定、唯一且区分实例的 registration identity；不能用类名代替同类
+系统的多个实例。`After` 表示依赖节点先执行，`Before` 表示当前节点先执行，依赖只允许
+指向同一 phase 的显式 key。启动时会拒绝重复 key、缺失 key、跨 phase 依赖和环，并在异常
+消息中给出 phase、节点、边和可诊断的环路径。`OrderedRegistrationKeys` 可用于启动日志和
+快照验证；它不是第二套调度入口。
 
 旧的 `new EcsServer(world, systems)` 构造方式仍可使用，它把传入系统全部放入
 `Simulation` 阶段。
@@ -32,12 +42,22 @@ EcsServer server = EcsServer.Create(
 ```text
 服务器宿主时钟
     ↓ EcsServer.Update(tick, deltaTime)
+固定 phase contract
+    ↓ Preparation → Simulation → Commit → Projection
+phase 内稳定拓扑排序
+    ↓
 Arch.System.Group
-    ↓ 按注册顺序
+    ↓
 NSSLC 领域系统
     ↓ Arch 查询 / 计算 / 提交
 Arch World 组件状态
 ```
+
+phase 之间的先后不是伪装成 dependency edge 的字符串关系，而是 `EcsServerPhase` 的固定
+合同。网络收包和 ingress 在 `Preparation` 完成，`Simulation` 读取其事实，`Commit` 完成
+权威写入，`Projection` 只观察已提交状态。若一轮 Tick 使用 `EcsServerCommandBuffer`，
+`Commit` 结束时播放一次结构变更；进入 `Projection` 前必须已经播放，不能让投影越过该
+提交边界。
 
 ## 是否需要系统组织层
 
@@ -138,12 +158,22 @@ public sealed class MovementUpdateSystem : BaseSystem<World, EcsServerTickContex
 `EcsServer` 不规定所有系统都必须每 Tick 修改组件。请求型操作可以由服务器在独占提交阶段
 直接调用领域系统；持续模拟系统则由宿主在每轮调用 `Update`。添加/移除组件和销毁实体属于
 结构变化，应由宿主按 Arch 的访问约定安排在明确的提交边界。`EcsServerCommandBuffer`
-封装 Arch `CommandBuffer`，用于记录一轮更新中的创建、销毁、添加、移除和设置操作；宿主在
-确认本轮查询结束后调用 `Playback`，不得把同一个缓冲区重复播放。
+封装 Arch `CommandBuffer`，用于记录一轮更新中的创建、销毁、添加、移除和设置操作；当前
+`EcsServer.Update` 在 `Commit` 完成后、`Projection` 开始前播放这一轮缓冲区，并拒绝同一
+缓冲区的重复播放。没有 `Projection` 系统时，更新尾部仍会完成一次兜底播放。
+
+需要在同一 Tick 创建实体时，定义宿主可以实现 `IDeferredEntityDefinitionHost<TEntity>`。
+`EntityDefinitionSystem<TEntity>.SpawnDeferred` 返回 `EcsServerEntityCreationTicket`：ticket 的
+`BufferedEntity` 只允许提交到当前 command buffer，`Resolve()` 只能在 playback 后使用；声明了
+`EntityIdentityComponent` 的实体会先分配 runtime handle，待 playback 完成后再登记真实 Arch
+实体。命令被丢弃、创建后又被销毁或 playback 失败时，ticket 会释放预分配的 handle，不把
+buffered entity 泄漏到跨域事实或网络投影中。服务器 NPC 与投射物生成路径使用这一边界，因此
+它们在 Commit 后才进入后续 Simulation/Projection 可见范围；启动初始化和通信 ingress 仍可使用
+同步宿主入口作为明确的低层适配器。
 
 ## 与现有服务器循环的关系
 
 `EcsServer` 是 NSSLC 的 Arch 组织适配器，不是 `MinimalImplementation` 的替代品。若宿主
 已有服务器循环，应在该循环的一个明确阶段调用 `EcsServer.Update`，不要同时再启动第二个
-权威循环推进相同的 World。阶段内的系统顺序由传入 Group 的顺序决定；文件名和目录顺序不
-构成调度依据。
+权威循环推进相同的 World。阶段内的系统顺序由依赖图和稳定注册序决定；文件名和目录顺序
+不构成调度依据。

@@ -8,7 +8,6 @@
   <ItemGroup>
     <PackageReference Include="Arch" Version="2.1.0" />
     <PackageReference Include="Arch.System" Version="1.1.0" />
-    <Compile Include="Component/**/*.cs" />
     <Compile Include="Components/**/*.cs" />
   </ItemGroup>
 </Project>

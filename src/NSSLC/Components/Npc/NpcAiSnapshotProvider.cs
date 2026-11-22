@@ -5,6 +5,7 @@ using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 using Terraria.Ai;
+using Terraria.Attributes;
 using Terraria.Combat;
 using Terraria.Entity;
 using Terraria.Inventory;
@@ -21,15 +22,19 @@ namespace Terraria.Npc;
 public sealed class NpcAiSnapshotProvider : IAiSnapshotProvider<ArchEntity>
 {
   private readonly ArchWorld _world;
+  private readonly Func<NpcAiWorldFact>? _worldFacts;
   private readonly QueryDescription _targetQuery = new QueryDescription().WithAll<
       EntityFactionComponent,
       LifeComponent,
       LocationComponent,
       InventoryComponent>();
 
-  public NpcAiSnapshotProvider(ArchWorld world)
+  public NpcAiSnapshotProvider(
+      ArchWorld world,
+      Func<NpcAiWorldFact>? worldFacts = null)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
+    _worldFacts = worldFacts;
   }
 
   public AiSnapshot Capture(ArchEntity entity, IReadOnlyList<Type> requiredComponents)
@@ -56,6 +61,19 @@ public sealed class NpcAiSnapshotProvider : IAiSnapshotProvider<ArchEntity>
       snapshot = snapshot.With(FindNearestFriendlyTarget(entity));
     }
 
+    if (requiredComponents.Contains(typeof(NpcAiLifeFact)))
+    {
+      NpcAiLifeFact lifeFact = _world.TryGet(entity, out LifeComponent life)
+          ? new NpcAiLifeFact(life.Current, life.Maximum)
+          : default;
+      snapshot = snapshot.With(lifeFact);
+    }
+
+    if (requiredComponents.Contains(typeof(NpcAiWorldFact)))
+    {
+      snapshot = snapshot.With(_worldFacts?.Invoke() ?? default);
+    }
+
     return snapshot;
   }
 
@@ -70,6 +88,7 @@ public sealed class NpcAiSnapshotProvider : IAiSnapshotProvider<ArchEntity>
     float nearestDistance = maximumTargetDistance * maximumTargetDistance;
     Vector2 nearestPosition = default;
     bool found = false;
+    bool nearestVisible = false;
     _world.Query(
         in _targetQuery,
         (ArchEntity entity,
@@ -90,8 +109,12 @@ public sealed class NpcAiSnapshotProvider : IAiSnapshotProvider<ArchEntity>
             nearestDistance = distance;
             nearestPosition = location.Coordinates;
             found = true;
+            // 隐身是 InvisibilityComponent 的行为结果，不是属性标量。投影只把可见性
+            // 事实交给 AI；目标仍然可供行为判断距离，但不可被追击或攻击。
+            nearestVisible = !(_world.Has<InvisibilityComponent>(entity) &&
+                _world.Get<InvisibilityComponent>(entity).IsActive);
           }
         });
-    return new NpcAiTargetFact(nearestPosition, found, found, found ? 1 : 0);
+    return new NpcAiTargetFact(nearestPosition, nearestVisible, found, found ? 1 : 0);
   }
 }

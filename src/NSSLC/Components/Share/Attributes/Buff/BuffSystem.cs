@@ -86,6 +86,28 @@ public sealed class BuffSystem
         sourceId);
   }
 
+  /// <summary>
+  /// Applies an intent to an entity's status components. The caller must be the status-effect
+  /// owner and provide the mutable components from the same entity.
+  /// </summary>
+  public BuffApplicationResult TryApply(
+      BuffReceptionCapabilityComponent? capability,
+      BuffImmunityComponent? immunity,
+      BuffListComponent activeBuffs,
+      AttributeSetComponent? attributes,
+      in BuffApplyRequestComponent request)
+  {
+    return TryApply(
+        capability,
+        immunity,
+        activeBuffs,
+        attributes,
+        request.Effect,
+        request.SourceId,
+        request.RequestedStacks,
+        request.DurationTicks);
+  }
+
   public int Advance(
       BuffListComponent activeBuffs,
       AttributeSetComponent? attributes = null)

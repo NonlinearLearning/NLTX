@@ -53,7 +53,7 @@ public sealed class ProjectileTerminationCommitSystem : BaseSystem<ArchWorld, Ec
     });
     foreach (ProjectileTerminationRequest request in ordered)
     {
-      _lifecycle.CommitTermination(request.Handle, request.Reason);
+      _lifecycle.CommitTermination(request.Handle, request.Reason, context.Commands);
     }
   }
 }

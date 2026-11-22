@@ -3,7 +3,7 @@
 ## 决策与范围
 
 本记录取代此前仅适用于 `dome/` 的实施目标。依据
-[`组件设计报告`](../../component-decomposition/baseline/组件设计报告.md)，组件实现在根目录 `src/`；`dome/`、`Test/`、
+[`组件设计报告`](../../component-decomposition/archive/baseline/组件设计报告.md)，组件实现在根目录 `src/`；`dome/`、`Test/`、
 构建策略与验证程序不在本次变更范围。用户明确要求不运行构建或测试。
 
 现有 `src/Share/Entity` 的 `LocationComponent`、`VelocityComponent`、

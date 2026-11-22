@@ -622,7 +622,7 @@ root17 旧 FixtureHost smoke 曾在 `TickNumber=0` 以
 `Tile mutation tracking requires the active published session` 失败，清理另报 session 已释放；
 root16 较早构建因重复 `ApplyTownNpcCount` 失败，后续已清理；root28/root30 的通过结果为
 较早源码快照历史证据。保留这些诊断记录，但不覆盖 root11/root36 的当前证据。命令、报告和
-日志见 [F1 Eye of Cthulhu checkpoint](../../migration/ledgers/2026-10-07-npc-ai-f1-eye-of-cthulhu-checkpoint.md)。
+日志见 [F1 Eye of Cthulhu checkpoint](../../migration/ledgers/2026-10-07-npc-ai-session-checkpoint-ledger.md)。
 
 完整变身、仆从生成、network authority、save/load、unload cleanup、presentation、完整目标输入
 和来源 golden 均未闭合。F1 整体保持 partial/open。F1 回退只删除 Eye profile、精确宿主分支/
@@ -840,7 +840,7 @@ registry 未提升”的反向验收（预期 exit 2，9 个 profile 仍 incompl
 rollback/network owner 源码写入影响，不能以这项局部结果登记整体回归通过。
 
 证据与精确边界见
-[任务结束宿主检查点](../../migration/ledgers/2026-10-07-npc-ai-task-host-checkpoint.md)。
+[任务结束宿主检查点](../../migration/ledgers/2026-10-07-npc-ai-session-checkpoint-ledger.md)。
 Transform 用例只验收 task 结束边界；实际 profile/type 变换、target/effect cleanup 仍 open。
 原生命周期会话已继续以 `/goal` 实现引用绑定的 Advance/Complete/Fail/Interrupt；主会话接入
 和验收后再决定关闭相应任务缺口。全量 coverage、来源行为、authority、持久化和删除门禁
@@ -863,7 +863,7 @@ blocked 第 60 tick 为 Failed/NoPath 且失败效果可观察，第 120 tick �
 
 上述关闭本批 task reference owner 接线与定向回归；完整 Simulation 大回归尚未在此批重跑，
 任何覆盖 profile 都没有升级。最初整体构建失败和独立隔离证据仍保留为历史，最新构建/运行
-结果在[宿主检查点续批](../../migration/ledgers/2026-10-07-npc-ai-task-host-checkpoint.md)中解释。
+结果在[宿主检查点续批](../../migration/ledgers/2026-10-07-npc-ai-session-checkpoint-ledger.md)中解释。
 
 来源门禁会话的新实际报告
 `Build/diagnostics/NpcAiReferenceVerification/20261007T033802164Z/differential-report.json`
@@ -884,7 +884,7 @@ type=22/netID=22/aiStyle=7 的 D 阶段 profile；当前有限 catalog style=0 �
 312/413 的第二/第三次冲刺边界。十二条运行全部 exit 0，普通/Expert 冲刺速度为 6/7，
 三次冲刺后分别在 1053/513 tick 返回悬停；世界文件保持不变。运行绑定 task-reference
 批次已构建程序集，不把共享工作区后续未构建修改算作通过。证据范围与回退见
-[F1 夜间主验收](../../migration/ledgers/2026-10-07-npc-ai-f1-night-host-acceptance.md)。
+[F1 夜间主验收](../../migration/ledgers/2026-10-07-npc-ai-session-checkpoint-ledger.md)。
 
 新增 Luna 6 Max 会话 `01a11489-0274-7493-aaee-b507e828b927`，名称“NPC AI B2 完整目标输入与
 宿主接线”，以 `/goal` 和完整 PUA 方法论持续实现普通/WOF/Upgraded 目标输入、即时提交和
@@ -902,7 +902,7 @@ Boss/碰撞、宠物和 NPC 候选只是有限输入，这个续批须以真实�
 profile 差异，exit 2 因而不能单独证明来源矛盾的拒绝路径。门禁退出语义验收暂不通过，
 来源会话已接续实现非空/编号校验、来源可信结果与 profile 结果区分，以及独立反向夹具。
 复现与修复验收要求见
-[来源门禁主验收](../../migration/ledgers/2026-10-07-npc-ai-source-gate-root-acceptance.md)。
+[来源门禁主验收](../../migration/ledgers/2026-10-07-npc-ai-session-checkpoint-ledger.md)。
 所有真实 capture、历史失败和 coverage 阶段保持原记录，不因门禁本身的修复提升 profile。
 
 ### B2 来源评分主验收反例（2026-10-07）
@@ -912,7 +912,7 @@ profile 差异，exit 2 因而不能单独证明来源矛盾的拒绝路径。�
 运行前后不变。B2 会话已接续修复源码字面距离式、整数半宽与几何/提交边界，并核对无候选
 fallback 和 Upgraded NPC `slot+300` 编码；源码 probe 通过不代表生产修复已经通过。
 来源运行证据、兼容 harness 编译和验收条件见
-[B2 目标主验收](../../migration/ledgers/2026-10-07-npc-ai-b2-target-root-review.md)。
+[B2 目标主验收](../../migration/ledgers/2026-10-07-npc-ai-session-checkpoint-ledger.md)。
 
 ### B3 更新时序与物理长线续批（2026-10-07）
 
@@ -931,7 +931,7 @@ TargetClosest 端口对结果条件 network intent 的提交。主会话独立�
 exit 0、17 warnings / 0 errors；首 tick network intent 为 true，120 tick 清除。Blue
 首 tick 的 item 初始化与 target 效果仍按组合证据解释。完整 source differential 和
 37-evidence 回归尚未在此批重跑，coverage stage 不升级。证据与回退见
-[Slime cooldown 主验收](../../migration/ledgers/2026-10-07-npc-ai-slime-cooldown-host-acceptance.md)。
+[Slime cooldown 主验收](../../migration/ledgers/2026-10-07-npc-ai-session-checkpoint-ledger.md)。
 
 ### G3/A4 来源行为差分续验（2026-10-07）
 

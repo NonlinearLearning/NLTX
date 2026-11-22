@@ -31,8 +31,28 @@
 | `AttributeContributionSet` | sealed class | 一个来源的一组贡献，整体加入或整体撤销 |
 | `AttributeContributionSystem` | static class | 翻译贡献并委托 `AttributeSystem` 增删 |
 
-`AttributeSetComponent` 仍是唯一的 ECS 状态组件；上述四个类型是定义侧与写入侧的值对象，
-不进入实体存储。
+`AttributeSetComponent` 只保存属性数值和修饰器；状态效果的实例、行为组件和资源组件由各自
+领域持有。上述四个类型是定义侧与写入侧的值对象，不进入实体存储。
+
+## 属性键分类（B1）
+
+`AttributeKind` 仍保留旧键以支持迁移期读取，但每个键现在由
+`AttributeKindMetadata` 明确分类。普通 `AttributeContribution` 和
+`AttributeModifier` 只允许 `ComputedScalar`、`Capacity` 或 `Policy`：
+
+- `ComputedScalar`：防御、伤害、移动速度、抗性、暴击、生命再生等派生数值；
+- `Capacity`：最大护盾、呼吸容量等容量参数；
+- `Policy`：由专用系统解释的派生规则参数；
+- `ResourcePool`：当前护盾等资源当前值，必须由资源组件持有；
+- `Cooldown`：剩余冷却，必须由冷却组件持有；
+- `Identity`：坐骑身份等关系状态，必须由身份/关系组件持有；
+- `StatusFlag`：隐身、眩晕等具体状态，必须由具体行为组件持有。
+
+旧的 `Shield`、冷却、`MountKind` 和无具体标识的 `StatusFlag` 键只保留定义和分类，用于
+枚举身份稳定；生产代码中已无写入，也没有任何读取路径（当前护盾读 `ShieldPoolComponent`，
+冷却读 `CooldownComponent`，呼吸读 `BreathComponent`，坐骑身份读 `MountStateComponent`）。
+删除这些枚举成员会把其后的键整体前移，改变已有序列化身份，因此本轮保留并在
+[执行计划](../../../../docs/plans/2026-11-20-attribute-system-execution-plan.md) 记为技术债。
 
 ```csharp
 AttributeContributionSet set = new(
@@ -43,6 +63,20 @@ AttributeContributionSystem.Apply(attributes, set);
 ```
 
 `Apply` 会先按 `SourceId` 撤销旧贡献再写入，因此同一来源重复登记是替换而非叠加。
+
+## 跨域请求边界（B8）
+
+外部来源不直接写 `AttributeSetComponent`。Buff 应用走 `BuffApplyRequestComponent`，由
+`BuffApplyRequestSystem` 在 Attributes 域内完成准入、叠层、刷新和生命周期登记；周期行为
+再由 `StatusEffectPeriodicSystem` 生成本域请求。
+
+护盾伤害结算保留一个受控同步例外：Combat 必须在同一提交调用中知道护盾是否完整吸收，
+因此通过 `AttributeShieldConsumeRequestComponent` 调用 Attributes 的窄接口并立即读取结果；
+该接口只写 `ShieldPoolComponent`，不再写属性基础值。
+
+Inventory 的装备属性桥接在本轮**明确延期**：`InventoryAttributeContributionSystem` 保留为
+历史文件，不注册、不作为验收入口，也不存在 `AttributeContributionRequestComponent` /
+`AttributeContributionApplySystem`。Inventory 只验证槽位、堆叠、物品关系和输入写入。
 
 ## 能力门槛
 
@@ -117,13 +151,15 @@ value = highest-priority Override, if any
 
 伤害系统不为 Player、NPC 或 Projectile 建立元素抗性、护盾、反射、吸血和暴击专属组件。
 这些数值由 `AttributeKind` 和 `AttributeCombatCalculator` 提供。随机暴击使用显式
-`CriticalRollInput`；元素抗性使用各元素抗性键；护盾使用 `Shield` 当前池和 `MaxShield`
-容量键；反射和吸血使用 `ReflectRatio` 与 `LifeStealRatio`。
+`CriticalRollInput`；元素抗性使用各元素抗性键；护盾容量使用 `MaxShield`，当前池使用
+`ShieldPoolComponent`；反射和吸血使用 `ReflectRatio` 与 `LifeStealRatio`。
 
-`Shield` 的当前值是 Attributes 的基础值，不能用修饰器重复叠加；`AttributeSystem.ConsumeShield`
-是护盾池的唯一消费入口。Combat 负责请求排序、准入和生命提交，后续效果 owner 负责提交
-反射伤害或吸血治疗。结算顺序为：攻击属性和暴击 → 防御 → 元素抗性 → 最终减伤 → 护盾吸收
-→ 实际生命伤害。`True` 伤害跳过防御、抗性和最终减伤，但当前仍经过护盾。
+`MaxShield` 是计算结果，`ShieldPoolComponent.Current` 是唯一的当前护盾权威值：
+`MaxShield` 变化只由 `LifeAttributeSynchronizationSystem` 收缩当前池，绝不反向写容量。
+`AttributeShieldCommands.Apply` 是护盾池的唯一外部消费入口，`ShieldPoolComponent.Consume`
+是唯一扣减实现；属性基础值不再保存当前护盾。结算顺序为：攻击属性和暴击 → 防御 →
+元素抗性 → 最终减伤 → 护盾吸收 → 实际生命伤害。`True` 伤害跳过防御、抗性和最终减伤，
+但当前仍经过护盾。
 
 护盾完全吸收时，Combat 回执的 `HasEffect` 为真而 `HasDamage` 为假；这允许 Projectile 等来源
 消费一次有效命中，同时不会把护盾消耗误报为生命伤害。
@@ -173,6 +209,27 @@ Buff 仍然可以拥有免疫、刷新、叠层、周期伤害、召唤物维护
 战斗领域管理。它可以向本组件贡献一条或多条数值修饰器，但不能把所有 Buff 语义压扁成一个
 浮点值。防御和耐力可以由这里聚合，某次受击如何使用防御、最终减伤、闪避、护盾和受击后
 消耗则仍由战斗结算系统负责。
+
+## 状态效果生命周期与行为组件（B6 / B7）
+
+`BuffDefinition` 同时声明四类内容：`Modifiers`（属性贡献）、`Behaviors`（行为贡献）、
+`PeriodicEffects`（周期效果）与即时效果（尚未建模）。`BuffListComponent` 仍是效果实例、
+来源、期限、层数和免疫的唯一 owner，`BuffListComponent.AdvanceOneTick` 是期限的唯一推进点。
+
+`StatusEffectBehaviorSystem` 把行为贡献物化为具体行为组件，并按来源同步增删：
+
+| 行为 | 组件 | 消费方 |
+| --- | --- | --- |
+| 周期治疗 | `LifeRegenerationComponent` | `StatusEffectPeriodicSystem` → `LifeRestoreRequestQueueComponent` → `LifeRestoreRequestSystem` |
+| 周期伤害 | `DamageOverTimeComponent` | `StatusEffectPeriodicSystem` → `CombatDamageRequestQueueComponent` → `CombatDamageRequestSystem` |
+| 隐身 | `InvisibilityComponent` | `NpcAiSnapshotProvider` 的可见性投影（`NpcAiTargetFact.IsVisible`） |
+| 眩晕 / 移动限制 | `StunComponent` | 组件已建模，移动域消费仍待接线（见技术债） |
+| 伤害免疫 | `DamageImmunityStatusComponent` | `CombatDamageSystem` 免疫判定 |
+
+行为组件不承载期限：来源撤销或过期时，`StatusEffectBehaviorSystem` 在同一 tick 把来源
+从组件中移除，空组件随即删除，因此不会留下孤儿行为状态。周期行为只产生目标域请求，
+从不直接写 `LifeComponent`、移动或网络状态。Regeneration、Poison、Invisibility 三条代表性
+闭环由 `Test/Terraria.Attributes.Verification` 用真实系统与真实 tick 顺序验证。
 
 ## 示例
 

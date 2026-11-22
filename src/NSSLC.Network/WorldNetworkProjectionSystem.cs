@@ -21,8 +21,18 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
   private const byte SyncItemMessageId = 21;
   private const byte ItemOwnerMessageId = 22;
   private const byte SyncItemDespawnMessageId = 151;
+
+  /// <summary>
+  /// Upper bound on committed tile mutations taken per tick. This projection runs inside the tick,
+  /// so an unbounded drain from a wide liquid pass would lengthen the tick and delay the next
+  /// authoritative NPC snapshot. Mutations above the bound stay queued in the world owner and are
+  /// merged with later changes to the same tile, so no update is lost.
+  /// </summary>
+  public const int DefaultMaximumTileMutationsPerTick = 128;
+
   private readonly IWorldProjectionSource _world;
   private readonly IWorldItemProjectionSource _items;
+  private readonly int _maximumTileMutationsPerTick;
   private WorldItemRequestQueueComponent? _itemRequests;
   private readonly IReadOnlyList<bool> _frameImportant;
   private readonly QueryDescription _sessionQuery = new QueryDescription().WithAll<
@@ -32,11 +42,14 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
       ArchWorld ecsWorld,
       IWorldProjectionSource world,
       IWorldItemProjectionSource items,
-      IReadOnlyList<bool> frameImportant)
+      IReadOnlyList<bool> frameImportant,
+      int maximumTileMutationsPerTick = DefaultMaximumTileMutationsPerTick)
       : base(ecsWorld ?? throw new ArgumentNullException(nameof(ecsWorld)))
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
     _items = items ?? throw new ArgumentNullException(nameof(items));
+    ArgumentOutOfRangeException.ThrowIfNegativeOrZero(maximumTileMutationsPerTick);
+    _maximumTileMutationsPerTick = maximumTileMutationsPerTick;
     _frameImportant = frameImportant is null
         ? throw new ArgumentNullException(nameof(frameImportant))
         : Array.AsReadOnly(frameImportant.ToArray());
@@ -54,7 +67,8 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
     // Drain committed mutations on every tick, even when no client is currently active.
     // A future client receives a full world snapshot, so retaining historical deltas while
     // sessions are connecting or synchronizing only creates an unbounded queue.
-    IReadOnlyList<WorldMutation> drained = _world.DrainPendingMutations();
+    IReadOnlyList<WorldMutation> drained =
+        _world.DrainPendingMutations(_maximumTileMutationsPerTick);
     IReadOnlyList<WorldItemMutation> itemMutations = _items.DrainMutations();
 
     List<SessionEpoch> activeSessions = [];
@@ -97,7 +111,8 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
     {
       if (mutation.DropItemType > 0)
       {
-        // 只表达意图：掉落物由 World 域的 WorldItemRequestSystem 生成。
+        // 只表达意图：掉落物由 World 域在下一 tick 的 Commit 阶段生成；Projection
+        // 不直接触碰权威 WorldItemStore。
         ItemRequests.Enqueue(new WorldItemRequest(
             WorldItemRequestKind.Create,
             Slot: -1,

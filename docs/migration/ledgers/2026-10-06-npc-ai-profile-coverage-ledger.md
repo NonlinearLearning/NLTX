@@ -562,7 +562,7 @@ identity-path evidence only; it is not Mother Slime content parity.
 
 Open work remains catalog identity correction, complete target/Tile/collision inputs, authority and
 network sinks, death/split effects, and source golden comparison. See the detailed
-[Mother Slime checkpoint](2026-10-07-npc-ai-c1-3-mother-slime-checkpoint.md).
+[Mother Slime checkpoint](2026-10-07-npc-ai-session-checkpoint-ledger.md).
 
 ### Eye of Cthulhu F1 opening / first dash slice (2026-10-07)
 
@@ -578,7 +578,7 @@ Projectile dependencies are inconsistent; host runtime evidence is therefore not
 | Simulation full build | `dotnet build src/NSSLC.Tools.Simulation/NSSLC.Tools.Simulation.csproj --no-restore --nologo -v:minimal` | exit 1; shared `Terraria.Items` has 7 `WorldItemReservationSystem`/`WorldItemStateComponent` errors |
 | Simulation restricted build | same command with `-p:BuildProjectReferences=false` | exit 1; `ItemMutationRevision`, `ItemEntityRef` and `IProjectileTickAdapter.UpdateProjectile` dependency errors |
 
-The detailed [F1 checkpoint](2026-10-07-npc-ai-f1-eye-of-cthulhu-checkpoint.md) records the exact
+The detailed [F1 checkpoint](2026-10-07-npc-ai-session-checkpoint-ledger.md) records the exact
 rollback scope. Later transformation, servants, full target input, authority/network, presentation,
 and reference golden remain open.
 
@@ -680,7 +680,7 @@ finite production NPC owner. The main session passed a fresh Simulation build (e
 do not replay teleport. Blocked return retains Failed/NoPath; invalid housing stays None/Idle.
 Stale same-kind task runs, stale entities, borrowed release, real lethal parent-child cleanup,
 Reset and repeated Dispose are covered. See the
-[host checkpoint](2026-10-07-npc-ai-task-host-checkpoint.md) and
+[host checkpoint](2026-10-07-npc-ai-session-checkpoint-ledger.md) and
 `Build/diagnostics/NpcAiRedesign/runs/task-reference-host-20261007/acceptance-result.json`.
 
 All coverage stages remain unchanged: 9 mapped/open profiles, 5 finite handlers and zero
@@ -696,7 +696,7 @@ and returns to hover at 1053; Expert uses 211, 312/413 and 513. Each run has exi
 input world. Dash magnitudes are 6 and approximately 7 respectively. Evidence is tied to the
 fingerprinted normal Simulation artifact built with exit 0, 17 warnings / 0 errors, rather than
 later unbuilt edits in the shared checkout. See the
-[night host acceptance](2026-10-07-npc-ai-f1-night-host-acceptance.md).
+[night host acceptance](2026-10-07-npc-ai-session-checkpoint-ledger.md).
 
 These are twelve independent replays ending at selected boundaries, not a complete per-tick source
 trace. Full F1 and all coverage stages remain partial/open. The Eye owner continues transformation
@@ -710,7 +710,7 @@ return. The verifier covers `3→2→1→1` and freezing at 3. Blue's target eff
 the selection result's conditional network intent. The main session independently reran four
 real-host 1/120-tick cases and the NPC AI verifier; all exit 0 on the fingerprinted normal
 Simulation artifact, built with 17 warnings / 0 errors. See the
-[cooldown host acceptance](2026-10-07-npc-ai-slime-cooldown-host-acceptance.md).
+[cooldown host acceptance](2026-10-07-npc-ai-session-checkpoint-ledger.md).
 
 The source differential has not yet been rerun for this fix. The 8 state / 11 observable differences
 remain the last measured historical result, and source-gate rejection semantics are being repaired

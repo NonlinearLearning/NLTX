@@ -18,6 +18,8 @@ public enum AttributeKind : byte
   CriticalChance,
   CriticalMultiplier,
   LifeRegeneration,
+  /// <summary>Calculated maximum life capacity; current life remains in LifeComponent.</summary>
+  MaximumLife,
   ArmorPenetration,
   ElementalPenetration,
   FireResistance,

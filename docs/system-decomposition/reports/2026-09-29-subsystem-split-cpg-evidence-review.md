@@ -14,7 +14,7 @@
 
 本次读取的文档：
 
-- [Version4 权威子系统全量审查报告（2026-09-05）](../../component-decomposition/baseline/Version4权威游戏模拟子系统全量审查报告-2026-09-05.md)，重点复核 `LiquidSimulation` 和 `SpatialSimulation`。
+- [Version4 权威子系统全量审查报告（2026-09-05）](../../component-decomposition/archive/baseline/Version4权威游戏模拟子系统全量审查报告-2026-09-05.md)，重点复核 `LiquidSimulation` 和 `SpatialSimulation`。
 - [字段和属性按系统及子系统拆分报告](../../migration/ledgers/Version4字段属性按系统子系统拆分报告-去除ID类文件.md)，重点复核两个子系统的字段/属性库存。
 - [子系统索引](../../migration/ledgers/Version4子系统索引.json)与[源码覆盖表](../../migration/ledgers/Version4源码覆盖.tsv)。
 

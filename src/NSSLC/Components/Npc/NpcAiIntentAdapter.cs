@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
@@ -21,7 +22,14 @@ namespace Terraria.Npc;
 /// </remarks>
 public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickContext>
 {
-  private readonly AiEntitySystem<ArchEntity, NpcAiIntent> _ai;
+  private readonly AiEntitySystem<ArchEntity, NpcAiIntent>? _ai;
+  private readonly AiRequirements? _manualRequirements;
+  private readonly Func<
+      AiComponent,
+      NpcBehaviorStateComponent,
+      AiSnapshot,
+      float,
+      IReadOnlyList<NpcAiIntent>>? _manualCalculator;
   private readonly IAiSnapshotProvider<ArchEntity> _snapshots;
   private readonly IEntityRuntimeHandleResolver _runtimeHandles;
   private readonly CombatAttackDefinitionCatalog _attackDefinitions;
@@ -33,11 +41,72 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
       IAiSnapshotProvider<ArchEntity> snapshots,
       IEntityRuntimeHandleResolver runtimeHandles,
       CombatAttackDefinitionCatalog attackDefinitions)
+      : this(
+          world,
+          ai ?? throw new ArgumentNullException(nameof(ai)),
+          snapshots,
+          runtimeHandles,
+          attackDefinitions,
+          manualRequirements: null,
+          manualCalculator: null)
+  {
+  }
+
+  /// <summary>Creates the NPC adapter with a direct calculator instead of the shared AI runtime.</summary>
+  public NpcAiIntentAdapter(
+      ArchWorld world,
+      IAiSnapshotProvider<ArchEntity> snapshots,
+      IEntityRuntimeHandleResolver runtimeHandles,
+      CombatAttackDefinitionCatalog attackDefinitions,
+      AiRequirements manualRequirements,
+      Func<
+          AiComponent,
+          NpcBehaviorStateComponent,
+          AiSnapshot,
+          float,
+          IReadOnlyList<NpcAiIntent>> manualCalculator)
+      : this(
+          world,
+          ai: null,
+          snapshots,
+          runtimeHandles,
+          attackDefinitions,
+          manualRequirements,
+          manualCalculator)
+  {
+  }
+
+  private NpcAiIntentAdapter(
+      ArchWorld world,
+      AiEntitySystem<ArchEntity, NpcAiIntent>? ai,
+      IAiSnapshotProvider<ArchEntity> snapshots,
+      IEntityRuntimeHandleResolver runtimeHandles,
+      CombatAttackDefinitionCatalog attackDefinitions,
+      AiRequirements? manualRequirements,
+      Func<
+          AiComponent,
+          NpcBehaviorStateComponent,
+          AiSnapshot,
+          float,
+          IReadOnlyList<NpcAiIntent>>? manualCalculator)
       : base(world)
   {
-    ArgumentNullException.ThrowIfNull(ai);
+    if ((ai is null) == (manualCalculator is null))
+    {
+      throw new ArgumentException(
+          "Provide either the shared AI runtime or a direct manual calculator.");
+    }
+
+    if ((manualRequirements is null) != (manualCalculator is null))
+    {
+      throw new ArgumentException(
+          "Manual AI requirements and calculator must be provided together.");
+    }
+
     ArgumentNullException.ThrowIfNull(snapshots);
     _ai = ai;
+    _manualRequirements = manualRequirements;
+    _manualCalculator = manualCalculator;
     _snapshots = snapshots;
     _runtimeHandles = runtimeHandles ?? throw new ArgumentNullException(nameof(runtimeHandles));
     _attackDefinitions = attackDefinitions ??
@@ -55,7 +124,14 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
     long tick = context.Tick;
     float deltaTime = context.DeltaTime;
     ArchWorld world = context.World;
-    AiEntitySystem<ArchEntity, NpcAiIntent> ai = _ai;
+    AiEntitySystem<ArchEntity, NpcAiIntent>? ai = _ai;
+    AiRequirements? manualRequirements = _manualRequirements;
+    Func<
+        AiComponent,
+        NpcBehaviorStateComponent,
+        AiSnapshot,
+        float,
+        IReadOnlyList<NpcAiIntent>>? manualCalculator = _manualCalculator;
     IAiSnapshotProvider<ArchEntity> snapshots = _snapshots;
     // 在查询之外解析队列实体：Require 内部本身要跑一次查询，放进 Query 回调会形成嵌套查询。
     CombatAttackIntentQueueComponent attackIntents = CombatAttackIntentQueue.Require(World);
@@ -68,18 +144,37 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
             ref NpcBehaviorStateComponent state,
             ref MovementIntent movementIntent) =>
         {
-          if (!aiComponent.Enabled || !ai.IsAttached(entity))
+          if (!aiComponent.Enabled)
           {
             return;
           }
 
           _ = _runtimeHandles.TryGetHandle(entity, out EntityRuntimeHandle entityHandle);
-          AiEntityResult<ArchEntity, NpcAiIntent> result = ai.Calculate(
-              entity,
-              in aiComponent,
-              snapshots,
-              deltaTime);
-          foreach (NpcAiIntent intent in result.Result.Intents)
+          IReadOnlyList<NpcAiIntent> intents;
+          if (manualCalculator is not null)
+          {
+            AiRequirements requirements = manualRequirements ??
+                throw new InvalidOperationException("Manual AI requirements were not configured.");
+            AiSnapshot snapshot = snapshots.Capture(entity, requirements.Components);
+            intents = manualCalculator(aiComponent, state, snapshot, deltaTime);
+          }
+          else
+          {
+            if (ai is null || !ai.IsAttached(entity))
+            {
+              return;
+            }
+
+            AiEntityResult<ArchEntity, NpcAiIntent> result = ai.Calculate(
+                entity,
+                in aiComponent,
+                snapshots,
+                deltaTime);
+            intents = result.Result.Intents;
+          }
+
+          ArgumentNullException.ThrowIfNull(intents);
+          foreach (NpcAiIntent intent in intents)
           {
             ApplyIntent(
                 entity,
@@ -143,7 +238,8 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
                 intent.DesiredVelocity,
                 tick,
                 jumpRequested: intent.JumpRequested,
-                source: MovementIntentSource.Ai)));
+                source: MovementIntentSource.Ai,
+                jumpSpeed: intent.JumpSpeed)));
         break;
       case NpcAiIntentKind.StopMovement:
         movementIntents.Enqueue(new MovementIntentRequest(

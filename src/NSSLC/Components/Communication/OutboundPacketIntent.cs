@@ -10,13 +10,15 @@ public sealed record OutboundPacketIntent
   public byte MessageId { get; }
   public ReadOnlyMemory<byte> Payload { get; }
   public CommitVersion CommitVersion { get; }
+  public OutboundPacketPriority Priority { get; }
 
   public OutboundPacketIntent(
     IReadOnlyCollection<SessionEpoch> targetEpochs,
     SessionEpoch? ignoreEpoch,
     byte messageId,
     ReadOnlyMemory<byte> payload,
-    CommitVersion commitVersion)
+    CommitVersion commitVersion,
+    OutboundPacketPriority priority = OutboundPacketPriority.Normal)
   {
     ArgumentNullException.ThrowIfNull(targetEpochs);
     if (targetEpochs.Count == 0)
@@ -38,6 +40,12 @@ public sealed record OutboundPacketIntent
     MessageId = messageId;
     Payload = payload.ToArray();
     CommitVersion = commitVersion;
+    if (!Enum.IsDefined(priority))
+    {
+      throw new ArgumentOutOfRangeException(nameof(priority));
+    }
+
+    Priority = priority;
 
   }
 }

@@ -17,8 +17,11 @@ public sealed class PacketTcpConnection : IAsyncDisposable
   private readonly TimeProvider _timeProvider;
   private readonly PacketFrameAssembler _assembler;
   private readonly Channel<PendingSend> _sendQueue;
+  private readonly Channel<PendingSend> _realtimeSendQueue;
   private readonly SemaphoreSlim _sendFrameSlots;
+  private readonly SemaphoreSlim _realtimeSendFrameSlots;
   private readonly ConnectionByteBudget _sendBudget;
+  private readonly ConnectionByteBudget _realtimeSendBudget;
   private readonly CancellationTokenSource _stop = new();
   private readonly TaskCompletionSource<bool> _runCompleted =
     new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -31,6 +34,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
   private bool _disposed;
   private int _activeSends;
   private int _pendingSendAdmissions;
+  private int _pendingRealtimeSendAdmissions;
   private string? _closeReason;
   private long _receiveSequence;
   private long _sendSequence;
@@ -76,10 +80,24 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       SingleReader = true,
       SingleWriter = false
     });
+    // Realtime frames have their own queue, frame allowance and byte budget so a saturated normal
+    // (tile/world) send path can never delay or reject an authoritative position snapshot.
+    _realtimeSendQueue = Channel.CreateBounded<PendingSend>(new BoundedChannelOptions(
+      _options.MaximumPendingRealtimeSendFrames)
+    {
+      AllowSynchronousContinuations = false,
+      FullMode = BoundedChannelFullMode.Wait,
+      SingleReader = true,
+      SingleWriter = false
+    });
     _sendFrameSlots = new SemaphoreSlim(
       _options.MaximumPendingSendFrames,
       _options.MaximumPendingSendFrames);
+    _realtimeSendFrameSlots = new SemaphoreSlim(
+      _options.MaximumPendingRealtimeSendFrames,
+      _options.MaximumPendingRealtimeSendFrames);
     _sendBudget = new ConnectionByteBudget(_options.MaximumPendingSendBytes);
+    _realtimeSendBudget = new ConnectionByteBudget(_options.MaximumPendingRealtimeSendBytes);
   }
 
   public SessionEpoch Epoch => _epoch;
@@ -205,6 +223,15 @@ public sealed class PacketTcpConnection : IAsyncDisposable
     }
 
     int frameLength = PacketFrameCodec.HeaderBytes + intent.Payload.Length;
+    // Realtime traffic (authoritative position snapshots) is admitted against a reserved slice of
+    // the connection's frame slots, bytes and admissions so a normal backlog cannot starve it.
+    bool realtime = intent.Priority == OutboundPacketPriority.Realtime;
+    Channel<PendingSend> sendQueue = realtime ? _realtimeSendQueue : _sendQueue;
+    SemaphoreSlim frameSlots = realtime ? _realtimeSendFrameSlots : _sendFrameSlots;
+    ConnectionByteBudget sendBudget = realtime ? _realtimeSendBudget : _sendBudget;
+    int maximumAdmissions = realtime
+      ? _options.MaximumPendingRealtimeSendRequests
+      : _options.MaximumPendingSendRequests;
     lock (_lifecycleGate)
     {
       if (!_runStarted || _stopRequested || _disposed)
@@ -216,7 +243,10 @@ public sealed class PacketTcpConnection : IAsyncDisposable
           ProtocolErrorCode.TransportClosed);
       }
 
-      if (_pendingSendAdmissions >= _options.MaximumPendingSendRequests)
+      int pendingAdmissions = realtime
+        ? _pendingRealtimeSendAdmissions
+        : _pendingSendAdmissions;
+      if (pendingAdmissions >= maximumAdmissions)
       {
         return CreateReceipt(
           TransportSendCertainty.NotSubmitted,
@@ -225,7 +255,15 @@ public sealed class PacketTcpConnection : IAsyncDisposable
           ProtocolErrorCode.RateLimited);
       }
 
-      _pendingSendAdmissions++;
+      if (realtime)
+      {
+        _pendingRealtimeSendAdmissions++;
+      }
+      else
+      {
+        _pendingSendAdmissions++;
+      }
+
       _activeSends++;
     }
 
@@ -239,9 +277,9 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       using CancellationTokenSource deadline =
         CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _stop.Token);
       deadline.CancelAfter(_options.SendDeadline);
-      await _sendFrameSlots.WaitAsync(deadline.Token).ConfigureAwait(false);
+      await frameSlots.WaitAsync(deadline.Token).ConfigureAwait(false);
       slotAcquired = true;
-      byteLease = await _sendBudget.AcquireAsync(frameLength, deadline.Token).ConfigureAwait(false);
+      byteLease = await sendBudget.AcquireAsync(frameLength, deadline.Token).ConfigureAwait(false);
       rawLease = await ConnectionByteBudget.SharedRaw.AcquireAsync(
         frameLength, deadline.Token).ConfigureAwait(false);
       deadline.Token.ThrowIfCancellationRequested();
@@ -259,6 +297,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
         new PacketSequence(NextSendSequence()),
         byteLease,
         rawLease,
+        frameSlots,
         deadline,
         admissionStarted,
         cancellationToken);
@@ -266,7 +305,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       {
         deadline.Token.ThrowIfCancellationRequested();
         bool admissionExpired = HasSendAdmissionExpired(admissionStarted);
-        if (_stopRequested || admissionExpired || !_sendQueue.Writer.TryWrite(pending))
+        if (_stopRequested || admissionExpired || !sendQueue.Writer.TryWrite(pending))
         {
           return CreateReceipt(
             TransportSendCertainty.NotSubmitted,
@@ -277,7 +316,15 @@ public sealed class PacketTcpConnection : IAsyncDisposable
               : ProtocolErrorCode.TransportClosed);
         }
 
-        _pendingSendAdmissions--;
+        if (realtime)
+        {
+          _pendingRealtimeSendAdmissions--;
+        }
+        else
+        {
+          _pendingSendAdmissions--;
+        }
+
         queued = true;
         byteLease = null;
         rawLease = null;
@@ -304,10 +351,10 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       byteLease?.Dispose();
       if (slotAcquired)
       {
-        _sendFrameSlots.Release();
+        frameSlots.Release();
       }
 
-      CompleteSend(queued);
+      CompleteSend(queued, realtime);
     }
   }
 
@@ -379,6 +426,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
         await _sendsCompleted.Task.ConfigureAwait(false);
         _assembler.Dispose();
         _sendFrameSlots.Dispose();
+        _realtimeSendFrameSlots.Dispose();
         _stop.Dispose();
       }
 
@@ -509,8 +557,8 @@ public sealed class PacketTcpConnection : IAsyncDisposable
   {
     try
     {
-      await foreach (PendingSend pending in _sendQueue.Reader.ReadAllAsync(cancellationToken)
-        .ConfigureAwait(false))
+      while (await TryReadPendingAsync(cancellationToken).ConfigureAwait(false)
+          is PendingSend pending)
       {
         SendReceipt receipt;
         try
@@ -526,14 +574,14 @@ public sealed class PacketTcpConnection : IAsyncDisposable
             ProtocolErrorCode.TransportFailure);
           pending.Completion.TrySetResult(uncertainReceipt);
           Volatile.Write(ref _lastSendCertainty, (int)uncertainReceipt.Certainty);
-          pending.Release(_sendFrameSlots);
+          pending.Release();
           RequestStop("SendFailure");
           throw;
         }
 
         pending.Completion.TrySetResult(receipt);
         Volatile.Write(ref _lastSendCertainty, (int)receipt.Certainty);
-        pending.Release(_sendFrameSlots);
+        pending.Release();
         if (receipt.Certainty is TransportSendCertainty.Failed or TransportSendCertainty.OutcomeUnknown)
         {
           RequestStop("SendFailure");
@@ -553,7 +601,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       }
       finally
       {
-        while (_sendQueue.Reader.TryRead(out PendingSend? pending))
+        while (TryReadPendingImmediate() is PendingSend pending)
         {
           SendReceipt receipt = CreateReceipt(
             TransportSendCertainty.NotSubmitted,
@@ -561,10 +609,79 @@ public sealed class PacketTcpConnection : IAsyncDisposable
             0,
             ProtocolErrorCode.TransportClosed);
           pending.Completion.TrySetResult(receipt);
-          pending.Release(_sendFrameSlots);
+          pending.Release();
         }
       }
     }
+  }
+
+  /// <summary>
+  /// Reads the next frame to write. Realtime frames are always taken first, so a queued normal
+  /// (tile/world) backlog cannot delay an authoritative position snapshot that already arrived.
+  /// A completed writer is not waited on, so draining one band never spins on the other.
+  /// </summary>
+  private async ValueTask<PendingSend?> TryReadPendingAsync(CancellationToken cancellationToken)
+  {
+    bool realtimeCompleted = false;
+    bool normalCompleted = false;
+    while (true)
+    {
+      if (TryReadPendingImmediate() is PendingSend pending)
+      {
+        return pending;
+      }
+
+      Task<bool>? realtimeWait = realtimeCompleted || _realtimeSendQueue.Reader.Completion.IsCompleted
+        ? null
+        : _realtimeSendQueue.Reader.WaitToReadAsync(cancellationToken).AsTask();
+      Task<bool>? normalWait = normalCompleted || _sendQueue.Reader.Completion.IsCompleted
+        ? null
+        : _sendQueue.Reader.WaitToReadAsync(cancellationToken).AsTask();
+
+      if (realtimeWait is null && normalWait is null)
+      {
+        return null;
+      }
+
+      await WaitForEitherAsync(realtimeWait, normalWait).ConfigureAwait(false);
+
+      if (realtimeWait is not null && realtimeWait.IsCompletedSuccessfully && !realtimeWait.Result)
+      {
+        realtimeCompleted = true;
+      }
+
+      if (normalWait is not null && normalWait.IsCompletedSuccessfully && !normalWait.Result)
+      {
+        normalCompleted = true;
+      }
+    }
+  }
+
+  private static async Task WaitForEitherAsync(Task<bool>? realtimeWait, Task<bool>? normalWait)
+  {
+    if (realtimeWait is null)
+    {
+      await normalWait!.ConfigureAwait(false);
+      return;
+    }
+
+    if (normalWait is null)
+    {
+      await realtimeWait.ConfigureAwait(false);
+      return;
+    }
+
+    await Task.WhenAny(realtimeWait, normalWait).ConfigureAwait(false);
+  }
+
+  private PendingSend? TryReadPendingImmediate()
+  {
+    if (_realtimeSendQueue.Reader.TryRead(out PendingSend? realtime))
+    {
+      return realtime;
+    }
+
+    return _sendQueue.Reader.TryRead(out PendingSend? normal) ? normal : null;
   }
 
   private async Task<SendReceipt> SendFrameAsync(
@@ -756,6 +873,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
     {
       _stopRequested = true;
       _sendQueue.Writer.TryComplete();
+      _realtimeSendQueue.Writer.TryComplete();
       if (_activeSends == 0)
       {
         _sendsCompleted.TrySetResult(true);
@@ -779,13 +897,20 @@ public sealed class PacketTcpConnection : IAsyncDisposable
     }
   }
 
-  private void CompleteSend(bool queued)
+  private void CompleteSend(bool queued, bool realtime)
   {
     lock (_lifecycleGate)
     {
       if (!queued)
       {
-        _pendingSendAdmissions--;
+        if (realtime)
+        {
+          _pendingRealtimeSendAdmissions--;
+        }
+        else
+        {
+          _pendingSendAdmissions--;
+        }
       }
 
       _activeSends--;
@@ -827,6 +952,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
   {
     private readonly ConnectionByteBudget.Lease _byteLease;
     private readonly ConnectionByteBudget.Lease _rawLease;
+    private readonly SemaphoreSlim _frameSlots;
     private int _bytesSubmitted;
 
     public PendingSend(
@@ -834,6 +960,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       PacketSequence sequence,
       ConnectionByteBudget.Lease byteLease,
       ConnectionByteBudget.Lease rawLease,
+      SemaphoreSlim frameSlots,
       CancellationTokenSource admissionDeadline,
       long admissionStarted,
       CancellationToken callerCancellation)
@@ -842,6 +969,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       Sequence = sequence;
       _byteLease = byteLease;
       _rawLease = rawLease;
+      _frameSlots = frameSlots;
       AdmissionDeadline = admissionDeadline;
       AdmissionStarted = admissionStarted;
       CallerCancellation = callerCancellation;
@@ -861,11 +989,11 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       Interlocked.Add(ref _bytesSubmitted, bytes);
     }
 
-    public void Release(SemaphoreSlim slots)
+    public void Release()
     {
       _rawLease.Dispose();
       _byteLease.Dispose();
-      slots.Release();
+      _frameSlots.Release();
     }
   }
 }

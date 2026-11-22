@@ -14,6 +14,7 @@ public sealed class EntityRuntimeRegistry : IEntityRuntimeResolver, IEntityRunti
 {
   private readonly Dictionary<EntityRuntimeHandle, ArchEntity> _entities = [];
   private readonly Dictionary<ArchEntity, EntityRuntimeHandle> _handles = [];
+  private readonly Dictionary<EntityUuid, EntityRuntimeHandle> _liveHandles = [];
   private readonly Dictionary<EntityUuid, long> _generations = [];
 
   public EntityRuntimeRegistry(long worldScope)
@@ -39,11 +40,28 @@ public sealed class EntityRuntimeRegistry : IEntityRuntimeResolver, IEntityRunti
       throw new ArgumentException("A valid entity identity is required.", nameof(id));
     }
 
-    long generation = _generations.TryGetValue(id, out long previous)
-        ? checked(previous + 1)
-        : 1;
+    if (_liveHandles.ContainsKey(id))
+    {
+      throw new InvalidOperationException("The entity UUID is already allocated in this world.");
+    }
+
+    long generation;
+    try
+    {
+      generation = _generations.TryGetValue(id, out long previous)
+          ? checked(previous + 1)
+          : 1;
+    }
+    catch (OverflowException exception)
+    {
+      throw new InvalidOperationException(
+          "The entity UUID generation exhausted the runtime handle range.", exception);
+    }
+
     _generations[id] = generation;
-    return new EntityRuntimeHandle(id, WorldScope, generation);
+    EntityRuntimeHandle handle = new(id, WorldScope, generation);
+    _liveHandles.Add(id, handle);
+    return handle;
   }
 
   public void Register(EntityRuntimeHandle handle, in ArchEntity entity)
@@ -52,6 +70,12 @@ public sealed class EntityRuntimeRegistry : IEntityRuntimeResolver, IEntityRunti
     if (entity == ArchEntity.Null)
     {
       throw new ArgumentException("The Arch entity must be alive.", nameof(entity));
+    }
+
+    if (!_liveHandles.TryGetValue(handle.Id, out EntityRuntimeHandle allocated) ||
+        allocated != handle)
+    {
+      throw new InvalidOperationException("The runtime handle was not allocated by this registry.");
     }
 
     if (_entities.ContainsKey(handle) || _handles.ContainsKey(entity))
@@ -97,19 +121,27 @@ public sealed class EntityRuntimeRegistry : IEntityRuntimeResolver, IEntityRunti
 
   public bool Remove(EntityRuntimeHandle handle, out ArchEntity entity)
   {
-    if (!_entities.Remove(handle, out entity))
+    if (_entities.Remove(handle, out entity))
     {
-      return false;
+      _handles.Remove(entity);
+      _liveHandles.Remove(handle.Id);
+      return true;
     }
 
-    _handles.Remove(entity);
-    return true;
+    entity = ArchEntity.Null;
+    if (_liveHandles.TryGetValue(handle.Id, out EntityRuntimeHandle live) && live == handle)
+    {
+      return _liveHandles.Remove(handle.Id);
+    }
+
+    return false;
   }
 
   public void Clear()
   {
     _entities.Clear();
     _handles.Clear();
+    _liveHandles.Clear();
   }
 
   private void EnsureWorld(EntityRuntimeHandle handle)

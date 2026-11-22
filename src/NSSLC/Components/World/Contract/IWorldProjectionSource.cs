@@ -21,6 +21,11 @@ public interface IWorldProjectionSource
   /// <summary>Revision of the last committed world state.</summary>
   long CommitRevision { get; }
 
-  /// <summary>Takes the mutations committed since the previous drain and clears them.</summary>
-  IReadOnlyList<WorldMutation> DrainPendingMutations();
+  /// <summary>
+  /// Takes at most <paramref name="maximum"/> of the mutations committed since the previous drain.
+  /// Mutations above the bound stay queued in commit order, so a projection that runs inside the
+  /// tick cannot be forced into unbounded serialization work by a single large world change (for
+  /// example a wide liquid pass).
+  /// </summary>
+  IReadOnlyList<WorldMutation> DrainPendingMutations(int maximum);
 }

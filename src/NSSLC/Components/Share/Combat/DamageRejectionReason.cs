@@ -17,5 +17,8 @@ public enum DamageRejectionReason : byte
   DuplicateRequest = 11,
   StaleTick = 12,
   InvalidDamage = 13,
-  NoContact = 14
+  NoContact = 14,
+  TargetImmune = 15,
+  /// <summary>The source or target entity does not declare <c>AttributeSetComponent</c>.</summary>
+  MissingAttributeCapability = 16
 }

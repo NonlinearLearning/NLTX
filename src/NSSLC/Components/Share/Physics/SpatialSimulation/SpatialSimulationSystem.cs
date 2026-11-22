@@ -65,7 +65,8 @@ public sealed class SpatialSimulationSystem
     bool jumpConsumed = intent.JumpRequested && movement.CanJump && entity.Grounding.IsGrounded;
     if (jumpConsumed)
     {
-      velocity.Y = -movement.JumpSpeed * (gravity.Direction == GravityDirection.Reversed ? -1f : 1f);
+      float jumpSpeed = intent.JumpSpeed > 0f ? intent.JumpSpeed : movement.JumpSpeed;
+      velocity.Y = -jumpSpeed * (gravity.Direction == GravityDirection.Reversed ? -1f : 1f);
     }
 
     if (gravityCapability.Enabled && movement.Mode != MovementMode.Flight)

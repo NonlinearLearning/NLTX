@@ -3,7 +3,7 @@
 ## 1. 范围
 
 本文是对
-[`Version4世界交互与结构变更系统组件拆分报告`](../../component-decomposition/baseline/Version4世界交互与结构变更系统组件拆分报告.md)
+[`Version4世界交互与结构变更系统组件拆分报告`](../../component-decomposition/archive/baseline/Version4世界交互与结构变更系统组件拆分报告.md)
 的字段级设计。只定义组件及其值对象的字段和属性，不定义 System 算法、Command 处理、
 网络协议、存档格式或测试。
 

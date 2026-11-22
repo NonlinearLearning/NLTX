@@ -14,7 +14,8 @@ public readonly record struct DamageRequest
       long tick,
       DamageCause cause,
       DamageContact? contact = null,
-      long requestId = 0)
+      long requestId = 0,
+      long effectSourceId = 0)
   {
     if (!source.IsValid)
     {
@@ -37,7 +38,7 @@ public readonly record struct DamageRequest
           nameof(expectedTargetLife));
     }
 
-    if (tick < 0 || requestId < 0 || !Enum.IsDefined(cause))
+    if (tick < 0 || requestId < 0 || effectSourceId < 0 || !Enum.IsDefined(cause))
     {
       throw new ArgumentOutOfRangeException(nameof(tick));
     }
@@ -50,6 +51,7 @@ public readonly record struct DamageRequest
     Cause = cause;
     Contact = contact;
     RequestId = requestId;
+    EffectSourceId = effectSourceId;
   }
 
   public EntityRuntimeHandle Source { get; }
@@ -69,7 +71,10 @@ public readonly record struct DamageRequest
   /// <summary>Source-local identity that distinguishes separate requests in the same tick.</summary>
   public long RequestId { get; }
 
-  public DamageRequestKey Key => new(Source, Target, Tick, Cause, RequestId);
+  /// <summary>Optional status-effect source identity preserved across periodic damage requests.</summary>
+  public long EffectSourceId { get; }
+
+  public DamageRequestKey Key => new(Source, Target, Tick, Cause, RequestId, EffectSourceId);
 }
 
 /// <summary>Stable key used to reject duplicate applications in one logical tick.</summary>
@@ -78,4 +83,5 @@ public readonly record struct DamageRequestKey(
     EntityRuntimeHandle Target,
     long Tick,
     DamageCause Cause,
-    long RequestId);
+    long RequestId,
+    long EffectSourceId = 0);

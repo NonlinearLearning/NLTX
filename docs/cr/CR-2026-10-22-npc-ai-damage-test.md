@@ -1,7 +1,7 @@
 # CR-2026-10-22: Spawn Slime and Guide for AI and Damage Validation
 
 - ID: `CR-2026-10-22-NPC-AI-DAMAGE-TEST`
-- Status: native correction checked; NPC visual acceptance pending; dropped-item pickup accepted
+- Status: native and manual-server corrections checked; original-client visual acceptance pending; dropped-item pickup accepted
 - Date: 2026-10-22
 - Level: major
 - Scheduled iteration: current task
@@ -44,6 +44,46 @@ lifecycle/synchronization before requesting another original-client acceptance.
   drive NPC CheckActive. The previously misplaced player could retire the slime before movement.
 - Current native reports pass 30 TCP and 12 AI checks. Original-client visual confirmation of
   slime hit particles and death stutter remains pending.
+
+## Acceptance correction (2026-11-17): manual slime AI and immunity
+
+User feedback:
+
+> 将史莱姆设置为无敌
+>
+> 史莱姆依旧会的不正确行为加剧了参考D:\TRbackup\MinimalImplementation和D:\TRbackup\Version4修复
+
+The user authorized this correction in the current task. Keep the original-client source and the
+two reference trees read-only. The server definition also still had 50/50 life despite the prior
+native-blue-slime decision and the reference's 25 life; restore 25/25 while keeping the immunity
+capability. The manual calculator treated every usable player target as an
+aggressive state. Both reference implementations gate aggression on nighttime, changed life,
+position below the world-surface threshold, or slime rain. The corrected calculator uses that
+predicate for the one-frame/two-frame grounded jump timer, damps horizontal speed while grounded,
+and steers toward a target while airborne. Movement and Spatial still own velocity, position, and
+collision commits. The server world clock now starts with the loaded world's day/night flag. The
+current runtime does not model slime-rain state, so its manual world fact supplies `false` for that
+condition. Project the manual slime timer/facing into the type-1 NPC packet so clients do not
+receive zeroed AI fields on every update. Version4's client does not interpret the reserved
+server-authority bit, so native client prediction remains a compatibility limitation unless a
+client-side change is authorized.
+
+Mark the spawned type-1 slime with damage immunity and reject it at the shared Combat request
+boundary. Player hit packets and projectile hits both converge on this owner; leave Guide and other
+NPC damage behavior unchanged. This explicitly supersedes the earlier acceptance that expected
+the test slime's health to decrease.
+
+Implementation and acceptance evidence are tracked in
+`.agent-workplace/docs/task/2026-10-22-npc-ai-damage-test.md`.
+
+Manual-server evidence: `NSSLC.Server` built with exit 0, 19 existing warnings from untouched
+`NSSLC.WorldGeneration`; the NPC AI verification project built with exit 0, zero warnings; the
+`--manual-ai` probe passed calm-ground, airborne-steering, aggressive timer/jump, collision,
+grounding-stability, and immunity assertions. The same verifier also passed its shared-AI run.
+The final server build and both verifier runs pass after restoring 25/25 life. The updated server
+listens on `127.0.0.1:7777` with PID 19764 and logs `ai=manual`. Original-client visual behavior
+remains unverified, and the client continues to run its own native AI because it ignores the custom
+authority bit.
 
 ## Follow-up acceptance defect: dropped-item pickup
 

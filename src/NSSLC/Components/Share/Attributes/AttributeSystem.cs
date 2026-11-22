@@ -18,30 +18,18 @@ public static class AttributeSystem
     attributes.SetBaseValue(new AttributeBaseValue(attribute, value));
   }
 
-  /// <summary>Consumes a shared shield pool represented by the Shield attribute.</summary>
+  /// <summary>Consumes a shield pool owned by <see cref="ShieldPoolComponent"/>.</summary>
   public static int ConsumeShield(
-      AttributeSetComponent attributes,
+      ShieldPoolComponent shield,
       int requestedDamage)
   {
-    ArgumentNullException.ThrowIfNull(attributes);
+    ArgumentNullException.ThrowIfNull(shield);
     if (requestedDamage < 0)
     {
       throw new ArgumentOutOfRangeException(nameof(requestedDamage));
     }
 
-    int current = AttributeCombatCalculator.ResolveShield(attributes);
-    if (current < requestedDamage)
-    {
-      return 0;
-    }
-
-    int consumed = Math.Min(current, requestedDamage);
-    if (consumed > 0)
-    {
-      SetBaseValue(attributes, AttributeKind.Shield, current - consumed);
-    }
-
-    return consumed;
+    return shield.Consume(requestedDamage);
   }
 
   public static AttributeModifier AddModifier(

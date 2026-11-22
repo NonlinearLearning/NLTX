@@ -32,4 +32,17 @@ public readonly record struct LifeComponent {
   {
     return new LifeComponent(current, Maximum, Minimum);
   }
+
+  /// <summary>Creates the next bounded life value after a maximum-life synchronization.</summary>
+  public LifeComponent WithMaximum(int maximum)
+  {
+    if (maximum <= 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(maximum));
+    }
+
+    int nextMinimum = Math.Min(Minimum, maximum);
+    int nextCurrent = Math.Clamp(Current, nextMinimum, maximum);
+    return new LifeComponent(nextCurrent, maximum, nextMinimum);
+  }
 }

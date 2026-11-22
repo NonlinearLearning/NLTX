@@ -1,0 +1,36 @@
+[
+  {
+    "type": "itemUse",
+    "id": "Torch",
+    "useTime": 15,
+    "useAnimation": 15,
+    "autoReuse": true,
+    "channel": false,
+    "useAmmo": "None",
+    "consumeAmmo": false,
+    "manaCost": 0
+  },
+  {
+    "type": "itemUse",
+    "id": "CopperBow",
+    "useTime": 25,
+    "useAnimation": 25,
+    "autoReuse": false,
+    "channel": false,
+    "useAmmo": "WoodenArrow",
+    "consumeAmmo": true,
+    "manaCost": 0
+  },
+  {
+    "type": "itemUse",
+    "id": "MagicMissile",
+    "useTime": 12,
+    "useAnimation": 12,
+    "autoReuse": true,
+    "channel": true,
+    "useAmmo": "None",
+    "consumeAmmo": false,
+    "manaCost": 10
+  }
+]
+

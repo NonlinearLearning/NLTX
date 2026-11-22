@@ -25,7 +25,8 @@ public readonly record struct MovementIntent
    bool jumpRequested = false,
       bool hasDesiredVelocity = true,
       MovementIntentSource source = MovementIntentSource.Input,
-      long sourceRevision = 0)
+      long sourceRevision = 0,
+      float jumpSpeed = 0f)
  {
   if (!float.IsFinite(desiredVelocity.X) || !float.IsFinite(desiredVelocity.Y))
   {
@@ -42,6 +43,11 @@ public readonly record struct MovementIntent
       throw new ArgumentOutOfRangeException(nameof(sourceRevision));
     }
 
+    if (!float.IsFinite(jumpSpeed) || jumpSpeed < 0f)
+    {
+      throw new ArgumentOutOfRangeException(nameof(jumpSpeed));
+    }
+
   DesiredVelocity = desiredVelocity;
   Tick = tick;
   Priority = priority;
@@ -49,6 +55,7 @@ public readonly record struct MovementIntent
   HasDesiredVelocity = hasDesiredVelocity;
     Source = source;
     SourceRevision = sourceRevision;
+    JumpSpeed = jumpSpeed;
  }
 
  public Vector2 DesiredVelocity { get; }
@@ -64,6 +71,9 @@ public readonly record struct MovementIntent
   public MovementIntentSource Source { get; }
 
   public long SourceRevision { get; }
+
+  /// <summary>Optional per-request jump speed in world units per second; zero uses the capability.</summary>
+  public float JumpSpeed { get; }
 
  public static MovementIntent Stop(long tick, int priority = 0)
  {

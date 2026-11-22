@@ -39,6 +39,10 @@ public static class PlayerEntityDefinition
         .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
         .Add(() => new EntityFactionComponent(Faction.Friendly))
         .Add(() => new LifeComponent(current: 100, maximum: 100))
+        .Add(() => new ShieldPoolComponent())
+        .Add(() => new CooldownComponent())
+        .Add(() => new BreathComponent(maximum: 200))
+        .Add(() => new MountStateComponent())
         // 没有这两项时 PlayerDeathRespawnSystem 与 PlayerCombatResultSystem 在真实服务器中
         // 匹配 0 个实体：前者永不处理死亡，后者永不排空 CombatDamageResultQueue，
         // 对局越久玩家伤害结果堆积越多（与 AttributeTickSystem 那次的成因同类）。
@@ -80,7 +84,7 @@ public static class PlayerEntityDefinition
   private static AttributeSetComponent CreateAttributes()
   {
     AttributeSetComponent attributes = new();
-    PlayerAttributeBaseline.Apply(attributes);
+    PlayerAttributeBaseline.Apply(attributes, maximumLife: 100);
     return attributes;
   }
 

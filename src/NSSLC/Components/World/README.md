@@ -4,7 +4,7 @@
 实体句柄定位调用者，但不把地图拆成“一 tile 一个实体”。
 
 `WorldRuntime` 组合 `WorldRuntimeStateComponent` 与 `WorldTileStorageComponent`，实现
-`IWorldInteractionWorld` 和 `ISpatialWorldQuery`。因此基础运行可以直接读取、放置、破坏
+`IWorldTileReader`、`IWorldInteractionWorld` 和 `ISpatialWorldQuery`。因此基础运行可以直接读取、放置、破坏
 tile，推进显式 ECS Tick，并为移动系统提供实心 tile 碰撞和液体接触查询。持久化、网络
 广播、掉落、多格物体、斜坡和完整液体传播仍由外部 adapter 负责，不能从这个最小 owner
 推断已实现。
@@ -15,7 +15,7 @@ tile，推进显式 ECS Tick，并为移动系统提供实心 tile 碰撞和液�
 
 ```text
 World/
-  Contract/   # World 定义的接口：IWorldInteractionWorld、IWorldTileGrid
+  Contract/   # World 定义的接口：IWorldTileReader、IWorldInteractionWorld、IWorldTileGrid
   Model/      # World 定义的数据模型：坐标、tile 事实、结果、mutation、时间推进值、运动结果
   Solver/     # 纯运算：运动、时间推进、tile 转移、mutation 归并、掉落表、索引、权限、物品
   *.cs        # 更新驱动：WorldRuntime、WorldTickSystem、WorldInteractionSystem、存储与组件
@@ -51,8 +51,9 @@ Arch Entity
   └─ WorldInteractionCapabilityComponent
        └─ WorldInteractionSystem.TryAcquire
             └─ WorldInteractionAccess（短期令牌）
-                 └─ IWorldInteractionWorld
-                      └─ WorldRuntime / 外部权威世界所有者
+                 ├─ IWorldTileReader（读取）
+                 └─ IWorldInteractionWorld（破坏/放置）
+                       └─ WorldRuntime / 外部权威世界所有者
 ```
 
 ## Arch World 请求流
@@ -69,7 +70,9 @@ WorldInteractionResultComponent
 
 ```csharp
 WorldRuntime world = new(width: 256, height: 128);
-WorldInteractionSystem worldSystem = new(ecsWorld, world);
+IWorldTileReader tileReader = world;
+IWorldInteractionWorld interactionWorld = world;
+WorldInteractionSystem worldSystem = new(ecsWorld, tileReader, interactionWorld);
 WorldTickSystem worldTick = new(ecsWorld, world);
 EcsServer server = EcsServer.Create(
     ecsWorld,
@@ -98,8 +101,9 @@ Entity player = ecsWorld.Create(
 请求组件只保存一次操作的 Tick、坐标、类型和请求编号；系统只消费当前 Tick 的请求，旧请求
 会写入拒绝结果。组件不保存 tile 数组、WorldFile、地图副本或长期 Arch 实体引用。实体即使
 缺少 `WorldInteractionCapabilityComponent`，也会收到明确的权限拒绝结果并结束请求。
-`IWorldInteractionWorld` 是 tile/wall/liquid 数据、坐标规则、掉落、dirty section 和广播
-的权威端口；`WorldRuntime` 只覆盖基础 tile、碰撞和液体接触行为。Arch `World` 管理的是
+`IWorldTileReader` 只提供权威 tile 快照读取；`IWorldInteractionWorld` 只接受破坏和放置
+操作。完整世界实现可以在这两个端口后面处理 tile/wall/liquid 数据、坐标规则、掉落、dirty section
+和广播；`WorldRuntime` 只覆盖基础 tile、碰撞和液体接触行为。Arch `World` 管理的是
 交互实体和请求状态，不是整张密集 tile map。
 
 `WorldInteractionCapabilityComponent` 是实体的授权声明。它只保存
@@ -132,7 +136,7 @@ Entity player = ecsWorld.Create(
         WorldInteractionPermission.BreakTile |
         WorldInteractionPermission.PlaceTile));
 
-WorldInteractionSystem interactions = new(ecsWorld, worldPort);
+WorldInteractionSystem interactions = new(ecsWorld, worldPort, worldPort);
 if (interactions.TryAcquire(
         player,
         WorldInteractionPermission.BreakTile,
@@ -155,10 +159,10 @@ bool canInteract = interactions.TryAcquire(
 
 ## 世界端口的职责
 
-`IWorldInteractionWorld` 是权威世界的适配端口。服务器实现它时，应把读取和修改转发到
-现有世界所有者，例如 `WorldOwner` 的快照读取、地形规则和提交入口。适配器负责处理世界
-版本、坐标边界、方块规则、掉落物、脏区块和网络广播；能力组件不绕过这些规则，也不保存
-第二份地形。
+`IWorldTileReader` 和 `IWorldInteractionWorld` 是权威世界的适配端口。服务器实现它们时，
+应把读取和修改分别转发到现有世界所有者，例如 `WorldOwner` 的快照读取、地形规则和提交
+入口。适配器负责处理世界版本、坐标边界、方块规则、掉落物、脏区块和网络广播；能力组件不绕过
+这些规则，也不保存第二份地形。
 
 读取 API 返回值快照。破坏和放置 API 返回一次操作结果；结果只表示世界端口是否接受了该
 操作，跨系统效果仍按服务器已有的提交顺序处理。

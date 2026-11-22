@@ -45,6 +45,7 @@ public sealed class AttributeSetComponent
 
   public void SetBaseValue(AttributeBaseValue baseValue)
   {
+    AttributeKindMetadata.ValidateNumericContribution(baseValue.Attribute);
     int index = _baseValues.FindIndex(item => item.Attribute == baseValue.Attribute);
     if (index >= 0)
     {

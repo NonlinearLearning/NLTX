@@ -16,6 +16,7 @@ public sealed class DamageMitigationSystem
       in DamagePayload payload,
       AttributeSetComponent? sourceAttributes,
       AttributeSetComponent? targetAttributes,
+      ShieldPoolComponent? targetShield,
       LifeComponent? targetLife = null)
   {
     if (!payload.IsValid)
@@ -91,7 +92,7 @@ public sealed class DamageMitigationSystem
       lifeDamage = incomingDamage;
     }
 
-    int currentShield = AttributeCombatCalculator.ResolveShield(targetAttributes);
+    int currentShield = AttributeCombatCalculator.ResolveShield(targetShield);
     shieldAbsorbedDamage = Math.Min(currentShield, lifeDamage);
     lifeDamage -= shieldAbsorbedDamage;
     if (targetLife.HasValue)
@@ -159,6 +160,15 @@ public sealed class DamageMitigationSystem
             ? 0f
             : AttributeCalculator.Resolve(attributes, AttributeKind.DamageReduction) +
               AttributeCalculator.Resolve(attributes, AttributeKind.Endurance));
+  }
+
+  public DamageMitigationResult Calculate(
+      in DamagePayload payload,
+      AttributeSetComponent? sourceAttributes,
+      AttributeSetComponent? targetAttributes,
+      LifeComponent? targetLife = null)
+  {
+    return Calculate(in payload, sourceAttributes, targetAttributes, targetShield: null, targetLife);
   }
 
   private static AttributeKind? ResolveTypeAttribute(DamageType type)

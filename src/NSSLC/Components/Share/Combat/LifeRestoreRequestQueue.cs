@@ -4,7 +4,7 @@ using Terraria.Entity;
 namespace Terraria.Combat;
 
 /// <summary>Locates the single entity that carries the life-restore request queue.</summary>
-internal static class LifeRestoreRequestQueue
+public static class LifeRestoreRequestQueue
 {
   public static LifeRestoreRequestQueueComponent Require(ArchWorld world)
     => SingletonComponent<LifeRestoreRequestQueueComponent>.Require(

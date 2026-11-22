@@ -24,10 +24,19 @@ public static class PlayerAttributeBaseline {
   /// <summary>
   /// 写入玩家基值。
   /// </summary>
-  public static void Apply(AttributeSetComponent attributes) {
+  public static void Apply(AttributeSetComponent attributes, int? maximumLife = null) {
     ArgumentNullException.ThrowIfNull(attributes);
     attributes.SetBaseValue(
         new AttributeBaseValue(AttributeKind.MovementSpeed, DefaultMovementSpeed));
     attributes.SetBaseValue(new AttributeBaseValue(AttributeKind.Defense, DefaultDefense));
+    if (maximumLife.HasValue)
+    {
+      if (maximumLife.Value <= 0)
+      {
+        throw new ArgumentOutOfRangeException(nameof(maximumLife));
+      }
+
+      attributes.SetBaseValue(new AttributeBaseValue(AttributeKind.MaximumLife, maximumLife.Value));
+    }
   }
 }

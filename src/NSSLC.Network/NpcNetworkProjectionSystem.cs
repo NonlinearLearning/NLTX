@@ -48,7 +48,7 @@ public sealed class NpcNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServer
 
   public override void Update(in EcsServerTickContext context)
   {
-    List<NpcNetworkSnapshot> npcs = CaptureNpcs();
+    List<NpcNetworkSnapshot> npcs = CaptureNpcs(context.DeltaTime);
 
     if (npcs.Count == 0)
     {
@@ -67,16 +67,21 @@ public sealed class NpcNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServer
 
           foreach (NpcNetworkSnapshot npc in npcs)
           {
-            bool initial = !session.HasSentNpcSlot(npc.Identity.Slot);
+            bool initial = !session.HasSentNpcSlot(
+                npc.Identity.Slot,
+                npc.Identity.Generation);
             outbound.Enqueue(new OutboundPacketIntent(
                 [session.Epoch],
                 null,
                 SyncNpcMessageId,
                 CreatePayload(npc, initial),
-                CommitVersion.Initial));
+                CommitVersion.Initial,
+                OutboundPacketPriority.Realtime));
             if (initial)
             {
-              session.MarkNpcSlotSent(npc.Identity.Slot);
+              session.MarkNpcSlotSent(
+                  npc.Identity.Slot,
+                  npc.Identity.Generation);
               ServerLog.Info(
                   "ecs.npc.network_sync",
                   $"epoch={session.Epoch.Value} slot={npc.Identity.Slot} " +
@@ -86,7 +91,7 @@ public sealed class NpcNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServer
         });
   }
 
-  private List<NpcNetworkSnapshot> CaptureNpcs()
+  private List<NpcNetworkSnapshot> CaptureNpcs(float deltaTime)
   {
     List<NpcNetworkSnapshot> npcs = [];
     World.Query(
@@ -100,20 +105,22 @@ public sealed class NpcNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServer
             ref NpcBehaviorStateComponent behavior,
             ref GroundingComponent grounding) =>
         {
-          Vector2 linearVelocity = velocity.LinearVelocity;
-          bool directionPositive = linearVelocity.X >= 0f;
-          bool directionYPositive = linearVelocity.Y >= 0f;
+          Vector2 wireVelocity = velocity.LinearVelocity * deltaTime;
+          bool directionPositive = behavior.StateSlot0 == 0f
+              ? wireVelocity.X >= 0f
+              : behavior.StateSlot0 > 0f;
+          bool directionYPositive = wireVelocity.Y >= 0f;
 
-          // The ECS behavior slots are private server state. Terraria clients execute the
-          // native AI for packet-23 NPC types, so publishing these values as ai[0]/ai[1] makes
-          // the client reinterpret our phase and timer as native Slime/Town NPC state.
-          float[] ai = [0f, 0f, 0f, 0f];
+          // Ordinary type-1 Slime uses state slot 1 as its reference ai[0] jump timer. The
+          // remaining native values select the default body, initialize ai[2], and leave ai[3]
+          // unused. Other NPC types retain their existing zero AI projection.
+          float[] ai = CreateAiState(identity.NetId, behavior);
           npcs.Add(new NpcNetworkSnapshot(
               identity,
               // Guide (22) and ordinary Slime (1) use the default zero SyncAnchor on the
               // current client. Packet 23 therefore carries the ECS collider's top-left.
               location.Coordinates,
-              linearVelocity,
+              wireVelocity,
               life.Current,
               life.Maximum,
               directionPositive,
@@ -152,10 +159,9 @@ public sealed class NpcNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServer
     SetFlag(ref flags1, 6, npc.SpriteDirectionPositive);
     WriteByte(stream, flags1);
 
-    // Bit 5 is unused by the Version4 packet-23 reader. The latest client uses it as an
-    // explicit marker for ECS-authoritative NPCs, so it will not run a second local AI/physics
-    // simulation between authoritative snapshots. Bit 4 is the native shimmer flag and must
-    // remain clear for ordinary NPCs, otherwise the client renders them fully transparent.
+    // Bit 5 is a custom server-authority extension. The supplied Version4 client ignores this
+    // reserved bit and still runs native NPC AI; packet AI state above keeps the Slime prediction
+    // aligned with the authoritative timer. Bit 4 is the native shimmer flag and stays clear.
     byte flags2 = 1 << 5;
     SetFlag(ref flags2, 3, initial);
     WriteByte(stream, flags2);
@@ -188,6 +194,15 @@ public sealed class NpcNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServer
   private static int ResolveLifeWidth(int maximumLife)
   {
     return maximumLife > short.MaxValue ? 4 : maximumLife > sbyte.MaxValue ? 2 : 1;
+  }
+
+  private static float[] CreateAiState(
+      short networkType,
+      NpcBehaviorStateComponent behavior)
+  {
+    return networkType == 1
+        ? [behavior.StateSlot1, -1f, behavior.ActionPhase > 0 ? 1f : 0f, 0f]
+        : [0f, 0f, 0f, 0f];
   }
 
   private static void SetFlag(ref byte flags, int bit, bool value)

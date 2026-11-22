@@ -80,7 +80,7 @@ public sealed class DamageCommitSystem
           _world,
           target,
           new AttributeShieldConsumeRequestComponent(mitigation.ShieldAbsorbedDamage));
-      if (shield.HasAttributes && shield.Consumed != mitigation.ShieldAbsorbedDamage)
+      if (shield.HasShieldPool && shield.Consumed != mitigation.ShieldAbsorbedDamage)
       {
         return DamageCommitResult.TargetChanged;
       }

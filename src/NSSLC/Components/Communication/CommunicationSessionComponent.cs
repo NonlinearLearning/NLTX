@@ -7,7 +7,7 @@ namespace Terraria.Communication;
 public sealed class CommunicationSessionComponent
 {
   private readonly HashSet<(int X, int Y)> _sentWorldSections = [];
-  private readonly HashSet<byte> _sentNpcSlots = [];
+  private readonly HashSet<(byte Slot, byte Generation)> _sentNpcIdentities = [];
 
   public CommunicationSessionComponent(SessionEpoch epoch)
   {
@@ -43,15 +43,15 @@ public sealed class CommunicationSessionComponent
   }
 
   /// <summary>Returns whether the initial snapshot for a client NPC slot was sent.</summary>
-  public bool HasSentNpcSlot(byte slot)
+  public bool HasSentNpcSlot(byte slot, byte generation)
   {
-    return _sentNpcSlots.Contains(slot);
+    return _sentNpcIdentities.Contains((slot, generation));
   }
 
   /// <summary>Records the initial snapshot for a client NPC slot.</summary>
-  public void MarkNpcSlotSent(byte slot)
+  public void MarkNpcSlotSent(byte slot, byte generation)
   {
-    _sentNpcSlots.Add(slot);
+    _sentNpcIdentities.Add((slot, generation));
   }
 
   public bool TryAdvance(CommunicationSessionStage stage)
@@ -84,6 +84,17 @@ public sealed class CommunicationSessionComponent
     }
 
     Player = player;
+    return true;
+  }
+
+  public bool UnbindPlayer(EntityRuntimeHandle player)
+  {
+    if (Player != player)
+    {
+      return false;
+    }
+
+    Player = null;
     return true;
   }
 }

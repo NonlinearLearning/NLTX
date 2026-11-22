@@ -4,8 +4,8 @@
 
 `Terraria.Entity.EcsServer` 是 NSSLC 自身的 ECS 组合边界。它接收一个由宿主提供的
 Arch `World` 和官方 `Arch.System.ISystem<EcsServerTickContext>` 集合，内部使用官方
-`Arch.System.Group<EcsServerTickContext>` 按注册顺序执行 `BeforeUpdate`、`Update` 和
-`AfterUpdate`。它不创建服务器时钟、线程、网络连接或文件访问，也不替代宿主的外部 Tick
+`Arch.System.Group<EcsServerTickContext>` 按验证后的稳定调度顺序执行 `BeforeUpdate`、`Update`
+和 `AfterUpdate`。它不创建服务器时钟、线程、网络连接或文件访问，也不替代宿主的外部 Tick
 循环。
 
 宿主负责：
@@ -22,8 +22,8 @@ Arch `World` 和官方 `Arch.System.ISystem<EcsServerTickContext>` 集合，内�
 - 只在完整的 `BeforeUpdate → Update → AfterUpdate` 流程成功后推进 `LastTick`；
 - 发生系统异常后停止继续推进，等待宿主释放该 ECS 世界。
 
-需要阶段顺序时使用 `EcsServer.Create` 和 `EcsServerPhase`。每个阶段内部由官方
-`Arch.System.Group<EcsServerTickContext>` 按注册顺序运行；阶段只表达 NSSLC 的可见性和
+需要阶段顺序时使用 `EcsServer.Create` 和 `EcsServerPhase`。每个阶段内部先按 registration
+依赖进行稳定拓扑排序，再由官方 `Arch.System.Group<EcsServerTickContext>` 运行；阶段只表达 NSSLC 的可见性和
 顺序边界，不创建第二个服务器时钟或线程。
 
 ```csharp
@@ -73,7 +73,9 @@ EntityDefinition（例如 Slime）
 | `EntityDefinitionBuilder` | 防止同一组件重复注册，检查定义级依赖 |
 | `EntityDefinitionRegistry` | 注册和查找不可变定义；不保存实例 |
 | `IEntityDefinitionHost<TEntity>` | 由服务器实现，把完整组件集合原子映射到 Arch 实体并登记身份 |
-| `EntityDefinitionSystem<TEntity>` | 读取定义、创建独立组件值并调用宿主创建/销毁入口 |
+| `IDeferredEntityDefinitionHost<TEntity>` | 可选的 Tick 提交宿主，返回 playback 后解析的实体创建 ticket |
+| `EntityDefinitionSystem<TEntity>` | 读取定义、创建独立组件值并调用同步或 deferred 宿主入口 |
+| `EcsServerEntityCreationTicket` | 保存 buffered entity、初始组件和 runtime handle 的提交后解析边界 |
 | `AiEntitySystem` | 为带 `AiComponent` 的实体维护独立绑定，读取宿主快照并返回结果 |
 | 运动、物理、战斗系统 | 读取组件和 AI 意图，按各自规则提交真实状态变化 |
 | 调度层 | 安排感知、AI、移动/物理、战斗和同步阶段 |
@@ -135,6 +137,17 @@ EntityDefinition slime = new EntityDefinitionBuilder(new EntityDefinitionId("sli
 
 这里的 `AiRequirements` 是快照输入的显式契约，不会创建行为实例或把规划器放进实体定义。
 宿主可以从多个权威组件生成这些投影；运行时 `AiBinding` 仍会再次检查每个 `AiSnapshot`。
+
+## 战斗实体的属性能力声明
+
+需要参与属性修正的战斗实体（玩家、敌对 NPC、投射物）必须通过组件组合显式声明
+`AttributeSetComponent`。这是实体定义层的契约，不是可选项：
+
+- `CombatDamageSystem` 在源或目标缺少 `AttributeSetComponent` 时直接返回
+  `DamageRejectionReason.MissingAttributeCapability`，不再提供可空回退。
+- 玩家基线由 `PlayerAttributeBaseline.Apply` 装配；NPC 与投射物在各自实体定义工厂里
+  `Clone` 一份定义属性，避免共享可变状态。
+- 不需要属性修正的实体应在定义层明确不参与 Combat，而不是让 Combat 猜测默认值。
 
 ## 每帧协作
 
@@ -208,6 +221,10 @@ AiEntityResult<MyEntityKey, ExampleAiIntent> stopped =
 拥有时钟并调用 `Initialize`/`Update`。它只组织已经注册的系统，不自动发现 Share 系统，
 也不负责网络、文件、持久化或服务器后台线程。结构变化由同目录的
 `EcsServerCommandBuffer` 记录并在宿主确定的边界播放。
+
+`SpawnDeferred` 只返回当前 Tick 的 buffered entity，不能把它当作已进入 Arch 查询的 live
+entity；跨域队列、AI 绑定和网络事实应通过 command buffer 的 after-playback 回调使用
+`EcsServerEntityCreationTicket.Resolve()` 得到真实实体。
 
 一个最小系统可以直接通过 Arch 查询组件：
 

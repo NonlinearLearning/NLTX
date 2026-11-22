@@ -20,7 +20,8 @@ public sealed class WorldRuntimeStateComponent
       int tileSize = DefaultTileSize,
       ulong worldEpoch = 1,
       long revision = 0,
-      double dayLengthSeconds = DefaultDayLengthSeconds)
+      double dayLengthSeconds = DefaultDayLengthSeconds,
+      bool initialDayTime = true)
   {
     if (width <= 0)
     {
@@ -59,7 +60,8 @@ public sealed class WorldRuntimeStateComponent
     Revision = revision;
     DayLengthSeconds = dayLengthSeconds;
     LastTick = -1;
-    DayTime = true;
+    DayTime = initialDayTime;
+    TimeOfDaySeconds = initialDayTime ? 0d : dayLengthSeconds / 2d;
   }
 
   public int Width { get; }

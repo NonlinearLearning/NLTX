@@ -24,6 +24,7 @@ using Terraria.World;
 using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
 
 using Terraria.Chat;
+using NSSLC.Server.Content.Prototypes;
 
 namespace NSSLC.Server;
 
@@ -49,8 +50,12 @@ internal static class Program
 
   public static async Task<int> Main(string[] args)
   {
+    bool manualAi = args.Any(static argument =>
+        string.Equals(argument, "--manual-ai", StringComparison.OrdinalIgnoreCase));
+    string? worldPath = args.FirstOrDefault(static argument =>
+        !argument.StartsWith("--", StringComparison.Ordinal));
     LoadedServerWorld loadedWorld = ServerWorldLoader.Load(
-        args.Length > 0 ? args[0] : null);
+        worldPath);
     ServerLog.Info(
         "ecs.world.tile-entities",
         $"chests={loadedWorld.TileEntities.ChestCount} signs={loadedWorld.TileEntities.SignCount} " +
@@ -59,7 +64,12 @@ internal static class Program
     int worldWidth = loadedWorld.Header.MaxTilesX;
     int worldHeight = loadedWorld.Header.MaxTilesY;
     using ArchWorld ecsWorld = ArchWorld.Create();
-    WorldRuntime worldRuntime = new(worldWidth, worldHeight);
+    WorldRuntime worldRuntime = new(
+        new WorldRuntimeStateComponent(
+            worldWidth,
+            worldHeight,
+            initialDayTime: loadedWorld.Environment.DayTime),
+        new WorldTileStorageComponent(worldWidth, worldHeight));
     WorldItemStore worldItems = new();
     ItemDefinitionRegistry itemDefinitions = BuildItemDefinitions();
     InventorySystem inventories = new(ecsWorld, itemDefinitions);
@@ -95,26 +105,45 @@ internal static class Program
         MaxInventoryStack,
         PlayerRespawnDelayTicks);
     NpcEntityDefinition.Register(entityDefinitions);
+    float worldSurfaceY = checked((float)(loadedWorld.Environment.WorldSurface *
+        WorldRuntimeStateComponent.DefaultTileSize));
+    NpcAiSnapshotProvider npcAiSnapshots = new(
+        ecsWorld,
+        () => new NpcAiWorldFact(
+            worldRuntime.State.DayTime,
+            worldSurfaceY,
+            slimeRain: false));
+    using NpcAiRuntime? npcAi = manualAi ? null : new NpcAiRuntime(ecsWorld, npcAiSnapshots);
+    NpcNetworkIdentitySystem npcNetwork = new(ecsWorld);
     EntityDefinitionSystem<ArchEntity> entitySpawner = new(
         entityDefinitions,
-        new ArchEntityDefinitionHost(ecsWorld, entities));
-    using NpcAiRuntime npcAi = new(ecsWorld);
+        new ArchEntityDefinitionHost(
+            ecsWorld,
+            entities,
+            entity =>
+            {
+              npcAi?.TryDetach(entity, out _);
+              npcNetwork.TryRelease(entity);
+            }));
     ArchEntity guide = CreateNpc(
         ecsWorld,
-                entitySpawner,
+        entitySpawner,
+        npcNetwork,
         new Vector2(guideSpawnTileX * 16f, guideSurfaceY),
-        isSlime: false,
-        networkSlot: 0,
-        networkType: 22);
+        false,
+        22);
     ArchEntity slime = CreateNpc(
         ecsWorld,
-                entitySpawner,
+        entitySpawner,
+        npcNetwork,
         new Vector2(slimeSpawnTileX * 16f, slimeSurfaceY),
-        isSlime: true,
-        networkSlot: 1,
-        networkType: 1);
-    npcAi.AttachGuide(guide);
-    npcAi.AttachSlime(slime);
+        true,
+        1);
+    if (npcAi is not null)
+    {
+      npcAi.AttachGuide(guide);
+      npcAi.AttachSlime(slime);
+    }
     ServerLog.Info(
         "ecs.npc.spawned",
         $"guide=world-spawn:{loadedWorld.Environment.SpawnTileX},{loadedWorld.Environment.SpawnTileY} " +
@@ -166,22 +195,36 @@ internal static class Program
         worldRuntime,
         entities);
     WorldTickSystem worldTick = new(ecsWorld, worldRuntime);
-    WorldInteractionSystem worldInteractions = new(ecsWorld, worldRuntime);
+    WorldInteractionSystem worldInteractions = new(ecsWorld, worldRuntime, worldRuntime);
     BuffDefinitionRegistry buffDefinitions = new();
     // 注册参考客户端药水表的三条样例，避免注册表为空导致 TryApply 恒返回 UnknownDefinition。
     BuffContent.RegisterAll(buffDefinitions);
     AttributeTickSystem attributeTick = new(ecsWorld);
-    // 装备/饰品/武器的属性贡献由库存事实重建。它必须排在所有读取 AttributeSetComponent
-    // 的系统之前，否则本 tick 内换装要到下一 tick 才生效。
-    InventoryAttributeContributionSystem attributeContributions = new(ecsWorld, itemDefinitions);
+    LifeAttributeSynchronizationSystem lifeAttributeSynchronization =
+        new(ecsWorld);
     BuffTickSystem buffTick = new(ecsWorld, new BuffSystem(buffDefinitions));
+    BuffApplyRequestSystem buffApply =
+        new(ecsWorld, new BuffSystem(buffDefinitions));
+    StatusEffectBehaviorSystem statusEffectBehavior =
+        new(ecsWorld, buffDefinitions);
+    StatusEffectPeriodicSystem statusEffectPeriodic =
+        new(ecsWorld, entities);
+    CooldownTickSystem cooldownTick = new(ecsWorld);
     GravityTickSystem gravityTick = new(ecsWorld);
-    NpcAiIntentAdapter npcAiAdapter = new(
-        ecsWorld,
-        npcAi.Entities,
-        npcAi.Snapshots,
-        entities,
-        attackDefinitions);
+    NpcAiIntentAdapter npcAiAdapter = manualAi
+        ? new NpcAiIntentAdapter(
+            ecsWorld,
+            npcAiSnapshots,
+            entities,
+            attackDefinitions,
+            ManualNpcAiRequirements,
+            CalculateManualNpcAi)
+        : new NpcAiIntentAdapter(
+            ecsWorld,
+            npcAi!.Entities,
+            npcAiSnapshots,
+            entities,
+            attackDefinitions);
     SpatialSimulationCoordinatorSystem spatialSimulation = new(ecsWorld, worldRuntime);
     // 刷怪表：目前只有史莱姆可被创建，表中权重与网络类型即 Version4 的出生判定常量。
     NpcSpawnTable npcSpawnTable = new(
@@ -213,57 +256,16 @@ internal static class Program
         npcSpawnTable,
         npcSpawnEnvironment,
         worldSeed: WorldSeed(loadedWorld.Header.UniqueId));
-    Dictionary<SessionEpoch, EntityRuntimeHandle> sessions = [];
-    object lifecycleGate = new();
-
-    CommunicationHostRuntime? communication = null;
-    communication = new(
-        ecsWorld,
-        new IPEndPoint(IPAddress.Loopback, ListenPort),
-        onSessionOpened: epoch =>
-        {
-          lock (lifecycleGate)
-          {
-            EntityRuntimeHandle handle = CreatePlayer(
-                ecsWorld,
-                entities,
-                entitySpawner,
-                playerSpawnPosition);
-            if (!communication!.Ingress.TryBindPlayer(epoch, handle))
-            {
-              entities.Remove(handle, out ArchEntity entity);
-              if (ecsWorld.IsAlive(entity))
-              {
-                ecsWorld.Destroy(entity);
-              }
-
-              throw new InvalidOperationException(
-                  "The new communication session could not bind its player entity.");
-            }
-
-            sessions.Add(epoch, handle);
-            ServerLog.Info("ecs.session.player_bound", $"epoch={epoch.Value}");
-          }
-
-          return ValueTask.CompletedTask;
-        },
-        onSessionClosed: closed =>
-        {
-          lock (lifecycleGate)
-          {
-            if (sessions.Remove(closed.Epoch, out EntityRuntimeHandle handle) &&
-                entities.Remove(handle, out ArchEntity entity) && ecsWorld.IsAlive(entity))
-            {
-              ecsWorld.Destroy(entity);
-            }
-
-            ServerLog.Info(
-                "ecs.session.player_unbound",
-                $"epoch={closed.Epoch.Value} reason={ServerLog.Quote(closed.Reason)}");
-          }
-
-          return ValueTask.CompletedTask;
-        });
+    ICommunicationSessionPlayerLifecycle playerLifecycle =
+        new ServerCommunicationSessionPlayerLifecycle(
+            ecsWorld,
+            entities,
+            entitySpawner,
+            playerSpawnPosition);
+    CommunicationHostRuntime communication = new(
+        new IPEndPoint(IPAddress.Loopback, ListenPort));
+    CommunicationIngressPreparationSystem preparation =
+        new(ecsWorld, communication.Ingress, playerLifecycle);
 
     IReadOnlyList<EcsServerSystemRegistration> registrations = BuildRegistrations(
         ecsWorld,
@@ -274,6 +276,7 @@ internal static class Program
         projectileHits,
         projectileLifecycle,
         communication,
+        playerLifecycle,
         worldTick,
         worldInteractions,
         worldItems,
@@ -282,13 +285,20 @@ internal static class Program
         spatialSimulation,
         npcSpawn,
         loadedWorld.TileEntities,
-        CreateItemUseDefinitions(),
+        ItemUseDefinitionPrototypeLoader.Load(
+            new PrototypeManager(),
+            Path.Combine(AppContext.BaseDirectory, "Content", "Prototypes", "ItemUse")),
         new ChatStore(),
         CreateChatCommands(),
         attributeTick,
-        attributeContributions,
+        lifeAttributeSynchronization,
+        buffApply,
         buffTick,
+        statusEffectBehavior,
+        statusEffectPeriodic,
+        cooldownTick,
         gravityTick,
+        npcNetwork,
         new NpcNetworkProjectionSystem(ecsWorld),
         new WorldNetworkProjectionSystem(
             ecsWorld,
@@ -313,7 +323,8 @@ internal static class Program
           MoonPhase = checked((byte)loadedWorld.Environment.MoonPhase),
           WorldTiles = loadedWorld.Tiles,
           FrameImportant = loadedWorld.FrameImportant.ToArray()
-        });
+        },
+        preparation);
     using EcsServer server = EcsServer.Create(ecsWorld, registrations);
     server.Initialize();
 
@@ -326,10 +337,11 @@ internal static class Program
     Console.CancelKeyPress += cancel;
     try
     {
-      await communication!.StartAsync(shutdown.Token).ConfigureAwait(false);
+      await communication.StartAsync(shutdown.Token).ConfigureAwait(false);
       ServerLog.Info(
           "ecs.server.ready",
-          $"listen=127.0.0.1:{ListenPort} world={worldWidth}x{worldHeight} " +
+          $"ai={(manualAi ? "manual" : "shared")} listen=127.0.0.1:{ListenPort} " +
+          $"world={worldWidth}x{worldHeight} " +
           $"path={ServerLog.Quote(loadedWorld.Path)} spawn={loadedWorld.Environment.SpawnTileX}," +
           $"{loadedWorld.Environment.SpawnTileY}");
       await RunTicksAsync(server, shutdown.Token).ConfigureAwait(false);
@@ -346,11 +358,27 @@ internal static class Program
     finally
     {
       Console.CancelKeyPress -= cancel;
-      await communication!.StopAsync().ConfigureAwait(false);
+      await communication.StopAsync().ConfigureAwait(false);
+      using EcsServerCommandBuffer shutdownCommands = new();
+      preparation.Update(new EcsServerTickContext(ecsWorld, Math.Max(0, server.LastTick), 1f / 60f, shutdownCommands));
+      preparation.CloseAllSessions(shutdownCommands);
+      shutdownCommands.Playback(ecsWorld);
+      NpcSpawnFactQueue.Require(ecsWorld).Clear();
+      if (ecsWorld.IsAlive(guide))
+      {
+        entitySpawner.Despawn(guide);
+      }
+      if (ecsWorld.IsAlive(slime))
+      {
+        entitySpawner.Despawn(slime);
+      }
+      npcAi?.Dispose();
+      npcNetwork.Clear();
+      entities.Clear();
       ServerLog.Info("ecs.server.stopped", $"lastTick={server.LastTick}");
     }
 
-    await communication!.DisposeAsync().ConfigureAwait(false);
+    await communication.DisposeAsync().ConfigureAwait(false);
 
     return 0;
   }
@@ -375,46 +403,107 @@ internal static class Program
     return registry;
   }
 
-  /// <summary>
-  /// 物品使用表：射速、动画、连射、通道与弹药。数值取自参考客户端对应物品的
-  /// <c>useTime/useAnimation/autoReuse/channel/useAmmo</c> 量级，尚未逐物品从物品表导入。
-  /// </summary>
+  private static readonly AiRequirements ManualNpcAiRequirements = AiRequirements.Empty
+      .Require<NpcAiMovementFact>()
+      .Require<NpcAiTargetFact>()
+      .Require<NpcAiLifeFact>()
+      .Require<NpcAiWorldFact>();
+
+  /// <summary>Runs the Slime subset directly without creating an AiSystem or AiBinding.</summary>
   /// <remarks>
-  /// 只登记少量示范物品：表格结构（每 id 一条不可变档案）才是本次引入的能力，
-  /// 全表导入需要物品表数据，属于后续工作。蓝量（<c>ManaCost</c>）随档案传递但暂不扣减。
+  /// This keeps the MinimalImplementation facts-to-plan boundary: target and movement facts
+  /// produce an intent, while Movement and Spatial remain responsible for applying it.
   /// </remarks>
-  private static ItemUseDefinitionCatalog CreateItemUseDefinitions()
+  private static IReadOnlyList<NpcAiIntent> CalculateManualNpcAi(
+      AiComponent aiComponent,
+      NpcBehaviorStateComponent state,
+      AiSnapshot snapshot,
+      float deltaTime)
   {
-    ItemUseDefinitionCatalog definitions = new();
-    definitions.Register(new ItemUseDefinition(
-        ItemId.Torch,
-        UseTime: 15,
-        UseAnimation: 15,
-        AutoReuse: true,
-        Channel: false,
-        UseAmmo: ItemId.None,
-        ConsumeAmmo: false,
-        ManaCost: 0));
-    definitions.Register(new ItemUseDefinition(
-        ItemId.CopperBow,
-        UseTime: 25,
-        UseAnimation: 25,
-        AutoReuse: false,
-        Channel: false,
-        UseAmmo: ItemId.WoodenArrow,
-        ConsumeAmmo: true,
-        ManaCost: 0));
-    definitions.Register(new ItemUseDefinition(
-        ItemId.MagicMissile,
-        UseTime: 12,
-        UseAnimation: 12,
-        AutoReuse: true,
-        Channel: true,
-        UseAmmo: ItemId.None,
-        ConsumeAmmo: false,
-        ManaCost: 10));
-    definitions.Seal();
-    return definitions;
+    if (aiComponent.BehaviorType == typeof(SlimeAiBehavior))
+    {
+      return CalculateManualSlimeIntents(state, snapshot, deltaTime);
+    }
+
+    if (aiComponent.BehaviorType == typeof(GuideAiBehavior))
+    {
+      return CalculateManualGuideIntents(state, snapshot, deltaTime);
+    }
+
+    throw new NotSupportedException(
+        $"Manual NPC AI does not support behavior '{aiComponent.BehaviorType?.FullName}'.");
+  }
+
+  private static IReadOnlyList<NpcAiIntent> CalculateManualSlimeIntents(
+      NpcBehaviorStateComponent state,
+      AiSnapshot snapshot,
+      float deltaTime)
+  {
+    NpcAiMovementFact movement = snapshot.Get<NpcAiMovementFact>();
+    NpcAiTargetFact target = snapshot.Get<NpcAiTargetFact>();
+    NpcAiLifeFact life = snapshot.Get<NpcAiLifeFact>();
+    NpcAiWorldFact world = snapshot.Get<NpcAiWorldFact>();
+    return SlimeAiRules.Calculate(
+        movement,
+        target,
+        life,
+        world,
+        state.StateSlot1,
+        state.ActionPhase > 0,
+        state.StateSlot0,
+        deltaTime);
+  }
+
+  private static IReadOnlyList<NpcAiIntent> CalculateManualGuideIntents(
+      NpcBehaviorStateComponent state,
+      AiSnapshot snapshot,
+      float deltaTime)
+  {
+    const float simulationTicksPerSecond = 60f;
+    NpcAiMovementFact movement = snapshot.Get<NpcAiMovementFact>();
+    float modeTime = state.StateSlot1 + deltaTime;
+    int direction = state.StateSlot0 == 0f ? 1 : Math.Sign(state.StateSlot0);
+    bool walking = state.Phase == NpcBehaviorPhase.Wander;
+    if (modeTime >= 4f)
+    {
+      modeTime = 0f;
+      walking = !walking;
+      if (walking)
+      {
+        direction = -direction;
+      }
+    }
+
+    bool blocked = walking && movement.IsGrounded && modeTime > 0.25f &&
+        MathF.Abs(movement.Velocity.X) < 0.05f;
+    bool jumpRequested = blocked && state.ActionPhase == 0;
+    if (jumpRequested)
+    {
+      direction = -direction;
+    }
+
+    Vector2 desiredVelocity = walking
+        ? new Vector2(direction * simulationTicksPerSecond, 0f)
+        : Vector2.Zero;
+    NpcBehaviorPhase phase = walking ? NpcBehaviorPhase.Wander : NpcBehaviorPhase.Idle;
+    int actionPhase = blocked ? 1 : 0;
+    return [
+      new NpcAiIntent(
+          NpcAiIntentKind.SetBehaviorState,
+          phase,
+          desiredVelocity: desiredVelocity,
+          actionPhase: actionPhase,
+          stateSlot0: direction,
+          stateSlot1: modeTime,
+          jumpRequested: jumpRequested),
+      new NpcAiIntent(
+          NpcAiIntentKind.Move,
+          phase,
+          desiredVelocity: desiredVelocity,
+          jumpRequested: jumpRequested,
+          stateSlot0: direction,
+          stateSlot1: modeTime)
+    ];
   }
 
   /// <summary>
@@ -453,6 +542,7 @@ internal static class Program
       ProjectileHitResolutionSystem projectileHits,
       ProjectileLifecycleSystem projectileLifecycle,
       CommunicationHostRuntime communication,
+      ICommunicationSessionPlayerLifecycle playerLifecycle,
       WorldTickSystem worldTick,
       WorldInteractionSystem worldInteractions,
       WorldItemStore worldItems,
@@ -465,48 +555,69 @@ internal static class Program
       ChatStore chatStore,
       ChatCommandCatalog chatCommands,
       AttributeTickSystem attributeTick,
-      InventoryAttributeContributionSystem attributeContributions,
+      LifeAttributeSynchronizationSystem lifeAttributeSynchronization,
+      BuffApplyRequestSystem buffApply,
       BuffTickSystem buffTick,
+      StatusEffectBehaviorSystem statusEffectBehavior,
+      StatusEffectPeriodicSystem statusEffectPeriodic,
+      CooldownTickSystem cooldownTick,
       GravityTickSystem gravityTick,
+      NpcNetworkIdentitySystem npcNetwork,
       NpcNetworkProjectionSystem npcProjection,
       WorldNetworkProjectionSystem worldProjection,
-      TerrariaProtocolOptions protocolOptions)
+      TerrariaProtocolOptions protocolOptions,
+      CommunicationIngressPreparationSystem preparation)
   {
     List<EcsServerSystemRegistration> registrations = [];
     // 必须排在本阶段最前：准备阶段收包写出的玩家输入要在任何移动/属性系统读取前落地。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
-        new PlayerInputRequestSystem(world, entities, inventories)));
-    // 属性贡献重建紧随输入落地之后：包里的换装在本 tick 就要影响 AttributeSetComponent，
-    // 而下面 CombatSystemRegistration 里的投射物命中结算会读取它。
+        EcsServerRegistrationKeys.PlayerInputApply,
+        new PlayerInputRequestSystem(world, entities, inventories),
+        reason: "Preparation communication facts must be available before player input is applied."));
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
-        attributeContributions));
+        EcsServerRegistrationKeys.LifeAttributeSynchronization,
+        lifeAttributeSynchronization,
+        reason: "Life and shield capacities observe the current attribute set."));
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Projection,
-        npcProjection));
+        EcsServerRegistrationKeys.NetworkNpcProjection,
+        npcProjection,
+        reason: "Projection observes the committed NPC identity and state phase contract."));
     // 聊天投影紧挨 NPC 投影：两者都只写 outbound 意图，顺序不影响语义。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Projection,
+        EcsServerRegistrationKeys.ChatNetworkProjection,
         new ChatNetworkProjectionSystem(world, entities)));
-    // 世界物品请求跑两遍：投影之前一遍，消化准备阶段收包产生的请求（保持同帧生效）；
-    // 投影之后一遍，消化投影自身写出的掉落物请求。队列取空后为空，跑两遍无副作用。
+    // 世界物品请求只在 Commit 阶段执行。Projection 可以表达掉落意图，但权威
+    // WorldItemStore 只能由这个 Commit owner 写入；投影产生的请求留到下一 tick。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Commit,
+        EcsServerRegistrationKeys.WorldItemRequestCommit,
+        new WorldItemRequestSystem(world, worldItems),
+        reason: "World-item requests mutate the authoritative store only at the Commit barrier."));
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Projection,
-        new WorldItemRequestSystem(world, worldItems)));
-    registrations.Add(new EcsServerSystemRegistration(
-        EcsServerPhase.Projection,
-        worldProjection));
-    registrations.Add(new EcsServerSystemRegistration(
-        EcsServerPhase.Projection,
-        new WorldItemRequestSystem(world, worldItems)));
+        EcsServerRegistrationKeys.NetworkWorldProjection,
+        worldProjection,
+        reason: "World network projection observes the committed world-item store and emits intents for the next Commit."));
     registrations.AddRange(CommunicationSystemRegistration.CreateGame(
         world,
         entities,
         attackDefinitions,
         communication.OutboundPort,
         protocolOptions: protocolOptions,
-        worldItems: worldItems));
+        worldItems: worldItems,
+        ingress: communication.Ingress,
+        playerLifecycle: playerLifecycle,
+        preparation: preparation,
+        outboundProjectionDependencies:
+        [
+          EcsServerRegistrationKeys.NetworkNpcProjection,
+          EcsServerRegistrationKeys.ChatNetworkProjection,
+          EcsServerRegistrationKeys.NetworkWorldProjection
+        ]));
     registrations.AddRange(CombatSystemRegistration.Create(
         world,
         entities,
@@ -515,54 +626,129 @@ internal static class Program
         projectileHits,
         projectileLifecycle,
         attackDefinitions,
-        PlayerHurtProtectionTicks));
-    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, worldTick));
+        PlayerHurtProtectionTicks,
+        attributeDependencyKeys: null));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.WorldTick,
+        worldTick));
     // 世界物品 tick 紧跟世界时间推进：本 tick 的重力/碰撞结果不依赖后续系统，
     // 但拾取请求必须在同一 tick 的 Inventory 步骤之前入队。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.WorldItemTick,
         new WorldItemTickSystem(
             world,
             worldItems,
             worldRuntime,
             worldRuntime,
             entities,
-            MaxInventoryStack)));
+            MaxInventoryStack),
+        after: [EcsServerRegistrationKeys.WorldTick],
+        reason: "World-item motion follows the world clock and produces same-tick pickup facts."));
     // 拾取请求由 Inventory 域结算并回写 Consume 请求；投影阶段之前跑完，同帧内一致。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
-        new InventoryPickupRequestSystem(world, entities, inventories)));
+        EcsServerRegistrationKeys.InventoryPickupRequest,
+        new InventoryPickupRequestSystem(world, entities, inventories),
+        after: [EcsServerRegistrationKeys.WorldItemTick],
+        reason: "Inventory pickup consumes the world-item facts produced earlier in Simulation."));
     // 刷怪在移动求解之前跑：本 tick 创建的 NPC 从下一 tick 起由 AI 与空间求解驱动，
     // 避免在同一个 tick 里对新实体重复计算移动。
-    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, npcSpawn));
-    // 槽位分配必须早于 Projection 阶段的 NpcNetworkProjectionSystem，否则新 NPC 本 tick 不可见。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
-        new NpcNetworkIdentitySystem(world)));
+        EcsServerRegistrationKeys.NpcSpawn,
+        npcSpawn));
+    // 槽位分配必须早于 Projection 阶段的 NpcNetworkProjectionSystem，否则新 NPC 本 tick 不可见。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Commit,
+        EcsServerRegistrationKeys.NpcNetworkIdentity,
+        npcNetwork,
+        reason: "NPC network identity is a structural ECS write owned by the Commit barrier."));
     // 箱子/告示牌意图在投影之前落地，开箱状态与文本改动同 tick 可被读取。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.WorldTileEntityRequest,
         new WorldTileEntityRequestSystem(world, tileEntities)));
     // 物品使用在投影之前：本 tick 的射击事实留给投射物/战斗域消费。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.PlayerItemUse,
         new PlayerItemUseSystem(world, entities, itemUseDefinitions, inventories)));
     // 聊天：能力组件决定谁能说话，系统的广播事实交给 Projection 阶段的聊天投影。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.ChatDomain,
         new ChatSystem(world, entities, chatCommands, chatStore)));
-    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, npcAiAdapter));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.NpcAiIntent,
+        npcAiAdapter));
     // 重力投影必须先于空间求解刷新，SpatialSimulationCoordinatorSystem 直接读取 GravityStateComponent。
-    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, gravityTick));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.GravityTick,
+        gravityTick));
     // 属性与 Buff 的期限在 Commit 之前推进，使本 tick 内新加的来源获得完整时长。
-    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, attributeTick));
-    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, buffTick));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.AttributeTick,
+        attributeTick,
+        reason: "Attribute expiry runs at the Attributes lifecycle boundary."));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.BuffApply,
+        buffApply,
+        after: [EcsServerRegistrationKeys.AttributeTick],
+        reason: "Buff application requests are admitted before status expiry and behavior sync."));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.BuffTick,
+        buffTick,
+        after: [EcsServerRegistrationKeys.BuffApply],
+        reason: "Buff expiry follows the attribute lifecycle pass."));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.StatusEffectBehavior,
+        statusEffectBehavior,
+        after: [EcsServerRegistrationKeys.BuffTick],
+        reason: "Behavior components follow status-effect admission and expiry."));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.StatusEffectPeriodic,
+        statusEffectPeriodic,
+        after: [EcsServerRegistrationKeys.StatusEffectBehavior],
+        reason: "Periodic status effects emit Life and Combat requests after behavior sync."));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.CooldownTick,
+        cooldownTick));
     // 必须紧邻空间求解之前：本帧由 AI 与输入适配器提交的意图要在求解读取前落地。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
-        new MovementIntentRequestSystem(world, entities)));
-    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Simulation, spatialSimulation));
-    registrations.Add(new EcsServerSystemRegistration(EcsServerPhase.Commit, worldInteractions));
+        EcsServerRegistrationKeys.MovementIntentApply,
+        new MovementIntentRequestSystem(world, entities),
+        after:
+        [
+          EcsServerRegistrationKeys.PlayerInputApply,
+          EcsServerRegistrationKeys.NpcAiIntent
+        ],
+        reason: "Player and NPC intent producers must finish before movement intent is applied."));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Simulation,
+        EcsServerRegistrationKeys.SpatialSimulation,
+        spatialSimulation,
+        after:
+        [
+          EcsServerRegistrationKeys.GravityTick,
+          EcsServerRegistrationKeys.MovementIntentApply
+        ],
+        reason: "Spatial simulation reads the refreshed gravity state and applied movement intents."));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Commit,
+        EcsServerRegistrationKeys.WorldInteractionCommit,
+        worldInteractions,
+        reason: "World interactions commit before the Projection phase observes committed facts."));
     return registrations.AsReadOnly();
   }
 
@@ -581,6 +767,63 @@ internal static class Program
     }
 
     return handle;
+  }
+
+  private sealed class ServerCommunicationSessionPlayerLifecycle
+      : ICommunicationSessionPlayerLifecycle
+  {
+    private readonly ArchWorld _world;
+    private readonly EntityRuntimeRegistry _entities;
+    private readonly EntityDefinitionSystem<ArchEntity> _entitySpawner;
+    private readonly Vector2 _spawnPosition;
+    private readonly Dictionary<SessionEpoch, EcsServerEntityCreationTicket> _pending = [];
+
+    public ServerCommunicationSessionPlayerLifecycle(
+        ArchWorld world,
+        EntityRuntimeRegistry entities,
+        EntityDefinitionSystem<ArchEntity> entitySpawner,
+        Vector2 spawnPosition)
+    {
+      _world = world ?? throw new ArgumentNullException(nameof(world));
+      _entities = entities ?? throw new ArgumentNullException(nameof(entities));
+      _entitySpawner = entitySpawner ?? throw new ArgumentNullException(nameof(entitySpawner));
+      _spawnPosition = spawnPosition;
+    }
+
+    public EntityRuntimeHandle CreatePlayer(SessionEpoch epoch, EcsServerCommandBuffer commands)
+    {
+      EcsServerEntityCreationTicket ticket = _entitySpawner.SpawnDeferred(
+          PlayerEntityDefinition.Id,
+          commands);
+      commands.Set(ticket.BufferedEntity, new LocationComponent(_spawnPosition));
+      if (ticket.RuntimeHandle is not EntityRuntimeHandle handle)
+      {
+        throw new InvalidOperationException("The deferred player definition did not allocate a runtime handle.");
+      }
+
+      _pending[epoch] = ticket;
+      commands.RegisterAfterPlayback(_ => _pending.Remove(epoch));
+      commands.RegisterOnDiscard(() => _pending.Remove(epoch));
+      ServerLog.Info("ecs.session.player_bound", $"epoch={epoch.Value}");
+      return handle;
+    }
+
+    public void DestroyPlayer(
+        SessionEpoch epoch,
+        EntityRuntimeHandle player,
+        EcsServerCommandBuffer commands)
+    {
+      if (_pending.Remove(epoch, out EcsServerEntityCreationTicket? ticket))
+      {
+        commands.Destroy(ticket.BufferedEntity);
+      }
+      else if (_entities.TryResolve(player, out ArchEntity entity) && _world.IsAlive(entity))
+      {
+        commands.Destroy(entity);
+      }
+
+      ServerLog.Info("ecs.session.player_unbound", $"epoch={epoch.Value}");
+    }
   }
 
   private static int FindSpawnSurfaceTileY(
@@ -630,22 +873,32 @@ internal static class Program
   private static ArchEntity CreateNpc(
       ArchWorld world,
       EntityDefinitionSystem<ArchEntity> entitySpawner,
+      NpcNetworkIdentitySystem npcNetwork,
       Vector2 position,
       bool isSlime,
-      byte networkSlot,
       short networkType)
   {
+    ArgumentNullException.ThrowIfNull(npcNetwork);
     ArchEntity entity = entitySpawner.Spawn(
         isSlime ? NpcEntityDefinition.SlimeId : NpcEntityDefinition.GuideId);
-    // 出生坐标与网络标识属于实例级输入，定义里只有占位值。
-    world.Set(
-        entity,
-        new LocationComponent(
-            position - new Vector2(0f, NpcEntityDefinition.SpawnOffsetY(isSlime))));
-    world.Add(
-        entity,
-        new NpcNetworkIdentityComponent(networkSlot, generation: 1, netId: networkType));
-    return entity;
+    try
+    {
+      // 出生坐标与网络标识属于实例级输入，定义里只有占位值。
+      world.Set(
+          entity,
+          new LocationComponent(
+              position - new Vector2(0f, NpcEntityDefinition.SpawnOffsetY(isSlime))));
+      if (!npcNetwork.TryBind(entity, networkType, out _))
+      {
+        throw new InvalidOperationException();
+      }
+      return entity;
+    }
+    catch
+    {
+      entitySpawner.Despawn(entity);
+      throw;
+    }
   }
 
   private static CombatAttackDefinitionCatalog CreateAttackDefinitions()

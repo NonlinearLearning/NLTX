@@ -1,123 +1,211 @@
-using Terraria.Relationships;
-using Arch.Core;
-using ArchEntity = Arch.Core.Entity;
-using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-
 namespace Terraria.Communication;
 
-/// <summary>Owns the epoch-to-ECS-session mapping at the host/ECS seam.</summary>
-public sealed class CommunicationSessionIngress
+public sealed class CommunicationSessionIngress : IDisposable
 {
-  private readonly ArchWorld _world;
-  private readonly Dictionary<SessionEpoch, ArchEntity> _sessions = [];
+  private readonly object _gate = new();
+  private readonly Queue<CommunicationIngressEvent> _queue = [];
+  private readonly Queue<CommunicationIngressEvent> _overflowCloseEvents = [];
+  private readonly int _capacity;
+  private long _nextIngressSequence;
+  private long _acceptedCount;
+  private long _discardedCount;
+  private long _queuedCount;
+  private bool _completed;
+  private bool _disposed;
 
-  public CommunicationSessionIngress(ArchWorld world)
+  public CommunicationSessionIngress(int capacity = 1024)
   {
-    _world = world ?? throw new ArgumentNullException(nameof(world));
+    ArgumentOutOfRangeException.ThrowIfNegativeOrZero(capacity);
+    _capacity = capacity;
   }
 
-  public int Count => _sessions.Count;
+  public int Capacity => _capacity;
 
-  public bool TryOpen(SessionEpoch epoch, out ArchEntity entity)
+  public int Count => (int)Math.Max(0, Volatile.Read(ref _queuedCount));
+
+  public long AcceptedCount => Interlocked.Read(ref _acceptedCount);
+
+  public long DiscardedCount => Interlocked.Read(ref _discardedCount);
+
+  public bool IsCompleted
   {
-    entity = ArchEntity.Null;
-    if (!epoch.IsValid || _sessions.ContainsKey(epoch))
+    get
     {
-      return false;
+      lock (_gate)
+      {
+        return _completed;
+      }
     }
-
-    entity = _world.Create(
-        new CommunicationSessionComponent(epoch),
-        new CommunicationInboundMessageBufferComponent(),
-        new CommunicationOutboundMessageBufferComponent());
-    _sessions.Add(epoch, entity);
-    return true;
   }
 
-  public bool TryEnqueue(InboundCommunicationPacket packet)
+  public CommunicationIngressEnqueueResult TryOpen(
+      SessionEpoch epoch,
+      CancellationToken cancellationToken = default)
   {
-    ArgumentNullException.ThrowIfNull(packet);
-    if (!_sessions.TryGetValue(packet.Envelope.Epoch, out ArchEntity entity) ||
-        !_world.IsAlive(entity) ||
-        !_world.TryGet(entity, out CommunicationSessionComponent? session) ||
-        !_world.TryGet(entity, out CommunicationInboundMessageBufferComponent? buffer))
-    {
-      return false;
-    }
-
-    if (session is null || buffer is null ||
-        session.Stage is CommunicationSessionStage.Closing or CommunicationSessionStage.Closed ||
-        !session.AcceptInbound(packet.Envelope.Sequence))
-    {
-      return false;
-    }
-
-    buffer.Enqueue(packet);
-    return true;
+    return Enqueue(
+        cancellationToken,
+        sequence => new CommunicationIngressEvent(
+            CommunicationIngressEventKind.Open,
+            sequence,
+            epoch,
+            new PacketSequence(0),
+            default,
+            0,
+            null,
+            ReadOnlyMemory<byte>.Empty,
+            0,
+            null));
   }
 
-  public bool TryActivate(SessionEpoch epoch)
+  public CommunicationIngressEnqueueResult TryEnqueuePacket(
+      SessionEpoch epoch,
+      PacketSequence packetSequence,
+      DateTimeOffset receivedAt,
+      byte messageId,
+      ushort? moduleId,
+      ReadOnlyMemory<byte> frameBytes,
+      int payloadOffset,
+      CancellationToken cancellationToken = default)
   {
-    if (!_sessions.TryGetValue(epoch, out ArchEntity entity) ||
-        !_world.IsAlive(entity) ||
-        !_world.TryGet(entity, out CommunicationSessionComponent? session) ||
-        session is null)
-    {
-      return false;
-    }
-
-    return session.TryAdvance(CommunicationSessionStage.Active);
+    return Enqueue(
+        cancellationToken,
+        sequence => new CommunicationIngressEvent(
+            CommunicationIngressEventKind.Packet,
+            sequence,
+            epoch,
+            packetSequence,
+            receivedAt,
+            messageId,
+            moduleId,
+            frameBytes,
+            payloadOffset,
+            null));
   }
 
-  public bool TryGetStage(SessionEpoch epoch, out CommunicationSessionStage stage)
-  {
-    if (_sessions.TryGetValue(epoch, out ArchEntity entity) &&
-        _world.IsAlive(entity) &&
-        _world.TryGet(entity, out CommunicationSessionComponent? session) &&
-        session is not null)
-    {
-      stage = session.Stage;
-      return true;
-    }
-
-    stage = CommunicationSessionStage.Closed;
-    return false;
-  }
-
-  public bool TryBindPlayer(SessionEpoch epoch, EntityRuntimeHandle player)
-  {
-    if (!_sessions.TryGetValue(epoch, out ArchEntity entity) ||
-        !_world.IsAlive(entity) ||
-        !_world.TryGet(entity, out CommunicationSessionComponent? session) ||
-        session is null)
-    {
-      return false;
-    }
-
-    return session.BindPlayer(player);
-  }
-
-  public bool TryClose(ConnectionClosed closed)
+  public CommunicationIngressEnqueueResult TryClose(
+      ConnectionClosed closed,
+      CancellationToken cancellationToken = default)
   {
     ArgumentNullException.ThrowIfNull(closed);
-    if (!_sessions.Remove(closed.Epoch, out ArchEntity entity) || !_world.IsAlive(entity))
-    {
-      return false;
-    }
-
-    if (_world.TryGet(entity, out CommunicationSessionComponent? session) && session is not null)
-    {
-      session.TryAdvance(CommunicationSessionStage.Closing);
-      session.TryAdvance(CommunicationSessionStage.Closed);
-    }
-
-    _world.Destroy(entity);
-    return true;
+    return Enqueue(
+        cancellationToken,
+        sequence => new CommunicationIngressEvent(
+            CommunicationIngressEventKind.Close,
+            sequence,
+            closed.Epoch,
+            new PacketSequence(0),
+            default,
+            0,
+            null,
+            ReadOnlyMemory<byte>.Empty,
+            0,
+            closed.Reason));
   }
 
-  public bool TryGetEntity(SessionEpoch epoch, out ArchEntity entity)
+  public bool TryDequeue(out CommunicationIngressEvent? ingressEvent)
   {
-    return _sessions.TryGetValue(epoch, out entity) && _world.IsAlive(entity);
+    lock (_gate)
+    {
+      ObjectDisposedException.ThrowIf(_disposed, this);
+      if (_queue.Count == 0 && _overflowCloseEvents.Count == 0)
+      {
+        ingressEvent = null;
+        return false;
+      }
+
+      if (_queue.Count == 0)
+      {
+        ingressEvent = _overflowCloseEvents.Dequeue();
+      }
+      else if (_overflowCloseEvents.Count == 0)
+      {
+        ingressEvent = _queue.Dequeue();
+      }
+      else if (_queue.Peek().IngressSequence <
+          _overflowCloseEvents.Peek().IngressSequence)
+      {
+        ingressEvent = _queue.Dequeue();
+      }
+      else
+      {
+        ingressEvent = _overflowCloseEvents.Dequeue();
+      }
+
+      Interlocked.Decrement(ref _queuedCount);
+      return true;
+    }
+  }
+
+  public void Complete()
+  {
+    lock (_gate)
+    {
+      if (_completed)
+      {
+        return;
+      }
+
+      _completed = true;
+    }
+  }
+
+  public void Dispose()
+  {
+    lock (_gate)
+    {
+      if (_disposed)
+      {
+        return;
+      }
+
+      _disposed = true;
+      _completed = true;
+      _queue.Clear();
+      _overflowCloseEvents.Clear();
+    }
+  }
+
+  private CommunicationIngressEnqueueResult Enqueue(
+      CancellationToken cancellationToken,
+      Func<long, CommunicationIngressEvent> createEvent)
+  {
+    ArgumentNullException.ThrowIfNull(createEvent);
+    lock (_gate)
+    {
+      if (_disposed || _completed)
+      {
+        Interlocked.Increment(ref _discardedCount);
+        return CommunicationIngressEnqueueResult.Closed;
+      }
+
+      if (cancellationToken.IsCancellationRequested)
+      {
+        Interlocked.Increment(ref _discardedCount);
+        return CommunicationIngressEnqueueResult.Cancelled;
+      }
+
+      long sequence = checked(_nextIngressSequence + 1);
+      CommunicationIngressEvent ingressEvent = createEvent(sequence);
+      if (_queue.Count >= _capacity)
+      {
+        if (ingressEvent.Kind == CommunicationIngressEventKind.Close)
+        {
+          _overflowCloseEvents.Enqueue(ingressEvent);
+          _nextIngressSequence = sequence;
+          Interlocked.Increment(ref _queuedCount);
+          Interlocked.Increment(ref _acceptedCount);
+          return CommunicationIngressEnqueueResult.Accepted;
+        }
+
+        Interlocked.Increment(ref _discardedCount);
+        return CommunicationIngressEnqueueResult.Full;
+      }
+
+      _queue.Enqueue(ingressEvent);
+      _nextIngressSequence = sequence;
+      Interlocked.Increment(ref _queuedCount);
+      Interlocked.Increment(ref _acceptedCount);
+      return CommunicationIngressEnqueueResult.Accepted;
+    }
   }
 }

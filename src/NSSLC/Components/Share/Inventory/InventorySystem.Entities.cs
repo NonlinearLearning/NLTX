@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using Terraria.Combat;
+using Terraria.Entity;
 using Terraria.Item;
 using Terraria.Relationships;
 
@@ -16,7 +17,8 @@ public sealed partial class InventorySystem {
   public InventoryTransferResult TryStoreEntity(
       ArchEntity inventoryEntity,
       ArchEntity itemEntity,
-      int? targetSlotIndex = null) {
+      int? targetSlotIndex = null,
+      EcsServerCommandBuffer? commands = null) {
     InventoryTransferFailure failure = GetInventory(inventoryEntity, out InventoryComponent inventory);
     if (failure != InventoryTransferFailure.None) {
       return InventoryTransferResult.Rejected(failure);
@@ -62,7 +64,10 @@ public sealed partial class InventorySystem {
     InventorySlotDefinition slot = plan[position].Definition;
     plan[position] = new InventorySlot(slot, itemEntityId: itemId);
     var relation = new ContainedInInventoryComponent(inventoryId, slot.Index);
-    _world.Add(itemEntity, relation);
+    commands?.Add(itemEntity, relation);
+    if (commands is null) {
+      _world.Add(itemEntity, relation);
+    }
     inventory.CommitSlots(plan);
     return InventoryTransferResult.Success(item.Stack.Quantity);
   }
@@ -74,7 +79,8 @@ public sealed partial class InventorySystem {
   public InventoryTransferResult TryTakeEntity(
       ArchEntity inventoryEntity,
       int slotIndex,
-      out ArchEntity itemEntity) {
+      out ArchEntity itemEntity,
+      EcsServerCommandBuffer? commands = null) {
     itemEntity = ArchEntity.Null;
     InventoryTransferFailure failure = GetInventory(inventoryEntity, out InventoryComponent inventory);
     if (failure != InventoryTransferFailure.None) {
@@ -94,7 +100,10 @@ public sealed partial class InventorySystem {
     InventorySlot[] plan = inventory.CaptureSlots();
     plan[FindPosition(plan, slotIndex)] = new InventorySlot(slot.Definition);
     int quantity = item.Stack.Quantity;
-    _world.Remove<ContainedInInventoryComponent>(contained);
+    commands?.Remove<ContainedInInventoryComponent>(contained);
+    if (commands is null) {
+      _world.Remove<ContainedInInventoryComponent>(contained);
+    }
     inventory.CommitSlots(plan);
     itemEntity = contained;
     return InventoryTransferResult.Success(quantity);

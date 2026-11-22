@@ -52,6 +52,38 @@ public static class BuffContent {
       [
         new AttributeContribution(
             AttributeKind.LifeRegeneration, AttributeModifierOperation.Additive, 4f)
+      ],
+      behaviors:
+      [
+          new BuffBehaviorContribution(BuffBehaviorKind.PeriodicHeal, periodTicks: 60, magnitude: 4)
+      ],
+      periodicEffects:
+      [
+          new BuffPeriodicEffect(BuffBehaviorKind.PeriodicHeal, periodTicks: 60, magnitude: 4)
+      ]);
+
+  /// <summary>Poison: periodic self-targeted combat damage request.</summary>
+  public static BuffDefinition Poison { get; } = new(
+      new BuffEffectId("buff.poison"),
+      new BuffId("buff.poison"),
+      durationTicks: 600,
+      behaviors:
+      [
+          new BuffBehaviorContribution(BuffBehaviorKind.DamageOverTime, periodTicks: 60, magnitude: 4)
+      ],
+      periodicEffects:
+      [
+          new BuffPeriodicEffect(BuffBehaviorKind.DamageOverTime, periodTicks: 60, magnitude: 4)
+      ]);
+
+  /// <summary>Invisibility: concrete visibility behavior, not a scalar StatusFlag.</summary>
+  public static BuffDefinition Invisibility { get; } = new(
+      new BuffEffectId("buff.invisibility"),
+      new BuffId("buff.invisibility"),
+      PotionDurationTicks,
+      behaviors:
+      [
+          new BuffBehaviorContribution(BuffBehaviorKind.Invisibility)
       ]);
 
   /// <summary>
@@ -62,5 +94,7 @@ public static class BuffContent {
     registry.Register(Ironskin);
     registry.Register(Swiftness);
     registry.Register(Regeneration);
+    registry.Register(Poison);
+    registry.Register(Invisibility);
   }
 }

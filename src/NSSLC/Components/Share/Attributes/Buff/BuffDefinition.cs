@@ -12,7 +12,9 @@ public sealed class BuffDefinition
       BuffId immunityKey,
       int durationTicks,
       int maximumStacks = 1,
-      IEnumerable<AttributeContribution>? contributions = null)
+      IEnumerable<AttributeContribution>? contributions = null,
+      IEnumerable<BuffBehaviorContribution>? behaviors = null,
+      IEnumerable<BuffPeriodicEffect>? periodicEffects = null)
   {
     if (string.IsNullOrWhiteSpace(effect.Value))
     {
@@ -41,6 +43,10 @@ public sealed class BuffDefinition
     MaximumStacks = maximumStacks;
     Modifiers = Array.AsReadOnly(
         (contributions ?? Array.Empty<AttributeContribution>()).ToArray());
+    Behaviors = Array.AsReadOnly(
+        (behaviors ?? Array.Empty<BuffBehaviorContribution>()).ToArray());
+    PeriodicEffects = Array.AsReadOnly(
+        (periodicEffects ?? Array.Empty<BuffPeriodicEffect>()).ToArray());
   }
 
   public BuffEffectId Effect { get; }
@@ -52,4 +58,8 @@ public sealed class BuffDefinition
   public int MaximumStacks { get; }
 
   public IReadOnlyList<AttributeContribution> Modifiers { get; }
+
+  public IReadOnlyList<BuffBehaviorContribution> Behaviors { get; }
+
+  public IReadOnlyList<BuffPeriodicEffect> PeriodicEffects { get; }
 }

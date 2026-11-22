@@ -24,6 +24,8 @@ public readonly record struct AttributeModifier
         "Unknown attribute kind.");
     }
 
+    AttributeKindMetadata.ValidateNumericContribution(attribute);
+
     if (!Enum.IsDefined(sourceCategory))
     {
       throw new ArgumentOutOfRangeException(
@@ -100,6 +102,8 @@ public readonly record struct AttributeModifier
         Attribute,
         "Unknown attribute kind.");
     }
+
+    AttributeKindMetadata.ValidateNumericContribution(Attribute);
 
     if (!Enum.IsDefined(SourceCategory))
     {
