@@ -32,7 +32,7 @@ internal static class EcsServerRegistrationKeys
   internal const string WorldTick = "world.tick";
   internal const string WorldItemTick = "world.item.tick";
   internal const string InventoryPickupRequest = "inventory.pickup.request";
-  internal const string NpcSpawn = "npc.spawn";
+  internal const string EntitySpawn = "entity.spawn";
   internal const string NpcNetworkIdentity = "npc.network.identity";
   internal const string WorldTileEntityRequest = "world.tile-entity.request";
   internal const string PlayerItemUse = "player.item-use";

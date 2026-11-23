@@ -152,22 +152,9 @@ public sealed class InventoryAttributeContributionSystem
       out ItemDefinition definition)
   {
     definition = null!;
-    ItemStack stack;
-    if (slot.Content is ItemStack value)
+    if (slot.Content is not ItemStack stack)
     {
-      stack = value;
-    }
-    else
-    {
-      if (!slot.ContainsEntity ||
-          !identities.TryGetValue(slot.ItemEntityId, out ArchEntity itemEntity) ||
-          !world.IsAlive(itemEntity) ||
-          !world.Has<ItemStackComponent>(itemEntity))
-      {
-        return false;
-      }
-
-      stack = world.Get<ItemStackComponent>(itemEntity).Stack;
+      return false;
     }
 
     return !stack.IsEmpty && definitions.TryGet(stack.ItemId, out definition);

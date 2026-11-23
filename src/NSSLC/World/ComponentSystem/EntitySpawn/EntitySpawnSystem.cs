@@ -9,12 +9,13 @@ using Terraria.Combat;
 using Terraria.Session;
 using Terraria.Entity;
 using Terraria.Movement;
+using Terraria.Npc;
 using Terraria.Physics;
 using Terraria.Relationships;
 using Terraria.World;
 using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
 
-namespace Terraria.Npc;
+namespace Terraria.EntitySpawn;
 
 /// <summary>
 /// Spawns hostile creatures around players, ported from Version4 <c>NPC.Spawner.SpawnNPC</c>.
@@ -23,7 +24,7 @@ namespace Terraria.Npc;
 /// Per tick the reference walks every active player, asks <c>GetSpawnRate</c> for that player's
 /// budget, rolls <c>Main.rand.Next(spawnRate) == 0</c>, finds a ground tile off screen, picks a
 /// creature and stops after the first success. This system keeps that sequence and replaces the
-/// hard-coded creature table with <see cref="NpcSpawnTable"/>, so content grows by registering
+/// hard-coded creature table with <see cref="EntitySpawnTable"/>, so content grows by registering
 /// candidates rather than by editing spawn logic.
 ///
 /// <para>
@@ -32,7 +33,7 @@ namespace Terraria.Npc;
 /// <c>nearbyActiveNPCs</c> counter is recomputed here from positions inside the spawn area.
 /// </para>
 /// </remarks>
-public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
+public sealed class EntitySpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   /// <summary>Version4 <c>Main.maxNPCs</c>.</summary>
   public const int MaximumNpcs = 200;
@@ -41,7 +42,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
   private readonly ISessionPlayerSource _sessionPlayers;
   private readonly EntityDefinitionSystem<ArchEntity> _spawner;
   private readonly NpcAiRuntime? _ai;
-  private readonly NpcSpawnTable _table;
+  private readonly EntitySpawnTable _table;
   private readonly long _worldSeed;
   private readonly List<SessionPlayer> _players = [];
   private readonly List<ArchEntity> _npcs = [];
@@ -49,16 +50,16 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
       NpcBehaviorStateComponent,
       LocationComponent,
       ColliderComponent>();
-  private NpcSpawnFactQueueComponent? _facts;
+  private EntitySpawnFactQueueComponent? _facts;
 
-  public NpcSpawnSystem(
+  public EntitySpawnSystem(
       ArchWorld ecsWorld,
       IWorldTileGrid tiles,
       ISessionPlayerSource sessionPlayers,
       EntityDefinitionSystem<ArchEntity> spawner,
       NpcAiRuntime? ai,
-      NpcSpawnTable table,
-      NpcSpawnEnvironment environment,
+      EntitySpawnTable table,
+      EntitySpawnEnvironment environment,
       long worldSeed)
       : base(ecsWorld ?? throw new ArgumentNullException(nameof(ecsWorld)))
   {
@@ -77,10 +78,10 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
   }
 
   /// <summary>World flags used by the rate rules; replaced when the world clock advances.</summary>
-  public NpcSpawnEnvironment Environment { get; set; }
+  public EntitySpawnEnvironment Environment { get; set; }
 
   // 在查询之外解析队列实体：Require 内部本身要跑一次查询。
-  private NpcSpawnFactQueueComponent Facts => _facts ??= NpcSpawnFactQueue.Require(World);
+  private EntitySpawnFactQueueComponent Facts => _facts ??= EntitySpawnFactQueue.Require(World);
 
   public override void Update(in EcsServerTickContext context)
   {
@@ -90,7 +91,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
       return;
     }
 
-    NpcSpawnFactQueueComponent facts = Facts;
+    EntitySpawnFactQueueComponent facts = Facts;
     CollectNpcs();
     if (_npcs.Count >= MaximumNpcs)
     {
@@ -98,7 +99,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
     }
 
     float tileSize = _tiles.TileSize;
-    NpcSpawnRandom random = NpcSpawnRandom.ForTick(_worldSeed, context.Tick);
+    EntitySpawnRandom random = EntitySpawnRandom.ForTick(_worldSeed, context.Tick);
     for (int index = 0; index < _players.Count; index++)
     {
       SessionPlayer player = _players[index];
@@ -107,12 +108,12 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
         continue;
       }
 
-      NpcSpawnArea area = NpcSpawnAreaRules.GetSpawnArea(
+      EntitySpawnArea area = EntitySpawnAreaRules.GetSpawnArea(
           player.Position,
           tileSize,
           _tiles.Width,
           _tiles.Height);
-      NpcSpawnBudget budget = NpcSpawnBudgetRules.For(Environment, player.Position, tileSize);
+      EntitySpawnBudget budget = EntitySpawnBudgetRules.For(Environment, player.Position, tileSize);
       if (CountHostileNpcsInside(area.Spawn) >= budget.MaximumSpawns)
       {
         continue;
@@ -123,12 +124,12 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
         continue;
       }
 
-      if (!NpcSpawnAreaRules.TryFindSpawnTile(area, _tiles, ref random, out WorldTileCoordinate ground))
+      if (!EntitySpawnAreaRules.TryFindSpawnTile(area, _tiles, ref random, out WorldTileCoordinate ground))
       {
         continue;
       }
 
-      if (NpcSpawnAreaRules.IsVisibleToAnyPlayer(
+      if (EntitySpawnAreaRules.IsVisibleToAnyPlayer(
           ground.X,
           ground.Y,
           tileSize,
@@ -139,7 +140,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
         continue;
       }
 
-      NpcSpawnCandidate candidate = _table.Select(random.Next(_table.TotalWeight));
+      EntitySpawnCandidate candidate = _table.Select(random.Next(_table.TotalWeight));
       Spawn(ground, candidate, tileSize, facts, context.Commands);
       // Version4 每个 tick 最多成功一次刷怪。
       return;
@@ -148,9 +149,9 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 
   private void Spawn(
       WorldTileCoordinate groundTile,
-      NpcSpawnCandidate candidate,
+      EntitySpawnCandidate candidate,
       float tileSize,
-      NpcSpawnFactQueueComponent facts,
+      EntitySpawnFactQueueComponent facts,
       EcsServerCommandBuffer? commands)
   {
     if (commands is not null)
@@ -167,7 +168,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
       // Publish the creation fact while the buffered entity is still owned by this command
       // buffer. The Commit identity system can bind the slot before playback; the callback below
       // is reserved for work that needs the resolved Arch entity.
-      NpcSpawnedFact deferredFact = new(ticket.BufferedEntity, candidate.NetworkType);
+      EntitySpawnedFact deferredFact = new(ticket.BufferedEntity, candidate.NetworkType);
       facts.Enqueue(deferredFact);
       commands.RegisterOnDiscard(() => facts.Remove(ticket.BufferedEntity));
       commands.RegisterAfterPlayback(_ =>
@@ -195,7 +196,7 @@ public sealed class NpcSpawnSystem : BaseSystem<ArchWorld, EcsServerTickContext>
             groundTile.Y * tileSize - size.Y)));
     World.Set(npc, MovementVelocityComponent.Stationary);
     _ai?.Attach(npc, candidate.Ai);
-    facts.Enqueue(new NpcSpawnedFact(npc, candidate.NetworkType));
+    facts.Enqueue(new EntitySpawnedFact(npc, candidate.NetworkType));
   }
 
   private void CollectNpcs()

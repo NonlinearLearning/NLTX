@@ -142,6 +142,33 @@ public WorldItem ToWorldItem()
 2. **禁止**为世界物品与容器物品各自复制一份 type/stack/prefix 权威状态；两者都只持有 `ItemStack` 值。
 3. **收敛 ECS 物品实体路径**：`ItemStackComponent`/`ItemWorldStateComponent`/`ContainedInInventoryComponent` 要么接上生产者并成为唯一世界物品表示，要么删除。当前“有声明、无生产者、却仍被 `InventorySystem` 读取”的状态应记为技术债，不得作为“已经支持实体化物品”的证据。
 
+### 5.1 决定 3 的执行状态（2026-11-23 回填）
+
+**已执行：采用 P1-A，实体化路径已删除。**
+
+按 [物品载荷层与双宿主 owner 执行计划](../../plans/2026-11-23-item-payload-dual-host-execution-plan.md)
+执行完毕，P0/P1-A/P2/P3/P4 全部完成，14/14 验证项目通过、0 失败。
+
+| 决定 3 的选项 | 结果 |
+| --- | --- |
+| P1-A 删除实体化路径 | **已采用** |
+| P1-B 接线让 ECS 实体成为唯一世界物品表示 | 未采用 |
+
+删除范围：`ItemStackComponent`、`ItemWorldStateComponent`、`ContainedInInventoryComponent`、
+`InventorySlot.ItemEntityId`/`ContainsEntity`、`InventorySystem.Entities.cs` 整个文件
+（含 `TryStoreEntity`/`TryTakeEntity`）、`InventorySystem` 的实体重载与两个私有辅助、
+`InventoryTransferFailure` 中 9 个仅属实体路径的取值。
+
+因此本节 §4.2 记录的"第三套表示"不再存在：`src/` 下对上述四个标识符的引用数均为 0。
+`Share/Item/README.md` 与 `Share/Inventory/README.md` 已同步为最终形态。
+
+**代价（已知且已记录）**：失去"物品实体自带子库存"的容器表达。当前仓库无此类内容；
+若将来需要，按执行计划 P1-B 重新设计，不得恢复无生产者的声明。
+
+**同批完成的边界收敛**：世界侧补齐 `noGrabDelay`/`ownTime`/`keepTime`/`timeSinceItemSpawned`/`shimmered`；
+合并判定加入 `shimmered` 比较；新建请求的哨兵槽语义被断言锁定；载荷唯一/宿主互斥/单一写者/
+转移守恒/瞬态不入档五条不变量落成可执行断言。
+
 ## 6. 验证与缺口
 
 ### 6.1 已运行

@@ -11,7 +11,7 @@ tile，推进显式 ECS Tick，并为移动系统提供实心 tile 碰撞和液�
 
 ## 目录结构
 
-本域按 ECS 职责分目录，全部文件的 C# 命名空间仍为 `Terraria.World`（`NpcSpawn/` 与
+本域按 ECS 职责分目录，全部文件的 C# 命名空间仍为 `Terraria.World`（`EntitySpawn/` 与
 `Session/` 例外，见下）：
 
 ```text
@@ -21,22 +21,30 @@ World/
   Component/                  # 世界运行时、tile 存储与交互请求/结果组件
   Query/                      # IWorldTileReader、IWorldTileGrid、IWorldProjectionSource
   System/                     # 运行时、规则、求解器、模型与事实
-  NpcSpawn/                   # 语义子域，见下
-  Session/                    # 语义子域，见下
-  TileEntity/                 # 语义子域，见下
+  ComponentSystem/            # 组件系统子域容器，见下
+    EntitySpawn/              # 语义子域
+    Session/                  # 语义子域
+    TileEntity/               # 语义子域
 ```
 
-`NpcSpawn/`、`Session/` 和 `TileEntity/` 是与世界运行时共享同一权威世界边界的语义子域，
+`ComponentSystem/` 下的三个目录是与世界运行时共享同一权威世界边界的语义子域，
 按 [ECS 文件组织设计约束](../../../Context/架构设计/ECS文件组织设计约束.md) §3.4 视为独立
 领域再分：带 `*System.cs` 的子域保留 `Component/`、`Command/`、`Query/`、`System/` 四类
-职责目录，主系统文件留在子域根；没有 `*System.cs` 的 `Session/` 保持扁平。三者命名空间
-不与目录同名，这是既定的目录与命名空间解耦事实，不在移动时顺手修正：
+职责目录，主系统文件留在子域根；没有 `*System.cs` 的 `Session/` 保持扁平。`Session/` 与
+`TileEntity/` 的命名空间不与目录同名，这是既定的目录与命名空间解耦事实，不在移动时顺手修正：
 
 | 子域 | 命名空间 | 内容 |
 | --- | --- | --- |
-| `NpcSpawn/` | `Terraria.Npc` | 刷怪预算、区域规则、随机数、刷怪表和刷怪事实队列 |
-| `Session/` | `Terraria.Session` | 会话身份、在线玩家投影和只读玩家来源端口 |
-| `TileEntity/` | `Terraria.World` | 箱子、告示牌等 Tile 实体记录与请求/结果队列 |
+| `ComponentSystem/EntitySpawn/` | `Terraria.EntitySpawn` | 刷怪预算、区域规则、随机数、刷怪表和刷怪事实队列 |
+| `ComponentSystem/Session/` | `Terraria.Session` | 会话身份、在线玩家投影和只读玩家来源端口 |
+| `ComponentSystem/TileEntity/` | `Terraria.World` | 箱子、告示牌等 Tile 实体记录与请求/结果队列 |
+
+`ComponentSystem/` 是子域容器，不是第五类职责目录：`Component/` 只收 World 父领域自身的
+组件，子域各自的 `Component/`、`Command/`、`Query/`、`System/` 保持在其子域根下。该层是
+对 §3.4「父领域根只放父领域自己的 `*System.cs`」的补充约定，撤销条件见
+[CR-2026-11-23 NpcSpawn / Session / TileEntity 收进 World 语义子域](../../../docs/cr/CR-2026-11-23-world-semantic-subdomains.md)；
+刷怪子域改名为 `EntitySpawn/` 的依据见
+[CR-2026-11-23 NpcSpawn 域改名为 EntitySpawn](../../../docs/cr/CR-2026-11-23-entity-spawn.md)。
 
 ### 运算与更新的边界
 

@@ -2,18 +2,18 @@ using System;
 using System.Collections.Generic;
 using Terraria.Entity;
 
-namespace Terraria.Npc;
+namespace Terraria.EntitySpawn;
 
-/// <summary>Weighted, immutable spawn table consumed by <see cref="NpcSpawnSystem"/>.</summary>
-public sealed class NpcSpawnTable
+/// <summary>Weighted, immutable spawn table consumed by <see cref="EntitySpawnSystem"/>.</summary>
+public sealed class EntitySpawnTable
 {
-  private readonly NpcSpawnCandidate[] _candidates;
+  private readonly EntitySpawnCandidate[] _candidates;
   private readonly int _totalWeight;
 
-  public NpcSpawnTable(IEnumerable<NpcSpawnCandidate> candidates)
+  public EntitySpawnTable(IEnumerable<EntitySpawnCandidate> candidates)
   {
     ArgumentNullException.ThrowIfNull(candidates);
-    NpcSpawnCandidate[] source = [.. candidates];
+    EntitySpawnCandidate[] source = [.. candidates];
     if (source.Length == 0)
     {
       throw new ArgumentException("A spawn table requires at least one candidate.", nameof(candidates));
@@ -21,7 +21,7 @@ public sealed class NpcSpawnTable
 
     HashSet<EntityDefinitionId> seen = [];
     int totalWeight = 0;
-    foreach (NpcSpawnCandidate candidate in source)
+    foreach (EntitySpawnCandidate candidate in source)
     {
       ArgumentNullException.ThrowIfNull(candidate);
       if (!candidate.IsValid)
@@ -43,15 +43,15 @@ public sealed class NpcSpawnTable
     _totalWeight = totalWeight;
   }
 
-  public IReadOnlyList<NpcSpawnCandidate> Candidates => _candidates;
+  public IReadOnlyList<EntitySpawnCandidate> Candidates => _candidates;
 
   public int TotalWeight => _totalWeight;
 
   /// <summary>Maps a roll in <c>[0, TotalWeight)</c> onto one candidate.</summary>
-  public NpcSpawnCandidate Select(int roll)
+  public EntitySpawnCandidate Select(int roll)
   {
     int remaining = roll % _totalWeight;
-    foreach (NpcSpawnCandidate candidate in _candidates)
+    foreach (EntitySpawnCandidate candidate in _candidates)
     {
       if (remaining < candidate.Weight)
       {

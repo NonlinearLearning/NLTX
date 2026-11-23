@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Npc;
+namespace Terraria.EntitySpawn;
 
 /// <summary>
 /// Deterministic pseudo-random cursor for spawn rolls.
@@ -12,25 +12,25 @@ namespace Terraria.Npc;
 /// the tick log need in order to be comparable. The state is a local cursor, never shared between
 /// systems.
 /// </remarks>
-public struct NpcSpawnRandom
+public struct EntitySpawnRandom
 {
   private const ulong DefaultState = 0x9E3779B97F4A7C15UL;
 
   private ulong _state;
 
-  public NpcSpawnRandom(ulong seed)
+  public EntitySpawnRandom(ulong seed)
   {
     _state = seed == 0 ? DefaultState : seed;
   }
 
   /// <summary>Derives one stream for a tick, mixing the world seed so replays stay stable.</summary>
-  public static NpcSpawnRandom ForTick(long worldSeed, long tick, ulong salt = 0)
+  public static EntitySpawnRandom ForTick(long worldSeed, long tick, ulong salt = 0)
   {
     ulong state = unchecked((ulong)worldSeed * 0x9E3779B97F4A7C15UL);
     state = unchecked(state ^ ((ulong)tick * 0xBF58476D1CE4E5B9UL));
     state = unchecked(state ^ (salt * 0x94D049BB133111EBUL));
     state = unchecked(state ^ (state >> 31));
-    return new NpcSpawnRandom(state);
+    return new EntitySpawnRandom(state);
   }
 
   /// <summary>Version4 <c>Main.rand.Next(maxValue)</c>.</summary>

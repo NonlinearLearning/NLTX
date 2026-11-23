@@ -41,4 +41,6 @@ public readonly record struct WorldItemRequest(
     byte Prefix = 0,
     Vector2 Position = default,
     Vector2 Velocity = default,
-    SessionEpoch? ReservedFor = null);
+    SessionEpoch? ReservedFor = null,
+    int NoGrabDelay = 0,
+    bool Shimmered = false);

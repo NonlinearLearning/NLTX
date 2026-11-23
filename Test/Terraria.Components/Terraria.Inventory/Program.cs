@@ -9,15 +9,18 @@ using Terraria.Player;
 using Terraria.Relationships;
 
 // 玩家库存双模型消除后的契约验证。
+// 验证类型：contract（单点 API 契约）+ chain（玩家输入 → 共享库存的链路）。
 //
 // 背景：Share/Inventory 原本只有实体式的 TryInsert/TryRemove/TryMove（要求物品先是带
 // ItemStackComponent 的 ECS 实体），而协议路径是槽位赋值式的（包 5 直接给出
 // itemType/stack/prefix），没有物品实体可搬。为此给 InventorySystem 增加了
 // TrySetSlotValue，并把 Player 域原本自带的 PlayerInventoryComponent 迁移过来删除。
 //
-// 本验证固定两件事：
+// 本验证固定三件事：
 //   阶段 1 —— TrySetSlotValue 自身的契约（成功、覆盖、清空、每类拒绝、拒绝不留部分写入）。
 //   阶段 2 —— 迁移后的端到端路径（PlayerInputRequestSystem 经 TrySetSlotValue 写入）。
+//   阶段 3 —— 容器只承载值（双宿主边界的容器侧，见
+//             docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md INV-1/INV-3）。
 int failures = 0;
 
 void Check(string name, bool ok, string detail)
@@ -212,10 +215,57 @@ using (ArchWorld inputWorld = ArchWorld.Create())
       cleared.IsEmpty,
       $"isEmpty={cleared.IsEmpty}");
 }
+// ---- 阶段 3：容器只承载值（双宿主边界的容器侧） ----
+// 对照 docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md INV-1/INV-3。
+// 容器宿主与世界宿主互斥的必要条件是：容器槽只存 ItemStack 值，不持有第二个物品身份。
+// 这组断言按行为口径写，不绑定具体成员名——槽位若将来去掉实体引用表达，
+// 这里仍然应当保持 PASS，而不是因为缺少某个属性而编译失败。
+using (ArchWorld valueWorld = ArchWorld.Create())
+{
+  ArchEntity valueHolder = valueWorld.Create(new InventoryComponent(GeneralSlots(2)));
+  ItemDefinitionRegistry valueDefinitions = new();
+  valueDefinitions.Register(new ItemDefinition(bigItem, BigMaxStack, ItemCategoryMask.General));
+  InventorySystem valueInventories = new(valueWorld, valueDefinitions);
+
+  _ = valueWorld.Get<InventoryComponent>(valueHolder).TryGetSlot(0, out InventorySlot emptySlot);
+  Check(
+      "slot-empty-has-no-content",
+      emptySlot.IsEmpty && emptySlot.Content is null,
+      $"isEmpty={emptySlot.IsEmpty} content={(emptySlot.Content is null ? "none" : "present")}");
+
+  InventoryTransferResult valueWrite =
+      valueInventories.TrySetSlotValue(valueHolder, 0, new ItemStack(bigItem, 9));
+  _ = valueWorld.Get<InventoryComponent>(valueHolder).TryGetSlot(0, out InventorySlot valueSlot);
+  Check(
+      "slot-value-carries-stack-only",
+      valueWrite.Succeeded && valueSlot.Content is { } storedValue &&
+          storedValue.ItemId == bigItem && storedValue.Quantity == 9 && storedValue.Prefix == 0,
+      $"content={Describe(valueSlot)}（容器侧只保存载荷三元组）");
+
+  // 值槽必须能被取出，说明它是"值"而不是"实体引用"：实体槽位在取出时要求结果类型不同。
+  InventoryTransferResult valueTake = valueInventories.TryRemove(valueHolder, 0, 4, out ItemStack takenValue);
+  Check(
+      "slot-value-removable-as-stack",
+      valueTake.Succeeded && takenValue.Quantity == 4 && takenValue.ItemId == bigItem,
+      $"taken={takenValue.Quantity} id={(int)takenValue.ItemId}");
+  _ = valueWorld.Get<InventoryComponent>(valueHolder).TryGetSlot(0, out InventorySlot afterTake);
+  Check(
+      "slot-value-remove-keeps-remainder",
+      afterTake.Content is { } remainder && remainder.Quantity == 5,
+      $"content={Describe(afterTake)}（9 取 4 余 5）");
+
+  // 清空后必须回到"空槽"，且不残留任何身份引用。
+  InventoryTransferResult valueClear = valueInventories.TrySetSlotValue(valueHolder, 0, default);
+  _ = valueWorld.Get<InventoryComponent>(valueHolder).TryGetSlot(0, out InventorySlot clearedSlot);
+  Check(
+      "slot-value-clear-leaves-nothing",
+      valueClear.Succeeded && clearedSlot.IsEmpty && clearedSlot.Content is null,
+      $"isEmpty={clearedSlot.IsEmpty} content={(clearedSlot.Content is null ? "none" : "present")}");
+}
 Console.WriteLine();
 Console.WriteLine(
     failures == 0
-        ? "PASS: single inventory model — TrySetSlotValue contract and player input path."
+        ? "PASS: single inventory model — TrySetSlotValue contract, player input path and value-only slots."
         : $"FAIL: {failures} check(s) failed.");
 return failures == 0 ? 0 : 1;
 

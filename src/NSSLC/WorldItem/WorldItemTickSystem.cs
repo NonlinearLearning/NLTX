@@ -27,10 +27,11 @@ namespace Terraria.World;
 ///
 /// <para>
 /// Motion is written silently (no mutation) because Version4 clients extrapolate item physics and
-/// only resynchronize on spawn, merge, pickup and despawn facts. The counters Version4 keeps per
-/// slot (<c>noGrabDelay</c>, <c>ownTime</c>, <c>timeSinceItemSpawned</c>) are not modelled yet:
-/// drops currently arrive with no grab delay, so the only observable difference is the missing
-/// pickup animation delay.
+/// only resynchronize on spawn, merge, pickup and despawn facts. The per-slot counters
+/// (<c>noGrabDelay</c>, <c>ownTime</c>, <c>keepTime</c>, <c>timeSinceItemSpawned</c>) are advanced by
+/// <see cref="LifecyclePass"/> after the passes that read them, mirroring where Version4 decrements
+/// them at the end of <c>UpdateItem</c>. Drops currently arrive with no grab delay, so the only
+/// observable difference from Version4 remains the missing pickup animation delay.
 /// </para>
 /// </remarks>
 public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickContext>
@@ -78,6 +79,15 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
   private InventoryPickupRequestQueueComponent PickupRequests =>
       _pickupRequests ??= InventoryPickupRequestQueue.Require(World);
 
+  /// <summary>
+  /// Mints the grab delay Version4 applies to a freshly thrown item.
+  /// </summary>
+  /// <remarks>
+  /// Version4 在玩家/NPC 丢弃路径上手写 <c>noGrabDelay = 100</c>（`Player.cs:4998`、`NPC.cs:45151`），
+  /// 避免刚扔出的物品立刻被自己吸回去。这里作为常量暴露，由请求方决定是否使用。
+  /// </remarks>
+  public const int ThrownItemGrabDelay = 100;
+
   public override void Update(in EcsServerTickContext context)
   {
     WorldItemState[] items = _items.SnapshotItems();
@@ -90,6 +100,20 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
     MergePass(items);
     MotionPass(items);
     PickupPass(items);
+    LifecyclePass(items);
+  }
+
+  /// <summary>Advances the per-slot Version4 lifecycle counters after the passes that read them.</summary>
+  /// <remarks>
+  /// 顺序与 Version4 `WorldItem.UpdateItem` 一致：先按本 tick 的 `noGrabDelay` 判定是否能被拾取，
+  /// 末尾再统一递减计数。若先递减，刚生成的物品会在同一 tick 少掉一格延迟。
+  /// </remarks>
+  private void LifecyclePass(WorldItemState[] items)
+  {
+    for (int index = 0; index < items.Length; index++)
+    {
+      _items.TryAdvanceLifecycle(items[index].Slot, out _);
+    }
   }
 
   /// <summary>Merges stacks forward, exactly like <c>TryCombiningIntoNearbyItems</c>.</summary>
@@ -171,6 +195,13 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
     for (int index = 0; index < items.Length; index++)
     {
       if (!_items.TryGet(items[index].Slot, out WorldItemState? live) || live is null)
+      {
+        continue;
+      }
+
+      // Version4 在 Player.GetItem(WorldItem, …) 里先看 noGrabDelay，再看装不装得下；
+      // 这里提前到候选筛选，避免为一个明知不可抓的物品发起请求。
+      if (!WorldItemRules.CanBePickedUp(live))
       {
         continue;
       }

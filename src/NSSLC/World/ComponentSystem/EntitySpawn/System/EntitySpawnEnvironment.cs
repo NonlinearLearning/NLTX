@@ -1,4 +1,4 @@
-namespace Terraria.Npc;
+namespace Terraria.EntitySpawn;
 
 /// <summary>World flags the Version4 spawner reads while choosing a rate and a population cap.</summary>
 /// <remarks>
@@ -7,7 +7,7 @@ namespace Terraria.Npc;
 /// blood-moon and eclipse flags. Biome zones (Jungle, Dungeon, Corruption, ...) are not modelled
 /// yet, so the spawn table has no biome predicates.
 /// </remarks>
-public readonly record struct NpcSpawnEnvironment(
+public readonly record struct EntitySpawnEnvironment(
     bool HardMode,
     int WorldSurfaceTileY,
     int RockLayerTileY,

@@ -1,47 +1,62 @@
 # Item 领域
 
-本目录把物品定义、无实体物品堆和实体化物品状态分开表达。
+本目录是**共享载荷层**：只表达"一个物品是什么"，不表达"它此刻在世界的哪里"或"它在谁的容器里"。
+后两者分别是世界宿主与容器宿主的职责，见 §"双宿主边界"。
 
 ```text
-ItemDefinition
-    ↓ definition id
-ItemStack                         # 无实体状态，例如库存或容器槽位
-    ↓ 作为组件附着到实体
-ItemStackComponent                # ECS 实体上的权威堆状态
-ItemWorldStateComponent           # 仅实体化后存在的拾取/寿命状态
+ItemDefinition                    # 每物品一条不可变定义（MaxStack / Categories / 属性修饰器）
+    ↓ ItemId
+ItemStack                         # 值对象：ItemId + Quantity + Prefix
+    ↓ 被两个宿主各自持有
+世界宿主：WorldItemState.Item      容器宿主：InventorySlot.Content
 ```
 
-## 无实体物品
+`ItemDefinitionRegistry` 只管理不可变定义，不保存物品实例、库存或世界槽位。
 
-`ItemDefinition` 是不可变定义，`ItemStack` 是值对象。`InventoryComponent` 的普通、武器、
-护甲或饰品类别槽位，以及其他容器，都可以直接保存 `ItemStack`，不需要为每个普通槽位创建
-Arch 实体。数量和前缀属于堆状态，定义只提供规则和最大堆叠数。具有耐久、弹药库存或其他
-独立实例组件的物品由库存关系保存 `EntityUuid`，继续使用原实体；这类物品不能被压平为普通
-值堆。装备关系因此属于 Inventory 的槽位定义和归属关系，不是 Item 或 Player 的第二套槽位
-组件。
+## 载荷只有一份定义
 
-## 有实体物品
+物品身份（`ItemId`）、数量（`Quantity`）、前缀（`Prefix`）**只以 `ItemStack` 表达**。
+任何宿主都不得把这三项平铺成自己的字段，否则同一物品会出现两份权威来源。
 
-世界中的物品实体至少附着 `ItemStackComponent`。需要世界生命周期时再附着
-`ItemWorldStateComponent`，并组合现有的 `Terraria.Entity.LocationComponent`、
-`Terraria.Movement.VelocityComponent` 和 `Terraria.Physics.ColliderComponent`。
-Arch `Entity` 是运行时句柄，不被这些共享组件复制保存。
+这条不是风格约定，是守恒的前提：拾取时"世界扣多少、背包收多少"要对得上，
+只有当两侧读的是同一种值对象时，这个等式才可能被验证而不是被推断。
+
+## 双宿主边界
 
 ```text
-Arch Entity
-  ├─ ItemStackComponent
-  ├─ ItemWorldStateComponent
-  ├─ LocationComponent
-  ├─ VelocityComponent
-  └─ ColliderComponent
+                共享载荷层（无 tick、无 owner、无世界字段）
+                            ItemStack / ItemDefinition
+                            │
+        ┌───────────────────┴───────────────────┐
+        ▼                                       ▼
+  世界宿主（瞬态）                        容器宿主（持久）
+  WorldItemStore + WorldItemState          InventoryComponent + InventorySlot
+  · 400 槽运行时表，不写入存档              · 随玩家/箱子存档
+  · 位置、速度、归属预留、生命周期计数        · 只存 ItemStack 值
+  · 只有 WorldItemRequestSystem 能写        · 只有 InventorySystem 能写
+        └────────── 转移只经请求组件，有方向 ──────────┘
 ```
 
-`ItemDefinitionRegistry` 只管理不可变定义，不保存物品实例、库存或世界实体。
-创建、拾取、堆叠和销毁由宿主系统负责，并在一个明确的提交点更新库存堆与实体堆，避免
-出现两份权威数量。物品进入库存后，宿主应停止其世界拾取和寿命处理；物品从库存取出后，
-宿主再恢复位置、碰撞和拾取延迟等世界状态。
+判定口径与验收断言见
+[物品载荷层与双宿主 owner 执行计划](../../../../docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md) §3 与
+[Item 与 WorldItem 拆分判定审计](../../../../docs/reviews/audits/2026-11-23-item-worlditem-split-necessity.md)。
 
-装备、饰品和武器对属性的贡献由物品定义/实例提供给
-`InventoryAttributeContributionSystem`，再作为 `AttributeModifier` 来源提交给持有者的
+## 当前实现状态（2026-11-23）
+
+世界物品走的是**非 ECS** 的 `WorldItemStore`（`Terraria.World` 命名空间，位于 `src/NSSLC/WorldItem/`）。
+它对齐 Version4 的 `Main.item[401]` 槽表：400 个槽位、槽位号即网络身份、进程内瞬态、不入存档。
+
+**实体化物品路径已删除**（执行计划 P1-A）。`ItemStackComponent`、`ItemWorldStateComponent`、
+`ContainedInInventoryComponent` 与 `InventorySlot.ItemEntityId` 全部移除：全仓没有
+`new ItemStackComponent(`，只有读取分支，保留它等于允许同一物品在世界与容器两端各存一份权威。
+
+被删除的能力："物品实体自带子库存"（如枪械内置弹药）不再有容器表达。当前仓库没有这类内容；
+若将来需要，必须作为独立设计重新引入，而不是恢复一条无生产者的声明——见
+[执行计划](../../../../docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md) P1-B 的代价说明。
+
+## 装备与属性贡献
+
+装备、饰品和武器对属性的贡献由物品定义提供，经
+`InventoryAttributeContributionSystem` 作为 `AttributeModifier` 来源提交给持有者的
 `AttributeSetComponent`。`Item` 不保存一份玩家装备槽，`Player` 也不拥有装备关系组件；
-槽位类别和 `ContainedInInventoryComponent` 的父库存关系是唯一的装备归属事实。
+槽位类别是唯一的装备归属事实。

@@ -10,6 +10,7 @@ using Terraria.Combat;
 using Terraria.Session;
 using Terraria.Diagnostics;
 using Terraria.Entity;
+using Terraria.EntitySpawn;
 using Terraria.Inventory;
 using Terraria.Item;
 using Terraria.Liquid;
@@ -176,8 +177,8 @@ internal static class Program
     _ = ecsWorld.Create(new WorldItemRequestQueueComponent());
     // 世界物品拾取请求队列：World 只提出"这件物品可以捡"，Inventory 决定能收下多少。
     _ = ecsWorld.Create(new InventoryPickupRequestQueueComponent());
-    // 刷怪事实队列：NPC 域创建实体，Network 域分配客户端槽位。
-    _ = ecsWorld.Create(new NpcSpawnFactQueueComponent());
+    // 实体生成事实队列：实体生成域创建实体，Network 域分配客户端槽位。
+    _ = ecsWorld.Create(new EntitySpawnFactQueueComponent());
     // 箱子/告示牌/Tile 实体交互：Communication 只提交意图，World 域持有并执行。
     _ = ecsWorld.Create(new WorldTileEntityRequestQueueComponent());
     _ = ecsWorld.Create(new WorldTileEntityResultQueueComponent());
@@ -231,16 +232,16 @@ internal static class Program
         attackDefinitions);
     SpatialSimulationCoordinatorSystem spatialSimulation = new(ecsWorld, worldRuntime);
     // 刷怪表：目前只有史莱姆可被创建，表中权重与网络类型即 Version4 的出生判定常量。
-    NpcSpawnTable npcSpawnTable = new(
+    EntitySpawnTable entitySpawnTable = new(
     [
-      new NpcSpawnCandidate(
+      new EntitySpawnCandidate(
           NpcEntityDefinition.SlimeId,
           NetworkType: 1,
           AiComponent.For<SlimeAiBehavior>(),
           Weight: 1),
     ]);
     // 困难模式/血月/日食的推进尚未建模，这里只带入存档头与时间事实。
-    NpcSpawnEnvironment npcSpawnEnvironment = new(
+    EntitySpawnEnvironment entitySpawnEnvironment = new(
         HardMode: false,
         WorldSurfaceTileY: (int)loadedWorld.Environment.WorldSurface,
         RockLayerTileY: (int)loadedWorld.Environment.RockLayer,
@@ -251,14 +252,14 @@ internal static class Program
         DayTime: loadedWorld.Environment.DayTime,
         BloodMoon: false,
         Eclipse: false);
-    NpcSpawnSystem npcSpawn = new(
+    EntitySpawnSystem entitySpawnSystem = new(
         ecsWorld,
         worldRuntime,
         sessionPlayers,
         entitySpawner,
         npcAi,
-        npcSpawnTable,
-        npcSpawnEnvironment,
+        entitySpawnTable,
+        entitySpawnEnvironment,
         worldSeed: WorldSeed(loadedWorld.Header.UniqueId));
     ICommunicationSessionPlayerLifecycle playerLifecycle =
         new ServerCommunicationSessionPlayerLifecycle(
@@ -288,7 +289,7 @@ internal static class Program
         inventories,
         npcAiAdapter,
         spatialSimulation,
-        npcSpawn,
+        entitySpawnSystem,
         loadedWorld.TileEntities,
         ItemUseDefinitionPrototypeLoader.Load(
             new PrototypeManager(),
@@ -368,7 +369,7 @@ internal static class Program
       preparation.Update(new EcsServerTickContext(ecsWorld, Math.Max(0, server.LastTick), 1f / 60f, shutdownCommands));
       preparation.CloseAllSessions(shutdownCommands);
       shutdownCommands.Playback(ecsWorld);
-      NpcSpawnFactQueue.Require(ecsWorld).Clear();
+      EntitySpawnFactQueue.Require(ecsWorld).Clear();
       if (ecsWorld.IsAlive(guide))
       {
         entitySpawner.Despawn(guide);
@@ -453,7 +454,7 @@ internal static class Program
       InventorySystem inventories,
       NpcAiIntentAdapter npcAiAdapter,
       SpatialSimulationCoordinatorSystem spatialSimulation,
-      NpcSpawnSystem npcSpawn,
+      EntitySpawnSystem entitySpawnSystem,
       WorldTileEntityStore tileEntities,
       ItemUseDefinitionCatalog itemUseDefinitions,
       ChatStore chatStore,
@@ -561,8 +562,8 @@ internal static class Program
     // 避免在同一个 tick 里对新实体重复计算移动。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
-        EcsServerRegistrationKeys.NpcSpawn,
-        npcSpawn));
+        EcsServerRegistrationKeys.EntitySpawn,
+        entitySpawnSystem));
     // 槽位分配必须早于 Projection 阶段的 NpcNetworkProjectionSystem，否则新 NPC 本 tick 不可见。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Commit,

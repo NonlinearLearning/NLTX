@@ -22,64 +22,6 @@ public sealed partial class InventorySystem {
   }
 
   /// <summary>
-  /// Collects a value stack, with partial pickup if needed. Items with an inventory retain
-  /// their entity. Use TryStoreEntity for other items with independent instance state.
-  /// </summary>
-  public InventoryTransferResult TryInsert(
-      ArchEntity inventoryEntity,
-      ArchEntity itemEntity,
-      int? targetSlotIndex = null,
-      EcsServerCommandBuffer? commands = null) {
-    InventoryTransferFailure failure = GetInventory(inventoryEntity, out InventoryComponent inventory);
-    if (failure != InventoryTransferFailure.None) {
-      return InventoryTransferResult.Rejected(failure);
-    }
-
-    failure = GetUncontainedItem(itemEntity, out ItemStackComponent item);
-    if (failure != InventoryTransferFailure.None) {
-      return InventoryTransferResult.Rejected(failure);
-    }
-
-    if (inventoryEntity == itemEntity) {
-      return InventoryTransferResult.Rejected(InventoryTransferFailure.ContainmentCycle);
-    }
-
-    if (_world.Has<InventoryComponent>(itemEntity)) {
-      return TryStoreEntity(inventoryEntity, itemEntity, targetSlotIndex, commands);
-    }
-
-    ItemStack stack = item.Stack;
-    failure = GetDefinition(stack, out ItemDefinition definition);
-    if (failure != InventoryTransferFailure.None) {
-      return InventoryTransferResult.Rejected(failure);
-    }
-
-    InventorySlot[] plan = inventory.CaptureSlots();
-    failure = ValidateTargetSlot(plan, targetSlotIndex);
-    if (failure != InventoryTransferFailure.None) {
-      return InventoryTransferResult.Rejected(failure);
-    }
-
-    int inserted = PlanInsert(plan, stack, definition, stack.Quantity, targetSlotIndex);
-    if (inserted == 0) {
-      return InventoryTransferResult.Rejected(InventoryTransferFailure.NoCompatibleSlot);
-    }
-
-    // Complete all allocation and rule checks before mutating the item or inventory.
-    if (inserted == stack.Quantity) {
-      commands?.Destroy(itemEntity);
-      if (commands is null) {
-        _world.Destroy(itemEntity);
-      }
-    } else {
-      item.Replace(stack.WithQuantity(stack.Quantity - inserted));
-    }
-
-    inventory.CommitSlots(plan);
-    return InventoryTransferResult.Success(inserted);
-  }
-
-  /// <summary>
   /// Inserts a value stack. The caller retains ownership of any quantity not reported committed.
   /// This method does not mutate the input value or any external source inventory.
   /// </summary>
@@ -137,10 +79,6 @@ public sealed partial class InventorySystem {
     }
 
     InventorySlotDefinition definition = plan[position].Definition;
-    if (plan[position].ContainsEntity) {
-      return InventoryTransferResult.Rejected(InventoryTransferFailure.SlotRequiresEntity);
-    }
-
     if (stack.IsEmpty) {
       plan[position] = new InventorySlot(definition, null);
       inventory.CommitSlots(plan);
@@ -165,7 +103,7 @@ public sealed partial class InventorySystem {
     return InventoryTransferResult.Success(stack.Quantity);
   }
 
-  /// <summary>Removes a value stack. Retained entities must use TryTakeEntity.</summary>
+  /// <summary>Removes a value stack from one slot.</summary>
   public InventoryTransferResult TryRemove(
       ArchEntity inventoryEntity,
       int slotIndex,
@@ -179,10 +117,6 @@ public sealed partial class InventorySystem {
 
     if (!inventory.TryGetSlot(slotIndex, out InventorySlot slot)) {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidSlot);
-    }
-
-    if (slot.ContainsEntity) {
-      return InventoryTransferResult.Rejected(InventoryTransferFailure.SlotRequiresEntity);
     }
 
     if (slot.Content is not ItemStack stack || quantity <= 0 || quantity > stack.Quantity) {
@@ -228,11 +162,6 @@ public sealed partial class InventorySystem {
 
     if (!source.TryGetSlot(sourceSlotIndex, out InventorySlot sourceSlot)) {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidSlot);
-    }
-
-    if (sourceSlot.ContainsEntity) {
-      return MoveEntity(sourceEntity, source, sourceSlot, targetEntity, target,
-          quantity, targetSlotIndex);
     }
 
     if (sourceSlot.Content is not ItemStack stack || quantity <= 0 || quantity > stack.Quantity) {
@@ -308,44 +237,6 @@ public sealed partial class InventorySystem {
         : InventoryTransferFailure.None;
   }
 
-  private InventoryTransferFailure GetItem(ArchEntity entity, out ItemStackComponent item) {
-    item = null!;
-    if (!IsAlive(entity)) {
-      return InventoryTransferFailure.InvalidEntity;
-    }
-
-    if (!_world.Has<ItemStackComponent>(entity)) {
-      return InventoryTransferFailure.MissingItemStack;
-    }
-
-    item = _world.Get<ItemStackComponent>(entity);
-    return item is null
-        ? InventoryTransferFailure.MissingItemStack
-        : InventoryTransferFailure.None;
-  }
-
-  private InventoryTransferFailure GetUncontainedItem(
-      ArchEntity entity,
-      out ItemStackComponent item) {
-    InventoryTransferFailure failure = GetItem(entity, out item);
-    if (failure != InventoryTransferFailure.None) {
-      return failure;
-    }
-
-    if (_world.Has<ContainedInInventoryComponent>(entity)) {
-      return InventoryTransferFailure.AlreadyContained;
-    }
-
-    if (_world.Has<ItemWorldStateComponent>(entity)) {
-      ItemWorldStateComponent state = _world.Get<ItemWorldStateComponent>(entity);
-      if (state is null || !state.CanBePickedUp || state.IsExpired) {
-        return InventoryTransferFailure.PickupUnavailable;
-      }
-    }
-
-    return InventoryTransferFailure.None;
-  }
-
   private InventoryTransferFailure GetDefinition(
       in ItemStack stack,
       out ItemDefinition definition) {
@@ -411,7 +302,7 @@ public sealed partial class InventorySystem {
         InventorySlot slot = plan[position];
         if ((targetSlotIndex.HasValue && slot.Definition.Index != targetSlotIndex.Value) ||
             (excludedSlotIndex.HasValue && slot.Definition.Index == excludedSlotIndex.Value) ||
-            slot.ContainsEntity || !slot.Definition.Accepts(definition) ||
+            !slot.Definition.Accepts(definition) ||
             (pass == 0 && slot.IsEmpty) || (pass == 1 && !slot.IsEmpty)) {
           continue;
         }

@@ -15,6 +15,9 @@ namespace Terraria.World;
 /// </remarks>
 public static class WorldItemRules
 {
+  /// <summary>Version4 <c>WorldItem.timeSinceItemSpawned</c> stops incrementing at this value.</summary>
+  public const int MaximumLifetimeCounter = 2147483547;
+
   /// <summary>True when a new item may occupy a slot with the supplied facts.</summary>
   /// <remarks>
   /// 物品类型必须是 <see cref="ItemId" /> 里的已知值：权威世界状态只保存共享
@@ -50,6 +53,19 @@ public static class WorldItemRules
   {
     ArgumentNullException.ThrowIfNull(item);
     return item.ReservedFor is null || item.ReservedFor == actor;
+  }
+
+  /// <summary>
+  /// True when the item may be picked up this tick.
+  /// </summary>
+  /// <remarks>
+  /// Version4 的门控在 <c>Player.GetItem(WorldItem, GetItemSettings)</c>：<c>noGrabDelay &gt; 0</c>
+  /// 时直接返回原物品，连"能不能装下"都不再判断（`Player.cs:38653`）。
+  /// </remarks>
+  public static bool CanBePickedUp(WorldItemState item)
+  {
+    ArgumentNullException.ThrowIfNull(item);
+    return !item.Item.IsEmpty && item.NoGrabDelay <= 0;
   }
 
   /// <summary>Lowest unoccupied slot number, or -1 when the table is full.</summary>

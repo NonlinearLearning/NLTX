@@ -1,30 +1,30 @@
 using System.Collections.Generic;
 using ArchEntity = Arch.Core.Entity;
 
-namespace Terraria.Npc;
+namespace Terraria.EntitySpawn;
 
 /// <summary>Tick-scoped queue of creatures that were just created and need a network identity.</summary>
-public sealed class NpcSpawnFactQueueComponent
+public sealed class EntitySpawnFactQueueComponent
 {
-  private readonly List<NpcSpawnedFact> _pending = [];
+  private readonly List<EntitySpawnedFact> _pending = [];
 
   public int Count => _pending.Count;
 
-  public void Enqueue(in NpcSpawnedFact fact) => _pending.Add(fact);
+  public void Enqueue(in EntitySpawnedFact fact) => _pending.Add(fact);
 
-  public IReadOnlyList<NpcSpawnedFact> Drain()
+  public IReadOnlyList<EntitySpawnedFact> Drain()
   {
     if (_pending.Count == 0)
     {
       return [];
     }
 
-    NpcSpawnedFact[] facts = _pending.ToArray();
+    EntitySpawnedFact[] facts = _pending.ToArray();
     _pending.Clear();
     return facts;
   }
 
-  public void Requeue(IReadOnlyList<NpcSpawnedFact> facts)
+  public void Requeue(IReadOnlyList<EntitySpawnedFact> facts)
   {
     ArgumentNullException.ThrowIfNull(facts);
     for (int index = 0; index < facts.Count; index++)
@@ -46,13 +46,13 @@ public sealed class NpcSpawnFactQueueComponent
   }
 
   /// <summary>Rebinds a deferred fact to its resolved Arch entity after playback.</summary>
-  public void Replace(in NpcSpawnedFact fact, ArchEntity entity)
+  public void Replace(in EntitySpawnedFact fact, ArchEntity entity)
   {
     for (int index = 0; index < _pending.Count; index++)
     {
       if (_pending[index] == fact)
       {
-        _pending[index] = new NpcSpawnedFact(entity, fact.NetworkType);
+        _pending[index] = new EntitySpawnedFact(entity, fact.NetworkType);
       }
     }
   }

@@ -1,7 +1,7 @@
 using Terraria.Ai;
 using Terraria.Entity;
 
-namespace Terraria.Npc;
+namespace Terraria.EntitySpawn;
 
 /// <summary>One entry of the spawn table: which entity to create and how likely it is.</summary>
 /// <remarks>
@@ -10,7 +10,7 @@ namespace Terraria.Npc;
 /// carries the entity definition, the protocol NPC type and the AI component to attach, so the
 /// system never names a concrete creature.
 /// </remarks>
-public sealed record NpcSpawnCandidate(
+public sealed record EntitySpawnCandidate(
     EntityDefinitionId DefinitionId,
     short NetworkType,
     AiComponent Ai,

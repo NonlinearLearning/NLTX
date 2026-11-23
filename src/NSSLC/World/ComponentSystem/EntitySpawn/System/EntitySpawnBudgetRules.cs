@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Terraria.Npc;
+namespace Terraria.EntitySpawn;
 
 /// <summary>
 /// Port of Version4 <c>Spawner.GetSpawnRate</c>: turns world flags and player depth into one roll
@@ -12,7 +12,7 @@ namespace Terraria.Npc;
 /// the reference; the remix-world branches are absent because the server does not host a remix
 /// world yet, and the invasion/tower branches are absent because those events are not modelled.
 /// </remarks>
-public static class NpcSpawnBudgetRules
+public static class EntitySpawnBudgetRules
 {
   /// <summary>Version4 <c>Spawner.defaultSpawnRate</c>.</summary>
   public const int DefaultSpawnRate = 600;
@@ -20,8 +20,8 @@ public static class NpcSpawnBudgetRules
   /// <summary>Version4 <c>Spawner.defaultMaxSpawns</c>.</summary>
   public const int DefaultMaximumSpawns = 5;
 
-  public static NpcSpawnBudget For(
-      in NpcSpawnEnvironment environment,
+  public static EntitySpawnBudget For(
+      in EntitySpawnEnvironment environment,
       Vector2 playerPosition,
       float tileSize)
   {
@@ -86,6 +86,6 @@ public static class NpcSpawnBudgetRules
       maximumSpawns = maximumCap;
     }
 
-    return new NpcSpawnBudget(spawnRate, maximumSpawns);
+    return new EntitySpawnBudget(spawnRate, maximumSpawns);
   }
 }

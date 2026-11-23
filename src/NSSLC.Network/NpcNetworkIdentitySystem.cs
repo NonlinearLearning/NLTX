@@ -5,7 +5,7 @@ using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 using Terraria.Entity;
-using Terraria.Npc;
+using Terraria.EntitySpawn;
 
 namespace Terraria.Network;
 
@@ -172,8 +172,8 @@ public sealed class NpcNetworkIdentitySystem : BaseSystem<ArchWorld, EcsServerTi
   {
     _pendingBindings.Clear();
     SynchronizeExistingIdentities();
-    NpcSpawnFactQueueComponent queue = NpcSpawnFactQueue.Require(World);
-    IReadOnlyList<NpcSpawnedFact> facts = queue.Drain();
+    EntitySpawnFactQueueComponent queue = EntitySpawnFactQueue.Require(World);
+    IReadOnlyList<EntitySpawnedFact> facts = queue.Drain();
     if (facts.Count == 0)
     {
       return;
@@ -181,7 +181,7 @@ public sealed class NpcNetworkIdentitySystem : BaseSystem<ArchWorld, EcsServerTi
 
     for (int index = 0; index < facts.Count; index++)
     {
-      NpcSpawnedFact fact = facts[index];
+      EntitySpawnedFact fact = facts[index];
       if (!IsAvailableEntity(fact.Entity))
       {
         continue;
@@ -198,10 +198,10 @@ public sealed class NpcNetworkIdentitySystem : BaseSystem<ArchWorld, EcsServerTi
           continue;
         }
 
-        List<NpcSpawnedFact> remainder = [];
+        List<EntitySpawnedFact> remainder = [];
         for (int remainderIndex = index; remainderIndex < facts.Count; remainderIndex++)
         {
-          NpcSpawnedFact pending = facts[remainderIndex];
+          EntitySpawnedFact pending = facts[remainderIndex];
           // A buffered entity belongs to this tick's command buffer and cannot be carried into
           // the next tick. Live entities can safely wait for a free protocol slot.
           if (pending.Entity.Id >= 0 && IsAvailableEntity(pending.Entity))

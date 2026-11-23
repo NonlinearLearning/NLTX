@@ -8,6 +8,7 @@ using Terraria.Combat;
 using Terraria.Network;
 using Terraria.Session;
 using Terraria.Entity;
+using Terraria.EntitySpawn;
 using Terraria.Liquid;
 using Terraria.Movement;
 using Terraria.Npc;
@@ -32,7 +33,7 @@ void Check(string name, bool ok, string detail)
 }
 
 // --- 1. 出生预算 ---
-NpcSpawnEnvironment surfaceDay = new(
+EntitySpawnEnvironment surfaceDay = new(
     HardMode: false,
     WorldSurfaceTileY: 80,
     RockLayerTileY: 120,
@@ -40,22 +41,22 @@ NpcSpawnEnvironment surfaceDay = new(
     DayTime: true,
     BloodMoon: false,
     Eclipse: false);
-NpcSpawnBudget dayBudget = NpcSpawnBudgetRules.For(surfaceDay, new Vector2(0f, 16f * 50f), 16f);
+EntitySpawnBudget dayBudget = EntitySpawnBudgetRules.For(surfaceDay, new Vector2(0f, 16f * 50f), 16f);
 Check(
     "budget-surface-day",
-    dayBudget == new NpcSpawnBudget(600, 5),
+    dayBudget == new EntitySpawnBudget(600, 5),
     $"spawnRate={dayBudget.SpawnRate} max={dayBudget.MaximumSpawns}（默认 600/5）");
 
-NpcSpawnBudget nightBudget = NpcSpawnBudgetRules.For(
+EntitySpawnBudget nightBudget = EntitySpawnBudgetRules.For(
     surfaceDay with { DayTime = false },
     new Vector2(0f, 16f * 50f),
     16f);
 Check(
     "budget-surface-night",
-    nightBudget == new NpcSpawnBudget(360, 6),
+    nightBudget == new EntitySpawnBudget(360, 6),
     $"spawnRate={nightBudget.SpawnRate} max={nightBudget.MaximumSpawns}（600×0.6 / 5×1.3）");
 
-NpcSpawnBudget bloodMoonBudget = NpcSpawnBudgetRules.For(
+EntitySpawnBudget bloodMoonBudget = EntitySpawnBudgetRules.For(
     surfaceDay with { DayTime = false, BloodMoon = true },
     new Vector2(0f, 16f * 50f),
     16f);
@@ -64,34 +65,34 @@ Check(
     bloodMoonBudget.SpawnRate == 108 && bloodMoonBudget.MaximumSpawns == 10,
     $"spawnRate={bloodMoonBudget.SpawnRate} max={bloodMoonBudget.MaximumSpawns}（360×0.3 / 6×1.8）");
 
-NpcSpawnBudget undergroundBudget = NpcSpawnBudgetRules.For(
+EntitySpawnBudget undergroundBudget = EntitySpawnBudgetRules.For(
     surfaceDay,
     new Vector2(0f, 16f * 100f),
     16f);
 Check(
     "budget-underground",
-    undergroundBudget == new NpcSpawnBudget(300, 8),
+    undergroundBudget == new EntitySpawnBudget(300, 8),
     $"spawnRate={undergroundBudget.SpawnRate} max={undergroundBudget.MaximumSpawns}（600×0.5 / 5×1.7）");
 
-NpcSpawnBudget cavernBudget = NpcSpawnBudgetRules.For(
+EntitySpawnBudget cavernBudget = EntitySpawnBudgetRules.For(
     surfaceDay,
     new Vector2(0f, 16f * 140f),
     16f);
 Check(
     "budget-cavern",
-    cavernBudget == new NpcSpawnBudget(240, 9),
+    cavernBudget == new EntitySpawnBudget(240, 9),
     $"spawnRate={cavernBudget.SpawnRate} max={cavernBudget.MaximumSpawns}（600×0.4 / 5×1.9）");
 
-NpcSpawnBudget underworldBudget = NpcSpawnBudgetRules.For(
+EntitySpawnBudget underworldBudget = EntitySpawnBudgetRules.For(
     surfaceDay,
     new Vector2(0f, 16f * 180f),
     16f);
 Check(
     "budget-underworld",
-    underworldBudget == new NpcSpawnBudget(600, 10),
+    underworldBudget == new EntitySpawnBudget(600, 10),
     $"spawnRate={underworldBudget.SpawnRate} max={underworldBudget.MaximumSpawns}（上限 ×2）");
 
-NpcSpawnBudget eclipseBudget = NpcSpawnBudgetRules.For(
+EntitySpawnBudget eclipseBudget = EntitySpawnBudgetRules.For(
     surfaceDay with { Eclipse = true },
     new Vector2(0f, 16f * 50f),
     16f);
@@ -101,7 +102,7 @@ Check(
     $"spawnRate={eclipseBudget.SpawnRate} max={eclipseBudget.MaximumSpawns}（600×0.2 / 5×3 封顶）");
 
 // --- 2. 出生区域与落点 ---
-NpcSpawnArea area = NpcSpawnAreaRules.GetSpawnArea(
+EntitySpawnArea area = EntitySpawnAreaRules.GetSpawnArea(
     new Vector2(100f * 16f, 100f * 16f),
     tileSize: 16f,
     worldWidth: 400,
@@ -116,7 +117,7 @@ Check(
     area.Spawn.Left == 16 && area.Spawn.Top == 53,
     $"left={area.Spawn.Left} top={area.Spawn.Top}（100-84，100-47）");
 
-NpcSpawnArea cornerArea = NpcSpawnAreaRules.GetSpawnArea(
+EntitySpawnArea cornerArea = EntitySpawnAreaRules.GetSpawnArea(
     new Vector2(2f * 16f, 2f * 16f),
     tileSize: 16f,
     worldWidth: 400,
@@ -128,8 +129,8 @@ Check(
 
 using ArchWorld eligibilityWorld = ArchWorld.Create();
 WorldRuntime eligibilityRuntime = BuildFloorRuntime(worldWidth: 400, worldHeight: 300, floorRow: 200);
-NpcSpawnRandom random = new(seed: 20261106UL);
-bool foundSpawnTile = NpcSpawnAreaRules.TryFindSpawnTile(
+EntitySpawnRandom random = new(seed: 20261106UL);
+bool foundSpawnTile = EntitySpawnAreaRules.TryFindSpawnTile(
     area with
     {
       // 搜索区必须把地面行包含在底部之内，否则参考实现的扫描会在边界处放弃。
@@ -145,26 +146,26 @@ Check(
     $"found={foundSpawnTile} tile={spawnTile.X},{spawnTile.Y}（地面行 200，列在搜索区内）");
 Check(
     "spawn-tile-has-body-space",
-    foundSpawnTile && NpcSpawnAreaRules.HasSpawnSpace(eligibilityRuntime, spawnTile.X, spawnTile.Y),
+    foundSpawnTile && EntitySpawnAreaRules.HasSpawnSpace(eligibilityRuntime, spawnTile.X, spawnTile.Y),
     "2x3 空间可用");
 
 Check(
     "spawn-tile-has-no-body-space",
-    !NpcSpawnAreaRules.HasSpawnSpace(
+    !EntitySpawnAreaRules.HasSpawnSpace(
         SetTile(eligibilityRuntime, 12, 199, new WorldTileState(true, 1, 0, 0, 0)),
         12,
         200),
     "落地格上方被实心方块占住时不可出生");
 Check(
     "spawn-tile-rejects-lava",
-    !NpcSpawnAreaRules.CanSpawnInTile(
+    !EntitySpawnAreaRules.CanSpawnInTile(
         SetTile(eligibilityRuntime, 300, 199, new WorldTileState(false, 0, 0, 0, 0, LiquidContactFlags.Lava, 255)),
         300,
         199),
     "岩浆格不可出生");
 Check(
     "spawn-tile-accepts-water",
-    NpcSpawnAreaRules.CanSpawnInTile(
+    EntitySpawnAreaRules.CanSpawnInTile(
         SetTile(eligibilityRuntime, 301, 199, new WorldTileState(false, 0, 0, 0, 0, LiquidContactFlags.Water, 255)),
         301,
         199),
@@ -176,17 +177,17 @@ List<SessionPlayer> players =
 ];
 Check(
     "on-screen-check-rejects-visible",
-    NpcSpawnAreaRules.IsVisibleToAnyPlayer(100, 100, 16f, players, area.SafeHalfExtentX, area.SafeHalfExtentY),
+    EntitySpawnAreaRules.IsVisibleToAnyPlayer(100, 100, 16f, players, area.SafeHalfExtentX, area.SafeHalfExtentY),
     "玩家附近的落点视为可见");
 Check(
     "on-screen-check-accepts-hidden",
-    !NpcSpawnAreaRules.IsVisibleToAnyPlayer(200, 100, 16f, players, area.SafeHalfExtentX, area.SafeHalfExtentY),
+    !EntitySpawnAreaRules.IsVisibleToAnyPlayer(200, 100, 16f, players, area.SafeHalfExtentX, area.SafeHalfExtentY),
     "屏幕外 100 格的落点不可见");
 
 // --- 3. 端到端：刷怪 + 槽位分配 ---
 using ArchWorld spawnWorld = ArchWorld.Create();
 WorldRuntime spawnRuntime = BuildFloorRuntime(worldWidth: 400, worldHeight: 300, floorRow: 200);
-_ = spawnWorld.Create(new NpcSpawnFactQueueComponent());
+_ = spawnWorld.Create(new EntitySpawnFactQueueComponent());
 SessionEpoch spawnEpoch = SessionEpoch.Create(9);
 CommunicationSessionComponent session = new(spawnEpoch);
 _ = spawnWorld.Create(
@@ -207,7 +208,7 @@ session.TryAdvance(CommunicationSessionStage.Active);
 
 EntityDefinitionRegistry definitions = new();
 definitions.Register(
-    new EntityDefinitionBuilder(new EntityDefinitionId("npc.spawn-test"))
+    new EntityDefinitionBuilder(new EntityDefinitionId("entity.spawn-test"))
         .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
         .Add(() => new EntityFactionComponent(Faction.Hostile))
         .Add(() => new LifeComponent(50, 50))
@@ -221,15 +222,15 @@ EntityDefinitionSystem<ArchEntity> spawner = new(
     definitions,
     new ArchEntityDefinitionHost(spawnWorld, spawnEntities));
 using NpcAiRuntime ai = new(spawnWorld);
-NpcSpawnTable table = new(
+EntitySpawnTable table = new(
 [
-  new NpcSpawnCandidate(
-      new EntityDefinitionId("npc.spawn-test"),
+  new EntitySpawnCandidate(
+      new EntityDefinitionId("entity.spawn-test"),
       NetworkType: 1,
       AiComponent.For<SlimeAiBehavior>(),
       Weight: 1),
 ]);
-NpcSpawnEnvironment spawnEnvironment = new(
+EntitySpawnEnvironment spawnEnvironment = new(
     HardMode: false,
     WorldSurfaceTileY: 80,
     RockLayerTileY: 120,
@@ -237,7 +238,7 @@ NpcSpawnEnvironment spawnEnvironment = new(
     DayTime: true,
     BloodMoon: false,
     Eclipse: false);
-NpcSpawnSystem spawnSystem = new(
+EntitySpawnSystem spawnSystem = new(
     spawnWorld,
     spawnRuntime,
     new SessionPlayerSource(spawnWorld, spawnEntities),
@@ -274,7 +275,7 @@ Check(
     allGrounded,
     "每个 NPC 的底边都贴在地面行顶边");
 
-NpcSpawnFactQueueComponent facts = NpcSpawnFactQueue.Require(spawnWorld);
+EntitySpawnFactQueueComponent facts = EntitySpawnFactQueue.Require(spawnWorld);
 Check(
     "spawn-system-raises-network-facts",
     facts.Count == spawnedCount,

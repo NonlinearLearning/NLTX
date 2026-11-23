@@ -19,11 +19,9 @@
 | --- | --- |
 | `InventoryComponent` | 每个实体独立的槽位状态；对外提供只读视图 |
 | `InventorySlotDefinition` | 索引、语义、接受类别、槽位堆叠上限 |
-| `InventorySlot` | 空槽、一个值堆，或一个物品实体的身份引用 |
+| `InventorySlot` | 空槽，或一个值堆 |
 | `ItemDefinitionRegistry` | 共享不可变物品定义及最大堆叠数 |
 | `ItemStack` | 定义 ID、数量、前缀组成的不可变值 |
-| `ItemStackComponent` | 保留物品实体上的唯一数量来源 |
-| `ContainedInInventoryComponent` | 物品实体所属库存的身份和槽位索引 |
 | `InventorySystem` | 类别检查、容量规划、数量和归属关系提交 |
 | `InventoryAttributeContributionSystem` | 从库存槽位和物品定义重建装备/饰品/武器属性贡献 |
 
@@ -34,32 +32,34 @@
 `Slots` 是实时只读视图，元素为不可变值；需要跨帧保留时由调用方复制。不要把同一个
 `InventoryComponent` 实例附加到多个实体。实体定义应使用工厂，每次创建一个新组件。
 
-## 为什么槽位允许两种内容
+## 槽位内容：只承载值
 
-普通材料、货币和弹药可以直接保存 `ItemStack` 值。它们只需要类型、数量和前缀，没有必要
-为每个库存格创建实体。值槽位的数量完全由 `InventoryComponent` 持有。
+普通材料、货币和弹药直接保存 `ItemStack` 值。它们只需要类型、数量和前缀，没有必要
+为每个库存格创建实体。槽位内容完全由 `InventoryComponent` 持有。
 
-有独立组件的物品则应保留实体。例如，枪械附加一个弹药 `InventoryComponent`，玩家再把
-这把枪装进武器槽。如果只复制 `ItemStack` 并销毁枪的实体，弹药库存就会一起消失。
-因此实体槽位只保存 `ItemEntityId`，物品数量仍在原实体的 `ItemStackComponent` 中。
+`InventorySlot` 曾保留一个 `ItemEntityId` 分支（"值 或 实体身份，二者互斥"），用来表达
+"有独立组件的物品保留实体"（如枪械内置弹药库）。该分支在
+[2026-11-23 执行计划](../../../../docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md)
+的 P1-A 中**已删除**：它没有任何生产点，只有读取分支，保留等于允许同一物品在世界与容器
+两端各存一份权威。
 
-两种内容互斥。`Content == null` 可能表示一个实体槽位，判断空槽必须使用 `IsEmpty`。
-通过 `InventorySystem.TryGetStack` 可以统一读取两种槽位的堆值，不取得可变组件引用。
+当前形态：
+
+- 槽位只有两种状态——一个非空 `ItemStack` 值，或空槽（`Content == null`）；
+- `IsEmpty` 即 `Content == null`，不再需要区分"空槽"与"实体槽"；
+- 世界中的物品由 `Terraria.World` 的 `WorldItemStore` 承载（非 ECS、400 槽、不入存档），
+  与容器槽经 `InventoryPickupRequest` / `WorldItemRequestKind.Consume` 做数量移交。
 
 ```mermaid
 flowchart LR
     P[玩家或 NPC 实体] --> I[InventoryComponent]
-    I --> V[通用槽：ItemStack 值]
-    I --> W[武器槽：物品 EntityUuid]
-    W --> G[枪械实体]
-    G --> S[ItemStackComponent：枪的唯一堆状态]
-    G --> R[ContainedInInventoryComponent：玩家身份和武器槽]
-    G --> A[InventoryComponent：弹药槽]
-    A --> B[ItemStack：弹药数量]
+    I --> V[槽位：ItemStack 值]
+    W[WorldItemStore：世界宿主] -.->|拾取请求 + Consume 回报| I
+    I -.->|ValueStack| W
 ```
 
-组件中的关系使用仓库现有 `EntityUuid` 身份根。Arch `Entity` 仅出现在系统同步 API 中，
-不被复制进槽位或关系组件，也不用于存档身份。
+若将来确实需要"物品实体自带子组件"，必须作为独立设计重新引入（执行计划 P1-B），
+不得恢复一条无生产者的声明。
 
 ## 用参数组合狭义库存
 
@@ -139,30 +139,14 @@ var player = world.Create(
     new EntityIdentityComponent(EntityUuid.Create()), playerInventory);
 var chest = world.Create(
     new EntityIdentityComponent(EntityUuid.Create()), chestInventory);
-var rifle = world.Create(
-    new EntityIdentityComponent(EntityUuid.Create()),
-    new ItemStackComponent(new ItemStack(rifleId, 1)),
-    weaponInventory);
 
-// 武器自己拥有弹药库存。
-InventoryTransferResult loaded = inventorySystem.TryInsert(
-    rifle, new ItemStack(bulletId, 60), targetSlotIndex: 0);
-
-// 保留枪实体、其弹药库存和其他实例组件，放入玩家武器槽。
-InventoryTransferResult equipped = inventorySystem.TryStoreEntity(
-    player, rifle, targetSlotIndex: 45);
-
-// 一个普通世界掉落物：全部拾取时销毁掉落物实体，槽位获得值堆。
-var woodDrop = world.Create(new ItemStackComponent(new ItemStack(woodId, 30)));
-InventoryTransferResult pickup = inventorySystem.TryInsert(player, woodDrop);
+// 一个普通世界掉落物：全部拾取时槽位获得值堆，世界侧由 WorldItemStore 扣减。
+InventoryTransferResult pickup = inventorySystem.TryInsert(
+    player, new ItemStack(woodId, 30));
 
 // 指定源槽与目标槽，完整移动请求数量；空间不足时返回拒绝。
 InventoryTransferResult moved = inventorySystem.TryMove(
     player, sourceSlotIndex: 0, targetEntity: chest, quantity: 10, targetSlotIndex: 0);
-
-// 武器作为整个实体进入箱子，枪内的弹药库存随原实体保留。
-InventoryTransferResult weaponMoved = inventorySystem.TryMove(
-    player, sourceSlotIndex: 45, targetEntity: chest, quantity: 1, targetSlotIndex: 1);
 ```
 
 每次调用后都应检查 `Succeeded`、`Quantity` 和 `Failure`。上例后续步骤需以前一步成功为前提。
@@ -174,30 +158,20 @@ InventoryTransferResult weaponMoved = inventorySystem.TryMove(
 
 | API | 行为 |
 | --- | --- |
-| `TryInsert(owner, itemEntity, targetSlotIndex)` | 普通物品可部分拾取；带 Inventory 的物品自动保留实体 |
 | `TryInsert(owner, stack, targetSlotIndex)` | 插入内存值堆，返回实际提交数量 |
-| `TryStoreEntity(owner, itemEntity, targetSlotIndex)` | 整个实体占用一个空槽，保留所有实例组件 |
-| `TryRemove(owner, slot, quantity, out stack)` | 从值槽位取出指定数量 |
-| `TryTakeEntity(owner, slot, out entity)` | 整体取出实体并清除双方容纳关系 |
+| `TrySetSlotValue(owner, slot, stack)` | 覆盖指定槽位；`stack` 为空则清空该槽 |
+| `TryRemove(owner, slot, quantity, out stack)` | 从槽位取出指定数量 |
 | `TryMove(source, slot, target, quantity, targetSlotIndex)` | 请求数量全部移动或拒绝；支持指定同库存另一槽 |
 | `TryGetStack(owner, slot, out stack)` | 读取当前权威堆值 |
 | `TryRemoveInventoryComponent(owner)` | 只允许移除已清空的库存能力 |
 
-未指定目标槽位时，值堆先填充同定义和同前缀的已有堆，再使用空槽；实体选择第一个合规
-空槽。实体槽位不与值堆合并，也不拆分实体组件。传入部分实体数量返回
-`EntitySplitNotSupported`；从实体槽位调用 `TryRemove` 返回 `SlotRequiresEntity`。
+未指定目标槽位时，值堆先填充同定义和同前缀的已有堆，再使用空槽。
 
-普通世界物品的 `TryInsert` 只适用于可转换为值堆的物品。武器具有弹药 Inventory 时自动
-保留；耐久、附魔、个体任务状态等其他独立组件由调用方使用 `TryStoreEntity` 保留。
-不能把这些实体误当作只有类型、数量、前缀的普通掉落物。
+物品实体相关的入口（`TryInsert(owner, itemEntity, …)`、`TryStoreEntity`、`TryTakeEntity`）
+与 `ItemEntityId` 槽位语义已在 P1-A 中删除。容器不再接受"物品实体"，也不再表达
+"物品自带子组件"；需要保留实例状态的内容必须另行设计。
 
-实体入口检查当前 World 和 Arch 存活版本；世界物品存在 `ItemWorldStateComponent` 时，
-还检查拾取延迟与寿命。实体存放需要双方的 `EntityIdentityComponent`，系统不代替宿主
-分配身份。身份解析从当前 Arch 世界查询，匹配不是唯一时拒绝。当前使用扫描实现，
-未引入与宿主竞争的身份登记表；大规模高频调用的性能尚未评估。
-
-源槽位与物品的关系必须对应；目标容器的祖先链用于拒绝自包含、把祖先放进后代或已损坏
-的环。缺失实体或关系不匹配显式拒绝，不把悬空身份指向其他物品。
+源槽位与容器的关系由系统在提交阶段核对；目标容器的祖先链检查随实体路径一并移除。
 
 ## 调度、失败与生命周期
 
@@ -217,21 +191,13 @@ Arch 结构变化事件中也不能重入修改或发布库存中间状态；完
 独占约定时不提供通用事务回滚保证。宿主应停止该次正常提交链，按自己的故障恢复规则处理。
 `CommitFailed` 保留为已有结果枚举值，目前这些入口不将未知技术故障转换为它。
 
-对库存内保留的实体，宿主应在物理、世界拾取和掉落寿命查询中排除
-`ContainedInInventoryComponent`；物品仍可运行其自身的弹药等内部能力。
-`TryTakeEntity` 只断开容纳关系。重新成为世界掉落物时，宿主在同一提交阶段设置位置、
-速度、碰撞启用状态和拾取延迟，不直接复用拾取前的位置。
-
 移除库存或销毁实体前，先处理内容：
 
-- 值槽位使用 `TryMove` 转交，或使用 `TryRemove` 交给宿主决定奖励、丢弃或销毁。
-- 实体槽位使用 `TryMove` 转交，或使用 `TryTakeEntity` 取出。
-- 若被销毁实体本身也位于另一库存中，先从父库存 `TryTakeEntity`。
+- 槽位内容使用 `TryMove` 转交，或使用 `TryRemove` 交给宿主决定奖励、丢弃或销毁。
 - 库存清空后才移除组件或调用宿主销毁入口。嵌套容器按相同规则处理。
 
-直接调用 `world.Destroy` 或绕过系统移除组件不会自动清理关系；本批没有注册全局销毁钩子。
-世界卸载应停止交互，再由宿主保存或释放整组实体。存档不得直接序列化 Arch 句柄，加载后
-需要根据新实例身份重新建立槽位与关系。
+直接调用 `world.Destroy` 或绕过系统移除组件不会自动清理槽位状态。
+世界卸载应停止交互，再由宿主保存或释放整组实体。存档不得直接序列化 Arch 句柄。
 
 ## 交付状态与接入边界
 

@@ -5,7 +5,7 @@ using Terraria.Session;
 using Terraria.Liquid;
 using Terraria.World;
 
-namespace Terraria.Npc;
+namespace Terraria.EntitySpawn;
 
 /// <summary>
 /// Port of Version4 <c>Spawner.GetSpawnArea</c>, <c>FindSpawnTile</c>, <c>HasTileSpawnSpace</c>,
@@ -18,7 +18,7 @@ namespace Terraria.Npc;
 /// the item and tile motion solvers already make. House walls are not modelled, which matches the
 /// reference behaviour with <c>ignoreSafeWalls</c> set.
 /// </remarks>
-public static class NpcSpawnAreaRules
+public static class EntitySpawnAreaRules
 {
   /// <summary>Reference screen width in pixels (1920x1080 client).</summary>
   public const float ScreenWidthPixels = 1920f;
@@ -44,7 +44,7 @@ public static class NpcSpawnAreaRules
 
   public const int SpawnSpaceHeight = 3;
 
-  public static NpcSpawnArea GetSpawnArea(
+  public static EntitySpawnArea GetSpawnArea(
       Vector2 playerPosition,
       float tileSize,
       int worldWidth,
@@ -61,7 +61,7 @@ public static class NpcSpawnAreaRules
     int spawnHalfExtentY = (int)(ScreenTileHeight * SpawnHalfExtentFactor);
     int safeHalfExtentX = (int)(ScreenTileWidth * SafeHalfExtentFactor);
     int safeHalfExtentY = (int)(ScreenTileHeight * SafeHalfExtentFactor);
-    return new NpcSpawnArea(
+    return new EntitySpawnArea(
         WorldTileArea
             .Centered(playerTileX, playerTileY, spawnHalfExtentX * 2, spawnHalfExtentY * 2)
             .ClampToWorld(worldWidth, worldHeight),
@@ -71,13 +71,13 @@ public static class NpcSpawnAreaRules
   }
 
   /// <summary>
-  /// Picks one spawn tile inside <see cref="NpcSpawnArea.Spawn"/>: a random column, then the first
+  /// Picks one spawn tile inside <see cref="EntitySpawnArea.Spawn"/>: a random column, then the first
   /// ground below it, outside the safe area and with room for the NPC body.
   /// </summary>
   public static bool TryFindSpawnTile(
-      in NpcSpawnArea area,
+      in EntitySpawnArea area,
       IWorldTileGrid tiles,
-      ref NpcSpawnRandom random,
+      ref EntitySpawnRandom random,
       out WorldTileCoordinate spawnTile)
   {
     ArgumentNullException.ThrowIfNull(tiles);

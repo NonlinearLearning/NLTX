@@ -1,6 +1,6 @@
 using Terraria.World;
 
-namespace Terraria.Npc;
+namespace Terraria.EntitySpawn;
 
 /// <summary>Version4 <c>Spawner.GetSpawnArea</c> outputs for one player.</summary>
 /// <remarks>
@@ -10,7 +10,7 @@ namespace Terraria.Npc;
 /// reuses the last computed half extents as pixels there, so they travel with the area instead of
 /// being recomputed.
 /// </remarks>
-public readonly record struct NpcSpawnArea(
+public readonly record struct EntitySpawnArea(
     WorldTileArea Spawn,
     WorldTileArea Safe,
     int SafeHalfExtentX,

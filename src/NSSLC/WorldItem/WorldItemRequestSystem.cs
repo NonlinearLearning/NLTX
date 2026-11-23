@@ -44,6 +44,8 @@ public sealed class WorldItemRequestSystem : BaseSystem<ArchWorld, EcsServerTick
             request.Position,
             request.Velocity,
             request.ReservedFor,
+            request.NoGrabDelay,
+            request.Shimmered,
             out _);
         break;
       case WorldItemRequestKind.Update:

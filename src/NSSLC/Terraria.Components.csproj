@@ -9,7 +9,6 @@
     <PackageReference Include="Arch" Version="2.1.0" />
     <PackageReference Include="Arch.System" Version="1.1.0" />
     <Compile Include="Chat/**/*.cs" />
-    <Compile Include="ItemUse/**/*.cs" />
     <Compile Include="Npc/**/*.cs" />
     <Compile Include="Player/**/*.cs" />
     <Compile Include="Projectile/**/*.cs" />
@@ -19,6 +18,7 @@
     <Compile Include="Share/Entity/**/*.cs" />
     <Compile Include="Share/Inventory/**/*.cs" />
     <Compile Include="Share/Item/**/*.cs" />
+    <Compile Include="Share/ItemUse/**/*.cs" />
     <Compile Include="Share/Physics/**/*.cs" />
     <Compile Include="World/**/*.cs" />
     <Compile Include="WorldItem/**/*.cs" />

@@ -26,8 +26,39 @@ public sealed class WorldItemStore : IWorldItemProjectionSource, IWorldItemQuery
       Vector2 velocity,
       SessionEpoch? reservedFor,
       out WorldItemState item)
+    => TryCreate(
+        itemType,
+        stack,
+        prefix,
+        position,
+        velocity,
+        reservedFor,
+        noGrabDelay: 0,
+        shimmered: false,
+        out item);
+
+  /// <summary>Creates a world item with the Version4 lifecycle counters supplied by the caller.</summary>
+  /// <remarks>
+  /// <paramref name="noGrabDelay"/> 对应 Version4 <c>WorldItem.noGrabDelay</c>：掉落者刚扔出的物品
+  /// 有约 100 tick 的不可拾取期。默认 0 保持既有可观察行为（当前所有掉落都无延迟）。
+  /// </remarks>
+  public bool TryCreate(
+      int itemType,
+      int stack,
+      byte prefix,
+      Vector2 position,
+      Vector2 velocity,
+      SessionEpoch? reservedFor,
+      int noGrabDelay,
+      bool shimmered,
+      out WorldItemState item)
   {
     item = default!;
+    if (noGrabDelay < 0)
+    {
+      throw new ArgumentOutOfRangeException(nameof(noGrabDelay));
+    }
+
     if (!WorldItemRules.IsValidItem(itemType, stack, position, velocity) ||
         !ItemIdRules.TryFromNetworkType(itemType, out ItemId itemId))
     {
@@ -48,7 +79,11 @@ public sealed class WorldItemStore : IWorldItemProjectionSource, IWorldItemQuery
           position,
           velocity,
           reservedFor,
-          NextRevisionUnsafe());
+          NextRevisionUnsafe())
+      {
+        NoGrabDelay = noGrabDelay,
+        Shimmered = shimmered
+      };
       _items.Add(slot, item);
       _pending.Enqueue(new WorldItemMutation(WorldItemChangeKind.Spawn, item));
       if (reservedFor is not null)
@@ -403,6 +438,53 @@ public sealed class WorldItemStore : IWorldItemProjectionSource, IWorldItemQuery
       };
       _pending.Enqueue(new WorldItemMutation(WorldItemChangeKind.Retire, retired, actor));
       item = retired;
+      return true;
+    }
+  }
+
+  /// <summary>
+  /// Advances the Version4 lifecycle counters of one slot by a single tick.
+  /// </summary>
+  /// <remarks>
+  /// Ported decrements: <c>ownTime</c> 与 <c>keepTime</c> 减到 0 为止，<c>noGrabDelay</c> 减到 0 为止，
+  /// <c>timeSinceItemSpawned</c> 只增不减（Version4 上限 2147483547 防溢出）。
+  /// 这个方法是**纯推进**，不产生网络变更：Version4 同样只在生成/合并/拾取/消失时同步。
+  /// </remarks>
+  public bool TryAdvanceLifecycle(short slot, out WorldItemState? item)
+  {
+    item = null;
+    lock (_gate)
+    {
+      if (!_items.TryGetValue(slot, out WorldItemState? current))
+      {
+        return false;
+      }
+
+      int noGrabDelay = current.NoGrabDelay > 0 ? current.NoGrabDelay - 1 : 0;
+      int ownTime = current.OwnTime > 0 ? current.OwnTime - 1 : 0;
+      int keepTime = current.KeepTime > 0 ? current.KeepTime - 1 : 0;
+      int sinceSpawned = current.TimeSinceItemSpawned < WorldItemRules.MaximumLifetimeCounter
+          ? current.TimeSinceItemSpawned + 1
+          : current.TimeSinceItemSpawned;
+      if (noGrabDelay == current.NoGrabDelay &&
+          ownTime == current.OwnTime &&
+          keepTime == current.KeepTime &&
+          sinceSpawned == current.TimeSinceItemSpawned)
+      {
+        item = current;
+        return true;
+      }
+
+      WorldItemState next = current with
+      {
+        NoGrabDelay = noGrabDelay,
+        OwnTime = ownTime,
+        KeepTime = keepTime,
+        TimeSinceItemSpawned = sinceSpawned,
+        Revision = NextRevisionUnsafe()
+      };
+      _items[slot] = next;
+      item = next;
       return true;
     }
   }

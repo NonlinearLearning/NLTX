@@ -23,16 +23,16 @@
    `Build/bin/<项目名>/` 落盘（见 [Directory.Build.props](../Directory.Build.props)），
    重名会合并产物目录。
 
-3. **项目名跟生产目录，不跟命名空间。** `src/NSSLC/World/NpcSpawn/` 下的代码仍是
-   `namespace Terraria.Npc`，`src/NSSLC/ItemUse/` 仍是 `Terraria.Player`，
-   `src/NSSLC/World/TileEntity/` 和 `src/NSSLC/WorldItem/` 仍是 `Terraria.World`。这是目录与
-   命名空间解耦的既定事实（见 [项目文件组织设计约束](../Context/架构设计/项目文件组织设计约束.md)
-   第 5 节）；测试名若跟命名空间，会退回拆目录之前的旧域。
+3. **项目名跟生产目录，不跟命名空间。** `src/NSSLC/World/ComponentSystem/TileEntity/` 和
+   `src/NSSLC/WorldItem/` 仍是 `Terraria.World`，`src/NSSLC/Share/ItemUse/` 仍是
+   `Terraria.Player`。这是目录与命名空间解耦的既定事实（见
+   [项目文件组织设计约束](../Context/架构设计/项目文件组织设计约束.md) 第 5 节）；
+   测试名若跟命名空间，会退回拆目录之前的旧域。
 
 4. **二级领域目录按需引入**：只在同一「边界 + 领域」累计 ≥3 个项目时才建，例如以后的
    `Test/Terraria.Components/Npc/`。现在不建。
 
-5. **跨边界项目放在「主要断言对象」的权威归属域下。** `Terraria.NpcSpawn` 引用
+5. **跨边界项目放在「主要断言对象」的权威归属域下。** `Terraria.EntitySpawn` 引用
    `NSSLC.Network` 只是为了末尾验证网络槽位分配，主体是刷怪规则，因此留在
    `Terraria.Components/`；`Terraria.Network.OutboundOrdering` 的主体是投递泵与背压，
    因此进 `NSSLC.Network/`。完整引用集以 csproj 为准，不靠目录表达。
@@ -95,7 +95,7 @@ Get-ChildItem Test -Recurse -Filter *.csproj | ForEach-Object {
 | `Test/Terraria.Inventory.Verification` | `Test/Terraria.Components/Terraria.Inventory` | `Terraria.Inventory` |
 | `Test/Terraria.PlayerItemUse.Verification` | `Test/Terraria.Components/Terraria.ItemUse` | `Terraria.ItemUse` |
 | `Test/Terraria.NpcAi.MinimalVerification` | `Test/Terraria.Components/Terraria.Npc.Ai` | `Terraria.Npc.Ai` |
-| `Test/Terraria.Npc.SpawnEligibility.Verification` | `Test/Terraria.Components/Terraria.NpcSpawn` | `Terraria.NpcSpawn` |
+| `Test/Terraria.Npc.SpawnEligibility.Verification` | `Test/Terraria.Components/Terraria.EntitySpawn` | `Terraria.EntitySpawn` |
 | `Test/Terraria.Projectile.Verification` | `Test/Terraria.Components/Terraria.Projectile` | `Terraria.Projectile` |
 | `Test/Terraria.WorldSession.TileEntity.Verification` | `Test/Terraria.Components/Terraria.TileEntity` | `Terraria.TileEntity` |
 | `Test/Terraria.WorldItem.Verification` | `Test/Terraria.Components/Terraria.WorldItem` | `Terraria.WorldItem` |

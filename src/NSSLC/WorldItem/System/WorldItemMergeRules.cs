@@ -34,6 +34,7 @@ public static class WorldItemMergeRules
         target.Item.IsEmpty || source.Item.IsEmpty ||
         !target.Item.CanStackWith(source.Item) ||
         target.ReservedFor != source.ReservedFor ||
+        target.Shimmered != source.Shimmered ||
         target.Item.Quantity >= maximumStackSize ||
         MathF.Abs(target.Position.X - source.Position.X) +
             MathF.Abs(target.Position.Y - source.Position.Y) > MaximumMergeDistance)

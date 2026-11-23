@@ -15,35 +15,39 @@
 
 - `StunComponent` 无移动消费者；`BuffApplyRequestComponent` 无内容侧生产者；NPC 未装配 Buff 接收；即时效果未建模；旧枚举键零读写。
 - Inventory 属性贡献与装备来源身份 deferred → [计划](../docs/plans/2026-11-20-attribute-system-execution-plan.md)
+- 物品实体路径已于 11-23 删除；"物品自带子库存"如需恢复须走 P1-B → [计划](../docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md)
 
 ## 基线（2026-11-22）
 
-- 活动项目 `src/NSSLC/Terraria.Components.csproj`（net10.0）；`src/NSSLC/` 分两层：`Share/` 收 AI、Attributes、Combat、Entity、Inventory、Item、Physics 七个共享能力域，其余领域直挂项目根；`World/` 下另有 NpcSpawn、Session、TileEntity 三个语义子域。
+- 活动项目 `src/NSSLC/Terraria.Components.csproj`（net10.0）；`src/NSSLC/` 分两层：`Share/` 收七个共享能力域，其余直挂项目根；`World/` 下另有 EntitySpawn、Session、TileEntity 三个语义子域。
 - 服务器 `src/NSSLC.Server`，监听 `127.0.0.1:7777`；14 个验证项目按 `Test/<生产边界>/<项目>/` 落位 → [规则](../Test/README.md)
-- `src/NSSLC.Infrastructure/` 整体受保护：仅 `Diagnostics/` 参与当前编译，其余旧项目不随组件库编译。
+- `src/NSSLC.Infrastructure/` 受保护：仅 `Diagnostics/` 参与当前编译。
 
 ## 工作区事件
 
-- 2026-11-22 20:35–20:37 未跟踪测试项目被外部进程清除；Attributes、EcsScheduling 已重建并入索引，Communication.Verification 未恢复。
+- 2026-11-22 20:35–20:37 未跟踪测试项目被外部进程清除；Attributes、EcsScheduling 已重建，Communication.Verification 未恢复。
 
 ## 最近轮次
 
-- **2026-11-23 刷怪、会话与 Tile 实体收进 World 语义子域**：三个域作为 `World/` 下的子域保留各自角色目录，命名空间与公共 API 不变 → [CR](../docs/cr/CR-2026-11-23-world-semantic-subdomains.md)
-- **2026-11-23 Item 与 WorldItem 拆分判定**：载荷/世界宿主/容器宿主三分解成立，单一系统与双份身份均被否决
-  - 未闭合：世界物品的第二套 ECS 表示需定为接线或删除 → [审计](../docs/reviews/audits/2026-11-23-item-worlditem-split-necessity.md)
-- **2026-11-23 恢复 NSSLC 的 Share 收容层**：按 git 历史把七个共享能力域收进 `src/NSSLC/Share/`，命名空间与公共 API 不变，14 个验证项目全通过 → [CR](../docs/cr/CR-2026-11-23-nsslc-share-layer-restore.md)
-- **2026-11-22 服务器诊断日志迁出共享组件域**：日志端口与控制台适配器移入基础设施侧独立工程，API 与输出格式不变 → [CR](../docs/cr/CR-2026-11-22-diagnostics-to-infrastructure.md)
+- **2026-11-23 刷怪域改名 EntitySpawn**：目录、文件、类型与命名空间统一改名 → [CR](../docs/cr/CR-2026-11-23-entity-spawn.md)
+- **2026-11-23 投射物穿透预算联动设计**：属性给上限、弹体持剩余，命中与瓦片反弹共用消费入口，耗尽于 tick 末提交销毁
+  - 未闭合：上限快照、反弹顺序、无害飞行待决，未落地 → [设计](../docs/architecture/2026-11-23-projectile-penetration-budget-linkage-design.md)
+- **2026-11-23 内容定义加载系统设计**：物品定义改由内容文件加载
+  - 未闭合：加载器与验证项目未落地 → [设计](../docs/architecture/2026-11-23-content-definition-loading-system-design.md)
+- **2026-11-23 物品双宿主边界落地**：载荷层与两宿主 owner 收敛为不变量，实体路径已删，世界侧补拾取延迟与存活计数 → [计划](../docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md)
+- **2026-11-23 刷怪、会话与 Tile 实体收进 World 语义子域**：三域在 `World/` 下保留角色目录，API 不变 → [CR](../docs/cr/CR-2026-11-23-world-semantic-subdomains.md)
+- **2026-11-23 Item 与 WorldItem 拆分判定**：载荷/世界宿主/容器宿主三分解成立，单一系统与双份身份均被否决 → [审计](../docs/reviews/audits/2026-11-23-item-worlditem-split-necessity.md)
+- **2026-11-23 恢复 NSSLC 的 Share 收容层**：七个共享能力域收进 `src/NSSLC/Share/`，命名空间与公共 API 不变，14 个验证项目全通过 → [CR](../docs/cr/CR-2026-11-23-nsslc-share-layer-restore.md)
 - **2026-11-22 NSSLC 领域内按 ECS 职责分目录**：组件、命令、查询与系统附属文件分别归入四类目录，主系统文件留领域根
   - 未闭合：`Communication` 迁出由并行任务收尾；扁平目录出现首个系统时需补建四类目录 → [CR](../docs/cr/CR-2026-11-22-nsslc-ecs-role-directory-layout.md)
-- **2026-11-22 出站 tick 批仲裁**：每 tick 必须同步的权威快照成批发布，批内不再被普通流量切断，闭合后自动恢复
-  - 未闭合：重负载世界整 tick 超时跳格待优化；待最新客户端画面验收 → [计划](../docs/plans/2026-11-22-outbound-tick-batch-execution-plan.md)
-- **2026-11-22 NSSLC 领域目录扁平化**：删除 `Components/`、`Share/` 两层，18 领域直挂 `src/NSSLC/`，移动 592 文件、`.cs` 零改动
-  - 未闭合：服务器仍持有旧程序集，需重启复验 → [CR](../docs/cr/CR-2026-11-22-nsslc-domain-directory-flatten.md)
-- **2026-11-22 调试工具客户端操作手册**：新增工具链总入口，覆盖启动参数、网络代理、契约测试与监控工具
-  - 未闭合：客户端重建 193 错误与 `Lighting.Clear()` 夹具限制 → [手册](调试工具/调试工具客户端操作手册.md)
+- **2026-11-22 出站 tick 批仲裁**：每 tick 必须同步的权威快照成批发布，闭合后自动恢复
+  - 未闭合：重负载整 tick 超时跳格待优化；待客户端画面验收 → [计划](../docs/plans/2026-11-22-outbound-tick-batch-execution-plan.md)
 
 ## 更早轮次
 
+- 11-22 调试工具客户端操作手册（启动参数、网络代理、契约测试与监控工具） → [手册](调试工具/调试工具客户端操作手册.md)
+- 11-22 领域目录扁平化（18 领域、592 文件迁移） → [CR](../docs/cr/CR-2026-11-22-nsslc-domain-directory-flatten.md)
+- 11-22 服务器诊断日志迁出共享组件域 → [CR](../docs/cr/CR-2026-11-22-diagnostics-to-infrastructure.md)
 - 11-22 Test 按生产边界重组（两层布局、去统一后缀） → [规则](../Test/README.md)
 - 11-22 NPC 同步出站优先级隔离 → [CR](../docs/cr/CR-2026-11-22-npc-sync-outbound-priority.md)
 - 11-22 项目文件组织从 ECS 约束拆出，仓库与项目层落位规则独立成文 → [CR](../docs/cr/CR-2026-11-22-project-file-organization-split.md)
