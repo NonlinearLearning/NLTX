@@ -73,8 +73,8 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 
 没有 `*System.cs` 的目录（`Share/Item`、`World/Session`、`Share/Physics`、`Share/Physics/Liquid`、
 `Share/Physics/SpatialQuery`、`ItemUse/Content`、`Share/Attributes/Contribution`）保持扁平，
-不建空的四类目录。`Share/AI/Goap`、`Share/AI/Htn` 是移植库，`Share/AI/Examples` 是示例集，
-三者保留来源结构。
+不建空的四类目录。`Share/AI/BasicFramework/Goap`、`Share/AI/BasicFramework/Htn` 是移植库，
+`Share/AI/BasicFramework/Examples` 是示例集，三者保留来源结构。
 规则正文见 [ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md) §3.4。
 
 ## 一次实体更新

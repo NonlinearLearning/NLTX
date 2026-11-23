@@ -358,12 +358,12 @@ AiRequirements requirements = AiRequirements.Empty
 
 ## 来源
 
-- `Htn/` 以 FluidHTN `e67af264cfdf240053f392d4e0e6c620c454eb97` 为基础，保留完整核心。
-  [文件与源码映射](Htn/SOURCES.md) 逐类型对比固定上游提交，除命名空间、文件拆分、来源头和
-  `#nullable disable` 外，类型代码 token 与来源相同。许可证见 [MIT](Htn/LICENSE.txt)。
-- `Goap/` 以 CrashKonijn GOAP `7fb29cfe59dc61aa8cf1f69880d3ef95fc29126c` 为基础。
-  [映射表](Goap/SOURCES.md)、[Apache-2.0 许可证](Goap/LICENSE.txt) 和
-  [归属说明](Goap/NOTICE.txt) 随源码提供。
+- `BasicFramework/Htn/` 以 FluidHTN `e67af264cfdf240053f392d4e0e6c620c454eb97` 为基础，保留完整核心。
+  [文件与源码映射](BasicFramework/Htn/SOURCES.md) 逐类型对比固定上游提交，除命名空间、文件拆分、来源头和
+  `#nullable disable` 外，类型代码 token 与来源相同。许可证见 [MIT](BasicFramework/Htn/LICENSE.txt)。
+- `BasicFramework/Goap/` 以 CrashKonijn GOAP `7fb29cfe59dc61aa8cf1f69880d3ef95fc29126c` 为基础。
+  [映射表](BasicFramework/Goap/SOURCES.md)、[Apache-2.0 许可证](BasicFramework/Goap/LICENSE.txt) 和
+  [归属说明](BasicFramework/Goap/NOTICE.txt) 随源码提供。
 - 移植没有添加第三方包。FluidHTN 上游缩进和代码格式保留，便于比对；项目适配代码使用
   当前仓库格式。
 
@@ -376,7 +376,7 @@ Slot 和工厂接口均由上游核心实现。
 
 `BaseContext` 使用 byte 数组和索引是 FluidHTN 的规划状态存储约定。新领域代码可继承
 `EnumContext<TState>`，通过命名枚举读取和修改事实，不需要在业务代码散落 `ai[1]` 一类
-数字索引。示例 `Examples/SlimeContext.cs` 与 `SlimeDomain.cs` 展示等待/跳跃选择：
+数字索引。示例 `BasicFramework/Examples/SlimeContext.cs` 与 `SlimeDomain.cs` 展示等待/跳跃选择：
 
 ```csharp
 using Terraria.Ai.Examples;
@@ -453,7 +453,7 @@ agent.Run(deltaTime);
 请求记录到 `AiOutput`。每个 Agent 应有自己的 WorldData 与 GoapActionProvider。
 为兼容 Terraria 的二维坐标，传给 Vector3 的 Z 设为 0；所有位置、范围和距离倍率使用相同单位。
 
-示例 `Examples/AttackAction.cs` 只调用 `ICombatAiEnvironment` 发起攻击和查询结束状态。
+示例 `BasicFramework/Examples/AttackAction.cs` 只调用 `ICombatAiEnvironment` 发起攻击和查询结束状态。
 实际伤害仍由战斗系统提交。GOAP 的 `IEffect` 是图搜索的规划连线描述，不会修改 WorldData、
 ECS 组件或生命值；动作完成后，系统应从真实实体状态重新感知并规划。
 
