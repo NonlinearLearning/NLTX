@@ -3,9 +3,9 @@
 活动项目为 [Terraria.Components.csproj](src/NSSLC/Terraria.Components.csproj)，目标框架为
 `net10.0`。源码按 ECS 领域放在 `src/NSSLC/` 下：端别无关的共享能力域收在 `Share/`
 （`AI`、`Attributes`、`Combat`、`Entity`、`Inventory`、`Item`、`Physics`），其余领域
-（`Chat`、`Communication`、`ItemUse`、`Npc`、`NpcSpawn`、`Player`、`Projectile`、
-`TileEntity`、`World`、`WorldItem`、`Session`）直接位于项目根目录，不经过 `Components/`
-中间层。目录只表达领域归属，C# 命名
+（`Chat`、`ItemUse`、`Npc`、`Player`、`Projectile`、`World`、`WorldItem`）直接位于项目根
+目录，不经过 `Components/` 中间层；刷怪、会话和 Tile 实体是 `World/` 下的语义子域。目录
+只表达领域归属，C# 命名
 空间保持原样，移动目录不改变公共 API。项目引用 `Arch` 与 `Arch.System` 包，不引用其他
 生产项目。服务器诊断日志不是 ECS 领域，位于
 [NSSLC.Infrastructure/Diagnostics](src/NSSLC.Infrastructure/Diagnostics/README.md)。

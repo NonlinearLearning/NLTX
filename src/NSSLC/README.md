@@ -30,12 +30,22 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 | [Chat](Chat/) | 聊天请求、命令分派、有界历史和广播队列 |
 | [ItemUse](ItemUse/) | 玩家物品使用请求、门闸和内容侧使用定义 |
 | [Npc](Npc/) | NPC AI 事实、意图、引导行为和运行时适配 |
-| [NpcSpawn](NpcSpawn/) | 刷怪预算、区域规则、随机数和刷怪事实 |
 | [Player](Player/) | 玩家输入请求、战斗结果、死亡与重生状态 |
 | [Projectile](Projectile/) | 投射物行为、生命周期、AI 与战斗接线 |
-| [TileEntity](TileEntity/) | 箱子、告示牌等 Tile 实体记录与请求/结果队列 |
-| [World](World/README.md) | 世界运行时、Tile 存储、交互请求和投影合同 |
+| [World](World/README.md) | 世界运行时、Tile 存储、交互请求和投影合同，以及刷怪、会话与 Tile 实体三个语义子域 |
 | [WorldItem](WorldItem/) | 世界物品存储、请求队列和 tick 系统 |
+
+### `World/` 下的语义子域
+
+刷怪、会话和 Tile 实体不独立成项目根领域，而是 `World/` 下的语义子域：它们与世界运行时
+共享同一权威世界边界，按 [ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md)
+§3.4 视为独立领域再分。
+
+| 子域 | 内容 | 命名空间 |
+| --- | --- | --- |
+| [NpcSpawn](World/NpcSpawn/) | 刷怪预算、区域规则、随机数和刷怪事实 | `Terraria.Npc` |
+| [Session](World/Session/) | 会话身份、在线玩家投影和只读玩家来源端口 | `Terraria.Session` |
+| [TileEntity](World/TileEntity/) | 箱子、告示牌等 Tile 实体记录与请求/结果队列 | `Terraria.World` |
 
 `Share/Attributes/Buff`、`Share/Attributes/Contribution`、`Share/Physics/CollisionGeometry`、
 `Share/Physics/ContactFact`、`Share/Physics/Liquid`、`Share/Physics/Movement`、
@@ -61,7 +71,7 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 | `Query/` | 查询：只读查询接口与只读端口 |
 | `System/` | 系统附属文件：规则、求解器、运行时与存储服务、定义与编目、事实/结果/快照、枚举与值对象 |
 
-没有 `*System.cs` 的目录（`Share/Item`、`Session`、`Share/Physics`、`Share/Physics/Liquid`、
+没有 `*System.cs` 的目录（`Share/Item`、`World/Session`、`Share/Physics`、`Share/Physics/Liquid`、
 `Share/Physics/SpatialQuery`、`ItemUse/Content`、`Share/Attributes/Contribution`）保持扁平，
 不建空的四类目录。`Share/AI/Goap`、`Share/AI/Htn` 是移植库，`Share/AI/Examples` 是示例集，
 三者保留来源结构。

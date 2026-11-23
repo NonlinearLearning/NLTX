@@ -11,10 +11,8 @@
     <Compile Include="Chat/**/*.cs" />
     <Compile Include="ItemUse/**/*.cs" />
     <Compile Include="Npc/**/*.cs" />
-    <Compile Include="NpcSpawn/**/*.cs" />
     <Compile Include="Player/**/*.cs" />
     <Compile Include="Projectile/**/*.cs" />
-    <Compile Include="Session/**/*.cs" />
     <Compile Include="Share/AI/**/*.cs" />
     <Compile Include="Share/Attributes/**/*.cs" />
     <Compile Include="Share/Combat/**/*.cs" />
@@ -22,7 +20,6 @@
     <Compile Include="Share/Inventory/**/*.cs" />
     <Compile Include="Share/Item/**/*.cs" />
     <Compile Include="Share/Physics/**/*.cs" />
-    <Compile Include="TileEntity/**/*.cs" />
     <Compile Include="World/**/*.cs" />
     <Compile Include="WorldItem/**/*.cs" />
   </ItemGroup>

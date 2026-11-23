@@ -9,24 +9,41 @@ tile，推进显式 ECS Tick，并为移动系统提供实心 tile 碰撞和液�
 广播、掉落、多格物体、斜坡和完整液体传播仍由外部 adapter 负责，不能从这个最小 owner
 推断已实现。
 
-## 职责分层（2026-11-01）
+## 目录结构
 
-本域按角色再分三层。目录只表达职责，全部文件的 C# 命名空间仍为 `Terraria.World`：
+本域按 ECS 职责分目录，全部文件的 C# 命名空间仍为 `Terraria.World`（`NpcSpawn/` 与
+`Session/` 例外，见下）：
 
 ```text
 World/
-  Contract/   # World 定义的接口：IWorldTileReader、IWorldInteractionWorld、IWorldTileGrid
-  Model/      # World 定义的数据模型：坐标、tile 事实、结果、mutation、时间推进值、运动结果
-  Solver/     # 纯运算：运动、时间推进、tile 转移、mutation 归并、掉落表、索引、权限、物品
-  *.cs        # 更新驱动：WorldRuntime、WorldTickSystem、WorldInteractionSystem、存储与组件
+  WorldInteractionSystem.cs   # 世界交互请求的提交阶段适配器
+  WorldTickSystem.cs          # 显式 tick 驱动
+  Component/                  # 世界运行时、tile 存储与交互请求/结果组件
+  Query/                      # IWorldTileReader、IWorldTileGrid、IWorldProjectionSource
+  System/                     # 运行时、规则、求解器、模型与事实
+  NpcSpawn/                   # 语义子域，见下
+  Session/                    # 语义子域，见下
+  TileEntity/                 # 语义子域，见下
 ```
+
+`NpcSpawn/`、`Session/` 和 `TileEntity/` 是与世界运行时共享同一权威世界边界的语义子域，
+按 [ECS 文件组织设计约束](../../../Context/架构设计/ECS文件组织设计约束.md) §3.4 视为独立
+领域再分：带 `*System.cs` 的子域保留 `Component/`、`Command/`、`Query/`、`System/` 四类
+职责目录，主系统文件留在子域根；没有 `*System.cs` 的 `Session/` 保持扁平。三者命名空间
+不与目录同名，这是既定的目录与命名空间解耦事实，不在移动时顺手修正：
+
+| 子域 | 命名空间 | 内容 |
+| --- | --- | --- |
+| `NpcSpawn/` | `Terraria.Npc` | 刷怪预算、区域规则、随机数、刷怪表和刷怪事实队列 |
+| `Session/` | `Terraria.Session` | 会话身份、在线玩家投影和只读玩家来源端口 |
+| `TileEntity/` | `Terraria.World` | 箱子、告示牌等 Tile 实体记录与请求/结果队列 |
 
 ### 运算与更新的边界
 
-- `Solver/` 中的类型只做计算。输入是 `Model/` 的值与 `Contract/` 的只读端口；它们不持有锁、
-  不写存储、不推进 revision、不读 Arch 世界。
+- `System/` 中的规则与求解器类型只做计算。输入是 `System/` 的值与 `Query/` 的只读端口；
+  它们不持有锁、不写存储、不推进 revision、不读 Arch 世界。
 - 更新驱动只做四件事：加锁、判断时机、写存储、推进 revision 并记录 mutation 和管理队列。
-- 本域对外暴露的接口一律返回 `Model/` 中定义的模型。例外是 `ISpatialWorldQuery` 与
+- 本域对外暴露的接口一律返回 `System/` 中定义的模型。例外是 `ISpatialWorldQuery` 与
   `ISpatialWorldRevisionSource`：这两个端口属于 `Terraria.Physics`，由本域实现，因此 `Move`
   和 `GetLiquidContact` 返回 Physics 侧结果。域内运算结果仍是 `WorldTileMotionResult` 这类
   World 模型，由 `WorldRuntime` 投影过去。

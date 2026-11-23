@@ -23,9 +23,9 @@
    `Build/bin/<项目名>/` 落盘（见 [Directory.Build.props](../Directory.Build.props)），
    重名会合并产物目录。
 
-3. **项目名跟生产目录，不跟命名空间。** `src/NSSLC/NpcSpawn/` 下的代码仍是
+3. **项目名跟生产目录，不跟命名空间。** `src/NSSLC/World/NpcSpawn/` 下的代码仍是
    `namespace Terraria.Npc`，`src/NSSLC/ItemUse/` 仍是 `Terraria.Player`，
-   `src/NSSLC/TileEntity/` 和 `src/NSSLC/WorldItem/` 仍是 `Terraria.World`。这是目录与
+   `src/NSSLC/World/TileEntity/` 和 `src/NSSLC/WorldItem/` 仍是 `Terraria.World`。这是目录与
    命名空间解耦的既定事实（见 [项目文件组织设计约束](../Context/架构设计/项目文件组织设计约束.md)
    第 5 节）；测试名若跟命名空间，会退回拆目录之前的旧域。
 
