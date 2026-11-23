@@ -23,6 +23,9 @@ public sealed class CommunicationHostRuntime : IAsyncDisposable
   public int ActiveConnectionCount => _host.ActiveConnectionCount;
   public ICommunicationOutboundPort OutboundPort => _delivery;
 
+  /// <summary>汇总所有连接的 tick 批准时性度量。</summary>
+  public TickBatchTimeliness TickBatchTimeliness => _host.SnapshotTickBatchTimeliness();
+
   public Task StartAsync(CancellationToken cancellationToken = default) => _host.StartAsync(cancellationToken);
   public Task StopAsync() => _host.StopAsync();
 

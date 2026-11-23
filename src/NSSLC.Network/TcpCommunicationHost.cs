@@ -137,6 +137,25 @@ public sealed class TcpCommunicationHost : ICommunicationTransportPort, IAsyncDi
     return ValueTask.CompletedTask;
   }
 
+  /// <summary>汇总所有连接的 tick 批准时性度量。</summary>
+  /// <remarks>
+  /// 副作用登记：只读取各连接的累计计数器，不产生 I/O、不改变连接状态。
+  /// </remarks>
+  public TickBatchTimeliness SnapshotTickBatchTimeliness()
+  {
+    long sealedCount = 0;
+    long overdue = 0;
+    double maxLatency = 0;
+    foreach (PacketTcpConnection connection in SnapshotConnections())
+    {
+      sealedCount += connection.SealedBatchCount;
+      overdue += connection.OverdueBatchCount;
+      maxLatency = Math.Max(maxLatency, connection.MaxBatchLatencyMilliseconds);
+    }
+
+    return new TickBatchTimeliness(sealedCount, overdue, maxLatency);
+  }
+
   private PacketTcpConnection[] SnapshotConnections()
   {
     lock (_gate)

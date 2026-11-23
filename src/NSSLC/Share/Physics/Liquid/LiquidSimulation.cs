@@ -20,7 +20,12 @@ namespace Terraria.Liquid;
 /// </remarks>
 internal sealed class LiquidSimulation
 {
-  internal const int DefaultOperationBudget = 3_500;
+  /// <summary>
+  /// 每 tick 的液体操作上限。按实测每操作约 4.8 µs 折算，350 次约 1.7 ms，即 16.67 ms
+  /// tick 预算的约 10%，给其他阶段留出余量；液体在稳态下由“液面差 ≤1 不搬运”收敛，
+  /// 正常情况下远达不到该上限。
+  /// </summary>
+  internal const int DefaultOperationBudget = 350;
   internal const int MaximumQueueEntries = 75_000;
 
   private readonly Queue<int> _settleQueue = [];
@@ -154,6 +159,12 @@ internal sealed class LiquidSimulation
           continue;
         }
 
+        // 只有真正能移动的液体才进入搬运逻辑：否则本格既不产生变化，也不该占用预算。
+        if (!NeedsFlow(storage, sourceCoordinate))
+        {
+          continue;
+        }
+
         bool sourceChanged = false;
         if (sourceCoordinate.Y + 1 < storage.Height)
         {
@@ -233,28 +244,96 @@ internal sealed class LiquidSimulation
     EnqueueWithNeighborsCore(storage, coordinate, urgent: true);
   }
 
-  private void EnqueueWithNeighborsCore(LiquidTileStorage storage, WorldTileCoordinate coordinate,
-      bool urgent)
+  /// <summary>
+  /// 判断该格当前是否存在可发生的液体移动：下方可容纳，或水平方向液面差 ≥2。
+  /// </summary>
+  /// <remarks>
+  /// 只有返回 true 的格子才值得入队和处理。液面差 ≤1 的格子即使参与均衡也不会产生搬运，
+  /// 而搬运算作变化又会再次触发邻居入队——正是这一点让队列曾经永远无法收敛。
+  /// </remarks>
+  private static bool NeedsFlow(LiquidTileStorage storage, WorldTileCoordinate coordinate)
   {
-    Enqueue(storage.ToIndex(coordinate), urgent);
-    if (coordinate.X > 0)
+    WorldTileState source = storage.Read(coordinate);
+    if (!source.HasLiquid || source.LiquidAmount == 0 || LiquidBlockingRules.BlocksLiquid(source))
     {
-      Enqueue(storage.ToIndex(new WorldTileCoordinate(coordinate.X - 1, coordinate.Y)), urgent);
-    }
-
-    if (coordinate.X + 1 < storage.Width)
-    {
-      Enqueue(storage.ToIndex(new WorldTileCoordinate(coordinate.X + 1, coordinate.Y)), urgent);
-    }
-
-    if (coordinate.Y > 0)
-    {
-      Enqueue(storage.ToIndex(new WorldTileCoordinate(coordinate.X, coordinate.Y - 1)), urgent);
+      return false;
     }
 
     if (coordinate.Y + 1 < storage.Height)
     {
-      Enqueue(storage.ToIndex(new WorldTileCoordinate(coordinate.X, coordinate.Y + 1)), urgent);
+      WorldTileState below = storage.Read(
+          new WorldTileCoordinate(coordinate.X, coordinate.Y + 1));
+      if (CanReceiveLiquid(source, below))
+      {
+        return true;
+      }
+    }
+
+    if (coordinate.X > 0 &&
+        HorizontalGap(source, storage.Read(new WorldTileCoordinate(coordinate.X - 1,
+            coordinate.Y))) >= 2)
+    {
+      return true;
+    }
+
+    return coordinate.X + 1 < storage.Width &&
+        HorizontalGap(source, storage.Read(new WorldTileCoordinate(coordinate.X + 1,
+            coordinate.Y))) >= 2;
+  }
+
+  private static bool CanReceiveLiquid(WorldTileState source, WorldTileState target) =>
+      !LiquidBlockingRules.BlocksLiquid(target) &&
+      (!target.HasLiquid ||
+          (target.Liquid == source.Liquid && target.LiquidAmount < byte.MaxValue));
+
+  /// <summary>相邻两格的液面差；不能共享液体的相邻格返回 0。</summary>
+  private static int HorizontalGap(WorldTileState source, WorldTileState neighbor)
+  {
+    if (!CanShareHorizontally(neighbor, source))
+    {
+      return 0;
+    }
+
+    int neighborAmount = neighbor.HasLiquid ? neighbor.LiquidAmount : 0;
+    return Math.Abs(source.LiquidAmount - neighborAmount);
+  }
+
+  private void EnqueueWithNeighborsCore(LiquidTileStorage storage, WorldTileCoordinate coordinate,
+      bool urgent)
+  {
+    // 只把“此刻确实能移动”的格子放进队列：液面稳定的区域不入队，队列才能真正排空。
+    EnqueueIfNeeded(storage, coordinate, urgent);
+    if (coordinate.X > 0)
+    {
+      EnqueueIfNeeded(storage,
+          new WorldTileCoordinate(coordinate.X - 1, coordinate.Y), urgent);
+    }
+
+    if (coordinate.X + 1 < storage.Width)
+    {
+      EnqueueIfNeeded(storage,
+          new WorldTileCoordinate(coordinate.X + 1, coordinate.Y), urgent);
+    }
+
+    if (coordinate.Y > 0)
+    {
+      EnqueueIfNeeded(storage,
+          new WorldTileCoordinate(coordinate.X, coordinate.Y - 1), urgent);
+    }
+
+    if (coordinate.Y + 1 < storage.Height)
+    {
+      EnqueueIfNeeded(storage,
+          new WorldTileCoordinate(coordinate.X, coordinate.Y + 1), urgent);
+    }
+  }
+
+  private void EnqueueIfNeeded(LiquidTileStorage storage, WorldTileCoordinate coordinate,
+      bool urgent)
+  {
+    if (NeedsFlow(storage, coordinate))
+    {
+      Enqueue(storage.ToIndex(coordinate), urgent);
     }
   }
 
@@ -336,6 +415,30 @@ internal sealed class LiquidSimulation
 
     int participantCount = 1 + (hasLeft ? 1 : 0) + (hasRight ? 1 : 0);
     if (participantCount == 1)
+    {
+      return false;
+    }
+
+    // 液面差 ≤1 时不做搬运。总额除以参与数会产生余数，而余数按“源优先”分配，于是相邻两格
+    // 的 1 单位差会在两格之间来回倒手：每次倒手都算作变化，又触发邻居入队，队列永远清不空。
+    // 实测这是液体每 tick 恒定跑满预算（约 2600 次操作、12–17 ms）的直接原因。
+    int minAmount = source.LiquidAmount;
+    int maxAmount = source.LiquidAmount;
+    if (hasLeft)
+    {
+      int leftAmount = left.HasLiquid ? left.LiquidAmount : 0;
+      minAmount = Math.Min(minAmount, leftAmount);
+      maxAmount = Math.Max(maxAmount, leftAmount);
+    }
+
+    if (hasRight)
+    {
+      int rightAmount = right.HasLiquid ? right.LiquidAmount : 0;
+      minAmount = Math.Min(minAmount, rightAmount);
+      maxAmount = Math.Max(maxAmount, rightAmount);
+    }
+
+    if (maxAmount - minAmount <= 1)
     {
       return false;
     }

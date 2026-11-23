@@ -154,6 +154,62 @@ static ArchEntity CreateNpc(
   return entity;
 }
 
+// 回归：向上跳跃撞到头顶实心块时，不得被判为着地。
+// 只凭 CollidedY 判定会让实体在空中“站住”，表现为跳跃到一半悬停并可再次起跳。
+VerifyCeilingHitIsNotGrounding();
+
+static void VerifyCeilingHitIsNotGrounding()
+{
+  const int width = 16;
+  const int height = 16;
+  WorldRuntime ceilingWorld = new(width, height);
+  WorldTileState[] tiles = new WorldTileState[width * height];
+  Array.Fill(tiles, WorldTileState.Empty);
+  // 第 8 行整行实心：实体从下方跳起时会撞到它。
+  for (int x = 0; x < width; x++)
+  {
+    tiles[(8 * width) + x] = new WorldTileState(true, 1, 0, 0, 0);
+  }
+
+  Require(ceilingWorld.Load(tiles).Succeeded, "Ceiling fixture world failed to load.");
+
+  SpatialSimulationSystem simulation = new();
+  SpatialFrame frame = new(0, ceilingWorld.Revision, ceilingWorld);
+  // 起点贴近天花板：碰撞盒顶边距离第 8 行底面只有 4 单位，一帧必撞。
+  Vector2 start = new((4 * 16f) + 8f, (9 * 16f) + 4f);
+  SpatialEntitySnapshot<int> entity = new(
+      0,
+      new LocationComponent(start),
+      new VelocityComponent(Vector2.Zero),
+      new ColliderComponent(new Vector2(16f, 16f)),
+      new GroundingComponent(false, false, Vector2.Zero));
+
+  // 向上运动：撞到上方方块时应记为撞天花板，而不是着地。
+  MovementIntent upward = new(
+      tick: 0,
+      desiredVelocity: new Vector2(0f, -2400f),
+      jumpRequested: false,
+      jumpSpeed: 0f);
+  SpatialSimulationResult<int> risen = simulation.Simulate(
+      in frame,
+      in entity,
+      new MovementCapabilityComponent(
+          enabled: true,
+          maximumSpeed: 3600f,
+          acceleration: 144000f,
+          canJump: true,
+          jumpSpeed: 360f,
+          mode: MovementMode.Grounded),
+      new GravityCapabilityComponent(true, false),
+      new GravityStateComponent(0f, 600f, GravityDirection.Normal, false, false),
+      new TileCollisionCapabilityComponent(true),
+      new LiquidInteractionCapabilityComponent(false, LiquidContactFlags.None),
+      in upward,
+      1f / 60f);
+
+  Require(!risen.Commit.Grounding.IsGrounded,
+      "A ceiling hit while moving up was incorrectly treated as grounded.");
+}
 static void Require(bool condition, string message)
 {
   if (!condition)

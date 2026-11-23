@@ -101,7 +101,7 @@ public sealed class SpatialSimulationSystem
             entity.Collider.Size,
             liquidInteraction)
         : new SpatialLiquidContact(LiquidContactFlags.None, 0);
-    GroundingComponent grounding = ResolveGrounding(motion, gravity);
+    GroundingComponent grounding = ResolveGrounding(motion, gravity, velocity.Y);
     var commit = new SpatialCommit(
         new Terraria.Entity.LocationComponent(motion.Position),
         new VelocityComponent(motion.Velocity / deltaTime),
@@ -148,11 +148,24 @@ public sealed class SpatialSimulationSystem
     return Terraria.Physics.SimulationVector.MoveTowards(current, desired, movement.Acceleration * deltaTime);
   }
 
+  /// <summary>
+  /// 由本帧的 Y 轴碰撞结果推导着地状态。
+  /// </summary>
+  /// <remarks>
+  /// 只有「朝重力方向运动时发生的 Y 碰撞」才算着地。仅凭 <c>CollidedY</c> 会把撞到天花板
+  /// 也判成着地：向上跳跃撞到台阶上沿时垂直速度被清零、实体被当成站在地面，于是在空中悬停
+  /// 并能再次起跳。墙面贴靠同样不能算着地。
+  /// <para>副作用登记：纯函数，只读取入参并构造新组件，不修改任何状态。</para>
+  /// </remarks>
   private static GroundingComponent ResolveGrounding(
       SpatialTileMotionResult motion,
-      GravityStateComponent gravity)
+      GravityStateComponent gravity,
+      float verticalVelocity)
   {
-    bool grounded = motion.CollidedY;
+    bool movingTowardSupport = gravity.Direction == GravityDirection.Reversed
+        ? verticalVelocity <= 0f
+        : verticalVelocity >= 0f;
+    bool grounded = motion.CollidedY && movingTowardSupport;
     Vector2 normal = grounded
         ? gravity.Direction == GravityDirection.Reversed ? -Vector2.UnitY : Vector2.UnitY
         : Vector2.Zero;

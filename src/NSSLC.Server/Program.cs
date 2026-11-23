@@ -64,8 +64,6 @@ internal static class Program
 
   public static async Task<int> Main(string[] args)
   {
-    bool manualAi = args.Any(static argument =>
-        string.Equals(argument, "--manual-ai", StringComparison.OrdinalIgnoreCase));
     string? worldPath = args.FirstOrDefault(static argument =>
         !argument.StartsWith("--", StringComparison.Ordinal));
     LoadedServerWorld loadedWorld = ServerWorldLoader.Load(
@@ -109,6 +107,7 @@ internal static class Program
     Vector2 playerSpawnPosition = new(
         guideSpawnTileX * WorldRuntimeStateComponent.DefaultTileSize,
         guideSurfaceY - 48f);
+
     EntityRuntimeRegistry entities = new(worldScope: 1);
     // 会话玩家名录：领域侧只认 ISessionPlayerSource 只读端口，实现在网络程序集。
     SessionPlayerSource sessionPlayers = new(ecsWorld, entities);
@@ -129,7 +128,7 @@ internal static class Program
             worldRuntime.State.DayTime,
             worldSurfaceY,
             slimeRain: false));
-    using NpcAiRuntime? npcAi = manualAi ? null : new NpcAiRuntime(ecsWorld, npcAiSnapshots);
+    using NpcAiRuntime npcAi = new(ecsWorld, npcAiSnapshots);
     NpcNetworkIdentitySystem npcNetwork = new(ecsWorld);
     EntityDefinitionSystem<ArchEntity> entitySpawner = new(
         entityDefinitions,
@@ -138,7 +137,7 @@ internal static class Program
             entities,
             entity =>
             {
-              npcAi?.TryDetach(entity, out _);
+              npcAi.TryDetach(entity, out _);
               npcNetwork.TryRelease(entity);
             }));
     ArchEntity guide = CreateNpc(
@@ -155,11 +154,8 @@ internal static class Program
         new Vector2(slimeSpawnTileX * 16f, slimeSurfaceY),
         true,
         1);
-    if (npcAi is not null)
-    {
-      npcAi.AttachGuide(guide);
-      npcAi.AttachSlime(slime);
-    }
+    npcAi.AttachGuide(guide);
+    npcAi.AttachSlime(slime);
     ServerLog.Info(
         "ecs.npc.spawned",
         $"guide=world-spawn:{loadedWorld.Environment.SpawnTileX},{loadedWorld.Environment.SpawnTileY} " +
@@ -227,20 +223,12 @@ internal static class Program
         new(ecsWorld, entities);
     CooldownTickSystem cooldownTick = new(ecsWorld);
     GravityTickSystem gravityTick = new(ecsWorld);
-    NpcAiIntentAdapter npcAiAdapter = manualAi
-        ? new NpcAiIntentAdapter(
-            ecsWorld,
-            npcAiSnapshots,
-            entities,
-            attackDefinitions,
-            ManualNpcAiRequirements,
-            CalculateManualNpcAi)
-        : new NpcAiIntentAdapter(
-            ecsWorld,
-            npcAi!.Entities,
-            npcAiSnapshots,
-            entities,
-            attackDefinitions);
+    NpcAiIntentAdapter npcAiAdapter = new(
+        ecsWorld,
+        npcAi.Entities,
+        npcAiSnapshots,
+        entities,
+        attackDefinitions);
     SpatialSimulationCoordinatorSystem spatialSimulation = new(ecsWorld, worldRuntime);
     // 刷怪表：目前只有史莱姆可被创建，表中权重与网络类型即 Version4 的出生判定常量。
     NpcSpawnTable npcSpawnTable = new(
@@ -357,11 +345,11 @@ internal static class Program
       await communication.StartAsync(shutdown.Token).ConfigureAwait(false);
       ServerLog.Info(
           "ecs.server.ready",
-          $"ai={(manualAi ? "manual" : "shared")} listen=127.0.0.1:{ListenPort} " +
+          $"listen=127.0.0.1:{ListenPort} " +
           $"world={worldWidth}x{worldHeight} " +
           $"path={ServerLog.Quote(loadedWorld.Path)} spawn={loadedWorld.Environment.SpawnTileX}," +
           $"{loadedWorld.Environment.SpawnTileY}");
-      await RunTicksAsync(server, worldTick, shutdown.Token).ConfigureAwait(false);
+      await RunTicksAsync(server, worldTick, communication, shutdown.Token).ConfigureAwait(false);
     }
     catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
     {
@@ -389,7 +377,7 @@ internal static class Program
       {
         entitySpawner.Despawn(slime);
       }
-      npcAi?.Dispose();
+      npcAi.Dispose();
       npcNetwork.Clear();
       entities.Clear();
       ServerLog.Info("ecs.server.stopped", $"lastTick={server.LastTick}");
@@ -420,108 +408,6 @@ internal static class Program
     return registry;
   }
 
-  private static readonly AiRequirements ManualNpcAiRequirements = AiRequirements.Empty
-      .Require<NpcAiMovementFact>()
-      .Require<NpcAiTargetFact>()
-      .Require<NpcAiLifeFact>()
-      .Require<NpcAiWorldFact>();
-
-  /// <summary>Runs the Slime subset directly without creating an AiSystem or AiBinding.</summary>
-  /// <remarks>
-  /// This keeps the MinimalImplementation facts-to-plan boundary: target and movement facts
-  /// produce an intent, while Movement and Spatial remain responsible for applying it.
-  /// </remarks>
-  private static IReadOnlyList<NpcAiIntent> CalculateManualNpcAi(
-      AiComponent aiComponent,
-      NpcBehaviorStateComponent state,
-      AiSnapshot snapshot,
-      float deltaTime)
-  {
-    if (aiComponent.BehaviorType == typeof(SlimeAiBehavior))
-    {
-      return CalculateManualSlimeIntents(state, snapshot, deltaTime);
-    }
-
-    if (aiComponent.BehaviorType == typeof(GuideAiBehavior))
-    {
-      return CalculateManualGuideIntents(state, snapshot, deltaTime);
-    }
-
-    throw new NotSupportedException(
-        $"Manual NPC AI does not support behavior '{aiComponent.BehaviorType?.FullName}'.");
-  }
-
-  private static IReadOnlyList<NpcAiIntent> CalculateManualSlimeIntents(
-      NpcBehaviorStateComponent state,
-      AiSnapshot snapshot,
-      float deltaTime)
-  {
-    NpcAiMovementFact movement = snapshot.Get<NpcAiMovementFact>();
-    NpcAiTargetFact target = snapshot.Get<NpcAiTargetFact>();
-    NpcAiLifeFact life = snapshot.Get<NpcAiLifeFact>();
-    NpcAiWorldFact world = snapshot.Get<NpcAiWorldFact>();
-    return SlimeAiRules.Calculate(
-        movement,
-        target,
-        life,
-        world,
-        state.StateSlot1,
-        state.ActionPhase > 0,
-        state.StateSlot0,
-        deltaTime);
-  }
-
-  private static IReadOnlyList<NpcAiIntent> CalculateManualGuideIntents(
-      NpcBehaviorStateComponent state,
-      AiSnapshot snapshot,
-      float deltaTime)
-  {
-    const float simulationTicksPerSecond = 60f;
-    NpcAiMovementFact movement = snapshot.Get<NpcAiMovementFact>();
-    float modeTime = state.StateSlot1 + deltaTime;
-    int direction = state.StateSlot0 == 0f ? 1 : Math.Sign(state.StateSlot0);
-    bool walking = state.Phase == NpcBehaviorPhase.Wander;
-    if (modeTime >= 4f)
-    {
-      modeTime = 0f;
-      walking = !walking;
-      if (walking)
-      {
-        direction = -direction;
-      }
-    }
-
-    bool blocked = walking && movement.IsGrounded && modeTime > 0.25f &&
-        MathF.Abs(movement.Velocity.X) < 0.05f;
-    bool jumpRequested = blocked && state.ActionPhase == 0;
-    if (jumpRequested)
-    {
-      direction = -direction;
-    }
-
-    Vector2 desiredVelocity = walking
-        ? new Vector2(direction * simulationTicksPerSecond, 0f)
-        : Vector2.Zero;
-    NpcBehaviorPhase phase = walking ? NpcBehaviorPhase.Wander : NpcBehaviorPhase.Idle;
-    int actionPhase = blocked ? 1 : 0;
-    return [
-      new NpcAiIntent(
-          NpcAiIntentKind.SetBehaviorState,
-          phase,
-          desiredVelocity: desiredVelocity,
-          actionPhase: actionPhase,
-          stateSlot0: direction,
-          stateSlot1: modeTime,
-          jumpRequested: jumpRequested),
-      new NpcAiIntent(
-          NpcAiIntentKind.Move,
-          phase,
-          desiredVelocity: desiredVelocity,
-          jumpRequested: jumpRequested,
-          stateSlot0: direction,
-          stateSlot1: modeTime)
-    ];
-  }
 
   /// <summary>
   /// 聊天命令表：名字对齐参考客户端的命令类（<c>SayChatCommand</c>、<c>HelpCommand</c>、
@@ -949,6 +835,7 @@ internal static class Program
   private static async Task RunTicksAsync(
       EcsServer server,
       WorldTickSystem worldTick,
+      CommunicationHostRuntime communication,
       CancellationToken cancellationToken)
   {
     long period = ServerTickPacing.PeriodTimestamp;
@@ -957,6 +844,7 @@ internal static class Program
     long skippedTotal = 0;
     long lastSkipLog = -_logThrottleTimestamp;
     long lastSlowLog = -_logThrottleTimestamp;
+    long lastTimelinessLog = Stopwatch.GetTimestamp() - _logThrottleTimestamp;
     double slowestMilliseconds = 0d;
     while (!cancellationToken.IsCancellationRequested)
     {
@@ -987,6 +875,22 @@ internal static class Program
       }
 
       deadline = ServerTickPacing.AdvanceDeadline(deadline, now, period, out long skipped);
+      if (now - lastTimelinessLog >= _logThrottleTimestamp)
+      {
+        // 每秒一条：直接回答“A 批能不能在自己那个 tick 里发完”，比平均间隔更接近体感。
+        TickBatchTimeliness timeliness = communication.TickBatchTimeliness;
+        if (timeliness.SealedBatches > 0)
+        {
+          ServerLog.Info(
+              "ecs.outbound.timeliness",
+              $"sealed={timeliness.SealedBatches} overdue={timeliness.OverdueBatches} " +
+              $"overdueRatio={timeliness.OverdueRatio * 100:F2}% " +
+              $"maxLatencyMs={timeliness.MaxLatencyMilliseconds:F2} tick={tick}");
+        }
+
+        lastTimelinessLog = now;
+      }
+
       if (skipped > 0)
       {
         skippedTotal += skipped;

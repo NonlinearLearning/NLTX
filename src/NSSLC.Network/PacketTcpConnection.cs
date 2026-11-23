@@ -1,4 +1,5 @@
 using Terraria.Session;
+using System.Diagnostics;
 using System.Net.Sockets;
 using System.Threading.Channels;
 
@@ -35,6 +36,14 @@ public sealed class PacketTcpConnection : IAsyncDisposable
   // tick 批门：批开启期间禁止写线程取普通流量。闭合时向实时队列写入一个零负载标记，
   // 借同一条有序通道唤醒等待者并放行普通流量。
   private bool _tickBatchOpen;
+  // tick 批准时性度量：记录批开启时刻，写线程取到闭合标记时即为“本批最后一帧写完”的时刻，
+  // 与一个 tick 周期比对即可判断该批是否跨期（第 N tick 的批拖到第 N+1 tick 之后才写出）。
+  private readonly long _tickPeriodTicks = Stopwatch.Frequency / 60;
+  private long _tickBatchBeginTicks;
+  private long _sealedBatchCount;
+  private long _overdueBatchCount;
+  private long _maxBatchLatencyTicks;
+  private long _lastBatchLatencyTicks;
   private readonly SemaphoreSlim _sendFrameSlots;
   private readonly SemaphoreSlim _realtimeSendFrameSlots;
   private readonly ConnectionByteBudget _sendBudget;
@@ -579,7 +588,24 @@ public sealed class PacketTcpConnection : IAsyncDisposable
       {
         if (pending.IsBatchSeal)
         {
-          // 闭合标记：放行普通流量即可，本身不写任何字节。
+          // 闭合标记：本批所有实时帧此时已写完，因此这里就是“A 批写出完成”的时刻。
+          long beginTicks = Volatile.Read(ref _tickBatchBeginTicks);
+          if (beginTicks != 0)
+          {
+            long latency = Stopwatch.GetTimestamp() - beginTicks;
+            Volatile.Write(ref _lastBatchLatencyTicks, latency);
+            if (latency > Volatile.Read(ref _maxBatchLatencyTicks))
+            {
+              Volatile.Write(ref _maxBatchLatencyTicks, latency);
+            }
+
+            Interlocked.Increment(ref _sealedBatchCount);
+            if (latency > _tickPeriodTicks)
+            {
+              Interlocked.Increment(ref _overdueBatchCount);
+            }
+          }
+
           Volatile.Write(ref _tickBatchOpen, false);
           pending.Release();
           continue;
@@ -720,6 +746,7 @@ public sealed class PacketTcpConnection : IAsyncDisposable
   public void BeginTickBatch(long tick)
   {
     _ = tick;
+    Volatile.Write(ref _tickBatchBeginTicks, Stopwatch.GetTimestamp());
     Volatile.Write(ref _tickBatchOpen, true);
   }
 
@@ -742,6 +769,20 @@ public sealed class PacketTcpConnection : IAsyncDisposable
     Volatile.Write(ref _tickBatchOpen, false);
     return ValueTask.CompletedTask;
   }
+
+  /// <summary>已闭合的 tick 批总数。</summary>
+  public long SealedBatchCount => Interlocked.Read(ref _sealedBatchCount);
+
+  /// <summary>写线程取到闭合标记时已超过一个 tick 周期的批数（跨期）。</summary>
+  public long OverdueBatchCount => Interlocked.Read(ref _overdueBatchCount);
+
+  /// <summary>最近一批从开启到写出完成的耗时，毫秒。</summary>
+  public double LastBatchLatencyMilliseconds =>
+      Volatile.Read(ref _lastBatchLatencyTicks) * 1000d / Stopwatch.Frequency;
+
+  /// <summary>观察到的最大批延迟，毫秒。</summary>
+  public double MaxBatchLatencyMilliseconds =>
+      Volatile.Read(ref _maxBatchLatencyTicks) * 1000d / Stopwatch.Frequency;
 
   private async Task<SendReceipt> SendFrameAsync(
     PendingSend pending,
