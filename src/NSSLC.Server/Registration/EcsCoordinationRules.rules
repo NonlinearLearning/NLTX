@@ -1,0 +1,43 @@
+# ECS 协作规则
+#
+# 由 EcsServer 在构造时校验：规则只能拒绝一个已经排好的调度，不能改变顺序。
+# 顺序的权威始终是注册上的 before/after 边；这里写的是"注册必须证明的协作契约"。
+#
+# 语法（每行一条，'#' 起注释，空行忽略）：
+#   before              <先执行的键> <后执行的键>
+#   phase               <Preparation|Simulation|Commit|Projection> <键>
+#   requires-dependency <键>      该注册必须声明至少一条 before/after 边
+#   requires-reason     <键>      该注册必须写明 reason
+
+# --- 投射物链路：接触事实先于伤害请求，伤害结果先于终止提交 ---
+before combat.physics.contact-capture combat.projectile.damage-request
+before combat.projectile.damage-request combat.projectile.damage-result
+before combat.projectile.damage-result combat.projectile.termination
+
+# --- Combat 提交边界：保护窗口 → 攻击请求 → 伤害请求 → 投射物结果 ---
+before combat.protection-window combat.attack-request
+before combat.attack-request combat.damage-request
+before combat.damage-request combat.projectile.damage-result
+
+# --- 阶段归属 ---
+phase Preparation combat.projectile.spawn
+phase Preparation combat.projectile.movement-intent
+phase Simulation combat.physics.contact-capture
+phase Simulation combat.projectile.lifetime
+phase Simulation combat.projectile.damage-request
+phase Commit combat.attack-request
+phase Commit combat.damage-request
+phase Commit combat.projectile.damage-result
+phase Commit combat.projectile.termination
+
+# --- 有明确前驱的注册必须把这条边写进注册，而不是靠数组下标 ---
+requires-dependency combat.attack-request
+requires-dependency combat.damage-request
+requires-dependency combat.projectile.damage-result
+requires-dependency combat.projectile.termination
+
+# --- 有前驱的注册必须说明为什么排在这里 ---
+requires-reason combat.attack-request
+requires-reason combat.damage-request
+requires-reason combat.projectile.damage-result
+requires-reason combat.projectile.termination

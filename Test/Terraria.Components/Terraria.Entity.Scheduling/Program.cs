@@ -38,6 +38,22 @@ EcsServerSchedulingFailureKind? CaptureException(ArchWorld world, EcsServerSyste
   }
 }
 
+EcsServerSchedulingFailureKind? CaptureExceptionWithRules(
+    ArchWorld world,
+    EcsServerSystemRegistration[] registrations,
+    EcsCoordinationRuleSet rules)
+{
+  try
+  {
+    _ = EcsServer.Create(world, registrations, rules);
+    return null;
+  }
+  catch (EcsServerSchedulingException exception)
+  {
+    return exception.Kind;
+  }
+}
+
 using (ArchWorld world = ArchWorld.Create())
 {
   // 合法图：后注册的系统通过 after 抢占前面的执行位置，注册书写顺序与执行顺序解耦。
@@ -246,13 +262,153 @@ using (ArchWorld world = ArchWorld.Create())
       $"lastTick={runnable.LastTick} ticks={CountingSystem.Ticks} faulted={runnable.IsFaulted}");
 }
 
+// ---- 协作规则：调度器可以加载声明式规则，并在建服时拒绝不合规的调度 ----
+using (ArchWorld world = ArchWorld.Create())
+{
+  EcsCoordinationRuleSet rules = EcsCoordinationRuleSet.FromRules(
+      EcsCoordinationRule.Before("spawn", "move"),
+      EcsCoordinationRule.RequiresPhase(EcsServerPhase.Simulation, "move"),
+      EcsCoordinationRule.RequiresDependency("move"),
+      EcsCoordinationRule.RequiresReason("move"));
+  EcsServer governed = EcsServer.Create(
+      world,
+      [
+          // 书写顺序故意反过来：规则与 after 边应当决定执行顺序，而不是数组下标。
+          new EcsServerSystemRegistration(EcsServerPhase.Simulation, "move", new NoopSystem(world),
+              after: ["spawn"], reason: "Movement reads the spawn result of the same tick."),
+          new EcsServerSystemRegistration(EcsServerPhase.Simulation, "spawn", new NoopSystem(world),
+              reason: "Spawn requests are recorded before simulation.")
+      ],
+      rules);
+  string governedOrder = string.Join(">", governed.OrderedRegistrationKeys);
+  Check(
+      "coordination-rules-accept-compliant-schedule",
+      governedOrder == "spawn>move" && governed.CoordinationRules.Count == 4,
+      $"order={governedOrder} rules={governed.CoordinationRules.Count}");
+}
+
+using (ArchWorld world = ArchWorld.Create())
+{
+  // 规则要求 early 先于 late，而注册书写顺序是 late、early 且两者都没有声明依赖边：
+  // 此时顺序只由数组下标决定，规则必须把这种"靠书写顺序成立"的调度判为违规。
+  EcsCoordinationRuleSet rules = EcsCoordinationRuleSet.FromRules(
+      EcsCoordinationRule.Before("early", "late"));
+  EcsServerSchedulingFailureKind? violated = CaptureExceptionWithRules(
+      world,
+      [
+          new EcsServerSystemRegistration(EcsServerPhase.Simulation, "late", new NoopSystem(world)),
+          new EcsServerSystemRegistration(EcsServerPhase.Simulation, "early", new NoopSystem(world))
+      ],
+      rules);
+  Check(
+      "coordination-rule-order-violation-is-rejected",
+      violated == EcsServerSchedulingFailureKind.CoordinationRuleViolation,
+      Describe(violated, "order rule"));
+}
+
+using (ArchWorld world = ArchWorld.Create())
+{
+  EcsCoordinationRuleSet rules = EcsCoordinationRuleSet.FromRules(
+      EcsCoordinationRule.RequiresDependency("drifting"));
+  EcsServerSchedulingFailureKind? violated = CaptureExceptionWithRules(
+      world,
+      [new EcsServerSystemRegistration(EcsServerPhase.Simulation, "drifting", new NoopSystem(world))],
+      rules);
+  Check(
+      "coordination-rule-missing-dependency-is-rejected",
+      violated == EcsServerSchedulingFailureKind.CoordinationRuleViolation,
+      Describe(violated, "dependency rule"));
+}
+
+using (ArchWorld world = ArchWorld.Create())
+{
+  EcsCoordinationRuleSet rules = EcsCoordinationRuleSet.FromRules(
+      EcsCoordinationRule.RequiresReason("silent"));
+  EcsServerSchedulingFailureKind? violated = CaptureExceptionWithRules(
+      world,
+      [
+          new EcsServerSystemRegistration(
+              EcsServerPhase.Simulation, "silent", new NoopSystem(world), after: [])
+      ],
+      rules);
+  Check(
+      "coordination-rule-missing-reason-is-rejected",
+      violated == EcsServerSchedulingFailureKind.CoordinationRuleViolation,
+      Describe(violated, "reason rule"));
+}
+
+using (ArchWorld world = ArchWorld.Create())
+{
+  EcsCoordinationRuleSet rules = EcsCoordinationRuleSet.FromRules(
+      EcsCoordinationRule.RequiresPhase(EcsServerPhase.Commit, "misplaced"));
+  EcsServerSchedulingFailureKind? violated = CaptureExceptionWithRules(
+      world,
+      [new EcsServerSystemRegistration(EcsServerPhase.Simulation, "misplaced", new NoopSystem(world))],
+      rules);
+  Check(
+      "coordination-rule-phase-violation-is-rejected",
+      violated == EcsServerSchedulingFailureKind.CoordinationRuleViolation,
+      Describe(violated, "phase rule"));
+}
+
+using (ArchWorld world = ArchWorld.Create())
+{
+  EcsCoordinationRuleSet rules = EcsCoordinationRuleSet.FromRules(
+      EcsCoordinationRule.RequiresReason("absent"));
+  EcsServerSchedulingFailureKind? violated = CaptureExceptionWithRules(
+      world,
+      [new EcsServerSystemRegistration(EcsServerPhase.Simulation, "present", new NoopSystem(world))],
+      rules);
+  Check(
+      "coordination-rule-unknown-key-is-rejected",
+      violated == EcsServerSchedulingFailureKind.CoordinationRuleViolation,
+      Describe(violated, "unknown key"));
+}
+
+// ---- 规则文本加载：逐行解析，错误带行号 ----
+EcsCoordinationRuleSet parsed = EcsCoordinationRuleLoader.Parse(
+    """
+    # 协作契约：瓦片结算必须在伤害结果之后，因为它要消费已确认的回执
+    before combat.projectile.damage-result combat.projectile.tile-resolve
+    phase Commit combat.projectile.tile-resolve
+    requires-dependency combat.projectile.tile-resolve
+    requires-reason combat.projectile.tile-resolve
+    """);
+Check(
+    "coordination-rule-document-parses",
+    parsed.Count == 4 &&
+    parsed.Rules[0].Kind == EcsCoordinationRuleKind.Before &&
+    parsed.Rules[0].Key == "combat.projectile.damage-result" &&
+    parsed.Rules[0].OtherKey == "combat.projectile.tile-resolve" &&
+    parsed.Rules[1].Kind == EcsCoordinationRuleKind.RequiresPhase &&
+    parsed.Rules[1].Phase == EcsServerPhase.Commit,
+    $"count={parsed.Count}");
+
+EcsServerSchedulingFailureKind? invalidRule = null;
+string invalidRuleDetail = string.Empty;
+try
+{
+  _ = EcsCoordinationRuleLoader.Parse("before only-one-key");
+}
+catch (EcsServerSchedulingException exception)
+{
+  invalidRule = exception.Kind;
+  invalidRuleDetail = exception.Message;
+}
+
+Check(
+    "coordination-rule-document-rejects-malformed-line",
+    invalidRule == EcsServerSchedulingFailureKind.CoordinationRuleInvalid &&
+    invalidRuleDetail.Contains("line 1", StringComparison.Ordinal),
+    Describe(invalidRule, invalidRuleDetail));
+
 Console.WriteLine();
 Console.WriteLine(
     failures == 0
-        ? "PASS: phase order, deterministic dependencies and the four rejected graphs hold."
+        ? "PASS: phase order, deterministic dependencies, rejected graphs and loaded " +
+          "coordination rules hold."
         : $"FAIL: {failures} check(s) failed.");
 return failures == 0 ? 0 : 1;
-
 sealed class NoopSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   public NoopSystem(ArchWorld world) : base(world)

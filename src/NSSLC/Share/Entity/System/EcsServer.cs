@@ -19,6 +19,7 @@ public sealed class EcsServer : IDisposable
   private readonly IReadOnlyList<PhaseGroup> _phaseGroups;
   private readonly IReadOnlyList<EcsServerSystemRegistration> _orderedRegistrations;
   private readonly IReadOnlyList<string> _orderedRegistrationKeys;
+  private readonly EcsCoordinationRuleSet _coordinationRules;
   private readonly bool _ownsWorld;
   private long _lastTick = -1;
   private bool _initialized;
@@ -30,17 +31,19 @@ public sealed class EcsServer : IDisposable
       ArchWorld world,
       IEnumerable<ISystem<EcsServerTickContext>> systems,
       bool ownsWorld = false)
-      : this(world, CreateSimulationRegistrations(systems), ownsWorld)
+      : this(world, CreateSimulationRegistrations(systems), EcsCoordinationRuleSet.Empty, ownsWorld)
   {
   }
 
   private EcsServer(
       ArchWorld world,
       IEnumerable<EcsServerSystemRegistration> registrations,
+      EcsCoordinationRuleSet coordinationRules,
       bool ownsWorld)
   {
     ArgumentNullException.ThrowIfNull(world);
     ArgumentNullException.ThrowIfNull(registrations);
+    ArgumentNullException.ThrowIfNull(coordinationRules);
 
     List<EcsServerSystemRegistration> registrationList = [];
     List<ISystem<EcsServerTickContext>> registeredSystems = [];
@@ -75,6 +78,7 @@ public sealed class EcsServer : IDisposable
     }
 
     IReadOnlyList<ScheduledRegistration> schedule = BuildSchedule(registrationList);
+    ValidateCoordinationRules(schedule, coordinationRules);
     World = world;
     List<PhaseGroup> phaseGroups = [];
     List<TimedSystem> timedSystems = [];
@@ -103,6 +107,7 @@ public sealed class EcsServer : IDisposable
         .Select(static registration => registration.EffectiveKey)
         .ToArray()
         .AsReadOnly();
+    _coordinationRules = coordinationRules;
     _ownsWorld = ownsWorld;
   }
 
@@ -114,7 +119,25 @@ public sealed class EcsServer : IDisposable
       IEnumerable<EcsServerSystemRegistration> registrations,
       bool ownsWorld = false)
   {
-    return new EcsServer(world, registrations, ownsWorld);
+    return new EcsServer(world, registrations, EcsCoordinationRuleSet.Empty, ownsWorld);
+  }
+
+  /// <summary>
+  /// Creates an NSSLC server that must also satisfy the supplied coordination rules.
+  /// </summary>
+  /// <remarks>
+  /// The rules are evaluated against the schedule that the dependency graph already produced, so
+  /// they can only reject that schedule. A violation throws before any system is initialized, which
+  /// keeps a mis-declared collaboration contract from reaching the first tick.
+  /// </remarks>
+  public static EcsServer Create(
+      ArchWorld world,
+      IEnumerable<EcsServerSystemRegistration> registrations,
+      EcsCoordinationRuleSet coordinationRules,
+      bool ownsWorld = false)
+  {
+    ArgumentNullException.ThrowIfNull(coordinationRules);
+    return new EcsServer(world, registrations, coordinationRules, ownsWorld);
   }
 
   /// <summary>The Arch world organized by this server boundary.</summary>
@@ -128,6 +151,9 @@ public sealed class EcsServer : IDisposable
   /// Gets the effective keys in execution order. Legacy registrations use synthetic keys.
   /// </summary>
   public IReadOnlyList<string> OrderedRegistrationKeys => _orderedRegistrationKeys;
+
+  /// <summary>Gets the coordination rules this server was built with.</summary>
+  public IReadOnlyList<EcsCoordinationRule> CoordinationRules => _coordinationRules.Rules;
 
   /// <summary>Gets the last successfully completed tick, or -1 before the first update.</summary>
   public long LastTick => _lastTick;
@@ -323,6 +349,127 @@ public sealed class EcsServer : IDisposable
     }
 
     return registrations.AsReadOnly();
+  }
+
+  /// <summary>
+  /// Rejects a schedule that violates a loaded collaboration rule. Collects every violation so a
+  /// contract review sees the whole gap in one run instead of one line per rebuild.
+  /// </summary>
+  private static void ValidateCoordinationRules(
+      IReadOnlyList<ScheduledRegistration> schedule,
+      EcsCoordinationRuleSet rules)
+  {
+    if (rules.Count == 0)
+    {
+      return;
+    }
+
+    Dictionary<string, int> positions = new(StringComparer.Ordinal);
+    Dictionary<string, ScheduledRegistration> byKey = new(StringComparer.Ordinal);
+    for (int index = 0; index < schedule.Count; index++)
+    {
+      ScheduledRegistration entry = schedule[index];
+      positions[entry.EffectiveKey] = index;
+      byKey[entry.EffectiveKey] = entry;
+    }
+
+    List<string> violations = [];
+    foreach (EcsCoordinationRule rule in rules.Rules)
+    {
+      string? violation = rule.Kind switch
+      {
+        EcsCoordinationRuleKind.Before => ValidateBefore(rule, positions),
+        EcsCoordinationRuleKind.RequiresPhase => ValidatePhase(rule, byKey),
+        EcsCoordinationRuleKind.RequiresDependency => ValidateDependency(rule, byKey),
+        EcsCoordinationRuleKind.RequiresReason => ValidateReason(rule, byKey),
+        _ => $"Unsupported coordination rule '{rule.Text}'."
+      };
+      if (violation is not null)
+      {
+        violations.Add(violation);
+      }
+    }
+
+    if (violations.Count == 0)
+    {
+      return;
+    }
+
+    throw new EcsServerSchedulingException(
+        EcsServerSchedulingFailureKind.CoordinationRuleViolation,
+        $"The ECS schedule violates {violations.Count} coordination rule(s): " +
+        string.Join(" | ", violations));
+  }
+
+  private static string? ValidateBefore(
+      in EcsCoordinationRule rule,
+      IReadOnlyDictionary<string, int> positions)
+  {
+    string? missing = null;
+    if (!positions.ContainsKey(rule.Key))
+    {
+      missing = rule.Key;
+    }
+    else if (!positions.ContainsKey(rule.OtherKey!))
+    {
+      missing = rule.OtherKey;
+    }
+
+    if (missing is not null)
+    {
+      return $"'{rule.Text}' names unregistered key '{missing}'.";
+    }
+
+    return positions[rule.Key] < positions[rule.OtherKey!]
+        ? null
+        : $"'{rule.Text}' requires '{rule.Key}' to run before '{rule.OtherKey}'.";
+  }
+
+  private static string? ValidatePhase(
+      in EcsCoordinationRule rule,
+      IReadOnlyDictionary<string, ScheduledRegistration> byKey)
+  {
+    if (!byKey.TryGetValue(rule.Key, out ScheduledRegistration? entry))
+    {
+      return $"'{rule.Text}' names unregistered key '{rule.Key}'.";
+    }
+
+    EcsServerPhase actual = entry.Registration.Phase;
+    return actual == rule.Phase
+        ? null
+        : $"'{rule.Text}' requires phase {rule.Phase} but the registration is in {actual}.";
+  }
+
+  private static string? ValidateDependency(
+      in EcsCoordinationRule rule,
+      IReadOnlyDictionary<string, ScheduledRegistration> byKey)
+  {
+    if (!byKey.TryGetValue(rule.Key, out ScheduledRegistration? entry))
+    {
+      return $"'{rule.Text}' names unregistered key '{rule.Key}'.";
+    }
+
+    EcsServerSystemRegistration registration = entry.Registration;
+    bool declaresEdge = registration.After.Count != 0 || registration.Before.Count != 0;
+    return declaresEdge
+        ? null
+        : $"'{rule.Text}' requires '{rule.Key}' to declare at least one before/after edge, " +
+          "but its order currently comes from registration index alone.";
+  }
+
+  private static string? ValidateReason(
+      in EcsCoordinationRule rule,
+      IReadOnlyDictionary<string, ScheduledRegistration> byKey)
+  {
+    if (!byKey.TryGetValue(rule.Key, out ScheduledRegistration? entry))
+    {
+      return $"'{rule.Text}' names unregistered key '{rule.Key}'.";
+    }
+
+    string? reason = entry.Registration.Reason;
+    return string.IsNullOrWhiteSpace(reason)
+        ? $"'{rule.Text}' requires '{rule.Key}' to state a non-empty registration reason."
+        : null;
   }
 
   private static IReadOnlyList<ScheduledRegistration> BuildSchedule(

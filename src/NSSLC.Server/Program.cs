@@ -1,15 +1,19 @@
 using System.Diagnostics;
 using System.Net;
 using System.Numerics;
+using System.Text;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
+using NSSLC.Infrastructure.Lvcs;
+using NSSLC.Server.Content.ItemUse;
 using Terraria.Ai;
 using Terraria.Attributes;
 using Terraria.Combat;
 using Terraria.Session;
 using Terraria.Diagnostics;
 using Terraria.Entity;
+using Terraria.Lvcs;
 using Terraria.EntitySpawn;
 using Terraria.Inventory;
 using Terraria.Item;
@@ -26,7 +30,6 @@ using Terraria.World;
 using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
 
 using Terraria.Chat;
-using NSSLC.Server.Content.Prototypes;
 
 namespace NSSLC.Server;
 
@@ -291,9 +294,7 @@ internal static class Program
         spatialSimulation,
         entitySpawnSystem,
         loadedWorld.TileEntities,
-        ItemUseDefinitionPrototypeLoader.Load(
-            new PrototypeManager(),
-            Path.Combine(AppContext.BaseDirectory, "Content", "Prototypes", "ItemUse")),
+        LoadItemUseCatalog(),
         new ChatStore(),
         CreateChatCommands(),
         attributeTick,
@@ -331,7 +332,8 @@ internal static class Program
           FrameImportant = loadedWorld.FrameImportant.ToArray()
         },
         preparation);
-    using EcsServer server = EcsServer.Create(ecsWorld, registrations);
+    using EcsServer server = EcsServer.Create(
+        ecsWorld, registrations, LoadCoordinationRules());
     server.Initialize();
 
     using CancellationTokenSource shutdown = new();
@@ -387,6 +389,61 @@ internal static class Program
     await communication.DisposeAsync().ConfigureAwait(false);
 
     return 0;
+  }
+
+  /// <summary>
+  /// 加载声明式 ECS 协作规则。文件缺失或规则写错都在启动期失败，而不是等到某个 tick 才
+  /// 表现出"系统跑在了错误的时点"。
+  /// </summary>
+  private static EcsCoordinationRuleSet LoadCoordinationRules()
+  {
+    string path = Path.Combine(
+        AppContext.BaseDirectory, "Registration", "EcsCoordinationRules.rules");
+    if (!File.Exists(path))
+    {
+      throw new InvalidDataException(
+          $"ECS coordination rules were not found at '{path}'. The rules file is copied to the " +
+          "output directory at build time; a missing file means the deployment is incomplete.");
+    }
+
+    return EcsCoordinationRuleLoader.Parse(File.ReadAllText(path));
+  }
+
+  /// <summary>
+  /// 通过 LVCS 管线加载物品使用档案。内容错误以诊断列表返回，加载失败即启动失败。
+  /// </summary>
+  /// <remarks>
+  /// 走分派而非直接 new codec：装配代码只声明"要 ItemUseDefinitionCatalog"，
+  /// 由注册表选出唯一能产出该类型的 codec。加新族时这里不变。
+  /// </remarks>
+  private static ItemUseDefinitionCatalog LoadItemUseCatalog()
+  {
+    LvcsCodecRegistry registry = new(new LvcsLoader());
+    registry.Register(new ItemUseCodec());
+
+    if (!registry.TryResolve<ItemUseDefinitionCatalog>(
+            ".json", out ILvcsCodecDescriptor? descriptor, out string? reason))
+    {
+      throw new InvalidDataException($"Item use codec could not be resolved: {reason}");
+    }
+
+    string directory = Path.Combine(
+        AppContext.BaseDirectory, "Content", "Prototypes", "ItemUse");
+    FileLvcsSource source = new(descriptor!.Family, directory, "*.json");
+    object? loaded = descriptor.Load(source, out IReadOnlyList<LvcsDiagnostic> diagnostics);
+    if (loaded is not ItemUseDefinitionCatalog catalog)
+    {
+      StringBuilder report = new();
+      report.AppendLine("Item use content could not be loaded:");
+      foreach (LvcsDiagnostic diagnostic in diagnostics)
+      {
+        report.AppendLine(diagnostic.ToString());
+      }
+
+      throw new InvalidDataException(report.ToString());
+    }
+
+    return catalog;
   }
 
   /// <summary>
