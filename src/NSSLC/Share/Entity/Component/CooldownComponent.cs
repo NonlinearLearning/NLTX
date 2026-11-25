@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>Owns remaining ticks for named cooldown families.</summary>
 public sealed class CooldownComponent

@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Registry for immutable definitions; it does not store runtime entity instances.
 /// </summary>
-public sealed class EntityDefinitionRegistry {
-  private readonly Dictionary<EntityDefinitionId, EntityDefinition> _definitions = [];
+public sealed class EntityRegistry {
+  private readonly Dictionary<EntityId, EntityDefinition> _definitions = [];
 
   public IReadOnlyCollection<EntityDefinition> Definitions => _definitions.Values;
 
@@ -19,11 +19,11 @@ public sealed class EntityDefinitionRegistry {
     }
   }
 
-  public bool TryGet(EntityDefinitionId id, out EntityDefinition definition) {
+  public bool TryGet(EntityId id, out EntityDefinition definition) {
     return _definitions.TryGetValue(id, out definition!);
   }
 
-  public EntityDefinition Get(EntityDefinitionId id) {
+  public EntityDefinition Get(EntityId id) {
     if (!TryGet(id, out EntityDefinition definition)) {
       throw new KeyNotFoundException($"Entity definition {id} is not registered.");
     }

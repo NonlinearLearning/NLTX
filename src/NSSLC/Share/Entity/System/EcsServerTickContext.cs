@@ -1,7 +1,7 @@
 using Arch.Core;
 using ArchWorld = Arch.Core.World;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Immutable input shared by all systems in one NSSLC ECS update.

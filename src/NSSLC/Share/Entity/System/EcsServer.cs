@@ -6,7 +6,7 @@ using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// NSSLC's ECS composition and update boundary.

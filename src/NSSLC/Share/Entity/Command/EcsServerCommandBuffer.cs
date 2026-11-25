@@ -7,7 +7,7 @@ using System.Collections.Generic;
 using System.Reflection;
 using System.Threading;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>Owns structural Arch changes produced by one ECS server update.</summary>
 /// <remarks>

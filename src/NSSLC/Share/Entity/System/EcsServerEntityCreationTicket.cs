@@ -1,8 +1,8 @@
 using System;
 using ArchEntity = Arch.Core.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Represents an entity created by the current tick command buffer.

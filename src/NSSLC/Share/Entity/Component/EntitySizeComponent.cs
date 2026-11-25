@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Stores the collision bounds used by spatial and combat systems.</summary>
 public readonly record struct EntitySizeComponent {

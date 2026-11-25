@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Parses one collaboration-rule document into an <see cref="EcsCoordinationRuleSet"/>.

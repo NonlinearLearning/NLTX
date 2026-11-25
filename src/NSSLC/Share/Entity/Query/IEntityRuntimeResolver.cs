@@ -1,6 +1,6 @@
 using ArchEntity = Arch.Core.Entity;
 
-namespace Terraria.Relationships;
+namespace Terraria.Share.Relationships;
 
 /// <summary>Resolves a generation-scoped runtime handle at a local commit boundary.</summary>
 public interface IEntityRuntimeResolver

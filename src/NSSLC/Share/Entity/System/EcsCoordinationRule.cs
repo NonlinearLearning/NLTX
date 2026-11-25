@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>Identifies what one coordination rule constrains in an ECS schedule.</summary>
 public enum EcsCoordinationRuleKind : byte

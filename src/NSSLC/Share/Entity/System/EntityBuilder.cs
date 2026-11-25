@@ -1,24 +1,23 @@
 using System;
 using System.Collections.Generic;
-using Terraria.Ai;
+using Terraria.Share.Ai;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Builds one immutable entity definition and validates its composition contract.
 /// </summary>
-public sealed class EntityDefinitionBuilder {
-  private readonly EntityDefinitionId _id;
+public sealed class EntityBuilder {
+  private readonly EntityId _id;
   private readonly List<EntityDefinition.ComponentFactory> _factories = [];
   private readonly HashSet<Type> _requiredComponents = [];
   private AiComponent? _ai;
-  private AiRequirements? _aiSnapshotRequirements;
 
-  public EntityDefinitionBuilder(EntityDefinitionId id) {
+  public EntityBuilder(EntityId id) {
     _id = id;
   }
 
-  public EntityDefinitionBuilder Add<TComponent>(Func<TComponent> factory)
+  public EntityBuilder Add<TComponent>(Func<TComponent> factory)
       where TComponent : notnull {
     ArgumentNullException.ThrowIfNull(factory);
     Type type = typeof(TComponent);
@@ -27,31 +26,23 @@ public sealed class EntityDefinitionBuilder {
     return this;
   }
 
-  public EntityDefinitionBuilder AddValue<TComponent>(TComponent value) where TComponent : struct {
+  public EntityBuilder AddValue<TComponent>(TComponent value) where TComponent : struct {
     return Add(() => value);
   }
 
-  public EntityDefinitionBuilder Require<TComponent>() {
+  public EntityBuilder Require<TComponent>() {
     _requiredComponents.Add(typeof(TComponent));
     return this;
   }
 
-  public EntityDefinitionBuilder WithAi<TBehavior>() where TBehavior : IAiBehavior {
-    return WithAi<TBehavior>(requirements: null);
-  }
-
-  /// <summary>
-  /// Declares AI and promotes its snapshot requirements to definition-level requirements.
-  /// </summary>
-  public EntityDefinitionBuilder WithAi<TBehavior>(AiRequirements? requirements)
-      where TBehavior : IAiBehavior {
+  /// <summary>Declares the one AI behavior this entity definition binds.</summary>
+  public EntityBuilder WithAi<TBehavior>() where TBehavior : IAiBehavior {
     if (_ai.HasValue) {
       throw new InvalidOperationException(
           "An entity definition can declare only one AI component.");
     }
     _ai = AiComponent.For<TBehavior>();
     AddValue(_ai.Value);
-    _aiSnapshotRequirements = requirements;
     return this;
   }
 
@@ -75,8 +66,7 @@ public sealed class EntityDefinitionBuilder {
         _id,
         _factories.ToArray(),
         new List<Type>(_requiredComponents).ToArray(),
-        _ai,
-        _aiSnapshotRequirements);
+        _ai);
   }
 
   private void EnsureNotRegistered(Type type) {

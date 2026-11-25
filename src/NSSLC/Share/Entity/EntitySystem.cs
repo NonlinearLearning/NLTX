@@ -1,15 +1,15 @@
 using System;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Coordinates immutable definitions with a platform ECS creation boundary.
 /// </summary>
-public sealed class EntityDefinitionSystem<TEntity> where TEntity : notnull {
-  private readonly EntityDefinitionRegistry _definitions;
+public sealed class EntitySystem<TEntity> where TEntity : notnull {
+  private readonly EntityRegistry _definitions;
   private readonly IEntityDefinitionHost<TEntity> _host;
 
-  public EntityDefinitionSystem(EntityDefinitionRegistry definitions,
+  public EntitySystem(EntityRegistry definitions,
                                 IEntityDefinitionHost<TEntity> host) {
     ArgumentNullException.ThrowIfNull(definitions);
     ArgumentNullException.ThrowIfNull(host);
@@ -20,14 +20,14 @@ public sealed class EntityDefinitionSystem<TEntity> where TEntity : notnull {
   /// <summary>
   /// Builds independent component values and passes the complete composition to the host.
   /// </summary>
-  public TEntity Spawn(EntityDefinitionId definitionId) {
+  public TEntity Spawn(EntityId definitionId) {
     EntityDefinition definition = _definitions.Get(definitionId);
     EntityComponentSet components = definition.CreateComponents();
     return _host.Create(definition, components);
   }
 
   public EcsServerEntityCreationTicket SpawnDeferred(
-      EntityDefinitionId definitionId,
+      EntityId definitionId,
       EcsServerCommandBuffer commands) {
     ArgumentNullException.ThrowIfNull(commands);
     if (_host is not IDeferredEntityDefinitionHost<TEntity> deferredHost) {

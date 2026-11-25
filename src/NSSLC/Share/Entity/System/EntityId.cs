@@ -1,14 +1,14 @@
 using System;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Stable business identifier for an entity definition, not a runtime entity identity.
 /// </summary>
-public readonly record struct EntityDefinitionId {
+public readonly record struct EntityId {
   public string Value { get; }
 
-  public EntityDefinitionId(string value) {
+  public EntityId(string value) {
     if (string.IsNullOrWhiteSpace(value)) {
       throw new ArgumentException("An entity definition id cannot be empty.", nameof(value));
     }

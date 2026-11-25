@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>A newly-created value for one component slot in an entity spawn plan.</summary>
 public readonly record struct EntityComponentValue {

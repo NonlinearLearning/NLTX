@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>An ordered, immutable set of coordination rules applied to every schedule.</summary>
 /// <remarks>

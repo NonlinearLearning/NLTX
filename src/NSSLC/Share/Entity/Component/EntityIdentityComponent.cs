@@ -1,7 +1,7 @@
 using System;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>
 /// Stores the authoritative identity root for an entity instance.

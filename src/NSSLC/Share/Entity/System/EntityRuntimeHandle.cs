@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Relationships;
+namespace Terraria.Share.Relationships;
 
 /// <summary>
 /// Runtime projection used to reject stale world or slot references.

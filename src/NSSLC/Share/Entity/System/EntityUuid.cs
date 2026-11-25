@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Relationships;
+namespace Terraria.Share.Relationships;
 
 /// <summary>
 /// Server-owned identity for one authoritative entity instance.

@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Terraria.Ai;
+using Terraria.Share.Ai;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Immutable business definition for an entity's initial component composition.
@@ -12,22 +12,19 @@ public sealed class EntityDefinition {
   private readonly ComponentFactory[] _factories;
   private readonly Type[] _requiredComponents;
 
-  public EntityDefinitionId Id { get; }
+  public EntityId Id { get; }
   public IReadOnlyList<Type> ComponentTypes { get; }
   public IReadOnlyList<Type> RequiredComponents { get; }
   public AiComponent? Ai { get; }
-  public AiRequirements? AiSnapshotRequirements { get; }
 
-  internal EntityDefinition(EntityDefinitionId id, ComponentFactory[] factories,
-                            Type[] requiredComponents, AiComponent? ai,
-                            AiRequirements? aiSnapshotRequirements) {
+  internal EntityDefinition(EntityId id, ComponentFactory[] factories,
+                            Type[] requiredComponents, AiComponent? ai) {
     Id = id;
     _factories = factories;
     _requiredComponents = requiredComponents;
     ComponentTypes = Array.AsReadOnly(GetTypes(factories));
     RequiredComponents = Array.AsReadOnly(requiredComponents);
     Ai = ai;
-    AiSnapshotRequirements = aiSnapshotRequirements;
   }
 
   public EntityComponentSet CreateComponents() {

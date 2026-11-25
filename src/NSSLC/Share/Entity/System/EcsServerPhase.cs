@@ -1,4 +1,4 @@
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Ordered boundaries in one NSSLC ECS server update.

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>Identifies a rejected ECS registration graph.</summary>
 public enum EcsServerSchedulingFailureKind : byte

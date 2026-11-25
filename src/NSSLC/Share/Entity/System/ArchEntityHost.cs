@@ -6,15 +6,15 @@ using System.Reflection;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>把不可变实体定义落到 Arch 世界与运行时句柄表上的宿主。</summary>
 /// <remarks>
 /// 这是 <see cref="IEntityDefinitionHost{TEntity}"/> 目前唯一的实现。在此之前该接口没有任何
-/// 实现，<c>EntityDefinitionSystem</c> 无法构造，整簇定义类型在目录外零引用。
+/// 实现，<c>EntitySystem</c> 无法构造，整簇定义类型在目录外零引用。
 /// </remarks>
 public sealed class ArchEntityDefinitionHost :
     IEntityDefinitionHost<ArchEntity>,

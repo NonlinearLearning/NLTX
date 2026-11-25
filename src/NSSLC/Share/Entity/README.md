@@ -116,27 +116,8 @@ EntityComponentSet initial = slime.CreateComponents();
 可变组件应使用 `Add(() => new Component(...))`。
 
 `Require<T>` 是定义级组合检查。如果行为需要从多个组件投影出某个 AI 输入，定义应声明
-这些源组件；`AiSnapshotRequirements` 只描述快照 Provider 必须提供的值。AI 运行时仍会检查
-实际快照，组件被移除或禁用时不会用默认值掩盖错误。
-
-也可以在定义构建时把已知的 AI 需求加入同一份组合契约：
-
-```csharp
-AiRequirements slimeInputs = AiRequirements.Empty
-    .Require<ExampleMovementComponent>()
-    .Require<ExampleTargetComponent>();
-
-EntityDefinition slime = new EntityDefinitionBuilder(new EntityDefinitionId("slime"))
-    .AddValue(Terraria.Entity.LocationComponent.At(0, 0))
-    .AddValue(Terraria.Movement.VelocityComponent.Stationary)
-    .AddValue(new ExampleMovementComponent(default, false, false))
-    .AddValue(new ExampleTargetComponent(default, false, false, 0))
-    .WithAi<SlimeAiBehavior>(slimeInputs)
-    .Build();
-```
-
-这里的 `AiRequirements` 是快照输入的显式契约，不会创建行为实例或把规划器放进实体定义。
-宿主可以从多个权威组件生成这些投影；运行时 `AiBinding` 仍会再次检查每个 `AiSnapshot`。
+这些源组件，而 AI 需要读取哪些值由行为自身的 `AiRequirements` 声明——定义层不再重复
+携带一份快照需求。AI 运行时仍会检查实际快照，组件被移除或禁用时不会用默认值掩盖错误。
 
 ## 战斗实体的属性能力声明
 

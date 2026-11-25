@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using Arch.System;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Associates one Arch system with an explicit NSSLC server phase.

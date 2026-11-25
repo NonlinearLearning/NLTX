@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 
-namespace Terraria.Relationships;
+namespace Terraria.Share.Relationships;
 
 /// <summary>World-scoped mapping between entity runtime handles and Arch entities.</summary>
 /// <remarks>

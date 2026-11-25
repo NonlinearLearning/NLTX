@@ -1,4 +1,4 @@
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Platform adapter that atomically creates or destroys an ECS entity from a definition.

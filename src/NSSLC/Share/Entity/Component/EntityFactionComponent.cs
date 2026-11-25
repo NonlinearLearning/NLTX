@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Identifies a broad relationship group used by combat queries.</summary>
 public enum Faction : byte {
