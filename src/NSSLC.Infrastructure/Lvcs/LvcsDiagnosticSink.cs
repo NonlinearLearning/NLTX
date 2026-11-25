@@ -1,4 +1,4 @@
-namespace Terraria.Share.Lvcs;
+namespace NSSLC.Infrastructure.Lvcs;
 
 /// <summary>
 /// Collects diagnostics produced while parsing and projecting one family.

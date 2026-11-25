@@ -2,6 +2,7 @@
   {
     "type": "projectile",
     "id": "wooden-arrow",
+    "initialVelocity": { "x": 8, "y": 0 },
     "behaviorId": "Straight",
     "profileId": "arrow.default",
     "extraUpdates": 0,
@@ -19,6 +20,7 @@
   {
     "type": "projectile",
     "id": "homing-spark",
+    "initialVelocity": { "x": 6, "y": 0 },
     "behaviorId": "HomingProjectile",
     "profileId": "homing.default",
     "extraUpdates": 0,
@@ -37,6 +39,7 @@
   {
     "type": "projectile",
     "id": "bouncer-orb",
+    "initialVelocity": { "x": 5, "y": 0 },
     "behaviorId": "Straight",
     "profileId": "bouncer.default",
     "extraUpdates": 1,
@@ -60,6 +63,7 @@
   {
     "type": "projectile",
     "id": "gem-bolt",
+    "initialVelocity": { "x": 7, "y": 0 },
     "behaviorId": "Straight",
     "profileId": "bouncer.default",
     "extraUpdates": 0,

@@ -1,4 +1,4 @@
-namespace Terraria.Share.Lvcs;
+namespace NSSLC.Infrastructure.Lvcs;
 
 /// <summary>
 /// In-memory <see cref="ILvcsUnit" />, used by sources that already hold their bytes.

@@ -1,7 +1,8 @@
 using System;
+using System.Numerics;
+using NSSLC.Infrastructure.Lvcs;
 using Terraria.Share.Ai;
 using Terraria.Share.Combat;
-using Terraria.Share.Lvcs;
 using Terraria.Unshared.Projectiles;
 
 namespace NSSLC.Server.Content.Projectile;
@@ -73,6 +74,13 @@ internal sealed class ProjectileBasicsReader : IProjectileSectionReader
           "baseDamage must not be negative.", location);
     }
 
+    if (prototype.InitialVelocity is ProjectileInitialVelocityPrototype velocity &&
+        (!float.IsFinite(velocity.X) || !float.IsFinite(velocity.Y)))
+    {
+      return Fail(diagnostics, familyId, prototype, "InitialVelocity",
+          "initialVelocity requires finite x and y.", location);
+    }
+
     return true;
   }
 
@@ -85,6 +93,10 @@ internal sealed class ProjectileBasicsReader : IProjectileSectionReader
           "Unknown damage type '" + prototype.DamageType + "'.", nameof(prototype));
     }
 
+    // 省略 initialVelocity 时为零速：生成后完全由 AI 决定运动的弹体不需要它。
+    Vector2 initialVelocity = prototype.InitialVelocity is ProjectileInitialVelocityPrototype v
+        ? new Vector2(v.X, v.Y)
+        : Vector2.Zero;
     return new ProjectileBasicsSection(
         new AiBehaviorId(prototype.BehaviorId),
         new AiBehaviorProfileId(prototype.ProfileId),
@@ -96,7 +108,8 @@ internal sealed class ProjectileBasicsReader : IProjectileSectionReader
         collider.Height,
         new CombatAttackId(prototype.AttackId),
         damageType,
-        prototype.BaseDamage);
+        prototype.BaseDamage,
+        initialVelocity);
   }
 
   private static bool TryParseDamageType(string value, out DamageType damageType)

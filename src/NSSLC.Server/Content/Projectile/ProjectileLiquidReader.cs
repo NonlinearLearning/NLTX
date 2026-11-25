@@ -1,5 +1,5 @@
+using NSSLC.Infrastructure.Lvcs;
 using Terraria.Share.Liquid;
-using Terraria.Share.Lvcs;
 using Terraria.Unshared.Projectiles;
 
 namespace NSSLC.Server.Content.Projectile;

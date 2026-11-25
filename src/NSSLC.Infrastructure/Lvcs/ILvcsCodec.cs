@@ -1,4 +1,4 @@
-namespace Terraria.Share.Lvcs;
+namespace NSSLC.Infrastructure.Lvcs;
 
 /// <summary>
 /// Turns raw units of one family into one frozen domain value.

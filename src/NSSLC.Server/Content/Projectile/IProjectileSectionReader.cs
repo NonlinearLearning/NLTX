@@ -1,4 +1,4 @@
-using Terraria.Share.Lvcs;
+using NSSLC.Infrastructure.Lvcs;
 using Terraria.Unshared.Projectiles;
 
 namespace NSSLC.Server.Content.Projectile;

@@ -262,10 +262,70 @@ using (ArchWorld valueWorld = ArchWorld.Create())
       valueClear.Succeeded && clearedSlot.IsEmpty && clearedSlot.Content is null,
       $"isEmpty={clearedSlot.IsEmpty} content={(clearedSlot.Content is null ? "none" : "present")}");
 }
+
+// ---- 阶段 4：手持关系由库存表达（Version4 Player.HeldItem => inventory[selectedItem]） ----
+// 手持不是第三个宿主：它只是库存上的一个索引，读出来的载荷必须就是那一格的值，
+// 因此没有任何第二份物品副本（INV-1/INV-2）。
+using (ArchWorld heldWorld = ArchWorld.Create())
+{
+  ArchEntity holder = heldWorld.Create(new InventoryComponent(GeneralSlots(3)));
+  ItemRegistry definitions = new();
+  definitions.Register(new Item(bigItem, BigMaxStack, ItemCategoryMask.General));
+  InventorySystem held = new(heldWorld, definitions);
+
+  InventoryComponent component = heldWorld.Get<InventoryComponent>(holder);
+  Check(
+      "held-defaults-to-unset",
+      component.Held is null && !held.TryGetHeldStack(holder, out _),
+      $"held={DescribeHeld(component.Held)} hasStack={held.TryGetHeldStack(holder, out _)}");
+
+  _ = held.TrySetSlotValue(holder, 1, new ItemStack(bigItem, 12));
+  InventoryTransferResult select = held.TrySetHeldSlot(holder, new HeldSlot(1));
+  Check(
+      "held-selects-existing-slot",
+      select.Succeeded && held.TryGetHeldStack(holder, out ItemStack heldStack) &&
+          heldStack.ItemId == bigItem && heldStack.Quantity == 12,
+      $"succeeded={select.Succeeded} held={DescribeHeld(component.Held)} qty={(held.TryGetHeldStack(holder, out ItemStack h) ? h.Quantity : -1)}");
+
+  Check(
+      "held-empty-slot-has-no-stack",
+      held.TrySetHeldSlot(holder, new HeldSlot(0)).Succeeded &&
+          !held.TryGetHeldStack(holder, out _) &&
+          component.Held?.Index == 0,
+      $"held={DescribeHeld(component.Held)} hasStack={held.TryGetHeldStack(holder, out _)}");
+
+  Check(
+      "held-rejects-unknown-slot",
+      !held.TrySetHeldSlot(holder, new HeldSlot(99)).Succeeded &&
+          component.Held?.Index == 0,
+      $"held={DescribeHeld(component.Held)}");
+
+  Check(
+      "held-clear-with-null",
+      held.TrySetHeldSlot(holder, null).Succeeded && component.Held is null,
+      $"held={DescribeHeld(component.Held)}");
+
+  // 手持读出的就是槽位自己的值：取出一半后，手持读到的量必须同步变化，不存在副本。
+  _ = held.TrySetHeldSlot(holder, new HeldSlot(1));
+  _ = held.TryRemove(holder, 1, 5, out _);
+  Check(
+      "held-reads-slot-value-only",
+      held.TryGetHeldStack(holder, out ItemStack afterRemove) &&
+          afterRemove.Quantity == 7 && component.Held?.Index == 1,
+      $"qty={(held.TryGetHeldStack(holder, out ItemStack a) ? a.Quantity : -1)} held={DescribeHeld(component.Held)}");
+
+  // 清空手持槽后，关系仍在但读不到载荷：与"选中一格空槽"一致。
+  _ = held.TrySetSlotValue(holder, 1, default);
+  Check(
+      "held-empty-after-slot-cleared",
+      component.Held is not null && !held.TryGetHeldStack(holder, out _),
+      $"held={DescribeHeld(component.Held)} hasStack={held.TryGetHeldStack(holder, out _)}");
+}
 Console.WriteLine();
 Console.WriteLine(
     failures == 0
-        ? "PASS: single inventory model — TrySetSlotValue contract, player input path and value-only slots."
+        ? "PASS: single inventory model — TrySetSlotValue contract, player input path, value-only "
+          + "slots and the held relation."
         : $"FAIL: {failures} check(s) failed.");
 return failures == 0 ? 0 : 1;
 
@@ -282,6 +342,11 @@ static InventorySlotDefinition[] GeneralSlots(int count)
   }
 
   return slots;
+}
+
+static string DescribeHeld(HeldSlot? held)
+{
+  return held is HeldSlot value ? $"slot {value.Index}" : "nothing";
 }
 
 static string Describe(InventorySlot slot)

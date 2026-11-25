@@ -19,7 +19,7 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 | [Attributes](Share/Attributes/README.md) | 基础属性、来源分类、限时属性修饰器、Buff 与状态效果 |
 | [Combat](Share/Combat/README.md) | 生命、伤害、减伤、无敌窗口与战斗状态组件 |
 | [Entity](Share/Entity/README.md) | 实体定义、组件组合、初始化契约、实体生命周期边界和 Arch 组织入口 |
-| [Inventory](Share/Inventory/README.md) | 广义库存能力、槽位规则和跨实体物品转移 |
+| [Inventory](Share/Inventory/README.md) | 广义库存能力、槽位规则、跨实体物品转移、手持槽与物品使用（门闸、弹药、通道） |
 | [Item](Share/Item/README.md) | 物品定义、无实体物品堆和实体化物品状态 |
 | [Physics](Share/Physics/README.md) | 碰撞体、空间查询与模拟、接触事实、液体和运动/重力 |
 
@@ -28,7 +28,6 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 | 目录 | 内容 |
 | --- | --- |
 | [Chat](Chat/) | 聊天请求、命令分派、有界历史和广播队列 |
-| [ItemUse](Share/ItemUse/) | 玩家物品使用请求、门闸和内容侧使用定义 |
 | [Npc](Npc/) | NPC AI 事实、意图、引导行为和运行时适配 |
 | [Player](Player/) | 玩家输入请求、战斗结果、死亡与重生状态 |
 | [Projectile](Projectile/) | 投射物行为、生命周期、AI 与战斗接线 |
@@ -52,6 +51,8 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 `Share/Physics/SpatialQuery` 和 `Share/Physics/SpatialSimulation` 是领域内按稳定职责划分的
 子目录。`Movement` 与 `Liquid` 的命名空间分别为 `Terraria.Movement` 和 `Terraria.Liquid`，
 与父目录 `Terraria.Physics` 不同；这是目录与命名空间解耦的既定事实，不在目录移动时顺手修正。
+`Share/Inventory` 同理：物品使用相关文件已并入该目录，命名空间仍是
+`Terraria.Share.Items`（使用档案）与 `Terraria.Share.Player`（请求、门闸状态与事实）。
 
 服务器诊断日志不是 ECS 领域状态，已迁到
 [NSSLC.Infrastructure/Diagnostics](../NSSLC.Infrastructure/Diagnostics/README.md)，由
@@ -72,8 +73,8 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 | `System/` | 系统附属文件：规则、求解器、运行时与存储服务、定义与编目、事实/结果/快照、枚举与值对象 |
 
 没有 `*System.cs` 的目录（`Share/Item`、`World/ComponentSystem/Session`、`Share/Physics`、
-`Share/Physics/Liquid`、`Share/Physics/SpatialQuery`、`Share/ItemUse/Content`、
-`Share/Attributes/Contribution`）保持扁平，不建空的四类目录。`Share/AI/BasicFramework/Goap`、
+`Share/Physics/Liquid`、`Share/Physics/SpatialQuery`、`Share/Attributes/Contribution`）
+保持扁平，不建空的四类目录。`Share/AI/BasicFramework/Goap`、
 `Share/AI/BasicFramework/Htn` 是移植库，`Share/AI/BasicFramework/Examples` 是示例集，三者保留来源结构。
 规则正文见 [ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md) §3.4。
 

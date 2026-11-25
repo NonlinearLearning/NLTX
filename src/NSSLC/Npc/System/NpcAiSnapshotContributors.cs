@@ -90,6 +90,9 @@ internal sealed class NpcAiTargetSnapshotContributor : INpcAiSnapshotContributor
 {
   private static readonly Type[] Types = [typeof(NpcAiTargetFact)];
 
+  /// <summary>Upper bound, in pixels, on how far a friendly target is looked for.</summary>
+  private const float MaximumTargetDistance = 3_000f;
+
   private readonly ArchWorld _world;
   private readonly QueryDescription _targetQuery = new QueryDescription().WithAll<
       EntityFactionComponent,
@@ -116,38 +119,24 @@ internal sealed class NpcAiTargetSnapshotContributor : INpcAiSnapshotContributor
       return default;
     }
 
-    const float maximumTargetDistance = 3_000f;
-    float nearestDistance = maximumTargetDistance * maximumTargetDistance;
-    Vector2 nearestPosition = default;
-    bool found = false;
-    bool nearestVisible = false;
-    _world.Query(
+    // 最近实体的空间选择由共享查询负责；这里只留"谁算友方目标"这一条判据。
+    if (!NearestEntityQuery.TryFind(
+        _world,
         in _targetQuery,
-        (ArchEntity entity,
-            ref EntityFactionComponent faction,
-            ref LifeComponent life,
-            ref LocationComponent location) =>
-        {
-          if (entity == source || faction.Value != Faction.Friendly || !life.IsAlive)
-          {
-            return;
-          }
+        sourceLocation.Coordinates,
+        MaximumTargetDistance,
+        (ArchEntity entity, in EntityFactionComponent faction, in LifeComponent life) =>
+            entity != source && faction.Value == Faction.Friendly && life.IsAlive,
+        out NearestEntityCandidate nearest))
+    {
+      return new NpcAiTargetFact(default, false, false, 0);
+    }
 
-          float distance = Vector2.DistanceSquared(
-              sourceLocation.Coordinates,
-              location.Coordinates);
-          if (distance < nearestDistance)
-          {
-            nearestDistance = distance;
-            nearestPosition = location.Coordinates;
-            found = true;
-            // 隐身是 InvisibilityComponent 的行为结果，不是属性标量。投影只把可见性
-            // 事实交给 AI；目标仍然可供行为判断距离，但不可被追击或攻击。
-            nearestVisible = !(_world.Has<InvisibilityComponent>(entity) &&
-                _world.Get<InvisibilityComponent>(entity).IsActive);
-          }
-        });
-    return new NpcAiTargetFact(nearestPosition, nearestVisible, found, found ? 1 : 0);
+    // 隐身是 InvisibilityComponent 的行为结果，不是属性标量。投影只把可见性
+    // 事实交给 AI；目标仍然可供行为判断距离，但不可被追击或攻击。
+    bool visible = !(_world.Has<InvisibilityComponent>(nearest.Entity) &&
+        _world.Get<InvisibilityComponent>(nearest.Entity).IsActive);
+    return new NpcAiTargetFact(nearest.Position, visible, true, 1);
   }
 }
 

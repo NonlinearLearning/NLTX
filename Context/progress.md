@@ -13,6 +13,7 @@
 - （11-22 起）`Communication` 迁出四类职责目录待收尾；首个系统出现时需补建 → [CR](../docs/cr/CR-2026-11-22-nsslc-ecs-role-directory-layout.md)
 - （11-23 起）LVCS 其余内容族未接 → [设计](../docs/architecture/2026-11-23-lvcs-unified-loading-api-design.md)
 - （11-24 起）ECS 协作契约未覆盖全部注册键 → [设计](../docs/architecture/2026-11-24-ecs-coordination-rules-design.md)
+- （11-24 起）投射物内容族 P5 按需能力菜单未开工；客户端输入适配缺失 → [CR](../docs/cr/CR-2026-11-24-projectile-p0-p1-content-and-shoot-seam.md)
 
 ## 技术债
 
@@ -22,9 +23,9 @@
 
 ## 基线（2026-11-22）
 
-- 活动项目 `src/NSSLC/Terraria.Components.csproj`（net10.0）；`Share/` 收七个共享能力域，其余直挂项目根；`World/` 下另有 EntitySpawn、Session、TileEntity 子域。
+- 活动项目 `src/NSSLC/Terraria.Components.csproj`（net10.0）；`Share/` 收八个共享能力域（LVCS 已迁出到基础设施），其余直挂项目根；`World/` 下另有 EntitySpawn、Session、TileEntity 子域。
 - 服务器 `src/NSSLC.Server`，监听 `127.0.0.1:7777`；14 个验证项目按 `Test/<生产边界>/<项目>/` 落位 → [规则](../Test/README.md)
-- `src/NSSLC.Infrastructure/` 受保护：仅 `Diagnostics/` 参与当前编译。
+- `src/NSSLC.Infrastructure/` 受保护：`Diagnostics/`、`Lvcs/`（内容加载契约）参与当前编译，其余子项目仍未接入。
 
 ## 工作区事件
 
@@ -33,6 +34,9 @@
 
 ## 最近轮次
 
+- **2026-11-25 手持概念并入 Inventory**：Version4 的 `HeldItem => inventory[selectedItem]` 由 `InventoryComponent.Held`（`HeldSlot?`）+ `InventorySystem.TrySetHeldSlot/TryGetHeldStack` 表达；包 13 选中槽改走 `PlayerInputRequestKind.SelectHeldSlot`，物品使用只对当前手持槽生效（`NotHeld`），legacy `Player.HeldItem` 改为视图 → [CR](../docs/cr/CR-2026-11-25-held-item-inventory-merge.md)
+  - 未闭合：无独立 `HandsComponent`（物品实体路径已删，重建即违反 INV-1）
+- **2026-11-25 LVCS 契约归位**：内容族加载契约从领域共享程序集下沉到基础设施程序集，依赖方向改为单向，领域侧只留加载产物 → [CR](../docs/cr/CR-2026-11-25-lvcs-contract-relocation.md)
 - **2026-11-25 无敌窗口通道化（P0–P4）**：单值 60 tick 窗口换成「6 通道到期戳 + 伤害反推阶梯 + NPC 攻击者分槽 + 只读免疫查询」，持续伤害两头都不受窗口影响，预检与裁决的差额进每秒诊断
   - 未闭合：表现层与网络投影未做、longInvince 无来源、出生/复活保护未接线、跨 tick 差额与预检只读无断言 → [CR](../docs/cr/CR-2026-11-25-invincibility-window-p0-p3.md)
 - **2026-11-25 错误处理约束成文**：失败先分类再选机制，按层选编码并单向跨层，码 append-only 且内部诊断码与协议码分治，结果未知不按失败重试
@@ -41,11 +45,8 @@
 - **2026-11-25 投射物链路修复计划立项**：四条缺陷与两处接缝不一致排成六批，先红后绿、按批验收
   - 未闭合：五条判据全过前不得标记完成，缺陷文件未删即未闭合 → [计划](../docs/plans/2026-11-25-projectile-chain-repair-execution-plan.md)
 - **2026-11-24 约束与代码漂移审计与同步**：10 份约束逐条对码，8 项失效、6 项代码已深化；A/B 类 13 条已改入正文，D 类待定 → [审计](../docs/reviews/audits/2026-11-24-constraint-drift-audit.md)、[CR](../docs/cr/CR-2026-11-24-constraints-drift-sync.md)
-- **2026-11-24 Context 目录整理与断裂路径修复**：约束/架构目录更名并归位，两份领域约束移入 docs/architecture；活跃文档 90 份断链清零，5 份 task-table 层级由 3 修正为 7 → [CR](../docs/cr/CR-2026-11-24-broken-folder-path-repair.md)、[CR](../docs/cr/CR-2026-11-24-constraints-dir-rename.md)、[CR](../docs/cr/CR-2026-11-24-arch-constraints-dir-rename.md)、[CR](../docs/cr/CR-2026-11-24-domain-constraints-to-docs-architecture.md)
 - **2026-11-24 玩家侧战斗结果消费者边界判定**：确认为空转的冗余队列清理者，与共享结果生产者的后置条件重叠，建议删除
   - 未闭合：按审计 §7 落地清单执行删除并跑通其验收条件，或确认需要结果级玩家数据后改走补齐 → [审计](../docs/reviews/audits/2026-11-24-player-combat-result-system-boundary.md)
-- **2026-11-24 投射物内容族接入统一加载、射击接缝、AI 入口、子步接触与反弹预算**：内容成为不可变目录，使用事实于下一帧生成弹体，高速弹按内容细分推进，瓦片接触按策略反射并扣共用预算
-  - 未闭合：P5 未开工；客户端输入适配缺失 → [CR](../docs/cr/CR-2026-11-24-projectile-p0-p1-content-and-shoot-seam.md)
 
 ## 历史
 

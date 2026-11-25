@@ -11,7 +11,6 @@ using Terraria.Share.Liquid;
 using Terraria.Share.Movement;
 using Terraria.Share.Physics;
 using Terraria.Share.Relationships;
-using MovementVelocityComponent = Terraria.Share.Movement.VelocityComponent;
 
 namespace Terraria.Unshared.Projectiles;
 
@@ -28,18 +27,27 @@ public sealed class ProjectileLifecycleSystem
 {
   private readonly ArchWorld _world;
   private readonly ProjectileCatalog _definitions;
+  private readonly ProjectileBehaviorCatalog _behaviors;
   private readonly ProjectileRuntimeRegistry _registry;
   private readonly EntitySystem<ArchEntity> _spawner;
+  private readonly ProjectileTerminationJournal _journal;
   private ProjectileTerminationQueueComponent? _terminations;
 
   public ProjectileLifecycleSystem(
       ArchWorld world,
       ProjectileCatalog definitions,
-      ProjectileRuntimeRegistry registry)
+      ProjectileBehaviorCatalog behaviors,
+      ProjectileRuntimeRegistry registry,
+      ProjectileTerminationJournal? journal = null)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
     _definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
+    // 行为目录只为解析 behaviorType：AI 声明必须在实体生成时装配，否则实体存在的第一个
+    // tick 没有行为可算，那一帧的速度意图就过期了（设计 D4）。
+    _behaviors = behaviors ?? throw new ArgumentNullException(nameof(behaviors));
     _registry = registry ?? throw new ArgumentNullException(nameof(registry));
+    // 终止历史归本域：注册表只做句柄解析，重复终止与陈旧句柄的区分留在这里。
+    _journal = journal ?? new ProjectileTerminationJournal(_registry.WorldScope);
     // 生成走共享的实体定义宿主：内容定义在目录里已经和实体组合定义成对登记。
     _spawner = new EntitySystem<ArchEntity>(
         _definitions.EntityDefinitions,
@@ -61,7 +69,7 @@ public sealed class ProjectileLifecycleSystem
       in ProjectileSpawnRequest request,
       EcsServerCommandBuffer? commands = null)
   {
-    if (!_definitions.TryGet(request.DefinitionId, out _))
+    if (!_definitions.TryGet(request.DefinitionId, out ProjectileRecipe recipe))
     {
       return new ProjectileSpawnResult(
           ProjectileLifecycleStatus.DefinitionUnknown,
@@ -69,6 +77,20 @@ public sealed class ProjectileLifecycleSystem
           ArchEntity.Null,
           $"Projectile definition {request.DefinitionId} is not registered.");
     }
+
+    // AI 声明随实体生成即装配（D4）：内容里只有 behavior id / profile id，
+    // 实现类型在行为目录上，所以这一步必须解析目录，不能留到适配器补挂。
+    if (!recipe.TryGetSection(out ProjectileBasicsSection basics) ||
+        !_behaviors.TryGet(basics.BehaviorId, basics.ProfileId, out ProjectileBehaviorProfile behavior))
+    {
+      return new ProjectileSpawnResult(
+          ProjectileLifecycleStatus.BehaviorUnknown,
+          default,
+          ArchEntity.Null,
+          $"Projectile definition {request.DefinitionId} has no resolvable behavior profile.");
+    }
+
+    AiComponent aiDeclaration = AiComponent.For(behavior.BehaviorType);
 
     if (!_registry.TryResolve(request.Owner, out _))
     {
@@ -92,12 +114,10 @@ public sealed class ProjectileLifecycleSystem
           _spawner.SpawnDeferred(deferredDefinition.Id, commands);
       ArchEntity bufferedEntity = ticket.BufferedEntity;
       commands.Add(bufferedEntity, new EntityFactionComponent(request.Faction));
-      commands.Add(bufferedEntity, request.Size);
       commands.Add(bufferedEntity, new LocationComponent(request.Position));
-      commands.Add(bufferedEntity, new MovementVelocityComponent(request.Velocity));
+      commands.Add(bufferedEntity, aiDeclaration);
       commands.Add(bufferedEntity, new ProjectileOwnerComponent(request.Owner));
       commands.Add(bufferedEntity, request.Source);
-      commands.Add(bufferedEntity, request.Collider);
 
       return new ProjectileSpawnResult(
           ProjectileLifecycleStatus.Deferred,
@@ -116,18 +136,16 @@ public sealed class ProjectileLifecycleSystem
 
     try
     {
-      // 实例级输入：出生位置、速度、阵营、归属、尺寸与碰撞体只有调用方知道；
-      // 静态组合（身份、运动学、生命周期、碰撞策略、攻击定义引用、空间前置条件）
-      // 已由内容定义配对登记的 EntityDefinition 提供。
+      // 实例级输入只剩三样：出生位置、阵营与归属。
+      // 速度不在其中（D3）：出厂速度是内容属性，由实体定义装配；之后的每一帧由 AI 行为算。
+      // 几何同样不在这里（D6）：碰撞体由内容定义装配，物理系统只消费。
       _world.Add(
           entity,
           new EntityFactionComponent(request.Faction),
-          request.Size,
           new LocationComponent(request.Position),
-          new MovementVelocityComponent(request.Velocity),
+          aiDeclaration,
           new ProjectileOwnerComponent(request.Owner),
-          request.Source,
-          request.Collider);
+          request.Source);
 
       return new ProjectileSpawnResult(
           ProjectileLifecycleStatus.Applied, handle, entity, null);
@@ -162,7 +180,7 @@ public sealed class ProjectileLifecycleSystem
 
     if (!_registry.TryResolve(handle, out ArchEntity entity))
     {
-      if (_registry.IsTerminated(handle))
+      if (_journal.Contains(handle))
       {
         return new ProjectileTerminationResult(
             ProjectileLifecycleStatus.AlreadyTerminated, handle, reason, null);
@@ -235,7 +253,7 @@ public sealed class ProjectileLifecycleSystem
   {
     if (!_registry.TryResolve(handle, out ArchEntity entity))
     {
-      return _registry.IsTerminated(handle)
+      return _journal.Contains(handle)
           ? new ProjectileTerminationResult(
               ProjectileLifecycleStatus.AlreadyTerminated, handle, reason, null)
           : new ProjectileTerminationResult(
@@ -263,7 +281,7 @@ public sealed class ProjectileLifecycleSystem
     {
       _world.Destroy(entity);
     }
-    _registry.MarkTerminated(handle);
+    _journal.Record(handle);
     return new ProjectileTerminationResult(
         ProjectileLifecycleStatus.Applied, handle, reason, null);
   }

@@ -58,6 +58,13 @@ public sealed class PlayerInputRequestSystem : BaseSystem<ArchWorld, EcsServerTi
         }
 
         break;
+      case PlayerInputRequestKind.SelectHeldSlot:
+        // Version4 把包 13 的选中槽直接写进 selectedItemState（MessageBuffer.cs:996），服务端
+        // 用同一语义把它记到库存上：只换索引，不搬物品。
+        _inventories.TrySetHeldSlot(
+            player,
+            request.Slot >= 0 ? new HeldSlot(request.Slot) : null);
+        break;
       case PlayerInputRequestKind.SetInventorySlot:
         if (World.Has<InventoryComponent>(player))
         {

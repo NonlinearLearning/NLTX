@@ -1,4 +1,4 @@
-namespace Terraria.Share.Lvcs;
+namespace NSSLC.Infrastructure.Lvcs;
 
 /// <summary>
 /// Signals that content was rejected because the payload is invalid.

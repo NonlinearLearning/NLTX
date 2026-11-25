@@ -38,8 +38,14 @@ public sealed class ProjectileHitResolutionSystem
   /// **目标免疫不得加进这个方法。** <see cref="ApplyCore" /> 会在 Combat 已开出窗口之后，
   /// 用同一份已提交回执再查一次准入；把目标免疫塞进来，刚落地的那份回执就会判自己非法，
   /// 穿透预扣永远确认不了。目标免疫是 <see cref="CanHit" /> 的职责，只用于「别入队」。
+  ///
+  /// 返回码复用共享 <see cref="DamageRejectionReason" />，源与目标的指代按弹体视角读：
+  /// <see cref="DamageRejectionReason.SourceUnavailable" /> 是弹体句柄解析不到，
+  /// <see cref="DamageRejectionReason.SourceInactive" /> 是弹体已终止或已排队终止，
+  /// <see cref="DamageRejectionReason.TargetImmune" /> 是**本弹体**对目标的命中冷却仍在窗口内
+  /// （不是目标侧的保护窗口，目标侧那一路由 <see cref="CanHit" /> 走 <c>DamageImmunityQuery</c>）。
   /// </remarks>
-  public ProjectileHitAdmissionResult CheckAdmission(
+  public DamageRejectionReason CheckAdmission(
       EntityRuntimeHandle projectile,
       EntityRuntimeHandle target,
       long tick)
@@ -47,24 +53,24 @@ public sealed class ProjectileHitResolutionSystem
     if (!_resolver.TryResolve(projectile, out ArchEntity entity) ||
         entity == ArchEntity.Null || !_world.IsAlive(entity))
     {
-      return ProjectileHitAdmissionResult.ProjectileUnavailable;
+      return DamageRejectionReason.SourceUnavailable;
     }
 
     if (!_world.Has<ProjectileDispositionStateComponent>(entity))
     {
-      return ProjectileHitAdmissionResult.ProjectileUnavailable;
+      return DamageRejectionReason.SourceUnavailable;
     }
 
     if (Terminations.Contains(projectile, tick))
     {
-      return ProjectileHitAdmissionResult.ProjectileInactive;
+      return DamageRejectionReason.SourceInactive;
     }
 
     ProjectileDispositionStateComponent disposition =
         _world.Get<ProjectileDispositionStateComponent>(entity);
     if (!disposition.IsActive)
     {
-      return ProjectileHitAdmissionResult.ProjectileInactive;
+      return DamageRejectionReason.SourceInactive;
     }
 
     if (_world.Has<ProjectileHitImmunityStateComponent>(entity))
@@ -74,11 +80,11 @@ public sealed class ProjectileHitResolutionSystem
       immunity.Prune(tick);
       if (immunity.AppliesTo(target, tick))
       {
-        return ProjectileHitAdmissionResult.TargetImmune;
+        return DamageRejectionReason.TargetImmune;
       }
     }
 
-    return ProjectileHitAdmissionResult.Accepted;
+    return DamageRejectionReason.None;
   }
 
   /// <summary>
@@ -142,7 +148,7 @@ public sealed class ProjectileHitResolutionSystem
   }
 
   /// <summary>Consumes a shared receipt produced for a Projectile damage request.</summary>
-  public ProjectileHitAdmissionResult Apply(
+  public DamageRejectionReason Apply(
       in DamageAppliedReceipt receipt,
       out ProjectileTerminationReason? terminationReason)
   {
@@ -199,18 +205,18 @@ public sealed class ProjectileHitResolutionSystem
     return true;
   }
 
-  private ProjectileHitAdmissionResult ApplyCore(
+  private DamageRejectionReason ApplyCore(
       EntityRuntimeHandle projectileHandle,
       EntityRuntimeHandle targetHandle,
       long tick,
       out ProjectileTerminationReason? terminationReason)
   {
     terminationReason = null;
-    ProjectileHitAdmissionResult admission = CheckAdmission(
+    DamageRejectionReason admission = CheckAdmission(
         projectileHandle,
         targetHandle,
         tick);
-    if (admission != ProjectileHitAdmissionResult.Accepted)
+    if (admission != DamageRejectionReason.None)
     {
       return admission;
     }
@@ -219,12 +225,12 @@ public sealed class ProjectileHitResolutionSystem
         entity == ArchEntity.Null || !_world.IsAlive(entity) ||
         !_world.Has<ProjectileDispositionStateComponent>(entity))
     {
-      return ProjectileHitAdmissionResult.ProjectileUnavailable;
+      return DamageRejectionReason.SourceUnavailable;
     }
 
     if (!_world.Get<ProjectileDispositionStateComponent>(entity).IsActive)
     {
-      return ProjectileHitAdmissionResult.ProjectileInactive;
+      return DamageRejectionReason.SourceInactive;
     }
 
     // Immunity is checked before Combat admission. Once Combat returns an accepted receipt,
@@ -267,7 +273,7 @@ public sealed class ProjectileHitResolutionSystem
       }
     }
 
-    return ProjectileHitAdmissionResult.Accepted;
+    return DamageRejectionReason.None;
   }
 
   private static long ResolveTicks(float value, string parameterName)

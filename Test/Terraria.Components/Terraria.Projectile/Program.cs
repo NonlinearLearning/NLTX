@@ -7,6 +7,7 @@ using Terraria.Share.Ai;
 using Terraria.Share.Attributes;
 using Terraria.Share.Combat;
 using Terraria.Share.Items;
+using Terraria.Share.Emission;
 using Terraria.Share.Entities;
 using Terraria.Share.Liquid;
 using Terraria.Share.Movement;
@@ -20,10 +21,12 @@ using VelocityComponent = Terraria.Share.Movement.VelocityComponent;
 //
 // 背景：此前 TrySpawn 创建的实体缺少 GroundingComponent 等六项组件，导致
 // SpatialSimulationCoordinatorSystem 的查询一个都匹配不到——投射物实体存在但从不移动。
-// 本验证固定两件事：
+// 本验证固定三件事：
 //   1. 生成出的实体具备协调系统要求的全部十项组件。
 //   2. 决定"匀速直线"语义的三个取值正确：加速度为 0（否则会被 MovementIntent.Stop 的
 //      零目标速度逐帧减速到静止）、Flight 模式（跳过重力积分）、速度不钳制。
+//   3. 发射接缝的契约口径：请求只有发射者 / 内容 id / 绝对坐标三字段，队列严格同 tick；
+//      排空失败逐条进结果、发射者未注册时不臆造归属（type: contract）。
 int failures = 0;
 
 void Check(string name, bool ok, string detail)
@@ -53,6 +56,7 @@ ProjectileRecipe Recipe(
     string attackId = "probe.attack",
     DamageType damageType = DamageType.Ranged,
     int baseDamage = 5,
+    Vector2 initialVelocity = default,
     bool gravityEnabled = false,
     float gravityStrength = 0f,
     float gravityMaximumFallSpeed = 0f,
@@ -76,6 +80,7 @@ ProjectileRecipe Recipe(
         attackDefinitionId: new CombatAttackId(attackId),
         damageType: damageType,
         baseDamage: baseDamage,
+        initialVelocity: initialVelocity,
         collisionLayer: collisionLayer,
         collisionMask: collisionMask),
     new ProjectileGravitySection(gravityEnabled, gravityStrength, gravityMaximumFallSpeed),
@@ -95,27 +100,69 @@ ProjectileRecipe Recipe(
   return new ProjectileRecipe(new ProjectileId(id), sections);
 }
 
+// 生成期装配 AI 声明需要 behaviorType，而 behaviorType 只在行为目录上（D4）。
+// 验证项目自建一份目录：profile 数值留 0 走能力组件，与宿主 CreateProjectileBehaviorProfiles 同口径。
+ProjectileBehaviorCatalog behaviors = new();
+behaviors.Register(new ProjectileBehaviorProfile(
+    new AiBehaviorId("Straight"),
+    new AiBehaviorProfileId("arrow.default"),
+    typeof(ProjectileStraightAiBehavior),
+    AiRequirements.Empty.Require<VelocityComponent>(),
+    maximumSpeed: 0f,
+    turnRate: 0f,
+    range: 0f));
+behaviors.Register(new ProjectileBehaviorProfile(
+    new AiBehaviorId("Straight"),
+    new AiBehaviorProfileId("contract.default"),
+    typeof(ProjectileStraightAiBehavior),
+    AiRequirements.Empty.Require<VelocityComponent>(),
+    maximumSpeed: 0f,
+    turnRate: 0f,
+    range: 0f));
+// 策略族内容用的是 orb.default 这一条 profile：同类型、不同 profile id 也是合法内容。
+behaviors.Register(new ProjectileBehaviorProfile(
+    new AiBehaviorId("Straight"),
+    new AiBehaviorProfileId("orb.default"),
+    typeof(ProjectileStraightAiBehavior),
+    AiRequirements.Empty.Require<VelocityComponent>(),
+    maximumSpeed: 0f,
+    turnRate: 0f,
+    range: 0f));
+behaviors.Register(new ProjectileBehaviorProfile(
+    new AiBehaviorId("HomingProjectile"),
+    new AiBehaviorProfileId("homing.default"),
+    typeof(ProjectileHomingAiBehavior),
+    AiRequirements.Empty
+        .Require<LocationComponent>()
+        .Require<VelocityComponent>()
+        .Require<ProjectileHomingCapabilityComponent>()
+        .Require<ProjectileTargetFact>(),
+    maximumSpeed: 0f,
+    turnRate: 0f,
+    range: 0f));
+behaviors.Seal();
+
 using ArchWorld world = ArchWorld.Create();
 ProjectileRuntimeRegistry registry = new(worldScope: 1);
+// 意图落地只剩一条通道：生产者入队、MovementIntentRequestSystem 安装。
+// 缺了这个宿主实体，任何意图生产者都会在 Require 处失败，所以它和世界一起建。
+world.Create(new MovementIntentRequestQueueComponent());
 ProjectileCatalog catalog = new();
 ProjectileId definitionId = new("probe.arrow");
-catalog.Register(Recipe("probe.arrow"));
+catalog.Register(Recipe("probe.arrow", initialVelocity: new Vector2(6f, -3f)));
 catalog.Seal();
 
-ProjectileLifecycleSystem lifecycle = new(world, catalog, registry);
+ProjectileLifecycleSystem lifecycle = new(world, catalog, behaviors, registry);
 
 EntityRuntimeHandle ownerHandle = registry.Allocate(EntityUuid.Create());
 ArchEntity owner = world.Create();
-registry.RegisterOwner(ownerHandle, owner);
+registry.Register(ownerHandle, owner);
 
 ProjectileSpawnRequest request = new(
     definitionId,
     ownerHandle,
     new ProjectileSourceMetadataComponent("probe", "source-1"),
     position: new Vector2(100f, 200f),
-    velocity: new Vector2(6f, -3f),
-    collider: new ColliderComponent(new Vector2(8f, 8f)),
-    size: new EntitySizeComponent(8, 8),
     faction: Faction.Hostile);
 
 ProjectileSpawnResult result = lifecycle.TrySpawn(request);
@@ -142,7 +189,6 @@ ArchEntity projectile = result.Entity;
 [
   ("EntityIdentityComponent", world.Has<EntityIdentityComponent>(projectile)),
   ("EntityFactionComponent", world.Has<EntityFactionComponent>(projectile)),
-  ("EntitySizeComponent", world.Has<EntitySizeComponent>(projectile)),
   ("EntityCollisionCapabilityComponent", world.Has<EntityCollisionCapabilityComponent>(projectile)),
   ("AiBehaviorSelectionComponent", world.Has<AiBehaviorSelectionComponent>(projectile)),
   ("ProjectileBehaviorStateComponent", world.Has<ProjectileBehaviorStateComponent>(projectile)),
@@ -245,9 +291,6 @@ ProjectileSpawnRequest queuedRequest = new(
     ownerHandle,
     new ProjectileSourceMetadataComponent("probe", "queued-1"),
     position: new Vector2(10f, 20f),
-    velocity: new Vector2(-2f, 5f),
-    collider: new ColliderComponent(new Vector2(8f, 8f)),
-    size: new EntitySizeComponent(8, 8),
     faction: Faction.Hostile);
 spawnQueue.Enqueue(queuedRequest, tick: 7);
 Check("queue-accepts", spawnQueue.Count == 1, $"count={spawnQueue.Count}");
@@ -274,9 +317,6 @@ ProjectileSpawnRequest publicRequest = new(
     ownerHandle,
     new ProjectileSourceMetadataComponent("probe", "public-1"),
     position: new Vector2(50f, 60f),
-    velocity: new Vector2(0f, 4f),
-    collider: new ColliderComponent(new Vector2(8f, 8f)),
-    size: new EntitySizeComponent(8, 8),
     faction: Faction.Hostile);
 ProjectileSpawnRequests.Enqueue(world, publicRequest, tick: 9);
 Check("public-seam-enqueues", spawnQueue.Count == 1, $"count={spawnQueue.Count}");
@@ -307,10 +347,17 @@ Check("public-seam-rejects-negative-tick", rejectedNegativeTick, $"threw={reject
 // acceleration=0 那个决定——若加速度非零，速度会被拉向 MovementIntent.Stop 的零目标。
 ProbeSpatialWorld probeWorld = new();
 SpatialSimulationCoordinatorSystem coordinator = new(world, probeWorld);
-// 生产顺序：先刷新意图，再由协调系统模拟。缺了这一步，投射物的意图 tick 会停在生成时的
-// 0，被 intent.Tick != frame.Tick 校验永久拒绝——这正是本条验证要防住的回归。
-ProjectileMovementIntentSystem intentSystem = new(world);
+// 生产顺序：先由 AI 产出本帧速度意图，再由协调系统模拟。缺了这一步，投射物的意图 tick
+// 会停在上一次安装时的值，被 intent.Tick != frame.Tick 校验永久拒绝——这正是本条要防的回归。
+// CreateSystem 的第二个参数是"追踪类行为的原型 profile"，它要求绑定到 ProjectileHomingAiBehavior。
+AiEntitySystem<ArchEntity, ProjectileAiIntent> mainAi = new(
+    ProjectileAiRegistration.CreateSystem(
+        behaviors,
+        behaviors.Get(new AiBehaviorId("HomingProjectile"), new AiBehaviorProfileId("homing.default"))));
+ProjectileAiAdapter intentSystem = new(
+    world, mainAi, new ProjectileAiSnapshotProvider(world, registry), behaviors, registry);
 intentSystem.Update(new EcsServerTickContext(world, 8, 0.5f));
+new MovementIntentRequestSystem(world, registry).Update(new EcsServerTickContext(world, 8, 0.5f));
 Check(
     "intent-refreshed-to-current-tick",
     world.Get<MovementIntent>(projectile).Tick == 8,
@@ -340,23 +387,21 @@ Check(
 // 注意子步不改变总位移（dt 被均分、步数相应增加），只影响瓦片碰撞的精度。
 ProjectileCatalog fastCatalog = new();
 ProjectileId fastId = new("probe.arrow.fast");
-fastCatalog.Register(Recipe("probe.arrow.fast", extraUpdates: 1));
+fastCatalog.Register(Recipe("probe.arrow.fast", extraUpdates: 1, initialVelocity: new Vector2(4f, 0f)));
 fastCatalog.Seal();
-ProjectileLifecycleSystem fastLifecycle = new(world, fastCatalog, registry);
+ProjectileLifecycleSystem fastLifecycle = new(world, fastCatalog, behaviors, registry);
 
 ProjectileSpawnResult fastResult = fastLifecycle.TrySpawn(new ProjectileSpawnRequest(
     fastId,
     ownerHandle,
     new ProjectileSourceMetadataComponent("probe", "fast-1"),
     position: new Vector2(300f, 400f),
-    velocity: new Vector2(4f, 0f),
-    collider: new ColliderComponent(new Vector2(8f, 8f)),
-    size: new EntitySizeComponent(8, 8),
     faction: Faction.Hostile));
 Check("fast-spawn-applied", fastResult.Status == ProjectileLifecycleStatus.Applied, $"status={fastResult.Status}");
 
 Vector2 fastBefore = world.Get<LocationComponent>(fastResult.Entity).Coordinates;
 intentSystem.Update(new EcsServerTickContext(world, 13, 0.5f));
+new MovementIntentRequestSystem(world, registry).Update(new EcsServerTickContext(world, 13, 0.5f));
 coordinator.Update(new EcsServerTickContext(world, 13, 0.5f));
 Vector2 fastAfter = world.Get<LocationComponent>(fastResult.Entity).Coordinates;
 // 这两条断言在 P3 被改写：原来的 kinematics-substep-not-advanced / substep-does-not-scale-distance
@@ -372,28 +417,64 @@ Check(
 using (ArchWorld p3World = ArchWorld.Create())
 {
   ProjectileRuntimeRegistry p3Registry = new(worldScope: 2);
+  // 意图队列是"世界级单例"：整个隔离世界只建一次，后面几帧复用同一个宿主。
+  p3World.Create(new MovementIntentRequestQueueComponent());
+  // D5 之后没有"每帧 Stop 续命"那条路了：速度意图只能由 AI 适配器产出。
+  ProjectileBehaviorCatalog p3Behaviors = new();
+  p3Behaviors.Register(new ProjectileBehaviorProfile(
+      new AiBehaviorId("Straight"),
+      new AiBehaviorProfileId("arrow.default"),
+      typeof(ProjectileStraightAiBehavior),
+      AiRequirements.Empty.Require<VelocityComponent>(),
+      maximumSpeed: 0f,
+      turnRate: 0f,
+      range: 0f));
+  // CreateSystem 的原型参数要的是追踪 profile（登记绑定类型用），直线行为仍按内容选择。
+  p3Behaviors.Register(new ProjectileBehaviorProfile(
+      new AiBehaviorId("HomingProjectile"),
+      new AiBehaviorProfileId("homing.default"),
+      typeof(ProjectileHomingAiBehavior),
+      AiRequirements.Empty
+          .Require<LocationComponent>()
+          .Require<VelocityComponent>()
+          .Require<ProjectileHomingCapabilityComponent>()
+          .Require<ProjectileTargetFact>(),
+      maximumSpeed: 0f,
+      turnRate: 0f,
+      range: 0f));
+  p3Behaviors.Seal();
+  AiEntitySystem<ArchEntity, ProjectileAiIntent> p3Ai = new(
+      ProjectileAiRegistration.CreateSystem(
+          p3Behaviors,
+          p3Behaviors.Get(
+              new AiBehaviorId("HomingProjectile"),
+              new AiBehaviorProfileId("homing.default"))));
+  ProjectileAiAdapter p3Adapter = new(
+      p3World, p3Ai, new ProjectileAiSnapshotProvider(p3World, p3Registry), p3Behaviors, p3Registry);
   ProjectileCatalog p3Catalog = new();
   ProjectileId p3FastId = new("probe.fast");
-  p3Catalog.Register(Recipe("probe.fast", extraUpdates: 1, attackId: "probe.attack.fast"));
+  p3Catalog.Register(Recipe(
+      "probe.fast",
+      extraUpdates: 1,
+      attackId: "probe.attack.fast",
+      initialVelocity: new Vector2(40f, 0f)));
   p3Catalog.Seal();
-  ProjectileLifecycleSystem p3Lifecycle = new(p3World, p3Catalog, p3Registry);
+  ProjectileLifecycleSystem p3Lifecycle = new(p3World, p3Catalog, p3Behaviors, p3Registry);
   EntityRuntimeHandle p3Owner = p3Registry.Allocate(EntityUuid.Create());
   ArchEntity p3OwnerEntity = p3World.Create();
-  p3Registry.RegisterOwner(p3Owner, p3OwnerEntity);
+  p3Registry.Register(p3Owner, p3OwnerEntity);
   ProjectileSpawnResult p3Fast = p3Lifecycle.TrySpawn(new ProjectileSpawnRequest(
       p3FastId,
       p3Owner,
       new ProjectileSourceMetadataComponent("probe", "fast"),
       position: Vector2.Zero,
-      velocity: new Vector2(40f, 0f),
-      collider: new ColliderComponent(new Vector2(8f, 8f)),
-      size: new EntitySizeComponent(8, 8),
       faction: Faction.Hostile));
   ProbeSpatialWorld p3Probe = new();
   SpatialSimulationCoordinatorSystem p3Coordinator = new(p3World, p3Probe);
-  // 意图必须先续到本帧：空间系统第一道校验就是 intent.Tick != frame.Tick 直接拒绝，
-  // 生成时写入的是 tick 0。这正是生产里 ProjectileMovementIntentSystem 每帧存在的理由。
-  new ProjectileMovementIntentSystem(p3World).Update(new EcsServerTickContext(p3World, 1, 0.5f));
+  // 意图必须先续到本帧：空间系统第一道校验就是 intent.Tick != frame.Tick 直接拒绝。
+  // 续意图的活归 AI 适配器（AI 每帧产出速度意图），不再是那条已删除的 Stop 兜底系统。
+  p3Adapter.Update(new EcsServerTickContext(p3World, 1, 0.5f));
+  new MovementIntentRequestSystem(p3World, p3Registry).Update(new EcsServerTickContext(p3World, 1, 0.5f));
   int before = p3Probe.MoveCount;
   p3Coordinator.Update(new EcsServerTickContext(p3World, 1, 0.5f));
   Check(
@@ -407,9 +488,6 @@ using (ArchWorld p3World = ArchWorld.Create())
       p3Owner,
       new ProjectileSourceMetadataComponent("probe", "walled"),
       position: new Vector2(300f, 300f),
-      velocity: new Vector2(40f, 0f),
-      collider: new ColliderComponent(new Vector2(8f, 8f)),
-      size: new EntitySizeComponent(8, 8),
       faction: Faction.Hostile));
   // 整个隔离世界只有这一个瓦片接触队列：队列是"世界级单例"，
   // 建两个会让协调系统写 A、结算系统读 B，现象就是"永远没有接触事实"。
@@ -417,7 +495,8 @@ using (ArchWorld p3World = ArchWorld.Create())
   p3World.Create(p3TileQueue);
   SpatialSimulationCoordinatorSystem p3WalledCoordinator = new(
       p3World, new WallSpatialWorld(blockedX: 320f), simulation: null, handles: p3Registry);
-  new ProjectileMovementIntentSystem(p3World).Update(new EcsServerTickContext(p3World, 2, 0.5f));
+  p3Adapter.Update(new EcsServerTickContext(p3World, 2, 0.5f));
+  new MovementIntentRequestSystem(p3World, p3Registry).Update(new EcsServerTickContext(p3World, 2, 0.5f));
   p3WalledCoordinator.Update(new EcsServerTickContext(p3World, 2, 0.5f));
   IReadOnlyList<TileContactFact> p3Contacts = p3TileQueue.Drain();
   Check(
@@ -441,9 +520,6 @@ using (ArchWorld p3World = ArchWorld.Create())
       p3Owner,
       new ProjectileSourceMetadataComponent("probe", "bouncer"),
       position: new Vector2(300f, 500f),
-      velocity: new Vector2(40f, 0f),
-      collider: new ColliderComponent(new Vector2(8f, 8f)),
-      size: new EntitySizeComponent(8, 8),
       faction: Faction.Hostile));
   // 预算组件由内容定义装配，这里不再 Add：同一组件重复添加会把实体挪进新原型，
   // 后续查询就选不中它（这正是本轮踩到的坑）。
@@ -453,8 +529,6 @@ using (ArchWorld p3World = ArchWorld.Create())
       speedScale: 0.5f,
       consumeOrder: ProjectileBounceConsumeOrder.BeforeBounce));
   // 复用同一队列：前一帧的接触已被 Drain 清空，这里不需要第二个宿主。
-  MovementIntentRequestQueueComponent p4Intents = new();
-  p3World.Create(p4Intents);
   ProjectileTerminationQueueComponent p4Terminations = new();
   p3World.Create(p4Terminations);
   SpatialSimulationCoordinatorSystem p4Coordinator = new(
@@ -464,13 +538,13 @@ using (ArchWorld p3World = ArchWorld.Create())
       p3World, p4Hits, p3Registry, p3Registry);
   // 顺序与宿主注册一致：意图刷新 → 装入意图 → 空间推进 → 瓦片结算。
   // 意图装入必须夹在中间：上一帧结算写入速度与意图，本帧先让两者对齐再推进。
-  new ProjectileMovementIntentSystem(p3World).Update(new EcsServerTickContext(p3World, 3, 0.5f));
+  p3Adapter.Update(new EcsServerTickContext(p3World, 3, 0.5f));
   new MovementIntentRequestSystem(p3World, p3Registry).Update(
       new EcsServerTickContext(p3World, 3, 0.5f));
   p4Coordinator.Update(new EcsServerTickContext(p3World, 3, 0.5f));
   p4TileSystem.Update(new EcsServerTickContext(p3World, 3, 0.5f));
   // 第二帧：验证"上一帧的反射"确实被下一次空间推进采纳，而不是只写在组件里。
-  new ProjectileMovementIntentSystem(p3World).Update(new EcsServerTickContext(p3World, 4, 0.5f));
+  p3Adapter.Update(new EcsServerTickContext(p3World, 4, 0.5f));
   new MovementIntentRequestSystem(p3World, p3Registry).Update(
       new EcsServerTickContext(p3World, 4, 0.5f));
   p4Coordinator.Update(new EcsServerTickContext(p3World, 4, 0.5f));
@@ -538,6 +612,7 @@ policyCatalog.Register(Recipe(
     attackId: "probe.attack.orb",
     damageType: DamageType.Magic,
     baseDamage: 7,
+    initialVelocity: new Vector2(3f, 0f),
     gravityEnabled: true,
     gravityStrength: 0.25f,
     gravityMaximumFallSpeed: 8f,
@@ -571,15 +646,12 @@ catch (InvalidOperationException)
 
 Check("catalog-rejects-register-after-seal", reRegisterRejected, $"threw={reRegisterRejected}");
 
-ProjectileLifecycleSystem policyLifecycle = new(world, policyCatalog, registry);
+ProjectileLifecycleSystem policyLifecycle = new(world, policyCatalog, behaviors, registry);
 ProjectileSpawnResult orbResult = policyLifecycle.TrySpawn(new ProjectileSpawnRequest(
     gravityId,
     ownerHandle,
     new ProjectileSourceMetadataComponent("probe", "orb-1"),
     position: new Vector2(500f, 500f),
-    velocity: new Vector2(3f, 0f),
-    collider: new ColliderComponent(new Vector2(12f, 12f)),
-    size: new EntitySizeComponent(12, 12),
     faction: Faction.Hostile));
 Check(
     "policy-spawn-applied",
@@ -672,6 +744,27 @@ Check(
     "pixel=" + boundsSection.PixelWidth + "x" + boundsSection.PixelHeight +
         " collider=" + boundsSection.ColliderWidth + "x" + boundsSection.ColliderHeight);
 
+// D6 的读侧断言：几何在实体定义里装配，物理系统只消费。内容写 4.2x6.1，实体的碰撞体
+// 必须是这一对浮点值——若退回"生成请求携带几何"，这里会看到请求侧再取整一次的 5x7。
+ProjectileCatalog geometryCatalog = new();
+geometryCatalog.Register(Recipe("probe.geometry", colliderSize: 4.2f, initialVelocity: new Vector2(1f, 0f)));
+geometryCatalog.Seal();
+ProjectileLifecycleSystem geometryLifecycle = new(world, geometryCatalog, behaviors, registry);
+ProjectileSpawnResult geometrySpawn = geometryLifecycle.TrySpawn(new ProjectileSpawnRequest(
+    new ProjectileId("probe.geometry"),
+    ownerHandle,
+    new ProjectileSourceMetadataComponent("probe", "geometry-1"),
+    position: Vector2.Zero,
+    faction: Faction.Hostile));
+Check(
+    "collider-assembled-by-definition",
+    geometrySpawn.Status == ProjectileLifecycleStatus.Applied &&
+        world.Has<ColliderComponent>(geometrySpawn.Entity) &&
+        world.Get<ColliderComponent>(geometrySpawn.Entity).Size == new Vector2(4.2f, 4.2f),
+    $"status={geometrySpawn.Status} " +
+        $"size={(geometrySpawn.Status == ProjectileLifecycleStatus.Applied && world.Has<ColliderComponent>(geometrySpawn.Entity) ? world.Get<ColliderComponent>(geometrySpawn.Entity).Size.ToString() : "none")}" +
+        "（几何来自内容定义，不来自生成请求）");
+
 Check(
     "definition-unknown-rejected",
     lifecycle.TrySpawn(new ProjectileSpawnRequest(
@@ -679,10 +772,7 @@ Check(
         ownerHandle,
         new ProjectileSourceMetadataComponent("probe", "missing-1"),
         position: new Vector2(0f, 0f),
-        velocity: new Vector2(1f, 0f),
-        collider: new ColliderComponent(new Vector2(8f, 8f)),
-        size: new EntitySizeComponent(8, 8),
-        faction: Faction.Hostile)).Status == ProjectileLifecycleStatus.DefinitionUnknown,
+            faction: Faction.Hostile)).Status == ProjectileLifecycleStatus.DefinitionUnknown,
     "unregistered definition must not spawn");
 
 // ---- P1：物品使用事实 → 投射物生成请求 ----
@@ -714,19 +804,28 @@ shootCatalog.Seal();
 // 能力组合混在一起。
 ProjectileCatalog shootProjectiles = new();
 ProjectileId shootId = new("probe.arrow");
+// 出厂速度来自内容：发射意图不再携带速度，箭的出膛速度是这条内容定义的属性。
 shootProjectiles.Register(Recipe(
     "probe.arrow",
     lifetimeTicks: 300,
-    attackId: "probe.attack.arrow"));
+    attackId: "probe.attack.arrow",
+    initialVelocity: new Vector2(8f, 0f)));
 shootProjectiles.Seal();
+// 生成步骤必须用射击目录的生命周期：D3 之后速度来自实体定义，
+// 用主目录的 "probe.arrow"（出厂 6,-3）生成会读到另一条内容的数值。
+ProjectileLifecycleSystem shootLifecycle = new(world, shootProjectiles, behaviors, registry);
 
 _ = world.Create(new PlayerItemUseFactQueueComponent());
+// 发射队列与生成队列一样挂在世界级单例实体上；缺了它入队会抛，与宿主启动时的创建顺序一致。
+_ = world.Create(new EmissionQueueComponent());
 // 玩家实体沿用本文件早先登记的 owner：给它一个位置和阵营，接缝才能取到出生点。
 world.Add(owner, new LocationComponent(new Vector2(320f, 480f)));
 world.Add(owner, new EntityFactionComponent(Faction.Friendly));
 
+// 接缝只产出发射意图，不碰投射物目录：定义解析归排空系统。
+EmissionDrainSystem emissionDrain = new(world, shootProjectiles, registry, registry);
 ProjectileItemUseSpawnSystem itemUseSpawnSystem = new(
-    world, registry, registry, shootCatalog, shootProjectiles);
+    world, registry, registry, shootCatalog);
 PlayerItemUseFactQueueComponent factQueueComponent = PlayerItemUseFactQueue.Require(world);
 
 factQueueComponent.Enqueue(new PlayerItemUseFact(
@@ -762,9 +861,18 @@ factQueueComponent.Enqueue(new PlayerItemUseFact(
     Continuous: false,
     PlayerItemUseOutcomeKind.Applied));
 
+// 三级链路同 tick：使用事实 → 发射意图（接缝）→ 生成请求（排空）→ 生成（生成接缝）。
 itemUseSpawnSystem.Update(new EcsServerTickContext(world, 21, 1f / 60f));
 Check("item-use-facts-drained", factQueueComponent.Count == 0, $"count={factQueueComponent.Count}");
 
+// 排空之前，意图应该还在发射队列里，且生成队列是空的——两级队列的边界由此可见。
+IReadOnlyList<ProjectileSpawnRequest> beforeDrain = DrainSpawnQueue(world, 21);
+Check(
+    "item-use-emits-before-drain",
+    beforeDrain.Count == 0,
+    $"spawnRequests={beforeDrain.Count}（接缝只入发射队列，生成请求由排空系统产出）");
+
+emissionDrain.Update(new EcsServerTickContext(world, 21, 1f / 60f));
 IReadOnlyList<ProjectileSpawnRequest> itemUseRequests = DrainSpawnQueue(world, 21);
 Check(
     "item-use-enqueued-one-spawn",
@@ -773,10 +881,6 @@ Check(
 
 ProjectileSpawnRequest queuedShoot = itemUseRequests[0];
 Check(
-    "item-use-spawn-uses-content-velocity",
-    queuedShoot.Velocity == new Vector2(8f, 0f),
-    $"velocity=({queuedShoot.Velocity.X},{queuedShoot.Velocity.Y})");
-Check(
     "item-use-spawn-offsets-from-owner",
     queuedShoot.Position == world.Get<LocationComponent>(owner).Coordinates + new Vector2(8f, -8f),
     $"position=({queuedShoot.Position.X},{queuedShoot.Position.Y})");
@@ -784,19 +888,67 @@ Check(
     "item-use-spawn-inherits-owner-faction",
     queuedShoot.Faction == Faction.Friendly,
     $"faction={queuedShoot.Faction}");
+// 归因由排空系统重建：发射意图只有三个字段，不再携带来源描述。
 Check(
     "item-use-spawn-records-source",
-    queuedShoot.Source.SourceKind == "item-use" &&
-        queuedShoot.Source.SourceId == nameof(ItemId.CopperBow),
+    queuedShoot.Source.SourceKind == "emission" &&
+        queuedShoot.Source.SourceId == "probe.arrow",
     $"kind={queuedShoot.Source.SourceKind} id={queuedShoot.Source.SourceId}");Check(
     "item-use-missing-definition-recorded",
     itemUseSpawnSystem.Results.Any(static r =>
-        r.Status == ProjectileItemUseSpawnStatus.DefinitionUnknown) &&
+        r.Status == ProjectileItemUseSpawnStatus.NoShootProfile) &&
         itemUseSpawnSystem.Results.Any(static r =>
-            r.Status == ProjectileItemUseSpawnStatus.NoShootProfile) &&
-        itemUseSpawnSystem.Results.Any(static r =>
-            r.Status == ProjectileItemUseSpawnStatus.Enqueued),
-    $"results={itemUseSpawnSystem.Results.Count}（失败入结果而不是静默丢弃）");
+            r.Status == ProjectileItemUseSpawnStatus.Enqueued) &&
+        // 定义未知由排空系统判定：接缝只负责把意图送进队列。
+        emissionDrain.Results.Any(static r =>
+            r.Status == EmissionDrainStatus.DefinitionUnknown),
+    $"seam={itemUseSpawnSystem.Results.Count} drain={emissionDrain.Results.Count}" +
+        "（失败入结果而不是静默丢弃）");
+
+// 发射者一侧的失败分支：句柄在本世界解析不到时，排空必须拒绝而不是借用别的归属。
+// 直接入队一条未注册句柄的意图，断言生成队列没有因此多出一条——"猜一个归属"与
+// "静默丢弃"都会让这条断言失败，只有"记进结果并拒绝"才通过。
+EntityRuntimeHandle unregisteredEmitter = registry.Allocate(EntityUuid.Create());
+EmissionQueue.Enqueue(
+    world,
+    new EmissionRequest(unregisteredEmitter, "probe.arrow", new Vector2(1f, 2f)),
+    tick: 20);
+emissionDrain.Update(new EcsServerTickContext(world, 20, 1f / 60f));
+IReadOnlyList<ProjectileSpawnRequest> orphanRequests = DrainSpawnQueue(world, 20);
+Check(
+    "emission-drain-rejects-unregistered-emitter",
+    orphanRequests.Count == 0 &&
+        emissionDrain.Results.Any(static r =>
+            r.Status == EmissionDrainStatus.EmitterUnavailable) &&
+        !emissionDrain.Results.Any(static r =>
+            r.Status == EmissionDrainStatus.Enqueued),
+    $"spawnRequests={orphanRequests.Count} " +
+        $"statuses={string.Join(",", emissionDrain.Results.Select(static r => r.Status))}");
+
+// 归属与坐标两条口径：阵营从发射者推导（缺失按中立）、位置原样取自意图。
+// 发射者位置刻意放在原点，意图坐标刻意给非零点——排空若偷读发射者位置，第二条会露馅。
+EntityRuntimeHandle factionlessEmitter = registry.Allocate(EntityUuid.Create());
+ArchEntity factionlessEntity = world.Create();
+registry.Register(factionlessEmitter, factionlessEntity);
+world.Add(factionlessEntity, new LocationComponent(Vector2.Zero));
+EmissionQueue.Enqueue(
+    world,
+    new EmissionRequest(factionlessEmitter, "probe.arrow", new Vector2(123f, 456f)),
+    tick: 19);
+emissionDrain.Update(new EcsServerTickContext(world, 19, 1f / 60f));
+IReadOnlyList<ProjectileSpawnRequest> factionlessRequests = DrainSpawnQueue(world, 19);
+Check(
+    "emission-drain-derives-faction-from-emitter",
+    factionlessRequests.Count == 1 && factionlessRequests[0].Faction == Faction.Neutral,
+    $"count={factionlessRequests.Count} " +
+        $"faction={(factionlessRequests.Count == 1 ? factionlessRequests[0].Faction.ToString() : "none")}" +
+        "（发射者没有阵营组件 → 中立，不猜）");
+Check(
+    "emission-drain-takes-origin-verbatim",
+    factionlessRequests.Count == 1 &&
+        factionlessRequests[0].Position == new Vector2(123f, 456f),
+    $"position={(factionlessRequests.Count == 1 ? factionlessRequests[0].Position.ToString() : "none")}" +
+        "（排空不读发射者位置，偏移由入队方加完）");
 
 // 端到端：复刻宿主接线顺序——使用事实在 Simulation 产生，射击接缝与生成接缝都在下一 tick 的
 // Preparation 里按"先射击、后生成"执行。这条断言固定的是相位契约：生成队列按 tick 号排空，
@@ -809,8 +961,9 @@ factQueueComponent.Enqueue(new PlayerItemUseFact(
     Tick: 22,
     Continuous: false,
     PlayerItemUseOutcomeKind.Applied));
-ProjectileSpawnRequestSystem spawnRunner = new(world, lifecycle);
+ProjectileSpawnRequestSystem spawnRunner = new(world, shootLifecycle);
 itemUseSpawnSystem.Update(new EcsServerTickContext(world, 22, 1f / 60f));
+emissionDrain.Update(new EcsServerTickContext(world, 22, 1f / 60f));
 spawnRunner.Update(new EcsServerTickContext(world, 22, 1f / 60f));
 Check(
     "item-use-spawn-reaches-lifecycle",
@@ -823,6 +976,136 @@ Check(
     shot != default && world.IsAlive(shot) &&
         world.Get<LocationComponent>(shot).Coordinates == new Vector2(328f, 472f),
     $"position={(shot != default && world.IsAlive(shot) ? world.Get<LocationComponent>(shot).Coordinates.ToString() : "none")}");
+// D3：出生速度不在生成请求里，而在实体定义里——实体生成即带内容出厂速度，AI 从它接管。
+Check(
+    "item-use-shot-carries-content-velocity",
+    shot != default && world.IsAlive(shot) &&
+        world.Get<VelocityComponent>(shot).LinearVelocity == new Vector2(8f, 0f),
+    $"velocity={(shot != default && world.IsAlive(shot) ? world.Get<VelocityComponent>(shot).LinearVelocity.ToString() : "none")}" +
+        "（速度来自内容定义 initialVelocity，不来自发射意图，也不由生成期写入）");
+
+// D4：AI 声明随实体生成即装配，生成请求落地的那一帧就能算，不需要适配器补挂。
+Check(
+    "spawn-assembles-ai-declaration",
+    shot != default && world.IsAlive(shot) &&
+        world.TryGet(shot, out AiComponent shotAi) &&
+        shotAi.BehaviorType == typeof(ProjectileStraightAiBehavior),
+    $"behaviorType={(shot != default && world.IsAlive(shot) && world.TryGet(shot, out AiComponent probeAi) ? probeAi.BehaviorType?.Name ?? "none" : "none")}");
+
+// ---- Emission 接缝：三字段意图 + 严格同 tick 队列 ----
+// 设计 §3 只把这一组写成契约：请求是自足的（发射者 / 内容 id / 绝对坐标），队列严格同 tick。
+// 其余行为（已有链路、相位、AI 接管）由上面的 P1/P2 段落覆盖，这里不重复。
+Check(
+    "emission-request-self-contained",
+    typeof(EmissionRequest).GetProperties().Select(static p => p.Name)
+        .SequenceEqual(["Emitter", "ContentId", "Origin"], StringComparer.Ordinal),
+    $"props={string.Join(",", typeof(EmissionRequest).GetProperties().Select(static p => p.Name))}" +
+        "（不含速度、碰撞体与尺寸：D2 的字段口径）");
+
+// 构造期三字段各自至少拒一次；只拦一面的校验等于没拦。
+int emissionRejections = 0;
+try
+{
+  _ = new EmissionRequest(default, "probe.arrow", Vector2.Zero);
+}
+catch (ArgumentException)
+{
+  emissionRejections++;
+}
+
+try
+{
+  _ = new EmissionRequest(ownerHandle, "  ", Vector2.Zero);
+}
+catch (ArgumentException)
+{
+  emissionRejections++;
+}
+
+try
+{
+  _ = new EmissionRequest(ownerHandle, "probe.arrow", new Vector2(float.NaN, 0f));
+}
+catch (ArgumentOutOfRangeException)
+{
+  emissionRejections++;
+}
+
+Check(
+    "emission-request-rejects-invalid-fields",
+    emissionRejections == 3,
+    $"rejected={emissionRejections}/3（无发射者、空白内容 id、非有限坐标）");
+
+// 队列语义：同形借用组件直接验。两个观测点各指一个失败模式——
+// tick 号更小则跨 tick 请求被返回；排空后不清空则同一请求被生成两次。
+EmissionQueueComponent emissionQueue = new();
+emissionQueue.Enqueue(new EmissionRequest(ownerHandle, "probe.arrow", Vector2.Zero), tick: 7);
+IReadOnlyList<EmissionRequest> emissionStale = emissionQueue.Drain(tick: 6);
+// 不匹配 tick 的排空必须两条都不做：既不能返回请求，也不能顺手清掉本 tick 的队列。
+int emissionKeptAfterStale = emissionQueue.Count;
+IReadOnlyList<EmissionRequest> emissionFresh = emissionQueue.Drain(tick: 7);
+int emissionLeftAfterDrain = emissionQueue.Count;
+Check(
+    "emission-queue-drains-only-its-tick",
+    emissionStale.Count == 0 &&
+        emissionKeptAfterStale == 1 &&
+        emissionFresh.Count == 1 &&
+        emissionFresh[0].ContentId == "probe.arrow" &&
+        emissionLeftAfterDrain == 0,
+    $"stale={emissionStale.Count} keptAfterStale={emissionKeptAfterStale} " +
+        $"fresh={emissionFresh.Count} leftAfterDrain={emissionLeftAfterDrain}" +
+        "（跨 tick 不返回、不自清，排空后不留残）");
+
+// ---- §4 第 8 项：行为目录与声明目录的边界 ----
+// 处置结论是"不合并"：声明的键是行为类型（谁实现、读什么），profile 的键是
+// (BehaviorId, ProfileId)（这一条内容用哪组数）。两者都叫目录，答的问题不同；合并要么把
+// 内容数值挤进共享域，要么让共享目录认识 profile。边界由两条拒绝固定下来。
+AiRequirements p8Reads = AiRequirements.Empty.Require<VelocityComponent>();
+ProjectileBehaviorCatalog p8Catalog = new();
+p8Catalog.Register(new ProjectileBehaviorProfile(
+    new AiBehaviorId("HomingProjectile"),
+    new AiBehaviorProfileId("homing.default"),
+    typeof(ProjectileHomingAiBehavior),
+    p8Reads,
+    maximumSpeed: 0f,
+    turnRate: 0f,
+    range: 0f));
+bool p8TypeConflictRejected = false;
+try
+{
+  p8Catalog.Register(new ProjectileBehaviorProfile(
+      new AiBehaviorId("HomingProjectile"),
+      new AiBehaviorProfileId("homing.fast"),
+      typeof(ProjectileStraightAiBehavior),
+      p8Reads,
+      maximumSpeed: 0f,
+      turnRate: 0f,
+      range: 0f));
+}
+catch (InvalidOperationException)
+{
+  p8TypeConflictRejected = true;
+}
+
+Check(
+    "behavior-catalog-type-held-by-declaration",
+    p8TypeConflictRejected,
+    $"threw={p8TypeConflictRejected}（同一 BehaviorId 只能绑定一个实现类型）");
+p8Catalog.Seal();
+bool p8WrongBehaviorKeyRejected = false;
+try
+{
+  _ = p8Catalog.Get(new AiBehaviorId("Straight"), new AiBehaviorProfileId("homing.default"));
+}
+catch (KeyNotFoundException)
+{
+  p8WrongBehaviorKeyRejected = true;
+}
+
+Check(
+    "behavior-catalog-keyed-by-both-ids",
+    p8WrongBehaviorKeyRejected,
+    $"threw={p8WrongBehaviorKeyRejected}（profile 由 (BehaviorId, ProfileId) 共同定位）");
 
 // ---- P2：AI 运行入口 + 目标获取 ----
 // 这一组固定的是"行为差异来自内容定义"：同一套 AI 运行时，追踪 profile 会转向目标，
@@ -858,9 +1141,9 @@ AiSystem<ProjectileAiIntent> p2AiSystem = ProjectileAiRegistration.CreateSystem(
         new AiBehaviorProfileId("homing.default")));
 AiEntitySystem<ArchEntity, ProjectileAiIntent> p2AiEntities = new(p2AiSystem);
 ProjectileAiSnapshotProvider p2Snapshots = new(world, registry);
-ProjectileAiAdapter p2Adapter = new(world, p2AiEntities, p2Snapshots, p2Behaviors);
+ProjectileAiAdapter p2Adapter = new(world, p2AiEntities, p2Snapshots, p2Behaviors, registry);
 ProjectileTargetAcquisitionSystem p2Targets = new(world, registry);
-ProjectileMovementIntentSystem p2Intents = new(world);
+MovementIntentRequestSystem p2Install = new(world, registry);
 SpatialSimulationCoordinatorSystem p2Spatial = new(world, probeWorld);
 
 ProjectileCatalog p2Catalog = new();
@@ -873,20 +1156,22 @@ p2Catalog.Register(Recipe(
     collideWithTiles: false,
     attackId: "probe.attack.homing",
     damageType: DamageType.Magic,
+    initialVelocity: new Vector2(8f, 0f),
     homing: new ProjectileHomingSection(turnRate: 60f, range: 2000f)));
 ProjectileId p2StraightId = new("probe.straight");
 p2Catalog.Register(Recipe(
     "probe.straight",
     lifetimeTicks: 600,
     collideWithTiles: false,
-    attackId: "probe.attack.straight"));
+    attackId: "probe.attack.straight",
+    initialVelocity: new Vector2(8f, 0f)));
 p2Catalog.Seal();
-ProjectileLifecycleSystem p2Lifecycle = new(world, p2Catalog, registry);
+ProjectileLifecycleSystem p2Lifecycle = new(world, p2Catalog, behaviors, registry);
 
 // 目标与弹体不同阵营；目标在弹体正下方 600px（在追踪半径内）。
 EntityRuntimeHandle p2TargetHandle = registry.Allocate(EntityUuid.Create());
 ArchEntity p2TargetEntity = world.Create();
-registry.RegisterOwner(p2TargetHandle, p2TargetEntity);
+registry.Register(p2TargetHandle, p2TargetEntity);
 world.Add(p2TargetEntity, new LocationComponent(new Vector2(300f, 900f)));
 world.Add(p2TargetEntity, new EntityFactionComponent(Faction.Friendly));
 world.Add(p2TargetEntity, new LifeComponent(100, 100));
@@ -896,18 +1181,12 @@ ProjectileSpawnResult p2Homing = p2Lifecycle.TrySpawn(new ProjectileSpawnRequest
     ownerHandle,
     new ProjectileSourceMetadataComponent("probe", "homing"),
     position: new Vector2(300f, 300f),
-    velocity: new Vector2(8f, 0f),
-    collider: new ColliderComponent(new Vector2(8f, 8f)),
-    size: new EntitySizeComponent(8, 8),
     faction: Faction.Hostile));
 ProjectileSpawnResult p2Straight = p2Lifecycle.TrySpawn(new ProjectileSpawnRequest(
     p2StraightId,
     ownerHandle,
     new ProjectileSourceMetadataComponent("probe", "straight"),
     position: new Vector2(300f, 300f),
-    velocity: new Vector2(8f, 0f),
-    collider: new ColliderComponent(new Vector2(8f, 8f)),
-    size: new EntitySizeComponent(8, 8),
     faction: Faction.Hostile));
 Check(
     "p2-spawned",
@@ -918,9 +1197,11 @@ Check(
 void RunProjectileTick(long tick)
 {
   EcsServerTickContext context = new(world, tick, p2Delta);
-  p2Intents.Update(context);
+  p2Adapter.Update(context);
   p2Targets.Update(context);
   p2Adapter.Update(context);
+  // 安装步骤不可省：AI 只把意图投进队列，空间求解读的是组件。
+  p2Install.Update(context);
   p2Spatial.Update(context);
 }
 
@@ -965,7 +1246,7 @@ Check("behavior-state-advances", p2Rev > 0, $"revision={p2Rev}");
 // 换目标：放一个更近的敌对阵营实体，版本号必须递增。
 EntityRuntimeHandle p2SecondHandle = registry.Allocate(EntityUuid.Create());
 ArchEntity p2SecondTarget = world.Create();
-registry.RegisterOwner(p2SecondHandle, p2SecondTarget);
+registry.Register(p2SecondHandle, p2SecondTarget);
 world.Add(p2SecondTarget, new LocationComponent(new Vector2(320f, 340f)));
 world.Add(p2SecondTarget, new EntityFactionComponent(Faction.Friendly));
 world.Add(p2SecondTarget, new LifeComponent(100, 100));
@@ -976,6 +1257,72 @@ Check(
         p2Switched.Target == p2SecondHandle &&
         p2Switched.Revision == 2,
     $"revision={(world.TryGet(p2Homing.Entity, out ProjectileTargetComponent r) ? r.Revision : -1)}");
+
+// ---- §4 第 6 项：意图写路径统一到请求队列 ----
+// 断言分两半：适配器跑完、安装之前组件必须没被改写（只有队列里有请求）；安装之后才落地。
+// 这两半合起来才证明"投射物域不持有 MovementIntent 的写权限"，只测最终值测不出来。
+EcsServerTickContext p6Context = new(world, 142, p2Delta);
+p2Adapter.Update(p6Context);
+p2Targets.Update(p6Context);
+long p6TickBeforeAdapter = world.Get<MovementIntent>(p2Homing.Entity).Tick;
+p2Adapter.Update(p6Context);
+bool p6OnlyQueued =
+    world.Get<MovementIntent>(p2Homing.Entity).Tick == p6TickBeforeAdapter &&
+    MovementIntentRequestQueue.Require(world).Count > 0;
+p2Install.Update(p6Context);
+MovementIntent p6Installed = world.Get<MovementIntent>(p2Homing.Entity);
+Check(
+    "ai-intent-goes-through-request-queue",
+    p6OnlyQueued &&
+        p6Installed.Tick == 142 &&
+        p6Installed.Source == MovementIntentSource.Ai &&
+        p6Installed.HasDesiredVelocity &&
+        p6Installed.DesiredVelocity.LengthSquared() > 0f,
+    $"queuedOnly={p6OnlyQueued} tick={p6Installed.Tick} source={p6Installed.Source} desired={p6Installed.DesiredVelocity.Length():0.00}");
+
+// ---- §4 第 7 项：快照投影改 contributor 形态 ----
+// 分工由断言固定：provider 只认识"哪些事实类型被声明过"，每个事实的来源域各住一个 contributor。
+// 三个观测点：默认集合覆盖四项事实、同一事实被两个 contributor 认领直接失败、
+// 只声明一项事实时其余 contributor 不被调用（用计数 contributor 观察调用次数）。
+IReadOnlyList<IProjectileAiSnapshotContributor> p7Contributors =
+    ProjectileAiSnapshotContributors.CreateDefault(world, registry);
+ProjectileAiSnapshotProvider p7Provider = new(p7Contributors);
+Type[] p7ExpectedFacts =
+[
+  typeof(LocationComponent),
+  typeof(VelocityComponent),
+  typeof(ProjectileHomingCapabilityComponent),
+  typeof(ProjectileTargetFact)
+];
+bool p7CoversAll = p7ExpectedFacts.All(p7Provider.FactTypes.Contains) &&
+    p7Provider.FactTypes.Count == p7ExpectedFacts.Length;
+Check(
+    "snapshot-contributors-cover-every-fact",
+    p7CoversAll,
+    $"facts={string.Join(",", p7Provider.FactTypes.Select(static type => type.Name))}");
+
+bool p7DuplicateRejected = false;
+try
+{
+  ProjectileAiSnapshotProvider p7Broken = new([p7Contributors[0], p7Contributors[0]]);
+  _ = p7Broken.FactTypes.Count;
+}
+catch (ArgumentException)
+{
+  p7DuplicateRejected = true;
+}
+
+Check("snapshot-contributor-duplicate-fact-rejected", p7DuplicateRejected, $"threw={p7DuplicateRejected}");
+
+CountingContributor p7Counting = new(typeof(ProjectileTargetFact));
+ProjectileAiSnapshotProvider p7Selective = new([p7Counting]);
+p7Selective.Capture(p2Homing.Entity, [typeof(LocationComponent)]);
+int p7SkippedCalls = p7Counting.Calls;
+p7Selective.Capture(p2Homing.Entity, [typeof(ProjectileTargetFact)]);
+Check(
+    "snapshot-contributor-only-projecting-source",
+    p7SkippedCalls == 0 && p7Counting.Calls == 1,
+    $"undeclaredCalls={p7SkippedCalls} declaredCalls={p7Counting.Calls}");
 
 // ---- P4：反弹策略 + 穿透预算状态机 ----
 // 预算是弹体自身的"生命值"：命中与反弹共用同一份计数，两个计数器必然漂移。
@@ -1077,6 +1424,7 @@ snapshotCatalog.Register(Recipe(
     "snapshot.straight",
     lifetimeTicks: 600,
     attackId: "projectile.snapshot.straight",
+    initialVelocity: new Vector2(4f, 0f),
     liquidEnabled: false,
     affectedLiquids: LiquidContactFlags.None));
 ProjectileId snapshotHomingId = new("snapshot.homing");
@@ -1086,13 +1434,14 @@ snapshotCatalog.Register(Recipe(
     profileId: "homing.default",
     lifetimeTicks: 300,
     attackId: "projectile.snapshot.homing",
+    initialVelocity: new Vector2(4f, 0f),
     maximumHits: 3,
     liquidEnabled: false,
     affectedLiquids: LiquidContactFlags.None,
     homing: new ProjectileHomingSection(turnRate: 6f, range: 320f)));
 snapshotCatalog.Seal();
 
-ProjectileLifecycleSystem snapshotLifecycle = new(world, snapshotCatalog, registry);
+ProjectileLifecycleSystem snapshotLifecycle = new(world, snapshotCatalog, behaviors, registry);
 ArchEntity SnapshotSpawn(string name, ProjectileId id)
 {
   ProjectileSpawnResult result = snapshotLifecycle.TrySpawn(new ProjectileSpawnRequest(
@@ -1100,10 +1449,7 @@ ArchEntity SnapshotSpawn(string name, ProjectileId id)
       ownerHandle,
       new ProjectileSourceMetadataComponent("snapshot", name),
       position: new Vector2(900f, 900f),
-      velocity: new Vector2(4f, 0f),
-      collider: new ColliderComponent(new Vector2(8f, 8f)),
-      size: new EntitySizeComponent(8, 8),
-      faction: Faction.Hostile));
+        faction: Faction.Hostile));
   if (result.Status != ProjectileLifecycleStatus.Applied)
   {
     throw new InvalidOperationException($"snapshot-{name} spawn failed: {result.Status}");
@@ -1220,6 +1566,138 @@ Check(
         ? "液体无接触 / 重复声明 / 封口后写入 三类均在建服期拒绝"
         : contractReport);
 
+
+// ---- 命中准入四态：合并共享拒绝码前的行为基线 ----
+// 审计 §4 第 3 项要把 DamageRejectionReason 并进共享 DamageRejectionReason。
+// 先钉住"哪条判据先命中"：码值换成共享枚举时，判定顺序与分支归属必须原样保留。
+// 四个分支的边界各测一次：不可用（句柄解析不到）、不活跃（处置已终止）、
+// 目标免疫（该弹体对目标的命中冷却）、放行。免疫另测一次到期后回到放行。
+using (ArchWorld admissionWorld = ArchWorld.Create())
+{
+  ProjectileRuntimeRegistry admissionRegistry = new(worldScope: 1);
+  admissionWorld.Create(new ProjectileTerminationQueueComponent());
+  ProjectileHitResolutionSystem admissionHits = new(admissionWorld, admissionRegistry);
+  EntityRuntimeHandle admissionTarget = admissionRegistry.Allocate(EntityUuid.Create());
+  const long admissionTick = 5;
+
+  EntityRuntimeHandle admissionActive = admissionRegistry.Allocate(EntityUuid.Create());
+  ArchEntity admissionActiveEntity = admissionWorld.Create(
+      new ProjectileDispositionStateComponent(ProjectileDisposition.Active));
+  admissionRegistry.Register(admissionActive, admissionActiveEntity);
+  DamageRejectionReason activeAdmission =
+      admissionHits.CheckAdmission(admissionActive, admissionTarget, admissionTick);
+  Check(
+      "admission-active-projectile-accepted",
+      activeAdmission == DamageRejectionReason.None,
+      $"result={activeAdmission}");
+
+  // 句柄分配了但从未绑定实体：等价于弹体已被销毁，判"不可用"而不是"不活跃"。
+  EntityRuntimeHandle admissionUnbound = admissionRegistry.Allocate(EntityUuid.Create());
+  DamageRejectionReason unboundAdmission =
+      admissionHits.CheckAdmission(admissionUnbound, admissionTarget, admissionTick);
+  Check(
+      "admission-unbound-handle-unavailable",
+      unboundAdmission == DamageRejectionReason.SourceUnavailable,
+      $"result={unboundAdmission}");
+
+  // 实体还在、句柄还能解析，但处置已终止：判"不活跃"，与"不可用"必须分开。
+  EntityRuntimeHandle admissionTerminated = admissionRegistry.Allocate(EntityUuid.Create());
+  ArchEntity admissionTerminatedEntity = admissionWorld.Create(
+      new ProjectileDispositionStateComponent(ProjectileDisposition.Terminated));
+  admissionRegistry.Register(admissionTerminated, admissionTerminatedEntity);
+  DamageRejectionReason terminatedAdmission =
+      admissionHits.CheckAdmission(admissionTerminated, admissionTarget, admissionTick);
+  Check(
+      "admission-terminated-disposition-inactive",
+      terminatedAdmission == DamageRejectionReason.SourceInactive,
+      $"result={terminatedAdmission}");
+
+  ProjectileHitImmunityStateComponent admissionImmunity = new();
+  admissionImmunity.Record(admissionTarget, admissionTick, admissionTick + 5);
+  EntityRuntimeHandle admissionImmune = admissionRegistry.Allocate(EntityUuid.Create());
+  ArchEntity admissionImmuneEntity = admissionWorld.Create(
+      new ProjectileDispositionStateComponent(ProjectileDisposition.Active),
+      admissionImmunity);
+  admissionRegistry.Register(admissionImmune, admissionImmuneEntity);
+  DamageRejectionReason immuneAdmission =
+      admissionHits.CheckAdmission(admissionImmune, admissionTarget, admissionTick);
+  Check(
+      "admission-recorded-hit-immune-within-window",
+      immuneAdmission == DamageRejectionReason.TargetImmune,
+      $"result={immuneAdmission}");
+  DamageRejectionReason expiredAdmission =
+      admissionHits.CheckAdmission(admissionImmune, admissionTarget, admissionTick + 5);
+  Check(
+      "admission-immune-window-expires",
+      expiredAdmission == DamageRejectionReason.None,
+      $"result={expiredAdmission}（授予 tick 5、时长 5 → tick 10 起放行）");
+}
+
+// ---- §4 第 9 项：终止历史归投射物生命周期，不归共享句柄注册表 ----
+// 注册表只回答"句柄指向谁"；"这个句柄是否已经终止过"是历史，实体销毁后只剩它能分辨
+// 「重复终止」与「陈旧句柄」。三个观测点：第一次提交 Applied、同句柄第二次 AlreadyTerminated、
+// 从未绑定过的句柄 StaleReference。把历史留在注册表里就测不出后两者会互相冒充。
+using (ArchWorld p9World = ArchWorld.Create())
+{
+  ProjectileRuntimeRegistry p9Registry = new(worldScope: 9);
+  ProjectileTerminationJournal p9Journal = new(worldScope: 9);
+  ProjectileCatalog p9Catalog = new();
+  p9Catalog.Register(Recipe("probe.journal", initialVelocity: new Vector2(1f, 0f)));
+  p9Catalog.Seal();
+  ProjectileLifecycleSystem p9Lifecycle = new(p9World, p9Catalog, behaviors, p9Registry, p9Journal);
+  EntityRuntimeHandle p9Owner = p9Registry.Allocate(EntityUuid.Create());
+  ArchEntity p9OwnerEntity = p9World.Create();
+  p9Registry.Register(p9Owner, p9OwnerEntity);
+  ProjectileSpawnResult p9Spawn = p9Lifecycle.TrySpawn(new ProjectileSpawnRequest(
+      new ProjectileId("probe.journal"),
+      p9Owner,
+      new ProjectileSourceMetadataComponent("probe", "journal"),
+      position: Vector2.Zero,
+        faction: Faction.Hostile));
+  Check(
+      "journal-spawn-applied",
+      p9Spawn.Status == ProjectileLifecycleStatus.Applied,
+      $"status={p9Spawn.Status}");
+
+  ProjectileTerminationResult p9First = p9Lifecycle.CommitTermination(
+      p9Spawn.Handle,
+      ProjectileTerminationReason.Expired);
+  bool p9HandleGone = !p9Registry.TryResolve(p9Spawn.Handle, out _);
+  Check(
+      "journal-records-terminated-handle",
+      p9First.Status == ProjectileLifecycleStatus.Applied &&
+          p9Journal.Contains(p9Spawn.Handle) &&
+          p9Journal.Count == 1 &&
+          p9HandleGone,
+      $"status={p9First.Status} count={p9Journal.Count} resolved={!p9HandleGone}");
+
+  // 同一句柄的第二次提交：实体已经销毁、注册表解析不到，仍然必须判「重复终止」。
+  ProjectileTerminationResult p9Second = p9Lifecycle.CommitTermination(
+      p9Spawn.Handle,
+      ProjectileTerminationReason.Expired);
+  Check(
+      "journal-second-termination-already-terminated",
+      p9Second.Status == ProjectileLifecycleStatus.AlreadyTerminated &&
+          p9Journal.Count == 1,
+      $"status={p9Second.Status} count={p9Journal.Count}");
+
+  // 从未终止过的句柄：注册表同样解析不到，但历史里没有，判「陈旧句柄」。
+  EntityRuntimeHandle p9Stale = p9Registry.Allocate(EntityUuid.Create());
+  ProjectileTerminationResult p9StaleResult = p9Lifecycle.CommitTermination(
+      p9Stale,
+      ProjectileTerminationReason.Expired);
+  Check(
+      "journal-unrecorded-handle-is-stale",
+      p9StaleResult.Status == ProjectileLifecycleStatus.StaleReference &&
+          !p9Journal.Contains(p9Stale),
+      $"status={p9StaleResult.Status} recorded={p9Journal.Contains(p9Stale)}");
+
+  p9Journal.Clear();
+  Check(
+      "journal-clear-forgets-history",
+      p9Journal.Count == 0 && !p9Journal.Contains(p9Spawn.Handle),
+      $"count={p9Journal.Count}");
+}
 
 Console.WriteLine();
 Console.WriteLine(
@@ -1369,5 +1847,28 @@ internal sealed class SealViolationSection : IProjectileSection
   {
     // 第二遍仍在写参数：封口若发生在折叠之后，这一行会静默生效。
     parameters.DeclareTileCollision(enabled: false);
+  }
+}
+
+/// <summary>只认领一种事实的 contributor，用来观察"没被声明就不调用"。</summary>
+internal sealed class CountingContributor : IProjectileAiSnapshotContributor
+{
+  private readonly Type _factType;
+
+  public CountingContributor(Type factType)
+  {
+    _factType = factType;
+    FactTypes = [factType];
+  }
+
+  /// <summary>Number of times <see cref="Contribute" /> ran.</summary>
+  public int Calls { get; private set; }
+
+  public IReadOnlyList<Type> FactTypes { get; }
+
+  public AiSnapshot Contribute(ArchEntity entity, AiSnapshot snapshot)
+  {
+    Calls++;
+    return snapshot;
   }
 }

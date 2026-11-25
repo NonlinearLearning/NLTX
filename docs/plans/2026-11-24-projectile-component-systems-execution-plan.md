@@ -122,8 +122,7 @@ P5 命中效果 + 内容扩展族    ──→ 内容可增量
 
 ### 4.1 输入
 
-- `Terraria.Lvcs` 契约（`ILvcsCodec<TRaw,TValue>`、`LvcsFamilyId`、`LvcsDiagnosticSink`）
-- `NSSLC.Infrastructure.Lvcs`（`FileLvcsSource`、`LvcsLoader`、`LvcsCodecRegistry`）
+- `NSSLC.Infrastructure.Lvcs` 契约（`ILvcsCodec<TRaw,TValue>`、`LvcsFamilyId`、`LvcsDiagnosticSink`）与适配器（`FileLvcsSource`、`LvcsLoader`、`LvcsCodecRegistry`）——契约 2026-11-25 前在 `Terraria.Lvcs` 共享程序集，见 [CR](../cr/CR-2026-11-25-lvcs-contract-relocation.md)
 - 既有 `ProjectileDefinitionCatalog`（`Seal()` 后为不可变目录）
 - 参照族：`NSSLC.Server/Content/ItemUse/{ItemUseCodec,ItemUsePrototype}.cs`
 
@@ -140,7 +139,7 @@ P5 命中效果 + 内容扩展族    ──→ 内容可增量
 
 ### 4.3 约束
 
-- `Terraria.Lvcs` 不得引用 `System.IO`；文件枚举只在 `NSSLC.Infrastructure.Lvcs`。
+- LVCS 契约文件不得引用 `System.IO`；文件枚举只在 `FileLvcsSource`。
 - `ProjectileDefinitionCatalog` 必须 `Seal()` 后交给系统，符合输入边界规则 3。
 - 字段组不要命名成 `ProjectileDataComponent` / `ProjectileInfo`；按组件命名约束用 `...Policy` / `...Profile`。
 

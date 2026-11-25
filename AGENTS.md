@@ -37,8 +37,10 @@
 ## Item And Inventory Design
 
 - 新增或修改物品身份、物品堆、库存槽位、世界掉落物、物品使用配置，或调整物品载荷与
-  世界/容器两侧的状态归属前，阅读
-  [物品载荷与双宿主设计约束](docs/architecture/物品载荷与双宿主设计约束.md)。
+  实体态/非实体态的状态归属前，阅读
+  [物品载荷与单一物品系统设计约束](docs/architecture/物品载荷与单一物品系统设计约束.md)；
+  实现落位与迁移批次见
+  [Item 系统设计：单域 · 双状态](docs/architecture/2026-11-25-item-single-domain-dual-state-design.md)。
 
 ## ECS System Input Boundary
 

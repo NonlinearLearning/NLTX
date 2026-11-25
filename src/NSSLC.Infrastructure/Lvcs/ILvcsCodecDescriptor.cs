@@ -1,4 +1,4 @@
-namespace Terraria.Share.Lvcs;
+namespace NSSLC.Infrastructure.Lvcs;
 
 /// <summary>
 /// Non generic view of a codec, so a registry can hold codecs of differing type arguments.

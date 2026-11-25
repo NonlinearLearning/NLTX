@@ -2,13 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using Terraria.Share.Items;
 
 namespace Terraria.Share.Inventory;
 
 /// <summary>Grants inventory capability; InventorySystem coordinates mutations.</summary>
+/// <remarks>
+/// 手持概念属于这里：Version4 的 <c>Player.HeldItem</c> 就是 <c>inventory[selectedItem]</c>
+/// （<c>Player.cs:3837</c>），选中槽只是库存的一个索引，不是独立的手部关系。因此本组件同时
+/// 承载槽位值与 <see cref="HeldSlot"/>；被手持的载荷仍然只有槽里那一份，读取一律走
+/// <see cref="TryGetHeld"/>。
+/// </remarks>
 public sealed class InventoryComponent {
   private readonly InventorySlot[] _slots;
   private readonly ReadOnlyCollection<InventorySlot> _readOnlySlots;
+  private HeldSlot? _held;
 
   /// <summary>A live read-only view for use within the host's exclusive access phase.</summary>
   public IReadOnlyList<InventorySlot> Slots => _readOnlySlots;
@@ -16,6 +24,9 @@ public sealed class InventoryComponent {
   public int Count => _slots.Length;
 
   public bool IsEmpty => Array.TrueForAll(_slots, static slot => slot.IsEmpty);
+
+  /// <summary>The slot this inventory currently holds; <c>null</c> when nothing is held.</summary>
+  public HeldSlot? Held => _held;
 
   public InventoryComponent(IEnumerable<InventorySlotDefinition> definitions) {
     ArgumentNullException.ThrowIfNull(definitions);
@@ -51,6 +62,24 @@ public sealed class InventoryComponent {
 
     slot = default;
     return false;
+  }
+
+  /// <summary>
+  /// Reads the stack this inventory holds, or <c>null</c> when the held slot is unset, missing or
+  /// empty. This is the only way to get the handheld payload: it is the slot's own value.
+  /// </summary>
+  public ItemStack? TryGetHeld() {
+    return _held is HeldSlot held && TryGetSlot(held.Index, out InventorySlot slot)
+        ? slot.Content
+        : null;
+  }
+
+  /// <summary>True when the held slot is set, present and nonempty.</summary>
+  public bool HasHeldItem => TryGetHeld() is not null;
+
+  /// <summary>Commits a held-slot change; the inventory owner is the only caller.</summary>
+  internal void CommitHeld(HeldSlot? held) {
+    _held = held;
   }
 
   internal InventorySlot[] CaptureSlots() {

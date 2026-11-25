@@ -6,12 +6,15 @@ using Terraria.Share.Relationships;
 
 namespace Terraria.Unshared.Projectiles;
 
-/// <summary>Projectile lifecycle metadata over the shared world entity registry.</summary>
-/// <remarks>The shared registry owns handle resolution; this type adds termination history.</remarks>
+/// <summary>Projectile-facing view over the shared world entity registry.</summary>
+/// <remarks>
+/// 这一层没有自己的状态：句柄分配、绑定、解析与代际全部由共享
+/// <see cref="EntityRuntimeRegistry" /> 持有。终止历史不在这里，见
+/// <see cref="ProjectileTerminationJournal" />——注册表只回答"这个句柄指向谁"，
+/// 不回答"这个句柄是不是已经被终止过"。
+/// </remarks>
 public sealed class ProjectileRuntimeRegistry : IEntityRuntimeResolver, IEntityRuntimeHandleResolver
 {
-  private readonly HashSet<EntityRuntimeHandle> _terminated = [];
-
   public ProjectileRuntimeRegistry(long worldScope)
       : this(new EntityRuntimeRegistry(worldScope))
   {
@@ -31,7 +34,12 @@ public sealed class ProjectileRuntimeRegistry : IEntityRuntimeResolver, IEntityR
   internal IEnumerable<KeyValuePair<EntityRuntimeHandle, ArchEntity>> Entities =>
       EntityRegistry.Entities;
 
-  public void RegisterOwner(EntityRuntimeHandle handle, in ArchEntity entity)
+  /// <summary>Binds a handle to its Arch entity; the single registration entry of this domain.</summary>
+  /// <remarks>
+  /// 没有按角色分名的别名：投射物、发射者、目标都是同一种"句柄→实体"绑定，
+  /// 共享注册表也只认一个 <see cref="EntityRuntimeRegistry.Register" />。
+  /// </remarks>
+  public void Register(EntityRuntimeHandle handle, in ArchEntity entity)
   {
     EntityRegistry.Register(handle, entity);
   }
@@ -39,16 +47,6 @@ public sealed class ProjectileRuntimeRegistry : IEntityRuntimeResolver, IEntityR
   public EntityRuntimeHandle Allocate(EntityUuid id)
   {
     return EntityRegistry.Allocate(id);
-  }
-
-  public void RegisterProjectile(EntityRuntimeHandle handle, in ArchEntity entity)
-  {
-    RegisterOwner(handle, entity);
-  }
-
-  public void RegisterEntity(EntityRuntimeHandle handle, in ArchEntity entity)
-  {
-    RegisterOwner(handle, entity);
   }
 
   public bool TryResolve(EntityRuntimeHandle handle, out ArchEntity entity)
@@ -61,17 +59,6 @@ public sealed class ProjectileRuntimeRegistry : IEntityRuntimeResolver, IEntityR
     return EntityRegistry.TryGetHandle(entity, out handle);
   }
 
-  public bool IsTerminated(EntityRuntimeHandle handle)
-  {
-    return _terminated.Contains(handle);
-  }
-
-  public void MarkTerminated(EntityRuntimeHandle handle)
-  {
-    EnsureWorld(handle);
-    _terminated.Add(handle);
-  }
-
   public bool Remove(EntityRuntimeHandle handle, out ArchEntity entity)
   {
     return EntityRegistry.Remove(handle, out entity);
@@ -80,7 +67,6 @@ public sealed class ProjectileRuntimeRegistry : IEntityRuntimeResolver, IEntityR
   public void Clear()
   {
     EntityRegistry.Clear();
-    _terminated.Clear();
   }
 
   internal bool SharesRegistryWith(
@@ -92,13 +78,5 @@ public sealed class ProjectileRuntimeRegistry : IEntityRuntimeResolver, IEntityR
     bool handleResolverMatches = ReferenceEquals(handleResolver, this) ||
         ReferenceEquals(handleResolver, EntityRegistry);
     return resolverMatches && handleResolverMatches;
-  }
-
-  private void EnsureWorld(EntityRuntimeHandle handle)
-  {
-    if (!handle.IsValid || handle.WorldScope != WorldScope)
-    {
-      throw new ArgumentException("The runtime handle belongs to another world.", nameof(handle));
-    }
   }
 }

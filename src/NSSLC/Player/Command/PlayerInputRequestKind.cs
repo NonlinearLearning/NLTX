@@ -7,5 +7,8 @@ public enum PlayerInputRequestKind : byte
   SetPosition,
 
   /// <summary>Overwrite one inventory slot from client input.</summary>
-  SetInventorySlot
+  SetInventorySlot,
+
+  /// <summary>Point the inventory's held slot at the slot the client selected.</summary>
+  SelectHeldSlot
 }

@@ -120,6 +120,7 @@ VerifyAnchorOrdering();
 VerifyGeneratedEdgesAreLoadBearing();
 VerifyCommitTable();
 VerifyNpcNetworkProjection();
+VerifyNearestEntityQuery();
 string sharedApiSummary = Terraria.Verification.SharedApiUsage.Verify();
 Console.WriteLine(sharedApiSummary);
 Console.WriteLine(
@@ -521,6 +522,79 @@ static void VerifyCeilingHitIsNotGrounding()
   Require(!risen.Commit.Grounding.IsGrounded,
       "A ceiling hit while moving up was incorrectly treated as grounded.");
 }
+static void VerifyNearestEntityQuery()
+{
+  using ArchWorld world = ArchWorld.Create();
+  QueryDescription candidates = new QueryDescription().WithAll<
+      EntityFactionComponent,
+      LifeComponent,
+      LocationComponent>();
+  Vector2 origin = new(0f, 0f);
+  ArchEntity near = world.Create(
+      new EntityFactionComponent(Faction.Hostile),
+      new LifeComponent(10, 10),
+      new LocationComponent(new Vector2(30f, 40f)));
+  world.Create(
+      new EntityFactionComponent(Faction.Hostile),
+      new LifeComponent(10, 10),
+      new LocationComponent(new Vector2(300f, 400f)));
+  ArchEntity dead = world.Create(
+      new EntityFactionComponent(Faction.Hostile),
+      new LifeComponent(0, 10),
+      new LocationComponent(new Vector2(10f, 10f)));
+
+  Require(
+      NearestEntityQuery.TryFind(
+          world,
+          in candidates,
+          origin,
+          0f,
+          (ArchEntity entity, in EntityFactionComponent faction, in LifeComponent life) => life.IsAlive,
+          out NearestEntityCandidate nearest),
+      "The shared nearest-entity query found no candidate inside an unlimited range.");
+  Require(nearest.Entity == near, "The shared nearest-entity query did not pick the nearest candidate.");
+  Require(
+      nearest.DistanceSquared == 2_500f,
+      $"The shared nearest-entity query reported {nearest.DistanceSquared} instead of 2500.");
+  Require(
+      nearest.Position == new Vector2(30f, 40f),
+      "The shared nearest-entity query reported a position that is not the candidate's.");
+
+  // 半径是严格上限：最近的存活候选在 50 像素外，40 像素的半径必须一个都选不出来。
+  Require(
+      !NearestEntityQuery.TryFind(
+          world,
+          in candidates,
+          origin,
+          40f,
+          (ArchEntity entity, in EntityFactionComponent faction, in LifeComponent life) => life.IsAlive,
+          out _),
+      "The shared nearest-entity query accepted a candidate outside the radius.");
+
+  // 判据由调用方负责：排除存活判据后，死亡且最近的那个会成为选中项。
+  Require(
+      NearestEntityQuery.TryFind(
+          world,
+          in candidates,
+          origin,
+          0f,
+          (ArchEntity entity, in EntityFactionComponent faction, in LifeComponent life) => true,
+          out NearestEntityCandidate unfiltered) &&
+      unfiltered.Entity == dead,
+      "The shared nearest-entity query ignored the candidate predicate's absence of filtering.");
+
+  // 全体被拒时返回 false，而不是给出默认候选。
+  Require(
+      !NearestEntityQuery.TryFind(
+          world,
+          in candidates,
+          origin,
+          0f,
+          (ArchEntity entity, in EntityFactionComponent faction, in LifeComponent life) => false,
+          out _),
+      "The shared nearest-entity query reported a hit although the predicate rejected every candidate.");
+}
+
 static void Require(bool condition, string message)
 {
   if (!condition)

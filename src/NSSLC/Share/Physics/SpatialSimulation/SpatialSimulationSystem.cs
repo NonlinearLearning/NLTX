@@ -118,8 +118,12 @@ public sealed class SpatialSimulationSystem
     }
 
     // 重新组装时要把接触几何一起带上，否则子步循环里查到的"撞了哪块瓦片"就丢了。
+    // 位移的时间基是整帧 deltaTime 而不是 substepDelta：motionVelocity 已经是"每子步速度"
+    // （按 substepDelta 归一），再乘 substepDelta 会让多子步实体的本帧位移只剩 1/substepCount，
+    // 回写速度随之被均分——extraUpdates=1 的弹体每 tick 掉一半速度。单子步时两者相等，
+    // 因此 NPC 与玩家路径的既有行为不变。
     SpatialTileMotionResult motion = new(
-        position, motionVelocity * substepDelta, collidedX, collidedY, contact);
+        position, motionVelocity * deltaTime, collidedX, collidedY, contact);
     if (!motion.IsFinite)
     {
       return SpatialSimulationResult<TEntity>.Rejected(

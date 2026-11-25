@@ -95,6 +95,11 @@ public sealed class ProjectileTargetAcquisitionSystem : BaseSystem<ArchWorld, Ec
   /// <summary>
   /// 找最近的敌对实体；<paramref name="range" /> 为 0 表示不限制距离，与追踪行为的判定口径一致。
   /// </summary>
+  /// <remarks>
+  /// 半径按严格小于判定，是共享选择器的统一口径。追踪行为自身那一层仍按
+  /// <see cref="ProjectileHomingAiBehavior" /> 的「不大于」判定，两者只在距离恰好等于半径的
+  /// 那一个值上不同：本方法不锁定，行为端于是退化成匀速直线，不会锁定一个不追击的目标。
+  /// </remarks>
   private bool TryFindNearestHostile(
       ArchEntity shooter,
       Vector2 origin,
@@ -111,36 +116,30 @@ public sealed class ProjectileTargetAcquisitionSystem : BaseSystem<ArchWorld, Ec
         ? ownerComponent.Owner
         : default;
 
-    float nearest = range > 0f ? range * range : float.MaxValue;
-    EntityRuntimeHandle nearestHandle = default;
-    World.Query(
+    Faction shooterFactionValue = shooterFaction.Value;
+    // 最近实体的空间选择由共享查询负责；这里只留"谁算敌对目标"这一条判据。
+    if (!NearestEntityQuery.TryFind(
+        World,
         in _candidateQuery,
-        (ArchEntity candidate,
-            ref EntityFactionComponent faction,
-            ref LifeComponent life,
-            ref LocationComponent candidateLocation) =>
+        origin,
+        range,
+        (ArchEntity candidate, in EntityFactionComponent faction, in LifeComponent life) =>
         {
-          if (candidate == shooter || faction.Value == shooterFaction.Value || !life.IsAlive)
+          if (candidate == shooter || faction.Value == shooterFactionValue || !life.IsAlive)
           {
-            return;
+            return false;
           }
 
-          if (!_handles.TryGetHandle(candidate, out EntityRuntimeHandle handle) || handle == owner)
-          {
-            return;
-          }
+          return _handles.TryGetHandle(candidate, out EntityRuntimeHandle handle) &&
+              handle != owner;
+        },
+        out NearestEntityCandidate nearest))
+    {
+      return false;
+    }
 
-          float distance = Vector2.DistanceSquared(origin, candidateLocation.Coordinates);
-          if (distance > nearest)
-          {
-            return;
-          }
-
-          nearest = distance;
-          nearestHandle = handle;
-        });
-
-    if (!nearestHandle.IsValid)
+    if (!_handles.TryGetHandle(nearest.Entity, out EntityRuntimeHandle nearestHandle) ||
+        !nearestHandle.IsValid)
     {
       return false;
     }

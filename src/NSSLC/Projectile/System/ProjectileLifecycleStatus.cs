@@ -9,5 +9,8 @@ public enum ProjectileLifecycleStatus : byte
   OwnerUnavailable = 3,
   StaleReference = 4,
   AlreadyTerminated = 5,
-  Deferred = 6
+  Deferred = 6,
+
+  /// <summary>定义存在，但其 behavior id / profile id 在行为目录里解析不到（内容缺陷）。</summary>
+  BehaviorUnknown = 7
 }

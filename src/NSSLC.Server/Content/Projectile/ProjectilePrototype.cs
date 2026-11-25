@@ -34,6 +34,16 @@ internal sealed class ProjectilePrototype
   [JsonPropertyName("collider")]
   public ProjectileColliderPrototype? Collider { get; set; }
 
+  /// <summary>
+  /// 出厂速度：生成时写入的初始运动，之后由 AI 行为接管。
+  /// </summary>
+  /// <remarks>
+  /// 速度属于内容而不是发射意图——发射方只说"在哪、射什么"。
+  /// 省略时为零速，适用于生成后完全由 AI 决定运动的弹体。
+  /// </remarks>
+  [JsonPropertyName("initialVelocity")]
+  public ProjectileInitialVelocityPrototype? InitialVelocity { get; set; }
+
   [JsonPropertyName("tileCollide")]
   public bool TileCollide { get; set; } = true;
 
@@ -73,6 +83,16 @@ internal sealed class ProjectileColliderPrototype
 
   [JsonPropertyName("height")]
   public float Height { get; set; }
+}
+
+/// <summary>出厂速度 of one projectile entry, in world units per tick.</summary>
+internal sealed class ProjectileInitialVelocityPrototype
+{
+  [JsonPropertyName("x")]
+  public float X { get; set; }
+
+  [JsonPropertyName("y")]
+  public float Y { get; set; }
 }
 
 /// <summary>Gravity parameters of one projectile entry.</summary>

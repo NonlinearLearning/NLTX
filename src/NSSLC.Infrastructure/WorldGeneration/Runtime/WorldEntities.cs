@@ -42,7 +42,9 @@ namespace NSSLC.WorldGeneration
     public bool ZoneRain;
     public bool ZoneGraveyard;
     public bool staffOfRegrowthBonus;
-    public Item HeldItem = new Item();
+    // Version4 的 HeldItem 是 inventory[selectedItem]（Player.cs:3837），不是独立存储的
+    // 第二份物品。这里保留同名只读表达，读取的始终是选中槽里的那一个实例。
+    public Item HeldItem => inventory[selectedItem];
 
     public static dynamic FindClosest(params dynamic[] arguments) => default;
 

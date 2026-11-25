@@ -1,14 +1,16 @@
 using System;
 using System.Numerics;
 using Terraria.Share.Combat;
-using Terraria.Share.Entities;
-using Terraria.Share.Movement;
-using Terraria.Share.Physics;
 using Terraria.Share.Relationships;
 
 namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Validated input for creating one projectile instance.</summary>
+/// <remarks>
+/// 请求只携带<b>实例级</b>输入：谁发的、用哪个定义、在哪、朝哪、属于哪个阵营。
+/// 碰撞体与尺寸不在这里——它们是实体定义的一部分（<see cref="ProjectileBasicsSection" />
+/// 的 <c>Contribute</c> 直接装配），物理系统只读不写，生成方不该提供几何。
+/// </remarks>
 public readonly record struct ProjectileSpawnRequest
 {
   public ProjectileSpawnRequest(
@@ -16,9 +18,6 @@ public readonly record struct ProjectileSpawnRequest
       EntityRuntimeHandle owner,
       ProjectileSourceMetadataComponent source,
       Vector2 position,
-      Vector2 velocity,
-      ColliderComponent collider,
-      EntitySizeComponent size,
       Faction faction)
   {
     if (!definitionId.IsValid)
@@ -38,7 +37,6 @@ public readonly record struct ProjectileSpawnRequest
     }
 
     ValidateFinite(position, nameof(position));
-    ValidateFinite(velocity, nameof(velocity));
     if (!Enum.IsDefined(faction))
     {
       throw new ArgumentOutOfRangeException(nameof(faction));
@@ -48,9 +46,6 @@ public readonly record struct ProjectileSpawnRequest
     Owner = owner;
     Source = source;
     Position = position;
-    Velocity = velocity;
-    Collider = collider;
-    Size = size;
     Faction = faction;
   }
 
@@ -62,12 +57,9 @@ public readonly record struct ProjectileSpawnRequest
 
   public Vector2 Position { get; }
 
-  public Vector2 Velocity { get; }
-
-  public ColliderComponent Collider { get; }
-
-  public EntitySizeComponent Size { get; }
-
+  /// <summary>
+  /// 阵营。出生速度不在这里：D3 把速度交给 AI 行为，生成请求只回答"谁、用什么、在哪"。
+  /// </summary>
   public Faction Faction { get; }
 
   private static void ValidateFinite(Vector2 value, string parameterName)

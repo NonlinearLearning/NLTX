@@ -1,4 +1,4 @@
-namespace Terraria.Share.Lvcs;
+namespace NSSLC.Infrastructure.Lvcs;
 
 /// <summary>Severity of one content diagnostic.</summary>
 public enum LvcsDiagnosticSeverity

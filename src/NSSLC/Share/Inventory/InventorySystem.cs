@@ -103,6 +103,47 @@ public sealed partial class InventorySystem {
     return InventoryTransferResult.Success(stack.Quantity);
   }
 
+  /// <summary>
+  /// Sets the slot this inventory holds, or clears the relation when <paramref name="held"/> is
+  /// <c>null</c>.
+  /// </summary>
+  /// <remarks>
+  /// 与 <see cref="TrySetSlotValue"/> 一样是槽位语义：只接受本库存确实存在的槽号，不做跨槽合并，
+  /// 也不搬运载荷。手持关系因此始终指向"某一格现有内容"，不会产生第二份物品副本。
+  /// </remarks>
+  public InventoryTransferResult TrySetHeldSlot(ArchEntity inventoryEntity, HeldSlot? held) {
+    InventoryTransferFailure failure = GetInventory(inventoryEntity, out InventoryComponent inventory);
+    if (failure != InventoryTransferFailure.None) {
+      return InventoryTransferResult.Rejected(failure);
+    }
+
+    if (held is HeldSlot selected && !inventory.TryGetSlot(selected.Index, out _)) {
+      return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidSlot);
+    }
+
+    inventory.CommitHeld(held);
+    return InventoryTransferResult.Success(0);
+  }
+
+  /// <summary>
+  /// Reads the held stack of one inventory. This is the server-side form of Version4
+  /// <c>Player.HeldItem</c>; it returns the slot's own value and never a copy of the payload.
+  /// </summary>
+  public bool TryGetHeldStack(ArchEntity inventoryEntity, out ItemStack stack) {
+    stack = default;
+    if (GetInventory(inventoryEntity, out InventoryComponent inventory) !=
+        InventoryTransferFailure.None) {
+      return false;
+    }
+
+    if (inventory.TryGetHeld() is not ItemStack held) {
+      return false;
+    }
+
+    stack = held;
+    return true;
+  }
+
   /// <summary>Removes a value stack from one slot.</summary>
   public InventoryTransferResult TryRemove(
       ArchEntity inventoryEntity,

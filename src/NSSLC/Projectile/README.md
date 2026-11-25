@@ -55,6 +55,10 @@ section 只持标量与值对象，运行时组件一律在 `Contribute` 里构�
 `AiBehaviorSelectionComponent` 只保存 `BehaviorId` 和 `ProfileId`。Profile 是不可变参数，
 `AiRequirements` 是行为输入声明，Planner 和运行时状态由共享 `AiBinding` 管理。
 
+行为看到的事实由按源域拆开的 contributor 投影：位置、速度、追踪能力、目标各一份，
+provider 自己不认识任何一种事实，只在行为声明过某项事实时调用对应 contributor。
+同一事实被两个 contributor 认领会在构造期失败。
+
 `ProjectileRecipe` 和 `ProjectileCatalog` 保存定义级默认值与查找结果，不创建实体、
 不持有 Arch `World`，也不保存运行时可变状态。
 
@@ -70,7 +74,11 @@ ProjectileMovementIntentSystem → MovementIntentRequestSystem
 PhysicsContactBuffer → CombatAttackIntentBuffer → Combat admission/commit → penetration/immunity → lifecycle termination
 ```
 
-穿透上限和命中免疫 Tick 是 Attributes 的数值输入；Projectile 只声明免疫能力并保存目标免疫 list 和 accepted hit 计数；终止请求进入 world-scoped `ProjectileTerminationBuffer`。免疫 list 按 `EntityRuntimeHandle` 的 world scope/generation
+穿透上限和命中免疫 Tick 是 Attributes 的数值输入；Projectile 只声明免疫能力并保存目标免疫 list 和 accepted hit 计数；终止请求进入 world-scoped `ProjectileTerminationBuffer`。
+
+终止历史归本域：`ProjectileTerminationJournal` 记住已经终止过的句柄，用于把「重复终止」与
+「陈旧句柄」分开。共享注册表只回答「句柄指向谁」，不背这份历史——实体销毁后组件消失，
+只有历史还在。免疫 list 按 `EntityRuntimeHandle` 的 world scope/generation
 区分目标，同一目标刷新窗口，不同目标同时保留。
 
 Projectile 行为属于共享 AI 系统的一种实现，不建立独立的 `ProjectileBehaviorSystem`。AI 不

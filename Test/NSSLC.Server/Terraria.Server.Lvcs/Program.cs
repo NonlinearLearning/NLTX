@@ -6,7 +6,6 @@ using Terraria.Share.Attributes;
 using Terraria.Share.Combat;
 using Terraria.Share.Entities;
 using Terraria.Share.Items;
-using Terraria.Share.Lvcs;
 using Terraria.Unshared.Projectiles;
 
 namespace Terraria.Server.Lvcs;

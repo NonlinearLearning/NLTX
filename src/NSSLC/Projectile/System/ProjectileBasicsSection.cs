@@ -48,6 +48,7 @@ public sealed class ProjectileBasicsSection : IProjectileSection
   private readonly CombatAttackId _attackDefinitionId;
   private readonly DamageType _damageType;
   private readonly int _baseDamage;
+  private readonly Vector2 _initialVelocity;
 
   public ProjectileBasicsSection(
       AiBehaviorId behaviorId,
@@ -61,6 +62,7 @@ public sealed class ProjectileBasicsSection : IProjectileSection
       CombatAttackId attackDefinitionId,
       DamageType damageType,
       int baseDamage,
+      Vector2 initialVelocity = default,
       bool collisionEnabled = true,
       uint collisionLayer = 1,
       uint collisionMask = uint.MaxValue)
@@ -111,6 +113,11 @@ public sealed class ProjectileBasicsSection : IProjectileSection
       throw new ArgumentOutOfRangeException(nameof(baseDamage));
     }
 
+    if (!float.IsFinite(initialVelocity.X) || !float.IsFinite(initialVelocity.Y))
+    {
+      throw new ArgumentOutOfRangeException(nameof(initialVelocity));
+    }
+
     _behaviorId = behaviorId;
     _profileId = profileId;
     _extraUpdates = extraUpdates;
@@ -125,6 +132,7 @@ public sealed class ProjectileBasicsSection : IProjectileSection
     _attackDefinitionId = attackDefinitionId;
     _damageType = damageType;
     _baseDamage = baseDamage;
+    _initialVelocity = initialVelocity;
 
     // 取整尺寸在这里派生一次：调用方（生成请求、物品使用射击）只读标量，不再二次取整。
     PixelWidth = checked((int)MathF.Ceiling(colliderWidth));
@@ -152,6 +160,16 @@ public sealed class ProjectileBasicsSection : IProjectileSection
   /// <summary>Base damage of the attack this projectile produces, before mitigation.</summary>
   public int BaseDamage => _baseDamage;
 
+  /// <summary>
+  /// 出厂速度：弹体生成时写入 <c>VelocityComponent</c> 的初始运动。
+  /// </summary>
+  /// <remarks>
+  /// 速度是<b>内容属性</b>，不是发射参数：发射意图只回答"在哪、射什么"，出生速度由内容声明。
+  /// 生成后 AI 行为从实体速度读到它并接管——直线弹保持它，追踪弹在它之上转向。
+  /// 这与参考端"箭有出膛速度、之后再被 AI 改写"是一致的。
+  /// </remarks>
+  public Vector2 InitialVelocity => _initialVelocity;
+
   /// <summary>内容声明的额外更新次数；子步数是它加一。</summary>
   public int ExtraUpdates => _extraUpdates;
 
@@ -177,11 +195,17 @@ public sealed class ProjectileBasicsSection : IProjectileSection
     builder
         // 身份每次生成都新建；宿主据此分配并登记运行时句柄。
         .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
+        // 碰撞体属于实体定义，不属于生成请求：物理系统只读它，从不由生成方提供。
+        // 与 NPC / 玩家的装配位置一致（见 NpcEntityDefinition.Add(ColliderComponent)）。
+        .Add(() => new ColliderComponent(new Vector2(_colliderWidth, _colliderHeight)))
         .Add(() => new EntityCollisionCapabilityComponent(
             Enabled: _collisionEnabled,
             // 层号在构造期已校验非负，这里是唯一一次拓宽；能力组件按位存放，负值无意义。
             Layer: (uint)_collisionLayer,
             Mask: _collisionMask))
+        // 出厂速度归内容定义，不归生成请求：发射接缝不携带速度（D2/D3）。
+        // AI 行为从实体速度读到它并接管，因此实体必须生成即带这一项，否则首帧无从计算。
+        .Add(() => new VelocityComponent(_initialVelocity))
         .Add(() => new AiBehaviorSelectionComponent(_behaviorId, _profileId))
         .Add(() => new ProjectileBehaviorStateComponent(0))
         .Add(() => new ProjectileLifetimeStateComponent(_lifetimeTicks))

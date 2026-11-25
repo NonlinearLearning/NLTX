@@ -30,14 +30,14 @@ VFS 的价值不在"统一接口"本身，而在三件事：**接口窄、类型
 
 ### 1.3 大小写
 
-C# 标识符按 [C# 风格约束](../../Context/项目约束/Google-CSharp-Style-Guide-约束.md) §2.1「缩写按单词处理，例如 `MyRpc`，不要写成 `MyRPC`」取 `Lvcs`（命名空间 `Terraria.Lvcs`、类型 `ILvcsCodec`）。文档正文使用 `LVCS` 作为系统名。
+C# 标识符按 [C# 风格约束](../../Context/项目约束/Google-CSharp-Style-Guide-约束.md) §2.1「缩写按单词处理，例如 `MyRpc`，不要写成 `MyRPC`」取 `Lvcs`（命名空间 `NSSLC.Infrastructure.Lvcs`、类型 `ILvcsCodec`）。文档正文使用 `LVCS` 作为系统名。
 
 ## 2. 分层与命名空间
 
-三层，职责互斥：
+两层加内容族，职责互斥（契约与适配器同属基础设施程序集，按文件区分职责）：
 
 ```text
-src/NSSLC/Share/Lvcs/                    namespace Terraria.Lvcs              契约（端口 + 值类型）
+src/NSSLC.Infrastructure/Lvcs/           namespace NSSLC.Infrastructure.Lvcs   契约（端口 + 值类型）
   LvcsFamilyId.cs                          族身份
   ILvcsUnit.cs / LvcsUnit.cs               原始内容单元
   ILvcsSource.cs                           内容来源端口
@@ -49,7 +49,7 @@ src/NSSLC/Share/Lvcs/                    namespace Terraria.Lvcs              �
   LvcsDiagnostic.cs / LvcsDiagnosticSeverity.cs / LvcsDiagnosticSink.cs   诊断
   LvcsLoadResult.cs                        加载结果
 
-src/NSSLC.Infrastructure/Lvcs/           namespace NSSLC.Infrastructure.Lvcs   适配器
+src/NSSLC.Infrastructure/Lvcs/           namespace NSSLC.Infrastructure.Lvcs   适配器（同一程序集）
   FileLvcsSource.cs                        文件枚举（唯一 System.IO）
   LvcsLoader.cs                            管线实现 + 异常转换
   LvcsCodecDescriptor.cs                   泛型 codec 到非泛型视图的包装
@@ -64,11 +64,24 @@ src/NSSLC.Server/Content/                namespace NSSLC.Server.Content        �
 
 | 约束原文 | 出处 | 推导 |
 | --- | --- | --- |
-| "ECS 领域层不依赖文件/云平台实现" | [架构边界](../../Context/架构约束/ECS领域与基础设施架构边界.md) §5 | `Terraria.Lvcs` 不得引用 `System.IO` |
+| "ECS 领域层不依赖文件/云平台实现" | [架构边界](../../Context/架构约束/ECS领域与基础设施架构边界.md) §5 | 契约文件不引用 `System.IO`；字节级 I/O 只出现在 `FileLvcsSource` |
 | "基础设施适配器…执行本地/云端文件访问、格式编解码" | 同上 §3 | 文件枚举属基础设施 |
 | "系统构造参数只允许 `ArchWorld`、只读端口、不可变目录对象" | [输入边界](../../Context/项目约束/ECS系统输入边界约束.md) 规则 3 | 加载结果是不可变目录，可作构造参数 |
+| "ECS 领域层…不负责字节流、序列化器配置" | 同上 §3 | 契约携带 `byte[]` 载荷与"单元+扩展名"形状，属基础设施数据，不得留在领域共享程序集 |
 
-**这条分界线在项目里已经存在**：`Terraria.*` 在共享项目、`NSSLC.Server.Content.*` 在服务端项目。
+**这条分界线在项目里已经存在**：`Terraria.*` 在领域共享项目、`NSSLC.Infrastructure.Lvcs` 在基础设施程序集、`NSSLC.Server.Content.*` 在服务端项目。
+
+### 2.1 契约归位（2026-11-25）
+
+本节原先把契约放在 `src/NSSLC/Share/Lvcs/`（namespace `Terraria.Share.Lvcs`），适配器放在 `src/NSSLC.Infrastructure/Lvcs/`。落地后暴露三个问题，契约定于 2026-11-25 整体迁入基础设施程序集：
+
+| 现象 | 证据 |
+| --- | --- |
+| 领域程序集导出自己从不使用的契约 | `git grep -n Lvcs 136c55d -- 'src/NSSLC/*.cs' 'src/NSSLC/**/*.cs'` 除 `Share/Lvcs/` 下的契约文件本身外零命中 |
+| 基础设施程序集为看自己的契约反向依赖领域程序集 | 迁移前 `NSSLC.Infrastructure.Lvcs.csproj` 引用 `Terraria.Components.csproj`；迁移后该引用删除 |
+| 契约携带字节载荷，与 §3「领域层不负责字节流」冲突 | `ILvcsUnit` 返回 `byte[]`，`ILvcsSource.ReadUnits()` 直接产出字节 |
+
+迁移后：namespace 统一为 `NSSLC.Infrastructure.Lvcs`；`Terraria.Components` 对 LVCS 零引用（`Share/Lvcs/**` 从该项目 `Compile` 项移除）；消费方 `NSSLC.Server` 与验证项目改为引用新命名空间。领域侧只保留加载产物（`ItemUseDefinitionCatalog`、`ProjectileCatalog`）作为不可变目录。
 
 ## 3. 身份
 
@@ -383,10 +396,11 @@ public sealed class LvcsLoadResult<TValue>
 | 族 | codec | 条目来源 | 规模 |
 | --- | --- | --- | --- |
 | `itemUse` | `ItemUseCodec` | `Content/Prototypes/ItemUse/item-use.json` | 3 条（当前夹具） |
+| `projectile` | `ProjectileCodec` | `Content/Prototypes/Projectile/projectile.json` | 4 条（wooden-arrow / homing-spark / bouncer-orb / gem-bolt） |
 
 ## 11. 已实现的验证
 
-验证项目：`Test/NSSLC.Server/Terraria.Server.Lvcs/`，**49 项断言全部通过**。
+验证项目：`Test/NSSLC.Server/Terraria.Server.Lvcs/`，**73 项断言全部通过**（2026-11-25 复核，含 §2.1 迁移后的重跑）。
 
 | 前缀 | 覆盖 | 项数 |
 | --- | --- | --- |
@@ -404,7 +418,10 @@ public sealed class LvcsLoadResult<TValue>
 | `registry-ext-*` | 扩展名命中、不匹配失败、原因含扩展名 | 3 |
 | `registry-ambiguous-*` | 同类型两 codec 歧义、指定扩展名后可区分、Family 正确 | 4 |
 | `registry-order-*` | **顺序无关**：两种相反注册顺序结果一致，歧义两边都失败 | 5 |
-| `dispatch-*` | 端到端经分派加载真实文件：解析命中、类型正确、已 Seal、无错误诊断 | 5 |
+| `dispatch-*` | 端到端经分派加载真实文件：解析命中、类型正确、已 Seal、无错误诊断 | 6 |
+| `shoot-*` | 射击接缝：声明即投影、未声明不出现、零速度与字段名拒绝 | 4 |
+| `projectile-*` | 投射物族：四条目投影、直线/追踪/反弹能力、未知伤害类型与未知消费顺序拒绝、最小条目接受、注册表解析 | 18 |
+| `section-*` | 族新增无需改 codec | 1 |
 
 ### 11.2 真实服务器启动验证
 
@@ -441,8 +458,8 @@ public sealed class LvcsLoadResult<TValue>
 
 ## 12. 三条硬约束
 
-1. **`Terraria.Lvcs` 不引用 `System.IO`、`System.Text.Json`、`System.Text.Encoding`。** 当前 12 个契约文件均为纯类型与接口。
-2. **`ILvcsSource` 只由基础设施实现。** 领域层只持接口。
+1. **契约文件不引用 `System.IO`、`System.Text.Json`、`System.Text.Encoding`。** `src/NSSLC.Infrastructure/Lvcs/` 下 13 个契约文件均为纯类型与接口；字节级 I/O 只允许出现在同目录的 `FileLvcsSource`。
+2. **`ILvcsSource` 只由基础设施实现，且领域程序集不引用 LVCS。** `Terraria.Components` 对 `NSSLC.Infrastructure.Lvcs` 零引用（见 §2.1）。
 3. **加载结果不得出现在可变形态。** `LvcsLoadResult<TValue>.Value` 由 codec 保证不可变（`ItemUseDefinitionCatalog` 在 `Project` 末尾 `Seal()`）。
 
 第 1 条现在多了一层含义：**分派也必须无 I/O**。`ILvcsCodecRegistry` 是纯内存表，`ILvcsCodecDescriptor.Load` 只是委托调用，不含任何文件访问。
@@ -476,13 +493,13 @@ public sealed class LvcsLoadResult<TValue>
 
 首批（ItemUse）已完成：
 
-1. `Terraria.Lvcs` 契约落地且不引用 `System.IO` ✓
+1. LVCS 契约落地于 `NSSLC.Infrastructure.Lvcs` 且不引用 `System.IO` ✓
 2. `ItemUse` 族经 `ILvcsCodec` 加载并 `Seal()` ✓
 3. 诊断可定位到"族 + 条目 + 字段 + 来源" ✓
 4. 分派层落地：按类型解析、扩展名细分、冲突拒绝注册、顺序无关 ✓
 5. 验证项目 **49 项**全绿，含真实文件路径、25 项分派用例，并有真实服务器启动对照 ✓
 6. `NSSLC.Infrastructure.Lvcs` 与验证项目各 0 警告 0 错误；`Terraria.Inventory`、`Terraria.ItemUse` 回归通过 ✓
 
-**未完成项**：`Terraria.Components` 与 `NSSLC.Server` 当前因外部改动 `src/NSSLC/Share/Entity/System/EcsServer.cs` 调用未定义的 `ValidateCoordinationRules` 而无法完整构建。该文件不属本轮改动（`git diff` 显示外部新增 149 行），LVCS 代码对零引用。按「保留无关修改」的约束未修复。
+**当时未完成项（已消除）**：记录的 `src/NSSLC/Share/Entity/System/EcsServer.cs` 调用未定义 `ValidateCoordinationRules` 导致的构建阻塞，2026-11-25 复核已随外部改动合入而消失：`Terraria.Components`、`NSSLC.Infrastructure.Lvcs`、`NSSLC.Server` 与 LVCS 验证项目均 0 警告 0 错误。
 
 后续族接入时须重复第 2、3、5、6 条；分派层（第 4 条）只需实现一次。

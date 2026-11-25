@@ -52,12 +52,6 @@ public static class CombatSystemRegistration
           EcsServerPhase.Preparation,
           EcsServerRegistrationKeys.CombatProjectileSpawn,
           new ProjectileSpawnRequestSystem(world, projectileLifecycle)),
-      // 排在生成之后，使仍在兼容同步路径上的投射物能够继续获得当前 tick 的意图；
-      // deferred 创建的实体从下一 tick 起进入这条管线。
-      new EcsServerSystemRegistration(
-          EcsServerPhase.Preparation,
-          EcsServerRegistrationKeys.CombatProjectileMovementIntent,
-          new ProjectileMovementIntentSystem(world)),
       new EcsServerSystemRegistration(
           EcsServerPhase.Simulation,
           EcsServerRegistrationKeys.CombatPhysicsContactCapture,

@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using NSSLC.Infrastructure.Lvcs;
 using Terraria.Share.Items;
-using Terraria.Share.Lvcs;
 
 namespace NSSLC.Server.Content.ItemUse;
 

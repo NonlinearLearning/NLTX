@@ -11,10 +11,10 @@ using NSSLC.Server.Content.Projectile;
 using Terraria.Share.Ai;
 using Terraria.Share.Attributes;
 using Terraria.Share.Combat;
+using Terraria.Share.Emission;
 using Terraria.Unshared.Session;
 using Terraria.Diagnostics;
 using Terraria.Share.Entities;
-using Terraria.Share.Lvcs;
 using Terraria.Unshared.EntitySpawn;
 using Terraria.Share.Inventory;
 using Terraria.Share.Items;
@@ -175,6 +175,8 @@ internal static class Program
     // 投射物终止队列挂在世界级实体上，生命周期、命中适配器与寿命推进共享同一组件。
     _ = ecsWorld.Create(new ProjectileTerminationQueueComponent());
     _ = ecsWorld.Create(new ProjectileSpawnQueueComponent());
+    // 发射意图队列：各域只声明"在哪朝哪射什么"，解析与生成归投射物域。
+    _ = ecsWorld.Create(new EmissionQueueComponent());
     // 世界物品变更请求队列：跨域只表达意图，由 World 域自己执行。
     _ = ecsWorld.Create(new WorldItemRequestQueueComponent());
     // 世界物品拾取请求队列：World 只提出"这件物品可以捡"，Inventory 决定能收下多少。
@@ -200,9 +202,12 @@ internal static class Program
     _ = ecsWorld.Create(new PhysicsContactQueueComponent());
     // 瓦片接触事实同样挂专用实体：空间协调系统发现它才写，反弹/贴壁策略在 P4 消费。
     _ = ecsWorld.Create(new TileContactQueueComponent());
+    // 行为目录要在生命周期之前就绪：生成期装配 AI 声明需要解析 behaviorType（D4）。
+    ProjectileBehaviorCatalog projectileBehaviors = CreateProjectileBehaviorProfiles();
     ProjectileLifecycleSystem projectileLifecycle = new(
         ecsWorld,
         projectileDefinitions,
+        projectileBehaviors,
         projectiles);
     ProjectileHitResolutionSystem projectileHits = new(ecsWorld, entities);
     PhysicsContactCaptureSystem physicsContacts = new(
@@ -701,8 +706,9 @@ internal static class Program
         attackDefinitions,
         attributeDependencyKeys: null));
     // 投射物 AI 的接入点只有一个：行为目录 + 快照提供者 + 适配器。
-    // 目标获取排在适配器之前，使"本 tick 锁定的目标"与"本 tick 算出的速度"来自同一帧；
-    // 适配器排在位移意图刷新之后，才能覆盖默认的 Stop 意图。
+    // 目标获取排在适配器之前，使"本 tick 锁定的目标"与"本 tick 算出的速度"来自同一帧。
+    // 没有默认的 Stop 意图要覆盖了：那条兜底路径已随 D5 删除，适配器是唯一的速度意图生产者。
+    // 目录是纯函数产物（同一份内容每次构造结果一致），宿主侧与生成侧各持一份即可。
     ProjectileBehaviorCatalog projectileBehaviors = CreateProjectileBehaviorProfiles();
     ProjectileAiSnapshotProvider projectileSnapshots = new(world, entities);
     AiEntitySystem<ArchEntity, ProjectileAiIntent> projectileAi = new(
@@ -718,12 +724,9 @@ internal static class Program
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Preparation,
         EcsServerRegistrationKeys.CombatProjectileAiAdapter,
-        new ProjectileAiAdapter(world, projectileAi, projectileSnapshots, projectileBehaviors),
-        after: [
-          EcsServerRegistrationKeys.CombatProjectileMovementIntent,
-          EcsServerRegistrationKeys.CombatProjectileTargetAcquisition
-        ],
-        reason: "Projectile AI overrides the default stop intent after target and intent are refreshed."));
+        new ProjectileAiAdapter(world, projectileAi, projectileSnapshots, projectileBehaviors, entities),
+        after: [EcsServerRegistrationKeys.CombatProjectileTargetAcquisition],
+        reason: "Projectile AI computes this tick's velocity from the target locked earlier in the tick."));
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
         EcsServerRegistrationKeys.WorldTick,
@@ -775,13 +778,22 @@ internal static class Program
     // 生产方与排空方必须用同一个 tick 号，否则请求会落到一个永远不会被排空的 tick 上。
     // 代价是使用事实到弹体差一 tick（Simulation 产事实、下一 tick 的 Preparation 生成），
     // 这与"使用物品后下一 tick 存在投射物实体"的验收口径一致。
+    //
+    // 三级链路同 tick 同相位：物品使用 → Emission 队列 → 排空（解析定义/阵营）
+    // → 投射物生成队列 → 生成。任何一级跨相位都会让请求落到永远不被排空的 tick 上。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Preparation,
         EcsServerRegistrationKeys.ProjectileItemUseSpawn,
         new ProjectileItemUseSpawnSystem(
-            world, entities, entities, itemUseDefinitions, projectileDefinitions),
+            world, entities, entities, itemUseDefinitions),
+        before: [EcsServerRegistrationKeys.CombatProjectileEmissionDrain],
+        reason: "Item use facts must become emission intents before the emission seam drains."));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Preparation,
+        EcsServerRegistrationKeys.CombatProjectileEmissionDrain,
+        new EmissionDrainSystem(world, projectileDefinitions, entities, entities),
         before: [EcsServerRegistrationKeys.CombatProjectileSpawn],
-        reason: "Item use facts must become spawn requests before the spawn seam drains."));
+        reason: "Emission intents are resolved into spawn requests before the spawn seam drains."));
     // 聊天：能力组件决定谁能说话，系统的广播事实交给 Projection 阶段的聊天投影。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,

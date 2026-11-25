@@ -9,7 +9,7 @@ internal static class EcsServerRegistrationKeys
   internal const string CommunicationOutboundProjection = "communication.outbound.projection";
 
   internal const string CombatProjectileSpawn = "combat.projectile.spawn";
-  internal const string CombatProjectileMovementIntent = "combat.projectile.movement-intent";
+  internal const string CombatProjectileEmissionDrain = "combat.projectile.emission-drain";
   internal const string CombatProjectileTargetAcquisition = "combat.projectile.target-acquisition";
   internal const string CombatProjectileAiAdapter = "combat.projectile.ai-adapter";
   internal const string CombatPhysicsContactCapture = "combat.physics.contact-capture";

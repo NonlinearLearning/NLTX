@@ -136,10 +136,17 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
       return;
     }
 
+    // Version4 ItemCheck 第一行就是 Item item = inventory[selectedItem]（Player.cs:42925），
+    // 用的始终是手持槽。服务端把这个关系表达在库存上，因此这里先确认请求指的正是手持槽，
+    // 再从库存读出那一格的值——不在系统里另存一份"手上物品"。
     InventoryComponent inventory = World.Get<InventoryComponent>(player);
-    if (!inventory.TryGetSlot(request.Slot, out InventorySlot slot) ||
-        slot.Content is not ItemStack stack ||
-        stack.IsEmpty)
+    if (inventory.Held is not HeldSlot heldSelection || heldSelection.Index != request.Slot)
+    {
+      Publish(request, state, tick, PlayerItemUseOutcomeKind.NotHeld, facts);
+      return;
+    }
+
+    if (inventory.TryGetHeld() is not ItemStack stack || stack.IsEmpty)
     {
       Publish(request, state, tick, PlayerItemUseOutcomeKind.EmptySlot, facts);
       return;

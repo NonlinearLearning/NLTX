@@ -80,7 +80,7 @@ public sealed class ProjectileDamageRequestSystem : BaseSystem<ArchWorld, EcsSer
           _projectileHits.CheckAdmission(
               projectileHandle,
               targetHandle,
-              tick) != ProjectileHitAdmissionResult.Accepted ||
+              tick) != DamageRejectionReason.None ||
           !targetHandle.IsValid)
       {
         continue;

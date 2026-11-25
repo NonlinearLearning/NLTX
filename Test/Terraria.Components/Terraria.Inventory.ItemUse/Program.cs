@@ -68,6 +68,10 @@ PlayerItemUseSystem system = new(world, registry, useDefinitions, inventories);
 PlayerItemUseRequestQueueComponent requests = PlayerItemUseRequestQueue.Require(world);
 PlayerItemUseFactQueueComponent factQueue = PlayerItemUseFactQueue.Require(world);
 
+// 手持关系由库存表达（Version4 Player.HeldItem => inventory[selectedItem]）。使用只对
+// 手持槽生效，因此这里像包 13 那样先改选，再发起使用请求。
+bool Hold(short slot) => inventories.TrySetHeldSlot(player, new HeldSlot(slot)).Succeeded;
+
 (PlayerItemUseFact Fact, PlayerItemUseStateComponent State) Run(long tick, PlayerItemUseRequest request)
 {
   requests.Enqueue(request);
@@ -85,6 +89,7 @@ PlayerItemUseRequest Begin(short slot) => new(PlayerItemUseRequestKind.BeginUse,
 PlayerItemUseRequest Release() => new(PlayerItemUseRequestKind.ReleaseUse, playerHandle, (short)-1);
 
 // --- 1. 火把：使用门闸 ---
+_ = Hold(2);
 (PlayerItemUseFact torchFact, PlayerItemUseStateComponent torchState) = Run(0, Begin(2));
 Check(
     "torch-use-applied",
@@ -108,6 +113,7 @@ Check(
     $"outcome={reopened.Outcome} readyTick={reopenedState.ReadyTick}");
 
 // --- 2. 弓：弹药消耗 ---
+_ = Hold(0);
 (PlayerItemUseFact bowFact, PlayerItemUseStateComponent bowState) = Run(100, Begin(0));
 Check(
     "bow-use-consumes-ammo",
@@ -133,6 +139,7 @@ Check(
 
 // --- 3. 通道物品 ---
 _ = inventories.TrySetSlotValue(player, 0, new ItemStack(ItemId.MagicMissile, 1));
+_ = Hold(0);
 (PlayerItemUseFact channelFact, PlayerItemUseStateComponent channelState) = Run(300, Begin(0));
 Check(
     "channel-item-marks-channeling",
@@ -159,6 +166,7 @@ Check(
 
 // --- 4. 拒绝路径 ---
 _ = inventories.TrySetSlotValue(player, 2, new ItemStack(ItemId.Gel, 5));
+_ = Hold(2);
 (PlayerItemUseFact unknownFact, _) = Run(500, Begin(2));
 Check(
     "unknown-item-rejected",
@@ -172,10 +180,24 @@ Check(
     emptyFact.Outcome == PlayerItemUseOutcomeKind.EmptySlot,
     $"outcome={emptyFact.Outcome}");
 
-(PlayerItemUseFact outOfRangeFact, _) = Run(502, Begin(9));
+// 未手持任何槽时，使用请求一律拒绝：手上没有东西就没有可用的物品。
+_ = inventories.TrySetHeldSlot(player, null);
+(PlayerItemUseFact notHeldFact, _) = Run(502, Begin(2));
+Check(
+    "use-without-held-slot-rejected",
+    notHeldFact.Outcome == PlayerItemUseOutcomeKind.NotHeld,
+    $"outcome={notHeldFact.Outcome}");
+
+// 手持的槽号在本库存里不存在时也不能凭空使用：SetHeldSlot 在提交前就拒绝。
+Check(
+    "hold-slot-out-of-range-rejected",
+    !inventories.TrySetHeldSlot(player, new HeldSlot(9)).Succeeded,
+    $"held={world.Get<InventoryComponent>(player).Held?.Index.ToString() ?? "nothing"}");
+
+(PlayerItemUseFact outOfRangeFact, _) = Run(503, Begin(2));
 Check(
     "unknown-slot-rejected",
-    outOfRangeFact.Outcome == PlayerItemUseOutcomeKind.EmptySlot,
+    outOfRangeFact.Outcome == PlayerItemUseOutcomeKind.NotHeld,
     $"outcome={outOfRangeFact.Outcome}");
 
 Console.WriteLine();

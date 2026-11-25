@@ -165,7 +165,9 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
     byte movementFlags = ReadByte(payload, ref offset);
     byte playerFeatureFlags = ReadByte(payload, ref offset);
     byte actionFlags = ReadByte(payload, ref offset);
-    _ = ReadByte(payload, ref offset); // Selected inventory slot remains Player-owned state.
+    // 选中槽是库存自带的索引（Version4 的 Player.selectedItem 就是 inventory 的一个下标），
+    // 这里照 MessageBuffer.cs:996 的做法把它交给 Player 域，而不是在适配器里直接写。
+    byte selectedSlot = ReadByte(payload, ref offset);
     Vector2 position = ReadVector(payload, ref offset);
     ValidateCoordinate(position);
     Vector2 velocity = Vector2.Zero;
@@ -212,6 +214,15 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
           PlayerInputRequestKind.SetPosition,
           Player: playerHandle,
           Position: position));
+    }
+
+    if (_world.Has<InventoryComponent>(player))
+    {
+      // 库存归 Player 域所有：这里只提交"改选哪一格"的意图，载荷仍留在原来的槽里。
+      PlayerInputs.Enqueue(new PlayerInputRequest(
+          PlayerInputRequestKind.SelectHeldSlot,
+          Player: playerHandle,
+          Slot: selectedSlot));
     }
 
     if (!_world.Has<MovementIntent>(player))

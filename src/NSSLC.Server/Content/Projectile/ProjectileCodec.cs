@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Terraria.Share.Lvcs;
+using NSSLC.Infrastructure.Lvcs;
 using Terraria.Unshared.Projectiles;
 
 namespace NSSLC.Server.Content.Projectile;

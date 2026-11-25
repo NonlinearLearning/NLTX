@@ -15,11 +15,10 @@
     <Compile Include="Share/AI/**/*.cs" />
     <Compile Include="Share/Attributes/**/*.cs" />
     <Compile Include="Share/Combat/**/*.cs" />
+    <Compile Include="Share/Emission/**/*.cs" />
     <Compile Include="Share/Entity/**/*.cs" />
     <Compile Include="Share/Inventory/**/*.cs" />
     <Compile Include="Share/Item/**/*.cs" />
-    <Compile Include="Share/ItemUse/**/*.cs" />
-    <Compile Include="Share/Lvcs/**/*.cs" />
     <Compile Include="Share/Physics/**/*.cs" />
     <Compile Include="World/**/*.cs" />
     <Compile Include="WorldItem/**/*.cs" />

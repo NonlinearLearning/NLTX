@@ -230,7 +230,7 @@ public readonly record struct InventoryRejection(
 | --- | --- | --- |
 | `ProtocolErrorCode` 枚举 + `SendReceipt.Certainty/Epoch/Sequence/ErrorCode` | NSSLC.Network | 网络边界的码 + 收据载荷；构造器强制“失败必带码”，是好的边界形态 |
 | `InventoryTransferResult(Succeeded, Quantity, Failure)` + `InventoryTransferFailure` | NSSLC.Share.Inventory | 码 + 载荷 + 数量，领域拒绝的标准形态 |
-| `LvcsLoadResult<T>` + `LvcsDiagnostic`（severity/family/id/field/message/source） | NSSLC.Share.Lvcs | 聚合诊断式，等价 Rust 的 `Result<T, Vec<E>>`；注释明确“内容错误返回而不抛出” |
+| `LvcsLoadResult<T>` + `LvcsDiagnostic`（severity/family/id/field/message/source） | NSSLC.Infrastructure.Lvcs | 聚合诊断式，等价 Rust 的 `Result<T, Vec<E>>`；注释明确“内容错误返回而不抛出” |
 | `DamageAppliedReceipt` | NSSLC.Share.Combat | 成功路径的富载荷收据 |
 | `WorldInteractionResultComponent(Status, string? Failure)` + `WorldInteractionResultStatus` 枚举 | NSSLC.World | **风险点**：状态枚举管“成没成”，失败原因却走自由文本，码的稳定性与类型的穷尽性同时丢失；`Failure` 与 `Status` 形成两套并行语义 |
 
