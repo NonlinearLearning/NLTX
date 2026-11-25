@@ -9,8 +9,8 @@ SS14/RobustToolbox 将运行时 Entity 表达为 **局部实体标识与附着�
 
 本仓库采用这些组织原则时，保留已接受的 `EntityUuid` 身份根和 typed projection，
 不照搬 SS14 的整数 UID、YAML、地图层级或全部生命周期事件。
-正式规则见 [ECS Entity 组织设计约束](../../Context/架构设计/ECSEntity组织设计约束.md)；
-文件目录继续使用 [ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md)。
+正式规则见 [ECS Entity 组织设计约束](../../docs/architecture/ECSEntity组织设计约束.md)；
+文件目录继续使用 [ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md)。
 
 本文是源码研究及目标适用性分析；不表示 NLTX 已完成迁移，也不表示运行了 SS14 或本项目。
 `confirmed` 指所列源码中直接确认的结构/分支，不能代替运行时行为、性能或版本配套验证。

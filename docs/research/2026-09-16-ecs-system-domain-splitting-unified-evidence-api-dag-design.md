@@ -485,4 +485,4 @@ StageSnapshotResult {
 - [系统拆分规则](../../.agents/skills/ecs-system/system-splitting/references/system-decomposition-rules.md)
 - [证据循环与迁移协议](../../.agents/skills/ecs-system/system-splitting/references/evidence-and-migration-protocol.md)
 - [输出风险约束](../../.agents/skills/ecs-system/reports/output-risk-profile.md)
-- [构建与验证约束](../../Context/约束/构建与验证约束.md)
+- [构建与验证约束](../../Context/项目约束/构建与验证约束.md)

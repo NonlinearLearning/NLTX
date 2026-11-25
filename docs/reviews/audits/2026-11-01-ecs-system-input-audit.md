@@ -1,7 +1,7 @@
 # ECS 系统输入边界审计（2026-11-01）
 
 范围：`src/NSSLC/Components/` 下 451 个 `.cs`，其中 24 个调度系统、6 个静态规则类、17 个服务/规则对象。
-目的：按 [ECS 系统输入边界约束](../../../Context/约束/ECS系统输入边界约束.md) 检查现状，列出存量迁移债。
+目的：按 [ECS 系统输入边界约束](../../../Context/项目约束/ECS系统输入边界约束.md) 检查现状，列出存量迁移债。
 
 ## 1. 结论摘要
 
@@ -373,14 +373,14 @@ World 域状态。
 
 本轮审计推翻了本文档此前的四处结论，均已就地更正：§5.1 的严重度、§6 的两条合规样例、
 §9.5 的"静态状态合规"、§9.6 的 `AiSystem` 字段数。另有约束文档中 `ItemDefinitionRegistry`
-被误列为不可变目录对象，已在 `Context/约束/ECS系统输入边界约束.md` 修正为只承认有 `Seal()` 的目录。
+被误列为不可变目录对象，已在 `Context/项目约束/ECS系统输入边界约束.md` 修正为只承认有 `Seal()` 的目录。
 
 **约束本身也补了一条**。`CommunicationOutboundProjectionSystem` 注入的 `ICommunicationOutboundPort`
 （`CommunicationSessionSystems.cs:74`）唯一成员是 `bool TrySubmit(OutboundPacketIntent)`，但其实现
 `CommunicationOutboundDeliveryPump` 持有 `Channel`、后台 `Task` 与 `_lastDelivery`（`:13-16`）。
 按规则 3 的字面读法这是违规。但区分**输入边**与**输出边**后结论不同：输入边是系统读来决策的来源，
 输出边是效果执行边界，二者混为一谈会把"隔离 I/O"这件事本身判成违规，并与
-[副作用隔离规范](../../../Context/约束/非函数式编码副作用隔离规范.md) §8 冲突。
+[副作用隔离规范](../../../Context/项目约束/非函数式编码副作用隔离规范.md) §8 冲突。
 
 约束已补"输出型端口不在此列"一节，给出三条判定条件（单向写入、不参与游戏判定、不别名到权威状态）。
 该系统的判定因此由 `unknown` 转为**合规**，`WorldRuntime` / `WorldItemStore` / `IWorldInteractionWorld`

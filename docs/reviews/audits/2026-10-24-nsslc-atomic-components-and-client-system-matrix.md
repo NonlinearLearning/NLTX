@@ -3,7 +3,7 @@
 - 日期：2026-10-24
 - 范围：src/NSSLC/Components/Share、src/NSSLC/Components/Npc、src/NSSLC/Terraria.Components.csproj
 - 客户端参考：D:/TRbackup/最新的客户端/Terraria
-- 相关设计：2026-10-24-projectile-ecs-system-design.md
+- 相关设计：`2026-10-24-projectile-ecs-system-design.md`（2026-11-24 删除；继任见 `2026-10-25-projectile-implementation.md` 与 `src/NSSLC/Projectile/README.md`）
 - 结论状态：confirmed、partial、proposed 混合；不代表全部运行时已接入。
 
 这里的“原子组件”指一个实体能力或一个权威状态的一份最小组件。它不等于把客户端字段

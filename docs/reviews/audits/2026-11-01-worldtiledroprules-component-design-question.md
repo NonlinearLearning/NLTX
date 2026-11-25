@@ -89,8 +89,8 @@ canonical 路径：docs/reviews/audits/2026-11-01-worldtiledroprules-component-d
 
 ## 4. 组件判定：逐条对照仓库约束
 
-依据 `Context/架构设计/ECSEntity组织设计约束.md` 与
-`Context/架构设计/组件命名设计约束.md`。
+依据 `docs/architecture/ECSEntity组织设计约束.md` 与
+`Context/架构约束/组件命名设计约束.md`。
 
 | 约束 | 原文 | 对照结果 |
 | --- | --- | --- |

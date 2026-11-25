@@ -162,7 +162,7 @@ Select minimal fixtures for overloads, partial declarations, lambda/local functi
 - The checkout already contains broad unrelated user changes. The target skill directory has no
   overlapping Git change; the two design/ execution documents are pre-existing untracked inputs.
   No user files were reverted or cleaned.
-- The linked `Context/约束/公共拆分约束.md` is absent from the current checkout. The available
+- The linked `Context/项目约束/公共拆分约束.md` is absent from the current checkout. The available
   ECS rules, evidence protocol, C# style, side-effect isolation, and build/output constraints
   were read; the missing linked document remains an execution gap rather than an invented rule.
 
@@ -586,5 +586,5 @@ The execution work is complete only when:
 - [ECS System 领域拆分技能](../../.agents/skills/ecs-system/SKILL.md)
  [系统拆分规则](../../.agents/skills/ecs-system/system-splitting/references/system-decomposition-rules.md)
  [证据循环与迁移协议](../../.agents/skills/ecs-system/system-splitting/references/evidence-and-migration-protocol.md)
-- [构建与验证约束](../../Context/约束/构建与验证约束.md)
+- [构建与验证约束](../../Context/项目约束/构建与验证约束.md)
 - [输出风险约束](../../.agents/skills/ecs-system/reports/output-risk-profile.md)

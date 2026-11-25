@@ -53,9 +53,9 @@ Buff / StatusEffect
 审查依据包括：
 
 - 当前项目的 ECS 系统输入边界约束：
-  [ECS系统输入边界约束.md](../../../Context/约束/ECS系统输入边界约束.md)
+  [ECS系统输入边界约束.md](../../../Context/项目约束/ECS系统输入边界约束.md)
 - 当前属性系统说明：
-  [Attributes README](../../../src/NSSLC/Components/Share/Attributes/README.md)
+  [Attributes README](../../../src/NSSLC/Share/Attributes/README.md)
 - 当前 Buff 与属性实现：
   `AttributeSetComponent`、`AttributeCalculator`、`BuffSystem`、`BuffListComponent`、`InventoryAttributeContributionSystem`
 - 当前实体装配和调度：
@@ -84,8 +84,8 @@ Buff / StatusEffect
 
 证据：
 
-- [LifeComponent.cs](../../../src/NSSLC/Components/Share/Combat/LifeComponent.cs:3)
-- [DamageCommitSystem.cs](../../../src/NSSLC/Components/Share/Combat/DamageCommitSystem.cs:75)
+- [LifeComponent.cs](../../../src/NSSLC/Share/Combat/Component/LifeComponent.cs)
+- [DamageCommitSystem.cs](../../../src/NSSLC/Share/Combat/DamageCommitSystem.cs)
 
 `CombatDamageSystem` 读取目标生命和属性，`DamageCommitSystem` 负责最终生命写入，基本符合“计算与提交分离”的方向。
 
@@ -102,8 +102,8 @@ Buff / StatusEffect
 
 证据：
 
-- [AttributeSetComponent.cs](../../../src/NSSLC/Components/Share/Attributes/AttributeSetComponent.cs:8)
-- [AttributeCalculator.cs](../../../src/NSSLC/Components/Share/Attributes/AttributeCalculator.cs:5)
+- [AttributeSetComponent.cs](../../../src/NSSLC/Share/Attributes/Component/AttributeSetComponent.cs)
+- [AttributeCalculator.cs](../../../src/NSSLC/Share/Attributes/System/AttributeCalculator.cs)
 
 当前适合留在属性系统中的键包括：
 
@@ -148,10 +148,10 @@ MaxShield
 
 证据：
 
-- [ActiveBuff.cs](../../../src/NSSLC/Components/Share/Attributes/Buff/ActiveBuff.cs:5)
-- [BuffListComponent.cs](../../../src/NSSLC/Components/Share/Attributes/Buff/BuffListComponent.cs:11)
-- [BuffSystem.cs](../../../src/NSSLC/Components/Share/Attributes/Buff/BuffSystem.cs:22)
-- [BuffTickSystem.cs](../../../src/NSSLC/Components/Share/Attributes/Buff/BuffTickSystem.cs:15)
+- [ActiveBuff.cs](../../../src/NSSLC/Share/Attributes/Buff/System/ActiveBuff.cs)
+- [BuffListComponent.cs](../../../src/NSSLC/Share/Attributes/Buff/Component/BuffListComponent.cs)
+- [BuffSystem.cs](../../../src/NSSLC/Share/Attributes/Buff/BuffSystem.cs)
+- [BuffTickSystem.cs](../../../src/NSSLC/Share/Attributes/Buff/BuffTickSystem.cs)
 
 这部分可以作为后续 `StatusEffect` 运行时容器的基础。
 
@@ -168,8 +168,8 @@ PlayerInputApply
 
 证据：
 
-- [Program.cs](../../../src/NSSLC.Server/Program.cs:601)
-- [Program.cs](../../../src/NSSLC.Server/Program.cs:726)
+- [Program.cs](../../../src/NSSLC.Server/Program.cs)
+- [Program.cs](../../../src/NSSLC.Server/Program.cs)
 
 这解决了同 tick 换装和属性读取之间的部分时序问题，但不改变跨域写入边界问题。
 
@@ -192,8 +192,8 @@ PlayerInputApply
 
 证据：
 
-- [AttributeKind.cs](../../../src/NSSLC/Components/Share/Attributes/AttributeKind.cs:6)
-- [AttributeCombatCalculator.cs](../../../src/NSSLC/Components/Share/Attributes/AttributeCombatCalculator.cs:75)
+- [AttributeKind.cs](../../../src/NSSLC/Share/Attributes/System/AttributeKind.cs)
+- [AttributeCombatCalculator.cs](../../../src/NSSLC/Share/Attributes/System/AttributeCombatCalculator.cs)
 
 问题不在于属性系统不能提供这些系统所需的参数，而在于不能把“当前状态”伪装成普通标量。例如：
 
@@ -206,18 +206,18 @@ PlayerInputApply
 
 玩家定义包含 `AttributeSetComponent` 和 `BuffListComponent`：
 
-- [PlayerEntityDefinition.cs](../../../src/NSSLC.Server/Registration/PlayerEntityDefinition.cs:41)
-- [PlayerEntityDefinition.cs](../../../src/NSSLC.Server/Registration/PlayerEntityDefinition.cs:48)
-- [PlayerEntityDefinition.cs](../../../src/NSSLC.Server/Registration/PlayerEntityDefinition.cs:50)
+- [PlayerEntityDefinition.cs](../../../src/NSSLC.Server/Registration/PlayerEntityDefinition.cs)
+- [PlayerEntityDefinition.cs](../../../src/NSSLC.Server/Registration/PlayerEntityDefinition.cs)
+- [PlayerEntityDefinition.cs](../../../src/NSSLC.Server/Registration/PlayerEntityDefinition.cs)
 
 向导和史莱姆定义目前只有 `LifeComponent`，没有 `AttributeSetComponent`：
 
-- [NpcEntityDefinition.cs](../../../src/NSSLC.Server/Registration/NpcEntityDefinition.cs:49)
-- [NpcEntityDefinition.cs](../../../src/NSSLC.Server/Registration/NpcEntityDefinition.cs:94)
+- [NpcEntityDefinition.cs](../../../src/NSSLC.Server/Registration/NpcEntityDefinition.cs)
+- [NpcEntityDefinition.cs](../../../src/NSSLC.Server/Registration/NpcEntityDefinition.cs)
 
 战斗系统因此用可选属性处理目标：
 
-- [CombatDamageSystem.cs](../../../src/NSSLC/Components/Share/Combat/CombatDamageSystem.cs:144)
+- [CombatDamageSystem.cs](../../../src/NSSLC/Share/Combat/CombatDamageSystem.cs)
 
 当前结果是 NPC 缺少属性组件时按 fallback 运行。这个 fallback 可以作为兼容路径，但不能作为“所有战斗实体统一使用属性系统”的完成证明。
 
@@ -227,7 +227,7 @@ PlayerInputApply
 
 `BuffDefinition` 当前只有 `AttributeContribution` 列表：
 
-- [BuffDefinition.cs](../../../src/NSSLC/Components/Share/Attributes/Buff/BuffDefinition.cs:7)
+- `BuffDefinition.cs`（现已重命名为 [Buff.cs](../../../src/NSSLC/Share/Attributes/Buff/System/Buff.cs)）
 
 当前注册的内容只有：
 
@@ -237,7 +237,7 @@ PlayerInputApply
 
 证据：
 
-- [BuffContent.cs](../../../src/NSSLC/Components/Share/Attributes/Buff/BuffContent.cs:25)
+- [BuffContent.cs](../../../src/NSSLC/Share/Attributes/Buff/System/BuffContent.cs)
 
 扫描当前 `src/NSSLC` 未发现 `LifeRegeneration` 被周期系统消费并转成 `LifeRestoreRequestComponent` 的完整路径。因此 `Regeneration` 当前可以计算出属性值，但不能据此确认实际回血已经闭环。该项应标记为 **partial**，而不是完成。
 
@@ -271,8 +271,8 @@ attributes.AddModifier(...);
 
 证据：
 
-- [InventoryAttributeContributionSystem.cs](../../../src/NSSLC/Components/Share/Inventory/InventoryAttributeContributionSystem.cs:105)
-- [InventoryAttributeContributionSystem.cs](../../../src/NSSLC/Components/Share/Inventory/InventoryAttributeContributionSystem.cs:123)
+- [InventoryAttributeContributionSystem.cs](../../../src/NSSLC/Share/Inventory/InventoryAttributeContributionSystem.cs)
+- [InventoryAttributeContributionSystem.cs](../../../src/NSSLC/Share/Inventory/InventoryAttributeContributionSystem.cs)
 
 根据当前边界约束，Inventory 应产生 Attributes 域的请求组件，由 Attributes 域系统更新 `AttributeSetComponent`。当前实现是功能上可工作的过渡方案，但架构上属于已确认的跨域写入偏离。
 
@@ -289,7 +289,7 @@ InventoryAttributeContributionSystem
 
 `BuffSystem.TryApply` 接收可变 `BuffListComponent` 和可选 `AttributeSetComponent`，并在同一个调用中直接更新二者：
 
-- [BuffSystem.cs](../../../src/NSSLC/Components/Share/Attributes/Buff/BuffSystem.cs:22)
+- [BuffSystem.cs](../../../src/NSSLC/Share/Attributes/Buff/BuffSystem.cs)
 
 当前扫描没有发现明确的服务器运行时调用点，因此“已激活违规”尚不能确认；但 API 形状本身允许外部域绕过请求和调度边界，应标记为 **confirmed API risk / active path unknown**。
 
@@ -306,8 +306,8 @@ BuffApplyRequestComponent
 
 Combat 在提交伤害时调用 `AttributeShieldCommands.Apply`，最终通过 `AttributeSystem.SetBaseValue` 改写 `AttributeSetComponent.Shield`：
 
-- [DamageCommitSystem.cs](../../../src/NSSLC/Components/Share/Combat/DamageCommitSystem.cs:75)
-- [AttributeSystem.cs](../../../src/NSSLC/Components/Share/Attributes/AttributeSystem.cs:23)
+- [DamageCommitSystem.cs](../../../src/NSSLC/Share/Combat/DamageCommitSystem.cs)
+- [AttributeSystem.cs](../../../src/NSSLC/Share/Attributes/AttributeSystem.cs)
 
 即使它被包装成同步 command，仍然存在两个问题：
 
@@ -335,7 +335,7 @@ long sourceId = slot.Definition.Index + 1L;
 
 证据：
 
-- [InventoryAttributeContributionSystem.cs](../../../src/NSSLC/Components/Share/Inventory/InventoryAttributeContributionSystem.cs:105)
+- [InventoryAttributeContributionSystem.cs](../../../src/NSSLC/Share/Inventory/InventoryAttributeContributionSystem.cs)
 
 这不是物品实例身份。同一实体的两个槽位可以放置相同定义，从而得到相同 `SourceId`。当前系统每 tick 按类别重建，因此短期内不一定产生错误；但它会破坏：
 

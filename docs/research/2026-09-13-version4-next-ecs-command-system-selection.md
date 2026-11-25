@@ -157,7 +157,7 @@ Main/场景输入快照
   -> AmbientWindPresentationPort
 ```
 
-当前 Version4 的兼容阶段应保留 `Main.cs:11636-11640` 的调用位置作为顺序锚点，至少在 shadow verifier 证明相同前不要把它移到任意“文件顺序”或未定义的系统顺序。不能依赖目录或项目文件顺序，符合 `D:\TRbackup\NLTX\Context/架构设计\ECS文件组织设计约束.md:148-151,183-192`。
+当前 Version4 的兼容阶段应保留 `Main.cs:11636-11640` 的调用位置作为顺序锚点，至少在 shadow verifier 证明相同前不要把它移到任意“文件顺序”或未定义的系统顺序。不能依赖目录或项目文件顺序，符合 `D:\TRbackup\NLTX\Context/架构约束\ECS文件组织设计约束.md:148-151,183-192`。
 
 单一写者约束：
 
@@ -169,9 +169,9 @@ Main/场景输入快照
 
 ### 5.4 与既有领域的交互和文件归属
 
-建议把新边界放在 `src2/WorldSession/Environment/AmbientWind/`，因为它表达的是客户端环境表现能力，并且 P02 已提出同一领域路径。若实际文件数量仍少于形成稳定边界的规模，按仓库约束保持该小领域扁平，不预建 `Components/`、`Queries/`、`Adapters/` 空目录，参见 `D:\TRbackup\NLTX\Context/架构设计\ECS文件组织设计约束.md:17-57,106-149`。
+建议把新边界放在 `src2/WorldSession/Environment/AmbientWind/`，因为它表达的是客户端环境表现能力，并且 P02 已提出同一领域路径。若实际文件数量仍少于形成稳定边界的规模，按仓库约束保持该小领域扁平，不预建 `Components/`、`Queries/`、`Adapters/` 空目录，参见 `D:\TRbackup\NLTX\Context/架构约束\ECS文件组织设计约束.md:17-57,106-149`。
 
-建议保留原 `Terraria.GameContent.AmbientWindSystem` 命名空间和 `Update()` 公共 API 作为兼容 facade，除非后续迁移任务明确要求 API 变更。组件名若最终采用，须遵循 `D:\TRbackup\NLTX\Context/架构设计\组件命名设计约束.md:42-69,89-120`，由实际注册机制确认运行时键，不在报告中猜测注册键。
+建议保留原 `Terraria.GameContent.AmbientWindSystem` 命名空间和 `Update()` 公共 API 作为兼容 facade，除非后续迁移任务明确要求 API 变更。组件名若最终采用，须遵循 `D:\TRbackup\NLTX\Context/架构约束\组件命名设计约束.md:42-69,89-120`，由实际注册机制确认运行时键，不在报告中猜测注册键。
 
 ## 6. 迁移范围估算
 

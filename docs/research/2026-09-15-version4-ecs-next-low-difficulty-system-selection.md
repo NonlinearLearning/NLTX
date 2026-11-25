@@ -48,8 +48,8 @@ Main.DoUpdateInWorld
 | 来源 | 用途 | 结果 |
 | --- | --- | --- |
 | `D:\TRbackup\NLTX\AGENTS.md`、`Context/progress.md` | 仓库、构建、迁移和文档约束 | `confirmed`；当前没有 active migration plan/task；工作树有大量既有改动 |
-| `D:\TRbackup\NLTX\Context/架构设计\ECS文件组织设计约束.md` | 领域优先、文件命名、迁移记录和验证要求 | `confirmed` |
-| `D:\TRbackup\NLTX\Context/架构设计\组件命名设计约束.md` | Component 类型、文件和注册身份约束 | `confirmed` |
+| `D:\TRbackup\NLTX\Context/架构约束\ECS文件组织设计约束.md` | 领域优先、文件命名、迁移记录和验证要求 | `confirmed` |
+| `D:\TRbackup\NLTX\Context/架构约束\组件命名设计约束.md` | Component 类型、文件和注册身份约束 | `confirmed` |
 | `D:\TRbackup\NLTX\.agents\skills\public-decomposition\references\ecs-evidence-protocol.md` | 成员、读写者、生命周期和证据门槛 | `confirmed` |
 | `D:\TRbackup\Version4` | 唯一完整目标源码基线 | `confirmed` |
 | `D:\TRbackup\tmodloader-api-docs-stable` | 公开 API 形状和参数语义 | 本地首页页眉显示 `tModLoader v2026.07`；类型页标题为 `tModLoader: ... Class Reference`，因此只用于公开签名和摘要，不用于私有行为证明 |

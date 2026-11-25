@@ -5,7 +5,7 @@
 产物类型：research  
 状态：draft  
 范围：核对世界加载工作流协调、Infrastructure 适配器与宿主组合根的职责和依赖方向。  
-证据入口：[ECS 领域与基础设施边界](../../Context/架构设计/ECS领域与基础设施架构边界.md)、[世界存档协调器设计](../architecture/2026-10-02-world-storage-load-coordinator-design.md)、[WorldLoadLifecycleSystem.cs](../../src/NSSLC/Component/WorldSession/WorldGeneration/Systems/WorldLoadLifecycleSystem.cs)、[WorldSavedOreTierLoadSystem.cs](../../src/NSSLC/Component/WorldSession/WorldSavedOreTierLoadSystem.cs)、[WorldFile.cs](../../src/NSSLC.Infrastructure/WorldStorage/WorldFile/WorldFile.cs)。  
+证据入口：[ECS 领域与基础设施边界](../../Context/架构约束/ECS领域与基础设施架构边界.md)、[世界存档协调器设计](../architecture/2026-10-02-world-storage-load-coordinator-design.md)、[WorldLoadLifecycleSystem.cs](../../src/NSSLC/Component/WorldSession/WorldGeneration/Systems/WorldLoadLifecycleSystem.cs)、[WorldSavedOreTierLoadSystem.cs](../../src/NSSLC/Component/WorldSession/WorldSavedOreTierLoadSystem.cs)、[WorldFile.cs](../../src/NSSLC.Infrastructure/WorldStorage/WorldFile/WorldFile.cs)。  
 canonical 路径：docs/research/2026-10-02-world-load-coordinator-dependency-boundary-research.md
 
 ## 1. 结论
@@ -48,7 +48,7 @@ Mark Seemann 的[Composition Root](https://blog.ploeh.dk/2011/07/28/CompositionR
 
 ## 3. 与本仓库世界加载设计的对应
 
-- [ECS 领域与基础设施边界](../../Context/架构设计/ECS领域与基础设施架构边界.md)已规定：应用协调层编排快照、编解码、校验、存储调用和结果；Infrastructure 执行文件/平台效果；组合入口创建并连接领域、用例和适配器。该约束不要求固定项目数量。
+- [ECS 领域与基础设施边界](../../Context/架构约束/ECS领域与基础设施架构边界.md)已规定：应用协调层编排快照、编解码、校验、存储调用和结果；Infrastructure 执行文件/平台效果；组合入口创建并连接领域、用例和适配器。该约束不要求固定项目数量。
 - [世界存档协调器设计](../architecture/2026-10-02-world-storage-load-coordinator-design.md)选择协调器临时持有完整载荷并按 owner 分发；同时明确不新增独立 `NSSLC.Application/WorldStorage` 子系统，协调器应落在实际宿主/组合边界，待确认真实项目归属。
 - `WorldLoadLifecycleSystem` 管理加载尝试、重试、备份恢复和完成通知，不负责文件解码及多 owner 数据提交。因此，世界加载用例协调器应接入其生命周期，而不是把文件格式和完整载荷责任放入该 ECS System。
 - `WorldSavedOreTierLoadSystem.Load` 接收 `IWorldFileSavedOreTierAdapter`，展示了领域加载行为依赖适配器契约的局部形态；它不能证明跨 owner 的完整加载已具备原子性。
