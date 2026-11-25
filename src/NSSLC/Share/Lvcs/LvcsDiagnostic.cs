@@ -1,11 +1,11 @@
-namespace Terraria.Lvcs;
+namespace Terraria.Share.Lvcs;
 
 /// <summary>
 /// One located content problem.
 /// </summary>
 /// <remarks>
 /// <paramref name="Source" /> is free text supplied by the infrastructure that read the unit, for
-/// example <c>ItemDefinition/items.armor.json:42</c>. The domain layer never interprets it, which
+/// example <c>Item/items.armor.json:42</c>. The domain layer never interprets it, which
 /// keeps this type free of any file model.
 /// </remarks>
 public readonly record struct LvcsDiagnostic

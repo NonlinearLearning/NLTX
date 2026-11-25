@@ -1,4 +1,4 @@
-namespace Terraria.Lvcs;
+namespace Terraria.Share.Lvcs;
 
 /// <summary>
 /// Stable identity of one content family. A family is one kind of domain value.

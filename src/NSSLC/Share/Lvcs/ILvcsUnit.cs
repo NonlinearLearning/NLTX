@@ -1,4 +1,4 @@
-namespace Terraria.Lvcs;
+namespace Terraria.Share.Lvcs;
 
 /// <summary>
 /// One raw content unit: a single file, or one entry produced by a source.

@@ -1,4 +1,4 @@
-using Terraria.Lvcs;
+using Terraria.Share.Lvcs;
 
 namespace NSSLC.Infrastructure.Lvcs;
 

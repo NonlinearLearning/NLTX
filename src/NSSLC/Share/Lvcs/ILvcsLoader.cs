@@ -1,4 +1,4 @@
-namespace Terraria.Lvcs;
+namespace Terraria.Share.Lvcs;
 
 /// <summary>
 /// Loads one content family: reads units, parses each, projects the batch.
