@@ -12,17 +12,18 @@
 
 ## 术语
 
-- **域**：`Terraria.<Name>` 命名空间覆盖的一套组件与系统。例如 `Terraria.Combat`、
-  `Terraria.Attributes`、`Terraria.Movement`。
+- **域**：`Terraria.Share.<Name>` 或 `Terraria.Unshared.<Name>` 命名空间覆盖的一套组件与系统。
+  例如 `Terraria.Share.Combat`、`Terraria.Share.Attributes.Buff`、`Terraria.Unshared.World`。
 - **请求组件**：挂在实体上、承载"某方希望该域做某事"的组件，名称为
   `*RequestComponent` 或 `*IntentComponent`。
 - **可变队列**：可在 tick 之间累积、并被一个以上系统读写的容器对象，例如 `*Buffer`、
   `List<T>`、`Queue<T>`、`Dictionary<TKey,TValue>`。
 - **只读端口**：只暴露查询、不暴露修改的接口，例如 `IEntityRuntimeHandleResolver`、
-  `ISpatialWorldQuery`、`IWorldInteractionWorld`；以及 `Seal()` 之后冻结的目录对象，例如
-  `CombatAttackDefinitionCatalog`、`ProjectileDefinitionCatalog`。**没有 `Seal()` 的注册表
-  （如 `BuffDefinitionRegistry`、`ItemDefinitionRegistry`、`ProjectileRuntimeRegistry`）不算
-  不可变目录对象**，它们仍可被注册写入。
+  `ISpatialWorldQuery`、`IWorldInteractionWorld`；以及 `Seal()` 之后冻结的目录对象。当前已冻结的
+  目录为 `ChatCommandCatalog`、`ProjectileBehaviorCatalog`、`ProjectileCatalog`、
+  `CombatAttackCatalog`、`ItemRegistry`、`ItemUseCatalog` 和 `PacketGateway`。**没有 `Seal()` 的
+  注册表（当前是 `BuffRegistry`、`ProjectileRuntimeRegistry`）不算不可变目录对象**，它们仍可被
+  注册写入。
 
 ## 规则 1：跨域输入走请求组件
 
@@ -88,8 +89,13 @@
 ## 存量与例外
 
 约束生效前已存在的注入队列属于**迁移债**，不影响其正确性，但新增代码不得扩大存量。
+
 存量清单与迁移路径见
 [2026-11-01 ECS 系统输入边界审计](../../docs/reviews/audits/2026-11-01-ecs-system-input-audit.md)。
+
+**存量状态（2026-11-24 复核）**：2026-11-01 审计列出的迁移项已基本收敛；抽查 16 处系统的容器型
+构造参数，得到的都是 `Seal()` 后的目录对象或同域 store。上段的迁移债描述保留作为历史记录，
+不再指向待办。
 
 对存量代码做超出当前任务的改造不在本约束要求内；本约束要求的是：新增系统按规则写，
 触碰到的存量系统在改动范围内顺带收敛。

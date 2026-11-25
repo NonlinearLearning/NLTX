@@ -10,6 +10,9 @@
 - （11-22 起）`Build/bin/` 仍保留扁平化前的旧项目名产物目录，属历史构建残留。
 - （11-17 起）史莱姆雨未接入运行时 → [CR](../docs/cr/CR-2026-10-22-npc-ai-damage-test.md)
 - （11-20 起）ECS 架构整改总计划仍 active，WorldRuntime 与项目配置收窄未纳入 → [计划](../docs/plans/2026-11-08-ecs-architecture-remediation-master-plan.md)
+- （11-22 起）`Communication` 迁出四类职责目录待收尾；首个系统出现时需补建 → [CR](../docs/cr/CR-2026-11-22-nsslc-ecs-role-directory-layout.md)
+- （11-23 起）LVCS 其余内容族未接 → [设计](../docs/architecture/2026-11-23-lvcs-unified-loading-api-design.md)
+- （11-24 起）ECS 协作契约未覆盖全部注册键 → [设计](../docs/architecture/2026-11-24-ecs-coordination-rules-design.md)
 
 ## 技术债
 
@@ -19,45 +22,31 @@
 
 ## 基线（2026-11-22）
 
-- 活动项目 `src/NSSLC/Terraria.Components.csproj`（net10.0）；`src/NSSLC/` 分两层：`Share/` 收七个共享能力域，其余直挂项目根；`World/` 下另有 EntitySpawn、Session、TileEntity 三个语义子域。
+- 活动项目 `src/NSSLC/Terraria.Components.csproj`（net10.0）；`Share/` 收七个共享能力域，其余直挂项目根；`World/` 下另有 EntitySpawn、Session、TileEntity 子域。
 - 服务器 `src/NSSLC.Server`，监听 `127.0.0.1:7777`；14 个验证项目按 `Test/<生产边界>/<项目>/` 落位 → [规则](../Test/README.md)
 - `src/NSSLC.Infrastructure/` 受保护：仅 `Diagnostics/` 参与当前编译。
 
 ## 工作区事件
 
 - 2026-11-22 未跟踪测试项目被外部进程清除；Communication.Verification 未恢复。
+- 2026-11-24 夜间 `docs/defects/` 被增量并行写入（新增与改名都有），按目录现状判断已记录缺陷，不按旧快照。
 
 ## 最近轮次
 
-- **2026-11-23 LVCS 统一加载系统落地**：契约、分派层、ItemUse 族落地，49 项验证与真实启动对照通过
-  - 未闭合：其余族待接 → [设计](../docs/architecture/2026-11-23-lvcs-unified-loading-api-design.md)
-- **2026-11-23 投射物穿透预算联动设计**：属性给上限、弹体持剩余，命中与反弹共用消费入口
-  - 未闭合：上限快照、反弹顺序待决 → [设计](../docs/architecture/2026-11-23-projectile-penetration-budget-linkage-design.md)
-- **2026-11-23 物品双宿主边界落地**：载荷层与两宿主 owner 收敛为不变量，实体路径已删，世界侧补拾取延迟与存活计数 → [计划](../docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md)
-- **2026-11-23 刷怪、会话与 Tile 实体收进 World 语义子域**：三域在 `World/` 下保留角色目录，API 不变 → [CR](../docs/cr/CR-2026-11-23-world-semantic-subdomains.md)
-- **2026-11-23 Item 与 WorldItem 拆分判定**：载荷/世界宿主/容器宿主三分解成立，单一系统与双份身份均被否决 → [审计](../docs/reviews/audits/2026-11-23-item-worlditem-split-necessity.md)
-- **2026-11-22 NSSLC 领域内按 ECS 职责分目录**：组件、命令、查询与系统附属文件分别归入四类目录，主系统文件留领域根
-  - 未闭合：`Communication` 迁出由并行任务收尾；扁平目录出现首个系统时需补建四类目录 → [CR](../docs/cr/CR-2026-11-22-nsslc-ecs-role-directory-layout.md)
-
-## 更早轮次
-
-- 11-23 刷怪域改名 EntitySpawn（目录、类型与命名空间统一） → [CR](../docs/cr/CR-2026-11-23-entity-spawn.md)
-- 11-23 Share 收容层恢复（七域入 `Share/`，API 不变，14 项目通过） → [CR](../docs/cr/CR-2026-11-23-nsslc-share-layer-restore.md)
-- 11-22 出站 tick 批仲裁（成批发布，闭合后恢复） → [计划](../docs/plans/2026-11-22-outbound-tick-batch-execution-plan.md)
-- 11-22 领域目录扁平化（18 领域、592 文件迁移） → [CR](../docs/cr/CR-2026-11-22-nsslc-domain-directory-flatten.md)
-- 11-22 服务器诊断日志迁出共享组件域 → [CR](../docs/cr/CR-2026-11-22-diagnostics-to-infrastructure.md)
-- 11-22 Test 按生产边界重组（两层布局、去统一后缀） → [规则](../Test/README.md)
-- 11-22 NPC 同步出站优先级隔离 → [CR](../docs/cr/CR-2026-11-22-npc-sync-outbound-priority.md)
-- 11-22 项目文件组织从 ECS 约束拆出，仓库与项目层落位规则独立成文 → [CR](../docs/cr/CR-2026-11-22-project-file-organization-split.md)
-- 11-22 属性与状态效果边界收敛 B0–B9（Inventory 属性桥接 deferred） → [计划](../docs/plans/2026-11-20-attribute-system-execution-plan.md)
-- 11-20 ECS Commit / Projection 边界收敛 → [计划](../docs/plans/2026-11-08-ecs-architecture-remediation-master-plan.md)
-- 11-17 手写史莱姆 AI 主动状态 → [CR](../docs/cr/CR-2026-10-22-npc-ai-damage-test.md)
-- 11-09 ECS command buffer deferred 实体生命周期 → [计划](../docs/plans/2026-11-08-ecs-command-buffer-commit-plan.md)
-- 11-07 聊天系统（NetModules 82 + NetTextModule） → [审计](../docs/reviews/audits/2026-11-07-chat-system-introduction.md)
-- 11-07 WorldItem / TileEntity / NpcSpawn / ItemUse 四域独立 → [审计](../docs/reviews/audits/2026-11-06-server-systems-introduction.md)
-- 11-06 服务器运算系统引入 → [审计](../docs/reviews/audits/2026-11-06-server-systems-introduction.md)
-- 10-13 L2 组件恢复与 components-only 清理基线 → [清理记录](../docs/cr/CR-2026-10-09-components-only-cleanup.md)、[组件清单](../docs/reviews/audits/2026-10-09-components-only-inventory.md)
+- **2026-11-25 无敌窗口通道化（P0–P4）**：单值 60 tick 窗口换成「6 通道到期戳 + 伤害反推阶梯 + NPC 攻击者分槽 + 只读免疫查询」，持续伤害两头都不受窗口影响，预检与裁决的差额进每秒诊断
+  - 未闭合：表现层与网络投影未做、longInvince 无来源、出生/复活保护未接线、跨 tick 差额与预检只读无断言 → [CR](../docs/cr/CR-2026-11-25-invincibility-window-p0-p3.md)
+- **2026-11-25 错误处理约束成文**：失败先分类再选机制，按层选编码并单向跨层，码 append-only 且内部诊断码与协议码分治，结果未知不按失败重试
+  - 未闭合：三项落地整改须由后续轮次按约束 §8 清单逐条勾选通过方算闭合（反例组件改封闭失败原因枚举、单一码注册表建立、技术异常转换点清单补齐） → [CR](../docs/cr/CR-2026-11-25-error-handling-constraint.md)
+- **2026-11-25 AI 声明接口收口（P0–P4）**：输入、输出、顺序锚点与提交目标四类声明全部被机器消费，缺声明在建服期失败 → [CR](../docs/cr/CR-2026-11-24-ai-declaration-interface.md)
+- **2026-11-25 投射物链路修复计划立项**：四条缺陷与两处接缝不一致排成六批，先红后绿、按批验收
+  - 未闭合：五条判据全过前不得标记完成，缺陷文件未删即未闭合 → [计划](../docs/plans/2026-11-25-projectile-chain-repair-execution-plan.md)
+- **2026-11-24 约束与代码漂移审计与同步**：10 份约束逐条对码，8 项失效、6 项代码已深化；A/B 类 13 条已改入正文，D 类待定 → [审计](../docs/reviews/audits/2026-11-24-constraint-drift-audit.md)、[CR](../docs/cr/CR-2026-11-24-constraints-drift-sync.md)
+- **2026-11-24 Context 目录整理与断裂路径修复**：约束/架构目录更名并归位，两份领域约束移入 docs/architecture；活跃文档 90 份断链清零，5 份 task-table 层级由 3 修正为 7 → [CR](../docs/cr/CR-2026-11-24-broken-folder-path-repair.md)、[CR](../docs/cr/CR-2026-11-24-constraints-dir-rename.md)、[CR](../docs/cr/CR-2026-11-24-arch-constraints-dir-rename.md)、[CR](../docs/cr/CR-2026-11-24-domain-constraints-to-docs-architecture.md)
+- **2026-11-24 玩家侧战斗结果消费者边界判定**：确认为空转的冗余队列清理者，与共享结果生产者的后置条件重叠，建议删除
+  - 未闭合：按审计 §7 落地清单执行删除并跑通其验收条件，或确认需要结果级玩家数据后改走补齐 → [审计](../docs/reviews/audits/2026-11-24-player-combat-result-system-boundary.md)
+- **2026-11-24 投射物内容族接入统一加载、射击接缝、AI 入口、子步接触与反弹预算**：内容成为不可变目录，使用事实于下一帧生成弹体，高速弹按内容细分推进，瓦片接触按策略反射并扣共用预算
+  - 未闭合：P5 未开工；客户端输入适配缺失 → [CR](../docs/cr/CR-2026-11-24-projectile-p0-p1-content-and-shoot-seam.md)
 
 ## 历史
 
-更早轮次与已关闭条目见 `docs/cr/`、`docs/reviews/audits/`、`docs/plans/`；旧 progress 全文可用 `git log -p -- Context/progress.md` 取回。
+已关闭轮次与更早内容见 `docs/cr/`、`docs/reviews/audits/`、`docs/plans/`；旧 progress 全文可用 `git log -p -- Context/progress.md` 取回。

@@ -145,8 +145,10 @@ public protected internal private new abstract virtual override sealed static re
 
 ## 9. class 与 struct 选择
 
-- 默认几乎总是优先 `class`
-- 仅当类型具有典型值语义时再考虑 `struct`，例如：
+- 默认几乎总是优先 `class`：目录、注册表、只读端口、有身份或需要引用相等的类型都用 `class`
+- **ECS 组件是明确的例外**：`Component/` 下的组件默认写 `readonly record struct`（现为 32/77，
+  `sealed class` 35/77），按值语义挂载在实体上；组件不建继承族
+- 其余类型仅当具有典型值语义时再考虑 `struct`，例如：
   - 很小
   - 生命周期短
   - 常被嵌入其他对象
@@ -223,7 +225,10 @@ public protected internal private new abstract virtual override sealed static re
 
 ## 19. 命名空间
 
-- 通常不要超过 2 层深度
+- 本仓库的命名空间以 `Terraria.Share` 或 `Terraria.Unshared` 为根，其下按"域 + 职责"分层，
+  现状深度为 3–5 层（3 层 428 个、4 层 34 个、5 层 101 个）；不要新增超过 5 层的命名空间
+- 领域代码形状为 `Terraria.<Share 或 Unshared>.<域>[.<子域>].<职责>`，例如
+  `Terraria.Share.Attributes.Buff.System`
 - 不强制文件夹布局与命名空间一一对应
 - 共享库 / 模块代码使用命名空间
 - 叶子应用代码（例如 Unity 应用）可以不使用命名空间
@@ -312,5 +317,5 @@ public protected internal private new abstract virtual override sealed static re
 
 涉及模块拆分、ECS 组件/系统/查询、适配器或投影设计时，必须同时遵循：
 
-- [公共拆分约束](./公共拆分约束.md)
+- 公共拆分约束（独立文档尚未建立；拆分规则见 [项目文件组织设计约束](../架构约束/项目文件组织设计约束.md) 与 [ECS 文件组织设计约束](../架构约束/ECS文件组织设计约束.md)）
 

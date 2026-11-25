@@ -8,7 +8,7 @@
 | 设计状态 | 已确认 |
 | 确认日期 | 2026-10-02 |
 | 规范性质 | 架构设计；约束职责归属和依赖方向，不规定唯一框架或固定项目数量 |
-| 关联约束 | [项目文件组织设计约束](项目文件组织设计约束.md)、[ECS 文件组织设计约束](ECS文件组织设计约束.md)、[副作用隔离规范（草案）](../约束/非函数式编码副作用隔离规范.md) |
+| 关联约束 | [项目文件组织设计约束](项目文件组织设计约束.md)、[ECS 文件组织设计约束](ECS文件组织设计约束.md)、[副作用隔离规范（草案）](../项目约束/非函数式编码副作用隔离规范.md) |
 
 ## 2. 决定
 
@@ -62,7 +62,7 @@ src/Server/Composition/                 # 宿主组合入口（按实际项目�
 
 上面的路径是职责归属示意，不表示这些项目或空目录都应立即创建。
 
-`src/NSSLC.Infrastructure/分类参考/` 是参考材料，不是生产实现目录；生产项目不得从该目录编译或引用实现。保存与恢复用例分别由 [WorldSaveCoordinator.cs](../../src/NSSLC.Application/WorldStorage/Persistence/WorldSaveCoordinator.cs) 和 [WorldLoadCoordinator.cs](../../src/NSSLC.Application/WorldStorage/Persistence/WorldLoadCoordinator.cs) 承载。正式的 [WorldFileStoreAdapter.cs](../../src/NSSLC.Infrastructure/WorldStorage/Platform/WorldFileStoreAdapter.cs) 实现 Application 文件端口并执行本地字节读写；[WorldStorageCoordinatorFactory.cs](../../src/NSSLC.Infrastructure/WorldStorage/WorldStorageCoordinatorFactory.cs) 将该适配器绑定到 Application 协调器，供宿主组合入口创建，并提供正式 WorldFile decoder/validator/encoder。`src/NSSLC.Infrastructure/WorldStorage/WorldFile/` 的正式 codec 不依赖全局状态：decoder/validator 接受 pointer-based `.wld` 版本 `88–326`，encoder 接受 `319–326` 的持久化文档并统一写为版本 `326`；二者共享 section pointer 边界和 header 前缀布局。decoder 按版本门保留压缩 Tile payload、Chest、Sign、NPC、TileEntity、WeightedPressurePlates、TownManager、Bestiary、CreativePowers 和 Footer 的 Application DTO 或有界原始载荷。WorldFile 326 的生成世界组合已通过 Application 加载 API，在 Prepare 阶段调用注入的 TileEntity codec 完成类型化解析，再交由领域 owner 提交；CreativePowers 当前接受标准新世界的空状态，非空载荷明确拒绝。旧全量 WorldFile 实现继续排除在正式项目编译之外。
+本仓库没有独立的 Application 项目：应用层用例以 `Terraria.NonAuthoritative.*` 命名空间落在 `src/NSSLC.Infrastructure/WorldData/` 与 `src/NSSLC.Infrastructure/WorldStorage/` 内，端口（`IWorldFileStore`、`IWorldPersistenceDocumentDecoder`、`IWorldPersistenceDocumentValidator`）由应用层拥有、由基础设施实现。保存与恢复的宿主入口是 [WorldStorageCoordinatorFactory.cs](../../src/NSSLC.Infrastructure/WorldStorage/WorldStorageCoordinatorFactory.cs)。正式的 [WorldFileStoreAdapter.cs](../../src/NSSLC.Infrastructure/WorldStorage/Platform/WorldFileStoreAdapter.cs) 实现 Application 文件端口并执行本地字节读写；[WorldStorageCoordinatorFactory.cs](../../src/NSSLC.Infrastructure/WorldStorage/WorldStorageCoordinatorFactory.cs) 将该适配器绑定到 Application 协调器，供宿主组合入口创建，并提供正式 WorldFile decoder/validator/encoder。`src/NSSLC.Infrastructure/WorldStorage/WorldFile/` 的正式 codec 不依赖全局状态：decoder/validator 接受 pointer-based `.wld` 版本 `88–326`，encoder 接受 `319–326` 的持久化文档并统一写为版本 `326`；二者共享 section pointer 边界和 header 前缀布局。decoder 按版本门保留压缩 Tile payload、Chest、Sign、NPC、TileEntity、WeightedPressurePlates、TownManager、Bestiary、CreativePowers 和 Footer 的 Application DTO 或有界原始载荷。WorldFile 326 的生成世界组合已通过 Application 加载 API，在 Prepare 阶段调用注入的 TileEntity codec 完成类型化解析，再交由领域 owner 提交；CreativePowers 当前接受标准新世界的空状态，非空载荷明确拒绝。旧全量 WorldFile 实现继续排除在正式项目编译之外。
 
 ### 后续 WorldFile 区段边界
 
