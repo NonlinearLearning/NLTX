@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Detached target observation supplied to projectile AI.</summary>
 public readonly record struct ProjectileTargetFact

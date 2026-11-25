@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>
 /// AI output consumed by projectile simulation; it is not a direct component write.

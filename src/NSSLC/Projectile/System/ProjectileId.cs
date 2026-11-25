@@ -1,11 +1,11 @@
 using System;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Stable content identifier for a projectile definition.</summary>
-public readonly record struct ProjectileDefinitionId
+public readonly record struct ProjectileId
 {
-  public ProjectileDefinitionId(string value)
+  public ProjectileId(string value)
   {
     if (string.IsNullOrWhiteSpace(value))
     {

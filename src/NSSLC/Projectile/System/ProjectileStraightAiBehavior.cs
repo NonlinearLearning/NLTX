@@ -1,10 +1,10 @@
 using System;
 using System.Numerics;
-using Terraria.Ai;
-using Terraria.Entity;
-using Terraria.Movement;
+using Terraria.Share.Ai;
+using Terraria.Share.Entities;
+using Terraria.Share.Movement;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Emits the current velocity as a deterministic straight-flight request.</summary>
 public sealed class ProjectileStraightAiBehavior : AiBehavior<ProjectileAiIntent>

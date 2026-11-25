@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Declares that a projectile may compute a homing adjustment.</summary>
 public readonly record struct ProjectileHomingCapabilityComponent

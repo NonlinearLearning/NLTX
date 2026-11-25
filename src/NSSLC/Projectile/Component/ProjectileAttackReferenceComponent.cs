@@ -1,12 +1,12 @@
 using System;
-using Terraria.Combat;
+using Terraria.Share.Combat;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>References immutable attack content without attaching a payload to the Projectile.</summary>
 public readonly record struct ProjectileAttackDefinitionReferenceComponent
 {
-  public ProjectileAttackDefinitionReferenceComponent(CombatAttackDefinitionId definitionId)
+  public ProjectileAttackDefinitionReferenceComponent(CombatAttackId definitionId)
   {
     if (!definitionId.IsValid)
     {
@@ -16,5 +16,5 @@ public readonly record struct ProjectileAttackDefinitionReferenceComponent
     DefinitionId = definitionId;
   }
 
-  public CombatAttackDefinitionId DefinitionId { get; }
+  public CombatAttackId DefinitionId { get; }
 }

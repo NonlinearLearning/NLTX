@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Tick-scoped queue of termination requests consumed at the lifecycle commit.</summary>
 /// <remarks>

@@ -1,10 +1,10 @@
 using System;
 using System.Numerics;
-using Terraria.Ai;
-using Terraria.Entity;
-using Terraria.Movement;
+using Terraria.Share.Ai;
+using Terraria.Share.Entities;
+using Terraria.Share.Movement;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>
 /// Computes a homing velocity request from detached inputs. It never writes ECS state.
@@ -64,7 +64,16 @@ public sealed class ProjectileHomingAiBehavior : AiBehavior<ProjectileAiIntent>
         ? velocity.LinearVelocity
         : Vector2.Normalize(offset) * maximumSpeed;
     float turnRate = _profile.TurnRate > 0f ? _profile.TurnRate : capability.TurnRate;
-    Vector2 nextVelocity = Terraria.Physics.SimulationVector.MoveTowards(velocity.LinearVelocity, desired, turnRate * deltaTime);
+    Vector2 nextVelocity = Terraria.Share.Physics.SimulationVector.MoveTowards(
+        velocity.LinearVelocity, desired, turnRate * deltaTime);
+    // 转向不得掉速：MoveTowards 走的是弦，而"目标速度"又按当前速度重算，速率会像滚雪球一样衰减
+    // （实测 40 tick 从 8 掉到 3.84）。参考端追踪弹保持恒定速率、只改方向，因此把速率钉回原值。
+    float speed = velocity.LinearVelocity.Length();
+    if (speed > 0f && nextVelocity != Vector2.Zero)
+    {
+      nextVelocity = Vector2.Normalize(nextVelocity) * speed;
+    }
+
     output.Emit(new ProjectileAiIntent(
         ProjectileAiIntentKind.AdjustVelocity, nextVelocity, target.Revision));
   }

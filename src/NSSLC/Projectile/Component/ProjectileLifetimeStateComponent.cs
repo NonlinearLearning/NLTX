@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Tracks finite projectile lifetime in simulation ticks.</summary>
 public readonly record struct ProjectileLifetimeStateComponent

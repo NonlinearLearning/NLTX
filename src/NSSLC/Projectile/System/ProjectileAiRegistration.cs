@@ -1,7 +1,7 @@
 using System;
-using Terraria.Ai;
+using Terraria.Share.Ai;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>
 /// Binds projectile behavior implementations to the shared AI registry after profile validation.

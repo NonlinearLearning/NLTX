@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Removes pending projectiles at the explicit lifecycle commit boundary.</summary>
 public sealed class ProjectileTerminationCommitSystem : BaseSystem<ArchWorld, EcsServerTickContext>

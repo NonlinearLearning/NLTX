@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Projectile lifecycle metadata over the shared world entity registry.</summary>
 /// <remarks>The shared registry owns handle resolution; this type adds termination history.</remarks>

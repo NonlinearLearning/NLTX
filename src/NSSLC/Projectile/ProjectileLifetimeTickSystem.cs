@@ -2,10 +2,10 @@ using System;
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Advances active projectile lifetime and records expiry for the lifecycle commit.</summary>
 public sealed class ProjectileLifetimeTickSystem : BaseSystem<ArchWorld, EcsServerTickContext>

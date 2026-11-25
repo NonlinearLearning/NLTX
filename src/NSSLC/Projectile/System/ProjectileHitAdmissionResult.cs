@@ -1,4 +1,4 @@
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Result of projectile-side immunity and lifecycle admission.</summary>
 public enum ProjectileHitAdmissionResult : byte

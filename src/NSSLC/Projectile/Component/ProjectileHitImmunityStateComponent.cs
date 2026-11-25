@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>
 /// Declares the projectile hit-immunity capability and stores its target-specific windows.
@@ -20,6 +20,12 @@ public sealed class ProjectileHitImmunityStateComponent
 
   public IReadOnlyList<ProjectileHitImmunity> Immunities => _readOnlyImmunities;
 
+  /// <summary>True when the target's recorded window still covers the given tick.</summary>
+  /// <remarks>
+  /// 边界与 <see cref="Terraria.Share.Combat.ImmunityWindowComponent" /> 一致：授予于 N、时长 D，
+  /// AppliesTo 在 N..N+D-1 为真，N+D 起放行。参考端 localNPCImmunity 是递减计数，
+  /// 授予后先递减再判定，受保护 tick 数恰好等于配置值。
+  /// </remarks>
   public bool AppliesTo(EntityRuntimeHandle target, long tick)
   {
     if (!target.IsValid || tick < 0)
@@ -77,7 +83,7 @@ public sealed class ProjectileHitImmunityStateComponent
       throw new ArgumentOutOfRangeException(nameof(tick));
     }
 
-    return _immunities.RemoveAll(immunity => immunity.UntilTick < tick);
+    return _immunities.RemoveAll(immunity => immunity.UntilTick <= tick);
   }
 }
 
@@ -106,6 +112,6 @@ public readonly record struct ProjectileHitImmunity
 
   public bool AppliesTo(EntityRuntimeHandle target, long tick)
   {
-    return Target.Matches(target) && tick <= UntilTick;
+    return Target.Matches(target) && tick < UntilTick;
   }
 }

@@ -1,7 +1,7 @@
 using System;
 using ArchWorld = Arch.Core.World;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Public entry point for requesting projectile spawns from outside the component domain.</summary>
 /// <remarks>

@@ -3,11 +3,11 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Consumes shared Combat results and applies projectile-owned hit state.</summary>
 public sealed class ProjectileDamageResultSystem : BaseSystem<ArchWorld, EcsServerTickContext>
@@ -54,6 +54,15 @@ public sealed class ProjectileDamageResultSystem : BaseSystem<ArchWorld, EcsServ
         {
           DamageAppliedReceipt receipt = result.Receipt.Value;
           _projectileHits.Apply(in receipt, out _);
+          continue;
+        }
+
+        // 没落地就把预扣退回：入队时已经预扣，拒绝要等 Combat 结算完才知道。
+        // 顺手记下「预检放行但裁决拒绝」的差额，否则预检读的是过期状态这件事无从观测。
+        if (results[index].Source is { } rejectedSource)
+        {
+          _projectileHits.Reject(rejectedSource);
+          _projectileHits.NoteAuthorityRejection(result.RejectionReason);
         }
       }
     }

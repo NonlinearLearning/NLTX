@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Small cross-behavior state visible to the projectile AI adapter.</summary>
 public readonly record struct ProjectileBehaviorStateComponent

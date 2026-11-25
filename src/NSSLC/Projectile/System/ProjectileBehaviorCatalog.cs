@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Terraria.Ai;
+using Terraria.Share.Ai;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Immutable-after-registration behavior profile directory.</summary>
 public sealed class ProjectileBehaviorCatalog

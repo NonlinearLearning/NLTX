@@ -1,7 +1,7 @@
 using System;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>One tick-scoped request to terminate a projectile runtime handle.</summary>
 public readonly record struct ProjectileTerminationRequest

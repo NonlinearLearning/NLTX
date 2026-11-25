@@ -1,18 +1,18 @@
 using System;
 using System.Numerics;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Movement;
-using Terraria.Physics;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Movement;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Validated input for creating one projectile instance.</summary>
 public readonly record struct ProjectileSpawnRequest
 {
   public ProjectileSpawnRequest(
-      ProjectileDefinitionId definitionId,
+      ProjectileId definitionId,
       EntityRuntimeHandle owner,
       ProjectileSourceMetadataComponent source,
       Vector2 position,
@@ -54,7 +54,7 @@ public readonly record struct ProjectileSpawnRequest
     Faction = faction;
   }
 
-  public ProjectileDefinitionId DefinitionId { get; }
+  public ProjectileId DefinitionId { get; }
 
   public EntityRuntimeHandle Owner { get; }
 

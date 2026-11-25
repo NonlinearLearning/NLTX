@@ -1,7 +1,7 @@
 using System;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Stores the owning entity handle used for attribution and collision exclusion.</summary>
 public readonly record struct ProjectileOwnerComponent

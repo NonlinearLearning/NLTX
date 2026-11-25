@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Ai;
-using Terraria.Attributes;
-using Terraria.Entity;
-using Terraria.Liquid;
-using Terraria.Movement;
-using Terraria.Physics;
-using Terraria.Relationships;
-using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
+using Terraria.Share.Combat;
+using Terraria.Share.Ai;
+using Terraria.Share.Attributes;
+using Terraria.Share.Entities;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
+using MovementVelocityComponent = Terraria.Share.Movement.VelocityComponent;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>
 /// Owns projectile creation, runtime-handle registration and termination at an exclusive ECS
@@ -27,21 +27,21 @@ namespace Terraria.Projectile;
 public sealed class ProjectileLifecycleSystem
 {
   private readonly ArchWorld _world;
-  private readonly ProjectileDefinitionCatalog _definitions;
+  private readonly ProjectileCatalog _definitions;
   private readonly ProjectileRuntimeRegistry _registry;
-  private readonly EntityDefinitionSystem<ArchEntity> _spawner;
+  private readonly EntitySystem<ArchEntity> _spawner;
   private ProjectileTerminationQueueComponent? _terminations;
 
   public ProjectileLifecycleSystem(
       ArchWorld world,
-      ProjectileDefinitionCatalog definitions,
+      ProjectileCatalog definitions,
       ProjectileRuntimeRegistry registry)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
     _definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
     _registry = registry ?? throw new ArgumentNullException(nameof(registry));
     // 生成走共享的实体定义宿主：内容定义在目录里已经和实体组合定义成对登记。
-    _spawner = new EntityDefinitionSystem<ArchEntity>(
+    _spawner = new EntitySystem<ArchEntity>(
         _definitions.EntityDefinitions,
         new ArchEntityDefinitionHost(_world, _registry.EntityRegistry));
   }
@@ -61,7 +61,7 @@ public sealed class ProjectileLifecycleSystem
       in ProjectileSpawnRequest request,
       EcsServerCommandBuffer? commands = null)
   {
-    if (!_definitions.TryGet(request.DefinitionId, out ProjectileDefinition? definition))
+    if (!_definitions.TryGet(request.DefinitionId, out _))
     {
       return new ProjectileSpawnResult(
           ProjectileLifecycleStatus.DefinitionUnknown,

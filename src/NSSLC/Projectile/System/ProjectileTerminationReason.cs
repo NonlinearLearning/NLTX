@@ -1,4 +1,4 @@
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Reason recorded when a projectile leaves the active simulation.</summary>
 public enum ProjectileTerminationReason : byte

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Lifecycle state for one projectile instance.</summary>
 public readonly record struct ProjectileDispositionStateComponent

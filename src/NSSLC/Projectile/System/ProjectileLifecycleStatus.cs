@@ -1,4 +1,4 @@
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Result of a projectile lifecycle command.</summary>
 public enum ProjectileLifecycleStatus : byte

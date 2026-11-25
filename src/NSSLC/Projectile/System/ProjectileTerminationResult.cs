@@ -1,6 +1,6 @@
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Authoritative result returned by a lifecycle termination operation.</summary>
 public readonly record struct ProjectileTerminationResult(

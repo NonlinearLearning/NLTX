@@ -1,7 +1,7 @@
 using System;
-using Terraria.Ai;
+using Terraria.Share.Ai;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>
 /// Immutable parameters and binding metadata for one projectile behavior profile.

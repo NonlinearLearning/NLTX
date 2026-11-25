@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Captures immutable source attribution for one projectile instance.</summary>
 public readonly record struct ProjectileSourceMetadataComponent

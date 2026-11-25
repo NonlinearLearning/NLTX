@@ -1,7 +1,7 @@
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.Projectile;
+namespace Terraria.Unshared.Projectiles;
 
 /// <summary>Locates the single entity that carries the tick-scoped termination queue.</summary>
 internal static class ProjectileTerminationQueue
