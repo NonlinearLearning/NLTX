@@ -1,6 +1,6 @@
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
 // 相位调度的可执行探针。
 //

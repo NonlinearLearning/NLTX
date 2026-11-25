@@ -3,10 +3,10 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using ArchWorld = Arch.Core.World;
-using Terraria.Session;
-using Terraria.Entity;
-using Terraria.Item;
-using Terraria.World;
+using Terraria.Unshared.Session;
+using Terraria.Share.Entities;
+using Terraria.Share.Items;
+using Terraria.Unshared.World;
 
 // Tile 实体（箱子 / 告示牌 / 传送塔）验证：
 //   1. world.tile-entities 记录流按 Version4 TileEntity.Read 的布局解码。

@@ -26,7 +26,7 @@
 3. **项目名跟生产目录，不跟命名空间。** `src/NSSLC/World/ComponentSystem/TileEntity/` 和
    `src/NSSLC/WorldItem/` 仍是 `Terraria.World`，`src/NSSLC/Share/ItemUse/` 仍是
    `Terraria.Player`。这是目录与命名空间解耦的既定事实（见
-   [项目文件组织设计约束](../Context/架构设计/项目文件组织设计约束.md) 第 5 节）；
+   [项目文件组织设计约束](../Context/架构约束/项目文件组织设计约束.md) 第 5 节）；
    测试名若跟命名空间，会退回拆目录之前的旧域。
 
 4. **二级领域目录按需引入**：只在同一「边界 + 领域」累计 ≥3 个项目时才建，例如以后的
@@ -70,7 +70,7 @@ Get-ChildItem Test -Recurse -Filter *.csproj | ForEach-Object {
 ```
 
 只构建受影响项目，不加 `-t:Rebuild`，验证输出仍落在 `Build/bin/<项目名>/`——详见
-[构建与验证约束](../Context/约束/构建与验证约束.md)。
+[构建与验证约束](../Context/项目约束/构建与验证约束.md)。
 
 ## 新增验证项目检查清单
 

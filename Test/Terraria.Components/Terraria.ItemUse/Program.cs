@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Inventory;
-using Terraria.Item;
-using Terraria.Player;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Inventory;
+using Terraria.Share.Items;
+using Terraria.Share.Player;
+using Terraria.Share.Relationships;
 
 // 物品使用 / 弹药 / 通道验证，对齐 Version4 Player.ItemCheck 的使用门闸与弹药消耗：
 //   1. useTime 决定下一次可用 tick；未到点一律拒绝。
@@ -28,20 +28,20 @@ using ArchWorld world = ArchWorld.Create();
 _ = world.Create(new PlayerItemUseRequestQueueComponent());
 _ = world.Create(new PlayerItemUseFactQueueComponent());
 
-ItemDefinitionRegistry itemDefinitions = new();
+ItemRegistry itemDefinitions = new();
 foreach (ItemId itemId in new[] { ItemId.Torch, ItemId.CopperBow, ItemId.WoodenArrow, ItemId.MagicMissile, ItemId.Gel })
 {
-  itemDefinitions.Register(new ItemDefinition(itemId, 999, ItemCategoryMask.Any));
+  itemDefinitions.Register(new Item(itemId, 999, ItemCategoryMask.Any));
 }
 
-ItemUseDefinitionCatalog useDefinitions = new();
-useDefinitions.Register(new ItemUseDefinition(
+ItemUseCatalog useDefinitions = new();
+useDefinitions.Register(new ItemUse(
     ItemId.Torch, UseTime: 15, UseAnimation: 15, AutoReuse: true, Channel: false,
     UseAmmo: ItemId.None, ConsumeAmmo: false, ManaCost: 0));
-useDefinitions.Register(new ItemUseDefinition(
+useDefinitions.Register(new ItemUse(
     ItemId.CopperBow, UseTime: 25, UseAnimation: 25, AutoReuse: false, Channel: false,
     UseAmmo: ItemId.WoodenArrow, ConsumeAmmo: true, ManaCost: 0));
-useDefinitions.Register(new ItemUseDefinition(
+useDefinitions.Register(new ItemUse(
     ItemId.MagicMissile, UseTime: 12, UseAnimation: 12, AutoReuse: true, Channel: true,
     UseAmmo: ItemId.None, ConsumeAmmo: false, ManaCost: 10));
 useDefinitions.Seal();

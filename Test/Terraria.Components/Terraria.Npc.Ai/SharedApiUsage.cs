@@ -3,12 +3,12 @@ using System.Numerics;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using GoapComparison = Terraria.Ai.Goap.Core.Comparison;
-using Terraria.Ai.Examples;
-using Terraria.Ai.Goap.Runtime;
-using Terraria.Attributes;
-using Terraria.Combat;
-using Terraria.Entity;
+using GoapComparison = Terraria.Share.Ai.Goap.Core.Comparison;
+using Terraria.Share.Ai.Examples;
+using Terraria.Share.Ai.Goap.Runtime;
+using Terraria.Share.Attributes;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
 
 namespace Terraria.Verification;
 

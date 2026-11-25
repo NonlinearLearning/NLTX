@@ -2,11 +2,11 @@ using System.Numerics;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Inventory;
-using Terraria.Item;
-using Terraria.Player;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Inventory;
+using Terraria.Share.Items;
+using Terraria.Unshared.Player;
+using Terraria.Share.Relationships;
 
 // 玩家库存双模型消除后的契约验证。
 // 验证类型：contract（单点 API 契约）+ chain（玩家输入 → 共享库存的链路）。
@@ -47,9 +47,9 @@ InventorySlotDefinition[] contractSlots =
     new(3, InventorySlotKind.General, ItemCategoryMask.Any, BigMaxStack)
 ];
 
-ItemDefinitionRegistry registry = new();
-registry.Register(new ItemDefinition(bigItem, BigMaxStack, ItemCategoryMask.General));
-registry.Register(new ItemDefinition(smallItem, 5, ItemCategoryMask.Any));
+ItemRegistry registry = new();
+registry.Register(new Item(bigItem, BigMaxStack, ItemCategoryMask.General));
+registry.Register(new Item(smallItem, 5, ItemCategoryMask.Any));
 
 using (ArchWorld world = ArchWorld.Create())
 {
@@ -123,7 +123,7 @@ using (ArchWorld world = ArchWorld.Create())
       !overSlotLimit.Succeeded && overSlotLimit.Failure == InventoryTransferFailure.InvalidQuantity,
       $"failure={overSlotLimit.Failure}");
 
-  // 超过物品自身堆叠上限：由 ItemDefinition.AcceptsQuantity 拒绝，报 InvalidItemStack
+  // 超过物品自身堆叠上限：由 Item.AcceptsQuantity 拒绝，报 InvalidItemStack
   InventoryTransferResult overItemLimit =
       inventories.TrySetSlotValue(holder, 0, new ItemStack(smallItem, 6));
   _ = world.Get<InventoryComponent>(holder).TryGetSlot(0, out InventorySlot afterItemLimit);
@@ -166,8 +166,8 @@ using (ArchWorld inputWorld = ArchWorld.Create())
       new InventoryComponent(GeneralSlots(4)));
   entities.Register(playerHandle, player);
 
-  ItemDefinitionRegistry inputDefinitions = new();
-  inputDefinitions.Register(new ItemDefinition(bigItem, BigMaxStack, ItemCategoryMask.General));
+  ItemRegistry inputDefinitions = new();
+  inputDefinitions.Register(new Item(bigItem, BigMaxStack, ItemCategoryMask.General));
   InventorySystem inputInventories = new(inputWorld, inputDefinitions);
   PlayerInputRequestSystem system = new(inputWorld, entities, inputInventories);
 
@@ -223,8 +223,8 @@ using (ArchWorld inputWorld = ArchWorld.Create())
 using (ArchWorld valueWorld = ArchWorld.Create())
 {
   ArchEntity valueHolder = valueWorld.Create(new InventoryComponent(GeneralSlots(2)));
-  ItemDefinitionRegistry valueDefinitions = new();
-  valueDefinitions.Register(new ItemDefinition(bigItem, BigMaxStack, ItemCategoryMask.General));
+  ItemRegistry valueDefinitions = new();
+  valueDefinitions.Register(new Item(bigItem, BigMaxStack, ItemCategoryMask.General));
   InventorySystem valueInventories = new(valueWorld, valueDefinitions);
 
   _ = valueWorld.Get<InventoryComponent>(valueHolder).TryGetSlot(0, out InventorySlot emptySlot);

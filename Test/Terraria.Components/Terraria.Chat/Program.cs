@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Chat;
-using Terraria.Combat;
-using Terraria.Session;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Unshared.Chat;
+using Terraria.Share.Combat;
+using Terraria.Unshared.Session;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
 // 聊天系统验证：
 //   1. 文本规则：归一、单行化、控制字符剔除、长度上限、命令拆分。
@@ -135,11 +135,11 @@ EntityRuntimeHandle silentHandle = registry.Allocate(EntityUuid.Create());
 registry.Register(silentHandle, silent);
 
 ChatCommandCatalog commands = new();
-commands.Register(new ChatCommandDefinition(ChatCommandRules.DefaultCommandName, "say", false));
-commands.Register(new ChatCommandDefinition("help", "help", false));
-commands.Register(new ChatCommandDefinition("playing", "players", false));
-commands.Register(new ChatCommandDefinition("roll", "roll", false));
-commands.Register(new ChatCommandDefinition("admin", "operator only", true));
+commands.Register(new ChatCommand(ChatCommandRules.DefaultCommandName, "say", false));
+commands.Register(new ChatCommand("help", "help", false));
+commands.Register(new ChatCommand("playing", "players", false));
+commands.Register(new ChatCommand("roll", "roll", false));
+commands.Register(new ChatCommand("admin", "operator only", true));
 commands.Seal();
 
 ChatStore store = new();

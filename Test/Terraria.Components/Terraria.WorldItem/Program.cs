@@ -3,17 +3,17 @@ using System.Collections.Generic;
 using System.Numerics;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
+using Terraria.Share.Combat;
 using Terraria.Network;
-using Terraria.Session;
-using Terraria.Entity;
-using Terraria.Inventory;
-using Terraria.Item;
-using Terraria.Liquid;
-using Terraria.Movement;
-using Terraria.Physics;
-using Terraria.Relationships;
-using Terraria.World;
+using Terraria.Unshared.Session;
+using Terraria.Share.Entities;
+using Terraria.Share.Inventory;
+using Terraria.Share.Items;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.World;
 
 // 世界掉落物的物品身份改由共享 ItemStack 承载（见审计 §32 与 §34）。
 // 验证类型：rule（对照 Version4 的身份/时序/拾取规则）+ chain（世界宿主 → 容器宿主的移交链路）。
@@ -374,8 +374,8 @@ pickupWorld.Add(playerEntity, new EntityIdentityComponent(playerId));
 pickupWorld.Add(playerEntity, new LocationComponent(new Vector2(100f, 250f)));
 pickupWorld.Add(playerEntity, new ColliderComponent(new Vector2(16f, 32f)));
 pickupWorld.Add(playerEntity, new LifeComponent(100, 100));
-ItemDefinitionRegistry pickupDefinitions = new();
-pickupDefinitions.Register(new ItemDefinition(ItemId.Torch, 99, ItemCategoryMask.Any));
+ItemRegistry pickupDefinitions = new();
+pickupDefinitions.Register(new Item(ItemId.Torch, 99, ItemCategoryMask.Any));
 InventoryComponent playerInventory = new(
 [
   new InventorySlotDefinition(0, InventorySlotKind.General, ItemCategoryMask.Any, 99),
@@ -501,8 +501,8 @@ dualWorld.Add(dualPlayer, new EntityIdentityComponent(dualPlayerId));
 dualWorld.Add(dualPlayer, new LocationComponent(new Vector2(100f, 250f)));
 dualWorld.Add(dualPlayer, new ColliderComponent(new Vector2(16f, 32f)));
 dualWorld.Add(dualPlayer, new LifeComponent(100, 100));
-ItemDefinitionRegistry dualDefinitions = new();
-dualDefinitions.Register(new ItemDefinition(ItemId.Gel, 99, ItemCategoryMask.Any));
+ItemRegistry dualDefinitions = new();
+dualDefinitions.Register(new Item(ItemId.Gel, 99, ItemCategoryMask.Any));
 InventoryComponent dualInventory = new(
 [
   new InventorySlotDefinition(0, InventorySlotKind.General, ItemCategoryMask.Any, 99),
@@ -616,8 +616,8 @@ partialWorld.Add(partialPlayer, new EntityIdentityComponent(partialPlayerId));
 partialWorld.Add(partialPlayer, new LocationComponent(new Vector2(100f, 250f)));
 partialWorld.Add(partialPlayer, new ColliderComponent(new Vector2(16f, 32f)));
 partialWorld.Add(partialPlayer, new LifeComponent(100, 100));
-ItemDefinitionRegistry partialDefinitions = new();
-partialDefinitions.Register(new ItemDefinition(ItemId.Gel, 99, ItemCategoryMask.Any));
+ItemRegistry partialDefinitions = new();
+partialDefinitions.Register(new Item(ItemId.Gel, 99, ItemCategoryMask.Any));
 InventoryComponent partialInventory = new(
 [
   new InventorySlotDefinition(0, InventorySlotKind.General, ItemCategoryMask.Any, 20),
@@ -684,8 +684,8 @@ oversizedWorld.Add(oversizedPlayer, new EntityIdentityComponent(oversizedPlayerI
 oversizedWorld.Add(oversizedPlayer, new LocationComponent(new Vector2(100f, 250f)));
 oversizedWorld.Add(oversizedPlayer, new ColliderComponent(new Vector2(16f, 32f)));
 oversizedWorld.Add(oversizedPlayer, new LifeComponent(100, 100));
-ItemDefinitionRegistry oversizedDefinitions = new();
-oversizedDefinitions.Register(new ItemDefinition(ItemId.Gel, 99, ItemCategoryMask.Any));
+ItemRegistry oversizedDefinitions = new();
+oversizedDefinitions.Register(new Item(ItemId.Gel, 99, ItemCategoryMask.Any));
 InventoryComponent oversizedInventory = new(
 [
   new InventorySlotDefinition(0, InventorySlotKind.General, ItemCategoryMask.Any, 99),
@@ -801,8 +801,8 @@ delayWorld.Add(delayPlayer, new EntityIdentityComponent(delayPlayerId));
 delayWorld.Add(delayPlayer, new LocationComponent(new Vector2(100f, 250f)));
 delayWorld.Add(delayPlayer, new ColliderComponent(new Vector2(16f, 32f)));
 delayWorld.Add(delayPlayer, new LifeComponent(100, 100));
-ItemDefinitionRegistry delayDefinitions = new();
-delayDefinitions.Register(new ItemDefinition(ItemId.Gel, 99, ItemCategoryMask.Any));
+ItemRegistry delayDefinitions = new();
+delayDefinitions.Register(new Item(ItemId.Gel, 99, ItemCategoryMask.Any));
 InventoryComponent delayInventory = new(
 [
   new InventorySlotDefinition(0, InventorySlotKind.General, ItemCategoryMask.Any, 99),

@@ -4,10 +4,10 @@ using System.Net;
 using System.Net.Sockets;
 using ArchWorld = Arch.Core.World;
 using Terraria.Network;
-using Terraria.Session;
-using Terraria.Entity;
+using Terraria.Unshared.Session;
+using Terraria.Share.Entities;
 using Terraria.Network;
-using Terraria.World;
+using Terraria.Unshared.World;
 
 // Verifies that an authoritative NPC position snapshot cannot be queued behind a tile backlog:
 //

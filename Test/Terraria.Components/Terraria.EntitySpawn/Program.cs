@@ -3,19 +3,19 @@ using System.Collections.Generic;
 using System.Numerics;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Ai;
-using Terraria.Combat;
+using Terraria.Share.Ai;
+using Terraria.Share.Combat;
 using Terraria.Network;
-using Terraria.Session;
-using Terraria.Entity;
-using Terraria.EntitySpawn;
-using Terraria.Liquid;
-using Terraria.Movement;
-using Terraria.Npc;
-using Terraria.Physics;
-using Terraria.Relationships;
-using Terraria.World;
-using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
+using Terraria.Unshared.Session;
+using Terraria.Share.Entities;
+using Terraria.Unshared.EntitySpawn;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
+using Terraria.Unshared.Npc;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.World;
+using MovementVelocityComponent = Terraria.Share.Movement.VelocityComponent;
 
 // 刷怪系统的行为验证：
 //   1. 出生预算公式逐档对照 Version4 Spawner.GetSpawnRate。
@@ -206,9 +206,9 @@ spawnEntities.Register(playerHandle, player);
 session.BindPlayer(playerHandle);
 session.TryAdvance(CommunicationSessionStage.Active);
 
-EntityDefinitionRegistry definitions = new();
+EntityRegistry definitions = new();
 definitions.Register(
-    new EntityDefinitionBuilder(new EntityDefinitionId("entity.spawn-test"))
+    new EntityBuilder(new EntityId("entity.spawn-test"))
         .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
         .Add(() => new EntityFactionComponent(Faction.Hostile))
         .Add(() => new LifeComponent(50, 50))
@@ -218,14 +218,14 @@ definitions.Register(
         .Add(() => new NpcBehaviorStateComponent())
         .WithAi<SlimeAiBehavior>()
         .Build());
-EntityDefinitionSystem<ArchEntity> spawner = new(
+EntitySystem<ArchEntity> spawner = new(
     definitions,
     new ArchEntityDefinitionHost(spawnWorld, spawnEntities));
 using NpcAiRuntime ai = new(spawnWorld);
 EntitySpawnTable table = new(
 [
   new EntitySpawnCandidate(
-      new EntityDefinitionId("entity.spawn-test"),
+      new EntityId("entity.spawn-test"),
       NetworkType: 1,
       AiComponent.For<SlimeAiBehavior>(),
       Weight: 1),

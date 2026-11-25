@@ -3,15 +3,15 @@ using System.Numerics;
 using Arch.Core;
 using ArchWorld = Arch.Core.World;
 using ArchEntity = Arch.Core.Entity;
-using Terraria.Ai;
-using Terraria.Attributes;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Inventory;
-using Terraria.Item;
-using Terraria.Npc;
-using Terraria.Physics;
-using Terraria.Relationships;
+using Terraria.Share.Ai;
+using Terraria.Share.Attributes;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Inventory;
+using Terraria.Share.Items;
+using Terraria.Unshared.Npc;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
 
 // Attributes 与 StatusEffect 边界的可执行探针。
 //
@@ -142,7 +142,7 @@ Check("invisibility-is-concrete-behavior",
 // ---- B6/B7 生命周期与闭环：真实系统、真实 tick 顺序 ----
 // 顺序与 Program.BuildRegistrations 一致：BuffApply → BuffTick → Behavior → Periodic，
 // 再由 Commit 阶段的 LifeRestoreRequest / CombatDamageRequest 消费请求。
-BuffDefinitionRegistry definitions = new();
+BuffRegistry definitions = new();
 BuffContent.RegisterAll(definitions);
 BuffSystem buffSystem = new(definitions);
 

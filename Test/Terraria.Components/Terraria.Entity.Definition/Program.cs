@@ -3,14 +3,14 @@ using System.Numerics;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
 // 实体定义框架的宿主验证（审计 §30 待决项 #6，用户选择 A：补宿主并收编）。
 //
 // 此前 8 个定义相关类型在目录外零引用：缺的不是消费者，而是 IEntityDefinitionHost 的实现，
-// 因此 EntityDefinitionSystem 连构造函数都调不通。本验证固定五件事：
+// 因此 EntitySystem 连构造函数都调不通。本验证固定五件事：
 //   1. 定义能被宿主实例化成真实实体，且声明过的组件全部存在；
 //   2. 带 EntityIdentityComponent 的定义会自动登记运行时句柄，可被 resolver 解析；
 //   3. 同一个定义两次生成得到互相独立的身份与句柄；
@@ -30,7 +30,7 @@ void Check(string name, bool ok, string detail)
 using ArchWorld world = ArchWorld.Create();
 EntityRuntimeRegistry registry = new(worldScope: 1);
 
-EntityDefinition definition = new EntityDefinitionBuilder(new EntityDefinitionId("probe.entity"))
+EntityDefinition definition = new EntityBuilder(new EntityId("probe.entity"))
     .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
     .Add(() => new EntityFactionComponent(Faction.Hostile))
     .Add(() => new LifeComponent(current: 50, maximum: 50))
@@ -39,12 +39,12 @@ EntityDefinition definition = new EntityDefinitionBuilder(new EntityDefinitionId
     .Require<LifeComponent>()
     .Build();
 
-EntityDefinitionRegistry definitions = new();
+EntityRegistry definitions = new();
 definitions.Register(definition);
 ArchEntityDefinitionHost host = new(world, registry);
-EntityDefinitionSystem<ArchEntity> spawner = new(definitions, host);
+EntitySystem<ArchEntity> spawner = new(definitions, host);
 
-EntityDefinitionId id = new("probe.entity");
+EntityId id = new("probe.entity");
 ArchEntity first = spawner.Spawn(id);
 
 Check(
@@ -90,7 +90,7 @@ Check("despawn-removes-entity-and-handle", destroyed, "实体与句柄都已移�
 bool rejectedAtBuild = false;
 try
 {
-  _ = new EntityDefinitionBuilder(new EntityDefinitionId("probe.broken"))
+  _ = new EntityBuilder(new EntityId("probe.broken"))
       .Add(() => new LifeComponent(current: 1, maximum: 1))
       .Require<EntityIdentityComponent>()
       .Build();
