@@ -10,10 +10,14 @@ internal static class EcsServerRegistrationKeys
 
   internal const string CombatProjectileSpawn = "combat.projectile.spawn";
   internal const string CombatProjectileMovementIntent = "combat.projectile.movement-intent";
+  internal const string CombatProjectileTargetAcquisition = "combat.projectile.target-acquisition";
+  internal const string CombatProjectileAiAdapter = "combat.projectile.ai-adapter";
   internal const string CombatPhysicsContactCapture = "combat.physics.contact-capture";
   internal const string CombatProjectileLifetime = "combat.projectile.lifetime";
   internal const string CombatProjectileDamageRequest = "combat.projectile.damage-request";
-  internal const string CombatProtectionWindow = "combat.protection-window";
+  internal const string CombatProjectileTileResolution = "combat.projectile.tile-resolution";
+  internal const string CombatImmunityWindow = "combat.immunity-window";
+  internal const string CombatAttackerImmunity = "combat.attacker-immunity";
   internal const string CombatAttackRequest = "combat.attack-request";
   internal const string CombatDamageRequest = "combat.damage-request";
   internal const string CombatProjectileDamageResult = "combat.projectile.damage-result";
@@ -36,6 +40,7 @@ internal static class EcsServerRegistrationKeys
   internal const string NpcNetworkIdentity = "npc.network.identity";
   internal const string WorldTileEntityRequest = "world.tile-entity.request";
   internal const string PlayerItemUse = "player.item-use";
+  internal const string ProjectileItemUseSpawn = "combat.projectile.item-use-spawn";
   internal const string ChatDomain = "chat.domain";
   internal const string NpcAiIntent = "npc.ai.intent";
   internal const string GravityTick = "movement.gravity.tick";

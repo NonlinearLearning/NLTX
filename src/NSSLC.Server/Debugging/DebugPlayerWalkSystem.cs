@@ -3,10 +3,10 @@ using System.Numerics;
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Movement;
-using Terraria.Player;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Movement;
+using Terraria.Unshared.Player;
+using Terraria.Share.Relationships;
 
 namespace NSSLC.Server.Debugging;
 

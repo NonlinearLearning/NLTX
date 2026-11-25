@@ -14,8 +14,11 @@ before combat.physics.contact-capture combat.projectile.damage-request
 before combat.projectile.damage-request combat.projectile.damage-result
 before combat.projectile.damage-result combat.projectile.termination
 
-# --- Combat 提交边界：保护窗口 → 攻击请求 → 伤害请求 → 投射物结果 ---
-before combat.protection-window combat.attack-request
+# --- Combat 提交边界：无敌窗口到期归零 → 攻击请求 → 伤害请求 → 投射物结果 ---
+# 归零系统只清理过期戳，不参与「是否被挡」的判断（判定在读取点用 tick 比较完成），
+# 所以它早跑晚跑都不会让窗口多生效一个 tick；这条边固定的是"读取看到规范状态"。
+before combat.immunity-window combat.attack-request
+before combat.immunity-window combat.damage-request
 before combat.attack-request combat.damage-request
 before combat.damage-request combat.projectile.damage-result
 
@@ -25,6 +28,8 @@ phase Preparation combat.projectile.movement-intent
 phase Simulation combat.physics.contact-capture
 phase Simulation combat.projectile.lifetime
 phase Simulation combat.projectile.damage-request
+phase Commit combat.immunity-window
+phase Commit combat.attacker-immunity
 phase Commit combat.attack-request
 phase Commit combat.damage-request
 phase Commit combat.projectile.damage-result
@@ -35,6 +40,15 @@ requires-dependency combat.attack-request
 requires-dependency combat.damage-request
 requires-dependency combat.projectile.damage-result
 requires-dependency combat.projectile.termination
+
+# --- NPC AI：先后关系由声明锚点在组合根解析成边，这里固定它必须仍然成立的契约 ---
+# 顺序的权威是 npc.ai.intent 注册上的 after 边（由 NpcAiOrdering 生成）；
+# 这两条 before 是调度探针：声明丢了锚点或生成边断了，启动必须在这里失败。
+before player.input.apply npc.ai.intent
+before npc.ai.intent movement.intent.apply
+phase Simulation npc.ai.intent
+requires-dependency npc.ai.intent
+requires-reason npc.ai.intent
 
 # --- 有前驱的注册必须说明为什么排在这里 ---
 requires-reason combat.attack-request

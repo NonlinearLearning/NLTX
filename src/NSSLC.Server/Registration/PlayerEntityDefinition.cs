@@ -1,17 +1,17 @@
 using System;
 using System.Numerics;
-using Terraria.Attributes;
-using Terraria.Chat;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Inventory;
-using Terraria.Item;
-using Terraria.Movement;
-using Terraria.Physics;
-using Terraria.Player;
-using Terraria.Relationships;
-using Terraria.World;
-using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
+using Terraria.Share.Attributes;
+using Terraria.Unshared.Chat;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Inventory;
+using Terraria.Share.Items;
+using Terraria.Share.Movement;
+using Terraria.Share.Physics;
+using Terraria.Unshared.Player;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.World;
+using MovementVelocityComponent = Terraria.Share.Movement.VelocityComponent;
 
 namespace NSSLC.Server;
 
@@ -23,18 +23,18 @@ namespace NSSLC.Server;
 /// </remarks>
 public static class PlayerEntityDefinition
 {
-  public static readonly EntityDefinitionId Id = new("player");
+  public static readonly EntityId Id = new("player");
 
   /// <summary>把玩家定义登记进注册表；超参数由组合根传入，定义本身不写死数值。</summary>
   public static void Register(
-      EntityDefinitionRegistry definitions,
+      EntityRegistry definitions,
       int inventorySlotCount,
       int maxStack,
       int respawnDelayTicks)
   {
     ArgumentNullException.ThrowIfNull(definitions);
 
-    definitions.Register(new EntityDefinitionBuilder(Id)
+    definitions.Register(new EntityBuilder(Id)
         // 身份每次生成都新建；宿主据此分配并登记运行时句柄。
         .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
         .Add(() => new EntityFactionComponent(Faction.Friendly))
@@ -56,9 +56,9 @@ public static class PlayerEntityDefinition
         .Add(() => new BuffReceptionCapabilityComponent(BuffReceptionMode.AllowAll))
         // 出生坐标由连接时的落点决定，这里只放占位值，创建后立即覆盖。
         .Add(() => new LocationComponent(Vector2.Zero))
-        // 受击后无敌窗口的载体。没有它时 ProtectionWindowSystem 匹配 0 个实体，
-        // 伤害协调器也不会为受击目标开始计时。
-        .Add(() => new ProtectionWindowComponent())
+        // 受击后无敌窗口的载体，按 6 个伤害通道分槽。没有它时 ImmunityWindowExpirySystem
+        // 匹配 0 个实体，免疫裁决也永远不会命中玩家。
+        .Add(() => new ImmunityWindowComponent())
         .Add(() => new InventoryComponent(CreateInventory(inventorySlotCount, maxStack)))
         // 声明这份能力，玩家就能在聊天里说话（Chat 域只认这个组件，不查会话或实体类别）。
         .Add(() => ChatSenderComponent.Player())

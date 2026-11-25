@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
+using Terraria.Share.Combat;
 using Terraria.Network;
-using Terraria.Entity;
-using Terraria.Relationships;
-using Terraria.World;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.World;
 
 namespace Terraria.Server;
 
@@ -24,7 +24,7 @@ public static class CommunicationSystemRegistration
   public static IReadOnlyList<EcsServerSystemRegistration> CreateGame(
       ArchWorld world,
       IEntityRuntimeResolver runtimeResolver,
-      CombatAttackDefinitionCatalog attackDefinitions,
+      CombatAttackCatalog attackDefinitions,
       ICommunicationOutboundPort outbound,
       IWorldItemQuery worldItems,
       GameCommunicationOptions? options = null,

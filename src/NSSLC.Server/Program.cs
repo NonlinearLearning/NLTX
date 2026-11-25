@@ -7,29 +7,31 @@ using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 using NSSLC.Infrastructure.Lvcs;
 using NSSLC.Server.Content.ItemUse;
-using Terraria.Ai;
-using Terraria.Attributes;
-using Terraria.Combat;
-using Terraria.Session;
+using NSSLC.Server.Content.Projectile;
+using Terraria.Share.Ai;
+using Terraria.Share.Attributes;
+using Terraria.Share.Combat;
+using Terraria.Unshared.Session;
 using Terraria.Diagnostics;
-using Terraria.Entity;
-using Terraria.Lvcs;
-using Terraria.EntitySpawn;
-using Terraria.Inventory;
-using Terraria.Item;
-using Terraria.Liquid;
-using Terraria.Movement;
-using Terraria.Npc;
+using Terraria.Share.Entities;
+using Terraria.Share.Lvcs;
+using Terraria.Unshared.EntitySpawn;
+using Terraria.Share.Inventory;
+using Terraria.Share.Items;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
+using Terraria.Unshared.Npc;
 using Terraria.Network;
-using Terraria.Physics;
-using Terraria.Player;
-using Terraria.Projectile;
+using Terraria.Share.Physics;
+using Terraria.Share.Player;
+using Terraria.Unshared.Player;
+using Terraria.Unshared.Projectiles;
 using Terraria.Server;
-using Terraria.Relationships;
-using Terraria.World;
-using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.World;
+using MovementVelocityComponent = Terraria.Share.Movement.VelocityComponent;
 
-using Terraria.Chat;
+using Terraria.Unshared.Chat;
 
 namespace NSSLC.Server;
 
@@ -58,14 +60,6 @@ internal static class Program
   /// <remarks>可由 <c>PlayerRespawnStateComponent.ConfigureDelay</c> 在运行时调整。</remarks>
   private const int PlayerRespawnDelayTicks = 600;
 
-  /// <summary>受击后无敌窗口时长（tick）。60 tick = 1 秒。</summary>
-  /// <remarks>
-  /// 参考客户端受击后的短无敌多在 60 tick 量级（同类量级还有 120/240）。
-  /// 其受击路径在 <c>Hurt</c> 内部按伤害来源分别计算，本仓库未逐行对齐，
-  /// 因此这里作为宿主层可调常量暴露，便于后续按手感调整。
-  /// </remarks>
-  private const int PlayerHurtProtectionTicks = 60;
-
   public static async Task<int> Main(string[] args)
   {
     string? worldPath = args.FirstOrDefault(static argument =>
@@ -87,7 +81,7 @@ internal static class Program
             initialDayTime: loadedWorld.Environment.DayTime),
         new WorldTileStorageComponent(worldWidth, worldHeight));
     WorldItemStore worldItems = new();
-    ItemDefinitionRegistry itemDefinitions = BuildItemDefinitions();
+    ItemRegistry itemDefinitions = BuildItemDefinitions();
     InventorySystem inventories = new(ecsWorld, itemDefinitions);
     WorldInteractionResult worldLoad = worldRuntime.Load(loadedWorld.Tiles);
     if (!worldLoad.Succeeded)
@@ -115,9 +109,9 @@ internal static class Program
     EntityRuntimeRegistry entities = new(worldScope: 1);
     // 会话玩家名录：领域侧只认 ISessionPlayerSource 只读端口，实现在网络程序集。
     SessionPlayerSource sessionPlayers = new(ecsWorld, entities);
-    // 实体定义框架的宿主与生成器：玩家与 NPC 创建都走 EntityDefinitionSystem，
+    // 实体定义框架的宿主与生成器：玩家与 NPC 创建都走 EntitySystem，
     // 不再是调用处逐个 new 组件。
-    EntityDefinitionRegistry entityDefinitions = new();
+    EntityRegistry entityDefinitions = new();
     PlayerEntityDefinition.Register(
         entityDefinitions,
         PlayerInventorySlotCount,
@@ -133,8 +127,10 @@ internal static class Program
             worldSurfaceY,
             slimeRain: false));
     using NpcAiRuntime npcAi = new(ecsWorld, npcAiSnapshots);
+    // AI 的顺序由声明里的锚点在组合根解析成边；宿主不手写它相对别人的位置。
+    NpcAiOrdering npcAiOrdering = NpcAiOrdering.Create(npcAi.Catalog);
     NpcNetworkIdentitySystem npcNetwork = new(ecsWorld);
-    EntityDefinitionSystem<ArchEntity> entitySpawner = new(
+    EntitySystem<ArchEntity> entitySpawner = new(
         entityDefinitions,
         new ArchEntityDefinitionHost(
             ecsWorld,
@@ -167,7 +163,10 @@ internal static class Program
         $"{loadedWorld.Environment.SpawnTileY} guideSurfaceTileY={guideSurfaceTileY} " +
         $"slimeSurfaceTileY={slimeSurfaceTileY}");
     ProjectileRuntimeRegistry projectiles = new(entities);
-    CombatAttackDefinitionCatalog attackDefinitions = CreateAttackDefinitions();
+    // 投射物内容族走 LVCS：装配代码只声明"要 ProjectileCatalog"，由注册表选出唯一 codec。
+    ProjectileCatalog projectileDefinitions = LoadProjectileCatalog();
+    // 攻击定义由投射物内容生成：投射物只引用攻击 id，伤害语义仍归 Combat。
+    CombatAttackCatalog attackDefinitions = CreateAttackDefinitions(projectileDefinitions);
     // 攻击意图队列挂在专用世界级实体上，各域生产者按组件查询，宿主不再持有队列对象。
     _ = ecsWorld.Create(new CombatAttackIntentQueueComponent());
     // 伤害请求与结果队列各自挂在专用世界级实体上，跨域只通过组件传递。
@@ -199,8 +198,8 @@ internal static class Program
     _ = ecsWorld.Create(new MovementIntentRequestQueueComponent());
     // 接触事实队列挂在专用世界级实体上，宿主不再持有队列对象。
     _ = ecsWorld.Create(new PhysicsContactQueueComponent());
-    ProjectileDefinitionCatalog projectileDefinitions = new();
-    projectileDefinitions.Seal();
+    // 瓦片接触事实同样挂专用实体：空间协调系统发现它才写，反弹/贴壁策略在 P4 消费。
+    _ = ecsWorld.Create(new TileContactQueueComponent());
     ProjectileLifecycleSystem projectileLifecycle = new(
         ecsWorld,
         projectileDefinitions,
@@ -212,7 +211,7 @@ internal static class Program
         entities);
     WorldTickSystem worldTick = new(ecsWorld, worldRuntime);
     WorldInteractionSystem worldInteractions = new(ecsWorld, worldRuntime, worldRuntime);
-    BuffDefinitionRegistry buffDefinitions = new();
+    BuffRegistry buffDefinitions = new();
     // 注册参考客户端药水表的三条样例，避免注册表为空导致 TryApply 恒返回 UnknownDefinition。
     BuffContent.RegisterAll(buffDefinitions);
     AttributeTickSystem attributeTick = new(ecsWorld);
@@ -232,8 +231,19 @@ internal static class Program
         npcAi.Entities,
         npcAiSnapshots,
         entities,
-        attackDefinitions);
-    SpatialSimulationCoordinatorSystem spatialSimulation = new(ecsWorld, worldRuntime);
+        attackDefinitions,
+        npcAi.Catalog);
+    ProjectileTileResolutionSystem projectileTiles = new(
+        ecsWorld,
+        projectileHits,
+        entities,
+        entities);
+    // 传入句柄解析器：命中瓦片时要把接触事实归属到实体，否则接触无人可指。
+    SpatialSimulationCoordinatorSystem spatialSimulation = new(
+        ecsWorld,
+        worldRuntime,
+        simulation: null,
+        handles: entities);
     // 刷怪表：目前只有史莱姆可被创建，表中权重与网络类型即 Version4 的出生判定常量。
     EntitySpawnTable entitySpawnTable = new(
     [
@@ -284,6 +294,7 @@ internal static class Program
         physicsContacts,
         projectileHits,
         projectileLifecycle,
+        projectileTiles,
         communication,
         playerLifecycle,
         worldTick,
@@ -291,10 +302,12 @@ internal static class Program
         worldItems,
         inventories,
         npcAiAdapter,
+        npcAiOrdering,
         spatialSimulation,
         entitySpawnSystem,
         loadedWorld.TileEntities,
         LoadItemUseCatalog(),
+        projectileDefinitions,
         new ChatStore(),
         CreateChatCommands(),
         attributeTick,
@@ -333,7 +346,11 @@ internal static class Program
         },
         preparation);
     using EcsServer server = EcsServer.Create(
-        ecsWorld, registrations, LoadCoordinationRules());
+        ecsWorld,
+        registrations,
+        MergeCoordinationRules(LoadCoordinationRules(), npcAiOrdering));
+    // 绑定键必须真实存在：改名或删掉一个注册项，下一次启动就失败，而不是静默丢掉一条顺序约束。
+    npcAiOrdering.EnsureResolvable(server.OrderedRegistrationKeys);
     server.Initialize();
 
     using CancellationTokenSource shutdown = new();
@@ -352,7 +369,8 @@ internal static class Program
           $"world={worldWidth}x{worldHeight} " +
           $"path={ServerLog.Quote(loadedWorld.Path)} spawn={loadedWorld.Environment.SpawnTileX}," +
           $"{loadedWorld.Environment.SpawnTileY}");
-      await RunTicksAsync(server, worldTick, communication, shutdown.Token).ConfigureAwait(false);
+      await RunTicksAsync(server, worldTick, communication, projectileHits, shutdown.Token)
+          .ConfigureAwait(false);
     }
     catch (OperationCanceledException) when (shutdown.IsCancellationRequested)
     {
@@ -410,18 +428,34 @@ internal static class Program
   }
 
   /// <summary>
+  /// 合成一份规则集：声明式文件里的规则 + 由 AI 声明锚点生成的边。
+  /// </summary>
+  /// <remarks>
+  /// 生成的边既进 <c>after</c> 列表，也进规则集：前者负责排序，后者负责在有人把边删掉时仍然
+  /// 失败。两者是同一份声明投影出来的，不会互相漂移。
+  /// </remarks>
+  private static EcsCoordinationRuleSet MergeCoordinationRules(
+      EcsCoordinationRuleSet declared,
+      NpcAiOrdering npcAiOrdering)
+  {
+    List<EcsCoordinationRule> rules = [.. declared.Rules];
+    rules.AddRange(npcAiOrdering.Rules);
+    return EcsCoordinationRuleSet.Create(rules);
+  }
+
+  /// <summary>
   /// 通过 LVCS 管线加载物品使用档案。内容错误以诊断列表返回，加载失败即启动失败。
   /// </summary>
   /// <remarks>
-  /// 走分派而非直接 new codec：装配代码只声明"要 ItemUseDefinitionCatalog"，
+  /// 走分派而非直接 new codec：装配代码只声明"要 ItemUseCatalog"，
   /// 由注册表选出唯一能产出该类型的 codec。加新族时这里不变。
   /// </remarks>
-  private static ItemUseDefinitionCatalog LoadItemUseCatalog()
+  private static ItemUseCatalog LoadItemUseCatalog()
   {
     LvcsCodecRegistry registry = new(new LvcsLoader());
     registry.Register(new ItemUseCodec());
 
-    if (!registry.TryResolve<ItemUseDefinitionCatalog>(
+    if (!registry.TryResolve<ItemUseCatalog>(
             ".json", out ILvcsCodecDescriptor? descriptor, out string? reason))
     {
       throw new InvalidDataException($"Item use codec could not be resolved: {reason}");
@@ -431,7 +465,7 @@ internal static class Program
         AppContext.BaseDirectory, "Content", "Prototypes", "ItemUse");
     FileLvcsSource source = new(descriptor!.Family, directory, "*.json");
     object? loaded = descriptor.Load(source, out IReadOnlyList<LvcsDiagnostic> diagnostics);
-    if (loaded is not ItemUseDefinitionCatalog catalog)
+    if (loaded is not ItemUseCatalog catalog)
     {
       StringBuilder report = new();
       report.AppendLine("Item use content could not be loaded:");
@@ -447,12 +481,45 @@ internal static class Program
   }
 
   /// <summary>
+  /// 通过 LVCS 管线加载投射物内容族。内容错误以诊断列表返回，加载失败即启动失败。
+  /// </summary>
+  private static ProjectileCatalog LoadProjectileCatalog()
+  {
+    LvcsCodecRegistry registry = new(new LvcsLoader());
+    registry.Register(new ProjectileCodec(ProjectileSectionReaders.Create()));
+
+    if (!registry.TryResolve<ProjectileCatalog>(
+            ".json", out ILvcsCodecDescriptor? descriptor, out string? reason))
+    {
+      throw new InvalidDataException($"Projectile codec could not be resolved: {reason}");
+    }
+
+    string directory = Path.Combine(
+        AppContext.BaseDirectory, "Content", "Prototypes", "Projectile");
+    FileLvcsSource source = new(descriptor!.Family, directory, "*.json");
+    object? loaded = descriptor.Load(source, out IReadOnlyList<LvcsDiagnostic> diagnostics);
+    if (loaded is not ProjectileCatalog catalog)
+    {
+      StringBuilder report = new();
+      report.AppendLine("Projectile content could not be loaded:");
+      foreach (LvcsDiagnostic diagnostic in diagnostics)
+      {
+        report.AppendLine(diagnostic.ToString());
+      }
+
+      throw new InvalidDataException(report.ToString());
+    }
+
+    return catalog;
+  }
+
+  /// <summary>
   /// 为物品表中每个已知 id 注册一条宽松定义。Share/Inventory 要求每次写入都有定义可用，
   /// 而参考客户端的逐物品 maxStack/分类数据尚未引入，因此先与迁移前行为保持一致。
   /// </summary>
-  private static ItemDefinitionRegistry BuildItemDefinitions()
+  private static ItemRegistry BuildItemDefinitions()
   {
-    ItemDefinitionRegistry registry = new();
+    ItemRegistry registry = new();
     foreach (ItemId itemId in Enum.GetValues<ItemId>())
     {
       if (itemId == ItemId.None)
@@ -460,7 +527,7 @@ internal static class Program
         continue;
       }
 
-      registry.Register(new ItemDefinition(itemId, MaxInventoryStack, ItemCategoryMask.Any));
+      registry.Register(new Item(itemId, MaxInventoryStack, ItemCategoryMask.Any));
     }
 
     return registry;
@@ -474,19 +541,19 @@ internal static class Program
   private static ChatCommandCatalog CreateChatCommands()
   {
     ChatCommandCatalog commands = new();
-    commands.Register(new ChatCommandDefinition(
+    commands.Register(new ChatCommand(
         ChatCommandRules.DefaultCommandName,
         "Say something in world chat.",
         RequiresOperator: false));
-    commands.Register(new ChatCommandDefinition(
+    commands.Register(new ChatCommand(
         "help",
         "List the commands this server understands.",
         RequiresOperator: false));
-    commands.Register(new ChatCommandDefinition(
+    commands.Register(new ChatCommand(
         "playing",
         "Show how many players are online.",
         RequiresOperator: false));
-    commands.Register(new ChatCommandDefinition(
+    commands.Register(new ChatCommand(
         "roll",
         "Roll a number from 1 to 100.",
         RequiresOperator: false));
@@ -494,15 +561,56 @@ internal static class Program
     return commands;
   }
 
+  /// <summary>投射物行为目录：行为 id 与 profile id 的形状在代码里，数值在内容里。</summary>
+  /// <remarks>
+  /// profile 里的 <c>turnRate</c> / <c>range</c> / <c>maximumSpeed</c> 故意留 0：0 表示"用能力组件上的
+  /// 内容值"。这样同一套行为可以服务多条内容条目，不必为每个数值新建 profile。
+  /// </remarks>
+  private static ProjectileBehaviorCatalog CreateProjectileBehaviorProfiles()
+  {
+    ProjectileBehaviorCatalog catalog = new();
+    catalog.Register(new ProjectileBehaviorProfile(
+        new AiBehaviorId("Straight"),
+        new AiBehaviorProfileId("arrow.default"),
+        typeof(ProjectileStraightAiBehavior),
+        AiRequirements.Empty.Require<Terraria.Share.Movement.VelocityComponent>(),
+        maximumSpeed: 0f,
+        turnRate: 0f,
+        range: 0f));
+    catalog.Register(new ProjectileBehaviorProfile(
+        new AiBehaviorId("HomingProjectile"),
+        new AiBehaviorProfileId("homing.default"),
+        typeof(ProjectileHomingAiBehavior),
+        AiRequirements.Empty
+            .Require<LocationComponent>()
+            .Require<Terraria.Share.Movement.VelocityComponent>()
+            .Require<ProjectileHomingCapabilityComponent>()
+            .Require<ProjectileTargetFact>(),
+        maximumSpeed: 0f,
+        turnRate: 0f,
+        range: 0f));
+    catalog.Register(new ProjectileBehaviorProfile(
+        new AiBehaviorId("Straight"),
+        new AiBehaviorProfileId("bouncer.default"),
+        typeof(ProjectileStraightAiBehavior),
+        AiRequirements.Empty.Require<Terraria.Share.Movement.VelocityComponent>(),
+        maximumSpeed: 0f,
+        turnRate: 0f,
+        range: 0f));
+    catalog.Seal();
+    return catalog;
+  }
+
   private static IReadOnlyList<EcsServerSystemRegistration> BuildRegistrations(
       ArchWorld world,
       WorldRuntime worldRuntime,
       EntityRuntimeRegistry entities,
       SessionPlayerSource sessionPlayers,
-      CombatAttackDefinitionCatalog attackDefinitions,
+      CombatAttackCatalog attackDefinitions,
       PhysicsContactCaptureSystem physicsContacts,
       ProjectileHitResolutionSystem projectileHits,
       ProjectileLifecycleSystem projectileLifecycle,
+      ProjectileTileResolutionSystem projectileTiles,
       CommunicationHostRuntime communication,
       ICommunicationSessionPlayerLifecycle playerLifecycle,
       WorldTickSystem worldTick,
@@ -510,10 +618,12 @@ internal static class Program
       WorldItemStore worldItems,
       InventorySystem inventories,
       NpcAiIntentAdapter npcAiAdapter,
+      NpcAiOrdering npcAiOrdering,
       SpatialSimulationCoordinatorSystem spatialSimulation,
       EntitySpawnSystem entitySpawnSystem,
       WorldTileEntityStore tileEntities,
-      ItemUseDefinitionCatalog itemUseDefinitions,
+      ItemUseCatalog itemUseDefinitions,
+      ProjectileCatalog projectileDefinitions,
       ChatStore chatStore,
       ChatCommandCatalog chatCommands,
       AttributeTickSystem attributeTick,
@@ -587,9 +697,33 @@ internal static class Program
         physicsContacts,
         projectileHits,
         projectileLifecycle,
+        projectileTiles,
         attackDefinitions,
-        PlayerHurtProtectionTicks,
         attributeDependencyKeys: null));
+    // 投射物 AI 的接入点只有一个：行为目录 + 快照提供者 + 适配器。
+    // 目标获取排在适配器之前，使"本 tick 锁定的目标"与"本 tick 算出的速度"来自同一帧；
+    // 适配器排在位移意图刷新之后，才能覆盖默认的 Stop 意图。
+    ProjectileBehaviorCatalog projectileBehaviors = CreateProjectileBehaviorProfiles();
+    ProjectileAiSnapshotProvider projectileSnapshots = new(world, entities);
+    AiEntitySystem<ArchEntity, ProjectileAiIntent> projectileAi = new(
+        ProjectileAiRegistration.CreateSystem(
+            projectileBehaviors,
+            projectileBehaviors.Get(
+                new AiBehaviorId("HomingProjectile"),
+                new AiBehaviorProfileId("homing.default"))));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Preparation,
+        EcsServerRegistrationKeys.CombatProjectileTargetAcquisition,
+        new ProjectileTargetAcquisitionSystem(world, entities)));
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Preparation,
+        EcsServerRegistrationKeys.CombatProjectileAiAdapter,
+        new ProjectileAiAdapter(world, projectileAi, projectileSnapshots, projectileBehaviors),
+        after: [
+          EcsServerRegistrationKeys.CombatProjectileMovementIntent,
+          EcsServerRegistrationKeys.CombatProjectileTargetAcquisition
+        ],
+        reason: "Projectile AI overrides the default stop intent after target and intent are refreshed."));
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
         EcsServerRegistrationKeys.WorldTick,
@@ -637,6 +771,17 @@ internal static class Program
         EcsServerPhase.Simulation,
         EcsServerRegistrationKeys.PlayerItemUse,
         new PlayerItemUseSystem(world, entities, itemUseDefinitions, inventories)));
+    // 射击接缝放在 Preparation 且排在生成之前：生成队列是"本 tick 内排空"的，
+    // 生产方与排空方必须用同一个 tick 号，否则请求会落到一个永远不会被排空的 tick 上。
+    // 代价是使用事实到弹体差一 tick（Simulation 产事实、下一 tick 的 Preparation 生成），
+    // 这与"使用物品后下一 tick 存在投射物实体"的验收口径一致。
+    registrations.Add(new EcsServerSystemRegistration(
+        EcsServerPhase.Preparation,
+        EcsServerRegistrationKeys.ProjectileItemUseSpawn,
+        new ProjectileItemUseSpawnSystem(
+            world, entities, entities, itemUseDefinitions, projectileDefinitions),
+        before: [EcsServerRegistrationKeys.CombatProjectileSpawn],
+        reason: "Item use facts must become spawn requests before the spawn seam drains."));
     // 聊天：能力组件决定谁能说话，系统的广播事实交给 Projection 阶段的聊天投影。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
@@ -645,7 +790,9 @@ internal static class Program
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
         EcsServerRegistrationKeys.NpcAiIntent,
-        npcAiAdapter));
+        npcAiAdapter,
+        after: npcAiOrdering.AfterKeysOf(EcsServerRegistrationKeys.NpcAiIntent),
+        reason: "NPC AI reads applied input and commits movement intents before they are applied."));
     // 重力投影必须先于空间求解刷新，SpatialSimulationCoordinatorSystem 直接读取 GravityStateComponent。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
@@ -690,10 +837,12 @@ internal static class Program
         EcsServerPhase.Simulation,
         EcsServerRegistrationKeys.MovementIntentApply,
         new MovementIntentRequestSystem(world, entities),
+        // NPC 那一项来自 AI 声明锚点，不在这里手写：声明说「我必须在 MovementCommit 之前」，
+        // 组合根把它解析成这条边。玩家那项是宿主自己的契约，留在原地。
         after:
         [
           EcsServerRegistrationKeys.PlayerInputApply,
-          EcsServerRegistrationKeys.NpcAiIntent
+          .. npcAiOrdering.AfterKeysOf(EcsServerRegistrationKeys.MovementIntentApply)
         ],
         reason: "Player and NPC intent producers must finish before movement intent is applied."));
     registrations.Add(new EcsServerSystemRegistration(
@@ -717,7 +866,7 @@ internal static class Program
   private static EntityRuntimeHandle CreatePlayer(
       ArchWorld world,
       EntityRuntimeRegistry entities,
-      EntityDefinitionSystem<ArchEntity> entitySpawner,
+      EntitySystem<ArchEntity> entitySpawner,
       Vector2 spawnPosition)
   {
     ArchEntity entity = entitySpawner.Spawn(PlayerEntityDefinition.Id);
@@ -736,14 +885,14 @@ internal static class Program
   {
     private readonly ArchWorld _world;
     private readonly EntityRuntimeRegistry _entities;
-    private readonly EntityDefinitionSystem<ArchEntity> _entitySpawner;
+    private readonly EntitySystem<ArchEntity> _entitySpawner;
     private readonly Vector2 _spawnPosition;
     private readonly Dictionary<SessionEpoch, EcsServerEntityCreationTicket> _pending = [];
 
     public ServerCommunicationSessionPlayerLifecycle(
         ArchWorld world,
         EntityRuntimeRegistry entities,
-        EntityDefinitionSystem<ArchEntity> entitySpawner,
+        EntitySystem<ArchEntity> entitySpawner,
         Vector2 spawnPosition)
     {
       _world = world ?? throw new ArgumentNullException(nameof(world));
@@ -834,7 +983,7 @@ internal static class Program
 
   private static ArchEntity CreateNpc(
       ArchWorld world,
-      EntityDefinitionSystem<ArchEntity> entitySpawner,
+      EntitySystem<ArchEntity> entitySpawner,
       NpcNetworkIdentitySystem npcNetwork,
       Vector2 position,
       bool isSlime,
@@ -863,12 +1012,30 @@ internal static class Program
     }
   }
 
-  private static CombatAttackDefinitionCatalog CreateAttackDefinitions()
+  private static CombatAttackCatalog CreateAttackDefinitions(ProjectileCatalog projectiles)
   {
-    CombatAttackDefinitionCatalog definitions = new();
-    definitions.Register(new CombatAttackDefinition(
-        new CombatAttackDefinitionId("player.default"),
+    ArgumentNullException.ThrowIfNull(projectiles);
+    CombatAttackCatalog definitions = new();
+    definitions.Register(new CombatAttack(
+        new CombatAttackId("player.default"),
         new DamagePayload(baseDamage: 10, type: DamageType.Melee)));
+    // 每个投射物内容条目自带攻击 id 与伤害参数。投射物只引用攻击定义，
+    // 伤害计算仍留在 Combat，避免弹体域再建一份伤害模型。
+    // 攻击参数只由平铺族声明，因此这里按族取 section，而不是读一个聚合对象。
+    foreach (ProjectileRecipe recipe in projectiles.Recipes)
+    {
+      if (!recipe.TryGetSection<ProjectileBasicsSection>(out ProjectileBasicsSection basics))
+      {
+        throw new InvalidOperationException(
+            $"Projectile content '{recipe.Id}' declares no basics section, " +
+            "so it has no attack definition to register.");
+      }
+
+      definitions.Register(new CombatAttack(
+          basics.AttackDefinitionId,
+          new DamagePayload(basics.BaseDamage, basics.DamageType)));
+    }
+
     definitions.Seal();
     return definitions;
   }
@@ -894,6 +1061,7 @@ internal static class Program
       EcsServer server,
       WorldTickSystem worldTick,
       CommunicationHostRuntime communication,
+      ProjectileHitResolutionSystem projectileHits,
       CancellationToken cancellationToken)
   {
     long period = ServerTickPacing.PeriodTimestamp;
@@ -945,6 +1113,14 @@ internal static class Program
               $"overdueRatio={timeliness.OverdueRatio * 100:F2}% " +
               $"maxLatencyMs={timeliness.MaxLatencyMilliseconds:F2} tick={tick}");
         }
+
+        // 预检是经济性优化，不是保证：它在 Simulation 跑、裁决在 Commit 跑，跨 tick 边界允许
+        // 「预检放行、裁决拒绝」。这个差额必须可观测——持续增长说明预检读的是过期状态，
+        // 长期为 0 说明预检没生效或被人删了。与出站批度量同一节流口径（每秒一条）。
+        ServerLog.Info(
+            "ecs.projectile.precheck",
+            $"admittedAuthorityRejected={projectileHits.PrecheckAdmittedAuthorityRejected} " +
+            $"tick={tick}");
 
         lastTimelinessLog = now;
       }

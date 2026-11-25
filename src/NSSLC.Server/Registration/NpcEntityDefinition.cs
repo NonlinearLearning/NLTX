@@ -1,15 +1,15 @@
 using System;
 using System.Numerics;
-using Terraria.Ai;
-using Terraria.Attributes;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Liquid;
-using Terraria.Movement;
-using Terraria.Npc;
-using Terraria.Physics;
-using Terraria.Relationships;
-using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
+using Terraria.Share.Ai;
+using Terraria.Share.Attributes;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
+using Terraria.Unshared.Npc;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
+using MovementVelocityComponent = Terraria.Share.Movement.VelocityComponent;
 
 namespace NSSLC.Server;
 
@@ -28,11 +28,11 @@ public static class NpcEntityDefinition
   private const float SlimeMaximumSpeedPerTick = 3f;
   private const float SlimeAccelerationPerTickSquared = 5f;
 
-  public static readonly EntityDefinitionId GuideId = new("npc.guide");
+  public static readonly EntityId GuideId = new("npc.guide");
 
-  public static readonly EntityDefinitionId SlimeId = new("npc.slime");
+  public static readonly EntityId SlimeId = new("npc.slime");
 
-  public static void Register(EntityDefinitionRegistry definitions)
+  public static void Register(EntityRegistry definitions)
   {
     ArgumentNullException.ThrowIfNull(definitions);
 
@@ -48,7 +48,7 @@ public static class NpcEntityDefinition
 
   private static EntityDefinition BuildGuide()
   {
-    return new EntityDefinitionBuilder(GuideId)
+    return new EntityBuilder(GuideId)
         .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
         .Add(() => new EntityFactionComponent(Faction.Friendly))
         .Add(() => new LifeComponent(current: 250, maximum: 250))
@@ -95,13 +95,16 @@ public static class NpcEntityDefinition
 
   private static EntityDefinition BuildSlime()
   {
-    return new EntityDefinitionBuilder(SlimeId)
+    return new EntityBuilder(SlimeId)
         .Add(() => new EntityIdentityComponent(EntityUuid.Create()))
         .Add(() => new EntityFactionComponent(Faction.Hostile))
         .Add(() => new LifeComponent(current: 25, maximum: 25))
         .Add(() => new ShieldPoolComponent())
         .Add(() => CreateAttributes(maximumLife: 25))
-        .Add(() => new DamageImmunityComponent())
+        // 受击免疫按攻击者分槽（对应参考端 NPC.immune[]）。此前这里挂的是
+        // DamageImmunityComponent，那是「永久不可受击」，等价于参考端的 dontTakeDamage，
+        // 让史莱姆完全打不动；现在换成真正的受击窗口。
+        .Add(() => new AttackerImmunityComponent())
         .Add(() => new LocationComponent(Vector2.Zero))
         .Add(() => MovementVelocityComponent.Stationary)
         .Add(() => new ColliderComponent(new Vector2(24f, 18f)))

@@ -31,11 +31,33 @@ internal sealed class ItemUsePrototype
   public bool Channel { get; set; }
 
   [JsonPropertyName("useAmmo")]
-  public string UseAmmo { get; set; } = nameof(Terraria.Item.ItemId.None);
+  public string UseAmmo { get; set; } = nameof(Terraria.Share.Items.ItemId.None);
 
   [JsonPropertyName("consumeAmmo")]
   public bool ConsumeAmmo { get; set; }
 
   [JsonPropertyName("manaCost")]
   public int ManaCost { get; set; }
+
+  [JsonPropertyName("shoot")]
+  public ItemShootPrototype? Shoot { get; set; }
+}
+
+/// <summary>射击参数：生成哪个投射物、以什么速度从哪里出发。</summary>
+internal sealed class ItemShootPrototype
+{
+  [JsonPropertyName("projectileId")]
+  public string ProjectileId { get; set; } = string.Empty;
+
+  [JsonPropertyName("velocityX")]
+  public float VelocityX { get; set; }
+
+  [JsonPropertyName("velocityY")]
+  public float VelocityY { get; set; }
+
+  [JsonPropertyName("offsetX")]
+  public float OffsetX { get; set; }
+
+  [JsonPropertyName("offsetY")]
+  public float OffsetY { get; set; }
 }

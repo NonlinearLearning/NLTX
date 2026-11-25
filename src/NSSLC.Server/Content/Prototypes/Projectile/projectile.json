@@ -1,0 +1,83 @@
+[
+  {
+    "type": "projectile",
+    "id": "wooden-arrow",
+    "behaviorId": "Straight",
+    "profileId": "arrow.default",
+    "extraUpdates": 0,
+    "lifetimeTicks": 600,
+    "collider": { "width": 8, "height": 8 },
+    "tileCollide": true,
+    "ignoreOwner": true,
+    "gravity": { "enabled": false, "strength": 0, "maximumFallSpeed": 0 },
+    "liquid": { "enabled": true, "water": true, "honey": true, "lava": true, "shimmer": true },
+    "penetration": { "maximumHits": 1 },
+    "attackId": "projectile.wooden-arrow",
+    "damageType": "Ranged",
+    "baseDamage": 5
+  },
+  {
+    "type": "projectile",
+    "id": "homing-spark",
+    "behaviorId": "HomingProjectile",
+    "profileId": "homing.default",
+    "extraUpdates": 0,
+    "lifetimeTicks": 300,
+    "collider": { "width": 10, "height": 10 },
+    "tileCollide": true,
+    "ignoreOwner": true,
+    "gravity": { "enabled": false, "strength": 0, "maximumFallSpeed": 0 },
+    "liquid": { "enabled": true, "water": true, "honey": true, "lava": true, "shimmer": true },
+    "penetration": { "maximumHits": 3 },
+    "homing": { "turnRate": 6, "range": 320 },
+    "attackId": "projectile.homing-spark",
+    "damageType": "Magic",
+    "baseDamage": 8
+  },
+  {
+    "type": "projectile",
+    "id": "bouncer-orb",
+    "behaviorId": "Straight",
+    "profileId": "bouncer.default",
+    "extraUpdates": 1,
+    "lifetimeTicks": 900,
+    "collider": { "width": 12, "height": 12 },
+    "tileCollide": true,
+    "ignoreOwner": true,
+    "gravity": { "enabled": false, "strength": 0, "maximumFallSpeed": 0 },
+    "liquid": { "enabled": true, "water": true, "honey": true, "lava": true, "shimmer": true },
+    "penetration": { "maximumHits": 5 },
+    "bounce": {
+      "maximumBounces": 5,
+      "penetrationCost": 1,
+      "speedScale": 0.8,
+      "consumeOrder": "BeforeBounce"
+    },
+    "attackId": "projectile.bouncer-orb",
+    "damageType": "Magic",
+    "baseDamage": 12
+  },
+  {
+    "type": "projectile",
+    "id": "gem-bolt",
+    "behaviorId": "Straight",
+    "profileId": "bouncer.default",
+    "extraUpdates": 0,
+    "lifetimeTicks": 600,
+    "collider": { "width": 10, "height": 10 },
+    "tileCollide": true,
+    "ignoreOwner": true,
+    "gravity": { "enabled": false, "strength": 0, "maximumFallSpeed": 0 },
+    "liquid": { "enabled": true, "water": true, "honey": true, "lava": true, "shimmer": true },
+    "penetration": { "maximumHits": 2, "suppressesDamage": false },
+    "bounce": {
+      "maximumBounces": 2,
+      "penetrationCost": 1,
+      "speedScale": 0.9,
+      "consumeOrder": "AfterBounce"
+    },
+    "attackId": "projectile.gem-bolt",
+    "damageType": "Magic",
+    "baseDamage": 9
+  }
+]

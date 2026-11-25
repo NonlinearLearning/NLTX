@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using Terraria.Item;
-using Terraria.Lvcs;
+using Terraria.Share.Items;
+using Terraria.Share.Lvcs;
 
 namespace NSSLC.Server.Content.ItemUse;
 
@@ -14,7 +14,7 @@ namespace NSSLC.Server.Content.ItemUse;
 /// batch. Detail goes to the diagnostic sink; failure is signalled by throwing
 /// <see cref="LvcsContentException" /> so that the loader owns the single conversion point.
 /// </remarks>
-internal sealed class ItemUseCodec : ILvcsCodec<ItemUsePrototype, ItemUseDefinitionCatalog>
+internal sealed class ItemUseCodec : ILvcsCodec<ItemUsePrototype, ItemUseCatalog>
 {
   /// <summary>Family id used by the item use family.</summary>
   public static readonly LvcsFamilyId FamilyId = new("itemUse");
@@ -85,14 +85,14 @@ internal sealed class ItemUseCodec : ILvcsCodec<ItemUsePrototype, ItemUseDefinit
     return accepted;
   }
 
-  public ItemUseDefinitionCatalog Project(
+  public ItemUseCatalog Project(
       IReadOnlyList<ItemUsePrototype> raws,
       LvcsDiagnosticSink diagnostics)
   {
     ArgumentNullException.ThrowIfNull(raws);
     ArgumentNullException.ThrowIfNull(diagnostics);
 
-    ItemUseDefinitionCatalog catalog = new();
+    ItemUseCatalog catalog = new();
     HashSet<ItemId> seen = [];
     bool rejected = false;
 
@@ -138,7 +138,7 @@ internal sealed class ItemUseCodec : ILvcsCodec<ItemUsePrototype, ItemUseDefinit
         continue;
       }
 
-      ItemUseDefinition definition = new(
+      Terraria.Share.Items.ItemUse definition = new(
           itemId,
           prototype.UseTime,
           prototype.UseAnimation,
@@ -146,7 +146,15 @@ internal sealed class ItemUseCodec : ILvcsCodec<ItemUsePrototype, ItemUseDefinit
           prototype.Channel,
           useAmmo,
           prototype.ConsumeAmmo,
-          prototype.ManaCost);
+          prototype.ManaCost)
+      {
+        Shoot = prototype.Shoot is ItemShootPrototype shoot
+            ? new ItemShootProfile(
+                shoot.ProjectileId,
+                new System.Numerics.Vector2(shoot.VelocityX, shoot.VelocityY),
+                new System.Numerics.Vector2(shoot.OffsetX, shoot.OffsetY))
+            : null,
+      };
 
       if (!definition.IsValid)
       {
@@ -214,6 +222,34 @@ internal sealed class ItemUseCodec : ILvcsCodec<ItemUsePrototype, ItemUseDefinit
           Family, prototype.Id, nameof(prototype.UseAmmo),
           message: $"Unknown item id '{prototype.UseAmmo}'.", source: location);
       return false;
+    }
+
+    if (prototype.Shoot is ItemShootPrototype shoot)
+    {
+      if (string.IsNullOrWhiteSpace(shoot.ProjectileId))
+      {
+        diagnostics.Error(
+            Family, prototype.Id, nameof(prototype.Shoot),
+            message: "shoot requires a projectileId.", source: location);
+        return false;
+      }
+
+      if (!float.IsFinite(shoot.VelocityX) || !float.IsFinite(shoot.VelocityY) ||
+          (shoot.VelocityX == 0f && shoot.VelocityY == 0f))
+      {
+        diagnostics.Error(
+            Family, prototype.Id, nameof(prototype.Shoot),
+            message: "shoot velocity must be finite and non zero.", source: location);
+        return false;
+      }
+
+      if (!float.IsFinite(shoot.OffsetX) || !float.IsFinite(shoot.OffsetY))
+      {
+        diagnostics.Error(
+            Family, prototype.Id, nameof(prototype.Shoot),
+            message: "shoot offset must be finite.", source: location);
+        return false;
+      }
     }
 
     return true;

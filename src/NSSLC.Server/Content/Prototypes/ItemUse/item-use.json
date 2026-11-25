@@ -19,7 +19,14 @@
     "channel": false,
     "useAmmo": "WoodenArrow",
     "consumeAmmo": true,
-    "manaCost": 0
+    "manaCost": 0,
+    "shoot": {
+      "projectileId": "wooden-arrow",
+      "velocityX": 8,
+      "velocityY": 0,
+      "offsetX": 8,
+      "offsetY": -8
+    }
   },
   {
     "type": "itemUse",
@@ -30,7 +37,13 @@
     "channel": true,
     "useAmmo": "None",
     "consumeAmmo": false,
-    "manaCost": 10
+    "manaCost": 10,
+    "shoot": {
+      "projectileId": "homing-spark",
+      "velocityX": 6,
+      "velocityY": 0,
+      "offsetX": 0,
+      "offsetY": -8
+    }
   }
 ]
-

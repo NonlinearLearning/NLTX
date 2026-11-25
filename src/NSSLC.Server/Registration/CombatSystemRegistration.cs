@@ -1,13 +1,13 @@
 using System;
 using System.Collections.Generic;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Npc;
-using Terraria.Physics;
-using Terraria.Player;
-using Terraria.Projectile;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Unshared.Npc;
+using Terraria.Share.Physics;
+using Terraria.Unshared.Player;
+using Terraria.Unshared.Projectiles;
+using Terraria.Share.Relationships;
 
 namespace Terraria.Server;
 
@@ -25,8 +25,8 @@ public static class CombatSystemRegistration
       PhysicsContactCaptureSystem physicsContacts,
       ProjectileHitResolutionSystem projectileHits,
       ProjectileLifecycleSystem projectileLifecycle,
-      CombatAttackDefinitionCatalog attackDefinitions,
-      int protectionWindowTicks,
+      ProjectileTileResolutionSystem projectileTiles,
+      CombatAttackCatalog attackDefinitions,
       IEnumerable<string>? attributeDependencyKeys = null)
   {
     ArgumentNullException.ThrowIfNull(world);
@@ -35,8 +35,8 @@ public static class CombatSystemRegistration
     ArgumentNullException.ThrowIfNull(physicsContacts);
     ArgumentNullException.ThrowIfNull(projectileHits);
     ArgumentNullException.ThrowIfNull(projectileLifecycle);
+    ArgumentNullException.ThrowIfNull(projectileTiles);
     ArgumentNullException.ThrowIfNull(attackDefinitions);
-    ArgumentOutOfRangeException.ThrowIfNegative(protectionWindowTicks);
 
     if (!projectileLifecycle.SharesRuntimeRegistryWith(resolver, handleResolver))
     {
@@ -64,6 +64,12 @@ public static class CombatSystemRegistration
           physicsContacts),
       new EcsServerSystemRegistration(
           EcsServerPhase.Simulation,
+          EcsServerRegistrationKeys.CombatProjectileTileResolution,
+          projectileTiles,
+          after: [EcsServerRegistrationKeys.CombatPhysicsContactCapture],
+          reason: "Tile contacts are drained after the spatial step that produces them."),
+      new EcsServerSystemRegistration(
+          EcsServerPhase.Simulation,
           EcsServerRegistrationKeys.CombatProjectileLifetime,
           new ProjectileLifetimeTickSystem(world, handleResolver),
           after: attributeDependencyKeys,
@@ -76,27 +82,33 @@ public static class CombatSystemRegistration
           new ProjectileDamageRequestSystem(
               world,
               projectileHits,
-              handleResolver),
+              handleResolver,
+              attackDefinitions),
           after: attributeDependencyKeys,
           reason: attributeDependencyKeys is null
               ? null
               : "Projectile damage requests must observe same-tick inventory attributes."),
-      // 无敌窗口的推进必须排在本阶段最前：本帧受击新开的窗口若在同帧被推进，
-      // 实际保护时长会少一个 tick。
+      // 无敌窗口的到期归零必须排在本阶段最前：归零只清理过期戳，不参与「是否被挡」的判断，
+      // 所以早跑晚跑都不会让窗口多生效一个 tick；排最前是为了让同帧的读取看到规范状态。
       new EcsServerSystemRegistration(
           EcsServerPhase.Commit,
-          EcsServerRegistrationKeys.CombatProtectionWindow,
-          new ProtectionWindowSystem(world)),
+          EcsServerRegistrationKeys.CombatImmunityWindow,
+          new ImmunityWindowExpirySystem(world)),
+      // 攻击者分槽的稀疏表没有上限保护，Prune 必须每 tick 无条件跑，不能等消费者触发。
+      new EcsServerSystemRegistration(
+          EcsServerPhase.Commit,
+          EcsServerRegistrationKeys.CombatAttackerImmunity,
+          new AttackerImmunityExpirySystem(world)),
       new EcsServerSystemRegistration(
           EcsServerPhase.Commit,
           EcsServerRegistrationKeys.CombatAttackRequest,
           new CombatAttackRequestSystem(world, attackDefinitions, resolver),
-          after: [EcsServerRegistrationKeys.CombatProtectionWindow],
-          reason: "Attack requests run after the protection-window state has advanced."),
+          after: [EcsServerRegistrationKeys.CombatImmunityWindow],
+          reason: "Attack requests run after the immunity-window state has been normalised."),
       new EcsServerSystemRegistration(
           EcsServerPhase.Commit,
           EcsServerRegistrationKeys.CombatDamageRequest,
-          new CombatDamageRequestSystem(world, resolver, protectionWindowTicks),
+          new CombatDamageRequestSystem(world, resolver),
           after: [EcsServerRegistrationKeys.CombatAttackRequest],
           reason: "Damage requests consume attack requests produced earlier in Commit."),
       new EcsServerSystemRegistration(

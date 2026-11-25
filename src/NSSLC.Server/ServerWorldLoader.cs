@@ -1,11 +1,11 @@
 using Terraria.WorldData;
-using Terraria.Item;
-using Terraria.Liquid;
+using Terraria.Share.Items;
+using Terraria.Share.Liquid;
 using Terraria.NonAuthoritative.Persistence;
 using Terraria.NonAuthoritative.WorldStorage;
 using Terraria.WorldStorage;
-using Terraria.World;
-using WorldRuntimeTile = Terraria.World.WorldTileState;
+using Terraria.Unshared.World;
+using WorldRuntimeTile = Terraria.Unshared.World.WorldTileState;
 
 namespace NSSLC.Server;
 
