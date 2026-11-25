@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>Tick-scoped queue of player state changes requested by other domains.</summary>
 /// <remarks>

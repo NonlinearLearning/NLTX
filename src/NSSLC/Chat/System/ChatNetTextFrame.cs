@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.IO;
 using System.Text;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Framing of the chat line inside the reference's text net module.</summary>
 /// <remarks>

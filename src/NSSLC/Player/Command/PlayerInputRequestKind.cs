@@ -1,4 +1,4 @@
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>Kind of player state change a foreign domain may request.</summary>
 public enum PlayerInputRequestKind : byte

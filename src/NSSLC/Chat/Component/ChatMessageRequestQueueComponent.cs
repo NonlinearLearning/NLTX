@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Tick-scoped queue of chat lines typed by entities that can speak.</summary>
 public sealed class ChatMessageRequestQueueComponent

@@ -1,4 +1,4 @@
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Delivery scope of one chat line.</summary>
 /// <remarks>

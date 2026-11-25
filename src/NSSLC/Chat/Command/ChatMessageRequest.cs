@@ -1,6 +1,6 @@
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>One cross-domain intention to speak: text typed by an entity that can chat.</summary>
 /// <remarks>

@@ -1,9 +1,9 @@
 using System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>
 /// Server-side Player attack submission boundary. It carries no client input or network state.
@@ -20,7 +20,7 @@ public sealed class PlayerAttackIntentAdapter
   public long Submit(
       EntityRuntimeHandle source,
       EntityRuntimeHandle target,
-      CombatAttackDefinitionId definitionId,
+      CombatAttackId definitionId,
       long tick,
       DamageContact? contact = null)
   {

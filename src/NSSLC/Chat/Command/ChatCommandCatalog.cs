@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Immutable-after-sealing directory of chat commands.</summary>
 public sealed class ChatCommandCatalog
 {
-  private readonly Dictionary<string, ChatCommandDefinition> _commands =
+  private readonly Dictionary<string, ChatCommand> _commands =
       new(StringComparer.OrdinalIgnoreCase);
   private bool _sealed;
 
@@ -14,7 +14,7 @@ public sealed class ChatCommandCatalog
 
   public bool IsSealed => _sealed;
 
-  public void Register(ChatCommandDefinition definition)
+  public void Register(ChatCommand definition)
   {
     ArgumentNullException.ThrowIfNull(definition);
     if (_sealed)
@@ -40,7 +40,7 @@ public sealed class ChatCommandCatalog
     _sealed = true;
   }
 
-  public bool TryGet(string name, out ChatCommandDefinition definition)
+  public bool TryGet(string name, out ChatCommand definition)
     => _commands.TryGetValue(name, out definition!);
 
   /// <summary>Registered command names in ordinal order, for help output and diagnostics.</summary>

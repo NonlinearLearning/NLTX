@@ -1,7 +1,7 @@
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>Locates the single entity that carries the player input request queue.</summary>
 public static class PlayerInputRequestQueue

@@ -1,8 +1,8 @@
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>RGB color of one chat line, matching the reference's <c>WriteRGB</c> byte triple.</summary>
 /// <remarks>
-/// The presets are the exact values of Version4 <c>Terraria.Chat.ChatColors</c>. The client sends
+/// The presets are the exact values of Version4 <c>Terraria.Unshared.Chat.ChatColors</c>. The client sends
 /// color as three bytes inside the text module frame, so the server never needs a graphics type.
 /// </remarks>
 public readonly record struct ChatColor(byte R, byte G, byte B)

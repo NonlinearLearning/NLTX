@@ -1,7 +1,7 @@
 using System;
 using System.Text;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Text rules for one chat line, extracted from the reference chat pipeline.</summary>
 /// <remarks>

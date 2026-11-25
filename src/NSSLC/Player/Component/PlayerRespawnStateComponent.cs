@@ -1,7 +1,7 @@
 using System;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>Stores a server-authoritative respawn schedule and optional spawn anchor.</summary>
 public sealed class PlayerRespawnStateComponent

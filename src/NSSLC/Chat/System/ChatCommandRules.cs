@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Pure helpers for the server's chat commands.</summary>
 /// <remarks>

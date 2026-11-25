@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Short server-side history of accepted chat lines.</summary>
 /// <remarks>

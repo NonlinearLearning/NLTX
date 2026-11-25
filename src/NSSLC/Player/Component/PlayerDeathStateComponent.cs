@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>Stores the authoritative death transition for a player entity.</summary>
 public sealed class PlayerDeathStateComponent

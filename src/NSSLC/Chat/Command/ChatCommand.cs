@@ -1,4 +1,4 @@
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>One chat command the server understands, as registered in the catalog.</summary>
 /// <remarks>
@@ -6,7 +6,7 @@ namespace Terraria.Chat;
 /// client's localized command table. The server keeps the same name/description pair plus the one
 /// permission bit it can enforce: administrator-only commands.
 /// </remarks>
-public sealed record ChatCommandDefinition(string Name, string Description, bool RequiresOperator)
+public sealed record ChatCommand(string Name, string Description, bool RequiresOperator)
 {
   public bool IsValid => Name.Length > 0 && Description.Length > 0;
 }

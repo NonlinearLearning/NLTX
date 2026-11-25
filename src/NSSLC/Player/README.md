@@ -13,21 +13,23 @@ Player 在 NSSLC 中是由组件组合表达的实体能力集合，不是一个
 | `PlayerTargetingStateComponent` | 服务器选择的目标实体关系；不是客户端锁定框或光标状态 |
 | `PlayerInteractionCapabilityComponent` | 使用物品、拾取、制作和 Tile 操作等权威能力声明 |
 | `PlayerCraftingContextComponent` | 当前工作台实体和配方身份；不保存配方库存 |
-| `AttributeSetComponent` + `ProtectionWindowComponent` | 防御/减伤属性与共享保护窗口 |
+| `AttributeSetComponent` + `ImmunityWindowComponent` | 防御/减伤属性与共享受击免疫窗口 |
 
 以下职责不属于 Player 私有组件：
 
 - 武器、护甲、饰品和弹药属于 `InventoryComponent` 与物品实体关系；
 - 防御、抗性、耐力和数值 Buff/Debuff 的来源修饰属于 `AttributeSetComponent` 的
-  `AttributeModifier`；Player 的基础防御、基础抗性和保护窗口由
-  `AttributeSetComponent` 保存属性，`ProtectionWindowComponent` 保存保护窗口；
-- 无敌帧、受击免疫、闪避冷却和护盾消耗属于共享 Combat 状态；
+  `AttributeModifier`；Player 的基础防御和基础抗性由 `AttributeSetComponent` 保存属性，
+  受击免疫窗口由共享 `ImmunityWindowComponent` 保存；
+- 无敌帧、受击免疫、闪避冷却和护盾消耗属于共享 Combat 状态：窗口按 6 个伤害通道分槽，
+  NPC 侧另按攻击者分槽（`AttackerImmunityComponent`）；
 - MovementIntent 由宿主提交，空间写入由 `SpatialSimulationCoordinatorSystem` 完成。
 
 ## 系统边界
 
-`PlayerResourceSystem` 只推进 Player 资源恢复；共享 `ProtectionWindowSystem` 只递减目标保护
-窗口；`PlayerTargetingSystem` 只清理当前世界中
+`PlayerResourceSystem` 只推进 Player 资源恢复；共享 `ImmunityWindowExpirySystem` 只把过期
+通道戳归零、不承担「是否被挡」的判断（判定发生在读取点，按 tick 比较），
+`AttackerImmunityExpirySystem` 同理清理攻击者稀疏表；`PlayerTargetingSystem` 只清理当前世界中
 已经失效的目标身份；`PlayerDeathRespawnSystem` 只提交生命和死亡/复活状态，不直接修改
 位置、库存、属性或外部表现。Inventory、Attributes、Combat、Movement 和 World 系统仍由
 各自 owner 负责。

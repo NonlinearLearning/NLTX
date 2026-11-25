@@ -1,7 +1,7 @@
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Locates the single entity that carries the chat request queue.</summary>
 public static class ChatMessageRequestQueue

@@ -1,4 +1,4 @@
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Who produced a chat line, as far as the server cares.</summary>
 /// <remarks>

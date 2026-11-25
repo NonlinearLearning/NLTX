@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Session;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Unshared.Session;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>
 /// Turns chat lines typed by entities into delivered chat facts, ported from Version4's chat
@@ -114,7 +114,7 @@ public sealed class ChatSystem : BaseSystem<ArchWorld, EcsServerTickContext>
       long tick,
       ChatBroadcastQueueComponent broadcasts)
   {
-    if (!_commands.TryGet(name, out ChatCommandDefinition definition))
+    if (!_commands.TryGet(name, out ChatCommand definition))
     {
       Reply(speaker, senderHandle, $"Unknown command: /{name}", tick, broadcasts);
       return;

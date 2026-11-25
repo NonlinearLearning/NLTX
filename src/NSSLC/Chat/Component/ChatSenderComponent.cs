@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Capability component: an entity that declares it may speak in chat.</summary>
 /// <remarks>

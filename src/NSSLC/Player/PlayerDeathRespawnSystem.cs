@@ -2,11 +2,11 @@ using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
 using ArchEntity = Arch.Core.Entity;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>
 /// Commits player death and same-instance respawn state without owning spatial placement.

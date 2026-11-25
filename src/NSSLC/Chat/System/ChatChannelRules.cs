@@ -1,4 +1,4 @@
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>Maps the protocol's text-command name onto a chat channel.</summary>
 /// <remarks>

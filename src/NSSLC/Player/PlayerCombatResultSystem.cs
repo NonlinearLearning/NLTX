@@ -4,11 +4,11 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>Consumes every Player-owned Combat result without storing a LastResult component.</summary>
 public sealed class PlayerCombatResultSystem : BaseSystem<ArchWorld, EcsServerTickContext>

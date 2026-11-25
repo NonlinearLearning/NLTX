@@ -1,6 +1,6 @@
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>One chat line the network layer must deliver.</summary>
 /// <remarks>

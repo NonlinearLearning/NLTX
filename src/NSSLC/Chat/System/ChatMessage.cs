@@ -1,4 +1,4 @@
-namespace Terraria.Chat;
+namespace Terraria.Unshared.Chat;
 
 /// <summary>One accepted chat line kept in the server's short history.</summary>
 public readonly record struct ChatMessage(

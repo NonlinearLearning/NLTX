@@ -1,7 +1,7 @@
 using System.Numerics;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>One player state change requested by the communication adapter.</summary>
 /// <remarks>

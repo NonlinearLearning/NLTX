@@ -2,12 +2,12 @@ using System;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
 using ArchEntity = Arch.Core.Entity;
-using Terraria.Entity;
-using Terraria.Inventory;
-using Terraria.Item;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Inventory;
+using Terraria.Share.Items;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Player;
+namespace Terraria.Unshared.Player;
 
 /// <summary>Applies the player state changes other domains asked for.</summary>
 /// <remarks>
