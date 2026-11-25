@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Tick-scoped queue of processed damage results, consumed per submitting source.</summary>
 /// <remarks>

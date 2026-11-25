@@ -3,10 +3,10 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Attributes;
-using Terraria.Entity;
+using Terraria.Share.Attributes;
+using Terraria.Share.Entities;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>
 /// Synchronizes calculated capacity attributes into their dedicated resource owners.

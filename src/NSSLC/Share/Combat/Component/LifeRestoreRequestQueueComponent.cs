@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Tick-scoped queue of requests to restore one entity to full life.</summary>
 /// <remarks>

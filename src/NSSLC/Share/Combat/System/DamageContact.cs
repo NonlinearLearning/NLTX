@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Optional spatial fact attached to a damage request.</summary>
 public readonly record struct DamageContact

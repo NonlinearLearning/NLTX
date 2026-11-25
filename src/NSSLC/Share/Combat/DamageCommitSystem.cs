@@ -2,10 +2,10 @@ using System;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Relationships;
-using Terraria.Attributes;
+using Terraria.Share.Relationships;
+using Terraria.Share.Attributes;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>
 /// Sole conventional writer of target <see cref="LifeComponent"/> for damage requests.

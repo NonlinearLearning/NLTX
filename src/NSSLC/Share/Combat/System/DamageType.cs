@@ -1,4 +1,4 @@
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Describes the calculation family of one damage application.</summary>
 public enum DamageType : byte

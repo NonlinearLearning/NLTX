@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Tick-scoped append-only queue of Player, NPC and Projectile attack intents.</summary>
 /// <remarks>
@@ -36,7 +36,7 @@ public sealed class CombatAttackIntentQueueComponent
   public long Enqueue(
       EntityRuntimeHandle source,
       EntityRuntimeHandle target,
-      CombatAttackDefinitionId definitionId,
+      CombatAttackId definitionId,
       long tick,
       DamageCause cause,
       DamageContact? contact = null)

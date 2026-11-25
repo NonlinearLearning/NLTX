@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Deterministic enemy/friendly relation rules shared by all damage sources.</summary>
 public sealed class DamageRelationSystem

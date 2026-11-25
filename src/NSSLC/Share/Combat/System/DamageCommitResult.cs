@@ -1,4 +1,4 @@
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Result of the sole target-life write boundary.</summary>
 public enum DamageCommitResult : byte

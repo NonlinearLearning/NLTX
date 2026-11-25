@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Tick-scoped queue of validated damage requests awaiting the Combat commit step.</summary>
 /// <remarks>

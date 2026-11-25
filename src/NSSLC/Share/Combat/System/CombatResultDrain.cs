@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using ArchEntity = Arch.Core.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>
 /// Drains the combat results queued against one entity's runtime handle.

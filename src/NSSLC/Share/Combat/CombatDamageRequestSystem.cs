@@ -2,10 +2,10 @@ using System;
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Runs the shared request buffer at the explicit Combat commit boundary.</summary>
 public sealed class CombatDamageRequestSystem : BaseSystem<ArchWorld, EcsServerTickContext>
@@ -14,14 +14,12 @@ public sealed class CombatDamageRequestSystem : BaseSystem<ArchWorld, EcsServerT
 
   public CombatDamageRequestSystem(
       ArchWorld world,
-      IEntityRuntimeResolver resolver,
-      int protectionWindowTicks = 0)
+      IEntityRuntimeResolver resolver)
       : base(world ?? throw new ArgumentNullException(nameof(world)))
   {
     _combat = new CombatDamageSystem(
         World,
-        resolver ?? throw new ArgumentNullException(nameof(resolver)),
-        protectionWindowTicks);
+        resolver ?? throw new ArgumentNullException(nameof(resolver)));
   }
 
   public override void Update(in EcsServerTickContext context)

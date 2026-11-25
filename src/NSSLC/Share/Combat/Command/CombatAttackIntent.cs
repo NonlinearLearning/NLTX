@@ -1,7 +1,7 @@
 using System;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>One immutable source attack intent captured for the current Tick.</summary>
 public readonly record struct CombatAttackIntent
@@ -9,7 +9,7 @@ public readonly record struct CombatAttackIntent
   public CombatAttackIntent(
       EntityRuntimeHandle source,
       EntityRuntimeHandle target,
-      CombatAttackDefinitionId definitionId,
+      CombatAttackId definitionId,
       long tick,
       DamageCause cause,
       DamageContact? contact = null,
@@ -38,7 +38,7 @@ public readonly record struct CombatAttackIntent
 
   public EntityRuntimeHandle Target { get; }
 
-  public CombatAttackDefinitionId DefinitionId { get; }
+  public CombatAttackId DefinitionId { get; }
 
   public long Tick { get; }
 

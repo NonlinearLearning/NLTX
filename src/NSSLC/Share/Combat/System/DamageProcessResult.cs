@@ -1,4 +1,4 @@
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Outcome of one request processed by the shared Combat boundary.</summary>
 public readonly record struct DamageProcessResult(

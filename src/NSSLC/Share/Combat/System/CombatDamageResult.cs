@@ -1,6 +1,6 @@
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Associates a processed result with the source that submitted it.</summary>
 public readonly record struct CombatDamageResult(

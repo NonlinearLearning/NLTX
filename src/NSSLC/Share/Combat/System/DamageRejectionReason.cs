@@ -1,4 +1,4 @@
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Stable reason exposed when a damage request does not apply.</summary>
 public enum DamageRejectionReason : byte

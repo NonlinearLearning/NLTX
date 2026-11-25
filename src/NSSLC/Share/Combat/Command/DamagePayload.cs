@@ -1,8 +1,8 @@
 using System;
-using Terraria.Attributes;
-using Terraria.Relationships;
+using Terraria.Share.Attributes;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Immutable input for one damage application.</summary>
 public readonly record struct DamagePayload

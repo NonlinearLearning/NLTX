@@ -1,4 +1,4 @@
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Identifies the domain that produced a damage request.</summary>
 public enum DamageCause : byte

@@ -1,7 +1,7 @@
 using System;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Validated, immutable request to apply one damage payload to one entity.</summary>
 public readonly record struct DamageRequest
@@ -15,7 +15,8 @@ public readonly record struct DamageRequest
       DamageCause cause,
       DamageContact? contact = null,
       long requestId = 0,
-      long effectSourceId = 0)
+      long effectSourceId = 0,
+      ImmunityChannel channel = ImmunityChannel.General)
   {
     if (!source.IsValid)
     {
@@ -43,6 +44,11 @@ public readonly record struct DamageRequest
       throw new ArgumentOutOfRangeException(nameof(tick));
     }
 
+    if ((int)channel < 0 || (int)channel >= (int)ImmunityChannel.Count)
+    {
+      throw new ArgumentOutOfRangeException(nameof(channel));
+    }
+
     Source = source;
     Target = target;
     Payload = payload;
@@ -52,6 +58,7 @@ public readonly record struct DamageRequest
     Contact = contact;
     RequestId = requestId;
     EffectSourceId = effectSourceId;
+    Channel = channel;
   }
 
   public EntityRuntimeHandle Source { get; }
@@ -73,6 +80,15 @@ public readonly record struct DamageRequest
 
   /// <summary>Optional status-effect source identity preserved across periodic damage requests.</summary>
   public long EffectSourceId { get; }
+
+  /// <summary>
+  /// Target-side immunity channel this hit consumes. Defaults to General.
+  /// </summary>
+  /// <remarks>
+  /// 通道是这次伤害的属性，不是请求身份，所以它不进 DamageRequestKey：
+  /// 进 key 会让同 tick 去重语义随内容配置漂移。
+  /// </remarks>
+  public ImmunityChannel Channel { get; }
 
   public DamageRequestKey Key => new(Source, Target, Tick, Cause, RequestId, EffectSourceId);
 }

@@ -1,16 +1,16 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Immutable-after-sealing directory for attack content definitions.</summary>
-public sealed class CombatAttackDefinitionCatalog
+public sealed class CombatAttackCatalog
 {
-  private readonly Dictionary<CombatAttackDefinitionId, CombatAttackDefinition> _definitions = [];
-  private readonly Dictionary<ulong, CombatAttackDefinition> _stableDefinitions = [];
+  private readonly Dictionary<CombatAttackId, CombatAttack> _definitions = [];
+  private readonly Dictionary<ulong, CombatAttack> _stableDefinitions = [];
   private bool _sealed;
 
-  public void Register(CombatAttackDefinition definition)
+  public void Register(CombatAttack definition)
   {
     ArgumentNullException.ThrowIfNull(definition);
     if (_sealed)
@@ -37,19 +37,19 @@ public sealed class CombatAttackDefinitionCatalog
     _sealed = true;
   }
 
-  public bool TryGet(CombatAttackDefinitionId id, out CombatAttackDefinition definition)
+  public bool TryGet(CombatAttackId id, out CombatAttack definition)
   {
     return _definitions.TryGetValue(id, out definition!);
   }
 
-  public bool TryGet(ulong stableKey, out CombatAttackDefinition definition)
+  public bool TryGet(ulong stableKey, out CombatAttack definition)
   {
     return _stableDefinitions.TryGetValue(stableKey, out definition!);
   }
 
-  public CombatAttackDefinition Get(CombatAttackDefinitionId id)
+  public CombatAttack Get(CombatAttackId id)
   {
-    if (!TryGet(id, out CombatAttackDefinition definition))
+    if (!TryGet(id, out CombatAttack definition))
     {
       throw new KeyNotFoundException($"Attack definition {id} is not registered.");
     }

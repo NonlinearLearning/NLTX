@@ -3,10 +3,10 @@ using System.Collections.Generic;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Attributes;
-using Terraria.Relationships;
+using Terraria.Share.Attributes;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>
 /// Coordinates source-agnostic damage requests for one local ECS commit boundary.
@@ -23,21 +23,14 @@ public sealed class CombatDamageSystem
   private readonly DamageRelationSystem _relations;
   private readonly DamageMitigationSystem _mitigation;
   private readonly DamageCommitSystem _commit;
-  private readonly int _protectionWindowTicks;
 
   public CombatDamageSystem(
       ArchWorld world,
-      IEntityRuntimeResolver resolver,
-      int protectionWindowTicks = 0)
+      IEntityRuntimeResolver resolver)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
     _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
-    if (protectionWindowTicks < 0)
-    {
-      throw new ArgumentOutOfRangeException(nameof(protectionWindowTicks));
-    }
 
-    _protectionWindowTicks = protectionWindowTicks;
     _admission = new DamageAdmissionSystem();
     _relations = new DamageRelationSystem();
     _mitigation = new DamageMitigationSystem();
@@ -113,11 +106,18 @@ public sealed class CombatDamageSystem
       return DamageProcessResult.Rejected(DamageRejectionReason.InvalidRequest);
     }
 
-    if (_world.Has<DamageImmunityComponent>(target) ||
-        (_world.Has<DamageImmunityStatusComponent>(target) &&
-         _world.Get<DamageImmunityStatusComponent>(target).IsActive))
+    // 无敌语义只有一个实现：永久免疫、状态来源免疫、受击窗口都在同一个只读查询里裁决。
+    // 放在属性能力校验之前，是因为一个不可受击的目标不该因为缺组件而报另一个原因。
+    DamageRejectionReason immunity = DamageImmunityQuery.Check(
+        _world,
+        target,
+        request.Source,
+        request.Channel,
+        request.Tick,
+        request.Payload.Type);
+    if (immunity != DamageRejectionReason.None)
     {
-      return DamageProcessResult.Rejected(DamageRejectionReason.TargetImmune);
+      return DamageProcessResult.Rejected(immunity);
     }
 
     // 属性能力必须由实体组合显式声明：没有 AttributeSetComponent 的战斗实体在定义层就是
@@ -129,13 +129,7 @@ public sealed class CombatDamageSystem
     }
 
     LifeComponent targetLife = _world.Get<LifeComponent>(target);
-    ProtectionWindowComponent? protection = _world.Has<ProtectionWindowComponent>(target)
-        ? _world.Get<ProtectionWindowComponent>(target)
-        : null;
-    DamageRejectionReason admission = _admission.Check(
-        in request,
-        in targetLife,
-        protection);
+    DamageRejectionReason admission = _admission.Check(in request, in targetLife);
     if (admission != DamageRejectionReason.None)
     {
       return DamageProcessResult.Rejected(admission);
@@ -172,12 +166,12 @@ public sealed class CombatDamageSystem
         in request,
         in mitigation,
         out DamageAppliedReceipt receipt);
-    // 受击成功后授予无敌窗口。该组件是目标侧能力：只有挂了 ProtectionWindowComponent 的
-    // 实体才会开始计时，所以这里不需要区分玩家与 NPC。
-    if (committed == DamageCommitResult.Applied && _protectionWindowTicks > 0 &&
-        _world.Has<ProtectionWindowComponent>(target))
+    // 开窗必须留在本 tick 的请求循环内：参考端同一 tick 内第二发命中会被 immune 挡掉，
+    // 推迟到 tick 末的另一次遍历就会让同 tick 的多发命中全部落地。
+    // 协调器只负责调用位置，时长规则与组件写入都在 ImmunityGrantPolicy 里。
+    if (committed == DamageCommitResult.Applied)
     {
-      _world.Get<ProtectionWindowComponent>(target).Start(_protectionWindowTicks);
+      ImmunityGrantPolicy.Grant(_world, target, in request, receipt.AcceptedDamage);
     }
 
     return committed switch

@@ -3,7 +3,7 @@ using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Locates the single entity that carries the tick-scoped attack intent queue.</summary>
 /// <remarks>

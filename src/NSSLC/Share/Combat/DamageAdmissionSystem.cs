@@ -1,16 +1,20 @@
 using System;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>
 /// Validates a shared damage request without changing target or source state.
 /// </summary>
+/// <remarks>
+/// 这里只判「请求本身合法吗」，不判「目标现在能不能挨打」。
+/// 后者是 <see cref="DamageImmunityQuery" /> 的职责：它是唯一实现，且需要世界状态访问。
+/// 两个职责分开，是因为前者是纯函数、后者是查询，混在一起会让准入类被迫持有世界引用。
+/// </remarks>
 public sealed class DamageAdmissionSystem
 {
   public DamageRejectionReason Check(
       in DamageRequest request,
-      in LifeComponent currentTargetLife,
-      ProtectionWindowComponent? protection = null)
+      in LifeComponent currentTargetLife)
   {
     if (!request.Source.IsValid || !request.Target.IsValid || !request.Payload.IsValid ||
         request.Tick < 0 || request.RequestId < 0 || !Enum.IsDefined(request.Cause) ||
@@ -34,8 +38,6 @@ public sealed class DamageAdmissionSystem
       return DamageRejectionReason.NonPositiveDamage;
     }
 
-    return protection is { IsActive: true }
-        ? DamageRejectionReason.ProtectionWindowActive
-        : DamageRejectionReason.None;
+    return DamageRejectionReason.None;
   }
 }

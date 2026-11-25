@@ -1,4 +1,4 @@
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Describes the intended relationship of a damage payload.</summary>
 public enum DamageRelation : byte

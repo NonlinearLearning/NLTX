@@ -1,11 +1,11 @@
 using System;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Stable content identifier for an attack definition.</summary>
-public readonly record struct CombatAttackDefinitionId
+public readonly record struct CombatAttackId
 {
-  public CombatAttackDefinitionId(string value)
+  public CombatAttackId(string value)
   {
     if (string.IsNullOrWhiteSpace(value))
     {

@@ -1,7 +1,7 @@
 using System;
-using Terraria.Attributes;
+using Terraria.Share.Attributes;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Calculates damage after a bounded endurance reduction.</summary>
 public sealed class DamageMitigationSystem

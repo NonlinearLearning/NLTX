@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Stores bounded health state; damage and healing rules belong to combat systems.</summary>
 public readonly record struct LifeComponent {

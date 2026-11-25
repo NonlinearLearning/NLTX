@@ -1,4 +1,4 @@
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>Deterministic damage result after offensive scaling and target mitigation.</summary>
 public readonly record struct DamageMitigationResult(

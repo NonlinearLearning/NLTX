@@ -4,10 +4,10 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Combat;
+namespace Terraria.Share.Combat;
 
 /// <summary>
 /// Converts one tick's source-neutral attack intents into validated damage requests.
@@ -18,12 +18,12 @@ namespace Terraria.Combat;
 /// </remarks>
 public sealed class CombatAttackRequestSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
-  private readonly CombatAttackDefinitionCatalog _definitions;
+  private readonly CombatAttackCatalog _definitions;
   private readonly IEntityRuntimeResolver _resolver;
 
   public CombatAttackRequestSystem(
       ArchWorld world,
-      CombatAttackDefinitionCatalog definitions,
+      CombatAttackCatalog definitions,
       IEntityRuntimeResolver resolver)
       : base(world ?? throw new ArgumentNullException(nameof(world)))
   {
@@ -44,7 +44,7 @@ public sealed class CombatAttackRequestSystem : BaseSystem<ArchWorld, EcsServerT
     for (int index = 0; index < intents.Count; index++)
     {
       CombatAttackIntent intent = intents[index];
-      if (!_definitions.TryGet(intent.DefinitionId, out CombatAttackDefinition? definition) ||
+      if (!_definitions.TryGet(intent.DefinitionId, out CombatAttack? definition) ||
           !_resolver.TryResolve(intent.Source, out ArchEntity source) ||
           source == ArchEntity.Null || !World.IsAlive(source) ||
           !_resolver.TryResolve(intent.Target, out ArchEntity target) ||
@@ -68,7 +68,8 @@ public sealed class CombatAttackRequestSystem : BaseSystem<ArchWorld, EcsServerT
           intent.Tick,
           intent.Cause,
           intent.Contact,
-          intent.RequestId);
+          intent.RequestId,
+          channel: definition.Channel);
       requests.Enqueue(in request);
     }
   }
