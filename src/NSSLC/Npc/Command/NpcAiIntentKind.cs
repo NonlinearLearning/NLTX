@@ -1,4 +1,4 @@
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>Domain intent kinds emitted by NPC behavior implementations.</summary>
 public enum NpcAiIntentKind : byte

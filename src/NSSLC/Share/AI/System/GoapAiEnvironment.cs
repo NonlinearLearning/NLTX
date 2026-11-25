@@ -1,9 +1,9 @@
 using System;
 using System.Numerics;
-using Terraria.Ai.Goap.Core;
-using Terraria.Ai.Goap.Runtime;
+using Terraria.Share.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Runtime;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>
 /// Snapshot-backed GOAP environment. Move/Stop and domain action methods must only emit intents.

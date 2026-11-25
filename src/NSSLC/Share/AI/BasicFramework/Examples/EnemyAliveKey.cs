@@ -1,6 +1,6 @@
-using Terraria.Ai.Goap.Runtime;
+using Terraria.Share.Ai.Goap.Runtime;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 public sealed class EnemyAliveKey : WorldKeyBase {
 }

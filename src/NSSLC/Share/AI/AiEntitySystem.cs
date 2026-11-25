@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>
 /// ECS host adapter for AI bindings. It stores no component data and never writes an entity.

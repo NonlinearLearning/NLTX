@@ -1,7 +1,7 @@
-using Terraria.Ai.Goap.Core;
-using Terraria.Ai.Goap.Runtime;
+using Terraria.Share.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Runtime;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>
 /// GOAP example; the environment records attack requests, never applies damage here.

@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>SlimeDomain bound through the common AI layer; emits jump requests only.</summary>
 public sealed class SlimeAiBehavior : HtnAiBehavior<SlimeContext, ExampleAiIntent> {

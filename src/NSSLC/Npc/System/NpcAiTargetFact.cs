@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>Detached target facts selected by the NPC host adapter.</summary>
 public readonly record struct NpcAiTargetFact(

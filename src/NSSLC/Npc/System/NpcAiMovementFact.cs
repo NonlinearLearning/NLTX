@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>
 /// Detached movement facts projected from the authoritative spatial components for one AI tick.

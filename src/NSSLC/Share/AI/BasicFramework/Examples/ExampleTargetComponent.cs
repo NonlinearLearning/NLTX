@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>
 /// Example target observation. The host changes Revision when the selected target changes.

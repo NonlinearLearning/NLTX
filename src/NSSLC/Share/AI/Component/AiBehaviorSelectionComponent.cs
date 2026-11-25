@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>
 /// Selects the content behavior and immutable profile used by an entity's AI adapter.

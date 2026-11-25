@@ -4,9 +4,9 @@
 #nullable disable
 using System.Collections.Generic;
 using System.Linq;
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Goap.Resolver
+namespace Terraria.Share.Ai.Goap.Resolver
 {
     public class EnabledBuilder : IEnabledBuilder
     {

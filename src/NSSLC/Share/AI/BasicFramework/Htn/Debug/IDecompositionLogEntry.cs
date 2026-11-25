@@ -3,9 +3,9 @@
 #nullable disable
 
 using System;
-using Terraria.Ai.Htn.Conditions;
+using Terraria.Share.Ai.Htn.Conditions;
 
-namespace Terraria.Ai.Htn.Debug
+namespace Terraria.Share.Ai.Htn.Debug
 {
 
     public interface IDecompositionLogEntry<T> : IBaseDecompositionLogEntry

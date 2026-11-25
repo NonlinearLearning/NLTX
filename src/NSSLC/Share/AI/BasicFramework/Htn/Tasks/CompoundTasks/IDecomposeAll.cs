@@ -2,7 +2,7 @@
 // Copyright (c) 2019 Pål Trefall. MIT license: LICENSE.txt.
 #nullable disable
 
-namespace Terraria.Ai.Htn.Compounds
+namespace Terraria.Share.Ai.Htn.Compounds
 {
     /// <summary>
     ///     The Decompose All interface is a tag to signify that this compound task type intends to

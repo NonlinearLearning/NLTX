@@ -232,6 +232,8 @@ Definition/Lifecycle Resolver 负责确认行为键、Profile 和 C# 行为注�
 | `AiSystem<TIntent>` | 注册行为工厂，创建绑定；不保存实体或世界 |
 | `AiBinding<TIntent>` | 每实体运行时，控制计算、依赖校验、停止与释放 |
 | `AiRequirements` | 不可变的 AI 快照输入类型集合 |
+| `AiBehaviorDeclaration<TIntent>` | 一条完整声明：行为类型、它读的快照类型、以及以这些读取构造行为的工厂 |
+| `AiBehaviorCatalog<TIntent>` | 声明目录；`Seal()` 之后拒绝再注册，重复行为类型在 `Add` 时即失败 |
 | `AiSnapshot` | 按精确类型索引的组件值副本 |
 | `AiBehavior<TIntent>` | 两个适配器共同遵守的需求、输入、输出与生命周期契约 |
 | `HtnAiBehavior<TContext,TIntent>` | 刷新 HTN Context，推进 Planner，再收集意图 |
@@ -290,9 +292,43 @@ pending.AddRange(binding.Stop().Intents);
 移动、停止、发起攻击和取消攻击。核心不把所有玩法固定成几种布尔字段，也不把取消、停止、
 新动作合并覆盖；宿主必须保留结果中的顺序。
 
+### 声明与目录
+
+一条声明同时携带三件事，宿主不再分散地各说一遍：
+
+```csharp
+AiRequirements reads = AiRequirements.Empty
+    .Require<ExampleMovementComponent>()
+    .Require<ExampleTargetComponent>();
+AiBehaviorDeclaration<ExampleAiIntent> declaration =
+    AiBehaviorDeclaration<ExampleAiIntent>.For<SlimeAiBehavior>(
+        static requirements => new SlimeAiBehavior(requirements),
+        reads);
+
+AiBehaviorCatalog<ExampleAiIntent> catalog = new();
+catalog.Add(declaration);
+catalog.Seal();          // 之后 Add 抛异常
+```
+
+`CreateBehavior()` 把声明的 `Reads` 注入行为构造函数，并核对造出来的类型确实是
+`BehaviorType`。因此「声明读 A、行为实际读 B」不是被检查出来的，而是**拿不到第二份需求**——
+行为若要把读取写在内部，就必须重复声明一次，而这需要绕开工厂，属于显式改代码而非静默漂移。
+
+```csharp
+AiSystem<ExampleAiIntent> system = new();
+foreach (AiBehaviorDeclaration<ExampleAiIntent> d in catalog.Declarations)
+{
+  system.Register(d);   // 直接注册声明，不再手写工厂
+}
+```
+
+目录是组合根的东西：`Seal()` 之后不可变，键是行为 `Type`（与 `AiComponent` 携带的字段一致）。
+它只管「有哪些行为、各读什么」；「各能发什么」属于玩法侧，由玩法自己的目录承载——
+例如 NPC 域用 `NpcAiCatalog` 包一层，把 `Emits` 保持为强类型枚举，而不是给共享层再加一个泛型参数。
+
 ### 输入需求
 
-行为在构造时声明输入，绑定通过 `RequiredComponents` 暴露需求，在每次计算前逐项检查：
+行为的输入仍由 `RequiredComponents` 暴露，绑定在每次计算前逐项检查：
 
 ```csharp
 AiRequirements requirements = AiRequirements.Empty

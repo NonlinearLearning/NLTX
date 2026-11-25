@@ -2,9 +2,9 @@
 // Copyright (c) 2019 Pål Trefall. MIT license: LICENSE.txt.
 #nullable disable
 
-using Terraria.Ai.Htn.Compounds;
+using Terraria.Share.Ai.Htn.Compounds;
 
-namespace Terraria.Ai.Htn
+namespace Terraria.Share.Ai.Htn
 {
     public class TaskRoot : Selector
     {

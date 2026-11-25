@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>Stable content key selecting immutable parameters for an AI behavior.</summary>
 public readonly record struct AiBehaviorProfileId

@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Terraria.Ai.Htn.Operators
+namespace Terraria.Share.Ai.Htn.Operators
 {
     public class FuncOperator<T> : IOperator where T : IContext
     {

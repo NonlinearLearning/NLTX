@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>Calculation-local output. Emitting outside Calculate/Stop/Dispose is invalid.</summary>
 public sealed class AiOutput<TIntent> where TIntent : unmanaged {

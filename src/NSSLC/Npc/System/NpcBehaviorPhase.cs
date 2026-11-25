@@ -1,4 +1,4 @@
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>Observable phase of an NPC behavior execution.</summary>
 public enum NpcBehaviorPhase : byte

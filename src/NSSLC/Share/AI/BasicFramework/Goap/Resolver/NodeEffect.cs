@@ -3,9 +3,9 @@
 // Changes: .NET namespaces/platform types; see SOURCES.md for file-specific changes.
 #nullable disable
 using System;
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Goap.Resolver
+namespace Terraria.Share.Ai.Goap.Resolver
 {
     public class NodeEffect : INodeEffect
     {

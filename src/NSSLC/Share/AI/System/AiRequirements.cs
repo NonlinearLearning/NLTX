@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>Immutable requirements; managed components must be projected to value inputs.</summary>
 public sealed class AiRequirements {

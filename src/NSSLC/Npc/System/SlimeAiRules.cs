@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Numerics;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>Calculates the supported ordinary type-1 slime movement step from captured facts.</summary>
 public static class SlimeAiRules

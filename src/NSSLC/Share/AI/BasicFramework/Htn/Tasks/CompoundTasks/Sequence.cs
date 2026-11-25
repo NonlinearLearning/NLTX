@@ -4,9 +4,9 @@
 
 using System;
 using System.Collections.Generic;
-using Terraria.Ai.Htn.PrimitiveTasks;
+using Terraria.Share.Ai.Htn.PrimitiveTasks;
 
-namespace Terraria.Ai.Htn.Compounds
+namespace Terraria.Share.Ai.Htn.Compounds
 {
     public class Sequence : CompoundTask, IDecomposeAll
     {

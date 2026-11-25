@@ -2,7 +2,7 @@
 // Copyright (c) 2019 Pål Trefall. MIT license: LICENSE.txt.
 #nullable disable
 
-namespace Terraria.Ai.Htn
+namespace Terraria.Share.Ai.Htn
 {
     public enum TaskStatus
     {

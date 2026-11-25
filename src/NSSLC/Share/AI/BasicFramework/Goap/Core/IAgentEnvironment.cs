@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Terraria.Ai.Goap.Core;
+namespace Terraria.Share.Ai.Goap.Core;
 
 /// <summary>
 /// Project adapter for one living ECS entity. Observations and targets must be stable for one tick;

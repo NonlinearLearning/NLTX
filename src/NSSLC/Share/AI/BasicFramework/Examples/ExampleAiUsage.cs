@@ -1,4 +1,4 @@
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>Common entry points for both examples. No entity access or intent execution.</summary>
 public static class ExampleAiUsage {

@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Terraria.Ai.Htn.Conditions
+namespace Terraria.Share.Ai.Htn.Conditions
 {
     public class FuncCondition<T> : ICondition where T : IContext
     {

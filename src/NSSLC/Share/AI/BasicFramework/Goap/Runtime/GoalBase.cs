@@ -1,8 +1,8 @@
 // Adapted from CrashKonijn/GOAP GoalBase; see LICENSE.txt and SOURCES.md.
 using System;
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Goap.Runtime;
+namespace Terraria.Share.Ai.Goap.Runtime;
 
 public abstract class GoalBase : IGoal {
   public Guid Guid { get; } = Guid.NewGuid();

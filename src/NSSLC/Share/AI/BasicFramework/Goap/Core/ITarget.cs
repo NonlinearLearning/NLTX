@@ -2,7 +2,7 @@
 // Licensed under Apache-2.0; see LICENSE.txt and NOTICE.txt.
 using System.Numerics;
 
-namespace Terraria.Ai.Goap.Core;
+namespace Terraria.Share.Ai.Goap.Core;
 
 public interface ITarget {
   Vector3 Position { get; }

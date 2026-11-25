@@ -3,10 +3,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using Terraria.Ai.Goap.Core;
-using Terraria.Ai.Goap.Resolver;
+using Terraria.Share.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Resolver;
 
-namespace Terraria.Ai.Goap.Runtime;
+namespace Terraria.Share.Ai.Goap.Runtime;
 
 /// <summary>One per agent. Immutable definitions and a frozen resolver may be shared.</summary>
 public sealed class GoapActionProvider {

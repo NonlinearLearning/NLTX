@@ -1,6 +1,6 @@
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 public sealed class AttackActionData : IActionData {
   public ITarget? Target { get; set; }

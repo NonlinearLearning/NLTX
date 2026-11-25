@@ -4,14 +4,14 @@
 
 using System;
 using System.Collections.Generic;
-using Terraria.Ai.Htn.Compounds;
-using Terraria.Ai.Htn.Conditions;
-using Terraria.Ai.Htn.Effects;
-using Terraria.Ai.Htn.Factory;
-using Terraria.Ai.Htn.Operators;
-using Terraria.Ai.Htn.PrimitiveTasks;
+using Terraria.Share.Ai.Htn.Compounds;
+using Terraria.Share.Ai.Htn.Conditions;
+using Terraria.Share.Ai.Htn.Effects;
+using Terraria.Share.Ai.Htn.Factory;
+using Terraria.Share.Ai.Htn.Operators;
+using Terraria.Share.Ai.Htn.PrimitiveTasks;
 
-namespace Terraria.Ai.Htn
+namespace Terraria.Share.Ai.Htn
 {
     public abstract class BaseDomainBuilder<DB, T>
         where DB : BaseDomainBuilder<DB, T>

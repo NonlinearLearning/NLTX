@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>Stores only observable NPC behavior progress between simulation ticks.</summary>
 /// <remarks>

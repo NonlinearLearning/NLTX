@@ -3,10 +3,10 @@
 // Changes: explicit per-agent ports, no Unity/proxy, context set before run-state update.
 #nullable disable
 using System;
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
 
-namespace Terraria.Ai.Goap.Runtime
+namespace Terraria.Share.Ai.Goap.Runtime
 {
     public class ActionRunner
     {

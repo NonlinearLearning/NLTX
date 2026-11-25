@@ -8,7 +8,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
-namespace Terraria.Ai.Goap.Resolver
+namespace Terraria.Share.Ai.Goap.Resolver
 {
     public struct GraphResolverJob
     {

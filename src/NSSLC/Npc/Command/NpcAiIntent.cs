@@ -1,9 +1,9 @@
 using System;
 using System.Numerics;
-using Terraria.Combat;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>Unmanaged output from shared AI for the NPC domain adapter.</summary>
 public readonly record struct NpcAiIntent

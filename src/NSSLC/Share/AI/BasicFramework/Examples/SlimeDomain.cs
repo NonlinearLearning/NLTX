@@ -1,11 +1,11 @@
-using Terraria.Ai.Htn;
-using Terraria.Ai.Htn.Compounds;
-using Terraria.Ai.Htn.Conditions;
-using Terraria.Ai.Htn.Operators;
-using Terraria.Ai.Htn.PrimitiveTasks;
-using HtnTaskStatus = Terraria.Ai.Htn.TaskStatus;
+using Terraria.Share.Ai.Htn;
+using Terraria.Share.Ai.Htn.Compounds;
+using Terraria.Share.Ai.Htn.Conditions;
+using Terraria.Share.Ai.Htn.Operators;
+using Terraria.Share.Ai.Htn.PrimitiveTasks;
+using HtnTaskStatus = Terraria.Share.Ai.Htn.TaskStatus;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>Example decision only. Physics, jump cooldown and targeting remain domain state.</summary>
 public static class SlimeDomain {

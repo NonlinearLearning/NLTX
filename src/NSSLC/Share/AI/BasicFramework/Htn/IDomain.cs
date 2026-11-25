@@ -3,9 +3,9 @@
 #nullable disable
 
 
-using Terraria.Ai.Htn.Compounds;
+using Terraria.Share.Ai.Htn.Compounds;
 
-namespace Terraria.Ai.Htn
+namespace Terraria.Share.Ai.Htn
 {
     public interface IDomain
     {

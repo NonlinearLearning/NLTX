@@ -1,9 +1,9 @@
 // Adapted from CrashKonijn/GOAP WorldDataBase; see LICENSE.txt and SOURCES.md.
 using System;
 using System.Collections.Generic;
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Goap.Runtime;
+namespace Terraria.Share.Ai.Goap.Runtime;
 
 /// <summary>Per-agent observations. Sensor and graph keys use the same canonical name.</summary>
 public sealed class WorldData : IWorldData {

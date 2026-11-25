@@ -1,4 +1,4 @@
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 public enum ExampleAiIntentKind {
   Jump,

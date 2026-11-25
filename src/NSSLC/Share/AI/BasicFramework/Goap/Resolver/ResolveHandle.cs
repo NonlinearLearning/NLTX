@@ -1,9 +1,9 @@
 // Adapted from CrashKonijn/GOAP ResolveHandle; see LICENSE.txt and SOURCES.md.
 using System.Collections.Generic;
 using System.Linq;
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Goap.Resolver;
+namespace Terraria.Share.Ai.Goap.Resolver;
 
 public sealed class ResolveHandle : IResolveHandle {
   private readonly JobResult _result;

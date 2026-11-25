@@ -2,12 +2,12 @@
 // Copyright (c) 2019 Pål Trefall. MIT license: LICENSE.txt.
 #nullable disable
 
-using Terraria.Ai.Htn.Conditions;
-using Terraria.Ai.Htn.PrimitiveTasks;
+using Terraria.Share.Ai.Htn.Conditions;
+using Terraria.Share.Ai.Htn.PrimitiveTasks;
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Ai.Htn
+namespace Terraria.Share.Ai.Htn
 {
     public interface IPlannerState
     {

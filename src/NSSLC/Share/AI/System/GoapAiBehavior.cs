@@ -1,9 +1,9 @@
 using System;
-using Terraria.Ai.Goap.Core;
-using Terraria.Ai.Goap.Resolver;
-using Terraria.Ai.Goap.Runtime;
+using Terraria.Share.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Resolver;
+using Terraria.Share.Ai.Goap.Runtime;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>
 /// GOAP adapter; each instance owns its environment, action runtime and resolver.

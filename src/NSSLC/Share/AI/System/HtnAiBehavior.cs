@@ -1,8 +1,8 @@
 using System;
-using Terraria.Ai.Htn;
-using Terraria.Ai.Htn.Contexts;
+using Terraria.Share.Ai.Htn;
+using Terraria.Share.Ai.Htn.Contexts;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>
 /// FluidHTN adapter implementing the common snapshot, output and lifecycle contract.

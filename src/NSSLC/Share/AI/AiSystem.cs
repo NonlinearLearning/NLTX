@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>Unified behavior registry and binding factory; owns no ECS entity or world.</summary>
 public sealed class AiSystem<TIntent> where TIntent : unmanaged {
@@ -16,6 +16,16 @@ public sealed class AiSystem<TIntent> where TIntent : unmanaged {
     if (!_factories.TryAdd(typeof(TBehavior), () => factory())) {
       throw new InvalidOperationException(
           $"AI behavior {typeof(TBehavior).FullName} is already registered.");
+    }
+  }
+
+  /// <summary>Registers one catalog declaration; every bind creates a fresh runtime from it.</summary>
+  public void Register(AiBehaviorDeclaration<TIntent> declaration) {
+    ArgumentNullException.ThrowIfNull(declaration);
+    Type type = declaration.BehaviorType;
+    if (!_factories.TryAdd(type, declaration.CreateBehavior)) {
+      throw new InvalidOperationException(
+          $"AI behavior {type.FullName} is already registered.");
     }
   }
 

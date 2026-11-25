@@ -1,7 +1,7 @@
 // Adapted from CrashKonijn/GOAP IActionConfig; see LICENSE.txt and SOURCES.md.
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Goap.Runtime;
+namespace Terraria.Share.Ai.Goap.Runtime;
 
 /// <summary>Configure before graph construction; treat arrays and properties as immutable.</summary>
 public sealed class ActionConfig {

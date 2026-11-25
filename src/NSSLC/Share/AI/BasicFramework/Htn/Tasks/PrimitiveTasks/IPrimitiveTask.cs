@@ -3,10 +3,10 @@
 #nullable disable
 
 using System.Collections.Generic;
-using Terraria.Ai.Htn.Conditions;
-using Terraria.Ai.Htn.Operators;
+using Terraria.Share.Ai.Htn.Conditions;
+using Terraria.Share.Ai.Htn.Operators;
 
-namespace Terraria.Ai.Htn.PrimitiveTasks
+namespace Terraria.Share.Ai.Htn.PrimitiveTasks
 {
     public interface IPrimitiveTask : ITask
     {

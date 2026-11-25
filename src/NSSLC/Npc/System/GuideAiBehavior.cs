@@ -1,8 +1,8 @@
 using System;
 using System.Numerics;
-using Terraria.Ai;
+using Terraria.Share.Ai;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>
 /// Homeless Guide subset of the original AI_007_TownEntities behavior.
@@ -15,14 +15,16 @@ public sealed class GuideAiBehavior : AiBehavior<NpcAiIntent>
 {
   private const float SimulationTicksPerSecond = 60f;
 
-  private static readonly AiRequirements Requirements = AiRequirements.Empty
-      .Require<NpcAiMovementFact>();
   private float _modeTime;
   private int _direction = 1;
   private bool _walking;
   private bool _blockedLastTick;
 
-  public GuideAiBehavior() : base(Requirements)
+  /// <summary>
+  /// Creates one runtime. The read contract comes from the composition-root declaration, so this
+  /// behavior cannot disagree with what the catalog publishes.
+  /// </summary>
+  public GuideAiBehavior(AiRequirements requirements) : base(requirements)
   {
   }
 

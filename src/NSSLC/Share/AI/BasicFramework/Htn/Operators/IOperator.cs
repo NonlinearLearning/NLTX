@@ -2,7 +2,7 @@
 // Copyright (c) 2019 Pål Trefall. MIT license: LICENSE.txt.
 #nullable disable
 
-namespace Terraria.Ai.Htn.Operators
+namespace Terraria.Share.Ai.Htn.Operators
 {
     public interface IOperator
     {

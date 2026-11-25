@@ -4,11 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using Terraria.Ai.Htn.Compounds;
-using Terraria.Ai.Htn.Conditions;
-using Terraria.Ai.Htn.Operators;
+using Terraria.Share.Ai.Htn.Compounds;
+using Terraria.Share.Ai.Htn.Conditions;
+using Terraria.Share.Ai.Htn.Operators;
 
-namespace Terraria.Ai.Htn.PrimitiveTasks
+namespace Terraria.Share.Ai.Htn.PrimitiveTasks
 {
     public class PrimitiveTask : IPrimitiveTask
     {

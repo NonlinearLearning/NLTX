@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>Stable content key selecting an AI behavior implementation.</summary>
 public readonly record struct AiBehaviorId

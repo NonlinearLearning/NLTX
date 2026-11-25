@@ -2,7 +2,7 @@
 // Licensed under Apache-2.0; see LICENSE.txt and NOTICE.txt.
 // Changes: .NET namespaces/platform types; see SOURCES.md for file-specific changes.
 #nullable disable
-namespace Terraria.Ai.Goap.Core
+namespace Terraria.Share.Ai.Goap.Core
 {
     public interface INodeCondition
     {

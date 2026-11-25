@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>
 /// Example value projection; the host reads the real movement/physics components.

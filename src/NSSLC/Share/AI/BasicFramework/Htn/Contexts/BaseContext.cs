@@ -4,11 +4,11 @@
 
 using System;
 using System.Collections.Generic;
-using Terraria.Ai.Htn.Conditions;
-using Terraria.Ai.Htn.Debug;
-using Terraria.Ai.Htn.Factory;
+using Terraria.Share.Ai.Htn.Conditions;
+using Terraria.Share.Ai.Htn.Debug;
+using Terraria.Share.Ai.Htn.Factory;
 
-namespace Terraria.Ai.Htn.Contexts
+namespace Terraria.Share.Ai.Htn.Contexts
 {
     public abstract class BaseContext : IContext
     {

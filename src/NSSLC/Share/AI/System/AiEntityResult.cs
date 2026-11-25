@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>
 /// Associates an AI result with the host's entity key without exposing an ECS type.

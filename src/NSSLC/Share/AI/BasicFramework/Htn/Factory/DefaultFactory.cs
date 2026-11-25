@@ -5,7 +5,7 @@
 
 using System.Collections.Generic;
 
-namespace Terraria.Ai.Htn.Factory
+namespace Terraria.Share.Ai.Htn.Factory
 {
     public sealed class DefaultFactory : IFactory
     {

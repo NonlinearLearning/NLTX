@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>Detached world conditions read by NPC behavior calculations.</summary>
 public readonly record struct NpcAiWorldFact

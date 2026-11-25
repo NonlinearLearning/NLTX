@@ -1,9 +1,9 @@
 // Adapted from CrashKonijn/GOAP GoapActionBase; see LICENSE.txt and SOURCES.md.
 using System;
 using System.Linq;
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Goap.Runtime;
+namespace Terraria.Share.Ai.Goap.Runtime;
 
 public abstract class GoapActionBase<TActionData, TActionProperties>
     : AgentActionBase<TActionData, TActionProperties>, IGoapAction

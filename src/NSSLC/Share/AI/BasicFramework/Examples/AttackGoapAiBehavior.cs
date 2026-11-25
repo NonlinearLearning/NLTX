@@ -1,4 +1,4 @@
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>
 /// The existing GOAP goal/action example bound to the same API as SlimeAiBehavior.

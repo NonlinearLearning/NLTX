@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>
 /// Per-entity runtime, owned by the host on one simulation thread. Consume Stop before Dispose.

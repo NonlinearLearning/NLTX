@@ -4,12 +4,12 @@
 
 using System;
 using System.Collections.Generic;
-using Terraria.Ai.Htn.Compounds;
-using Terraria.Ai.Htn.Conditions;
-using Terraria.Ai.Htn.Debug;
-using Terraria.Ai.Htn.Factory;
+using Terraria.Share.Ai.Htn.Compounds;
+using Terraria.Share.Ai.Htn.Conditions;
+using Terraria.Share.Ai.Htn.Debug;
+using Terraria.Share.Ai.Htn.Factory;
 
-namespace Terraria.Ai.Htn
+namespace Terraria.Share.Ai.Htn
 {
     /// <summary>
     ///     The state our context can be in. This is essentially planning or execution state.

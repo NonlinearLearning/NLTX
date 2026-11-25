@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>Entity declaration only; contains no planner, context, world or service.</summary>
 public readonly record struct AiComponent {

@@ -4,14 +4,14 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Ai;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Movement;
-using Terraria.Physics;
-using Terraria.Relationships;
+using Terraria.Share.Ai;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Movement;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>
 /// Converts validated shared AI output into NPC behavior state and one-step movement intents.
@@ -19,6 +19,11 @@ namespace Terraria.Npc;
 /// <remarks>
 /// This adapter is not an NPC AI engine. It never writes location, velocity, life, attributes or
 /// Buff state; those remain owned by spatial, combat, attribute and Buff systems.
+/// <para>
+/// AiBehaviorSelectionComponent stays in the query filter as part of the composition contract: an
+/// entity opts into NPC AI by carrying it, so the archetype remains the admission gate even though
+/// this adapter reads no field from it.
+/// </para>
 /// </remarks>
 public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickContext>
 {
@@ -32,7 +37,7 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
       IReadOnlyList<NpcAiIntent>>? _manualCalculator;
   private readonly IAiSnapshotProvider<ArchEntity> _snapshots;
   private readonly IEntityRuntimeHandleResolver _runtimeHandles;
-  private readonly CombatAttackDefinitionCatalog _attackDefinitions;
+  private readonly CombatAttackCatalog _attackDefinitions;
   private readonly QueryDescription _query;
 
   public NpcAiIntentAdapter(
@@ -40,7 +45,8 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
       AiEntitySystem<ArchEntity, NpcAiIntent> ai,
       IAiSnapshotProvider<ArchEntity> snapshots,
       IEntityRuntimeHandleResolver runtimeHandles,
-      CombatAttackDefinitionCatalog attackDefinitions)
+      CombatAttackCatalog attackDefinitions,
+      NpcAiCatalog catalog)
       : this(
           world,
           ai ?? throw new ArgumentNullException(nameof(ai)),
@@ -50,6 +56,14 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
           manualRequirements: null,
           manualCalculator: null)
   {
+    ArgumentNullException.ThrowIfNull(catalog);
+    // 提交表必须覆盖每个 kind 且只写允许的组件；声明说能发的 kind 必须都有行。
+    NpcAiIntentCommitTable.EnsureComplete();
+    foreach (NpcAiBehaviorDeclaration declaration in catalog.Declarations)
+    {
+      NpcAiIntentCommitTable.EnsureDispatches(
+          declaration.Emits, declaration.Behavior.BehaviorType);
+    }
   }
 
   /// <summary>Creates the NPC adapter with a direct calculator instead of the shared AI runtime.</summary>
@@ -57,7 +71,7 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
       ArchWorld world,
       IAiSnapshotProvider<ArchEntity> snapshots,
       IEntityRuntimeHandleResolver runtimeHandles,
-      CombatAttackDefinitionCatalog attackDefinitions,
+      CombatAttackCatalog attackDefinitions,
       AiRequirements manualRequirements,
       Func<
           AiComponent,
@@ -81,7 +95,7 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
       AiEntitySystem<ArchEntity, NpcAiIntent>? ai,
       IAiSnapshotProvider<ArchEntity> snapshots,
       IEntityRuntimeHandleResolver runtimeHandles,
-      CombatAttackDefinitionCatalog attackDefinitions,
+      CombatAttackCatalog attackDefinitions,
       AiRequirements? manualRequirements,
       Func<
           AiComponent,
@@ -140,7 +154,6 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
         in _query,
         (ArchEntity entity,
             ref AiComponent aiComponent,
-            ref AiBehaviorSelectionComponent behavior,
             ref NpcBehaviorStateComponent state,
             ref MovementIntent movementIntent) =>
         {
@@ -176,104 +189,19 @@ public sealed class NpcAiIntentAdapter : BaseSystem<ArchWorld, EcsServerTickCont
           ArgumentNullException.ThrowIfNull(intents);
           foreach (NpcAiIntent intent in intents)
           {
-            ApplyIntent(
+            // 提交目标与写法都来自表：这里没有 switch，新增 kind 不可能绕过构造期校验。
+            NpcAiIntentCommit commit = NpcAiIntentCommitTable.Get(intent.Kind);
+            NpcAiCommitContext commitContext = new(
                 entity,
                 entityHandle,
                 tick,
-                intent,
                 attackIntents,
                 movementIntents,
+                _runtimeHandles,
+                _attackDefinitions,
                 ref state);
+            commit.Handler(ref commitContext, in intent);
           }
         });
   }
-
-  private void ApplyIntent(
-      ArchEntity entity,
-      EntityRuntimeHandle entityHandle,
-      long tick,
-      NpcAiIntent intent,
-      CombatAttackIntentQueueComponent attackIntents,
-      MovementIntentRequestQueueComponent movementIntents,
-      ref NpcBehaviorStateComponent state)
-  {
-    switch (intent.Kind)
-    {
-      case NpcAiIntentKind.SetBehaviorState:
-        state = state.WithDecision(
-            intent.Phase,
-            tick,
-            state.DecisionCooldown,
-            intent.ActionPhase,
-            intent.StateSlot0,
-            intent.StateSlot1);
-        break;
-      case NpcAiIntentKind.BeginCombatAction:
-        state = state.WithDecision(
-            intent.Phase,
-            tick,
-            state.DecisionCooldown,
-            intent.ActionPhase,
-            intent.StateSlot0,
-            intent.StateSlot1);
-        if (intent.Phase == NpcBehaviorPhase.Attack)
-        {
-          TryQueueAttack(entity, tick, intent, attackIntents);
-        }
-        break;
-      case NpcAiIntentKind.CancelCombatAction:
-        state = state.WithDecision(
-            intent.Phase,
-            tick,
-            state.DecisionCooldown,
-            intent.ActionPhase,
-            intent.StateSlot0,
-            intent.StateSlot1);
-        break;
-      case NpcAiIntentKind.Move:
-        // MovementIntent 归 Movement 域所有：这里只提交意图。
-        movementIntents.Enqueue(new MovementIntentRequest(
-            entityHandle,
-            new MovementIntent(
-                intent.DesiredVelocity,
-                tick,
-                jumpRequested: intent.JumpRequested,
-                source: MovementIntentSource.Ai,
-                jumpSpeed: intent.JumpSpeed)));
-        break;
-      case NpcAiIntentKind.StopMovement:
-        movementIntents.Enqueue(new MovementIntentRequest(
-            entityHandle,
-            MovementIntent.Stop(tick)));
-        break;
-      default:
-        throw new ArgumentOutOfRangeException(nameof(intent.Kind));
-    }
-  }
-
-  private void TryQueueAttack(
-      ArchEntity source,
-      long tick,
-      NpcAiIntent intent,
-      CombatAttackIntentQueueComponent attackIntents)
-  {
-    if (!intent.AttackTarget.IsValid || intent.AttackDefinitionKey == 0 ||
-        !_attackDefinitions.TryGet(intent.AttackDefinitionKey, out CombatAttackDefinition? definition))
-    {
-      return;
-    }
-
-    if (!_runtimeHandles.TryGetHandle(source, out EntityRuntimeHandle sourceHandle))
-    {
-      return;
-    }
-
-    attackIntents.Enqueue(
-        sourceHandle,
-        intent.AttackTarget,
-        definition.Id,
-        tick,
-        DamageCause.NpcAttack);
-  }
-
 }

@@ -1,6 +1,6 @@
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>
 /// Action port. Unified AI implementations emit intents and read execution feedback.

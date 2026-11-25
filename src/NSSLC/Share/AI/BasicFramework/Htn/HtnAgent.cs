@@ -1,8 +1,8 @@
 using System;
-using Terraria.Ai.Htn.Contexts;
-using Terraria.Ai.Htn.PrimitiveTasks;
+using Terraria.Share.Ai.Htn.Contexts;
+using Terraria.Share.Ai.Htn.PrimitiveTasks;
 
-namespace Terraria.Ai.Htn;
+namespace Terraria.Share.Ai.Htn;
 
 /// <summary>Per-entity host. Domain, context and callbacks are used on one simulation thread.</summary>
 public sealed class HtnAgent<TContext> : IDisposable where TContext : BaseContext {

@@ -5,7 +5,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Ai.Goap.Core
+namespace Terraria.Share.Ai.Goap.Core
 {
     public interface INode
     {

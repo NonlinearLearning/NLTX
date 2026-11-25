@@ -4,7 +4,7 @@
 #nullable disable
 using System;
 
-namespace Terraria.Ai.Goap.Core
+namespace Terraria.Share.Ai.Goap.Core
 {
     public interface IConnectable
     {

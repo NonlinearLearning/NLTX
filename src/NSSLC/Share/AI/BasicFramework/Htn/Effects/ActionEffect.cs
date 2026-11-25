@@ -4,7 +4,7 @@
 
 using System;
 
-namespace Terraria.Ai.Htn.Effects
+namespace Terraria.Share.Ai.Htn.Effects
 {
     public class ActionEffect<T> : IEffect where T : IContext
     {

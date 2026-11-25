@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Terraria.Ai.Htn.Debug;
-using Terraria.Ai.Htn.Factory;
+using Terraria.Share.Ai.Htn.Debug;
+using Terraria.Share.Ai.Htn.Factory;
 
-namespace Terraria.Ai.Htn.Contexts;
+namespace Terraria.Share.Ai.Htn.Contexts;
 
 /// <summary>Named state access over the upstream world-state stack and rollback mechanism.</summary>
 public abstract class EnumContext<TState> : BaseContext where TState : struct, Enum {

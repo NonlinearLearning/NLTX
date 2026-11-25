@@ -2,9 +2,9 @@
 // Copyright (c) 2019 Pål Trefall. MIT license: LICENSE.txt.
 #nullable disable
 
-using Terraria.Ai.Htn.Factory;
+using Terraria.Share.Ai.Htn.Factory;
 
-namespace Terraria.Ai.Htn
+namespace Terraria.Share.Ai.Htn
 {
     /// <summary>
     ///     A simple domain builder for easy use when one just need the core functionality

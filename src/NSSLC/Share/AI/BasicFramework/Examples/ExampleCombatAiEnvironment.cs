@@ -1,8 +1,8 @@
 using System;
 using System.Numerics;
-using Terraria.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Core;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>
 /// GOAP environment that only reads copied inputs and emits ExampleAiIntent values.

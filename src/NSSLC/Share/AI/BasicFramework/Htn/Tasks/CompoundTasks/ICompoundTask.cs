@@ -5,7 +5,7 @@
 
 using System.Collections.Generic;
 
-namespace Terraria.Ai.Htn.Compounds
+namespace Terraria.Share.Ai.Htn.Compounds
 {
     public interface ICompoundTask : ITask
     {

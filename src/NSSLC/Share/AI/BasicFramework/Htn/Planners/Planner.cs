@@ -4,10 +4,10 @@
 
 using System;
 using System.Collections.Generic;
-using Terraria.Ai.Htn.Compounds;
-using Terraria.Ai.Htn.PrimitiveTasks;
+using Terraria.Share.Ai.Htn.Compounds;
+using Terraria.Share.Ai.Htn.PrimitiveTasks;
 
-namespace Terraria.Ai.Htn
+namespace Terraria.Share.Ai.Htn
 {
     /// <summary>
     ///     A planner is a responsible for handling the management of finding plans in a domain, replan when the state of the

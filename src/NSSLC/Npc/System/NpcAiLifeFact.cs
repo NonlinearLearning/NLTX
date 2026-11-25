@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>Detached health values used by NPC behaviors that change with damage taken.</summary>
 public readonly record struct NpcAiLifeFact

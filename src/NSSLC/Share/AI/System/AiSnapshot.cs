@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Ai;
+namespace Terraria.Share.Ai;
 
 /// <summary>Immutable copies of explicit inputs, indexed by their exact component type.</summary>
 public sealed class AiSnapshot {

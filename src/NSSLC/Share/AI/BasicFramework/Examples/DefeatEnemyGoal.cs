@@ -1,7 +1,7 @@
-using Terraria.Ai.Goap.Core;
-using Terraria.Ai.Goap.Runtime;
+using Terraria.Share.Ai.Goap.Core;
+using Terraria.Share.Ai.Goap.Runtime;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 public sealed class DefeatEnemyGoal : GoalBase {
   public DefeatEnemyGoal()

@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Terraria.Ai.Examples;
+namespace Terraria.Share.Ai.Examples;
 
 /// <summary>
 /// Shared HTN/GOAP output. Value is a jump direction or destination, depending on Kind.

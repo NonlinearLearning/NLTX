@@ -1,7 +1,7 @@
 using System.Collections.Generic;
-using Terraria.Ai;
+using Terraria.Share.Ai;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>
 /// Ordinary type-1 subset of the original AI_001_Slimes behavior.
@@ -12,16 +12,15 @@ namespace Terraria.Npc;
 /// </summary>
 public sealed class SlimeAiBehavior : AiBehavior<NpcAiIntent>
 {
-  private static readonly AiRequirements Requirements = AiRequirements.Empty
-      .Require<NpcAiMovementFact>()
-      .Require<NpcAiTargetFact>()
-      .Require<NpcAiLifeFact>()
-      .Require<NpcAiWorldFact>();
   private float _jumpTimer = -100f;
   private float _direction = 1f;
   private bool _initialized;
 
-  public SlimeAiBehavior() : base(Requirements)
+  /// <summary>
+  /// Creates one runtime. The read contract comes from the composition-root declaration, so this
+  /// behavior cannot disagree with what the catalog publishes.
+  /// </summary>
+  public SlimeAiBehavior(AiRequirements requirements) : base(requirements)
   {
   }
 

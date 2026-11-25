@@ -4,11 +4,11 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Npc;
+namespace Terraria.Unshared.Npc;
 
 /// <summary>Consumes every NPC-owned Combat result without a single-result entity slot.</summary>
 public sealed class NpcCombatResultSystem : BaseSystem<ArchWorld, EcsServerTickContext>

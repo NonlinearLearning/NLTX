@@ -3,10 +3,10 @@
 #nullable disable
 
 using System.Collections.Generic;
-using Terraria.Ai.Htn.Compounds;
-using Terraria.Ai.Htn.Conditions;
+using Terraria.Share.Ai.Htn.Compounds;
+using Terraria.Share.Ai.Htn.Conditions;
 
-namespace Terraria.Ai.Htn
+namespace Terraria.Share.Ai.Htn
 {
     public interface ITask
     {
