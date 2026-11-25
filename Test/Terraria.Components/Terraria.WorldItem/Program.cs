@@ -38,7 +38,7 @@ SessionEpoch actor = SessionEpoch.Create(7);
 Vector2 position = new(10f, 20f);
 Vector2 velocity = new(1f, -1f);
 
-WorldItemStore store = new();
+ItemStore store = new();
 
 // --- 1. 已知类型创建成功，且身份进入共享 ItemStack ---
 bool created = store.TryCreate(
@@ -48,7 +48,7 @@ bool created = store.TryCreate(
     position,
     velocity,
     reservedFor: null,
-    out WorldItemState torch);
+    out ItemState torch);
 Check("create-known-applied", created, $"created={created}");
 
 Check(
@@ -61,10 +61,10 @@ Check(
     ItemIdRules.ToNetworkType(torch.Item.ItemId) == 8,
     $"itemType={ItemIdRules.ToNetworkType(torch.Item.ItemId)}（应为 8）");
 
-IReadOnlyList<WorldItemMutation> spawnMutations = store.DrainMutations();
+IReadOnlyList<ItemMutation> spawnMutations = store.DrainMutations();
 Check(
     "spawn-mutation-kind",
-    spawnMutations.Count == 1 && spawnMutations[0].Kind == WorldItemChangeKind.Spawn,
+    spawnMutations.Count == 1 && spawnMutations[0].Kind == ItemChangeKind.Spawn,
     $"count={spawnMutations.Count} kind={(spawnMutations.Count > 0 ? spawnMutations[0].Kind.ToString() : "none")}");
 
 // --- 2. 未知 / 非法类型在入口被拒 ---
@@ -108,7 +108,7 @@ Check(
 
 Check(
     "update-applied",
-    store.TryUpdate(slot, actor, 8, 4, 3, position, velocity, out WorldItemState? updated) &&
+    store.TryUpdate(slot, actor, 8, 4, 3, position, velocity, out ItemState? updated) &&
         updated is not null && updated.Item.Quantity == 4,
     $"quantity={(updated is null ? -1 : updated.Item.Quantity)}");
 
@@ -121,58 +121,58 @@ bool retired = store.TryUpdate(
     prefix: 0,
     position,
     velocity,
-    out WorldItemState? retiredState);
+    out ItemState? retiredState);
 Check(
     "update-zero-stack-retires",
     retired && retiredState is not null && retiredState.Item.IsEmpty,
     $"retired={retired} isEmpty={(retiredState is null ? false : retiredState.Item.IsEmpty)}");
 
 bool sawRetire = false;
-foreach (WorldItemMutation mutation in store.DrainMutations())
+foreach (ItemMutation mutation in store.DrainMutations())
 {
-  sawRetire |= mutation.Kind == WorldItemChangeKind.Retire && mutation.Item.Item.IsEmpty;
+  sawRetire |= mutation.Kind == ItemChangeKind.Retire && mutation.Item.Item.IsEmpty;
 }
 Check("retire-mutation-carries-empty-item", sawRetire, "Retire 变更携带空 ItemStack");
 
 Check(
     "retired-slot-is-free",
-    store.TryCreate(ItemIdRules.ToNetworkType(ItemId.Gel), 2, 0, position, velocity, null, out WorldItemState gel) &&
+    store.TryCreate(ItemIdRules.ToNetworkType(ItemId.Gel), 2, 0, position, velocity, null, out ItemState gel) &&
         gel.Slot == slot,
     $"重新占用槽位 {slot}");
 
 // --- 5. 直接退役同样产生空 ItemStack ---
-bool directRetire = store.TryRetire(gel.Slot, actor, out WorldItemState? gone);
+bool directRetire = store.TryRetire(gel.Slot, actor, out ItemState? gone);
 Check(
     "direct-retire-yields-empty-item",
     directRetire && gone is not null && gone.Item.IsEmpty,
     $"retired={directRetire} isEmpty={(gone is null ? false : gone.Item.IsEmpty)}");
 
 // --- 6. 世界物品 tick 的纯规则（Version4 WorldItem.MoveInWorld / TryCombiningIntoNearbyItems） ---
-Vector2 airGravity = WorldItemMotionSolver.Integrate(Vector2.Zero, WorldItemMotionProfile.Air);
+Vector2 airGravity = ItemMotionSolver.Integrate(Vector2.Zero, ItemMotionProfile.Air);
 Check(
     "motion-air-gravity",
     airGravity == new Vector2(0f, 0.1f),
     $"velocity={airGravity}（Version4 每 tick +0.1）");
 
-Vector2 fallClamp = WorldItemMotionSolver.Integrate(new Vector2(1f, 7f), WorldItemMotionProfile.Air);
+Vector2 fallClamp = ItemMotionSolver.Integrate(new Vector2(1f, 7f), ItemMotionProfile.Air);
 Check("motion-air-fall-clamp", fallClamp.Y == 7f, $"velocity.Y={fallClamp.Y}（上限 7）");
 
-Vector2 deadZone = WorldItemMotionSolver.Integrate(new Vector2(0.05f, 0f), WorldItemMotionProfile.Air);
+Vector2 deadZone = ItemMotionSolver.Integrate(new Vector2(0.05f, 0f), ItemMotionProfile.Air);
 Check("motion-horizontal-dead-zone", deadZone.X == 0f, $"velocity.X={deadZone.X}（±0.1 内归零）");
 
 Check(
     "motion-profile-shimmer",
-    WorldItemMotionSolver.ProfileFor(LiquidContactFlags.Shimmer) == WorldItemMotionProfile.Shimmer &&
-        WorldItemMotionSolver.ProfileFor(LiquidContactFlags.Honey) == WorldItemMotionProfile.Honey,
+    ItemMotionSolver.ProfileFor(LiquidContactFlags.Shimmer) == ItemMotionProfile.Shimmer &&
+        ItemMotionSolver.ProfileFor(LiquidContactFlags.Honey) == ItemMotionProfile.Honey,
     "微光 0.065/4、蜂蜜 0.05/3 优先于水");
 
 Check(
     "motion-liquid-half-speed",
-    WorldItemMotionSolver.ToDisplacement(new Vector2(2f, 2f), WorldItemMotionProfile.Water) ==
+    ItemMotionSolver.ToDisplacement(new Vector2(2f, 2f), ItemMotionProfile.Water) ==
         new Vector2(1f, 1f),
     "水下位移按 0.5 缩放");
 
-WorldItemState survivor = new(
+ItemState survivor = new(
     0,
     new ItemStack(ItemId.Gel, 5),
     new Vector2(0f, 0f),
@@ -181,22 +181,22 @@ WorldItemState survivor = new(
     1);
 Check(
     "merge-amount",
-    WorldItemMergeRules.MergeAmount(survivor, survivor with { Slot = 1, Position = new Vector2(10f, 0f) }, 99) == 5,
+    ItemMergeRules.MergeAmount(survivor, survivor with { Slot = 1, Position = new Vector2(10f, 0f) }, 99) == 5,
     "同身份 10 像素内合并 5");
 Check(
     "merge-distance-limit",
-    WorldItemMergeRules.MergeAmount(survivor, survivor with { Slot = 1, Position = new Vector2(31f, 0f) }, 99) == 0,
+    ItemMergeRules.MergeAmount(survivor, survivor with { Slot = 1, Position = new Vector2(31f, 0f) }, 99) == 0,
     "曼哈顿距离 31 > 30 不合并");
 Check(
     "merge-requires-same-prefix",
-    WorldItemMergeRules.MergeAmount(
+    ItemMergeRules.MergeAmount(
         survivor,
         survivor with { Slot = 1, Item = new ItemStack(ItemId.Gel, 5, 2) },
         99) == 0,
     "前缀不同不合并");
 Check(
     "merge-full-stack-rejected",
-    WorldItemMergeRules.MergeAmount(
+    ItemMergeRules.MergeAmount(
         survivor with { Item = new ItemStack(ItemId.Gel, 99) },
         survivor with { Slot = 1 },
         99) == 0,
@@ -204,25 +204,25 @@ Check(
 
 Check(
     "pickup-in-range",
-    WorldItemPickupRules.IsWithinGrabRange(
+    ItemPickupRules.IsWithinGrabRange(
         new Vector2(100f, 100f),
         new Vector2(16f, 16f),
         new Vector2(100f, 96f),
         new Vector2(16f, 32f),
-        WorldItemPickupRules.DefaultGrabRange),
+        ItemPickupRules.DefaultGrabRange),
     "物品外扩 42 像素后与玩家碰撞体重叠");
 Check(
     "pickup-out-of-range",
-    !WorldItemPickupRules.IsWithinGrabRange(
+    !ItemPickupRules.IsWithinGrabRange(
         new Vector2(1000f, 100f),
         new Vector2(16f, 16f),
         new Vector2(100f, 96f),
         new Vector2(16f, 32f),
-        WorldItemPickupRules.DefaultGrabRange),
+        ItemPickupRules.DefaultGrabRange),
     "距离足够远时不判定可拾取");
 Check(
     "pickup-manhattan-cost",
-    WorldItemPickupRules.ManhattanCost(
+    ItemPickupRules.ManhattanCost(
         new Vector2(100f, 100f),
         new Vector2(16f, 16f),
         new Vector2(104f, 96f),
@@ -230,7 +230,7 @@ Check(
     "中心曼哈顿距离 8");
 
 // --- 7. 存储层的 tick 原语 ---
-WorldItemStore opsStore = new();
+ItemStore opsStore = new();
 opsStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Gel),
     5,
@@ -238,7 +238,7 @@ opsStore.TryCreate(
     new Vector2(10f, 10f),
     Vector2.Zero,
     reservedFor: null,
-    out WorldItemState first);
+    out ItemState first);
 opsStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Gel),
     4,
@@ -246,14 +246,14 @@ opsStore.TryCreate(
     new Vector2(20f, 10f),
     Vector2.Zero,
     reservedFor: null,
-    out WorldItemState second);
+    out ItemState second);
 opsStore.DrainMutations();
 
 bool motionWritten = opsStore.TrySetMotion(
     first.Slot,
     new Vector2(11f, 12f),
     new Vector2(0f, 1f),
-    out WorldItemState? movedItem);
+    out ItemState? movedItem);
 Check(
     "motion-write-does-not-emit-mutation",
     motionWritten && movedItem is not null && opsStore.DrainMutations().Count == 0,
@@ -263,8 +263,8 @@ bool combined = opsStore.TryCombineStacks(
     first.Slot,
     second.Slot,
     amount: 4,
-    out WorldItemState? combinedSurvivor,
-    out WorldItemState? combinedDrained);
+    out ItemState? combinedSurvivor,
+    out ItemState? combinedDrained);
 Check(
     "combine-adds-quantity",
     combined && combinedSurvivor is not null && combinedSurvivor.Item.Quantity == 9,
@@ -275,25 +275,25 @@ Check(
         !opsStore.TryGet(second.Slot, out _),
     "被合并的槽位清空");
 
-bool partialConsume = opsStore.TryConsume(first.Slot, default, quantity: 4, out WorldItemState? afterConsume);
+bool partialConsume = opsStore.TryConsume(first.Slot, default, quantity: 4, out ItemState? afterConsume);
 Check(
     "consume-partial",
     partialConsume && afterConsume is not null && afterConsume.Item.Quantity == 5,
     $"quantity={(afterConsume is null ? -1 : afterConsume.Item.Quantity)}");
 
-bool fullConsume = opsStore.TryConsume(first.Slot, default, quantity: 5, out WorldItemState? consumed);
+bool fullConsume = opsStore.TryConsume(first.Slot, default, quantity: 5, out ItemState? consumed);
 Check(
     "consume-retires-empty-slot",
     fullConsume && consumed is not null && !opsStore.TryGet(first.Slot, out _),
     "取空后槽位释放");
 
-WorldItemState[] snapshot = opsStore.SnapshotItems();
+ItemState[] snapshot = opsStore.SnapshotItems();
 Check("snapshot-is-sorted", snapshot.Length == 0 || snapshot[0].Slot <= snapshot[snapshot.Length - 1].Slot, $"count={snapshot.Length}");
 
 // --- 8. 集成：下落、落地与静止（无会话，不触发拾取） ---
 using ArchWorld fallWorld = ArchWorld.Create();
 WorldRuntime fallRuntime = BuildFloorRuntime(worldWidth: 30, worldHeight: 20, floorRow: 18);
-WorldItemStore fallStore = new();
+ItemStore fallStore = new();
 EntityRuntimeRegistry fallEntities = new(worldScope: 1);
 fallStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Gel),
@@ -302,9 +302,9 @@ fallStore.TryCreate(
     new Vector2(48f, 0f),
     Vector2.Zero,
     reservedFor: null,
-    out WorldItemState fallingItem);
+    out ItemState fallingItem);
 fallStore.DrainMutations();
-WorldItemTickSystem fallTick = new(
+ItemTickSystem fallTick = new(
     fallWorld,
     fallStore,
     fallRuntime,
@@ -318,7 +318,7 @@ for (int tick = 0; tick < 90; tick++)
 
 Check(
     "falling-item-rests-on-floor",
-    fallStore.TryGet(fallingItem.Slot, out WorldItemState? landed) &&
+    fallStore.TryGet(fallingItem.Slot, out ItemState? landed) &&
         landed is not null &&
         MathF.Abs(landed.Position.Y - 272f) < 0.01f &&
         landed.Velocity == Vector2.Zero,
@@ -336,7 +336,7 @@ fallStore.TryCreate(
     new Vector2(80f, 272f),
     Vector2.Zero,
     reservedFor: null,
-    out WorldItemState mergeLeft);
+    out ItemState mergeLeft);
 fallStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Gel),
     7,
@@ -344,12 +344,12 @@ fallStore.TryCreate(
     new Vector2(90f, 272f),
     Vector2.Zero,
     reservedFor: null,
-    out WorldItemState mergeRight);
+    out ItemState mergeRight);
 fallStore.DrainMutations();
 fallTick.Update(new EcsServerTickContext(fallWorld, 90, 1f / 60f));
 Check(
     "nearby-items-merge-same-tick",
-    fallStore.TryGet(mergeLeft.Slot, out WorldItemState? mergedLeft) &&
+    fallStore.TryGet(mergeLeft.Slot, out ItemState? mergedLeft) &&
         mergedLeft is not null &&
         mergedLeft.Item.Quantity == 12 &&
         !fallStore.TryGet(mergeRight.Slot, out _),
@@ -358,7 +358,7 @@ Check(
 // --- 10. 集成：玩家靠近时拾取并写入背包，余量留在世界 ---
 using ArchWorld pickupWorld = ArchWorld.Create();
 WorldRuntime pickupRuntime = BuildFloorRuntime(worldWidth: 30, worldHeight: 20, floorRow: 18);
-_ = pickupWorld.Create(new WorldItemRequestQueueComponent());
+_ = pickupWorld.Create(new ItemRequestQueueComponent());
 _ = pickupWorld.Create(new InventoryPickupRequestQueueComponent());
 SessionEpoch pickupEpoch = SessionEpoch.Create(11);
 CommunicationSessionComponent sessionComponent = new(pickupEpoch);
@@ -386,7 +386,7 @@ sessionComponent.BindPlayer(playerHandle);
 // 只有已激活（完成握手）的会话才会触发拾取，与"玩家已进入世界"一致。
 sessionComponent.TryAdvance(CommunicationSessionStage.Active);
 
-WorldItemStore pickupStore = new();
+ItemStore pickupStore = new();
 pickupStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Torch),
     5,
@@ -394,7 +394,7 @@ pickupStore.TryCreate(
     new Vector2(100f, 272f),
     Vector2.Zero,
     reservedFor: null,
-    out WorldItemState torchItem);
+    out ItemState torchItem);
 pickupStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Torch),
     120,
@@ -402,10 +402,10 @@ pickupStore.TryCreate(
     new Vector2(112f, 272f),
     Vector2.Zero,
     reservedFor: null,
-    out WorldItemState overflowItem);
+    out ItemState overflowItem);
 pickupStore.DrainMutations();
-InventorySystem inventories = new(pickupWorld, pickupDefinitions);
-WorldItemTickSystem pickupTick = new(
+InventorySystem inventories = new(pickupWorld, pickupDefinitions, pickupStore);
+ItemTickSystem pickupTick = new(
     pickupWorld,
     pickupStore,
     pickupRuntime,
@@ -413,7 +413,7 @@ WorldItemTickSystem pickupTick = new(
     new SessionPlayerSource(pickupWorld, pickupEntities),
     maximumStackSize: 99);
 InventoryPickupRequestSystem pickupRequests = new(pickupWorld, pickupEntities, inventories);
-WorldItemRequestSystem worldRequests = new(pickupWorld, pickupStore);
+ItemSystem worldRequests = new(pickupWorld, pickupStore);
 for (int tick = 0; tick < 3; tick++)
 {
   EcsServerTickContext pickupContext = new(pickupWorld, tick, 1f / 60f);
@@ -426,14 +426,27 @@ Check(
     "pickup-removes-world-item",
     !pickupStore.TryGet(torchItem.Slot, out _),
     "被拾取的槽位退役");
+bool TryReadSlot(InventoryComponent inventory, int index, ItemStore store, out ItemStack stack)
+{
+  stack = default;
+  if (!inventory.TryGetSlot(index, out InventorySlot slot) ||
+      slot.Content is not ItemContainerAddress address ||
+      !store.TryGetContainedStack(address, out ItemStack found))
+  {
+    return false;
+  }
+
+  stack = found;
+  return true;
+}
+
 Check(
     "pickup-fills-inventory",
-    playerInventory.TryGetSlot(0, out InventorySlot stockedSlot) &&
-        stockedSlot.Content is ItemStack storedTorches &&
+    TryReadSlot(playerInventory, 0, pickupStore, out ItemStack storedTorches) &&
         storedTorches.ItemId == ItemId.Torch &&
         storedTorches.Quantity == 99,
-    $"slot0={(playerInventory.TryGetSlot(0, out InventorySlot s) && s.Content is ItemStack c ? c.Quantity : -1)}（上限 99）");
-int overflowRemaining = pickupStore.TryGet(overflowItem.Slot, out WorldItemState? overflow) && overflow is not null
+    $"slot0={(TryReadSlot(playerInventory, 0, pickupStore, out ItemStack c) ? c.Quantity : -1)}（上限 99）");
+int overflowRemaining = pickupStore.TryGet(overflowItem.Slot, out ItemState? overflow) && overflow is not null
     ? overflow.Item.Quantity
     : 0;
 Check(
@@ -442,16 +455,16 @@ Check(
     $"世界剩余={overflowRemaining}（120 收下 99，另有 5 件已入包后余量应为 26）");
 
 bool sawPickupRetire = false;
-foreach (WorldItemMutation mutation in pickupStore.DrainMutations())
+foreach (ItemMutation mutation in pickupStore.DrainMutations())
 {
-  sawPickupRetire |= mutation.Kind == WorldItemChangeKind.Retire;
+  sawPickupRetire |= mutation.Kind == ItemChangeKind.Retire;
 }
 Check("pickup-emits-retire-fact", sawPickupRetire, "网络侧据此发送物品消失报文");
 
 // --- 11. 集成：失去支撑的物品离开世界底部后被清理 ---
 using ArchWorld voidWorld = ArchWorld.Create();
 WorldRuntime voidRuntime = new(30, 20);
-WorldItemStore voidStore = new();
+ItemStore voidStore = new();
 EntityRuntimeRegistry voidEntities = new(worldScope: 1);
 voidStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Gel),
@@ -460,8 +473,8 @@ voidStore.TryCreate(
     new Vector2(48f, 300f),
     new Vector2(0f, 7f),
     reservedFor: null,
-    out WorldItemState voidItem);
-WorldItemTickSystem voidTick = new(
+    out ItemState voidItem);
+ItemTickSystem voidTick = new(
     voidWorld,
     voidStore,
     voidRuntime,
@@ -485,7 +498,7 @@ Check(
 // 接进存档，必须先让这里变红，而不是等线上出现复制或丢失。
 using ArchWorld dualWorld = ArchWorld.Create();
 WorldRuntime dualRuntime = BuildFloorRuntime(worldWidth: 30, worldHeight: 20, floorRow: 18);
-_ = dualWorld.Create(new WorldItemRequestQueueComponent());
+_ = dualWorld.Create(new ItemRequestQueueComponent());
 _ = dualWorld.Create(new InventoryPickupRequestQueueComponent());
 SessionEpoch dualEpoch = SessionEpoch.Create(13);
 CommunicationSessionComponent dualSession = new(dualEpoch);
@@ -514,7 +527,7 @@ dualSession.TryAdvance(CommunicationSessionStage.Active);
 
 // 前缀非 0 才能证明"身份三元组整体过界"，而不只是数量对得上。
 const byte CarriedPrefix = 2;
-WorldItemStore dualStore = new();
+ItemStore dualStore = new();
 dualStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Gel),
     40,
@@ -522,10 +535,10 @@ dualStore.TryCreate(
     new Vector2(100f, 272f),
     Vector2.Zero,
     reservedFor: null,
-    out WorldItemState exclusiveItem);
+    out ItemState exclusiveItem);
 dualStore.DrainMutations();
-InventorySystem dualInventories = new(dualWorld, dualDefinitions);
-WorldItemTickSystem dualTick = new(
+InventorySystem dualInventories = new(dualWorld, dualDefinitions, dualStore);
+ItemTickSystem dualTick = new(
     dualWorld,
     dualStore,
     dualRuntime,
@@ -533,12 +546,12 @@ WorldItemTickSystem dualTick = new(
     new SessionPlayerSource(dualWorld, dualEntities),
     maximumStackSize: 99);
 InventoryPickupRequestSystem dualPickupRequests = new(dualWorld, dualEntities, dualInventories);
-WorldItemRequestSystem dualWorldRequests = new(dualWorld, dualStore);
+ItemSystem dualWorldRequests = new(dualWorld, dualStore);
 
-int WorldQuantity(WorldItemStore source)
+int WorldQuantity(ItemStore source)
 {
   int total = 0;
-  foreach (WorldItemState item in source.SnapshotItems())
+  foreach (ItemState item in source.SnapshotItems())
   {
     total += item.Item.Quantity;
   }
@@ -546,12 +559,13 @@ int WorldQuantity(WorldItemStore source)
   return total;
 }
 
-int InventoryQuantity(InventoryComponent inventory)
+int InventoryQuantity(InventoryComponent inventory, ItemStore store)
 {
   int total = 0;
   foreach (InventorySlot slot in inventory.Slots)
   {
-    if (slot.Content is ItemStack stack)
+    if (slot.Content is ItemContainerAddress address &&
+        store.TryGetContainedStack(address, out ItemStack stack))
     {
       total += stack.Quantity;
     }
@@ -561,7 +575,7 @@ int InventoryQuantity(InventoryComponent inventory)
 }
 
 int worldBefore = WorldQuantity(dualStore);
-int inventoryBefore = InventoryQuantity(dualInventory);
+int inventoryBefore = InventoryQuantity(dualInventory, dualStore);
 Check(
     "invariant-hosts-exclusive-before-pickup",
     worldBefore == 40 && inventoryBefore == 0,
@@ -576,21 +590,21 @@ for (int tick = 0; tick < 3; tick++)
 }
 
 int worldAfter = WorldQuantity(dualStore);
-int inventoryAfter = InventoryQuantity(dualInventory);
+int inventoryAfter = InventoryQuantity(dualInventory, dualStore);
 Check(
     "invariant-hosts-exclusive-after-pickup",
     worldAfter + inventoryAfter == worldBefore && worldAfter == 0 && inventoryAfter == 40,
     $"世界={worldAfter} 背包={inventoryAfter} 合计={worldAfter + inventoryAfter}（应为 0 / 40 / 40）");
 
-bool carried = dualInventory.TryGetSlot(0, out InventorySlot carriedSlot) &&
-    carriedSlot.Content is ItemStack carriedStack;
+bool carried = TryReadSlot(dualInventory, 0, dualStore, out ItemStack carriedStack) &&
+    dualInventory.TryGetSlot(0, out InventorySlot carriedSlot);
 Check(
     "invariant-payload-single-source",
-    carried && carriedSlot.Content is ItemStack bound &&
-        bound.ItemId == exclusiveItem.Item.ItemId &&
-        bound.Prefix == exclusiveItem.Item.Prefix &&
-        bound.Quantity == exclusiveItem.Item.Quantity,
-    $"过界三元组={(carriedSlot.Content is ItemStack s2 ? $"{s2.ItemId}/{s2.Quantity}/{s2.Prefix}" : "none")}；" +
+    carried &&
+        carriedStack.ItemId == exclusiveItem.Item.ItemId &&
+        carriedStack.Prefix == exclusiveItem.Item.Prefix &&
+        carriedStack.Quantity == exclusiveItem.Item.Quantity,
+    $"过界三元组={carriedStack.ItemId}/{carriedStack.Quantity}/{carriedStack.Prefix}；" +
         $"源头={exclusiveItem.Item.ItemId}/{exclusiveItem.Item.Quantity}/{exclusiveItem.Item.Prefix}");
 
 // INV-4：部分成交时世界余量必须等于"原量 − 实收"，且槽位不得被误退休。
@@ -600,7 +614,7 @@ Check(
 // GetDefinition 整堆拒绝，测不到部分路径。
 using ArchWorld partialWorld = ArchWorld.Create();
 WorldRuntime partialRuntime = BuildFloorRuntime(worldWidth: 30, worldHeight: 20, floorRow: 18);
-_ = partialWorld.Create(new WorldItemRequestQueueComponent());
+_ = partialWorld.Create(new ItemRequestQueueComponent());
 _ = partialWorld.Create(new InventoryPickupRequestQueueComponent());
 SessionEpoch partialEpoch = SessionEpoch.Create(17);
 CommunicationSessionComponent partialSession = new(partialEpoch);
@@ -626,7 +640,7 @@ partialWorld.Add(partialPlayer, partialInventory);
 partialEntities.Register(partialHandle, partialPlayer);
 partialSession.BindPlayer(partialHandle);
 partialSession.TryAdvance(CommunicationSessionStage.Active);
-WorldItemStore partialStore = new();
+ItemStore partialStore = new();
 partialStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Gel),
     40,
@@ -634,10 +648,10 @@ partialStore.TryCreate(
     new Vector2(100f, 272f),
     Vector2.Zero,
     reservedFor: null,
-    out WorldItemState partialItem);
+    out ItemState partialItem);
 partialStore.DrainMutations();
-InventorySystem partialInventories = new(partialWorld, partialDefinitions);
-WorldItemTickSystem partialTick = new(
+InventorySystem partialInventories = new(partialWorld, partialDefinitions, partialStore);
+ItemTickSystem partialTick = new(
     partialWorld,
     partialStore,
     partialRuntime,
@@ -645,7 +659,7 @@ WorldItemTickSystem partialTick = new(
     new SessionPlayerSource(partialWorld, partialEntities),
     maximumStackSize: 99);
 InventoryPickupRequestSystem partialRequests = new(partialWorld, partialEntities, partialInventories);
-WorldItemRequestSystem partialWorldRequests = new(partialWorld, partialStore);
+ItemSystem partialWorldRequests = new(partialWorld, partialStore);
 for (int tick = 0; tick < 3; tick++)
 {
   EcsServerTickContext partialContext = new(partialWorld, tick, 1f / 60f);
@@ -654,11 +668,11 @@ for (int tick = 0; tick < 3; tick++)
   partialWorldRequests.Update(partialContext);
 }
 
-int partialRemaining = partialStore.TryGet(partialItem.Slot, out WorldItemState? partialState) &&
+int partialRemaining = partialStore.TryGet(partialItem.Slot, out ItemState? partialState) &&
     partialState is not null
   ? partialState.Item.Quantity
   : 0;
-int partialAccepted = InventoryQuantity(partialInventory);
+int partialAccepted = InventoryQuantity(partialInventory, partialStore);
 Check(
     "invariant-transfer-conservation-partial",
     partialAccepted == 20 && partialRemaining == 40 - 20 && partialRemaining + partialAccepted == 40,
@@ -669,7 +683,7 @@ Check(
 // 因此这条断言同时记录了"超限世界堆会一直不可拾取"这一当前事实。
 using ArchWorld oversizedWorld = ArchWorld.Create();
 _ = oversizedWorld.Create(new InventoryPickupRequestQueueComponent());
-_ = oversizedWorld.Create(new WorldItemRequestQueueComponent());
+_ = oversizedWorld.Create(new ItemRequestQueueComponent());
 SessionEpoch oversizedEpoch = SessionEpoch.Create(19);
 CommunicationSessionComponent oversizedSession = new(oversizedEpoch);
 _ = oversizedWorld.Create(
@@ -694,7 +708,8 @@ oversizedWorld.Add(oversizedPlayer, oversizedInventory);
 oversizedEntities.Register(oversizedHandle, oversizedPlayer);
 oversizedSession.BindPlayer(oversizedHandle);
 oversizedSession.TryAdvance(CommunicationSessionStage.Active);
-InventorySystem oversizedInventories = new(oversizedWorld, oversizedDefinitions);
+ItemStore oversizedStore = new();
+InventorySystem oversizedInventories = new(oversizedWorld, oversizedDefinitions, oversizedStore);
 int oversizedBefore = 150;
 InventoryTransferResult oversizedResult = oversizedInventories.TryInsert(
     oversizedPlayer,
@@ -702,16 +717,16 @@ InventoryTransferResult oversizedResult = oversizedInventories.TryInsert(
 Check(
     "invariant-oversized-stack-rejected-whole",
     oversizedResult.Failure == InventoryTransferFailure.InvalidItemStack &&
-        InventoryQuantity(oversizedInventory) == 0,
-    $"failure={oversizedResult.Failure} 背包={InventoryQuantity(oversizedInventory)}（超定义上限整堆拒绝，不得部分入包）");
+        InventoryQuantity(oversizedInventory, oversizedStore) == 0,
+    $"failure={oversizedResult.Failure} 背包={InventoryQuantity(oversizedInventory, oversizedStore)}（超定义上限整堆拒绝，不得部分入包）");
 
 // INV-3：只读端口不得长出写入口。这是结构性守卫——单一写者规则一旦被破坏，
 // 通常是先给某个"查询"端口悄悄加一个 Create/Update/Consume 成员。
 string[] queryPortMethods = Array.ConvertAll(
-    typeof(IWorldItemQuery).GetMethods(),
+    typeof(IItemQuery).GetMethods(),
     static method => method.Name);
 string[] projectionPortMethods = Array.ConvertAll(
-    typeof(IWorldItemProjectionSource).GetMethods(),
+    typeof(IItemProjectionSource).GetMethods(),
     static method => method.Name);
 Array.Sort(queryPortMethods, StringComparer.Ordinal);
 Array.Sort(projectionPortMethods, StringComparer.Ordinal);
@@ -724,12 +739,12 @@ Check(
     $"查询端口=[{string.Join(',', queryPortMethods)}] 投影端口=[{string.Join(',', projectionPortMethods)}]");
 
 // INV-1 的结构面：世界槽的状态必须把物品身份**整体**放在 ItemStack 里，
-// 一旦有人把 type/stack/prefix 平铺回 WorldItemState，载荷就有第二份来源。
+// 一旦有人把 type/stack/prefix 平铺回 ItemState，载荷就有第二份来源。
 // 这里断的是"没有平铺"，不是"成员数量固定"——生命周期计数（P2）合法增加，
 // 但它们不得替代或复制 ItemStack 的三元组。
 string[] stateMembers = Array.FindAll(
     Array.ConvertAll(
-        typeof(WorldItemState).GetProperties(),
+        typeof(ItemState).GetProperties(),
         static property => property.Name),
     static name => name != "EqualityContract");
 string[] flattenedPayloadNames = ["Type", "Stack", "Prefix", "ItemType", "Quantity", "ItemId"];
@@ -747,14 +762,14 @@ Check(
 // 而不是某个把四元组拆开的新类型。
 Check(
     "invariant-world-state-item-property-is-item-stack",
-    typeof(WorldItemState).GetProperty("Item")?.PropertyType == typeof(ItemStack),
-    $"Item 属性类型={typeof(WorldItemState).GetProperty("Item")?.PropertyType.Name}");
+    typeof(ItemState).GetProperty("Item")?.PropertyType == typeof(ItemStack),
+    $"Item 属性类型={typeof(ItemState).GetProperty("Item")?.PropertyType.Name}");
 
 // INV-5：世界槽是进程内瞬态，不得出现任何存档型入口。
 string[] persistenceWords = ["Save", "Load", "Serialize", "Persist", "Export", "Import", "Read", "Write"];
 bool worldStoreHasNoPersistenceApi = true;
 string offendingMember = "none";
-foreach (System.Reflection.MethodInfo method in typeof(WorldItemStore).GetMethods(
+foreach (System.Reflection.MethodInfo method in typeof(ItemStore).GetMethods(
     System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Instance))
 {
   foreach (string word in persistenceWords)
@@ -785,7 +800,7 @@ Check(
 //   · timeSinceItemSpawned 每 tick 递增，上限 2147483547（WorldItem.cs:599-602）
 using ArchWorld delayWorld = ArchWorld.Create();
 WorldRuntime delayRuntime = BuildFloorRuntime(worldWidth: 30, worldHeight: 20, floorRow: 18);
-_ = delayWorld.Create(new WorldItemRequestQueueComponent());
+_ = delayWorld.Create(new ItemRequestQueueComponent());
 _ = delayWorld.Create(new InventoryPickupRequestQueueComponent());
 SessionEpoch delayEpoch = SessionEpoch.Create(23);
 CommunicationSessionComponent delaySession = new(delayEpoch);
@@ -811,7 +826,7 @@ delayWorld.Add(delayPlayer, delayInventory);
 delayEntities.Register(delayHandle, delayPlayer);
 delaySession.BindPlayer(delayHandle);
 delaySession.TryAdvance(CommunicationSessionStage.Active);
-WorldItemStore delayStore = new();
+ItemStore delayStore = new();
 delayStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Gel),
     5,
@@ -821,17 +836,17 @@ delayStore.TryCreate(
     reservedFor: null,
     noGrabDelay: 3,
     shimmered: false,
-    out WorldItemState delayedItem);
+    out ItemState delayedItem);
 delayStore.DrainMutations();
 Check(
     "no-grab-delay-blocks-pickup",
-    delayStore.TryGet(delayedItem.Slot, out WorldItemState? delayedLive) &&
+    delayStore.TryGet(delayedItem.Slot, out ItemState? delayedLive) &&
         delayedLive is not null &&
-        !WorldItemRules.CanBePickedUp(delayedLive),
+        !ItemRules.CanBePickedUp(delayedLive),
     $"noGrabDelay={(delayedLive is null ? -1 : delayedLive.NoGrabDelay)}（> 0 时不可拾取）");
 
-InventorySystem delayInventories = new(delayWorld, delayDefinitions);
-WorldItemTickSystem delayTick = new(
+InventorySystem delayInventories = new(delayWorld, delayDefinitions, delayStore);
+ItemTickSystem delayTick = new(
     delayWorld,
     delayStore,
     delayRuntime,
@@ -839,7 +854,7 @@ WorldItemTickSystem delayTick = new(
     new SessionPlayerSource(delayWorld, delayEntities),
     maximumStackSize: 99);
 InventoryPickupRequestSystem delayRequests = new(delayWorld, delayEntities, delayInventories);
-WorldItemRequestSystem delayWorldRequests = new(delayWorld, delayStore);
+ItemSystem delayWorldRequests = new(delayWorld, delayStore);
 void StepDelayTick(int tick)
 {
   EcsServerTickContext delayContext = new(delayWorld, tick, 1f / 60f);
@@ -855,25 +870,25 @@ for (int tick = 0; tick < 3; tick++)
   StepDelayTick(tick);
 }
 
-_ = delayStore.TryGet(delayedItem.Slot, out WorldItemState? duringDelay);
+_ = delayStore.TryGet(delayedItem.Slot, out ItemState? duringDelay);
 Check(
     "no-grab-delay-blocks-pickup-for-whole-window",
     duringDelay is not null &&
         duringDelay.NoGrabDelay == 0 &&
-        InventoryQuantity(delayInventory) == 0 &&
+        InventoryQuantity(delayInventory, delayStore) == 0 &&
         delayStore.TryGet(delayedItem.Slot, out _),
-    $"延迟窗口内 delay={duringDelay?.NoGrabDelay} 背包={InventoryQuantity(delayInventory)} 槽仍在={delayStore.TryGet(delayedItem.Slot, out _)}");
+    $"延迟窗口内 delay={duringDelay?.NoGrabDelay} 背包={InventoryQuantity(delayInventory, delayStore)} 槽仍在={delayStore.TryGet(delayedItem.Slot, out _)}");
 
 // 延迟归零后的下一 tick 才允许拾取——顺序与 Version4 一致（先判定后递减）。
 StepDelayTick(3);
 Check(
     "no-grab-delay-expires-then-pickup",
-    InventoryQuantity(delayInventory) == 5 &&
+    InventoryQuantity(delayInventory, delayStore) == 5 &&
         !delayStore.TryGet(delayedItem.Slot, out _),
-    $"延迟耗尽后背包={InventoryQuantity(delayInventory)} 槽已退役={!delayStore.TryGet(delayedItem.Slot, out _)}");
+    $"延迟耗尽后背包={InventoryQuantity(delayInventory, delayStore)} 槽已退役={!delayStore.TryGet(delayedItem.Slot, out _)}");
 
 // 计数推进：生成即从 0 开始，每 tick +1，延迟每 tick −1。
-WorldItemStore counterStore = new();
+ItemStore counterStore = new();
 counterStore.TryCreate(
     ItemIdRules.ToNetworkType(ItemId.Gel),
     1,
@@ -883,7 +898,7 @@ counterStore.TryCreate(
     reservedFor: null,
     noGrabDelay: 2,
     shimmered: false,
-    out WorldItemState counterItem);
+    out ItemState counterItem);
 Check(
     "lifecycle-counters-start-at-declared",
     counterItem.NoGrabDelay == 2 && counterItem.TimeSinceItemSpawned == 0,
@@ -893,7 +908,7 @@ for (int tick = 0; tick < 5; tick++)
   counterStore.TryAdvanceLifecycle(counterItem.Slot, out _);
 }
 
-_ = counterStore.TryGet(counterItem.Slot, out WorldItemState? counted);
+_ = counterStore.TryGet(counterItem.Slot, out ItemState? counted);
 Check(
     "lifecycle-counts-advance-per-tick",
     counted is not null && counted.NoGrabDelay == 0 && counted.TimeSinceItemSpawned == 5,
@@ -902,7 +917,7 @@ Check(
 // 合并判定必须区分微光产物：Version4 要求 shimmered 相同才合并。
 Check(
     "merge-requires-same-shimmer-state",
-    WorldItemMergeRules.MergeAmount(
+    ItemMergeRules.MergeAmount(
         survivor with { Slot = 1, Shimmered = true },
         survivor,
         99) == 0,
@@ -915,14 +930,14 @@ Check(
 //   · Create 的 Slot 是哨兵，宿主忽略它并自己分配；
 //   · 分配永远取最低空闲槽，不复用仍被占用的槽位。
 using ArchWorld sentinelWorld = ArchWorld.Create();
-_ = sentinelWorld.Create(new WorldItemRequestQueueComponent());
-WorldItemRequestQueueComponent sentinelQueue =
-    WorldItemRequestQueue.Require(sentinelWorld);
-WorldItemStore sentinelStore = new();
-WorldItemRequestSystem sentinelRequests = new(sentinelWorld, sentinelStore);
+_ = sentinelWorld.Create(new ItemRequestQueueComponent());
+ItemRequestQueueComponent sentinelQueue =
+    ItemRequestQueue.Require(sentinelWorld);
+ItemStore sentinelStore = new();
+ItemSystem sentinelRequests = new(sentinelWorld, sentinelStore);
 
-sentinelQueue.Enqueue(new WorldItemRequest(
-    WorldItemRequestKind.Create,
+sentinelQueue.Enqueue(new ItemRequest(
+    ItemRequestKind.Create,
     Slot: 400,
     Actor: actor,
     ItemType: ItemIdRules.ToNetworkType(ItemId.Gel),
@@ -932,15 +947,15 @@ sentinelQueue.Enqueue(new WorldItemRequest(
     Velocity: Vector2.Zero));
 sentinelRequests.Update(new EcsServerTickContext(sentinelWorld, 0, 1f / 60f));
 
-WorldItemState[] sentinelItems = sentinelStore.SnapshotItems();
+ItemState[] sentinelItems = sentinelStore.SnapshotItems();
 Check(
     "create-ignores-sentinel-slot",
     sentinelItems.Length == 1 && sentinelItems[0].Slot != 400,
     $"落点={(sentinelItems.Length == 1 ? sentinelItems[0].Slot : -1)}（哨兵 400 不得成为真实槽位）");
 
 // 分配必须取最低空闲槽，且不复用仍被占用的槽位。
-sentinelQueue.Enqueue(new WorldItemRequest(
-    WorldItemRequestKind.Create,
+sentinelQueue.Enqueue(new ItemRequest(
+    ItemRequestKind.Create,
     Slot: 400,
     Actor: actor,
     ItemType: ItemIdRules.ToNetworkType(ItemId.Gel),
@@ -950,7 +965,7 @@ sentinelQueue.Enqueue(new WorldItemRequest(
     Velocity: Vector2.Zero));
 sentinelRequests.Update(new EcsServerTickContext(sentinelWorld, 1, 1f / 60f));
 
-WorldItemState[] sentinelAfterSecond = sentinelStore.SnapshotItems();
+ItemState[] sentinelAfterSecond = sentinelStore.SnapshotItems();
 bool tookLowestThenNext = sentinelAfterSecond.Length == 2 &&
     sentinelAfterSecond[0].Slot == 0 &&
     sentinelAfterSecond[1].Slot == 1;
@@ -962,8 +977,8 @@ Check(
 // 退役中间槽后再建：必须回填最低空闲槽 0，而不是追加到 2。
 _ = sentinelStore.TryRetire(0, actor, out _);
 sentinelStore.DrainMutations();
-sentinelQueue.Enqueue(new WorldItemRequest(
-    WorldItemRequestKind.Create,
+sentinelQueue.Enqueue(new ItemRequest(
+    ItemRequestKind.Create,
     Slot: 400,
     Actor: actor,
     ItemType: ItemIdRules.ToNetworkType(ItemId.Gel),
@@ -973,13 +988,77 @@ sentinelQueue.Enqueue(new WorldItemRequest(
     Velocity: Vector2.Zero));
 sentinelRequests.Update(new EcsServerTickContext(sentinelWorld, 2, 1f / 60f));
 
-WorldItemState[] sentinelAfterRefill = sentinelStore.SnapshotItems();
+ItemState[] sentinelAfterRefill = sentinelStore.SnapshotItems();
 Check(
     "create-never-reuses-occupied-slot",
     sentinelAfterRefill.Length == 2 &&
         sentinelAfterRefill[0].Slot == 0 &&
         sentinelAfterRefill[1].Slot == 1,
     $"槽位=[{string.Join(',', Array.ConvertAll(sentinelAfterRefill, static item => item.Slot))}]（退役 0 后回填 0，1 不动）");
+
+// --- 15. 合并后的新不变量（INV-2 地址唯一 / INV-6 状态字段隔离） ---
+// 合并把"两个系统各管一种状态"换成"一条记录带状态判别"，因此多出两条必须可判定的边界：
+//   INV-2：一条记录同一时刻恰好一个地址，不存在既不在世界也不在容器的游离记录；
+//   INV-6：Embodied 专用字段只在 Presence == Embodied 时可读，Dormant 记录不携带它们。
+using ArchWorld presenceWorld = ArchWorld.Create();
+ItemStore presenceStore = new();
+presenceStore.TryCreate(
+    ItemIdRules.ToNetworkType(ItemId.Gel),
+    10,
+    0,
+    new Vector2(0f, 0f),
+    Vector2.Zero,
+    reservedFor: null,
+    out ItemState embodiedRecord);
+ItemContainerAddress dormantAddress = new(1, 0);
+presenceStore.TryStoreIntoContainer(dormantAddress, new ItemStack(ItemId.Gel, 4), out ItemState? dormantRecord);
+Check(
+    "invariant-address-uniqueness",
+    embodiedRecord.IsEmbodied && embodiedRecord.Container is null &&
+        dormantRecord is not null &&
+        !dormantRecord.IsEmbodied &&
+        dormantRecord.Container == dormantAddress &&
+        dormantRecord.Slot == -1,
+    $"Embodied=slot {embodiedRecord.Slot} container={embodiedRecord.Container}；" +
+        $"Dormant=slot {dormantRecord?.Slot} container={dormantRecord?.Container}");
+
+// 改址是原子的：Embodied → Dormant 一次提交内完成，不存在"两边都有"或"两边都没有"。
+presenceStore.DrainMutations();
+ItemContainerAddress pickupAddress = new(2, 0);
+bool transferred = presenceStore.TryTransferToContainer(
+    embodiedRecord.Slot,
+    actor,
+    pickupAddress,
+    quantity: 10,
+    out ItemState? afterTransferRemaining,
+    out ItemState? afterTransferStored);
+Check(
+    "invariant-transfer-is-atomic-relocation",
+    transferred &&
+        afterTransferStored is not null &&
+        afterTransferStored.Container == pickupAddress &&
+        afterTransferStored.Item.Quantity == 10 &&
+        !presenceStore.TryGet(embodiedRecord.Slot, out _) &&
+        presenceStore.TryGetContained(pickupAddress, out _) &&
+        presenceStore.WorldCount == 0 &&
+        presenceStore.ContainerCount == 2,
+    $"世界={presenceStore.WorldCount} 容器={presenceStore.ContainerCount} 转移量={afterTransferStored?.Item.Quantity}");
+
+Check(
+    "invariant-state-fields-isolated",
+    afterTransferStored is not null &&
+        !afterTransferStored.IsEmbodied &&
+        afterTransferStored.Position == Vector2.Zero &&
+        afterTransferStored.Velocity == Vector2.Zero &&
+        afterTransferStored.ReservedFor is null &&
+        afterTransferStored.NoGrabDelay == 0,
+    $"Dormant 记录不携带世界字段：position={afterTransferStored?.Position} velocity={afterTransferStored?.Velocity}");
+
+// 守恒：改址前后总量一致（INV-4 在合并后的形态）。
+Check(
+    "invariant-relocation-conserves-quantity",
+    presenceStore.TotalWorldQuantity() + presenceStore.TotalContainerQuantity() == 14,
+    $"世界={presenceStore.TotalWorldQuantity()} 容器={presenceStore.TotalContainerQuantity()}（4 + 10）");
 
 Console.WriteLine();
 if (failures == 0)

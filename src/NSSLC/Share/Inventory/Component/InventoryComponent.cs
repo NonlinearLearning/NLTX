@@ -65,17 +65,21 @@ public sealed class InventoryComponent {
   }
 
   /// <summary>
-  /// Reads the stack this inventory holds, or <c>null</c> when the held slot is unset, missing or
-  /// empty. This is the only way to get the handheld payload: it is the slot's own value.
+  /// Reads the slot this inventory holds, or <c>null</c> when the held slot is unset or missing.
   /// </summary>
-  public ItemStack? TryGetHeld() {
+  /// <remarks>
+  /// 手持只是"库存里的一个索引 + 对该槽的派生读取"（原版 <c>Player.HeldItem</c> 就是
+  /// <c>inventory[selectedItem]</c>）。合并为单一 Item 域后槽里只有地址，载荷在物品记录上，
+  /// 因此这里返回槽位本身，由调用方经 <c>InventorySystem</c> 读出数量与身份。
+  /// </remarks>
+  public InventorySlot? TryGetHeld() {
     return _held is HeldSlot held && TryGetSlot(held.Index, out InventorySlot slot)
-        ? slot.Content
+        ? slot
         : null;
   }
 
-  /// <summary>True when the held slot is set, present and nonempty.</summary>
-  public bool HasHeldItem => TryGetHeld() is not null;
+  /// <summary>True when the held slot is set, present and refers to a record.</summary>
+  public bool HasHeldItem => TryGetHeld() is InventorySlot slot && !slot.IsEmpty;
 
   /// <summary>Commits a held-slot change; the inventory owner is the only caller.</summary>
   internal void CommitHeld(HeldSlot? held) {

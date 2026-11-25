@@ -59,12 +59,13 @@ world.Add(player, new InventoryComponent(
 ]));
 registry.Register(playerHandle, player);
 
-InventorySystem inventories = new(world, itemDefinitions);
+ItemStore itemStore = new();
+InventorySystem inventories = new(world, itemDefinitions, itemStore);
 _ = inventories.TrySetSlotValue(player, 0, new ItemStack(ItemId.CopperBow, 1));
 _ = inventories.TrySetSlotValue(player, 1, new ItemStack(ItemId.WoodenArrow, 3));
 _ = inventories.TrySetSlotValue(player, 2, new ItemStack(ItemId.Torch, 50));
 
-PlayerItemUseSystem system = new(world, registry, useDefinitions, inventories);
+PlayerItemUseSystem system = new(world, registry, useDefinitions, inventories, itemStore);
 PlayerItemUseRequestQueueComponent requests = PlayerItemUseRequestQueue.Require(world);
 PlayerItemUseFactQueueComponent factQueue = PlayerItemUseFactQueue.Require(world);
 
@@ -210,7 +211,7 @@ if (failures == 0)
 Console.WriteLine($"FAIL: {failures} check(s) failed.");
 return 1;
 
-static ItemStack? GetStack(ArchWorld world, ArchEntity player, int slotIndex)
+ItemStack? GetStack(ArchWorld world, ArchEntity player, int slotIndex)
 {
   if (!world.Has<InventoryComponent>(player))
   {
@@ -219,7 +220,9 @@ static ItemStack? GetStack(ArchWorld world, ArchEntity player, int slotIndex)
 
   foreach (InventorySlot slot in world.Get<InventoryComponent>(player).Slots)
   {
-    if (slot.Definition.Index == slotIndex && slot.Content is ItemStack stack)
+    if (slot.Definition.Index == slotIndex &&
+        slot.Content is ItemContainerAddress address &&
+        itemStore.TryGetContainedStack(address, out ItemStack stack))
     {
       return stack;
     }

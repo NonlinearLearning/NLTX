@@ -3,23 +3,16 @@ using System.Numerics;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Unshared.Session;
 using Terraria.Share.Combat;
-using Terraria.Unshared.Session;
 using Terraria.Share.Entities;
-using Terraria.Unshared.Session;
 using Terraria.Share.Inventory;
-using Terraria.Unshared.Session;
 using Terraria.Share.Movement;
-using Terraria.Unshared.Session;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.Chat;
+using Terraria.Share.Items;
 using Terraria.Unshared.Player;
 using Terraria.Unshared.Session;
-using Terraria.Share.Relationships;
-using Terraria.Unshared.Session;
 using Terraria.Unshared.World;
-
-using Terraria.Unshared.Session;
-using Terraria.Unshared.Chat;
 
 namespace Terraria.Network;
 
@@ -48,9 +41,9 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
   private readonly ArchWorld _world;
   private readonly IEntityRuntimeResolver _runtimeResolver;
   private readonly CombatAttackCatalog _attackDefinitions;
-  private readonly IWorldItemQuery _worldItems;
+  private readonly IItemQuery _worldItems;
   private readonly GameCommunicationOptions _options;
-  private WorldItemRequestQueueComponent? _itemRequests;
+  private ItemRequestQueueComponent? _itemRequests;
   private PlayerInputRequestQueueComponent? _playerInputs;
   private MovementIntentRequestQueueComponent? _movementIntents;
   private ChatMessageRequestQueueComponent? _chatRequests;
@@ -59,7 +52,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
       ArchWorld world,
       IEntityRuntimeResolver runtimeResolver,
       CombatAttackCatalog attackDefinitions,
-      IWorldItemQuery worldItems,
+      IItemQuery worldItems,
       GameCommunicationOptions? options = null)
   {
     _world = world ?? throw new ArgumentNullException(nameof(world));
@@ -76,8 +69,8 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
   /// <see cref="World.Query"/> callback, so the queue must already exist — resolving it here keeps
   /// that resolution out of the session query.
   /// </summary>
-  private WorldItemRequestQueueComponent ItemRequests =>
-      _itemRequests ??= WorldItemRequestQueue.Require(_world);
+  private ItemRequestQueueComponent ItemRequests =>
+      _itemRequests ??= ItemRequestQueue.Require(_world);
 
   /// <summary>
   /// Player-scoped input request queue, resolved on first use. Packet handling runs inside a
@@ -415,8 +408,8 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
     {
       byte ownership = (byte)(stateFlags & 3);
       SessionEpoch? reservedFor = ownership is 1 or 2 ? session.Epoch : null;
-      ItemRequests.Enqueue(new WorldItemRequest(
-          WorldItemRequestKind.Create,
+      ItemRequests.Enqueue(new ItemRequest(
+          ItemRequestKind.Create,
           Slot: slot,
           Actor: session.Epoch,
           ItemType: itemType,
@@ -428,8 +421,8 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
       return Array.Empty<OutboundPacketIntent>();
     }
 
-    ItemRequests.Enqueue(new WorldItemRequest(
-        WorldItemRequestKind.Update,
+    ItemRequests.Enqueue(new ItemRequest(
+        ItemRequestKind.Update,
         Slot: slot,
         Actor: session.Epoch,
         ItemType: itemType,
@@ -452,8 +445,8 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
     int offset = 0;
     short slot = ReadInt16(payload, ref offset);
     _ = ReadByte(payload, ref offset);
-    ItemRequests.Enqueue(new WorldItemRequest(
-        WorldItemRequestKind.Release,
+    ItemRequests.Enqueue(new ItemRequest(
+        ItemRequestKind.Release,
         Slot: slot,
         Actor: session.Epoch));
     return Array.Empty<OutboundPacketIntent>();
@@ -471,13 +464,13 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
 
     int offset = 0;
     short slot = ReadInt16(payload, ref offset);
-    if (_world.Has<LocationComponent>(player) && _worldItems.TryGet(slot, out WorldItemState? item) &&
+    if (_world.Has<LocationComponent>(player) && _worldItems.TryGet(slot, out ItemState? item) &&
         item is not null && Vector2.Distance(
             _world.Get<LocationComponent>(player).Coordinates,
             item.Position) <= 256f)
     {
-      ItemRequests.Enqueue(new WorldItemRequest(
-          WorldItemRequestKind.Retire,
+      ItemRequests.Enqueue(new ItemRequest(
+          ItemRequestKind.Retire,
           Slot: slot,
           Actor: session.Epoch));
     }

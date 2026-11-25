@@ -3,19 +3,19 @@ using Arch.System;
 using ArchWorld = Arch.Core.World;
 using Terraria.Share.Entities;
 
-namespace Terraria.Unshared.World;
+namespace Terraria.Share.Items;
 
 /// <summary>Applies the world-item changes other domains requested at the Commit barrier.</summary>
 /// <remarks>
 /// Projection systems may enqueue intents, but this system is the sole owner that mutates the
-/// authoritative <see cref="WorldItemStore"/>. Requests emitted during Projection are therefore
+/// authoritative <see cref="ItemStore"/>. Requests emitted during Projection are therefore
 /// drained on the next tick's Commit pass.
 /// </remarks>
-public sealed class WorldItemRequestSystem : BaseSystem<ArchWorld, EcsServerTickContext>
+public sealed class ItemSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
-  private readonly WorldItemStore _items;
+  private readonly ItemStore _items;
 
-  public WorldItemRequestSystem(ArchWorld ecsWorld, WorldItemStore items)
+  public ItemSystem(ArchWorld ecsWorld, ItemStore items)
       : base(ecsWorld ?? throw new ArgumentNullException(nameof(ecsWorld)))
   {
     _items = items ?? throw new ArgumentNullException(nameof(items));
@@ -24,19 +24,19 @@ public sealed class WorldItemRequestSystem : BaseSystem<ArchWorld, EcsServerTick
   public override void Update(in EcsServerTickContext context)
   {
     // 在查询之外解析队列实体：Require 内部本身要跑一次查询。
-    WorldItemRequestQueueComponent queue = WorldItemRequestQueue.Require(World);
-    IReadOnlyList<WorldItemRequest> requests = queue.Drain();
+    ItemRequestQueueComponent queue = ItemRequestQueue.Require(World);
+    IReadOnlyList<ItemRequest> requests = queue.Drain();
     for (int index = 0; index < requests.Count; index++)
     {
       Apply(requests[index]);
     }
   }
 
-  private void Apply(in WorldItemRequest request)
+  private void Apply(in ItemRequest request)
   {
     switch (request.Kind)
     {
-      case WorldItemRequestKind.Create:
+      case ItemRequestKind.Create:
         _items.TryCreate(
             request.ItemType,
             request.Stack,
@@ -48,7 +48,7 @@ public sealed class WorldItemRequestSystem : BaseSystem<ArchWorld, EcsServerTick
             request.Shimmered,
             out _);
         break;
-      case WorldItemRequestKind.Update:
+      case ItemRequestKind.Update:
         _items.TryUpdate(
             request.Slot,
             request.Actor,
@@ -59,13 +59,13 @@ public sealed class WorldItemRequestSystem : BaseSystem<ArchWorld, EcsServerTick
             request.Velocity,
             out _);
         break;
-      case WorldItemRequestKind.Release:
+      case ItemRequestKind.Release:
         _items.TryRelease(request.Slot, request.Actor);
         break;
-      case WorldItemRequestKind.Retire:
+      case ItemRequestKind.Retire:
         _items.TryRetire(request.Slot, request.Actor, out _);
         break;
-      case WorldItemRequestKind.Consume:
+      case ItemRequestKind.Consume:
         _items.TryConsume(request.Slot, request.Actor, request.Stack, out _);
         break;
       default:

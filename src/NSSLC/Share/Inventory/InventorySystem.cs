@@ -10,15 +10,47 @@ namespace Terraria.Share.Inventory;
 /// Coordinates inventory mutations during the host's exclusive, synchronous commit phase.
 /// Expected rejections happen before writes. Runtime exceptions propagate to the host.
 /// </summary>
+/// <remarks>
+/// <para>
+/// 合并为单一 Item 域后，容器槽只存**指向物品记录的地址**，数量与身份都在记录上。
+/// 因此本系统不再持有任何载荷副本：每次读写都经过 <see cref="ItemStore"/>，
+/// 拾取因此变成"同一提交内的改址"，而不是两个存储之间的对账。
+/// </para>
+/// <para>
+/// 容器段用 <see cref="ContainerId"/> 作为宿主号。玩家库存的宿主号是玩家的实体 id 偏移，
+/// 银行/箱子等宿主按需分配——宿主号只需要在进程内唯一，不进入存档或协议。
+/// </para>
+/// </remarks>
 public sealed partial class InventorySystem {
   private readonly ArchWorld _world;
   private readonly ItemRegistry _definitions;
+  private readonly ItemStore _items;
 
-  public InventorySystem(ArchWorld world, ItemRegistry definitions) {
+  public InventorySystem(ArchWorld world, ItemRegistry definitions, ItemStore items) {
     ArgumentNullException.ThrowIfNull(world);
     ArgumentNullException.ThrowIfNull(definitions);
+    ArgumentNullException.ThrowIfNull(items);
     _world = world;
     _definitions = definitions;
+    _items = items;
+  }
+
+  /// <summary>Container host number of one entity's inventory.</summary>
+  /// <remarks>
+  /// 用实体 id 加一作为宿主号：0 保留给"没有宿主"，实体 id 在进程内唯一，因此槽地址不会撞车。
+  /// 这个编号只在运行时有效，不写进存档，也不出现在协议里。
+  /// </remarks>
+  public static int ContainerId(ArchEntity entity) {
+    return entity.Id + 1;
+  }
+
+  /// <summary>Reads the stack a slot refers to, or <c>null</c> when the slot is empty.</summary>
+  public ItemStack? ReadSlot(ArchEntity inventoryEntity, InventorySlot slot) {
+    if (slot.Content is not ItemContainerAddress address) {
+      return null;
+    }
+
+    return _items.TryGetContainedStack(address, out ItemStack stack) ? stack : null;
   }
 
   /// <summary>
@@ -45,7 +77,8 @@ public sealed partial class InventorySystem {
       return InventoryTransferResult.Rejected(failure);
     }
 
-    int inserted = PlanInsert(plan, stack, definition, stack.Quantity, targetSlotIndex);
+    int container = ContainerId(inventoryEntity);
+    int inserted = PlanInsert(plan, container, stack, definition, stack.Quantity, targetSlotIndex);
     if (inserted == 0) {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.NoCompatibleSlot);
     }
@@ -79,7 +112,9 @@ public sealed partial class InventorySystem {
     }
 
     InventorySlotDefinition definition = plan[position].Definition;
+    ItemContainerAddress address = new(ContainerId(inventoryEntity), slotIndex);
     if (stack.IsEmpty) {
+      _items.TryClearContainer(address, out _);
       plan[position] = new InventorySlot(definition, null);
       inventory.CommitSlots(plan);
       return InventoryTransferResult.Success(0);
@@ -98,7 +133,13 @@ public sealed partial class InventorySystem {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidQuantity);
     }
 
-    plan[position] = new InventorySlot(definition, stack);
+    // 先清掉旧记录再写新值：同一槽位只允许一条记录，地址唯一是硬约束。
+    _items.TryClearContainer(address, out _);
+    if (!_items.TryStoreIntoContainer(address, stack, out _)) {
+      return InventoryTransferResult.Rejected(InventoryTransferFailure.CommitFailed);
+    }
+
+    plan[position] = new InventorySlot(definition, address);
     inventory.CommitSlots(plan);
     return InventoryTransferResult.Success(stack.Quantity);
   }
@@ -136,11 +177,15 @@ public sealed partial class InventorySystem {
       return false;
     }
 
-    if (inventory.TryGetHeld() is not ItemStack held) {
+    if (inventory.TryGetHeld() is not InventorySlot held) {
       return false;
     }
 
-    stack = held;
+    if (ReadSlot(inventoryEntity, held) is not ItemStack heldStack) {
+      return false;
+    }
+
+    stack = heldStack;
     return true;
   }
 
@@ -160,15 +205,24 @@ public sealed partial class InventorySystem {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidSlot);
     }
 
-    if (slot.Content is not ItemStack stack || quantity <= 0 || quantity > stack.Quantity) {
+    if (slot.Content is not ItemContainerAddress address ||
+        ReadSlot(inventoryEntity, slot) is not ItemStack stack ||
+        quantity <= 0 || quantity > stack.Quantity) {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidQuantity);
     }
 
+    if (!_items.TryShrinkContainerStack(address, quantity, out _, out _)) {
+      return InventoryTransferResult.Rejected(InventoryTransferFailure.CommitFailed);
+    }
+
     InventorySlot[] plan = inventory.CaptureSlots();
-    PlanRemove(plan, slotIndex, stack, quantity);
-    ItemStack taken = stack.WithQuantity(quantity);
-    inventory.CommitSlots(plan);
-    removed = taken;
+    int position = FindPosition(plan, slotIndex);
+    if (quantity == stack.Quantity) {
+      plan[position] = new InventorySlot(plan[position].Definition, null);
+      inventory.CommitSlots(plan);
+    }
+
+    removed = stack.WithQuantity(quantity);
     return InventoryTransferResult.Success(quantity);
   }
 
@@ -205,7 +259,9 @@ public sealed partial class InventorySystem {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidSlot);
     }
 
-    if (sourceSlot.Content is not ItemStack stack || quantity <= 0 || quantity > stack.Quantity) {
+    if (sourceSlot.Content is not ItemContainerAddress sourceAddress ||
+        ReadSlot(sourceEntity, sourceSlot) is not ItemStack stack ||
+        quantity <= 0 || quantity > stack.Quantity) {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidQuantity);
     }
 
@@ -221,15 +277,23 @@ public sealed partial class InventorySystem {
       return InventoryTransferResult.Rejected(failure);
     }
 
-    PlanRemove(sourcePlan, sourceSlotIndex, stack, quantity);
-    if (PlanInsert(
-            targetPlan,
-            stack,
-            definition,
-            quantity,
-            targetSlotIndex,
-            sameInventory ? sourceSlotIndex : null) != quantity) {
+    int targetContainer = ContainerId(targetEntity);
+    int moved = PlanInsert(
+        targetPlan,
+        targetContainer,
+        stack,
+        definition,
+        quantity,
+        targetSlotIndex,
+        sameInventory ? sourceSlotIndex : null);
+    if (moved != quantity) {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.NoCompatibleSlot);
+    }
+
+    _items.TryShrinkContainerStack(sourceAddress, quantity, out _, out _);
+    if (quantity == stack.Quantity) {
+      int sourcePosition = FindPosition(sourcePlan, sourceSlotIndex);
+      sourcePlan[sourcePosition] = new InventorySlot(sourcePlan[sourcePosition].Definition, null);
     }
 
     source.CommitSlots(sourcePlan);
@@ -317,27 +381,22 @@ public sealed partial class InventorySystem {
     return -1;
   }
 
-  private static void PlanRemove(
+  /// <summary>
+  /// Plans an insertion across the slot table and writes the corresponding dormant records.
+  /// </summary>
+  /// <remarks>
+  /// 两遍扫描与原实现一致：先填同类未满的堆，再占用空槽。区别在于这里写入的是物品记录，
+  /// 槽位表只保存地址——因此"计划"与"记录"必须同时成立，任何一步失败都不提交槽位表。
+  /// </remarks>
+  private int PlanInsert(
       InventorySlot[] plan,
-      int slotIndex,
-      ItemStack stack,
-      int quantity) {
-    int position = FindPosition(plan, slotIndex);
-    ItemStack? remaining = quantity == stack.Quantity
-        ? null
-        : stack.WithQuantity(stack.Quantity - quantity);
-    plan[position] = new InventorySlot(plan[position].Definition, remaining);
-  }
-
-  private static int PlanInsert(
-      InventorySlot[] plan,
+      int container,
       ItemStack stack,
       Item definition,
       int quantity,
       int? targetSlotIndex,
       int? excludedSlotIndex = null) {
     int remaining = quantity;
-    // Fill compatible existing stacks before consuming empty slots.
     for (int pass = 0; pass < 2 && remaining > 0; pass++) {
       for (int position = 0; position < plan.Length && remaining > 0; position++) {
         InventorySlot slot = plan[position];
@@ -348,19 +407,30 @@ public sealed partial class InventorySystem {
           continue;
         }
 
-        if (slot.Content is ItemStack existing && !existing.CanStackWith(stack)) {
+        ItemContainerAddress address = new(container, slot.Definition.Index);
+        ItemStack? existing = _items.TryGetContainedStack(address, out ItemStack contained)
+            ? contained
+            : null;
+        if (existing is ItemStack present && !present.CanStackWith(stack)) {
           continue;
         }
 
-        int currentQuantity = slot.Content?.Quantity ?? 0;
+        int currentQuantity = existing?.Quantity ?? 0;
         int capacity = Math.Min(slot.Definition.MaxStackSize, definition.MaxStack) - currentQuantity;
         if (capacity <= 0) {
           continue;
         }
 
         int added = Math.Min(capacity, remaining);
-        ItemStack next = stack.WithQuantity(currentQuantity + added);
-        plan[position] = new InventorySlot(slot.Definition, next);
+        if (existing.HasValue) {
+          if (!_items.TryGrowContainerStack(address, added, out _)) {
+            continue;
+          }
+        } else if (!_items.TryStoreIntoContainer(address, stack.WithQuantity(added), out _)) {
+          continue;
+        }
+
+        plan[position] = new InventorySlot(slot.Definition, address);
         remaining -= added;
       }
     }

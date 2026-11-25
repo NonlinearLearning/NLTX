@@ -9,7 +9,7 @@ namespace Terraria.Share.Inventory;
 /// The World domain owns world items and the Inventory domain owns stacks. Pickup therefore runs
 /// as a request in this direction only: the inventory decides how many units it can accept and
 /// reports the accepted quantity back as a
-/// <see cref="Terraria.Unshared.World.WorldItemRequestKind.Consume"/> request.
+/// <see cref="Terraria.Share.Items.ItemRequestKind.Consume"/> request.
 /// </remarks>
 public readonly record struct InventoryPickupRequest(
     EntityRuntimeHandle Player,

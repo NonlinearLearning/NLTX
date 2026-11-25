@@ -1,10 +1,10 @@
 using System.Numerics;
 using Terraria.Unshared.Session;
 
-namespace Terraria.Unshared.World;
+namespace Terraria.Share.Items;
 
 /// <summary>Kind of world-item change another domain may request.</summary>
-public enum WorldItemRequestKind : byte
+public enum ItemRequestKind : byte
 {
   /// <summary>Occupy a free slot with a new item.</summary>
   Create,
@@ -18,7 +18,7 @@ public enum WorldItemRequestKind : byte
   /// <summary>Remove an item the actor owns.</summary>
   Retire,
 
-  /// <summary>Remove <see cref="WorldItemRequest.Stack"/> units the actor owns.</summary>
+  /// <summary>Remove <see cref="ItemRequest.Stack"/> units the actor owns.</summary>
   /// <remarks>
   /// Pickup reporting uses this kind: the inventory domain states how many units it accepted and
   /// the World domain removes exactly that many, so a partial pickup can never duplicate items.
@@ -29,11 +29,11 @@ public enum WorldItemRequestKind : byte
 /// <summary>One world-item change requested by another domain.</summary>
 /// <remarks>
 /// A request states intent only. The World domain validates it against
-/// <see cref="WorldItemRules"/> and the slot's current owner, so a requesting domain cannot write
+/// <see cref="ItemRules"/> and the slot's current owner, so a requesting domain cannot write
 /// authoritative item state even though it decides what to ask for.
 /// </remarks>
-public readonly record struct WorldItemRequest(
-    WorldItemRequestKind Kind,
+public readonly record struct ItemRequest(
+    ItemRequestKind Kind,
     short Slot,
     SessionEpoch Actor,
     int ItemType = 0,

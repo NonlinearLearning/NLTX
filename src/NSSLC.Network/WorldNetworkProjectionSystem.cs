@@ -5,6 +5,7 @@ using Arch.System;
 using ArchWorld = Arch.Core.World;
 using Terraria.Share.Entities;
 using Terraria.Unshared.Session;
+using Terraria.Share.Items;
 using Terraria.Unshared.World;
 
 
@@ -31,9 +32,9 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
   public const int DefaultMaximumTileMutationsPerTick = 128;
 
   private readonly IWorldProjectionSource _world;
-  private readonly IWorldItemProjectionSource _items;
+  private readonly IItemProjectionSource _items;
   private readonly int _maximumTileMutationsPerTick;
-  private WorldItemRequestQueueComponent? _itemRequests;
+  private ItemRequestQueueComponent? _itemRequests;
   private readonly IReadOnlyList<bool> _frameImportant;
   private readonly QueryDescription _sessionQuery = new QueryDescription().WithAll<
       CommunicationSessionComponent,
@@ -41,7 +42,7 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
   public WorldNetworkProjectionSystem(
       ArchWorld ecsWorld,
       IWorldProjectionSource world,
-      IWorldItemProjectionSource items,
+      IItemProjectionSource items,
       IReadOnlyList<bool> frameImportant,
       int maximumTileMutationsPerTick = DefaultMaximumTileMutationsPerTick)
       : base(ecsWorld ?? throw new ArgumentNullException(nameof(ecsWorld)))
@@ -59,8 +60,8 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
   /// World-scoped item request queue, resolved on first use so construction order never decides
   /// which instance a system observes.
   /// </summary>
-  private WorldItemRequestQueueComponent ItemRequests =>
-      _itemRequests ??= WorldItemRequestQueue.Require(World);
+  private ItemRequestQueueComponent ItemRequests =>
+      _itemRequests ??= ItemRequestQueue.Require(World);
 
   public override void Update(in EcsServerTickContext context)
   {
@@ -69,7 +70,7 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
     // sessions are connecting or synchronizing only creates an unbounded queue.
     IReadOnlyList<WorldMutation> drained =
         _world.DrainPendingMutations(_maximumTileMutationsPerTick);
-    IReadOnlyList<WorldItemMutation> itemMutations = _items.DrainMutations();
+    IReadOnlyList<ItemMutation> itemMutations = _items.DrainMutations();
 
     List<SessionEpoch> activeSessions = [];
     World.Query(
@@ -112,9 +113,9 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
       if (mutation.DropItemType > 0)
       {
         // 只表达意图：掉落物由 World 域在下一 tick 的 Commit 阶段生成；Projection
-        // 不直接触碰权威 WorldItemStore。
-        ItemRequests.Enqueue(new WorldItemRequest(
-            WorldItemRequestKind.Create,
+        // 不直接触碰权威 ItemStore。
+        ItemRequests.Enqueue(new ItemRequest(
+            ItemRequestKind.Create,
             Slot: -1,
             Actor: activeSessions[0],
             ItemType: mutation.DropItemType,
@@ -155,15 +156,15 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
 
           }
 
-          foreach (WorldItemMutation mutation in itemMutations)
+          foreach (ItemMutation mutation in itemMutations)
           {
             outbound.Enqueue(new OutboundPacketIntent(
                 [session.Epoch],
                 null,
                 mutation.Kind switch
                 {
-                  WorldItemChangeKind.Retire => SyncItemDespawnMessageId,
-                  WorldItemChangeKind.Ownership => ItemOwnerMessageId,
+                  ItemChangeKind.Retire => SyncItemDespawnMessageId,
+                  ItemChangeKind.Ownership => ItemOwnerMessageId,
                   _ => SyncItemMessageId
                 },
                 CreateItemPayload(mutation),
@@ -240,16 +241,16 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
     }
   }
 
-  private static byte[] CreateItemPayload(WorldItemMutation mutation)
+  private static byte[] CreateItemPayload(ItemMutation mutation)
   {
-    if (mutation.Kind == WorldItemChangeKind.Retire)
+    if (mutation.Kind == ItemChangeKind.Retire)
     {
       using var retired = new MemoryStream(capacity: 2);
       WriteInt16(retired, mutation.Item.Slot);
       return retired.ToArray();
     }
 
-    if (mutation.Kind == WorldItemChangeKind.Ownership)
+    if (mutation.Kind == ItemChangeKind.Ownership)
     {
       using var ownership = new MemoryStream(capacity: 24);
       WriteInt16(ownership, mutation.Item.Slot);

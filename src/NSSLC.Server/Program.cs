@@ -80,9 +80,9 @@ internal static class Program
             worldHeight,
             initialDayTime: loadedWorld.Environment.DayTime),
         new WorldTileStorageComponent(worldWidth, worldHeight));
-    WorldItemStore worldItems = new();
+    ItemStore worldItems = new();
     ItemRegistry itemDefinitions = BuildItemDefinitions();
-    InventorySystem inventories = new(ecsWorld, itemDefinitions);
+    InventorySystem inventories = new(ecsWorld, itemDefinitions, worldItems);
     WorldInteractionResult worldLoad = worldRuntime.Load(loadedWorld.Tiles);
     if (!worldLoad.Succeeded)
     {
@@ -178,7 +178,7 @@ internal static class Program
     // 发射意图队列：各域只声明"在哪朝哪射什么"，解析与生成归投射物域。
     _ = ecsWorld.Create(new EmissionQueueComponent());
     // 世界物品变更请求队列：跨域只表达意图，由 World 域自己执行。
-    _ = ecsWorld.Create(new WorldItemRequestQueueComponent());
+    _ = ecsWorld.Create(new ItemRequestQueueComponent());
     // 世界物品拾取请求队列：World 只提出"这件物品可以捡"，Inventory 决定能收下多少。
     _ = ecsWorld.Create(new InventoryPickupRequestQueueComponent());
     // 实体生成事实队列：实体生成域创建实体，Network 域分配客户端槽位。
@@ -620,7 +620,7 @@ internal static class Program
       ICommunicationSessionPlayerLifecycle playerLifecycle,
       WorldTickSystem worldTick,
       WorldInteractionSystem worldInteractions,
-      WorldItemStore worldItems,
+      ItemStore worldItems,
       InventorySystem inventories,
       NpcAiIntentAdapter npcAiAdapter,
       NpcAiOrdering npcAiOrdering,
@@ -668,11 +668,11 @@ internal static class Program
         EcsServerRegistrationKeys.ChatNetworkProjection,
         new ChatNetworkProjectionSystem(world, entities)));
     // 世界物品请求只在 Commit 阶段执行。Projection 可以表达掉落意图，但权威
-    // WorldItemStore 只能由这个 Commit owner 写入；投影产生的请求留到下一 tick。
+    // ItemStore 只能由这个 Commit owner 写入；投影产生的请求留到下一 tick。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Commit,
-        EcsServerRegistrationKeys.WorldItemRequestCommit,
-        new WorldItemRequestSystem(world, worldItems),
+        EcsServerRegistrationKeys.ItemRequestCommit,
+        new ItemSystem(world, worldItems),
         reason: "World-item requests mutate the authoritative store only at the Commit barrier."));
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Projection,
@@ -735,8 +735,8 @@ internal static class Program
     // 但拾取请求必须在同一 tick 的 Inventory 步骤之前入队。
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
-        EcsServerRegistrationKeys.WorldItemTick,
-        new WorldItemTickSystem(
+        EcsServerRegistrationKeys.ItemTick,
+        new ItemTickSystem(
             world,
             worldItems,
             worldRuntime,
@@ -750,7 +750,7 @@ internal static class Program
         EcsServerPhase.Simulation,
         EcsServerRegistrationKeys.InventoryPickupRequest,
         new InventoryPickupRequestSystem(world, entities, inventories),
-        after: [EcsServerRegistrationKeys.WorldItemTick],
+        after: [EcsServerRegistrationKeys.ItemTick],
         reason: "Inventory pickup consumes the world-item facts produced earlier in Simulation."));
     // 刷怪在移动求解之前跑：本 tick 创建的 NPC 从下一 tick 起由 AI 与空间求解驱动，
     // 避免在同一个 tick 里对新实体重复计算移动。
@@ -773,7 +773,7 @@ internal static class Program
     registrations.Add(new EcsServerSystemRegistration(
         EcsServerPhase.Simulation,
         EcsServerRegistrationKeys.PlayerItemUse,
-        new PlayerItemUseSystem(world, entities, itemUseDefinitions, inventories)));
+        new PlayerItemUseSystem(world, entities, itemUseDefinitions, inventories, worldItems)));
     // 射击接缝放在 Preparation 且排在生成之前：生成队列是"本 tick 内排空"的，
     // 生产方与排空方必须用同一个 tick 号，否则请求会落到一个永远不会被排空的 tick 上。
     // 代价是使用事实到弹体差一 tick（Simulation 产事实、下一 tick 的 Preparation 生成），

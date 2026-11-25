@@ -4,16 +4,16 @@ using System.Numerics;
 using Terraria.Unshared.Session;
 using Terraria.Share.Items;
 
-namespace Terraria.Unshared.World;
+namespace Terraria.Share.Items;
 
 /// <summary>
 /// Pure validation and slot arithmetic for world items.
 /// </summary>
 /// <remarks>
-/// <see cref="WorldItemStore" /> owns the table, lock, mutation queue and revision field; every
+/// <see cref="ItemStore" /> owns the table, lock, mutation queue and revision field; every
 /// decision about whether an item may exist, change or claim a slot is computed here.
 /// </remarks>
-public static class WorldItemRules
+public static class ItemRules
 {
   /// <summary>Version4 <c>WorldItem.timeSinceItemSpawned</c> stops incrementing at this value.</summary>
   public const int MaximumLifetimeCounter = 2147483547;
@@ -49,7 +49,7 @@ public static class WorldItemRules
   }
 
   /// <summary>True when the actor owns or does not contest the slot reservation.</summary>
-  public static bool CanMutate(WorldItemState item, SessionEpoch actor)
+  public static bool CanMutate(ItemState item, SessionEpoch actor)
   {
     ArgumentNullException.ThrowIfNull(item);
     return item.ReservedFor is null || item.ReservedFor == actor;
@@ -62,17 +62,17 @@ public static class WorldItemRules
   /// Version4 的门控在 <c>Player.GetItem(WorldItem, GetItemSettings)</c>：<c>noGrabDelay &gt; 0</c>
   /// 时直接返回原物品，连"能不能装下"都不再判断（`Player.cs:38653`）。
   /// </remarks>
-  public static bool CanBePickedUp(WorldItemState item)
+  public static bool CanBePickedUp(ItemState item)
   {
     ArgumentNullException.ThrowIfNull(item);
     return !item.Item.IsEmpty && item.NoGrabDelay <= 0;
   }
 
   /// <summary>Lowest unoccupied slot number, or -1 when the table is full.</summary>
-  public static short FindFreeSlot(IReadOnlyDictionary<short, WorldItemState> items)
+  public static short FindFreeSlot(IReadOnlyDictionary<short, ItemState> items)
   {
     ArgumentNullException.ThrowIfNull(items);
-    for (short slot = 0; slot < WorldItemStore.SlotCount; slot++)
+    for (short slot = 0; slot < ItemStore.SlotCount; slot++)
     {
       if (!items.ContainsKey(slot))
       {

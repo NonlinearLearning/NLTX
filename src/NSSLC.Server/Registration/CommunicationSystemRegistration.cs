@@ -5,7 +5,7 @@ using Terraria.Share.Combat;
 using Terraria.Network;
 using Terraria.Share.Entities;
 using Terraria.Share.Relationships;
-using Terraria.Unshared.World;
+using Terraria.Share.Items;
 
 namespace Terraria.Server;
 
@@ -26,7 +26,7 @@ public static class CommunicationSystemRegistration
       IEntityRuntimeResolver runtimeResolver,
       CombatAttackCatalog attackDefinitions,
       ICommunicationOutboundPort outbound,
-      IWorldItemQuery worldItems,
+      IItemQuery worldItems,
       GameCommunicationOptions? options = null,
       TerrariaProtocolOptions? protocolOptions = null,
       CommunicationSessionIngress? ingress = null,

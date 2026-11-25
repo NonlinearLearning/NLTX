@@ -3,19 +3,25 @@ using Terraria.Share.Items;
 
 namespace Terraria.Share.Inventory;
 
-/// <summary>A slot owns one value stack or nothing.</summary>
+/// <summary>A slot owns a reference to one item record, or nothing.</summary>
 /// <remarks>
-/// 容器宿主只承载载荷值。物品实体的身份引用（`EntityUuid`）已在
-/// [2026-11-23 执行计划](../../../../docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md)
-/// 的 P1-A 中移除：那条路径没有任何生产者，保留它等于允许同一物品在世界与容器两端各存一份权威。
-/// 世界中的物品由 `Terraria.World` 的 `WorldItemStore` 承载，两者只经请求组件移交数量。
+/// <para>
+/// 合并为单一 Item 域后，容器槽**不再持有载荷本体**，只持有指向 <see cref="ItemStore"/> 中
+/// 那条 Dormant 记录的地址。数量与身份的权威仍然只有一份——在记录上——因此
+/// "世界扣多少、背包收多少"不再是两个存储之间的对账，而是同一条记录改址。
+/// </para>
+/// <para>
+/// 地址用 <see cref="ItemContainerAddress"/> 表达：宿主号由容器域决定（玩家 / 箱子 / 银行各有
+/// 自己的编号），槽索引沿用库存槽定义里的 <see cref="InventorySlotDefinition.Index"/>。
+/// </para>
 /// </remarks>
 public readonly record struct InventorySlot {
   internal InventorySlot(
       InventorySlotDefinition definition,
-      ItemStack? content = null) {
-    if (content.HasValue && content.Value.IsEmpty) {
-      throw new ArgumentException("A slot value must be a nonempty stack.");
+      ItemContainerAddress? content = null) {
+    if (content is ItemContainerAddress address &&
+        (address.Container <= 0 || address.Slot < 0)) {
+      throw new ArgumentException("A slot reference must name a container and a slot.");
     }
 
     Definition = definition;
@@ -24,7 +30,11 @@ public readonly record struct InventorySlot {
 
   public InventorySlotDefinition Definition { get; }
 
-  public ItemStack? Content { get; }
+  /// <summary>Address of the item record this slot refers to; <c>null</c> when empty.</summary>
+  public ItemContainerAddress? Content { get; }
 
-  public bool IsEmpty => !Content.HasValue;
+  public bool IsEmpty => Content is null;
+
+  /// <summary>True when this slot refers to the supplied record.</summary>
+  public bool References(ItemContainerAddress address) => Content == address;
 }

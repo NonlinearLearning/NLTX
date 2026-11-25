@@ -1,5 +1,6 @@
 using System.IO;
 using Terraria.NonAuthoritative.Persistence;
+using Terraria.Share.Items;
 using Terraria.Unshared.World;
 
 namespace Terraria.WorldData;

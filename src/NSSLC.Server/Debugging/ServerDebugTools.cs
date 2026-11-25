@@ -2,6 +2,7 @@ using System;
 using ArchWorld = Arch.Core.World;
 using Terraria.Share.Entities;
 using Terraria.Share.Relationships;
+using Terraria.Share.Items;
 using Terraria.Unshared.World;
 
 namespace NSSLC.Server.Debugging;

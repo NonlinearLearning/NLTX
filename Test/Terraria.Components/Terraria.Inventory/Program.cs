@@ -53,7 +53,8 @@ registry.Register(new Item(smallItem, 5, ItemCategoryMask.Any));
 
 using (ArchWorld world = ArchWorld.Create())
 {
-  InventorySystem inventories = new(world, registry);
+  ItemStore inventoriesStore = new();
+  InventorySystem inventories = new(world, registry, inventoriesStore);
   ArchEntity holder = world.Create(new InventoryComponent(contractSlots));
   // 无库存组件的实体，用于验证 MissingInventory。
   ArchEntity bare = world.Create();
@@ -63,7 +64,7 @@ using (ArchWorld world = ArchWorld.Create())
   Check(
       "set-valid",
       write.Succeeded && write.Quantity == 7 &&
-          slot0.Content is { } c0 && c0.ItemId == bigItem && c0.Quantity == 7,
+          ReadSlot(inventoriesStore, slot0) is ItemStack c0 && c0.ItemId == bigItem && c0.Quantity == 7,
       $"succeeded={write.Succeeded} qty={write.Quantity} content={Describe(slot0)}");
 
   // 覆盖写入：整格替换，不与既有内容合并
@@ -72,7 +73,7 @@ using (ArchWorld world = ArchWorld.Create())
   _ = world.Get<InventoryComponent>(holder).TryGetSlot(0, out InventorySlot slot0b);
   Check(
       "overwrite-replaces",
-      overwrite.Succeeded && slot0b.Content is { } c0b && c0b.Quantity == 3,
+      overwrite.Succeeded && ReadSlot(inventoriesStore, slot0b) is ItemStack c0b && c0b.Quantity == 3,
       $"succeeded={overwrite.Succeeded} content={Describe(slot0b)}");
 
   // 用空堆清空槽位
@@ -168,7 +169,8 @@ using (ArchWorld inputWorld = ArchWorld.Create())
 
   ItemRegistry inputDefinitions = new();
   inputDefinitions.Register(new Item(bigItem, BigMaxStack, ItemCategoryMask.General));
-  InventorySystem inputInventories = new(inputWorld, inputDefinitions);
+  ItemStore inputStore = new();
+  InventorySystem inputInventories = new(inputWorld, inputDefinitions, inputStore);
   PlayerInputRequestSystem system = new(inputWorld, entities, inputInventories);
 
   queue.Enqueue(new PlayerInputRequest(
@@ -197,7 +199,7 @@ using (ArchWorld inputWorld = ArchWorld.Create())
   _ = inputWorld.Get<InventoryComponent>(player).TryGetSlot(1, out InventorySlot written);
   Check(
       "player-input-writes-shared-inventory",
-      written.Content is { } cw && cw.ItemId == bigItem && cw.Quantity == 7,
+      ReadSlot(inputStore, written) is ItemStack cw && cw.ItemId == bigItem && cw.Quantity == 7,
       $"content={Describe(written)}");
   Check("player-input-consumed", queue.Count == 0, $"left={queue.Count}");
 
@@ -225,7 +227,8 @@ using (ArchWorld valueWorld = ArchWorld.Create())
   ArchEntity valueHolder = valueWorld.Create(new InventoryComponent(GeneralSlots(2)));
   ItemRegistry valueDefinitions = new();
   valueDefinitions.Register(new Item(bigItem, BigMaxStack, ItemCategoryMask.General));
-  InventorySystem valueInventories = new(valueWorld, valueDefinitions);
+  ItemStore valueStore = new();
+  InventorySystem valueInventories = new(valueWorld, valueDefinitions, valueStore);
 
   _ = valueWorld.Get<InventoryComponent>(valueHolder).TryGetSlot(0, out InventorySlot emptySlot);
   Check(
@@ -238,7 +241,7 @@ using (ArchWorld valueWorld = ArchWorld.Create())
   _ = valueWorld.Get<InventoryComponent>(valueHolder).TryGetSlot(0, out InventorySlot valueSlot);
   Check(
       "slot-value-carries-stack-only",
-      valueWrite.Succeeded && valueSlot.Content is { } storedValue &&
+      valueWrite.Succeeded && ReadSlot(valueStore, valueSlot) is ItemStack storedValue &&
           storedValue.ItemId == bigItem && storedValue.Quantity == 9 && storedValue.Prefix == 0,
       $"content={Describe(valueSlot)}（容器侧只保存载荷三元组）");
 
@@ -251,7 +254,7 @@ using (ArchWorld valueWorld = ArchWorld.Create())
   _ = valueWorld.Get<InventoryComponent>(valueHolder).TryGetSlot(0, out InventorySlot afterTake);
   Check(
       "slot-value-remove-keeps-remainder",
-      afterTake.Content is { } remainder && remainder.Quantity == 5,
+      ReadSlot(valueStore, afterTake) is ItemStack remainder && remainder.Quantity == 5,
       $"content={Describe(afterTake)}（9 取 4 余 5）");
 
   // 清空后必须回到"空槽"，且不残留任何身份引用。
@@ -271,7 +274,8 @@ using (ArchWorld heldWorld = ArchWorld.Create())
   ArchEntity holder = heldWorld.Create(new InventoryComponent(GeneralSlots(3)));
   ItemRegistry definitions = new();
   definitions.Register(new Item(bigItem, BigMaxStack, ItemCategoryMask.General));
-  InventorySystem held = new(heldWorld, definitions);
+  ItemStore heldStore = new();
+  InventorySystem held = new(heldWorld, definitions, heldStore);
 
   InventoryComponent component = heldWorld.Get<InventoryComponent>(holder);
   Check(
@@ -349,9 +353,17 @@ static string DescribeHeld(HeldSlot? held)
   return held is HeldSlot value ? $"slot {value.Index}" : "nothing";
 }
 
+static ItemStack? ReadSlot(ItemStore store, InventorySlot slot)
+{
+  return slot.Content is ItemContainerAddress address &&
+      store.TryGetContainedStack(address, out ItemStack found)
+    ? found
+    : null;
+}
+
 static string Describe(InventorySlot slot)
 {
-  return slot.Content is { } content
-      ? $"itemId={(int)content.ItemId} qty={content.Quantity}"
+  return slot.Content is ItemContainerAddress address
+      ? $"container={address.Container} slot={address.Slot}"
       : "none";
 }

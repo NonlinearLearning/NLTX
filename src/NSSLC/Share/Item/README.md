@@ -1,58 +1,60 @@
 # Item 领域
 
-本目录是**共享载荷层**：只表达"一个物品是什么"，不表达"它此刻在世界的哪里"或"它在谁的容器里"。
-后两者分别是世界宿主与容器宿主的职责，见 §"双宿主边界"。
+本目录是**合并后的单一 Item 域**：一层共享载荷 + 一条记录 + 两种互斥状态。
+它同时表达"一个物品是什么"（载荷）和"它此刻驻留在哪里"（状态），
+不再把世界物品与容器物品拆成两个系统。
 
 ```text
-ItemDefinition                    # 每物品一条不可变定义（MaxStack / Categories / 属性修饰器）
-    ↓ ItemId
-ItemStack                         # 值对象：ItemId + Quantity + Prefix
-    ↓ 被两个宿主各自持有
-世界宿主：WorldItemState.Item      容器宿主：InventorySlot.Content
+ItemId / ItemStack(ItemId, Quantity, Prefix)   # 载荷唯一权威（Item.cs / ItemStack.cs）
+    ↓ 被记录持有
+ItemState                                       # 一条记录 = 载荷 + Presence + 地址
+    ├─ Presence = Embodied → Slot 0..399        # 在世界里，有位置/速度，逐 tick 推进
+    └─ Presence = Dormant  → Container(宿主,槽)  # 在容器里，无世界字段，不 tick
+    ↓
+ItemStore                                       # _worldSlots(400) + _containerSlots(地址索引)
 ```
-
-`ItemDefinitionRegistry` 只管理不可变定义，不保存物品实例、库存或世界槽位。
 
 ## 载荷只有一份定义
 
 物品身份（`ItemId`）、数量（`Quantity`）、前缀（`Prefix`）**只以 `ItemStack` 表达**。
 任何宿主都不得把这三项平铺成自己的字段，否则同一物品会出现两份权威来源。
 
-这条不是风格约定，是守恒的前提：拾取时"世界扣多少、背包收多少"要对得上，
-只有当两侧读的是同一种值对象时，这个等式才可能被验证而不是被推断。
+这条不是风格约定，是守恒的前提：拾取时"世界扣多少、背包收多少"要对得上。
+合并后这个等式由**改址**保证，而不是由两侧对账保证。
 
-## 双宿主边界
+## 一条记录，一个地址
 
-```text
-                共享载荷层（无 tick、无 owner、无世界字段）
-                            ItemStack / ItemDefinition
-                            │
-        ┌───────────────────┴───────────────────┐
-        ▼                                       ▼
-  世界宿主（瞬态）                        容器宿主（持久）
-  WorldItemStore + WorldItemState          InventoryComponent + InventorySlot
-  · 400 槽运行时表，不写入存档              · 随玩家/箱子存档
-  · 位置、速度、归属预留、生命周期计数        · 只存 ItemStack 值
-  · 只有 WorldItemRequestSystem 能写        · 只有 InventorySystem 能写
-        └────────── 转移只经请求组件，有方向 ──────────┘
-```
+| 形态 | 地址 | 有 tick | 入存档 | 网络身份 |
+| --- | --- | --- | --- | --- |
+| **Embodied** | `Slot`（0..399） | 是 | 否（瞬态） | 世界槽号（包 21/22/39） |
+| **Dormant** | `Container(container, slot)` | 否 | 是（随容器） | 容器实体 + 槽索引 |
+
+地址恒有且只有一个，不存在既不在世界也不在容器的游离记录。改址是一次原子提交：
+
+- **Embodied → Dormant**（拾取）：`ItemStore.TryTransferToContainer`，同一 lock 内释放世界槽并建立容器槽；
+- **Dormant → Embodied**（丢弃）：`ItemStore.TryTransferToWorld`。
+
+## 目录职责
+
+| 路径 | 职责 |
+| --- | --- |
+| `Item.cs` / `ItemStack.cs` / `ItemId.g.cs` / `ItemRegistry.cs` / `ItemCategoryMask.cs` | 共享载荷层：不可变定义与值对象，无状态、无 tick |
+| `ItemState.cs` | 记录 + `ItemPresence` + `ItemContainerAddress` + `ItemMutation` |
+| `ItemStore.cs` | 权威存储：世界槽段 + 容器段，单一锁 |
+| `ItemSystem.cs` | **Commit 阶段唯一写者**，排空请求队列 |
+| `ItemTickSystem.cs` | Embodied 记录的物理推进（合并 / 运动 / 拾取候选 / 生命周期），只产请求 |
+| `System/ItemRules.cs` 等 | 纯规则：合法性、合并、拾取、运动积分 |
+| `Command/` `Component/` `Query/` | 请求队列、只读端口（`IItemQuery` / `IItemProjectionSource`） |
+
+## 与容器域的边界
+
+容器域（`Share/Inventory/`）只持有**地址**，不持有载荷：
+`InventorySlot.Content : ItemContainerAddress?`。因此数量永远只有一份权威，
+"背包已加、世界未减"的中间态在存储层不可能出现。
 
 判定口径与验收断言见
-[物品载荷层与双宿主 owner 执行计划](../../../../docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md) §3 与
-[Item 与 WorldItem 拆分判定审计](../../../../docs/reviews/audits/2026-11-23-item-worlditem-split-necessity.md)。
-
-## 当前实现状态（2026-11-23）
-
-世界物品走的是**非 ECS** 的 `WorldItemStore`（`Terraria.World` 命名空间，位于 `src/NSSLC/WorldItem/`）。
-它对齐 Version4 的 `Main.item[401]` 槽表：400 个槽位、槽位号即网络身份、进程内瞬态、不入存档。
-
-**实体化物品路径已删除**（执行计划 P1-A）。`ItemStackComponent`、`ItemWorldStateComponent`、
-`ContainedInInventoryComponent` 与 `InventorySlot.ItemEntityId` 全部移除：全仓没有
-`new ItemStackComponent(`，只有读取分支，保留它等于允许同一物品在世界与容器两端各存一份权威。
-
-被删除的能力："物品实体自带子库存"（如枪械内置弹药）不再有容器表达。当前仓库没有这类内容；
-若将来需要，必须作为独立设计重新引入，而不是恢复一条无生产者的声明——见
-[执行计划](../../../../docs/plans/2026-11-23-item-payload-dual-host-execution-plan.md) P1-B 的代价说明。
+[Item 系统设计：单域 · 双状态](../../../docs/architecture/2026-11-25-item-single-domain-dual-state-design.md)
+与[物品载荷与单一物品系统设计约束](../../../docs/architecture/物品载荷与单一物品系统设计约束.md)。
 
 ## 装备与属性贡献
 

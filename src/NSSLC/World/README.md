@@ -65,7 +65,7 @@ World/
 | `WorldTileDropRules` | 单 tile 掉落表 | `WorldRuntime.TryBreakTile` |
 | `WorldTileIndexRules` | 边界判断与行主序索引 | `WorldTileStorageComponent` |
 | `WorldInteractionPermissionRules` | 操作到权限的映射、权限位校验 | `WorldInteractionSystem`、`WorldInteractionCapabilityComponent` |
-| `WorldItemRules` | 物品合法性、可否变更、空槽选择、revision 递增 | `WorldItemStore` |
+| `ItemRules`（已迁至 `src/NSSLC/Share/Item/`） | 物品合法性、可否变更、空槽选择、revision 递增 | `ItemStore` |
 
 行为等价以确定性转录比对为依据：改造前后 195 行输出逐字节相同。
 

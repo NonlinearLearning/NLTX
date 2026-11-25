@@ -13,8 +13,9 @@ using Terraria.Share.Liquid;
 using Terraria.Share.Movement;
 using Terraria.Share.Physics;
 using Terraria.Share.Relationships;
+using Terraria.Unshared.World;
 
-namespace Terraria.Unshared.World;
+namespace Terraria.Share.Items;
 
 /// <summary>
 /// Advances the authoritative world item table once per server tick.
@@ -34,7 +35,7 @@ namespace Terraria.Unshared.World;
 /// observable difference from Version4 remains the missing pickup animation delay.
 /// </para>
 /// </remarks>
-public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickContext>
+public sealed class ItemTickSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   /// <summary>Version4 <c>WorldItem.UpdateEntityFields</c> uses a 16x16 item hitbox.</summary>
   private const float ItemExtent = 16f;
@@ -46,7 +47,7 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
       AffectedLiquids: LiquidContactFlags.Water | LiquidContactFlags.Honey |
           LiquidContactFlags.Lava | LiquidContactFlags.Shimmer);
 
-  private readonly WorldItemStore _items;
+  private readonly ItemStore _items;
   private readonly ISpatialWorldQuery _world;
   private readonly IWorldTileGrid _tiles;
   private readonly ISessionPlayerSource _sessionPlayers;
@@ -54,9 +55,9 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
   private readonly List<SessionPlayer> _grabbers = [];
   private InventoryPickupRequestQueueComponent? _pickupRequests;
 
-  public WorldItemTickSystem(
+  public ItemTickSystem(
       ArchWorld ecsWorld,
-      WorldItemStore items,
+      ItemStore items,
       ISpatialWorldQuery world,
       IWorldTileGrid tiles,
       ISessionPlayerSource sessionPlayers,
@@ -90,7 +91,7 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
 
   public override void Update(in EcsServerTickContext context)
   {
-    WorldItemState[] items = _items.SnapshotItems();
+    ItemState[] items = _items.SnapshotItems();
     if (items.Length == 0)
     {
       _grabbers.Clear();
@@ -108,7 +109,7 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
   /// 顺序与 Version4 `WorldItem.UpdateItem` 一致：先按本 tick 的 `noGrabDelay` 判定是否能被拾取，
   /// 末尾再统一递减计数。若先递减，刚生成的物品会在同一 tick 少掉一格延迟。
   /// </remarks>
-  private void LifecyclePass(WorldItemState[] items)
+  private void LifecyclePass(ItemState[] items)
   {
     for (int index = 0; index < items.Length; index++)
     {
@@ -117,22 +118,22 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
   }
 
   /// <summary>Merges stacks forward, exactly like <c>TryCombiningIntoNearbyItems</c>.</summary>
-  private void MergePass(WorldItemState[] items)
+  private void MergePass(ItemState[] items)
   {
     for (int survivorIndex = 0; survivorIndex < items.Length; survivorIndex++)
     {
       for (int drainedIndex = survivorIndex + 1; drainedIndex < items.Length; drainedIndex++)
       {
         // 每一对都在写的瞬间重新读槽位：本轮前半段被合并掉的槽位不能复活。
-        if (!_items.TryGet(items[survivorIndex].Slot, out WorldItemState? survivor) ||
+        if (!_items.TryGet(items[survivorIndex].Slot, out ItemState? survivor) ||
             survivor is null ||
-            !_items.TryGet(items[drainedIndex].Slot, out WorldItemState? drained) ||
+            !_items.TryGet(items[drainedIndex].Slot, out ItemState? drained) ||
             drained is null)
         {
           continue;
         }
 
-        int amount = WorldItemMergeRules.MergeAmount(survivor, drained, _maximumStackSize);
+        int amount = ItemMergeRules.MergeAmount(survivor, drained, _maximumStackSize);
         if (amount <= 0)
         {
           continue;
@@ -144,19 +145,19 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
   }
 
   /// <summary>Integrates gravity, friction and the tile sweep for every live item.</summary>
-  private void MotionPass(WorldItemState[] items)
+  private void MotionPass(ItemState[] items)
   {
     for (int index = 0; index < items.Length; index++)
     {
-      if (!_items.TryGet(items[index].Slot, out WorldItemState? live) || live is null)
+      if (!_items.TryGet(items[index].Slot, out ItemState? live) || live is null)
       {
         continue;
       }
 
       SpatialLiquidContact liquid = _world.GetLiquidContact(live.Position, ItemSize, LiquidContact);
-      WorldItemMotionProfile profile = WorldItemMotionSolver.ProfileFor(liquid.Flags);
-      Vector2 velocity = WorldItemMotionSolver.Integrate(live.Velocity, profile);
-      Vector2 displacement = WorldItemMotionSolver.ToDisplacement(velocity, profile);
+      ItemMotionProfile profile = ItemMotionSolver.ProfileFor(liquid.Flags);
+      Vector2 velocity = ItemMotionSolver.Integrate(live.Velocity, profile);
+      Vector2 displacement = ItemMotionSolver.ToDisplacement(velocity, profile);
       if (displacement == Vector2.Zero)
       {
         _items.TrySetMotion(live.Slot, live.Position, velocity, out _);
@@ -184,7 +185,7 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
   }
 
   /// <summary>Offers every grabbable item to the inventory of the nearest eligible player.</summary>
-  private void PickupPass(WorldItemState[] items)
+  private void PickupPass(ItemState[] items)
   {
     CollectGrabbers();
     if (_grabbers.Count == 0)
@@ -194,14 +195,14 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
 
     for (int index = 0; index < items.Length; index++)
     {
-      if (!_items.TryGet(items[index].Slot, out WorldItemState? live) || live is null)
+      if (!_items.TryGet(items[index].Slot, out ItemState? live) || live is null)
       {
         continue;
       }
 
       // Version4 在 Player.GetItem(WorldItem, …) 里先看 noGrabDelay，再看装不装得下；
       // 这里提前到候选筛选，避免为一个明知不可抓的物品发起请求。
-      if (!WorldItemRules.CanBePickedUp(live))
+      if (!ItemRules.CanBePickedUp(live))
       {
         continue;
       }
@@ -229,7 +230,7 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
   /// Claims the slot for the grabbing session, releasing a reservation left behind by a session
   /// that no longer has a live player.
   /// </summary>
-  private bool TryClaim(WorldItemState item, SessionEpoch epoch)
+  private bool TryClaim(ItemState item, SessionEpoch epoch)
   {
     if (item.ReservedFor is SessionEpoch reserved)
     {
@@ -263,24 +264,24 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
     return false;
   }
 
-  private SessionPlayer? FindNearestGrabber(in WorldItemState item)
+  private SessionPlayer? FindNearestGrabber(in ItemState item)
   {
     SessionPlayer? nearest = null;
     int bestCost = int.MaxValue;
     for (int index = 0; index < _grabbers.Count; index++)
     {
       SessionPlayer grabber = _grabbers[index];
-      if (!WorldItemPickupRules.IsWithinGrabRange(
+      if (!ItemPickupRules.IsWithinGrabRange(
           item.Position,
           ItemSize,
           grabber.Position,
           grabber.Size,
-          WorldItemPickupRules.DefaultGrabRange))
+          ItemPickupRules.DefaultGrabRange))
       {
         continue;
       }
 
-      int cost = WorldItemPickupRules.ManhattanCost(
+      int cost = ItemPickupRules.ManhattanCost(
           item.Position,
           ItemSize,
           grabber.Position,
@@ -300,7 +301,7 @@ public sealed class WorldItemTickSystem : BaseSystem<ArchWorld, EcsServerTickCon
   /// </summary>
   /// <remarks>
   /// 会话纪元与玩家句柄的绑定是会话身份，世界物品预约本来就以纪元表达（
-  /// <see cref="WorldItemState.ReservedFor" />），所以这里只读投影，不写通信域状态。
+  /// <see cref="ItemState.ReservedFor" />），所以这里只读投影，不写通信域状态。
   /// </remarks>
   private void CollectGrabbers()
   {

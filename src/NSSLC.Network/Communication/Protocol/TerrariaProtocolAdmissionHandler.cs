@@ -4,6 +4,7 @@ using System.IO.Compression;
 using System.Text;
 using Terraria.Diagnostics;
 using Terraria.Share.Liquid;
+using Terraria.Share.Items;
 using Terraria.Unshared.World;
 
 namespace Terraria.Network;

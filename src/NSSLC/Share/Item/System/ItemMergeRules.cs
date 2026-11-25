@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Unshared.World;
+namespace Terraria.Share.Items;
 
 /// <summary>
 /// Pure stacking arithmetic for world items, ported from Version4
@@ -12,15 +12,15 @@ namespace Terraria.Unshared.World;
 /// identity (item type plus prefix), the same shimmer state and the same reservation, and refuses
 /// pairs whose Manhattan centre distance exceeds <c>30</c>.
 /// </remarks>
-public static class WorldItemMergeRules
+public static class ItemMergeRules
 {
   /// <summary>Version4 merge radius in pixels, compared as a Manhattan distance.</summary>
   public const float MaximumMergeDistance = 30f;
 
   /// <summary>How many units of <paramref name="source"/> fit into <paramref name="target"/>.</summary>
   public static int MergeAmount(
-      in WorldItemState target,
-      in WorldItemState source,
+      in ItemState target,
+      in ItemState source,
       int maximumStackSize)
   {
     ArgumentNullException.ThrowIfNull(target);

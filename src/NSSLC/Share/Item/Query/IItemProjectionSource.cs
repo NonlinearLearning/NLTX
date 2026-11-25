@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Unshared.World;
+namespace Terraria.Share.Items;
 
 /// <summary>
 /// Narrow feed for the committed world-item changes that still need network publication.
@@ -11,8 +11,8 @@ namespace Terraria.Unshared.World;
 /// <see cref="WorldItemSpawnRequestComponent"/> and the World domain performs the spawn, so the
 /// authoritative item store never leaves its owner.
 /// </remarks>
-public interface IWorldItemProjectionSource
+public interface IItemProjectionSource
 {
   /// <summary>Takes the item changes committed since the previous drain and clears them.</summary>
-  IReadOnlyList<WorldItemMutation> DrainMutations();
+  IReadOnlyList<ItemMutation> DrainMutations();
 }

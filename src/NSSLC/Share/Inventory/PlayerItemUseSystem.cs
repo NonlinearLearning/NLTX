@@ -25,18 +25,21 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
   private readonly IEntityRuntimeResolver _resolver;
   private readonly ItemUseCatalog _definitions;
   private readonly InventorySystem _inventories;
+  private readonly ItemStore _items;
   private PlayerItemUseFactQueueComponent? _facts;
 
   public PlayerItemUseSystem(
       ArchWorld ecsWorld,
       IEntityRuntimeResolver resolver,
       ItemUseCatalog definitions,
-      InventorySystem inventories)
+      InventorySystem inventories,
+      ItemStore items)
       : base(ecsWorld ?? throw new ArgumentNullException(nameof(ecsWorld)))
   {
     _resolver = resolver ?? throw new ArgumentNullException(nameof(resolver));
     _definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
     _inventories = inventories ?? throw new ArgumentNullException(nameof(inventories));
+    _items = items ?? throw new ArgumentNullException(nameof(items));
   }
 
   // 在查询之外解析队列实体：Require 内部本身要跑一次查询。
@@ -146,7 +149,10 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
       return;
     }
 
-    if (inventory.TryGetHeld() is not ItemStack stack || stack.IsEmpty)
+    // 合并后槽里只有地址，载荷在物品记录上：经 InventorySystem 读出这一格的实际内容。
+    if (inventory.TryGetHeld() is not InventorySlot heldSlot ||
+        _inventories.ReadSlot(player, heldSlot) is not ItemStack stack ||
+        stack.IsEmpty)
     {
       Publish(request, state, tick, PlayerItemUseOutcomeKind.EmptySlot, facts);
       return;
@@ -219,8 +225,13 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
 
     foreach (InventorySlot candidate in World.Get<InventoryComponent>(player).Slots)
     {
-      if (candidate.Content is ItemStack stack &&
-          ItemUseRules.IsAmmoFor(definition, stack))
+      if (candidate.Content is not ItemContainerAddress address ||
+          !_items.TryGetContainedStack(address, out ItemStack stack))
+      {
+        continue;
+      }
+
+      if (ItemUseRules.IsAmmoFor(definition, stack))
       {
         ammoSlotIndex = candidate.Definition.Index;
         return true;

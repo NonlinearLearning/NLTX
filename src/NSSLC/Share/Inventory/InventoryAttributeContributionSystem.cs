@@ -30,16 +30,20 @@ public sealed class InventoryAttributeContributionSystem
   ];
 
   private readonly ItemRegistry _definitions;
+  private readonly ItemStore _items;
   private readonly QueryDescription _identityQuery;
   private readonly QueryDescription _inventoryQuery;
 
   public InventoryAttributeContributionSystem(
       ArchWorld world,
-      ItemRegistry definitions)
+      ItemRegistry definitions,
+      ItemStore items)
       : base(world)
   {
     ArgumentNullException.ThrowIfNull(definitions);
+    ArgumentNullException.ThrowIfNull(items);
     _definitions = definitions;
+    _items = items;
     _identityQuery = new QueryDescription().WithAll<EntityIdentityComponent>();
     _inventoryQuery = new QueryDescription()
         .WithAll<InventoryComponent, AttributeSetComponent>();
@@ -77,7 +81,7 @@ public sealed class InventoryAttributeContributionSystem
         });
   }
 
-  private static void Rebuild(
+  private void Rebuild(
       ArchWorld world,
       IReadOnlyDictionary<EntityUuid, ArchEntity> identities,
       ItemRegistry definitions,
@@ -87,14 +91,16 @@ public sealed class InventoryAttributeContributionSystem
     List<AttributeModifier> pending = [];
     foreach (InventorySlot slot in inventory.Slots)
     {
-      if (slot.IsEmpty || !TryGetDefinition(
-              world,
-              identities,
+      ItemStack? content = slot.Content is ItemContainerAddress address &&
+          _items.TryGetContainedStack(address, out ItemStack contained)
+        ? contained
+        : null;
+      if (content is null || !TryGetDefinition(
               definitions,
-              slot,
+              content,
               out Item definition))
       {
-        if (!slot.IsEmpty)
+        if (content is not null)
         {
           return;
         }
@@ -141,18 +147,12 @@ public sealed class InventoryAttributeContributionSystem
   }
 
   private static bool TryGetDefinition(
-      ArchWorld world,
-      IReadOnlyDictionary<EntityUuid, ArchEntity> identities,
       ItemRegistry definitions,
-      InventorySlot slot,
+      ItemStack? stack,
       out Item definition)
   {
     definition = null!;
-    if (slot.Content is not ItemStack stack)
-    {
-      return false;
-    }
-
-    return !stack.IsEmpty && definitions.TryGet(stack.ItemId, out definition);
+    return stack is ItemStack present && !present.IsEmpty &&
+        definitions.TryGet(present.ItemId, out definition);
   }
 }

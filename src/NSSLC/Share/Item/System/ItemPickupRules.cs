@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Unshared.World;
+namespace Terraria.Share.Items;
 
 /// <summary>
 /// Pure pickup eligibility for one world item and one player, ported from Version4
@@ -12,7 +12,7 @@ namespace Terraria.Unshared.World;
 /// picks the nearest eligible player by Manhattan distance between centres. Both rules stay pure
 /// here; the tick system supplies positions and decides which request to raise.
 /// </remarks>
-public static class WorldItemPickupRules
+public static class ItemPickupRules
 {
   /// <summary>Version4 <c>Player.defaultItemGrabRange</c> in pixels.</summary>
   public const int DefaultGrabRange = 42;

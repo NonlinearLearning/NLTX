@@ -31,10 +31,10 @@ internal static class EcsServerRegistrationKeys
   internal const string LifeAttributeSynchronization = "combat.life-attribute-synchronization";
   internal const string NetworkNpcProjection = "network.npc.projection";
   internal const string ChatNetworkProjection = "chat.network.projection";
-  internal const string WorldItemRequestCommit = "world.item-request.commit";
+  internal const string ItemRequestCommit = "world.item-request.commit";
   internal const string NetworkWorldProjection = "network.world.projection";
   internal const string WorldTick = "world.tick";
-  internal const string WorldItemTick = "world.item.tick";
+  internal const string ItemTick = "world.item.tick";
   internal const string InventoryPickupRequest = "inventory.pickup.request";
   internal const string EntitySpawn = "entity.spawn";
   internal const string NpcNetworkIdentity = "npc.network.identity";

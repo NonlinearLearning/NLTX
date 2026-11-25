@@ -45,18 +45,21 @@
 
 当前形态：
 
-- 槽位只有两种状态——一个非空 `ItemStack` 值，或空槽（`Content == null`）；
-- `IsEmpty` 即 `Content == null`，不再需要区分"空槽"与"实体槽"；
-- 世界中的物品由 `Terraria.World` 的 `WorldItemStore` 承载（非 ECS、400 槽、不入存档），
-  与容器槽经 `InventoryPickupRequest` / `WorldItemRequestKind.Consume` 做数量移交。
+- 槽位只有两种状态——一个非空地址（`ItemContainerAddress`），或空槽（`Content == null`）；
+- `IsEmpty` 即 `Content == null`；
+- 载荷（`ItemId` / `Quantity` / `Prefix`）**不在槽里**，在 `Terraria.Share.Items.ItemStore`
+  的那条记录上。容器槽只持有地址，因此数量永远只有一份权威。
 
 ```mermaid
 flowchart LR
     P[玩家或 NPC 实体] --> I[InventoryComponent]
-    I --> V[槽位：ItemStack 值]
-    W[WorldItemStore：世界宿主] -.->|拾取请求 + Consume 回报| I
-    I -.->|ValueStack| W
+    I --> V[槽位：ItemContainerAddress]
+    V --> S[ItemStore：世界段 + 容器段]
+    W[世界槽 0..399] <-->|原子改址| S
 ```
+
+拾取是一次**原子改址**：`ItemStore.TryTransferToContainer` 在同一个 lock 内释放世界槽并建立
+容器槽，因此不再有"背包已加、世界未减"的中间窗口，也不再需要 `Consume` 对账请求。
 
 若将来确实需要"物品实体自带子组件"，必须作为独立设计重新引入（执行计划 P1-B），
 不得恢复一条无生产者的声明。
@@ -140,7 +143,7 @@ var player = world.Create(
 var chest = world.Create(
     new EntityIdentityComponent(EntityUuid.Create()), chestInventory);
 
-// 一个普通世界掉落物：全部拾取时槽位获得值堆，世界侧由 WorldItemStore 扣减。
+// 一个普通世界掉落物：插入时在 ItemStore 里建立 Dormant 记录，槽位只拿到地址。
 InventoryTransferResult pickup = inventorySystem.TryInsert(
     player, new ItemStack(woodId, 30));
 

@@ -4,7 +4,7 @@
 文档 ID：DOC-2026-11-25-item-single-domain-dual-state
 逻辑域：architecture
 产物类型：design
-状态：已确认，代码待迁移（当前实现仍是两套，见 §11）
+状态：已确认，代码已迁移（M0–M4 落地，见 §11）
 canonical 路径：docs/architecture/2026-11-25-item-single-domain-dual-state-design.md
 上位约束：docs/architecture/物品载荷与单一物品系统设计约束.md
 取代：2026-11-23「Item 与 WorldItem 分离」的双宿主 owner 形态（载荷唯一部分保留）
@@ -39,12 +39,12 @@ canonical 路径：docs/architecture/2026-11-25-item-single-domain-dual-state-de
 
 ```text
 ItemState
-  ├─ ItemId      : 记录身份（域内唯一，不是网络身份）
-  ├─ Stack       : ItemStack（ItemId + Quantity + Prefix）—— 载荷唯一权威
+  ├─ Slot        : short（世界槽号 0..399，Dormant 记录为 -1）
+  ├─ Item        : ItemStack（ItemId + Quantity + Prefix）—— 载荷唯一权威
   ├─ Presence    : Embodied | Dormant
-  ├─ Address     : ItemAddress —— 唯一位置，恰好一个
-  │                 ├─ WorldSlot(short index 0..399)      Presence == Embodied
-  │                 └─ ContainerSlot(container, index)    Presence == Dormant
+  ├─ Address     : 唯一位置，恰好一个
+  │                 ├─ Slot（0..399）                     Presence == Embodied
+  │                 └─ Container(container, slot)         Presence == Dormant
   └─ Embodied 专用字段（仅 Presence == Embodied 时有意义）
         Position / Velocity / ReservedFor / NoGrabDelay / OwnTime / KeepTime
         / TimeSinceItemSpawned / Shimmered
@@ -86,8 +86,9 @@ Dormant 不是"被删除的世界物品"，Embodied 也不是"掉出来的容器
 [ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md) §3.4 分四类职责目录：
 
 ```text
-src/NSSLC/Item/                        # 合并后的 Item 域（服务端权威）
+src/NSSLC/Share/Item/                        # 合并后的 Item 域（服务端权威，命名空间 Terraria.Share.Items）
   ItemSystem.cs                        # 唯一提交写者（Commit 阶段）
+  ItemTickSystem.cs                    # Embodied 记录的物理推进（只产请求）
   Component/
     ItemRequestQueueComponent.cs
   Command/
@@ -139,8 +140,14 @@ src/NSSLC/Item/                        # 合并后的 Item 域（服务端权威
 | INV-6 | **状态字段隔离**：Embodied 字段只为 Embodied 记录读取 | 静态：属性只在 `Presence == Embodied` 分支可达 | **新增** |
 
 INV-6 是合并带来的新风险：两个系统分开时，世界字段不可能被容器侧读到；合并后必须用状态判别
-把这条边界显式化。`ItemState` 的 Embodied 字段应以"仅在 Embodied 下有效"的方式暴露，
-或以 `EmbodiedFields?` 子记录承载，让误读在类型层不可写。
+把这条边界显式化。
+
+**实现取舍（2026-11-25）**：`ItemState` 是 `record`，`with` 表达式与序列化天然允许携带字段，
+类型层挡不住误读。因此边界改由**写入侧**把关：`ItemStore` 的 Dormant 构造路径
+（`TryStoreIntoContainer` / `TryTransferToContainer`）显式把 `Position`/`Velocity` 置零、
+`ReservedFor` 置空、`NoGrabDelay` 归零、`Slot` 置 -1，并由
+`invariant-state-fields-isolated` 断言锁住。这比拆子记录更贴近原版：原版 `WorldItem` 组合的
+`Item` 本身也不带世界字段，区别只在"谁持有世界字段"。
 
 ## 5. 状态转移
 
@@ -239,35 +246,42 @@ Version4 用两个类型表达两种状态；本设计用**一条记录 + 状态
 
 ## 11. 当前实现与迁移
 
-### 11.1 现状（2026-11-25，代码未迁移）
+### 11.1 现状（2026-11-25，代码已迁移）
 
-| 项 | 当前位置 | 形态 |
+| 项 | 位置 | 形态 |
 | --- | --- | --- |
-| 世界物品 | `src/NSSLC/WorldItem/` | `WorldItemStore`（400 槽）+ `WorldItemState` + `WorldItemRequestSystem` |
-| 容器物品 | `src/NSSLC/Share/Inventory/` | `InventoryComponent` + `InventorySlot.Content : ItemStack?` |
-| 载荷 | `src/NSSLC/Share/Item/` | `ItemStack` / `Item` / `ItemRegistry` |
+| 物品域 | `src/NSSLC/Share/Item/`（`Terraria.Share.Items`） | `ItemState` + `ItemStore` + `ItemSystem` + `ItemTickSystem` |
+| 世界段 | `ItemStore._worldSlots` | 400 槽字典，槽号即网络身份 |
+| 容器段 | `ItemStore._containerSlots` | `ItemContainerAddress(container, slot)` 索引 |
+| 载荷 | `src/NSSLC/Share/Item/` | `ItemStack` / `Item` / `ItemRegistry`（未改） |
+| 容器槽 | `Share/Inventory/System/InventorySlot` | `Content : ItemContainerAddress?`（只存地址） |
 
-两套存储各自持有数量，靠 `WorldItemRequestKind.Consume` 的回报量对账——这是**本次要消除的**
-双写形态。
+**记录身份不新增类型。** 设计初稿曾写 `ItemId : 记录身份`，与仓库既有语义冲突：
+`ItemId` 是由 `Terraria.ID.ItemID` 生成的 6244 项物品种类枚举（`ItemId.g.cs`），
+`ItemStack.ItemId` 已经拿它当种类。记录身份因此由**地址**承担——Embodied 用世界槽号，
+Dormant 用 `(container, slot)` 对，两者互斥且恰好一个，不需要额外的 UUID。
 
-### 11.2 迁移批次
+### 11.2 已交付
 
 | 批次 | 内容 | 验收 |
 | --- | --- | --- |
-| M0 | 建 `ItemState`/`ItemAddress`/`ItemPresence` 与 `ItemStore`，把 `WorldItemStore` 的 400 槽搬进世界槽段 | 现有 `Terraria.WorldItem` 断言全绿 |
-| M1 | 容器槽内容改 `ItemId` 引用，`InventorySystem` 的读写转到 `ItemStore` | `Terraria.Inventory` 的 `slot-*` / `held-*` 全绿 |
-| M2 | 合并写者：`ItemSystem` 取代 `WorldItemRequestSystem`，拾取改为回报接受量 | `invariant-*` 全绿，含新的 INV-2 / INV-6 |
-| M3 | 网络投影与包 21 入口校验收敛到合并后的 `ItemMutation` | 包 21 / 22 / 39 行为不变 |
-| M4 | 删除 `src/NSSLC/WorldItem/` 与 `InventorySlot.Content` 旧路径 | 全仓零残留引用 |
+| M0 | `src/NSSLC/WorldItem/` 整体迁入 `src/NSSLC/Share/Item/`（与 `Share/Item` 的载荷层合并）并改名；`ItemStore` 增加容器段 | 原 12 条 `invariant-*` 断言改写后全绿 |
+| M1 | `InventorySlot.Content` 由 `ItemStack?` 改为 `ItemContainerAddress?`；`InventorySystem` 全部读写经 `ItemStore` | `Terraria.Inventory` 的 `slot-*` / `held-*` 全绿 |
+| M2 | 拾取改为**原子改址**：`ItemStore.TryTransferToContainer` 在同一 lock 内完成世界槽释放与容器槽建立 | 新增 `invariant-transfer-is-atomic-relocation` / `invariant-address-uniqueness` / `invariant-state-fields-isolated` |
+| M3 | 网络投影与包 21 入口按新类型收敛 | `Terraria.WorldItem`、`Terraria.Projectile`、`Terraria.EntitySpawn` 全绿 |
+| M4 | 删除 `src/NSSLC/WorldItem/` 与旧 `InventorySlot.Content : ItemStack?` 路径 | 全仓 `src/` 零残留类型引用 |
 
-每个批次都必须在旧路径与新路径**同时存在**期间保持单一写源，不得两侧各推一份再互相同步
-（[ECS Entity 组织设计约束](ECSEntity组织设计约束.md) §10）。
+全量验证：`Test/` 下 15 个验证项目全部 PASS（`dotnet build` + `dotnet run --no-build`）。
 
-### 11.3 顺带修复的既有缺口
+### 11.3 未交付（明确保留的边界）
 
-- 世界侧缺 `MaxStack` 校验：`ItemStore` 创建路径必须校验定义的 `MaxStack`，否则客户端
-  包 21 可造出超上限的世界堆，容器整堆拒绝后该堆永不可拾取。
-- 包 21 的 `itemType` 入口校验缺失（`GameCommunicationAdapter` 直接透传），应在 M3 补齐。
+| 项 | 现状 | 原因 |
+| --- | --- | --- |
+| `ItemRequestKind.Consume` 仍在 | 拾取路径已不依赖它，但 `ItemSystem` 仍处理该请求 | 删除会改变 `ItemSystem` 的公开请求契约，属于独立变更；当前保留为"只扣减不转移"的合法用途 |
+| 世界 tick 与拾取仍在 Simulation 阶段分两步跑 | `ItemTickSystem` → `InventoryPickupRequestSystem` → 下一 tick `ItemSystem` 提交 | 改址本身是原子的，但**请求的提交仍在 Commit**，所以跨 tick 窗口在"请求层"仍存在；彻底消除需要把拾取结算整体移入 Commit |
+| 世界侧 `MaxStack` 校验 | 仍缺失 | `ItemStore.TryCreate` 只校验类型已知、`stack > 0`、坐标有限；补它需要 `ItemRegistry` 注入，属于独立批次 |
+| 物品自带子库存 | 未实现 | 设计 §9 提到 Dormant 记录可挂子容器；但 INV-2 要求地址唯一，两者冲突，需先解决语义才能落地 |
+| 存档 | 容器段目前是进程内状态 | `ItemStore` 没有存档 API（`invariant-world-items-not-persisted` 守着这条）；Dormant 记录随容器入档需要独立批次 |
 
 ## 12. 验收检查清单
 
@@ -287,3 +301,5 @@ Version4 用两个类型表达两种状态；本设计用**一条记录 + 状态
 | 日期 | 变更 |
 | --- | --- |
 | 2026-11-25 | 建立本设计。原"两个宿主 owner"合并为单域双状态；保留载荷唯一、转移守恒、瞬态不入档；新增 INV-2（地址唯一）与 INV-6（状态字段隔离）；代码迁移排为 M0–M4，尚未执行 |
+| 2026-11-25 | **目录归位**：合并后的 Item 域从 `src/NSSLC/Item/` 移入 `src/NSSLC/Share/Item/`，与既有共享载荷层同目录；命名空间统一为 `Terraria.Share.Items`，与 [Share 收容层 CR](../cr/CR-2026-11-23-nsslc-share-layer-restore.md) 一致 |
+| 2026-11-25 | **M0–M4 落地**：`WorldItem` 域迁入 `src/NSSLC/Share/Item/`（命名空间 `Terraria.Share.Items`）；`InventorySlot.Content` 改为 `ItemContainerAddress?`；拾取改为原子改址 `ItemStore.TryTransferToContainer`；删除旧目录。同时修正记录身份：`ItemId` 是物品种类枚举，不是记录 id，记录身份由地址承担 |
