@@ -1,6 +1,6 @@
-using Terraria.Item;
+using Terraria.Share.Items;
 
-namespace Terraria.Player;
+namespace Terraria.Share.Player;
 
 /// <summary>Use gate and channel state of one player, written only by the item use system.</summary>
 /// <remarks>

@@ -1,4 +1,4 @@
-namespace Terraria.Item;
+namespace Terraria.Share.Items;
 
 /// <summary>Server-side use profile of one item kind, as Version4 keeps on <c>Item</c>.</summary>
 /// <remarks>
@@ -7,7 +7,7 @@ namespace Terraria.Item;
 /// server keeps them in one immutable record registered per item id, so a use never depends on
 /// client-supplied numbers.
 /// </remarks>
-public sealed record ItemUseDefinition(
+public sealed record ItemUse(
     ItemId ItemId,
     int UseTime,
     int UseAnimation,
@@ -17,6 +17,9 @@ public sealed record ItemUseDefinition(
     bool ConsumeAmmo,
     int ManaCost)
 {
+  /// <summary>射击参数；null 表示使用该物品不生成投射物。</summary>
+  public ItemShootProfile? Shoot { get; init; }
+
   public bool RequiresAmmo => UseAmmo != ItemId.None && ConsumeAmmo;
 
   public bool IsValid => UseTime > 0 && UseAnimation > 0 && ManaCost >= 0;

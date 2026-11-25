@@ -3,12 +3,12 @@ using System.Collections.Generic;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Inventory;
-using Terraria.Item;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Inventory;
+using Terraria.Share.Items;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Player;
+namespace Terraria.Share.Player;
 
 /// <summary>
 /// Applies item use requests, ported from the gate and ammo part of Version4 <c>Player.ItemCheck</c>.
@@ -17,20 +17,20 @@ namespace Terraria.Player;
 /// Per request the system replays the reference's order: does the slot hold a usable stack, is the
 /// use gate open, is the required ammunition present, then commit the gate, the consumed ammo and
 /// the channel flag and publish one fact. Mana spend is not applied: the ECS has no mana resource
-/// yet, so <see cref="ItemUseDefinition.ManaCost"/> travels as data only and the gap is recorded
+/// yet, so <see cref="ItemUse.ManaCost"/> travels as data only and the gap is recorded
 /// rather than guessed at.
 /// </remarks>
 public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   private readonly IEntityRuntimeResolver _resolver;
-  private readonly ItemUseDefinitionCatalog _definitions;
+  private readonly ItemUseCatalog _definitions;
   private readonly InventorySystem _inventories;
   private PlayerItemUseFactQueueComponent? _facts;
 
   public PlayerItemUseSystem(
       ArchWorld ecsWorld,
       IEntityRuntimeResolver resolver,
-      ItemUseDefinitionCatalog definitions,
+      ItemUseCatalog definitions,
       InventorySystem inventories)
       : base(ecsWorld ?? throw new ArgumentNullException(nameof(ecsWorld)))
   {
@@ -145,7 +145,7 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
       return;
     }
 
-    if (!_definitions.TryGet(stack.ItemId, out ItemUseDefinition definition))
+    if (!_definitions.TryGet(stack.ItemId, out ItemUse definition))
     {
       Publish(request, state, tick, PlayerItemUseOutcomeKind.UnknownItem, facts);
       return;
@@ -202,7 +202,7 @@ public sealed class PlayerItemUseSystem : BaseSystem<ArchWorld, EcsServerTickCon
   }
 
   /// <summary>Finds the first inventory slot holding the required ammunition.</summary>
-  private bool TryFindAmmo(ArchEntity player, ItemUseDefinition definition, out int ammoSlotIndex)
+  private bool TryFindAmmo(ArchEntity player, ItemUse definition, out int ammoSlotIndex)
   {
     ammoSlotIndex = -1;
     if (!World.Has<InventoryComponent>(player))

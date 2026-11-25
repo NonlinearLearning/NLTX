@@ -1,7 +1,7 @@
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.Player;
+namespace Terraria.Share.Player;
 
 /// <summary>Locates the single entity that carries the applied item use facts.</summary>
 public static class PlayerItemUseFactQueue

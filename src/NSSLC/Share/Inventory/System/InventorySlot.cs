@@ -1,7 +1,7 @@
 using System;
-using Terraria.Item;
+using Terraria.Share.Items;
 
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>A slot owns one value stack or nothing.</summary>
 /// <remarks>

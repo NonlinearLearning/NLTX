@@ -7,7 +7,7 @@
 // 按数值升序写入本枚举，成员名与客户端常量名保持一致。
 // </auto-generated>
 
-namespace Terraria.Item;
+namespace Terraria.Share.Items;
 
 /// <summary>
 /// 物品身份的权威表示。每个成员对应参考客户端 <c>Terraria.ID.ItemID</c> 中的一个常量。

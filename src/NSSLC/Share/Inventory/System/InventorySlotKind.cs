@@ -1,4 +1,4 @@
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>Semantic role of an inventory slot.</summary>
 public enum InventorySlotKind : byte {

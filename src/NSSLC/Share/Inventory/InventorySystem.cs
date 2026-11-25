@@ -1,10 +1,10 @@
 using System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Item;
+using Terraria.Share.Entities;
+using Terraria.Share.Items;
 
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>
 /// Coordinates inventory mutations during the host's exclusive, synchronous commit phase.
@@ -12,9 +12,9 @@ namespace Terraria.Inventory;
 /// </summary>
 public sealed partial class InventorySystem {
   private readonly ArchWorld _world;
-  private readonly ItemDefinitionRegistry _definitions;
+  private readonly ItemRegistry _definitions;
 
-  public InventorySystem(ArchWorld world, ItemDefinitionRegistry definitions) {
+  public InventorySystem(ArchWorld world, ItemRegistry definitions) {
     ArgumentNullException.ThrowIfNull(world);
     ArgumentNullException.ThrowIfNull(definitions);
     _world = world;
@@ -34,7 +34,7 @@ public sealed partial class InventorySystem {
       return InventoryTransferResult.Rejected(failure);
     }
 
-    failure = GetDefinition(stack, out ItemDefinition definition);
+    failure = GetDefinition(stack, out Item definition);
     if (failure != InventoryTransferFailure.None) {
       return InventoryTransferResult.Rejected(failure);
     }
@@ -85,7 +85,7 @@ public sealed partial class InventorySystem {
       return InventoryTransferResult.Success(0);
     }
 
-    failure = GetDefinition(stack, out ItemDefinition item);
+    failure = GetDefinition(stack, out Item item);
     if (failure != InventoryTransferFailure.None) {
       return InventoryTransferResult.Rejected(failure);
     }
@@ -168,7 +168,7 @@ public sealed partial class InventorySystem {
       return InventoryTransferResult.Rejected(InventoryTransferFailure.InvalidQuantity);
     }
 
-    failure = GetDefinition(stack, out ItemDefinition definition);
+    failure = GetDefinition(stack, out Item definition);
     if (failure != InventoryTransferFailure.None) {
       return InventoryTransferResult.Rejected(failure);
     }
@@ -239,7 +239,7 @@ public sealed partial class InventorySystem {
 
   private InventoryTransferFailure GetDefinition(
       in ItemStack stack,
-      out ItemDefinition definition) {
+      out Item definition) {
     definition = null!;
     if (stack.IsEmpty) {
       return InventoryTransferFailure.InvalidItemStack;
@@ -291,7 +291,7 @@ public sealed partial class InventorySystem {
   private static int PlanInsert(
       InventorySlot[] plan,
       ItemStack stack,
-      ItemDefinition definition,
+      Item definition,
       int quantity,
       int? targetSlotIndex,
       int? excludedSlotIndex = null) {

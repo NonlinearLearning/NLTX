@@ -1,4 +1,4 @@
-namespace Terraria.Player;
+namespace Terraria.Share.Player;
 
 /// <summary>Why a use request was or was not applied.</summary>
 public enum PlayerItemUseOutcomeKind : byte

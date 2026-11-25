@@ -1,4 +1,4 @@
-namespace Terraria.Item;
+namespace Terraria.Share.Items;
 
 /// <summary>Pure timing and gate rules for item use, extracted from Version4 <c>Player.ItemCheck</c>.</summary>
 /// <remarks>
@@ -22,14 +22,14 @@ public static class ItemUseRules
   public static bool ContinuesChannel(bool channel, bool useHeld) => channel && useHeld;
 
   /// <summary>Version4 consumes exactly one ammo item per shot for the supported kinds.</summary>
-  public static int AmmoCost(ItemUseDefinition definition)
+  public static int AmmoCost(ItemUse definition)
   {
     ArgumentNullException.ThrowIfNull(definition);
     return definition.RequiresAmmo ? 1 : 0;
   }
 
   /// <summary>True when the stack can serve as ammunition for the definition.</summary>
-  public static bool IsAmmoFor(ItemUseDefinition definition, in ItemStack stack)
+  public static bool IsAmmoFor(ItemUse definition, in ItemStack stack)
   {
     ArgumentNullException.ThrowIfNull(definition);
     return !stack.IsEmpty && definition.RequiresAmmo && stack.ItemId == definition.UseAmmo;

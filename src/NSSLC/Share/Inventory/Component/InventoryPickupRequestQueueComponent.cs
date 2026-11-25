@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>Tick-scoped queue of world items offered to player inventories.</summary>
 /// <remarks>

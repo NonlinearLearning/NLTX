@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>Grants inventory capability; InventorySystem coordinates mutations.</summary>
 public sealed class InventoryComponent {

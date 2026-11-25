@@ -1,6 +1,6 @@
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Player;
+namespace Terraria.Share.Player;
 
 /// <summary>One cross-domain intention to use or release an item.</summary>
 /// <remarks>

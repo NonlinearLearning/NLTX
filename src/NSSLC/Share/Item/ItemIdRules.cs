@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Item;
+namespace Terraria.Share.Items;
 
 /// <summary>
 /// Item identity rules shared by the domain and the Version4 protocol boundary.

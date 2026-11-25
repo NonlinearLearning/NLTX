@@ -1,4 +1,4 @@
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>Result of an inventory mutation, including the quantity committed.</summary>
 public readonly record struct InventoryTransferResult(

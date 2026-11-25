@@ -1,4 +1,4 @@
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>Reason an inventory operation was rejected.</summary>
 /// <remarks>

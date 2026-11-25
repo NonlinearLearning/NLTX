@@ -1,7 +1,7 @@
 using System;
-using Terraria.Item;
+using Terraria.Share.Items;
 
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>Immutable rule describing what one inventory slot can hold.</summary>
 public readonly record struct InventorySlotDefinition {
@@ -44,7 +44,7 @@ public readonly record struct InventorySlotDefinition {
   public bool IsValid => Index >= 0 && Enum.IsDefined(Kind) &&
       AcceptedCategories != ItemCategoryMask.None && MaxStackSize > 0;
 
-  public bool Accepts(ItemDefinition definition) {
+  public bool Accepts(Item definition) {
     return definition.Categories != ItemCategoryMask.None &&
         (AcceptedCategories & definition.Categories) != ItemCategoryMask.None;
   }

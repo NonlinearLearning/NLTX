@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Item;
+namespace Terraria.Share.Items;
 
 /// <summary>Categories used by inventory slots to accept or reject item stacks.</summary>
 [Flags]

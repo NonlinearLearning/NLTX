@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Player;
+namespace Terraria.Share.Player;
 
 /// <summary>Tick-scoped queue of applied item uses.</summary>
 public sealed class PlayerItemUseFactQueueComponent

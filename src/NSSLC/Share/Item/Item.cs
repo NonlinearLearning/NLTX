@@ -2,21 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
-using Terraria.Attributes;
+using Terraria.Share.Attributes;
 
-namespace Terraria.Item;
+namespace Terraria.Share.Items;
 
 /// <summary>
 /// Immutable rules and defaults shared by all stacks of an item kind.
 /// </summary>
-public sealed class ItemDefinition {
-  public ItemDefinition(
+public sealed class Item {
+  public Item(
       ItemId id,
       int maxStack,
       ItemCategoryMask categories = ItemCategoryMask.General,
-      IEnumerable<ItemAttributeModifierDefinition>? attributeModifiers = null) {
+      IEnumerable<ItemAttributeContribution>? attributeContributions = null) {
     if (!ItemIdRules.IsKnown(id)) {
-      throw new ArgumentException("An item definition requires a known item id.", nameof(id));
+      throw new ArgumentException("An item requires a known item id.", nameof(id));
     }
 
     if (maxStack <= 0) {
@@ -27,17 +27,17 @@ public sealed class ItemDefinition {
     MaxStack = maxStack;
     Categories = categories;
 
-    ItemAttributeModifierDefinition[] modifiers =
-        (attributeModifiers ?? Array.Empty<ItemAttributeModifierDefinition>()).ToArray();
-    foreach (ItemAttributeModifierDefinition modifier in modifiers) {
-      if (!modifier.IsInventorySource) {
+    ItemAttributeContribution[] contributions =
+        (attributeContributions ?? Array.Empty<ItemAttributeContribution>()).ToArray();
+    foreach (ItemAttributeContribution contribution in contributions) {
+      if (!ItemAttributeContributionRules.IsInventorySource(contribution.SourceCategory)) {
         throw new ArgumentException(
             "Item attribute contributions must use an inventory source category.",
-            nameof(attributeModifiers));
+            nameof(attributeContributions));
       }
     }
 
-    AttributeModifiers = new ReadOnlyCollection<ItemAttributeModifierDefinition>(modifiers);
+    AttributeContributions = new ReadOnlyCollection<ItemAttributeContribution>(contributions);
   }
 
   public ItemId Id { get; }
@@ -47,9 +47,9 @@ public sealed class ItemDefinition {
   public ItemCategoryMask Categories { get; }
 
   /// <summary>
-  /// Numeric contributions rebuilt from an inventory relation by the attribute contribution system.
+  /// Attribute contributions rebuilt from an inventory relation by the attribute contribution system.
   /// </summary>
-  public IReadOnlyList<ItemAttributeModifierDefinition> AttributeModifiers { get; }
+  public IReadOnlyList<ItemAttributeContribution> AttributeContributions { get; }
 
   public bool IsStackable => MaxStack > 1;
 

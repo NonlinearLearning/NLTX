@@ -3,11 +3,11 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Relationships;
-using Terraria.World;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.World;
 
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>Applies the world items the World tick offered to player inventories.</summary>
 /// <remarks>

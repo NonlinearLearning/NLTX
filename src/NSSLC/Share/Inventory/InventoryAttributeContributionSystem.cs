@@ -4,13 +4,13 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Attributes;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Item;
-using Terraria.Relationships;
+using Terraria.Share.Attributes;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Items;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Inventory;
+namespace Terraria.Share.Inventory;
 
 /// <summary>
 /// Rebuilds item supplied attribute contributions from authoritative inventory facts.
@@ -29,13 +29,13 @@ public sealed class InventoryAttributeContributionSystem
     AttributeSourceCategory.Weapon
   ];
 
-  private readonly ItemDefinitionRegistry _definitions;
+  private readonly ItemRegistry _definitions;
   private readonly QueryDescription _identityQuery;
   private readonly QueryDescription _inventoryQuery;
 
   public InventoryAttributeContributionSystem(
       ArchWorld world,
-      ItemDefinitionRegistry definitions)
+      ItemRegistry definitions)
       : base(world)
   {
     ArgumentNullException.ThrowIfNull(definitions);
@@ -48,7 +48,7 @@ public sealed class InventoryAttributeContributionSystem
   public override void Update(in EcsServerTickContext context)
   {
     ArchWorld world = context.World;
-    ItemDefinitionRegistry definitions = _definitions;
+    ItemRegistry definitions = _definitions;
     Dictionary<EntityUuid, ArchEntity> identities = [];
     bool duplicateIdentity = false;
 
@@ -80,7 +80,7 @@ public sealed class InventoryAttributeContributionSystem
   private static void Rebuild(
       ArchWorld world,
       IReadOnlyDictionary<EntityUuid, ArchEntity> identities,
-      ItemDefinitionRegistry definitions,
+      ItemRegistry definitions,
       InventoryComponent inventory,
       AttributeSetComponent attributes)
   {
@@ -92,7 +92,7 @@ public sealed class InventoryAttributeContributionSystem
               identities,
               definitions,
               slot,
-              out ItemDefinition definition))
+              out Item definition))
       {
         if (!slot.IsEmpty)
         {
@@ -103,20 +103,16 @@ public sealed class InventoryAttributeContributionSystem
       }
 
       long sourceId = slot.Definition.Index + 1L;
-      foreach (ItemAttributeModifierDefinition contribution in definition.AttributeModifiers)
+      foreach (ItemAttributeContribution contribution in definition.AttributeContributions)
       {
         if (!IsContributionActive(slot.Definition.Kind, contribution.SourceCategory))
         {
           continue;
         }
 
-        pending.Add(new AttributeModifier(
-            contribution.Attribute,
+        pending.Add(contribution.Contribution.ToModifier(
             contribution.SourceCategory,
-            contribution.Operation,
-            contribution.Value,
-            sourceId,
-            contribution.Priority));
+            sourceId));
       }
     }
 
@@ -147,9 +143,9 @@ public sealed class InventoryAttributeContributionSystem
   private static bool TryGetDefinition(
       ArchWorld world,
       IReadOnlyDictionary<EntityUuid, ArchEntity> identities,
-      ItemDefinitionRegistry definitions,
+      ItemRegistry definitions,
       InventorySlot slot,
-      out ItemDefinition definition)
+      out Item definition)
   {
     definition = null!;
     if (slot.Content is not ItemStack stack)

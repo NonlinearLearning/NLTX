@@ -1,7 +1,7 @@
-using Terraria.Item;
-using Terraria.Relationships;
+using Terraria.Share.Items;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Player;
+namespace Terraria.Share.Player;
 
 /// <summary>One applied use, published so other domains can react without reading player state.</summary>
 /// <remarks>

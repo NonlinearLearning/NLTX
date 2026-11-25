@@ -1,19 +1,19 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Item;
+namespace Terraria.Share.Items;
 
 /// <summary>Immutable-after-sealing directory of item use profiles.</summary>
-public sealed class ItemUseDefinitionCatalog
+public sealed class ItemUseCatalog
 {
-  private readonly Dictionary<ItemId, ItemUseDefinition> _definitions = [];
+  private readonly Dictionary<ItemId, ItemUse> _definitions = [];
   private bool _sealed;
 
   public int Count => _definitions.Count;
 
   public bool IsSealed => _sealed;
 
-  public void Register(ItemUseDefinition definition)
+  public void Register(ItemUse definition)
   {
     ArgumentNullException.ThrowIfNull(definition);
     if (_sealed)
@@ -39,12 +39,12 @@ public sealed class ItemUseDefinitionCatalog
     _sealed = true;
   }
 
-  public bool TryGet(ItemId itemId, out ItemUseDefinition definition)
+  public bool TryGet(ItemId itemId, out ItemUse definition)
     => _definitions.TryGetValue(itemId, out definition!);
 
-  public ItemUseDefinition Get(ItemId itemId)
+  public ItemUse Get(ItemId itemId)
   {
-    if (!TryGet(itemId, out ItemUseDefinition definition))
+    if (!TryGet(itemId, out ItemUse definition))
     {
       throw new KeyNotFoundException($"Item use definition {itemId} is not registered.");
     }

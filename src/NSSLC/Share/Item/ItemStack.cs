@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Item;
+namespace Terraria.Share.Items;
 
 /// <summary>
 /// A value object for an item stack that does not require an ECS entity.

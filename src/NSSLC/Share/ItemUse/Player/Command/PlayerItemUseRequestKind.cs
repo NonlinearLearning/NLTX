@@ -1,4 +1,4 @@
-namespace Terraria.Player;
+namespace Terraria.Share.Player;
 
 /// <summary>Intentions a session may raise about using an item.</summary>
 public enum PlayerItemUseRequestKind : byte
