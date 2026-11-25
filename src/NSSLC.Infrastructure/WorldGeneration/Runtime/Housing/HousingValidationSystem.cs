@@ -13,7 +13,7 @@ public static class HousingValidationSystem
     TilePosition startPosition,
     int worldWidth,
     int worldHeight,
-    HousingValidationDefinition definition,
+    HousingValidation definition,
     IHousingTileSource tileSource,
     out HousingRoomEvaluationResult result)
   {

@@ -2,9 +2,9 @@ using System;
 
 namespace NSSLC.WorldGeneration.Runtime.Housing;
 
-public readonly record struct HousingValidationDefinition
+public readonly record struct HousingValidation
 {
-  public HousingValidationDefinition(
+  public HousingValidation(
     int maxRoomTiles,
     int maxRoomSize,
     int minimumRoomTiles,

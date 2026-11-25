@@ -97,7 +97,7 @@ JSON 文件为统计和哈希报告，不包含完整地块载荷。
 `12345 → 54321 → 12345`，两次 `12345` 的地块和宝箱 SHA256 相同；
 重新读取第一次返回的世界，其地块 SHA256 没有变化。
 
-证据位于 `Build/diagnostics/WorldGenerationCompile/` 的
+证据曾位于 `Build/diagnostics/WorldGenerationCompile/`（`.gitignore` 内的本地证据区，当前工作区已清理）的
 `generated-world-repeat.json`、`generated-world-crimson-medium.json` 及对应日志。
 这些记录验证了上述场景；Large、其余难度和全部种子组合尚未逐一运行。
 没有新增测试项目，也没有构建整套 solution。
@@ -118,7 +118,7 @@ JSON 文件为统计和哈希报告，不包含完整地块载荷。
 - 快照文件保留在 `Snapshots/`。创建入口不创建、加载或恢复磁盘快照，调试控制器的
   相关操作明确拒绝执行；此次没有验证独立快照代码的完整运行语义。
 - 原诊断项目现只引用正式项目。历史 `Build/diagnostics/WorldGenerationCompile/Source/`
-  镜像不再参与编译。
+  镜像（已随本地证据区清理）不再参与编译。
 
 ## 完整保存与加载（2026-10-04）
 

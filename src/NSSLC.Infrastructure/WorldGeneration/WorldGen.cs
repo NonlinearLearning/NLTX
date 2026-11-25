@@ -6289,7 +6289,7 @@ public partial class WorldGen
 		int worldWidth,
 		int worldHeight)
 	{
-		var definition = new HousingValidationDefinition(
+		var definition = new HousingValidation(
 			maxRoomTiles,
 			maxRoomSize,
 			60,
