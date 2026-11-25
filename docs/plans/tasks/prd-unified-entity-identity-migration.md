@@ -249,7 +249,7 @@ identity 进行高频查找，同时保证它们不能跨域互换。
 ## 11. 2026-10-07 需求校准记录
 
 本次校准遵循已接受的 [Entity 身份根与 typed projection 决策](../../architecture/decisions/0001-entity-identity-root-and-typed-projections.md)
-和当前 [Entity 组织约束](../../../Context/架构设计/ECSEntity组织设计约束.md)：根只在实体实例实际创建时产生，实例删除/重建时旧根失效；玩法生命周期变化本身不等同实例重建。原 PRD 的“Player 重生后重新分配 UUID”与此语义冲突，已由 US-002、FR-3 和 §6.2 明确替代，历史要求由本段留档，不继续作为验收标准。
+和当前 [Entity 组织约束](../../../docs/architecture/ECSEntity组织设计约束.md)：根只在实体实例实际创建时产生，实例删除/重建时旧根失效；玩法生命周期变化本身不等同实例重建。原 PRD 的“Player 重生后重新分配 UUID”与此语义冲突，已由 US-002、FR-3 和 §6.2 明确替代，历史要求由本段留档，不继续作为验收标准。
 
 原草案把 Arch `Entity`、特定 `Share/Entity/Components` 路径和 Arch 项目引用写成目标架构。本次改为 runtime-neutral 的实体句柄和共享身份契约；这些 Arch 字样仅说明草案当时使用的实现设想，不是项目对该 ECS 的采纳，也不是当前实现验收要求。
 

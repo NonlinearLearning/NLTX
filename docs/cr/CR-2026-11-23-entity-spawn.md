@@ -6,9 +6,9 @@
 状态：completed  
 日期：2026-11-23  
 canonical 路径：`docs/cr/CR-2026-11-23-ENTITY-SPAWN.md`  
-上游依据：[ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md) §2.5、§3.1、§3.4、§6；
-[组件命名设计约束](../../Context/架构设计/组件命名设计约束.md) §3、§4、§8.3；
-[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §5、§6  
+上游依据：[ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md) §2.5、§3.1、§3.4、§6；
+[组件命名设计约束](../../Context/架构约束/组件命名设计约束.md) §3、§4、§8.3；
+[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §5、§6  
 前置：[CR-2026-11-23 NpcSpawn / Session / TileEntity 收进 World 语义子域](CR-2026-11-23-world-semantic-subdomains.md)
 
 ## 1. 授权与范围
@@ -51,7 +51,7 @@ canonical 路径：`docs/cr/CR-2026-11-23-ENTITY-SPAWN.md`
 ## 3. 命名空间与既有解耦事实
 
 本轮是「变更目标明确要求同步调整」的情形，
-[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §5 允许把命名空间
+[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §5 允许把命名空间
 作为独立的 API/依赖变更评估后一并调整，因此子域命名空间由 `Terraria.Npc` 改为
 `Terraria.EntitySpawn`。
 
@@ -62,7 +62,7 @@ canonical 路径：`docs/cr/CR-2026-11-23-ENTITY-SPAWN.md`
 - `src/NSSLC/README.md` 的语义子域表；
 - [Test 验证项目组织](../../Test/README.md) 第 3 条的「项目名跟生产目录」示例，改用仍然解耦的
   `TileEntity/` 与 `Share/ItemUse/`；
-- [项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §5 的示例路径，
+- [项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §5 的示例路径，
   改用仍然解耦的 `World/ComponentSystem/TileEntity/`。
 
 `Terraria.Entity`（`Share/Entity/`）与 `Terraria.EntitySpawn` 是不同的命名空间，不会产生

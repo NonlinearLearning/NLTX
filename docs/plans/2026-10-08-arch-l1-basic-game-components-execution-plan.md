@@ -441,7 +441,7 @@ A8 已完成零引用旧 store 的 partial 清理，剩余 facade 的退出仍�
 
 ## 8. 编译门禁和证据记录
 
-按仓库的[构建与验证约束](../../Context/约束/构建与验证约束.md)，每次只构建受影响项目，不运行 solution 级 Rebuild。以下命令均在 `D:\TRbackup\NLTX` 工作目录执行；它们只写入 `Build/bin/` 和 `Build/obj/`，不修改源码。实际项目集合由 A0 重新计算：
+按仓库的[构建与验证约束](../../Context/项目约束/构建与验证约束.md)，每次只构建受影响项目，不运行 solution 级 Rebuild。以下命令均在 `D:\TRbackup\NLTX` 工作目录执行；它们只写入 `Build/bin/` 和 `Build/obj/`，不修改源码。实际项目集合由 A0 重新计算：
 
 ```powershell
 dotnet build src/NSSLC/Component/Share/Entity/Terraria.EntityEcs.csproj --no-restore --nologo -v:q

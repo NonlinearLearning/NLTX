@@ -2,7 +2,7 @@
 
 ## 1. 需求与目标
 
-把 [ECS 系统输入边界约束](../../Context/约束/ECS系统输入边界约束.md) 落到代码上：消除
+把 [ECS 系统输入边界约束](../../Context/项目约束/ECS系统输入边界约束.md) 落到代码上：消除
 [2026-11-01 审计](../reviews/audits/2026-11-01-ecs-system-input-audit.md) 登记的 16 处规则 3 违规与
 9 处规则 1 违规，且**不改变任何可观察行为**。
 
@@ -386,7 +386,7 @@ TerminateOwnedBy`、`Terraria.Combat` 定义链（7 个类型）。
 
 ## 9. 依据
 
-- 约束：[ECS 系统输入边界约束](../../Context/约束/ECS系统输入边界约束.md)
+- 约束：[ECS 系统输入边界约束](../../Context/项目约束/ECS系统输入边界约束.md)
 - 存量证据：[2026-11-01 ECS 系统输入边界审计](../reviews/audits/2026-11-01-ecs-system-input-audit.md) §3-§10
 - 域边界与所有权：[2026-10-26 Physics/Combat/Projectile 边界收敛执行计划](2026-10-26-physics-combat-projectile-boundary-execution-plan.md) §3.2
 - 判定方法：`ecs-system` → `command-splitting`（按效果分类，证据标 `confirmed`/`partial`/`unknown`）

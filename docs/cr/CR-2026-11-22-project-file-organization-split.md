@@ -12,8 +12,8 @@ canonical 路径：`docs/cr/CR-2026-11-22-project-file-organization-split.md`
 
 ## 1. 授权与范围
 
-把 `Context/架构设计/ECS文件组织设计约束.md` 中治理仓库与项目层落位的正文拆到新文件
-`Context/架构设计/项目文件组织设计约束.md`，原文件收窄为 ECS 领域内部的文件组织约束。
+把 `Context/架构约束/ECS文件组织设计约束.md` 中治理仓库与项目层落位的正文拆到新文件
+`Context/架构约束/项目文件组织设计约束.md`，原文件收窄为 ECS 领域内部的文件组织约束。
 
 判定标准：某条规则若回答“东西放在哪个项目/目录/交付边界”，归新文件；若回答“ECS 领域内部
 如何划分目录、组件与查询归谁”，留在原文件。本次为纯文档拆分，未修改源码、测试、项目配置或
@@ -56,10 +56,10 @@ canonical 路径：`docs/cr/CR-2026-11-22-project-file-organization-split.md`
 | 文件 | 改动 |
 | --- | --- |
 | `AGENTS.md` | 新增 `## Project File Organization` 条目；`## ECS File Organization` 触发条件收窄为 ECS 领域目录内文件 |
-| `Context/架构设计/ECS文件组织设计约束.md` | 收窄适用范围，加入上游约束指向与 §8 迁移对照 |
-| `Context/架构设计/组件命名设计约束.md` | 目录归属引用与适用优先级第 4 条同时指向两份文件 |
-| `Context/架构设计/ECSEntity组织设计约束.md` | 目录归属引用补入新文件 |
-| `Context/架构设计/ECS领域与基础设施架构边界.md` | 关联约束补入新文件 |
+| `Context/架构约束/ECS文件组织设计约束.md` | 收窄适用范围，加入上游约束指向与 §8 迁移对照 |
+| `Context/架构约束/组件命名设计约束.md` | 目录归属引用与适用优先级第 4 条同时指向两份文件 |
+| `docs/architecture/ECSEntity组织设计约束.md` | 目录归属引用补入新文件 |
+| `Context/架构约束/ECS领域与基础设施架构边界.md` | 关联约束补入新文件 |
 | `Test/README.md` | 目录与命名空间解耦的引用由 ECS 文件组织 §7 改为项目文件组织 §5 |
 | `docs/plans/2026-11-20-attribute-system-execution-plan.md` | 证据入口补入新文件路径 |
 
@@ -80,10 +80,10 @@ canonical 路径：`docs/cr/CR-2026-11-22-project-file-organization-split.md`
 拆分为两步，可独立回滚：
 
 ```powershell
-git checkout -- Context/架构设计/ECS文件组织设计约束.md AGENTS.md `
-  Context/架构设计/组件命名设计约束.md Context/架构设计/ECSEntity组织设计约束.md `
-  Context/架构设计/ECS领域与基础设施架构边界.md Test/README.md
-Remove-Item Context/架构设计/项目文件组织设计约束.md
+git checkout -- Context/架构约束/ECS文件组织设计约束.md AGENTS.md `
+  Context/架构约束/组件命名设计约束.md docs/architecture/ECSEntity组织设计约束.md `
+  Context/架构约束/ECS领域与基础设施架构边界.md Test/README.md
+Remove-Item Context/架构约束/项目文件组织设计约束.md
 ```
 
 `docs/plans/2026-11-20-attribute-system-execution-plan.md` 为未跟踪文件，回滚时手动删除新增的一行。

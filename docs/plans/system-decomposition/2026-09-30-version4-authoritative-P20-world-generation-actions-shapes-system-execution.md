@@ -388,7 +388,7 @@ $cpgDb = 'D:\TRbackup\Version4-cpg-export\out-dop8-interproc.sqlite'
 
 ~~~powershell
 # 未来构建/测试模板；本轮禁止执行
-Get-Content 'D:\TRbackup\NLTX\Context\约束\构建与验证约束.md'
+Get-Content 'D:\TRbackup\NLTX\Context\项目约束\构建与验证约束.md'
 dotnet build <approved-project-or-solution>
 dotnet test <approved-test-project> --no-restore
 <approved-verifier-command>

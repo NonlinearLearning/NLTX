@@ -6,7 +6,7 @@
 **策略**：sequential-with-one-decision（P0 无前置；P1 是唯一决策点，需用户确认后继续；P2–P4 各自独立可验收）
 **状态**：P0、P1-A、P2、P3、P4 **全部 completed**（2026-11-23 执行并验证）；P1-B 未采用
 **上游依据**：[2026-11-23 Item 与 WorldItem 拆分必要性判定](../reviews/audits/2026-11-23-item-worlditem-split-necessity.md)
-**适用约束**：[ECS 系统输入边界约束](../../Context/约束/ECS系统输入边界约束.md)、[ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md)、[构建与验证约束](../../Context/约束/构建与验证约束.md)、[Test 验证项目组织](../../Test/README.md)
+**适用约束**：[ECS 系统输入边界约束](../../Context/项目约束/ECS系统输入边界约束.md)、[ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md)、[构建与验证约束](../../Context/项目约束/构建与验证约束.md)、[Test 验证项目组织](../../Test/README.md)
 **范围**：`src/NSSLC/Share/Item/**`、`src/NSSLC/Share/Inventory/**`、`src/NSSLC/WorldItem/**`、`src/NSSLC/ItemUse/**`、`src/NSSLC.Server/Program.cs` 的系统注册、`Test/Terraria.Components/{Terraria.WorldItem,Terraria.Inventory}`
 **排除范围**：不改协议包号与载荷格式；不改客户端；不改 `src/NSSLC.Infrastructure/**`；不引入事件总线或 CQRS；不动 World 域的 tile/液体推进
 
@@ -388,7 +388,7 @@ Version4 的丢弃由客户端本地 `Item.NewItem` + 广播包 21 完成，服�
 - `Share/Item/README.md`、`Share/Inventory/README.md`：按 P1/P2/P3 的最终形态重写结构图与“状态由谁持有”表。
 - `WorldItem/` 若有 README 或类注释：补“世界宿主不持久化”与“拾取/丢弃是唯一跨宿主方向”两句。
 - 审计 [2026-11-23 判定](../reviews/audits/2026-11-23-item-worlditem-split-necessity.md) §5 的“决定 3”回填实际选择与结果。
-- `Context/progress.md`：按 [progress 信息保存约束](../../Context/约束/progress信息保存约束.md) 关闭本轮未闭合项。
+- `Context/progress.md`：按 [progress 信息保存约束](../../Context/项目约束/progress信息保存约束.md) 关闭本轮未闭合项。
 
 **验收**：文档中每条结构描述都能指向一个真实存在的类型或文件；`grep` 不到“两种内容”“实体槽位”等已删概念；progress 行数 ≤ 70、字节 ≤ 6 KB。
 

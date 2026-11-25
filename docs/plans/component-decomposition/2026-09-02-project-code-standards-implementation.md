@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** 将副作用隔离规范改造成 `约束/项目代码规范/` 下的 10 个主题文档，并让 `Context/约束/非函数式编码副作用隔离规范.md` 成为 AI 可执行的唯一入口。
+**Goal:** 将副作用隔离规范改造成 `Context/项目约束/项目代码规范/` 下的 10 个主题文档，并让 `Context/项目约束/非函数式编码副作用隔离规范.md` 成为 AI 可执行的唯一入口。
 
 **Architecture:** 入口文档只保存总原则、加载协议、任务映射、优先级和最低门禁；主题文档按边界、纯计算、依赖、状态、ECS、command、一致性、异步和验证拆分。主题文档使用统一结构，并通过相对链接互相引用；不修改源代码。
 
@@ -13,8 +13,8 @@
 ### Task 1: 建立项目代码规范目录和入口迁移骨架
 
 **Files:**
-- Create: `约束/项目代码规范/`
-- Modify: `Context/约束/非函数式编码副作用隔离规范.md`
+- Create: `Context/项目约束/项目代码规范/`
+- Modify: `Context/项目约束/非函数式编码副作用隔离规范.md`
 
 **Step 1: 读取现有入口和相关仓库约束**
 
@@ -29,8 +29,8 @@
 Run:
 
 ```powershell
-Test-Path 'Context/约束/非函数式编码副作用隔离规范.md'
-Select-String -Path 'Context/约束/非函数式编码副作用隔离规范.md' -Pattern 'AI 加载协议|主题索引|高风险|冲突'
+Test-Path 'Context/项目约束/非函数式编码副作用隔离规范.md'
+Select-String -Path 'Context/项目约束/非函数式编码副作用隔离规范.md' -Pattern 'AI 加载协议|主题索引|高风险|冲突'
 ```
 
 Expected: 文件存在，四类入口字段均出现。
@@ -38,7 +38,7 @@ Expected: 文件存在，四类入口字段均出现。
 ### Task 2: 编写加载协议主题
 
 **Files:**
-- Create: `约束/项目代码规范/00-规范加载协议.md`
+- Create: `Context/项目约束/项目代码规范/00-规范加载协议.md`
 
 **Step 1: 定义 AI 加载顺序**
 
@@ -55,7 +55,7 @@ Expected: 文件存在，四类入口字段均出现。
 ### Task 3: 编写作用域与副作用分类主题
 
 **Files:**
-- Create: `约束/项目代码规范/01-作用域与副作用分类.md`
+- Create: `Context/项目约束/项目代码规范/01-作用域与副作用分类.md`
 
 **Step 1: 定义三档作用域**
 
@@ -72,7 +72,7 @@ Expected: 文件存在，四类入口字段均出现。
 ### Task 4: 编写纯计算与功能核心主题
 
 **Files:**
-- Create: `约束/项目代码规范/02-纯计算与功能核心.md`
+- Create: `Context/项目约束/项目代码规范/02-纯计算与功能核心.md`
 
 **Step 1: 规定显式输入和不可变输出**
 
@@ -89,7 +89,7 @@ Application/System 从端口取得值，Domain 只接收值；随机规则写明
 ### Task 5: 编写端口适配器与依赖注入主题
 
 **Files:**
-- Create: `约束/项目代码规范/03-端口适配器与依赖注入.md`
+- Create: `Context/项目约束/项目代码规范/03-端口适配器与依赖注入.md`
 
 **Step 1: 定义最小端口和能力分离**
 
@@ -106,7 +106,7 @@ Application/System 从端口取得值，Domain 只接收值；随机规则写明
 ### Task 6: 编写状态所有权与不可变快照主题
 
 **Files:**
-- Create: `约束/项目代码规范/04-状态所有权与不可变快照.md`
+- Create: `Context/项目约束/项目代码规范/04-状态所有权与不可变快照.md`
 
 **Step 1: 定义唯一 owner**
 
@@ -123,7 +123,7 @@ Application/System 从端口取得值，Domain 只接收值；随机规则写明
 ### Task 7: 编写 ECS 读写集与系统阶段主题
 
 **Files:**
-- Create: `约束/项目代码规范/05-ECS读写集与系统阶段.md`
+- Create: `Context/项目约束/项目代码规范/05-ECS读写集与系统阶段.md`
 
 **Step 1: 定义 ReadSet/WriteSet**
 
@@ -140,7 +140,7 @@ Application/System 从端口取得值，Domain 只接收值；随机规则写明
 ### Task 8: 编写 Command 队列与确定性提交主题
 
 **Files:**
-- Create: `约束/项目代码规范/06-Command队列与确定性提交.md`
+- Create: `Context/项目约束/项目代码规范/06-Command队列与确定性提交.md`
 
 **Step 1: 定义 command envelope**
 
@@ -161,7 +161,7 @@ Application/System 从端口取得值，Domain 只接收值；随机规则写明
 ### Task 9: 编写持久化、消息一致性与 Outbox 主题
 
 **Files:**
-- Create: `约束/项目代码规范/07-持久化消息一致性与Outbox.md`
+- Create: `Context/项目约束/项目代码规范/07-持久化消息一致性与Outbox.md`
 
 **Step 1: 定义三类效果**
 
@@ -178,7 +178,7 @@ Application/System 从端口取得值，Domain 只接收值；随机规则写明
 ### Task 10: 编写异步、取消、异常与重试主题
 
 **Files:**
-- Create: `约束/项目代码规范/08-异步取消异常与重试.md`
+- Create: `Context/项目约束/项目代码规范/08-异步取消异常与重试.md`
 
 **Step 1: 区分同步纯计算和异步 I/O**
 
@@ -195,7 +195,7 @@ Domain 默认同步；外部 I/O 端口必须异步并接受 `CancellationToken`
 ### Task 11: 编写测试、静态检查、迁移与例外主题
 
 **Files:**
-- Create: `约束/项目代码规范/09-测试静态检查迁移与例外.md`
+- Create: `Context/项目约束/项目代码规范/09-测试静态检查迁移与例外.md`
 
 **Step 1: 定义测试层次**
 
@@ -216,8 +216,8 @@ Domain 默认同步；外部 I/O 端口必须异步并接受 `CancellationToken`
 ### Task 12: 交叉引用、链接和 Markdown 验收
 
 **Files:**
-- Modify: `Context/约束/非函数式编码副作用隔离规范.md`
-- Verify: `约束/项目代码规范/*.md`
+- Modify: `Context/项目约束/非函数式编码副作用隔离规范.md`
+- Verify: `Context/项目约束/项目代码规范/*.md`
 
 **Step 1: 检查主题文件是否齐全**
 
@@ -225,7 +225,7 @@ Run:
 
 ```powershell
 $expected = 0..9 | ForEach-Object { '{0:D2}' -f $_ }
-$actual = Get-ChildItem '约束/项目代码规范' -Filter '*.md' | ForEach-Object { [regex]::Match($_.Name, '^\d{2}').Value }
+$actual = Get-ChildItem 'Context/项目约束/项目代码规范' -Filter '*.md' | ForEach-Object { [regex]::Match($_.Name, '^\d{2}').Value }
 Compare-Object $expected $actual
 ```
 

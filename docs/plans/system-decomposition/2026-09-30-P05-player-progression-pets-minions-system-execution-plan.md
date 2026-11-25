@@ -72,7 +72,7 @@ P05 数据包相关 API 仅编写函数签名声明，不得编写具体函数�
 
 ## 验证与交付记录
 
-计划初稿创建时没有修改 `src/`、测试或项目文件，也没有运行 build、test、verifier 或生成代码。后续实施必须遵循[构建与验证约束](../../../Context/约束/构建与验证约束.md)：从仓库根目录经 `Build/Tools/Invoke-SerialDotnet.ps1` 串行验证受影响项目，先检查活跃 dotnet/csc 进程；不为小范围改动构建整个 solution。生产接入项目和调度入口仍为 `unknown`。
+计划初稿创建时没有修改 `src/`、测试或项目文件，也没有运行 build、test、verifier 或生成代码。后续实施必须遵循[构建与验证约束](../../../Context/项目约束/构建与验证约束.md)：从仓库根目录经 `Build/Tools/Invoke-SerialDotnet.ps1` 串行验证受影响项目，先检查活跃 dotnet/csc 进程；不为小范围改动构建整个 solution。生产接入项目和调度入口仍为 `unknown`。
 
 实施阶段每次验证记录实际命令、目标项目、退出码、warning/error 数、`Build/bin/` 产物路径和测试观察结果。文档链接或类型文件存在不替代行为结果。删除 legacy writer/facade 的 gate 是所有必需行为由新 owner 和完整组合测试通过，并完成 persistence/network 与生命周期复核；当前 gate 未满足。
 

@@ -6,7 +6,7 @@
 状态：draft  
 范围：本地世界文件的加载、保存及其与 ECS 世界存储 owner 的交接；加载 API 的构建期收集和调度；不含探索地图侧车文件。  
 设计与执行材料：[总体设计](../../architecture/2026-10-02-world-storage-load-coordinator-design.md)、[标准加载 API 设计](../../architecture/2026-10-02-world-load-standard-api-design.md)、[标准加载 API 执行计划](../../architecture/execution/2026-10-02-world-load-standard-api-execution.md)。  
-证据入口：[WorldFile.cs](../../../src/NSSLC.Infrastructure/WorldStorage/WorldFile/WorldFile.cs)、[WorldLoadLifecycleSystem.cs](../../../src/NSSLC/Component/WorldSession/WorldGeneration/Systems/WorldLoadLifecycleSystem.cs)、[WorldStorageRoot.cs](../../../src/NSSLC/Component/WorldStorage/WorldStorageRoot.cs)、[ECS 领域层与基础设施架构边界](../../../Context/架构设计/ECS领域与基础设施架构边界.md)、[CR-2026-10-02](../../cr/CR-2026-10-02-world-load-standard-api.md)。  
+证据入口：[WorldFile.cs](../../../src/NSSLC.Infrastructure/WorldStorage/WorldFile/WorldFile.cs)、[WorldLoadLifecycleSystem.cs](../../../src/NSSLC/Component/WorldSession/WorldGeneration/Systems/WorldLoadLifecycleSystem.cs)、[WorldStorageRoot.cs](../../../src/NSSLC/Component/WorldStorage/WorldStorageRoot.cs)、[ECS 领域层与基础设施架构边界](../../../Context/架构约束/ECS领域与基础设施架构边界.md)、[CR-2026-10-02](../../cr/CR-2026-10-02-world-load-standard-api.md)。  
 canonical 路径：docs/plans/tasks/2026-10-02-world-storage-load-coordinator-prd.md
 
 ## 1. 概述

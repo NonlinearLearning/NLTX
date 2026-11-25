@@ -82,7 +82,7 @@ NPC AI 决策、目标选择、随机消费、物理/碰撞权威、生成、变
 
 ## 验证记录
 
-遵循 [构建与验证约束](../../../Context/约束/构建与验证约束.md) 和当前主会话边界：本续批只做源级断言与 `git diff --check`，不运行 build/restore/run 或任何测试。Focused ground/jump runtime verifier 记为 `not-run`；authority adapter 和 Wolf profile 不因旧 DLL 的运行结果而宣称 runtime verified。
+遵循 [构建与验证约束](../../../Context/项目约束/构建与验证约束.md) 和当前主会话边界：本续批只做源级断言与 `git diff --check`，不运行 build/restore/run 或任何测试。Focused ground/jump runtime verifier 记为 `not-run`；authority adapter 和 Wolf profile 不因旧 DLL 的运行结果而宣称 runtime verified。
 
 本批实际验证：
 

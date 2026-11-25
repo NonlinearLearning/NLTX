@@ -6,8 +6,8 @@
 状态：completed  
 日期：2026-11-23  
 canonical 路径：`docs/cr/CR-2026-11-23-world-semantic-subdomains.md`  
-上游依据：[ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md) §2.2、§3.1、§3.4、§6；
-[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §5、§6  
+上游依据：[ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md) §2.2、§3.1、§3.4、§6；
+[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §5、§6  
 前置：[CR-2026-11-23 NSSLC 恢复 Share 收容层](CR-2026-11-23-nsslc-share-layer-restore.md)、
 [CR-2026-11-22 NSSLC 领域内按 ECS 职责分目录](CR-2026-11-22-nsslc-ecs-role-directory-layout.md)
 
@@ -52,7 +52,7 @@ src/NSSLC/World/
 
 ## 3. 与既有约束的关系
 
-[ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md) §3.4 规定语义子域
+[ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md) §3.4 规定语义子域
 （`Physics/Movement`、`Attributes/Buff` 等）视为独立领域、按同一规则再分，父领域根只放
 父领域自己的 `*System.cs`。本轮把三个域作为 `World/ComponentSystem/` 下的语义子域落位，
 与该条文一致：`World/` 根仍只有两个 `*System.cs` 与 `README.md`，子域各自保留自己的角色
@@ -75,7 +75,7 @@ src/NSSLC/World/
 §2.2「小目录扁平化」与 §3.4「没有 `*System.cs` 的目录不建这四类目录」决定了
 `Session/` 保持扁平：它只有三个类型，没有系统，不为其模板完整性预建空角色目录。
 
-[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §5 规定目录移动优先
+[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §5 规定目录移动优先
 保持命名空间不变，本轮沿用：`ComponentSystem/NpcSpawn/` 仍是 `Terraria.Npc`，
 `ComponentSystem/Session/` 仍是 `Terraria.Session`，`ComponentSystem/TileEntity/` 仍是
 `Terraria.World`。目录与命名空间不一致是既定事实，不在移动时顺手修正。
@@ -92,7 +92,7 @@ src/NSSLC/World/
 | `src/NSSLC/README.md` | 项目根领域表删去三行；新增「`World/ComponentSystem/` 下的语义子域」小节，列出三个子域、内容与命名空间；扁平目录清单的 `Session` 改为 `World/ComponentSystem/Session` |
 | `README.md` | 项目根领域清单删去三个名字，补一句说明它们是 `World/ComponentSystem/` 下的语义子域 |
 | `src/NSSLC/World/README.md` | 「职责分层（2026-11-01）」改为「目录结构」，按四类职责目录重写目录树并补 `ComponentSystem/` 容器与三个子域的角色、命名空间；「运算与更新的边界」中已不存在的 `Solver/`、`Model/`、`Contract/` 表述改指 `System/` 与 `Query/` |
-| `Context/架构设计/项目文件组织设计约束.md` | §5 的目录与命名空间解耦示例路径改为 `src/NSSLC/World/ComponentSystem/NpcSpawn/` |
+| `Context/架构约束/项目文件组织设计约束.md` | §5 的目录与命名空间解耦示例路径改为 `src/NSSLC/World/ComponentSystem/NpcSpawn/` |
 | `Test/README.md` | 第 3 条「项目名跟生产目录」的示例路径改为 `src/NSSLC/World/ComponentSystem/NpcSpawn/`、`src/NSSLC/World/ComponentSystem/TileEntity/` |
 
 历史审计、计划、旧 CR 与迁移台账中的旧路径作为当时证据保留，不逐条改写。旧路径按下表
@@ -138,12 +138,12 @@ Remove-Item "src/NSSLC/World/ComponentSystem" -Recurse
 
 - 目录移动未改变命名空间，三个子域的目录名与命名空间继续不一致；这是 §5 要求的既定
   事实，不在本轮修正。
-- `ComponentSystem/` 是 `World/` 独有的容器层，[ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md)
+- `ComponentSystem/` 是 `World/` 独有的容器层，[ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md)
   §3.4 本身未定义该层。§3.1 记录了原因、范围与撤销条件；若后续该约束正式引入容器层，
   应改写 §3.1 为对约束的引用而非本地约定。
 - `World/README.md` 第 2 节的运算表仍列 `WorldItemRules`，该类型实际位于
   `src/NSSLC/WorldItem/System/`，属本轮之前的既有失准，本轮未改。
-- `Context/架构设计/ECS领域与基础设施架构边界.md` 的 `src/NSSLC/Component/WorldSession/`
+- `Context/架构约束/ECS领域与基础设施架构边界.md` 的 `src/NSSLC/Component/WorldSession/`
   是文档自述的「逻辑归属示意，不是当前源码路径清单」，不随本轮换算。
 - 工作区另有不属于本轮的未提交改动（`src/NSSLC.Network/` 三个文件、
   `src/NSSLC.Server/Program.cs`、`Test/Terraria.Components/Terraria.Npc.Ai/Program.cs`、

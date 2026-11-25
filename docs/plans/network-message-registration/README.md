@@ -26,8 +26,8 @@
 
 ## 所有子代理的共同执行规则
 
-1. 会话启动后先阅读根 AGENTS.md、Context/progress.md、Context/约束/开发协作与变更约束.md
-   和 Context/约束/构建与验证约束.md，再阅读本类别文档列出的主题约束。
+1. 会话启动后先阅读根 AGENTS.md、Context/progress.md、Context/项目约束/开发协作与变更约束.md
+   和 Context/项目约束/构建与验证约束.md，再阅读本类别文档列出的主题约束。
 2. 必须读取 C:\Users\shan\.agents\skills\pua\SKILL.md，并在自己的执行过程中使用其
    主动搜索、验证、同类排查、边界检查和失败换方向规则。不要把 PUA 当成口号。
 3. 必须为自己的会话声明一个 /goal，目标只覆盖本类别的实现、10% 核心测试和证据回报。

@@ -350,12 +350,12 @@ Simulation、fixture、WorldFile、保存加载和宿主运行命令本轮全部
 
 ## 11. 仓库约束及关联材料
 
-- [ECS 文件组织约束](../../Context/架构设计/ECS文件组织设计约束.md)：领域优先；只读 `分类参考` 不改、不参与生产编译。
-- [ECS Entity 组织约束](../../Context/架构设计/ECSEntity组织设计约束.md)：身份、组件权威状态、生命周期及关系边界；框架未被固定为自建实现。
-- [ECS 与基础设施边界](../../Context/架构设计/ECS领域与基础设施架构边界.md)：DTO、Codec、文件 I/O 不成为 ECS 组件或内部 World consumer。
-- [组件命名约束](../../Context/架构设计/组件命名设计约束.md)：新组件按实际能力命名，不增加泛化容器。
-- [副作用隔离规范](../../Context/约束/非函数式编码副作用隔离规范.md)：随机、时间、网络、存档效果明确 owner 与顺序。
-- [构建与验证约束](../../Context/约束/构建与验证约束.md)：SDK、增量构建、输出位置与通过证据。
+- [ECS 文件组织约束](../../Context/架构约束/ECS文件组织设计约束.md)：领域优先；只读 `分类参考` 不改、不参与生产编译。
+- [ECS Entity 组织约束](../../docs/architecture/ECSEntity组织设计约束.md)：身份、组件权威状态、生命周期及关系边界；框架未被固定为自建实现。
+- [ECS 与基础设施边界](../../Context/架构约束/ECS领域与基础设施架构边界.md)：DTO、Codec、文件 I/O 不成为 ECS 组件或内部 World consumer。
+- [组件命名约束](../../Context/架构约束/组件命名设计约束.md)：新组件按实际能力命名，不增加泛化容器。
+- [副作用隔离规范](../../Context/项目约束/非函数式编码副作用隔离规范.md)：随机、时间、网络、存档效果明确 owner 与顺序。
+- [构建与验证约束](../../Context/项目约束/构建与验证约束.md)：SDK、增量构建、输出位置与通过证据。
 - [已接受身份 ADR](../architecture/decisions/0001-entity-identity-root-and-typed-projections.md)：领域 UUID 与 typed projection 不由 Arch Entity ID 替代。
 - [现有 Entity 组织执行文档](../architecture/execution/2026-10-06-entity-organization-execution.md)：沿用其实际场景线索和具名限制，不沿用旧自建存储选型或历史通过结果。
 

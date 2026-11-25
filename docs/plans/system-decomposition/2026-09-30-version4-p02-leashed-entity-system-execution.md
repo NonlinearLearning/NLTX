@@ -540,7 +540,7 @@ finally {
 
 ~~~powershell
 # 未来完整构建/测试模板；本轮没有运行
-Get-Content 'D:\TRbackup\NLTX\Context\约束\构建与验证约束.md'
+Get-Content 'D:\TRbackup\NLTX\Context\项目约束\构建与验证约束.md'
 $dotnetArguments = @(
   'build', '<approved-project.csproj>',
   '-m:1', '-nr:false', '-p:UseSharedCompilation=false',

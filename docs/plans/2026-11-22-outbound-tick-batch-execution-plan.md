@@ -90,7 +90,7 @@
     dotnet run --project Test\NSSLC.Server\Terraria.Server.TickCadence\Terraria.Server.TickCadence.csproj --no-build --no-restore
     git diff --check
 
-构建按 `Context/约束/构建与验证约束.md` 执行：只构建受影响项目，不做 solution 全量重建，不用 `-t:Rebuild`，产物落 `Build/bin/`。
+构建按 `Context/项目约束/构建与验证约束.md` 执行：只构建受影响项目，不做 solution 全量重建，不用 `-t:Rebuild`，产物落 `Build/bin/`。
 
 ## 5. P0：批边界与仲裁
 

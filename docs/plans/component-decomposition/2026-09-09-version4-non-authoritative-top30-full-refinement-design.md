@@ -80,7 +80,7 @@ ranking + summary + per-member projection
 边界目前属于 `source-inventory-confirmed`，但读写者/生命周期仍是 partial；后续真正实现
 ECS 时必须为 state、query、adapter、projection 建立明确 owner 和 focused verifier。
 
-仓库声明的 `约束/公共拆分约束.md` 当前缺失，已记录为文档风险；本设计以技能正文、ECS
+仓库声明的 `Context/项目约束/公共拆分约束.md` 当前缺失，已记录为文档风险；本设计以技能正文、ECS
 证据协议、现有报告约束和 Version4 只读源码为当前有效依据。
 
 ## Verification

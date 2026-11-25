@@ -14,7 +14,7 @@ canonical 路径：`docs/cr/CR-2026-11-22-arch-design-only.md`
 
 `architecture/` 的信息域定义是：已确认的架构、约束和决策——ADR、边界原则、命名和组织
 规则（[CR-2026-09-18](CR-2026-09-18-docs-md-structure-reorganization.md) 第 3 节、
-[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md)）。
+[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md)）。
 实现记录、盘点矩阵和 System 分区产物不属于这个域。
 
 本次移动 7 个文件、删除 0 个文件，全部限于 `docs/` 内部。源码、测试、项目配置未改动；

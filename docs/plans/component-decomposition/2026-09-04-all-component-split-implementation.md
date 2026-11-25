@@ -16,7 +16,7 @@
 - 所有 `restore`、`build`、`test` 或 `run` 都从仓库根目录通过 `Build/Tools/Invoke-SerialDotnet.ps1` 执行，并带上 `-m:1 -nr:false -p:UseSharedCompilation=false -p:MSBuildNodeReuse=false -p:BuildInParallel=false`。
 - 只构建受影响的 `dome/src/Terraria.Dome.Simulation/Terraria.Dome.Simulation.csproj`，验证程序使用 `--no-build --no-restore`。
 - 不触碰当前工作区与本计划无关的既有删除/修改；每个阶段只提交该阶段的文件。
-- 组件、系统、查询和验证文件遵守 `Context/架构设计/ECS文件组织设计约束.md`、`Context/约束/Google-CSharp-Style-Guide-约束.md` 和 `Context/约束/非函数式编码副作用隔离规范.md`。
+- 组件、系统、查询和验证文件遵守 `Context/架构约束/ECS文件组织设计约束.md`、`Context/项目约束/Google-CSharp-Style-Guide-约束.md` 和 `Context/项目约束/非函数式编码副作用隔离规范.md`。
 
 ## Task 1: 建立逐字段归属和重复模型基线
 

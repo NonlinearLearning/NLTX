@@ -6,8 +6,8 @@
 状态：completed  
 日期：2026-11-22  
 canonical 路径：`docs/cr/CR-2026-11-22-nsslc-domain-directory-flatten.md`  
-上游依据：[ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md) §2.1、§2.2、§4；
-[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §3.1、§5
+上游依据：[ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md) §2.1、§2.2、§4；
+[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §3.1、§5
 
 ## 1. 授权与范围
 
@@ -95,8 +95,8 @@ src/NSSLC/
   `Physics/Movement`、`Physics/Liquid` 等稳定子域。
 - `src/NSSLC/Attributes/README.md`、`src/NSSLC/Projectile/README.md`：按新目录深度修正
   指向 `docs/` 的相对链接。
-- `Test/README.md`、`Context/约束/ECS系统输入边界约束.md`、
-  `Context/架构设计/项目文件组织设计约束.md`：更新当前规则中的旧 `Components/` 路径。
+- `Test/README.md`、`Context/项目约束/ECS系统输入边界约束.md`、
+  `Context/架构约束/项目文件组织设计约束.md`：更新当前规则中的旧 `Components/` 路径。
 - `docs/architecture/` 中仍描述当前实现的四份设计文档同步更新路径；历史审计、计划、
   旧 CR 中的路径作为当时证据保留，不逐条改写。旧路径按下表换算：
 

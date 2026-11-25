@@ -59,12 +59,12 @@ Inventory 属性贡献系统。Inventory 属性贡献和基于槽位的来源身
 证据入口：
 
 - docs/reviews/audits/2026-11-20-attribute-system-architecture-review.md
-- Context/约束/ECS系统输入边界约束.md
-- Context/架构设计/ECS文件组织设计约束.md
-- Context/架构设计/ECSEntity组织设计约束.md
-- Context/约束/组件命名设计约束.md
-- Context/约束/构建与验证约束.md
-- Context/约束/非函数式编码副作用隔离规范.md
+- Context/项目约束/ECS系统输入边界约束.md
+- Context/架构约束/ECS文件组织设计约束.md
+- docs/architecture/ECSEntity组织设计约束.md
+- Context/项目约束/组件命名设计约束.md
+- Context/项目约束/构建与验证约束.md
+- Context/项目约束/非函数式编码副作用隔离规范.md
 
 不把“类型存在”“注册表存在”或“项目能编译”当作行为完成证据。每批必须补充运行路径或可执行验证。
 
@@ -121,7 +121,7 @@ Inventory 属性贡献系统。Inventory 属性贡献和基于槽位的来源身
     dotnet run --project <受影响验证项目> --no-build --no-restore
     git diff --check
 
-构建必须按 Context/约束/构建与验证约束.md 执行，不使用 solution 全量重建代替受影响项目构建。若验证项目还没有可用资产，先增量 build，再用 --no-build --no-restore 运行。
+构建必须按 Context/项目约束/构建与验证约束.md 执行，不使用 solution 全量重建代替受影响项目构建。若验证项目还没有可用资产，先增量 build，再用 --no-build --no-restore 运行。
 
 ## 5. B0：基线、契约和验证骨架
 

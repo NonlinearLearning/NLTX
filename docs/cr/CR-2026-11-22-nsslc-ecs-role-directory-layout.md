@@ -6,14 +6,14 @@
 状态：completed  
 日期：2026-11-22  
 canonical 路径：`docs/cr/CR-2026-11-22-nsslc-ecs-role-directory-layout.md`  
-上游依据：[ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md) §3.2、§3.3、§3.4、§6；
-[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §5
+上游依据：[ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md) §3.2、§3.3、§3.4、§6；
+[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §5
 前置：[CR-2026-11-22 NSSLC 领域目录扁平化](CR-2026-11-22-nsslc-domain-directory-flatten.md)
 
 ## 1. 授权与范围
 
 用户要求：在 `src/NSSLC/` 下移除 `Model` 这类职责文件夹命名风格，忽略 `Communication`
-（该域由并行任务迁出，本轮不触碰）；按 [ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md)
+（该域由并行任务迁出，本轮不触碰）；按 [ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md)
 分为 `Component`、`Command`、`Query` 三类归档；系统主文件留在领域根目录、不做子目录
 管理，系统的附属小文件统一放进 `System/`。用户同时确认了范围与口径：
 
@@ -101,7 +101,7 @@ src/NSSLC/<领域>/
 所有文件仍使用原命名空间：`src/NSSLC/World/**` 仍是 `namespace Terraria.World`，
 `src/NSSLC/Physics/Movement/**` 仍是 `Terraria.Movement`，`NpcSpawn/` 仍是
 `Terraria.Npc`，`ItemUse/` 仍是 `Terraria.Player`。目录移动没有改变命名空间，符合
-[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §5。
+[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §5。
 
 ## 4. 结构调整理由
 
@@ -117,7 +117,7 @@ src/NSSLC/<领域>/
 
 ## 5. 文档处理
 
-- `Context/架构设计/ECS文件组织设计约束.md`：§3.4 由"不强制规定统一目录名称"改为固定的
+- `Context/架构约束/ECS文件组织设计约束.md`：§3.4 由"不强制规定统一目录名称"改为固定的
   四类职责目录规则；§2.1 增加"禁止的是代码根层横向切分"的澄清；§3.2、§3.3 的示例改为
   新布局；§6 验收清单新增两条。
 - `src/NSSLC/README.md`：新增"领域内目录"一节，写明四类目录、扁平目录清单和移植库例外。
@@ -156,7 +156,7 @@ src/NSSLC/<领域>/
 ```powershell
 # 按 §2 的判定表反向移动：Component/、Command/、Query/、System/ 下的文件回到领域根或原
 # Model/、Solver/、Contract/ 目录，然后删除空的四类目录
-git checkout -- Context/架构设计/ECS文件组织设计约束.md src/NSSLC/README.md `
+git checkout -- Context/架构约束/ECS文件组织设计约束.md src/NSSLC/README.md `
   docs/architecture/2026-10-23-nsslc-arch-ecs-organizer.md
 ```
 
