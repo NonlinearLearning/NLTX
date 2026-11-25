@@ -550,7 +550,7 @@ public sealed class PlayerFishingCapabilityComponent
 2. 为 `EntityUuid`、`PersistentPlayerId`、`DirectionKind`、`PlayerContainerRef` 和免疫槽位取得真实来源证据。
 3. 盘点所有 `Player*State`、dome 组件和调用方，确定每个字段只有一个权威写入路径。
 4. 先补状态转换和关系失效的 focused verifier，再迁移一个 Component 边界；不要以“能编译”替代行为验证。
-5. 按 `Context/架构设计/ECS文件组织设计约束.md` 和 `AGENTS.md` 记录源路径、目标路径及依赖影响。
+5. 按 `Context/架构约束/ECS文件组织设计约束.md` 和 `AGENTS.md` 记录源路径、目标路径及依赖影响。
 6. 只在代码边界确定后创建 `.cs` 文件，并按仓库要求通过 `Build/Tools/Invoke-SerialDotnet.ps1` 串行验证受影响项目。
 
 ## 9. 未验证声明

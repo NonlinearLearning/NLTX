@@ -23,9 +23,9 @@
 4. `D:\TRbackup\NLTX\.agents\skills\public-decomposition\SKILL.md`；
 5. `D:\TRbackup\NLTX\.agents\skills\public-decomposition\references\ecs-evidence-protocol.md`；
 6. `D:\TRbackup\NLTX\.agents\skills\public-decomposition\references\tmodloader-documentation-retrieval.md`；
-7. `D:\TRbackup\NLTX\Context/架构设计\ECS文件组织设计约束.md`；
-8. `D:\TRbackup\NLTX\Context/约束\Google-CSharp-Style-Guide-约束.md`；
-9. `D:\TRbackup\NLTX\Context/约束\非函数式编码副作用隔离规范.md`；
+7. `D:\TRbackup\NLTX\Context/架构约束\ECS文件组织设计约束.md`；
+8. `D:\TRbackup\NLTX\Context/项目约束\Google-CSharp-Style-Guide-约束.md`；
+9. `D:\TRbackup\NLTX\Context/项目约束\非函数式编码副作用隔离规范.md`；
 10. 本公共提示词；
 11. 一个且仅一个 P01-P20 专属任务提示词；
 12. runner 返回的 `VERSION4_PARTITION_REPORT_PATH` 对应的输入分区报告。

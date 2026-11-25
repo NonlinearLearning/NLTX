@@ -384,7 +384,7 @@ ExtraSeatInfo.IsAToilet 是 PlayerSittingHelper 创建/设置、Player 消费的
 ### Evidence-gap
 
 1. 第一轮 P05 public-decomposition 报告缺失，无法复用其逐成员读者/写者结论。
-2. D:\TRbackup\NLTX\约束\公共拆分约束.md 当前路径不存在；设计遵循已读取的 public-decomposition 和 AGENTS.md 规则，但公共约束仍需整合会话补齐。
+2. D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md 当前路径不存在；设计遵循已读取的 public-decomposition 和 AGENTS.md 规则，但公共约束仍需整合会话补齐。
 3. D:\TRbackup\NLTX\docs\Version4与完整源码差异附录-2026-09-05.md 当前路径不存在。
 4. DontStarveDarknessDamageDealer 的 darknessTimer/darknessHitTimer 实际 tick 写入路径未找到。
 5. TrackedProjectileReference 的 FindMatchingProjectile、Equals 和 GetHashCode 在 Version4 中有 stub。

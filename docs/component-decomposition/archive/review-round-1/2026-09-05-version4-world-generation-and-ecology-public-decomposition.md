@@ -91,7 +91,7 @@ Version4 决定真实行为、覆盖范围、字段和调用链；完整参考�
 
 - 任务提示给出的 `D:\TRbackup\Version4\Terraria\WorldFile.cs` 不存在；实际证据为 `D:\TRbackup\Version4\Terraria.IO\WorldFile.cs`，标记 `evidence-mismatch`，以下均使用实际路径。
 - 任务包关于“当前 NLTX 没有 generation executor、确定性 Pass 或 Tile commit”的描述与现场源码不一致，属于 `version-drift`。现场存在受限 executor、确定性状态、命令提交和有限验证，但不能据此声称完整 Version4 实现。
-- 根目录 `D:\TRbackup\NLTX\约束\公共拆分约束.md` 和 `D:\TRbackup\NLTX\docs\flowstate\README.md` 当前未找到；已读取仓库实际存在的 `dome\dome1\docs\flowstate\README.md` 作为有限上下文，不把缺失文件当成设计事实。
+- 根目录 `D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md` 和 `D:\TRbackup\NLTX\docs\flowstate\README.md` 当前未找到；已读取仓库实际存在的 `dome\dome1\docs\flowstate\README.md` 作为有限上下文，不把缺失文件当成设计事实。
 
 ## 4. Version4 真实代码证据
 
@@ -587,7 +587,7 @@ evidenceGaps:
 - 完整参考源码只能对 Version4 已存在成员补证
 - 当前 NLTX 虽有受限 generation pipeline，但完整 Pass、住房、ready、持久化和跨域执行闭环尚未证实
 - `WorldFile.cs` 任务路径与实际 `Terraria.IO/WorldFile.cs` 不一致
-- 根目录 `约束/公共拆分约束.md` 与 `docs/flowstate/README.md` 当前不存在；仅 `dome/dome1/docs/flowstate/README.md` 存在
+- 根目录 `Context/项目约束/公共拆分约束.md` 与 `docs/flowstate/README.md` 当前不存在；仅 `dome/dome1/docs/flowstate/README.md` 存在
 - 当前报告本轮未运行 focused verifier
 
 blockingDecisions:

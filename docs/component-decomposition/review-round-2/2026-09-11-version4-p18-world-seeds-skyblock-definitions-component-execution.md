@@ -32,7 +32,7 @@ lastCheckpointUtc: 2026-09-12T07:16:31Z
 evidence-gap:
   - Exact NLTX canonical owner for existing WorldRuleSnapshotComponent flags is unresolved.
   - Version4 persistence/network and cross-partition scheduler contracts are not verified.
-  - 约束/公共拆分约束.md is referenced by the style guide but absent from this checkout.
+  - Context/项目约束/公共拆分约束.md is referenced by the style guide but absent from this checkout.
   - GenerateBiggerAbandonedHouses has an explicit Version4 genRand.Next(3) dependency; draw timing is not yet an NLTX contract.
   - The current NLTX variation API accepts enabled variants and active count separately; their consistency is not enforced by the API.
   - Version4 Skyblock.ScanTiles/Calculate owns scan reset, active-tile accumulation, dungeon-coordinate mutation and lowTiles replication effects; the cross-partition effect owner is not verified.

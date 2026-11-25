@@ -28,7 +28,7 @@
 1. [仓库入口](../../../AGENTS.md) 和 [当前进度](../../../Context/progress.md)；
 2. [System 拆分规则](../../../.agents/skills/ecs-system/system-splitting/SKILL.md)；
 3. [权威分区会话规则](../../../.agents/skills/version4-partition-session-runner/sessions/version4-authoritative-partition-session/SKILL.md)；
-4. [ECS 文件组织约束](../../../Context/架构设计/ECS文件组织设计约束.md)；
+4. [ECS 文件组织约束](../../../Context/架构约束/ECS文件组织设计约束.md)；
 5. 本文档对应的 P01-P20 专属 prompt；
 6. runner 返回的当前分区输入报告；
 7. 为解决具体争议所需的 Version4 源码、调用证据、读写证据和生命周期证据。

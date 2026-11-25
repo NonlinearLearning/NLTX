@@ -811,7 +811,7 @@ Version4 `TownRoomManager` 的 `_roomLocationPairs`、`_hasRoom`、`SetRoom`、`
 
 ### `EG-COMP-08`：公共拆分约束文件缺失
 
-- 缺口：当前 checkout 未找到 `D:\TRbackup\NLTX\约束\公共拆分约束.md`；本设计只能依据已读取的 `public-decomposition` 规则、ECS 文件组织约束和任务提示词。
+- 缺口：当前 checkout 未找到 `D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md`；本设计只能依据已读取的 `public-decomposition` 规则、ECS 文件组织约束和任务提示词。
 - 影响：项目专属公共拆分细则无法作为额外证据，设计状态不能升为 `baseline`。
 - 证据状态：`missing`。
 

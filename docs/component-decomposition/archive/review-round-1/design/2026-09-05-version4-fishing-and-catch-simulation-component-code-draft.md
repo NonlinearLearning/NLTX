@@ -791,7 +791,7 @@ public struct FishingResultCommitStateComponent
 - [ ] 确认 FishingOutcomeKind 的 Item/NPC/Junk/QuestFish 集合和字段互斥规则。
 - [ ] 确认 BiteThreshold 的 Version4 来源；在此之前不能把 660 作为已验证常量。
 - [ ] 确认 FishingBiomeFlags、FishingRarityFlags 和 RNG 审计值的位宽、版本和持久化语义。
-- [ ] 结合目标项目引用关系决定是否采用 dome/.../Fishing/Components/，并遵守 Context/架构设计/ECS文件组织设计约束.md。
+- [ ] 结合目标项目引用关系决定是否采用 dome/.../Fishing/Components/，并遵守 Context/架构约束/ECS文件组织设计约束.md。
 - [ ] 实际创建 .cs 前，按仓库 BUILD-CONCURRENCY-1 规则执行受约束的最小编译和 focused verifier。
 
 ## 10. 最终声明

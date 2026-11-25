@@ -21,7 +21,7 @@ aggregateVerifierResult: exitCode=1; System.InvalidOperationException at src2\Ve
 handoffId: p04-world-tiles-storage-rebind-20260912
 previousSessionId: bd37778d060641eeaa9f2700ed00af6c
 handoffStatus: completed; old session was rejected from further settlement and the active session is 7714d0b0d753445aa529fb1b38578679
-evidence-gap: P04 first-round public-decomposition report is absent; 约束\公共拆分约束.md is absent; complete per-member readers, writers, lifecycle and parity evidence is not closed for all 320 members; exact Version4 build/runtime integration and cross-partition ownership are unverified; geometry initialization and canonical section derivation owner are not closed; the existing aggregate verifier fails at src2\Verification\Program.cs:326 before the P04 tile-specific check
+evidence-gap: P04 first-round public-decomposition report is absent; Context\项目约束\公共拆分约束.md is absent; complete per-member readers, writers, lifecycle and parity evidence is not closed for all 320 members; exact Version4 build/runtime integration and cross-partition ownership are unverified; geometry initialization and canonical section derivation owner are not closed; the existing aggregate verifier fails at src2\Verification\Program.cs:326 before the P04 tile-specific check
 blocking-decision: integration-review must decide final owners for shared Main metadata, canonical Tile mutation/bit packing, TileEntity identity and persistence/network projections, placement hook execution, snapshot restore ordering, and the global System scheduler before remaining deferred work or caller migration; the existing aggregate verifier boundary must be repaired outside this Component-only task before P04 behavior can be verified
 
 ## Status Boundary
@@ -742,7 +742,7 @@ Evidence gaps are intentionally explicit:
 - No P04 first-round report exists at
   `D:\TRbackup\NLTX\docs\component-decomposition\review-round-1\2026-09-11-version4-non-authoritative-P04-world-tiles-storage-public-decomposition.md`.
   This second-round document does not recreate it or treat it as evidence.
-- `D:\TRbackup\NLTX\约束\公共拆分约束.md` was not present. The design therefore uses the
+- `D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md` was not present. The design therefore uses the
   available repository and session rules and marks public-split compliance as requiring review.
 - The inventory confirms declarations and paths, but a complete member-by-member reader/writer,
   lifecycle, failure, retry, and parity trace is not closed for every member. Rows remain

@@ -24,7 +24,7 @@ lastCheckpointUtc: 2026-09-12T10:27:47.1999522Z
 evidence-gap:
 - The first-round P10 public-decomposition output named by the task package was not found in the checkout.
 - The partition report declares upstream source-report SHA-256 b944441d92d5103f218b766a3e354200794528a19e65a862e44c2b40a36f1196, while the observed SHA-256 of the current partition report is 8B6B00D33DE98A7A1047E7DF05F60E5A114AB270FF38C330995407F236C5874C; provenance must be reconciled before implementation.
-- The referenced repository constraint file 约束\公共拆分约束.md is absent.
+- The referenced repository constraint file Context\项目约束\公共拆分约束.md is absent.
 - Member-level readers, writers, initialization, cleanup, persistence, network semantics, and scheduler ownership are not closed for all 321 rows.
 - Version4 contains incomplete or empty behavior in remote craft request deserialization, shop mood processing, fishing condition matching, and portions of item-drop rules; names and fields are not evidence of behavior equivalence.
 - Existing NLTX files are current-state evidence only and are not claimed as migrated targets.

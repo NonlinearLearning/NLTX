@@ -13,7 +13,7 @@ completedComponents: [FrameActivityStateComponent, RuntimeBootstrapAndWorldRuleS
 currentComponent: none (src2 implementation and focused verification complete)
 pendingComponents: []
 lastCheckpointUtc: 2026-09-12T07:32:20.4258455Z
-evidence-gap: P01 专属第一轮 public-decomposition 输出文件不存在；输入库存只确认声明/计数，逐成员读者、写者、生命周期、网络/存档提交和宿主语义仍有 partial/unresolved；任务包中的 `Terraria\\WorldFile.cs` 与实际 `Terraria.IO\\WorldFile.cs` 不一致；`约束/公共拆分约束.md` 未在声明路径找到；src2 serial build、focused verifier 和 149-member coverage audit 已通过；`WorldSessionReplicationProjection` 目前仅提供 typed committed-snapshot pass-through，不闭合 WorldData packet 7 客户端恢复；`WorldPersistenceAdapter` 是内存边界，不是生产文件 I/O。
+evidence-gap: P01 专属第一轮 public-decomposition 输出文件不存在；输入库存只确认声明/计数，逐成员读者、写者、生命周期、网络/存档提交和宿主语义仍有 partial/unresolved；任务包中的 `Terraria\\WorldFile.cs` 与实际 `Terraria.IO\\WorldFile.cs` 不一致；`Context/项目约束/公共拆分约束.md` 未在声明路径找到；src2 serial build、focused verifier 和 149-member coverage audit 已通过；`WorldSessionReplicationProjection` 目前仅提供 typed committed-snapshot pass-through，不闭合 WorldData packet 7 客户端恢复；`WorldPersistenceAdapter` 是内存边界，不是生产文件 I/O。
 blocking-decision: crossSubsystemOwner: integration-review；需整合会话锁定 WorldSession 根实体、Hardmode 事务、FrameActivity 聚合、WorldData 客户端恢复、宿主/平台隔离、公共 ID/快照以及 Version4 时间与网络/持久化提交顺序。
 
 > 本文件仍是第二轮非权威设计提案。边界、owner、网络/存档语义和跨分区调度仍为 `proposed`；本会话已在 `src2` 保存对应的非权威实现，且串行 build、focused verifier 和 149 条成员覆盖审计已通过。这不表示生产 `src` 已迁移、行为等价、网络闭合或生产持久化完成。
@@ -555,7 +555,7 @@ HostBootstrapAdapter
 
 ## 18. Evidence Gaps, Blocking Decisions and Verification
 
-- `evidence-gap`：P01 专属第一轮 public-decomposition 输出文件不存在；输入库存只确认声明/计数，逐成员读者、写者、生命周期、网络/存档提交和宿主语义仍有 partial/unresolved；任务包中的 `Terraria\\WorldFile.cs` 与实际 `Terraria.IO\\WorldFile.cs` 不一致；`约束/公共拆分约束.md` 未在声明路径找到。
+- `evidence-gap`：P01 专属第一轮 public-decomposition 输出文件不存在；输入库存只确认声明/计数，逐成员读者、写者、生命周期、网络/存档提交和宿主语义仍有 partial/unresolved；任务包中的 `Terraria\\WorldFile.cs` 与实际 `Terraria.IO\\WorldFile.cs` 不一致；`Context/项目约束/公共拆分约束.md` 未在声明路径找到。
 - `blocking-decision`：`crossSubsystemOwner: integration-review`；需整合会话锁定 WorldSession 根实体、Hardmode 事务、FrameActivity 聚合、WorldData 客户端恢复、宿主/平台隔离、公共 ID/快照以及 Version4 时间与网络/持久化提交顺序。
 - focused verifier：`src2/WorldSessionVerification/Program.cs` 已覆盖 frame activity trace、readiness gate、time-skip compatibility、host boundary、difficulty curve/query、special-seed input、ManEater cleanup/index ordering 和 typed persistence/replication boundary；WorldData packet 7 golden bytes、one-writer static guard 和行为回放仍未闭合。
 - 已实际执行并通过本会话的验证：通过 `Build/Tools/Invoke-SerialDotnet.ps1` 对 `src2/WorldSessionVerification/Terraria.WorldSessionVerification.csproj` 串行 build（exit code 0，0 warning，0 error），确认两个 DLL 位于 `Build/bin/`；随后以 `--no-build --no-restore` 运行 focused verifier（exit code 0，输出 `P01 verifier passed.`）；149-member coverage audit 的实际序号集合与执行映射完全相等，禁止边界引用审计无命中。`verificationStatus: independently-verified` 仅表示这些 src2 局部证据，不能据此声称行为等价、网络闭合或生产持久化完成。

@@ -103,7 +103,7 @@ SpawnLifecycleAndLoot 的候选职责是实体从请求到结果提交的跨域�
 | Space Station 14 | spawn、despawn、EntitySpawnEntry、ContainerFill | 命中最小相关内容系统 | RobustToolbox 核心为空 | 只保留结构参考 |
 | NLTX | NpcSpawnCommitSystem、NpcLifecycleSystem、NpcLootSystem、DomeSimulation | 命中局部实现和集中编排点 | 无统一跨域事务和 focused verifier | 作为当前状态证据 |
 
-D:\TRbackup\NLTX\约束\公共拆分约束.md 在本次读取中不存在。公共协议、ECS 文件组织约束、C# 风格约束和副作用隔离约束已读取；该文件缺失记录为 evidence-gap，不假定其存在。
+D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md 在本次读取中不存在。公共协议、ECS 文件组织约束、C# 风格约束和副作用隔离约束已读取；该文件缺失记录为 evidence-gap，不假定其存在。
 
 ## 4. Version4 真实代码证据表
 
@@ -582,7 +582,7 @@ tModLoader 的 GlobalNPC/ModNPC 将 CheckActive、SpawnNPC、PreKill、ModifyNPC
 
 ### 19.1 普通 evidence-gap
 
-1. D:\TRbackup\NLTX\约束\公共拆分约束.md 缺失；已依据公共协议和其他已读约束继续交付。
+1. D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md 缺失；已依据公共协议和其他已读约束继续交付。
 2. RobustToolbox 核心子模块为空，缺少 SS14 引擎级实体管理、删除、复制和持久化直接证据。
 3. MessageBuffer.cs:1184 的 case 23 提前 break 与后续 NPC 解析冲突；字段布局可确认，可达性为 evidence-mismatch。
 4. 完整参考的 DropEoWLoot、NPC helper、OnKillNPC 只能作为 Version4 已存在成员的补证。
@@ -726,7 +726,7 @@ tModLoader 的 GlobalNPC/ModNPC 将 CheckActive、SpawnNPC、PreKill、ModifyNPC
     - 不创建 generic Shared/Components、Common 或 Misc 目录
 
     evidenceGaps:
-    - 缺失 D:\TRbackup\NLTX\约束\公共拆分约束.md
+    - 缺失 D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md
     - RobustToolbox 子模块为空，缺少 SS14 引擎级直接证据
     - MessageBuffer.cs:1184 case 23 提前 break，状态 evidence-mismatch
     - 完整参考 DropEoWLoot、NPCLoot helper、OnKillNPC 只能补证/version-drift

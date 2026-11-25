@@ -3,7 +3,7 @@
 日期：2026-10-06。状态：实施中；源码事实、已接入切片与目标方案分开记录。配套文件：
 [执行文档](execution/2026-10-06-entity-organization-execution.md)。
 
-本文把 [Entity 组织设计约束](../../Context/架构设计/ECSEntity组织设计约束.md) 落到
+本文把 [Entity 组织设计约束](../../docs/architecture/ECSEntity组织设计约束.md) 落到
 Version4 原实现和 NLTX 当前调用路径。交付范围是架构、代码边界、迁移映射和验收方案，
 当前进度和可复核的构建、行为证据记录在执行文档及其
 [执行 ledger](../migration/ledgers/2026-10-06-entity-organization-execution-ledger.md)。
@@ -11,8 +11,8 @@ Version4 原实现和 NLTX 当前调用路径。交付范围是架构、代码�
 ## 1. 依据、范围与结论
 
 采用已接受的 [EntityUuid 身份决策](decisions/0001-entity-identity-root-and-typed-projections.md)、
-[身份术语](entity-identity-context.md)、[文件组织约束](../../Context/架构设计/ECS文件组织设计约束.md)
-和 [领域/基础设施边界](../../Context/架构设计/ECS领域与基础设施架构边界.md)。
+[身份术语](entity-identity-context.md)、[文件组织约束](../../Context/架构约束/ECS文件组织设计约束.md)
+和 [领域/基础设施边界](../../Context/架构约束/ECS领域与基础设施架构边界.md)。
 SS14 的身份与组件关联、能力查询、类型化视图和生命周期机制见
 [固定版本源码研究](../research/2026-10-06-ss14-entity-organization.md)。
 

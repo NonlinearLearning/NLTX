@@ -66,7 +66,7 @@ deferred seam。所有 proposed 类型都明确标记 `status: proposed`。
 | Version4 network input/output | `MessageBuffer.cs` case 13；`NetMessage.cs` case 13 | 控制位、pulley、gravDir、位置/速度和坐骑位进入/离开协议；P07 字段不能自行假设所有字段网络同步 | confirmed; P07 field-level coverage partial |
 | tModLoader public mirror | `D:\TRbackup\tmodloader-api-docs-stable\index.html` shows `v2026.07`; `class_player.html`, `class_mod_player.html`, `class_mount.html`, `class_projectile.html` | 公开 Player/ModPlayer/Mount/Projectile boundary and hook shape only | confirmed-public-boundary; not Version4 proof |
 | Current NLTX | `dome/src/Terraria.Dome.Simulation/Player/Components/PlayerMovementStateComponent.cs`, `PlayerFlightStateComponent.cs`, `PlayerGrappleStateComponent.cs`, `PlayerControlSystem.cs`, `MovementSystem.cs` | 仅部分 flight/grapple/fall 状态和简化输入/位置更新已存在；没有完整 P07 authority | existing-evidence; partial |
-| Missing constraint | `D:\TRbackup\NLTX\约束\公共拆分约束.md` 不存在 | 不能声称该约束已读取；以 AGENTS、ECS 文件组织和副作用规范为准 | missing/partial |
+| Missing constraint | `D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md` 不存在 | 不能声称该约束已读取；以 AGENTS、ECS 文件组织和副作用规范为准 | missing/partial |
 
 Version4 当前 checkout 中 `GetGrapplingForces`、`RefreshMovementAbilities`、`SolarDashStart`
 等路径存在 stub/空实现，Player 直接序列化入口也不能证明完整保存格式。因此本设计的总体

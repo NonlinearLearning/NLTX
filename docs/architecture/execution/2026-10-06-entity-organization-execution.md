@@ -9,7 +9,7 @@ DLL `0B052D8CB8E6D47A0DF4555B44249F26D1A0BE1A787BF7819CB53D71D9981E56`，其 17 
 七个 Projectile mode 的 fresh 验证使用 `5C631F60797CD86E7B23A88CD8B04CF706B3DA2D993EDB75C2ADA65D7CD487B3`。
 Mother Slime 的 237/11 比较差异与完整因果、未接线/存根和有限支持集作为具名限制保留。
 配套 [代码设计](../2026-10-06-entity-organization-design.md) 与
-[正式组织约束](../../../Context/架构设计/ECSEntity组织设计约束.md)。
+[正式组织约束](../../../docs/architecture/ECSEntity组织设计约束.md)。
 
 本文件规定具体入口、依赖、切换、回退和验收记录方式。批次状态、单写边界和验证证据见
 [本主题执行 ledger](../../migration/ledgers/2026-10-06-entity-organization-execution-ledger.md)。
@@ -23,7 +23,7 @@ B5 不拥有这些正式文档或文档导航。
 
 先读根 AGENTS、progress 和各主题约束，保留工作树已有修改。涉及文件移动、组件命名、
 C#、副作用、基础设施及验证时分别读取对应约束。使用
-[构建与验证约束](../../../Context/约束/构建与验证约束.md) 规定的 SDK 和输出边界。
+[构建与验证约束](../../../Context/项目约束/构建与验证约束.md) 规定的 SDK 和输出边界。
 
 实施前固定当前 NLTX 工作树及 `D:/TRbackup/Version4` 的具体文件指纹、源码行号、
 已有行为支持和每个真实入口。Version4 只读；不构建旧 net40/x86 工程；不修改

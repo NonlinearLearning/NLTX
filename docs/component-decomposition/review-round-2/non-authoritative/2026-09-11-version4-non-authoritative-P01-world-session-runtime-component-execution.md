@@ -13,7 +13,7 @@ completedComponents: [FrameActivityStateComponent, RuntimeBootstrapAndWorldRuleS
 currentComponent: none (src2 implementation and focused verification complete)
 pendingComponents: []
 lastCheckpointUtc: 2026-09-12T07:32:20.4258455Z
-evidence-gap: P01 专属第一轮 public-decomposition 输出文件不存在；输入库存只确认声明/计数，逐成员读者、写者、生命周期、网络/存档提交和宿主语义仍有 partial/unresolved；任务包中的 `Terraria\\WorldFile.cs` 与实际 `Terraria.IO\\WorldFile.cs` 不一致；`约束/公共拆分约束.md` 未在声明路径找到；src2 serial build、focused verifier 和 149-member coverage audit 已通过；`WorldSessionReplicationProjection` 目前仅提供 typed committed-snapshot pass-through，不闭合 WorldData packet 7 客户端恢复；`WorldPersistenceAdapter` 是内存边界，不是生产文件 I/O。
+evidence-gap: P01 专属第一轮 public-decomposition 输出文件不存在；输入库存只确认声明/计数，逐成员读者、写者、生命周期、网络/存档提交和宿主语义仍有 partial/unresolved；任务包中的 `Terraria\\WorldFile.cs` 与实际 `Terraria.IO\\WorldFile.cs` 不一致；`Context/项目约束/公共拆分约束.md` 未在声明路径找到；src2 serial build、focused verifier 和 149-member coverage audit 已通过；`WorldSessionReplicationProjection` 目前仅提供 typed committed-snapshot pass-through，不闭合 WorldData packet 7 客户端恢复；`WorldPersistenceAdapter` 是内存边界，不是生产文件 I/O。
 blocking-decision: crossSubsystemOwner: integration-review；需整合会话锁定 WorldSession 根实体、Hardmode 事务、FrameActivity 聚合、WorldData 客户端恢复、宿主/平台隔离、公共 ID/快照以及 Version4 时间与网络/持久化提交顺序。
 
 > 本文件记录 P01 非权威实现执行状态。跨分区 owner、生产接线、Version4 行为等价、文件格式和 packet 7 客户端恢复仍未裁决；对应源码已保存到 `src2`，且串行 build、focused verifier 和 149 条成员覆盖审计已通过。这不表示生产 `src` 已迁移、行为等价、网络闭合或生产持久化完成。
@@ -41,7 +41,7 @@ blocking-decision: crossSubsystemOwner: integration-review；需整合会话锁�
 | External boundaries | `src2/WorldSession/Runtime/RuntimeHostAdapter.cs`, `WorldPersistenceAdapter.cs`, `WorldSessionReplicationProjection.cs` | proposed adapter/projection boundary |
 | Commands/ports | `src2/WorldSession/Runtime/FrameControlCommand.cs`, `WorldTimeSkipCommand.cs`, `DeferredProcessPort.cs` | explicit intent/effect boundary |
 
-Implementation mode keeps existing `src` untouched and does not silently rename public identities or register a second component key. The missing `约束/公共拆分约束.md` remains an evidence gap; the repository ECS organization, naming, style and side-effect rules were used for the saved `src2` files.
+Implementation mode keeps existing `src` untouched and does not silently rename public identities or register a second component key. The missing `Context/项目约束/公共拆分约束.md` remains an evidence gap; the repository ECS organization, naming, style and side-effect rules were used for the saved `src2` files.
 
 ## 2. Implementation order
 

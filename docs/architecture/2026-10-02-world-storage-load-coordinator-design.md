@@ -5,7 +5,7 @@
 产物类型：design  
 状态：draft  
 范围：本地世界文件的完整载荷生命周期、Infrastructure 编解码、System 标准加载 API 的构建期收集与生成分派、ECS owner 提交及保存快照编排。  
-证据入口：[WorldFile.cs](../../src/NSSLC.Infrastructure/WorldStorage/WorldFile/WorldFile.cs)、[WorldStorageRoot.cs](../../src/NSSLC/Component/WorldStorage/WorldStorageRoot.cs)、[WorldLoadLifecycleSystem.cs](../../src/NSSLC/Component/WorldSession/WorldGeneration/Systems/WorldLoadLifecycleSystem.cs)、[WorldSavedOreTierLoadSystem.cs](../../src/NSSLC/Component/WorldSession/WorldSavedOreTierLoadSystem.cs)、[架构边界约束](../../Context/架构设计/ECS领域与基础设施架构边界.md)、[CR-2026-10-02](../cr/CR-2026-10-02-world-load-standard-api.md)。  
+证据入口：[WorldFile.cs](../../src/NSSLC.Infrastructure/WorldStorage/WorldFile/WorldFile.cs)、[WorldStorageRoot.cs](../../src/NSSLC/Component/WorldStorage/WorldStorageRoot.cs)、[WorldLoadLifecycleSystem.cs](../../src/NSSLC/Component/WorldSession/WorldGeneration/Systems/WorldLoadLifecycleSystem.cs)、[WorldSavedOreTierLoadSystem.cs](../../src/NSSLC/Component/WorldSession/WorldSavedOreTierLoadSystem.cs)、[架构边界约束](../../Context/架构约束/ECS领域与基础设施架构边界.md)、[CR-2026-10-02](../cr/CR-2026-10-02-world-load-standard-api.md)。  
 canonical 路径：docs/architecture/2026-10-02-world-storage-load-coordinator-design.md
 
 System 加载协议和构建期发现规则由[标准加载 API 专项设计](2026-10-02-world-load-standard-api-design.md)细化；其分阶段实施门槛见[执行计划](execution/2026-10-02-world-load-standard-api-execution.md)。

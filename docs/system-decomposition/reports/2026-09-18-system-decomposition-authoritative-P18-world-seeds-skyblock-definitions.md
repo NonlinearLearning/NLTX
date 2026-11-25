@@ -49,7 +49,7 @@ CPG queries used exact declaration paths and explicit SourcePath scopes. Type-su
 
 The target tree was inspected under src/NSSLC/Component/WorldSession/WorldGeneration. Candidate flag, secret-seed registry, Query, scan and commit source files are present. Scoped text search found declarations for the reviewed candidate APIs but no explicit production call sites for the flag component, catalog/derived Queries or the cited registry/Skyblock commit APIs. This is partial static evidence only: dynamic, reflection, generated, serializer, external assembly and runtime edges are not closed.
 
-The selected SS14 reference is C:/Users/shan/Downloads/ECS/space-station-14-master. SharedHandsSystem.cs and SharedHandsSystem.Drop.cs support one System type owning related API/event behavior across partial files; PullingSystem.CanPull illustrates that an eligibility-shaped API may emit a cancellable event. These are organization examples only, not Terraria behavior evidence. The local tModLoader v2026.07 page struct_world_gen_1_1_grow_tree_settings.html confirms the public GrowTreeSettings shape and documented fields; it does not establish Version4's private registration, option or execution semantics. Context/约束/公共拆分约束.md, referenced by the public-decomposition skill, was not present in this checkout; applicable file-organization, API and side-effect rules were read from their available sources.
+The selected SS14 reference is C:/Users/shan/Downloads/ECS/space-station-14-master. SharedHandsSystem.cs and SharedHandsSystem.Drop.cs support one System type owning related API/event behavior across partial files; PullingSystem.CanPull illustrates that an eligibility-shaped API may emit a cancellable event. These are organization examples only, not Terraria behavior evidence. The local tModLoader v2026.07 page struct_world_gen_1_1_grow_tree_settings.html confirms the public GrowTreeSettings shape and documented fields; it does not establish Version4's private registration, option or execution semantics. Context/项目约束/公共拆分约束.md, referenced by the public-decomposition skill, was not present in this checkout; applicable file-organization, API and side-effect rules were read from their available sources.
 
 ## Prior Component Decomposition Reconciliation
 
@@ -198,7 +198,7 @@ evidenceGaps:
 - Current NSSLC candidate APIs have no confirmed production call path in the inspected source tree.
 - Event subscribers, full derived-property callers, generator pass scheduling, exception/retry paths and unload behavior are incomplete.
 - Persistence, network/client projection and multi-world/session scope are unresolved.
-- Context/约束/公共拆分约束.md is missing from this checkout.
+- Context/项目约束/公共拆分约束.md is missing from this checkout.
 
 blockingDecisions:
 - integration-review must select the canonical owner/scope for the option-derived flags and enabled secret-seed runtime set. Options are (a) retain a process-static compatibility facade during staged replacement, minimizing immediate semantic change but preserving singleton limitations; (b) promote state to a world-session Component, requiring identity, persistence and network migration; or (c) snapshot process selection into a generation-scoped immutable input, separating UI selection from execution but requiring reset/restore coordination.

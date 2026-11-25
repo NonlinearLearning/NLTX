@@ -5,7 +5,7 @@
 产物类型：design  
 状态：implemented（首批：ItemUse 族已切换，含分派层；49 项验证通过 + 真实启动对照）  
 日期：2026-11-23（Asia/Shanghai）  
-关联约束：[ECS 领域层与基础设施架构边界](../../Context/架构设计/ECS领域与基础设施架构边界.md)、[ECS 系统输入边界约束](../../Context/约束/ECS系统输入边界约束.md)、[ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md)、[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md)、[C# 风格约束](../../Context/约束/Google-CSharp-Style-Guide-约束.md)  
+关联约束：[ECS 领域层与基础设施架构边界](../../Context/架构约束/ECS领域与基础设施架构边界.md)、[ECS 系统输入边界约束](../../Context/项目约束/ECS系统输入边界约束.md)、[ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md)、[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md)、[C# 风格约束](../../Context/项目约束/Google-CSharp-Style-Guide-约束.md)  
 相关研究：[参考客户端元数据普查](../research/2026-11-23-client-metadata-survey.md)、[代码内元数据与业界元数据加载技术调研](../research/2026-11-23-code-embedded-metadata-research.md)
 
 ## 1. 命名与定位
@@ -30,7 +30,7 @@ VFS 的价值不在"统一接口"本身，而在三件事：**接口窄、类型
 
 ### 1.3 大小写
 
-C# 标识符按 [C# 风格约束](../../Context/约束/Google-CSharp-Style-Guide-约束.md) §2.1「缩写按单词处理，例如 `MyRpc`，不要写成 `MyRPC`」取 `Lvcs`（命名空间 `Terraria.Lvcs`、类型 `ILvcsCodec`）。文档正文使用 `LVCS` 作为系统名。
+C# 标识符按 [C# 风格约束](../../Context/项目约束/Google-CSharp-Style-Guide-约束.md) §2.1「缩写按单词处理，例如 `MyRpc`，不要写成 `MyRPC`」取 `Lvcs`（命名空间 `Terraria.Lvcs`、类型 `ILvcsCodec`）。文档正文使用 `LVCS` 作为系统名。
 
 ## 2. 分层与命名空间
 
@@ -64,9 +64,9 @@ src/NSSLC.Server/Content/                namespace NSSLC.Server.Content        �
 
 | 约束原文 | 出处 | 推导 |
 | --- | --- | --- |
-| "ECS 领域层不依赖文件/云平台实现" | [架构边界](../../Context/架构设计/ECS领域与基础设施架构边界.md) §5 | `Terraria.Lvcs` 不得引用 `System.IO` |
+| "ECS 领域层不依赖文件/云平台实现" | [架构边界](../../Context/架构约束/ECS领域与基础设施架构边界.md) §5 | `Terraria.Lvcs` 不得引用 `System.IO` |
 | "基础设施适配器…执行本地/云端文件访问、格式编解码" | 同上 §3 | 文件枚举属基础设施 |
-| "系统构造参数只允许 `ArchWorld`、只读端口、不可变目录对象" | [输入边界](../../Context/约束/ECS系统输入边界约束.md) 规则 3 | 加载结果是不可变目录，可作构造参数 |
+| "系统构造参数只允许 `ArchWorld`、只读端口、不可变目录对象" | [输入边界](../../Context/项目约束/ECS系统输入边界约束.md) 规则 3 | 加载结果是不可变目录，可作构造参数 |
 
 **这条分界线在项目里已经存在**：`Terraria.*` 在共享项目、`NSSLC.Server.Content.*` 在服务端项目。
 
@@ -273,7 +273,7 @@ if (existing.Handles(extension))
 
 **这是对 Bevy 的有意背离。** Bevy 的 `get_by_type` / `get_by_extension` 都取 `.last()`，同类型多 loader 时后注册者静默胜出，只打一条 `warn!`。
 
-本项目不能这样做——[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §2.2 规定：
+本项目不能这样做——[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §2.2 规定：
 
 > 执行顺序都不得由目录结构、文件名排序、目录枚举或项目文件顺序隐式决定。
 

@@ -56,7 +56,7 @@ blocking-decision: build-blocked-by-pre-existing-player-progression-references; 
 | 当前 NLTX Combat 原型 | src/Combat/StatusEffectSlotsComponent.cs, src/Combat/HitCooldownComponent.cs, src/Combat/ImmunityComponent.cs | Combat 已有状态 owner 候选；hurtCooldowns 与 meleeNPCHitCooldown 不能由 P09 私自重复拥有 | existing-evidence |
 | tModLoader stable mirror | D:\TRbackup\tmodloader-api-docs-stable\index.html、class_item.html、class_chest.html；首页版本 tModLoader v2026.07 | 公开 Item/Chest API 的边界交叉参考 | confirmed-public-boundary |
 | SS14 ECS 只读参考 | C:\Users\shan\Downloads\ECS\space-station-14-master\Content.Shared\Inventory、Containers、Stacks、Storage | 槽位关系、窄组件、System/Query 组织粒度 | organization-only |
-| 流程缺口 | D:\TRbackup\NLTX\约束\公共拆分约束.md 不存在；Version4\Terraria\ItemSlot.cs 不存在，实际 UI 路径为 Terraria.UI\ItemSlot.cs | 不能声称缺失文件已读取；路径漂移与约束缺口保留在风险中 | missing/partial |
+| 流程缺口 | D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md 不存在；Version4\Terraria\ItemSlot.cs 不存在，实际 UI 路径为 Terraria.UI\ItemSlot.cs | 不能声称缺失文件已读取；路径漂移与约束缺口保留在风险中 | missing/partial |
 
 持久化结论必须区分两类事实：Version4 当前 checkout 只证明 Player 保存入口和克隆适配器存在，不证明具体文件字节格式；客户端完整参考可以用于提出待验证的 adapter 计划，但不能把其字段顺序当作本分区已确认的 Version4 事实。
 

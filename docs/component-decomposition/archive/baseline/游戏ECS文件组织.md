@@ -1,7 +1,7 @@
 # 游戏 ECS 文件组织
 
 > 历史参考文档：本文件保留早期 ECS 组织原则与示例。
-> 仓库当前正式约束以 [ECS文件组织设计约束.md](../../../../Context/架构设计/ECS文件组织设计约束.md) 为准。
+> 仓库当前正式约束以 [ECS文件组织设计约束.md](../../../../Context/架构约束/ECS文件组织设计约束.md) 为准。
 
 ## 目标
 
@@ -190,4 +190,4 @@ TileReadSnapshot
 - Snapshot 使用 `Snapshot` 后缀，例如 `TileReadSnapshot.cs`。
 - 静态定义使用 `Definition` 后缀，例如 `NpcDefinition.cs`。
 
-具体 C# 格式和命名仍以 `Context/约束/Google-CSharp-Style-Guide-约束.md` 为准。
+具体 C# 格式和命名仍以 `Context/项目约束/Google-CSharp-Style-Guide-约束.md` 为准。

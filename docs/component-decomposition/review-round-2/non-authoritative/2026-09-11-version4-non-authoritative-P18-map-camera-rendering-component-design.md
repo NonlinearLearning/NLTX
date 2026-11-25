@@ -101,7 +101,7 @@ number is an inventory key only; it never defines runtime order.
 | SS14 client camera/mapping/render files | Structural comparison supports separating client presentation, map source, overlay, and rendering systems. | structural reference only; no semantics copied |
 | Complete-reference source D:\TRbackup\无任何删减通过编译 | Richer camera/rendering/map call chains exist for files also present in Version4. | supplemental/partial only; not a Version4 fact |
 | Current NLTX src/Test/dome/src search | No matching P18 camera/map/lighting/shader/presentation implementation was found. | absence-of-match only; not a capability claim |
-| Missing source material | The first-round P18 research report and the old referenced 约束\公共拆分约束.md are absent. | missing evidence |
+| Missing source material | The first-round P18 research report and the old referenced Context\项目约束\公共拆分约束.md are absent. | missing evidence |
 
 Evidence handling rule: confirmed means only the listed declaration or call slice was read; partial
 means behavior or ownership is not closed; supplemental never overrides Version4; missing means the
@@ -742,7 +742,7 @@ Evidence gaps, synchronized with the execution plan:
   lighting definitions are not migration results.
 - Tile, entity, weather, player, UI, particle, audio, network, persistence, and render scheduler
   boundaries cross other partitions and cannot be finalized in this session.
-- The old common constraint file 约束\公共拆分约束.md referenced by historical material is absent.
+- The old common constraint file Context\项目约束\公共拆分约束.md referenced by historical material is absent.
 
 Blocking decisions:
 

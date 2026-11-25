@@ -20,7 +20,7 @@ implementedSrc2Files: src2/Content/Runtime/ContentAbilityCatalog.cs; src2/Conten
 evidence-gap:
 - P12 第一轮 public-decomposition 输出路径 `D:\TRbackup\NLTX\docs\component-decomposition\review-round-1\2026-09-11-version4-non-authoritative-P12-content-definitions-catalogs-public-decomposition.md` 在 checkout 中不存在；本轮只使用当前输入报告、Version4 和已读取的交叉证据。
 - 285 条成员的声明、关键初始化和部分直接读写已回到 Version4；仍有成员级完整 reader/writer、清理、网络、持久化和调度闭合缺口，成员表以 partial/evidence-gap 表示。
-- 仓库引用的 `约束/公共拆分约束.md` 不存在；本轮遵循 AGENTS.md、ECS 文件组织约束、命名约束、C# 风格和副作用隔离规则，不据此宣称代码可实施。
+- 仓库引用的 `Context/项目约束/公共拆分约束.md` 不存在；本轮遵循 AGENTS.md、ECS 文件组织约束、命名约束、C# 风格和副作用隔离规则，不据此宣称代码可实施。
 - 当前 NLTX `src/Content` 的 ContentCatalog、ContentCatalogSnapshot、DerivedIndexes 和 PresentationIndexes 只是已有草案/部分结构；没有证据证明已映射 P12 的 285 条成员。
 - SS14 没有直接对应的 Terraria 内容目录证据；只参考最小 ECS System/Query 形状，边界由 Version4 和 NLTX 约束决定。
 blocking-decision:
@@ -712,7 +712,7 @@ ContentIdentity/ID inputs (crossSubsystemOwner: integration-review)
 ### Evidence gaps
 - P12 第一轮 public-decomposition 输出路径 `D:\TRbackup\NLTX\docs\component-decomposition\review-round-1\2026-09-11-version4-non-authoritative-P12-content-definitions-catalogs-public-decomposition.md` 在 checkout 中不存在；本轮只使用当前输入报告、Version4 和已读取的交叉证据。
 - 285 条成员的声明、关键初始化和部分直接读写已回到 Version4；仍有成员级完整 reader/writer、清理、网络、持久化和调度闭合缺口，成员表以 partial/evidence-gap 表示。
-- 仓库引用的 `约束/公共拆分约束.md` 不存在；本轮遵循 AGENTS.md、ECS 文件组织约束、命名约束、C# 风格和副作用隔离规则，不据此宣称代码可实施。
+- 仓库引用的 `Context/项目约束/公共拆分约束.md` 不存在；本轮遵循 AGENTS.md、ECS 文件组织约束、命名约束、C# 风格和副作用隔离规则，不据此宣称代码可实施。
 - 当前 NLTX `src/Content` 的 ContentCatalog、ContentCatalogSnapshot、DerivedIndexes 和 PresentationIndexes 只是已有草案/部分结构；没有证据证明已映射 P12 的 285 条成员。
 - SS14 没有直接对应的 Terraria 内容目录证据；只参考最小 ECS System/Query 形状，边界由 Version4 和 NLTX 约束决定。
 
@@ -778,7 +778,7 @@ boundaryChallenges:
 evidenceGaps:
 - P12 第一轮 public-decomposition 输出路径 `D:\TRbackup\NLTX\docs\component-decomposition\review-round-1\2026-09-11-version4-non-authoritative-P12-content-definitions-catalogs-public-decomposition.md` 在 checkout 中不存在；本轮只使用当前输入报告、Version4 和已读取的交叉证据。
 - 285 条成员的声明、关键初始化和部分直接读写已回到 Version4；仍有成员级完整 reader/writer、清理、网络、持久化和调度闭合缺口，成员表以 partial/evidence-gap 表示。
-- 仓库引用的 `约束/公共拆分约束.md` 不存在；本轮遵循 AGENTS.md、ECS 文件组织约束、命名约束、C# 风格和副作用隔离规则，不据此宣称代码可实施。
+- 仓库引用的 `Context/项目约束/公共拆分约束.md` 不存在；本轮遵循 AGENTS.md、ECS 文件组织约束、命名约束、C# 风格和副作用隔离规则，不据此宣称代码可实施。
 - 当前 NLTX `src/Content` 的 ContentCatalog、ContentCatalogSnapshot、DerivedIndexes 和 PresentationIndexes 只是已有草案/部分结构；没有证据证明已映射 P12 的 285 条成员。
 - SS14 没有直接对应的 Terraria 内容目录证据；只参考最小 ECS System/Query 形状，边界由 Version4 和 NLTX 约束决定。
 blockingDecisions:

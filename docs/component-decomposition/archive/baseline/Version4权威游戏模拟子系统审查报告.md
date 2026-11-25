@@ -342,5 +342,5 @@ WorldStorage 提交 Tile/TileEntity/实体生成命令。当前 Tile 交互层�
   摘要；本报告以更严格的“初次只到子系统”口径对其进行审查和落地排序。
 - [Version4 权威游戏模拟子系统证据研究笔记](../review-round-1/reports/2026-09-05-version4-authoritative-simulation-subsystem-findings.md)：
   本轮 Version4 与本地 tModLoader API 的具体交叉证据。
-- [ECS 文件组织设计约束](../../../../Context/架构设计/ECS文件组织设计约束.md)：后续移动或新增 ECS 文件时的
+- [ECS 文件组织设计约束](../../../../Context/架构约束/ECS文件组织设计约束.md)：后续移动或新增 ECS 文件时的
   目录归属和迁移验收规则。

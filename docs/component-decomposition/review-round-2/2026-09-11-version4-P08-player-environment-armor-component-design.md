@@ -54,7 +54,7 @@ blocking-decision: integration-review; C01-C09 partial until protocol and owner 
 | tModLoader stable mirror | `D:\TRbackup\tmodloader-api-docs-stable\class_player.html`，页面版本 `tModLoader v2026.07` | tile range/target、luck、ResetEffects、UpdateEquips、UpdateArmorSets、UpdateLuck 的公开 API 语义交叉参考 | confirmed-public-boundary |
 | 当前 NLTX | `src\Player\PlayerAbilityComponent.cs`, `PlayerEquipmentComponent.cs`, `PlayerMountComponent.cs`, `src\Physics\PhysicsStateComponent.cs`, `src\SpatialSimulation\MovementStateComponent.cs` | 已存在能力、装备、坐骑、物理和移动局部 owner 候选；不能重复建立 turret/physics authority | existing-evidence |
 | SS14 ECS 只读参考 | `C:\Users\shan\Downloads\ECS\space-station-14-master\Content.Shared\Gravity\GravityComponent.cs`、Atmos/Wires/Movement System | 仅支持窄组件、System/Query、外部 effect 边界的组织粒度，不支持 Terraria 语义 | organization-only |
-| 流程缺口 | `D:\TRbackup\NLTX\约束\公共拆分约束.md` 不存在；`Context/progress.md` 显示 migration context cleared | 缺失约束不能被臆造；本设计保留 partial evidence | missing/partial |
+| 流程缺口 | `D:\TRbackup\NLTX\Context\项目约束\公共拆分约束.md` 不存在；`Context/progress.md` 显示 migration context cleared | 缺失约束不能被臆造；本设计保留 partial evidence | missing/partial |
 
 证据等级约定：`confirmed` 只表示该事实在指定源中直接看到；`partial` 表示调用点或完整生命周期尚未闭合；`integration-review` 表示 P08 不单方面拥有最终 authority；`proposed` 表示尚未创建或迁移的类型/系统/接口。
 

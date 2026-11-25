@@ -35,7 +35,7 @@ pendingComponents:
 lastCheckpointUtc: 2026-09-12T07:16:31Z
 evidence-gap:
   - Version4 call-site ownership, world reset/cleanup scope, persistence, network replication and exact scheduler order are not closed for all 136 members.
-  - The repository-referenced 约束/公共拆分约束.md is absent; AGENTS.md, ECS文件组织设计约束.md and public-decomposition remain the applicable available constraints.
+  - The repository-referenced Context/项目约束/公共拆分约束.md is absent; AGENTS.md, ECS文件组织设计约束.md and public-decomposition remain the applicable available constraints.
   - C02-C12 definition, query, scan, command, adapter and projection boundaries now have source mappings; the P18 focused verifier covers selected state/query/error boundaries, while complete Version4 behavior equivalence remains unverified. The isolated P18 compile probe and focused verifier pass.
   - GenerateBiggerAbandonedHouses currently depends on Version4 genRand.Next(3); the random draw boundary is not yet an NLTX contract.
   - The current NLTX variation API accepts enabled variants and active count separately; their consistency is not enforced by the API.

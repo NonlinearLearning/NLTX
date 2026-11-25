@@ -442,7 +442,7 @@ pwsh -NoProfile -Command "& {
 ### Evidence-gap
 
 1. 第一轮 P05 outputReport 不存在，路径为 D:\TRbackup\NLTX\docs\component-decomposition\review-round-1\2026-09-11-version4-non-authoritative-P05-spatial-motion-physics-public-decomposition.md。
-2. 约束\公共拆分约束.md 和 docs\Version4与完整源码差异附录-2026-09-05.md 不存在于预期路径。
+2. Context\项目约束\公共拆分约束.md 和 docs\Version4与完整源码差异附录-2026-09-05.md 不存在于预期路径。
 3. darknessTimer/darknessHitTimer 的实际 tick 写入者未找到；不能确定 world/player/entity 生命周期。
 4. TrackedProjectileReference 的 FindMatchingProjectile、Equals、GetHashCode 为 stub；协议和关系迁移不能闭合。
 5. Minecart Tile extension 行为部分为 stub；catalog invalidation 和 Tile owner 未闭合。

@@ -75,7 +75,7 @@ $observedMemberCount = $claim.observedMemberCount
 
 领取后按需读取以下材料。它们是规则或证据入口，不是可直接提升为 owner 的结论：
 
-1. `AGENTS.md`、`Context/progress.md`、`Context/约束/开发协作与变更约束.md`，以及实际需要的文件组织和副作用约束；
+1. `AGENTS.md`、`Context/progress.md`、`Context/项目约束/开发协作与变更约束.md`，以及实际需要的文件组织和副作用约束；
 2. runner、authoritative profile、System session contract；
 3. `ecs-system-domain-splitting` 入口、`system-splitting`、`system-api-splitting`；
 4. 相关 references：`system-decomposition-rules.md`、`evidence-and-migration-protocol.md`、`called-functions-analyzer.md`、`analysis-evidence-catalog.md`、API 行为/组合/工作流/反证/映射模板；

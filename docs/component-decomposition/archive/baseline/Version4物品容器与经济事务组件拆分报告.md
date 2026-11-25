@@ -29,9 +29,9 @@
   `ContainerAccessState`、`WorldItemState`、`TileEntityBindingState`。
 - `public-decomposition` 要求先盘点成员、读者/写者、生命周期和副作用，再按访问模式选择
   Component、System、Query、Command、Adapter、Projection。其引用的
-  `约束/公共拆分约束.md` 在当前 checkout 不存在，因此本报告同时遵循实际可读取的
-  `Context/架构设计/ECS文件组织设计约束.md`、`Context/约束/Google-CSharp-Style-Guide-约束.md` 和
-  `Context/约束/非函数式编码副作用隔离规范.md`。
+  `Context/项目约束/公共拆分约束.md` 在当前 checkout 不存在，因此本报告同时遵循实际可读取的
+  `Context/架构约束/ECS文件组织设计约束.md`、`Context/项目约束/Google-CSharp-Style-Guide-约束.md` 和
+  `Context/项目约束/非函数式编码副作用隔离规范.md`。
 
 ### 2.2 Version4 目标代码（权威语义）
 

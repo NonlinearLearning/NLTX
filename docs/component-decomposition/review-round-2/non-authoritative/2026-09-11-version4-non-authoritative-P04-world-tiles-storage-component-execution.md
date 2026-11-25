@@ -21,7 +21,7 @@ aggregateVerifierResult: exitCode=1; System.InvalidOperationException at src2\Ve
 handoffId: p04-world-tiles-storage-rebind-20260912
 previousSessionId: bd37778d060641eeaa9f2700ed00af6c
 handoffStatus: completed; old session was rejected from further settlement and the active session is 7714d0b0d753445aa529fb1b38578679
-evidence-gap: P04 first-round public-decomposition report is absent; 约束\公共拆分约束.md is absent; complete per-member readers, writers, lifecycle and parity evidence is not closed for all 320 members; exact Version4 build/runtime integration and cross-partition ownership are unverified; geometry initialization and canonical section derivation owner are not closed; the existing aggregate verifier fails at src2\Verification\Program.cs:326 before the P04 tile-specific check
+evidence-gap: P04 first-round public-decomposition report is absent; Context\项目约束\公共拆分约束.md is absent; complete per-member readers, writers, lifecycle and parity evidence is not closed for all 320 members; exact Version4 build/runtime integration and cross-partition ownership are unverified; geometry initialization and canonical section derivation owner are not closed; the existing aggregate verifier fails at src2\Verification\Program.cs:326 before the P04 tile-specific check
 blocking-decision: integration-review must decide final owners for shared Main metadata, canonical Tile mutation/bit packing, TileEntity identity and persistence/network projections, placement hook execution, snapshot restore ordering, and the global System scheduler before remaining deferred work or caller migration; the existing aggregate verifier boundary must be repaired outside this Component-only task before P04 behavior can be verified
 
 ## Execution Boundary
@@ -742,7 +742,7 @@ excluded from the user-forbidden `git diff --check`.
 
 - The missing P04 first-round report prevents relying on a completed public-decomposition trace;
   this plan uses the input inventory and directly inspected Version4 evidence only.
-- The missing `约束\公共拆分约束.md` prevents a final public-split compliance decision.
+- The missing `Context\项目约束\公共拆分约束.md` prevents a final public-split compliance decision.
 - The existing NLTX models overlap portions of the proposed boundaries. Their actual readers and
   writers must be inspected during implementation before adding or renaming files.
 - `Tile` packed headers and setters are coupled; field-by-field migration can silently change

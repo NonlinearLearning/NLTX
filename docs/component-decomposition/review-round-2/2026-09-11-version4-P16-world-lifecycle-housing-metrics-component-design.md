@@ -55,7 +55,7 @@ definition 和 C13 ocean-level query 的实际实现状态只在第 9 节 implem
 - `WorldGen.StartHardmode` 使用后台任务和 `_transformingWorld`，`WorldFile` 保存前等待 `TransformingWorld`；世界变换是独立事务边界。
 - `SceneMetrics` 按扫描中心和 `Main.GameUpdateCount` 重建实例级缓存；它是 Query/Projection/cache 参考，不是世界权威根。
 - `WorldFile` 和 `NetMessage` 只证明部分持久化/网络范围，不能据此给所有成员添加 Save/Sync。
-- `docs/flowstate/README.md` 与 `约束/公共拆分约束.md` 缺失，已记录为 evidence gap；不会以文件不存在推断额外架构规则。
+- `docs/flowstate/README.md` 与 `Context/项目约束/公共拆分约束.md` 缺失，已记录为 evidence gap；不会以文件不存在推断额外架构规则。
 
 ## 3. 叶子分区与提议边界
 

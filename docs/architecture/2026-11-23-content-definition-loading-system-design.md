@@ -6,7 +6,7 @@
 状态：proposal；未实现、未编译、未运行  
 日期：2026-11-23（Asia/Shanghai）  
 外部调研输入：[外部项目元加载技术调研](../research/2026-11-23-external-meta-loading-research.md)、[代码内元数据与业界元数据加载技术调研](../research/2026-11-23-code-embedded-metadata-research.md)  
-关联约束：[ECS 领域层与基础设施架构边界](../../Context/架构设计/ECS领域与基础设施架构边界.md)、[ECS 系统输入边界约束](../../Context/约束/ECS系统输入边界约束.md)、[ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md)、[项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md)、[物品载荷与双宿主设计约束](../../Context/架构设计/物品载荷与双宿主设计约束.md)、[组件命名设计约束](../../Context/架构设计/组件命名设计约束.md)
+关联约束：[ECS 领域层与基础设施架构边界](../../Context/架构约束/ECS领域与基础设施架构边界.md)、[ECS 系统输入边界约束](../../Context/项目约束/ECS系统输入边界约束.md)、[ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md)、[项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md)、[物品载荷与双宿主设计约束](../../docs/architecture/物品载荷与双宿主设计约束.md)、[组件命名设计约束](../../Context/架构约束/组件命名设计约束.md)
 
 ## 1. 要解决的问题
 
@@ -248,7 +248,7 @@ internal sealed class ItemAttributeContributionPrototype
 
 枚举一律用**成员名**而非整数：`"Defense"`、`"Additive"`、`"Accessory"`。理由与 `ItemUseDefinitionPrototype` 现状一致（`"useAmmo": "WoodenArrow"`），且避免枚举重排导致内容静默错位。解析用 `Enum.TryParse(..., ignoreCase: false)` 并要求 `Enum.IsDefined`。
 
-`Expression-bodied`、`init`、`required` 的使用遵守 [C# 风格约束](../../Context/约束/Google-CSharp-Style-Guide-约束.md)：DTO 是 Plain Old Data，允许对象初始化器；领域类型仍走构造函数校验。
+`Expression-bodied`、`init`、`required` 的使用遵守 [C# 风格约束](../../Context/项目约束/Google-CSharp-Style-Guide-约束.md)：DTO 是 Plain Old Data，允许对象初始化器；领域类型仍走构造函数校验。
 
 ### 2.9 加载阶段与失败语义
 
@@ -272,7 +272,7 @@ internal sealed class ItemAttributeContributionPrototype
 
 ### 2.10 目录冻结
 
-`ItemDefinitionRegistry` 现状（`src/NSSLC/Share/Item/ItemDefinitionRegistry.cs`）没有 `Seal()`，而 `ItemUseDefinitionCatalog` 有。按 [ECS 系统输入边界约束](../../Context/约束/ECS系统输入边界约束.md) 的术语，没有 `Seal()` 的注册表"不算不可变目录对象"，不能作为系统构造依赖。
+`ItemDefinitionRegistry` 现状（`src/NSSLC/Share/Item/ItemDefinitionRegistry.cs`）没有 `Seal()`，而 `ItemUseDefinitionCatalog` 有。按 [ECS 系统输入边界约束](../../Context/项目约束/ECS系统输入边界约束.md) 的术语，没有 `Seal()` 的注册表"不算不可变目录对象"，不能作为系统构造依赖。
 
 因此本设计把 `ItemDefinitionRegistry` 收紧为：
 
@@ -308,7 +308,7 @@ internal sealed class ItemAttributeContributionPrototype
 | INV-E | **顺序无关**：文件顺序、目录顺序不改变任何一条定义的结果 | 运行：打乱文件顺序两次加载，目录快照逐字段相等 |
 | INV-F | **载荷不回流**：`ItemDefinition` 仍只承载按种类的规则，不出现位置、速度、归属 | 静态：字段清单评审 |
 
-INV-E 是 [项目文件组织设计约束](../../Context/架构设计/项目文件组织设计约束.md) §5"不得依赖文件枚举顺序"在加载器上的具体落点：排序只用于可复现的错误输出，语义顺序全部来自 `parent` 与 `loadPriority`。
+INV-E 是 [项目文件组织设计约束](../../Context/架构约束/项目文件组织设计约束.md) §5"不得依赖文件枚举顺序"在加载器上的具体落点：排序只用于可复现的错误输出，语义顺序全部来自 `parent` 与 `loadPriority`。
 
 ## 5. 验证设计
 
@@ -332,7 +332,7 @@ INV-E 是 [项目文件组织设计约束](../../Context/架构设计/项目文�
 
 ### 5.2 既有验证回归
 
-受影响项目按 [构建与验证约束](../../Context/约束/构建与验证约束.md) 增量构建：
+受影响项目按 [构建与验证约束](../../Context/项目约束/构建与验证约束.md) 增量构建：
 
 ```powershell
 dotnet build src/NSSLC/Terraria.Components.csproj

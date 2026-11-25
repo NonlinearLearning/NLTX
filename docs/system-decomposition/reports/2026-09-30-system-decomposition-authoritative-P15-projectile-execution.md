@@ -28,7 +28,7 @@
 - 一个权威字段/索引一个 commit owner。多个 System 可协作，但不得同时直接写同一权威状态。
 - `GetNextSlot`、`FindOldestProjectile` 不能在独立 Query 中预选后再提交分配；slot 选择、generation 校验、identity 建立须处于同一 lifecycle Command。
 - 保留 Main 升序 slot pass 和单 Projectile 更新内序。不得把逐对象时序改成跨对象全局 AI/collision/combat 多轮。
-- 实现每个阶段的 focused verification 之前，遵守仓库 `Context/约束/构建与验证约束.md`。本计划不是对本轮运行 build/test 的授权或记录。
+- 实现每个阶段的 focused verification 之前，遵守仓库 `Context/项目约束/构建与验证约束.md`。本计划不是对本轮运行 build/test 的授权或记录。
 
 ## 阶段与退出门槛
 

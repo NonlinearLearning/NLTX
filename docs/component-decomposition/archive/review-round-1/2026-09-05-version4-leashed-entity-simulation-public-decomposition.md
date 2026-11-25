@@ -62,9 +62,9 @@ Version4 的主文件是一个有删减的源码基线：发送路径和更新�
 | `D:\TRbackup\NLTX\Context\progress.md` | 当前无活跃迁移批次，源码和验证文件不得被上下文清理改写 | 工作区上下文 |
 | `D:\TRbackup\NLTX\docs\component-decomposition\review-round-1\design\2026-09-05-version4-public-decomposition-common-protocol.md` | 证据状态、四类内容分区、报告最低结构、Integration Handoff | 报告协议 |
 | `D:\TRbackup\NLTX\docs\component-decomposition\review-round-1\design\2026-09-05-version4-leashed-entity-simulation-public-decomposition.md` | `taskNumber: 03`、固定范围、必读证据和不拆分对象 | 子系统任务包 |
-| `D:\TRbackup\NLTX\Context/架构设计\ECS文件组织设计约束.md` | 按领域组织、单核心 public type、禁止通用聚合目录 | proposed 路径约束 |
-| `D:\TRbackup\NLTX\Context/约束\Google-CSharp-Style-Guide-约束.md` | 命名和文件组织要求 | proposed 代码形状约束 |
-| `D:\TRbackup\NLTX\Context/约束\非函数式编码副作用隔离规范.md` | I/O、时钟、随机数、网络、日志和持久化隔离 | System/Adapter 边界约束 |
+| `D:\TRbackup\NLTX\Context/架构约束\ECS文件组织设计约束.md` | 按领域组织、单核心 public type、禁止通用聚合目录 | proposed 路径约束 |
+| `D:\TRbackup\NLTX\Context/项目约束\Google-CSharp-Style-Guide-约束.md` | 命名和文件组织要求 | proposed 代码形状约束 |
+| `D:\TRbackup\NLTX\Context/项目约束\非函数式编码副作用隔离规范.md` | I/O、时钟、随机数、网络、日志和持久化隔离 | System/Adapter 边界约束 |
 | `D:\TRbackup\NLTX\docs\Version4权威游戏模拟子系统全量审查报告-2026-09-05.md` | 全量责任面、LeashedEntitySimulation 的既有归类和 NLTX 状态摘要 | 既有审查索引，不替代源码 |
 | `D:\TRbackup\NLTX\docs\migration\ledgers\Version4子系统索引.json` | `LeashedEntitySimulation` 的责任和排除候选 | 既有索引 |
 | `D:\TRbackup\NLTX\docs\migration\ledgers\Version4源码覆盖.tsv` | `LeashedEntity.cs`、LeashedEntities prototypes 和两个锚点文件的 primary owner/coverage | 文件级覆盖索引 |

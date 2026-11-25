@@ -951,7 +951,7 @@ public sealed class TownHousingRegistryComponent
 | `EG-COMP-05` | 完整参考缺少 NPC 成员级差异补证记录 | 不用完整参考源码静默补写 Version4 私有默认值或行为 |
 | `EG-COMP-06` | 活动、计时、生命、父关系和清理写集未闭合 | 生命周期、生命和父关系构造约束仍可能调整 |
 | `EG-COMP-07` | 当前 NLTX 存在 identity、AI、target、health 和住房状态重叠 | 不能让重叠类型同时成为可写权威源 |
-| `EG-COMP-08` | 当前 checkout 缺少 `约束\\公共拆分约束.md` | 草案不能升级为项目约束已完整确认的基线 |
+| `EG-COMP-08` | 当前 checkout 缺少 `Context\项目约束\\公共拆分约束.md` | 草案不能升级为项目约束已完整确认的基线 |
 | `EG-COMP-09` | 本会话未运行构建、测试或验证程序 | 代码块不能被表述为编译通过或行为验证通过 |
 
 ## 9. 当前源码映射与禁止的直接替换

@@ -90,9 +90,9 @@ verificationStatus: existing-evidence
 3. `D:\TRbackup\NLTX\.agents\skills\public-decomposition\SKILL.md`
 4. `D:\TRbackup\NLTX\.agents\skills\public-decomposition\references\ecs-evidence-protocol.md`
 5. `D:\TRbackup\NLTX\.agents\skills\public-decomposition\references\tmodloader-documentation-retrieval.md`
-6. `D:\TRbackup\NLTX\Context/架构设计\ECS文件组织设计约束.md`
-7. `D:\TRbackup\NLTX\Context/约束\Google-CSharp-Style-Guide-约束.md`
-8. `D:\TRbackup\NLTX\Context/约束\非函数式编码副作用隔离规范.md`
+6. `D:\TRbackup\NLTX\Context/架构约束\ECS文件组织设计约束.md`
+7. `D:\TRbackup\NLTX\Context/项目约束\Google-CSharp-Style-Guide-约束.md`
+8. `D:\TRbackup\NLTX\Context/项目约束\非函数式编码副作用隔离规范.md`
 9. `D:\TRbackup\NLTX\docs\plans\component-decomposition\2026-09-05-version4-all-subsystem-discovery-new-session-guide.md`
 10. `D:\TRbackup\NLTX\docs\Version4权威游戏模拟子系统全量审查报告-2026-09-05.md`
 11. `D:\TRbackup\NLTX\docs\migration\ledgers\Version4子系统索引.json`
