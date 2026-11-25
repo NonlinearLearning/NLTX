@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// Central classification and admission rules for attribute keys.

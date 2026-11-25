@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// 十四类泛 Buff 形态共有的写入边界：把一组贡献登记进属性集合，或按来源整体撤销。

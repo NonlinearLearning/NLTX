@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// 管理属性修饰器的加入、来源移除和时限推进。

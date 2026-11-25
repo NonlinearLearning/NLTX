@@ -2,7 +2,7 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Declares participation in the shared Buff admission path.</summary>
 /// <remarks>

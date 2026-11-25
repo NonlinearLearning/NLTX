@@ -3,11 +3,11 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// Converts periodic behavior components into Life and Combat request components.

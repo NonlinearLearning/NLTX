@@ -2,12 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Immutable content definition used by the shared Buff system.</summary>
-public sealed class BuffDefinition
+public sealed class Buff
 {
-  public BuffDefinition(
+  public Buff(
       BuffEffectId effect,
       BuffId immunityKey,
       int durationTicks,

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// 根据组件中的基础值和修饰器计算当前属性，不执行状态写入或其他副作用。

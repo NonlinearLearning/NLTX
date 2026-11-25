@@ -1,4 +1,4 @@
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// Describes which kind of state an attribute key represents.

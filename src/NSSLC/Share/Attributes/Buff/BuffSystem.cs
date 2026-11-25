@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// Owns active shared Buff application, refresh, stacking and expiry.
@@ -11,9 +11,9 @@ namespace Terraria.Attributes;
 /// </remarks>
 public sealed class BuffSystem
 {
-  private readonly BuffDefinitionRegistry _definitions;
+  private readonly BuffRegistry _definitions;
 
-  public BuffSystem(BuffDefinitionRegistry definitions)
+  public BuffSystem(BuffRegistry definitions)
   {
     ArgumentNullException.ThrowIfNull(definitions);
     _definitions = definitions;
@@ -35,7 +35,7 @@ public sealed class BuffSystem
       return BuffApplicationResult.Rejected(BuffAdmissionResult.InvalidRequest, sourceId);
     }
 
-    if (!_definitions.TryGet(effect, out BuffDefinition? definition))
+    if (!_definitions.TryGet(effect, out Buff? definition))
     {
       return BuffApplicationResult.Rejected(BuffAdmissionResult.UnknownDefinition, sourceId);
     }
@@ -127,7 +127,7 @@ public sealed class BuffSystem
 
   private static void AddAttributeModifiers(
       AttributeSetComponent attributes,
-      BuffDefinition definition,
+      Buff definition,
       ActiveBuff activeBuff)
   {
     // 期限由 BuffListComponent 单一持有并推进，过期时按来源整体撤销。

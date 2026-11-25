@@ -2,7 +2,7 @@ using System;
 using System.Collections.Frozen;
 using System.Collections.Generic;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// 保存按状态效果定义编号索引的 Buff 与 Debuff 免疫表。

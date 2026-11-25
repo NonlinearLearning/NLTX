@@ -1,4 +1,4 @@
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Result returned after the shared Buff system attempts an application.</summary>
 public readonly record struct BuffApplicationResult(

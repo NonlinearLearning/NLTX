@@ -2,7 +2,7 @@ using System;
 using ArchWorld = Arch.Core.World;
 using ArchEntity = Arch.Core.Entity;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Attributes-domain entry point for shield consumption requested by other domains.</summary>
 /// <remarks>

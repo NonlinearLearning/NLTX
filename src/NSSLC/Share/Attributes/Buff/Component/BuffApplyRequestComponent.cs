@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Cross-domain intent to apply one status effect to an entity.</summary>
 public readonly record struct BuffApplyRequestComponent

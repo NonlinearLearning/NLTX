@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// Explicit input for deterministic critical-roll calculation. It contains no hidden clock or

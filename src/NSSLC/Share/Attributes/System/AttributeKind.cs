@@ -1,4 +1,4 @@
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// 可被来源修饰的通用属性键。

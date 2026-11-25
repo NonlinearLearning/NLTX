@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Marks damage immunity supplied by one or more status effect sources.</summary>
 public sealed class DamageImmunityStatusComponent

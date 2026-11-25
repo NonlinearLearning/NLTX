@@ -1,4 +1,4 @@
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// 独立管线形态的分类。这些形态不在 Buff 列表中存放，但都以

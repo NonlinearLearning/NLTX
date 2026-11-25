@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Declares one non-numeric behavior produced by a status effect.</summary>
 public readonly record struct BuffBehaviorContribution

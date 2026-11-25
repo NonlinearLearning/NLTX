@@ -1,4 +1,4 @@
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Outcome of checking whether a Buff may be applied to one entity.</summary>
 public enum BuffAdmissionResult : byte

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// 属性的基础值。基础值不是来源修饰器，不能通过来源移除操作删除。

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Stable definition identifier for an active status effect.</summary>
 public readonly record struct BuffEffectId {

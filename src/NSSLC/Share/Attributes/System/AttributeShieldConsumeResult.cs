@@ -1,4 +1,4 @@
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Outcome of one shield consumption attempt.</summary>
 /// <param name="HasShieldPool">Whether the target carried a shield pool.</param>

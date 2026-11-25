@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Stores one or more status effect movement/decision locks.</summary>
 public sealed class StunComponent

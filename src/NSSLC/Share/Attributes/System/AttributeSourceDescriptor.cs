@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// 一个属性来源的身份与生命周期：谁贡献、属于哪一类、还要存活多久。

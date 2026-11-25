@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Marks an entity as invisible while one or more status effects are active.</summary>
 public sealed class InvisibilityComponent

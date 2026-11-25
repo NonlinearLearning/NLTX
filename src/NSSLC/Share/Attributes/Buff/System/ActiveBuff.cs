@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>One active Buff instance owned by the shared Buff list.</summary>
 public readonly record struct ActiveBuff

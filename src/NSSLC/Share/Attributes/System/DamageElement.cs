@@ -1,4 +1,4 @@
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Elemental channel used by an attribute-driven damage calculation.</summary>
 public enum DamageElement : byte

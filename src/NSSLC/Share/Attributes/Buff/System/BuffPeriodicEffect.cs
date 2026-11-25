@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Explicit periodic effect metadata shared by a status effect definition.</summary>
 public readonly record struct BuffPeriodicEffect

@@ -4,10 +4,10 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Entity;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// Materializes declared behavior contributions into concrete status components.
@@ -18,11 +18,11 @@ namespace Terraria.Attributes;
 /// </remarks>
 public sealed class StatusEffectBehaviorSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
-  private readonly BuffDefinitionRegistry _definitions;
+  private readonly BuffRegistry _definitions;
   private readonly QueryDescription _query = new QueryDescription()
       .WithAll<BuffListComponent>();
 
-  public StatusEffectBehaviorSystem(ArchWorld world, BuffDefinitionRegistry definitions)
+  public StatusEffectBehaviorSystem(ArchWorld world, BuffRegistry definitions)
       : base(world)
   {
     _definitions = definitions ?? throw new ArgumentNullException(nameof(definitions));
@@ -45,7 +45,7 @@ public sealed class StatusEffectBehaviorSystem : BaseSystem<ArchWorld, EcsServer
 
           foreach (ActiveBuff active in activeBuffs.Entries)
           {
-            if (!_definitions.TryGet(active.Effect, out BuffDefinition definition))
+            if (!_definitions.TryGet(active.Effect, out Buff definition))
             {
               continue;
             }

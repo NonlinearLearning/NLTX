@@ -1,9 +1,9 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
-/// 参考客户端药水表的 Buff 内容样例，用于填充空的 <see cref="BuffDefinitionRegistry"/>。
+/// 参考客户端药水表的 Buff 内容样例，用于填充空的 <see cref="BuffRegistry"/>。
 /// </summary>
 /// <remarks>
 /// 每一项都直接取自参考客户端源码，不做推测：
@@ -23,7 +23,7 @@ public static class BuffContent {
   public const int PotionDurationTicks = 28800;
 
   /// <summary>铁皮药水：防御 +8。</summary>
-  public static BuffDefinition Ironskin { get; } = new(
+  public static Buff Ironskin { get; } = new(
       new BuffEffectId("buff.ironskin"),
       new BuffId("buff.ironskin"),
       PotionDurationTicks,
@@ -33,7 +33,7 @@ public static class BuffContent {
       ]);
 
   /// <summary>迅捷药水：移动速度 +25%。</summary>
-  public static BuffDefinition Swiftness { get; } = new(
+  public static Buff Swiftness { get; } = new(
       new BuffEffectId("buff.swiftness"),
       new BuffId("buff.swiftness"),
       PotionDurationTicks,
@@ -44,7 +44,7 @@ public static class BuffContent {
       ]);
 
   /// <summary>再生药水：生命再生 +4。</summary>
-  public static BuffDefinition Regeneration { get; } = new(
+  public static Buff Regeneration { get; } = new(
       new BuffEffectId("buff.regeneration"),
       new BuffId("buff.regeneration"),
       PotionDurationTicks,
@@ -63,7 +63,7 @@ public static class BuffContent {
       ]);
 
   /// <summary>Poison: periodic self-targeted combat damage request.</summary>
-  public static BuffDefinition Poison { get; } = new(
+  public static Buff Poison { get; } = new(
       new BuffEffectId("buff.poison"),
       new BuffId("buff.poison"),
       durationTicks: 600,
@@ -77,7 +77,7 @@ public static class BuffContent {
       ]);
 
   /// <summary>Invisibility: concrete visibility behavior, not a scalar StatusFlag.</summary>
-  public static BuffDefinition Invisibility { get; } = new(
+  public static Buff Invisibility { get; } = new(
       new BuffEffectId("buff.invisibility"),
       new BuffId("buff.invisibility"),
       PotionDurationTicks,
@@ -89,7 +89,7 @@ public static class BuffContent {
   /// <summary>
   /// 把全部样例注册到给定注册表。
   /// </summary>
-  public static void RegisterAll(BuffDefinitionRegistry registry) {
+  public static void RegisterAll(BuffRegistry registry) {
     ArgumentNullException.ThrowIfNull(registry);
     registry.Register(Ironskin);
     registry.Register(Swiftness);

@@ -3,7 +3,7 @@
 `Attributes` 保存跨运行时复用的属性契约和无平台依赖的属性计算。它把“来源向某个属性
 贡献一个数值修改”统一起来，因此装备、Buff/Debuff 和其他来源对防御、抗性、耐力、伤害
 的数值修饰不再由 Player 私有组件保存。Player 的基础防御和抗性由
-`AttributeSetComponent` 保存，保护窗口由共享 `ProtectionWindowComponent` 保存。装备关系由 Inventory 持有，属性系统只接收物品/效果提交的贡献；
+`AttributeSetComponent` 保存；受击免疫窗口不属于属性，由共享 `ImmunityWindowComponent` 按伤害通道保存。装备关系由 Inventory 持有，属性系统只接收物品/效果提交的贡献；
 状态效果的免疫、刷新、叠层、周期行为和其他非数值行为仍留在各自领域。
 
 ## 子域划分
@@ -164,10 +164,11 @@ value = highest-priority Override, if any
 护盾完全吸收时，Combat 回执的 `HasEffect` 为真而 `HasDamage` 为假；这允许 Projectile 等来源
 消费一次有效命中，同时不会把护盾消耗误报为生命伤害。
 
-Projectile 命中边界也使用相同的数值聚合：`ProjectilePenetrationLimit` 提供有效穿透上限，
-负值表示无限；`ProjectileHitImmunityTicks` 提供每目标免疫窗口的 Tick 数。两个属性只提供
-数值结果，不保存目标关系、命中计数、免疫到期记录或终止状态；这些运行态分别由 Projectile
-免疫/穿透组件和生命周期系统维护。
+Projectile 命中边界只从属性取免疫窗口：`ProjectileHitImmunityTicks` 提供每目标免疫窗口的
+Tick 数。穿透上限不由属性承载——它来自内容族穿透 section 的上限，生成时快照进穿透预算组件，
+`Remaining = -1` 表示无限；`ProjectilePenetrationLimit` 这个键保留，但已经没有写入者与运行期
+读者。属性只提供数值结果，不保存目标关系、命中计数、免疫到期记录或终止状态；这些运行态分别由
+Projectile 免疫/穿透组件和生命周期系统维护。
 
 ## 生命周期边界
 

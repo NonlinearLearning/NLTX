@@ -1,9 +1,9 @@
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// Advances timed attribute modifiers for entities that carry an attribute set.

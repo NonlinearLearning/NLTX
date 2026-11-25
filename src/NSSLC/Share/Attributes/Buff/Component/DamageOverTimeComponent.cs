@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Tracks periodic damage behaviors owned by active status effect sources.</summary>
 public sealed class DamageOverTimeComponent

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Checks shared Buff reception rules without mutating entity state.</summary>
 public static class BuffAdmissionSystem
@@ -8,7 +8,7 @@ public static class BuffAdmissionSystem
   public static BuffAdmissionResult Check(
       BuffReceptionCapabilityComponent? capability,
       BuffImmunityComponent? immunity,
-      BuffDefinition? definition,
+      Buff? definition,
       long sourceId)
   {
     if (definition is null)

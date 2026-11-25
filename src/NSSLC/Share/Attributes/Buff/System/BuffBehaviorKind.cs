@@ -1,4 +1,4 @@
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Behavior categories that remain outside scalar attribute calculation.</summary>
 public enum BuffBehaviorKind : byte

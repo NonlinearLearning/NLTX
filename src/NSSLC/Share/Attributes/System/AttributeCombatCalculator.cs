@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>
 /// Pure combat-facing calculations backed by <see cref="AttributeSetComponent"/>.

@@ -1,4 +1,4 @@
-namespace Terraria.Attributes;
+namespace Terraria.Share.Attributes;
 
 /// <summary>Cross-domain request to consume one target's shared shield pool.</summary>
 /// <remarks>
