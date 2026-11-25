@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Identifies the world operation requested by an entity for one tick.</summary>
 public enum WorldInteractionOperation : byte

@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Pure permission arithmetic for world interaction requests.

@@ -1,9 +1,9 @@
 using System;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Applies the world-item changes other domains requested at the Commit barrier.</summary>
 /// <remarks>

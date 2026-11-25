@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using Terraria.Liquid;
-using Terraria.Movement;
-using Terraria.Physics;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
+using Terraria.Share.Physics;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Small authoritative world owner used by NSSLC's standalone ECS runtime.

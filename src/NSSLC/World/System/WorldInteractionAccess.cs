@@ -1,7 +1,7 @@
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// A short-lived capability token issued after an entity passes a world permission check.

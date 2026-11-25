@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 public readonly record struct WorldInteractionResult(
     bool Succeeded,

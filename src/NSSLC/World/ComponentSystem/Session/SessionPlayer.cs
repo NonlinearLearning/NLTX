@@ -1,7 +1,7 @@
 using System.Numerics;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Session;
+namespace Terraria.Unshared.Session;
 
 /// <summary>One player bound to an active session, as read by other domains.</summary>
 /// <remarks>

@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Read-only view of authoritative world items for other domains.</summary>
 /// <remarks>

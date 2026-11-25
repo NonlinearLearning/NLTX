@@ -1,6 +1,6 @@
-using Terraria.Physics;
+using Terraria.Share.Physics;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Result of one explicit world tick attempt.</summary>
 public readonly record struct WorldTickResult(

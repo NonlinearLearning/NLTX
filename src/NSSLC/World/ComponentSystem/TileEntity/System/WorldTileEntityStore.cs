@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Authoritative in-memory table of the world's chests, signs and tile entities.

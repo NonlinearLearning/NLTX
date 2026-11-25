@@ -1,9 +1,9 @@
 using System;
 using System.Buffers.Binary;
 using System.Text;
-using Terraria.Item;
+using Terraria.Share.Items;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Decodes the <c>world.tile-entities</c> record stream into <see cref="WorldTileEntityState"/>.

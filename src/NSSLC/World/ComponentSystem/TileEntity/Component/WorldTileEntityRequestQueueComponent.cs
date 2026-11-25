@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Tick-scoped queue of chest, sign and tile entity intentions.</summary>
 public sealed class WorldTileEntityRequestQueueComponent

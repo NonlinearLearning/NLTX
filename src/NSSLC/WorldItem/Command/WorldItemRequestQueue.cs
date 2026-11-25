@@ -1,7 +1,7 @@
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Locates the single entity that carries the world-item request queue.</summary>
 /// <remarks>

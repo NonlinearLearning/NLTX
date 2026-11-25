@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Pure row-major index arithmetic for dense tile storage.

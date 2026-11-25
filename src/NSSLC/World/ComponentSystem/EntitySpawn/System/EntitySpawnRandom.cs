@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>
 /// Deterministic pseudo-random cursor for spawn rolls.

@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Pure stacking arithmetic for world items, ported from Version4

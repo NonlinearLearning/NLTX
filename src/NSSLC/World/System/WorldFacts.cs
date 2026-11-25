@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Immutable Version4 tile facts: the per-tile-type properties shared by the world domain and

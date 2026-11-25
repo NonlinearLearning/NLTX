@@ -1,7 +1,7 @@
 using System.Numerics;
-using Terraria.Liquid;
+using Terraria.Share.Liquid;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Per-tick world item motion arithmetic ported from Version4 <c>WorldItem.MoveInWorld</c>.

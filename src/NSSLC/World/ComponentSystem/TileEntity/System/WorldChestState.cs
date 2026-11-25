@@ -1,7 +1,7 @@
-using Terraria.Session;
-using Terraria.Item;
+using Terraria.Unshared.Session;
+using Terraria.Share.Items;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Authoritative contents of one world chest, keyed by the tile it sits on.</summary>
 /// <remarks>

@@ -1,8 +1,8 @@
 using System.Numerics;
-using Terraria.Session;
-using Terraria.Item;
+using Terraria.Unshared.Session;
+using Terraria.Share.Items;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Owns the bounded 400-slot world item table used by the Version4 protocol.</summary>
 public sealed class WorldItemStore : IWorldItemProjectionSource, IWorldItemQuery

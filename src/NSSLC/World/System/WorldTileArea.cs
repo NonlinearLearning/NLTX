@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Half-open integer rectangle in tile coordinates.</summary>
 /// <remarks>

@@ -1,7 +1,7 @@
 using System;
-using Terraria.Physics;
+using Terraria.Share.Physics;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Stores the authoritative metadata for one in-memory world instance.</summary>
 /// <remarks>

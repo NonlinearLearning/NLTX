@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Small authoritative subset of Terraria's single-tile drop rules.</summary>
 public static class WorldTileDropRules

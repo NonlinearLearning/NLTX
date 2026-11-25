@@ -1,6 +1,6 @@
 using System.Numerics;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>
 /// Port of Version4 <c>Spawner.GetSpawnRate</c>: turns world flags and player depth into one roll

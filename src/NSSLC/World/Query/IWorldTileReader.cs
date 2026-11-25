@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Read-only tile snapshot port for world interaction consumers.</summary>
 /// <remarks>Implementations must read the authoritative world state without exposing storage.</remarks>

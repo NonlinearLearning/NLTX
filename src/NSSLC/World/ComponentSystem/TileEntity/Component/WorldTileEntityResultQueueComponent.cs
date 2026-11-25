@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Tick-scoped queue of applied tile entity outcomes.</summary>
 public sealed class WorldTileEntityResultQueueComponent

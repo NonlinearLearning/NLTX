@@ -5,17 +5,17 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Session;
-using Terraria.Entity;
-using Terraria.Movement;
-using Terraria.Npc;
-using Terraria.Physics;
-using Terraria.Relationships;
-using Terraria.World;
-using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
+using Terraria.Share.Combat;
+using Terraria.Unshared.Session;
+using Terraria.Share.Entities;
+using Terraria.Share.Movement;
+using Terraria.Unshared.Npc;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.World;
+using MovementVelocityComponent = Terraria.Share.Movement.VelocityComponent;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>
 /// Spawns hostile creatures around players, ported from Version4 <c>NPC.Spawner.SpawnNPC</c>.
@@ -40,7 +40,7 @@ public sealed class EntitySpawnSystem : BaseSystem<ArchWorld, EcsServerTickConte
 
   private readonly IWorldTileGrid _tiles;
   private readonly ISessionPlayerSource _sessionPlayers;
-  private readonly EntityDefinitionSystem<ArchEntity> _spawner;
+  private readonly EntitySystem<ArchEntity> _spawner;
   private readonly NpcAiRuntime? _ai;
   private readonly EntitySpawnTable _table;
   private readonly long _worldSeed;
@@ -56,7 +56,7 @@ public sealed class EntitySpawnSystem : BaseSystem<ArchWorld, EcsServerTickConte
       ArchWorld ecsWorld,
       IWorldTileGrid tiles,
       ISessionPlayerSource sessionPlayers,
-      EntityDefinitionSystem<ArchEntity> spawner,
+      EntitySystem<ArchEntity> spawner,
       NpcAiRuntime? ai,
       EntitySpawnTable table,
       EntitySpawnEnvironment environment,

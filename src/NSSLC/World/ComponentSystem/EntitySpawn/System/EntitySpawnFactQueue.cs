@@ -1,7 +1,7 @@
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>Locates the single entity that carries the NPC spawn fact queue.</summary>
 public static class EntitySpawnFactQueue

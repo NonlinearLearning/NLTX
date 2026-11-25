@@ -1,9 +1,9 @@
 using System;
 using System.Numerics;
-using Terraria.Movement;
-using Terraria.Physics;
+using Terraria.Share.Movement;
+using Terraria.Share.Physics;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Pure tile collision arithmetic for one movement query.
@@ -28,7 +28,7 @@ public static class WorldTileMotionSolver
       GravityDirection gravityDirection)
   {
     ArgumentNullException.ThrowIfNull(grid);
-    if (!Terraria.Physics.SimulationVector.IsFinite(position) || !Terraria.Physics.SimulationVector.IsFinite(velocity) || !Terraria.Physics.SimulationVector.IsFinite(colliderSize) ||
+    if (!Terraria.Share.Physics.SimulationVector.IsFinite(position) || !Terraria.Share.Physics.SimulationVector.IsFinite(velocity) || !Terraria.Share.Physics.SimulationVector.IsFinite(colliderSize) ||
         colliderSize.X <= 0f || colliderSize.Y <= 0f)
     {
       return new SpatialTileMotionResult(position, Vector2.Zero, false, false);
@@ -69,6 +69,10 @@ public static class WorldTileMotionSolver
       current.Y = resolvedY;
     }
 
+    TileContactGeometry contact = collidedX || collidedY
+        ? DescribeContact(grid, current, colliderSize, velocity, collidedX, collidedY)
+        : default;
+
     // At large world coordinates a one-tick gravity displacement can be smaller than one
     // float ULP. Probe the support plane explicitly so an entity resting exactly on a tile
     // still becomes grounded and its vertical velocity is consumed.
@@ -86,7 +90,7 @@ public static class WorldTileMotionSolver
     Vector2 resultingVelocity = new(
         collidedX ? 0f : velocity.X,
         collidedY ? 0f : velocity.Y);
-    return new SpatialTileMotionResult(current, resultingVelocity, collidedX, collidedY);
+    return new SpatialTileMotionResult(current, resultingVelocity, collidedX, collidedY, contact);
   }
 
   private static bool TrySnapToGround(
@@ -317,6 +321,43 @@ public static class WorldTileMotionSolver
     }
 
     return false;
+  }
+
+  /// <summary>把"撞了"翻译成几何事实：接触点取被挡住那一侧的表面，法线指向实体。</summary>
+  /// <remarks>
+  /// 位置是碰撞后的安全位置，所以接触点直接用碰撞盒对应的边：水平撞墙取迎面的 X 边，
+  /// 垂直取迎面的 Y 边。瓦片索引由接触点往里挪半像素后换算，避免正好压在边界上取到空瓦片。
+  /// </remarks>
+  private static TileContactGeometry DescribeContact(
+      IWorldTileGrid grid,
+      Vector2 position,
+      Vector2 colliderSize,
+      Vector2 velocity,
+      bool collidedX,
+      bool collidedY)
+  {
+    int tileSize = Math.Max(1, grid.TileSize);
+    float pointX;
+    float pointY;
+    Vector2 normal;
+    if (collidedX)
+    {
+      pointX = velocity.X > 0f ? position.X + colliderSize.X : position.X;
+      pointY = position.Y + colliderSize.Y * 0.5f;
+      normal = velocity.X > 0f ? -Vector2.UnitX : Vector2.UnitX;
+    }
+    else
+    {
+      pointX = position.X + colliderSize.X * 0.5f;
+      pointY = velocity.Y > 0f ? position.Y + colliderSize.Y : position.Y;
+      normal = velocity.Y > 0f ? -Vector2.UnitY : Vector2.UnitY;
+    }
+
+    float probeX = pointX - normal.X * 0.5f;
+    float probeY = pointY - normal.Y * 0.5f;
+    int tileX = Math.Clamp((int)MathF.Floor(probeX / tileSize), 0, Math.Max(0, grid.Width - 1));
+    int tileY = Math.Clamp((int)MathF.Floor(probeY / tileSize), 0, Math.Max(0, grid.Height - 1));
+    return new TileContactGeometry(tileX, tileY, new Vector2(pointX, pointY), normal);
   }
 
   private static Vector2 ClampToWorld(

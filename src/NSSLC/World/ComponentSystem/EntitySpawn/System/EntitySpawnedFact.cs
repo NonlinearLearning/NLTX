@@ -1,6 +1,6 @@
 using ArchEntity = Arch.Core.Entity;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>Fact raised by the NPC domain after it created a creature that needs a network id.</summary>
 /// <remarks>

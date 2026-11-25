@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Narrow feed that lets another domain publish committed world mutations without holding the

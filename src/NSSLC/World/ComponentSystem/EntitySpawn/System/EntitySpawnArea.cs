@@ -1,6 +1,6 @@
-using Terraria.World;
+using Terraria.Unshared.World;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>Version4 <c>Spawner.GetSpawnArea</c> outputs for one player.</summary>
 /// <remarks>

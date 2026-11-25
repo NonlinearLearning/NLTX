@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Pure pickup eligibility for one world item and one player, ported from Version4

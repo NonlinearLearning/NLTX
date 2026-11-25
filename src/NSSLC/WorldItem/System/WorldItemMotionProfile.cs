@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Per-tick integration constants for one world item and the medium it stands in.</summary>
 /// <remarks>

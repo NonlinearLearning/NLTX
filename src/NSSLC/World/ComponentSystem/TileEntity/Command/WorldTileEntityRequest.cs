@@ -1,6 +1,6 @@
-using Terraria.Session;
+using Terraria.Unshared.Session;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>One cross-domain intention about a chest, a sign or a tile entity.</summary>
 /// <remarks>

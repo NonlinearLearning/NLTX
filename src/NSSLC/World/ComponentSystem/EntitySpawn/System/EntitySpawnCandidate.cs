@@ -1,7 +1,7 @@
-using Terraria.Ai;
-using Terraria.Entity;
+using Terraria.Share.Ai;
+using Terraria.Share.Entities;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>One entry of the spawn table: which entity to create and how likely it is.</summary>
 /// <remarks>
@@ -11,7 +11,7 @@ namespace Terraria.EntitySpawn;
 /// system never names a concrete creature.
 /// </remarks>
 public sealed record EntitySpawnCandidate(
-    EntityDefinitionId DefinitionId,
+    EntityId DefinitionId,
     short NetworkType,
     AiComponent Ai,
     int Weight)

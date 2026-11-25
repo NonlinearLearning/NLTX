@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using ArchEntity = Arch.Core.Entity;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>Tick-scoped queue of creatures that were just created and need a network identity.</summary>
 public sealed class EntitySpawnFactQueueComponent

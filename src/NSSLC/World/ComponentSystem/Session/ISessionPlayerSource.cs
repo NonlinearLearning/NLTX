@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Session;
+namespace Terraria.Unshared.Session;
 
 /// <summary>Read-only view of the players currently bound to an active session.</summary>
 /// <remarks>

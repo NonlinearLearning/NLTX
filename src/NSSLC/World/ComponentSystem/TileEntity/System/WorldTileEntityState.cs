@@ -1,6 +1,6 @@
-using Terraria.Item;
+using Terraria.Share.Items;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>One decoded tile entity: identity, kind and the payload the runtime keeps.</summary>
 /// <remarks>

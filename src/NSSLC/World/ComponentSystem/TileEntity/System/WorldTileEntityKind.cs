@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Tile entity kinds, in the registration order Version4 <c>TileEntitiesManager.RegisterAll</c>

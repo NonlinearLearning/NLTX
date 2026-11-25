@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Outcome of processing one world interaction request.</summary>
 public enum WorldInteractionResultStatus : byte

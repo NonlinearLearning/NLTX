@@ -5,16 +5,16 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Session;
-using Terraria.Entity;
-using Terraria.Inventory;
-using Terraria.Liquid;
-using Terraria.Movement;
-using Terraria.Physics;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Unshared.Session;
+using Terraria.Share.Entities;
+using Terraria.Share.Inventory;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Advances the authoritative world item table once per server tick.

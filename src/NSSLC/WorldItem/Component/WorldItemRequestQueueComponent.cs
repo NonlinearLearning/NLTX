@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Tick-scoped queue of world-item changes requested by other domains.</summary>
 /// <remarks>

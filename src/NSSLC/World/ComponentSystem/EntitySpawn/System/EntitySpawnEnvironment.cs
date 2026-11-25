@@ -1,4 +1,4 @@
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>World flags the Version4 spawner reads while choosing a rate and a population cap.</summary>
 /// <remarks>

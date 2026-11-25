@@ -1,6 +1,6 @@
-using Terraria.Liquid;
+using Terraria.Share.Liquid;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Read-only tile value returned by the world interaction boundary.</summary>
 public readonly record struct WorldTileState(

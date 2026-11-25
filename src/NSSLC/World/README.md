@@ -28,7 +28,7 @@ World/
 ```
 
 `ComponentSystem/` 下的三个目录是与世界运行时共享同一权威世界边界的语义子域，
-按 [ECS 文件组织设计约束](../../../Context/架构设计/ECS文件组织设计约束.md) §3.4 视为独立
+按 [ECS 文件组织设计约束](../../../Context/架构约束/ECS文件组织设计约束.md) §3.4 视为独立
 领域再分：带 `*System.cs` 的子域保留 `Component/`、`Command/`、`Query/`、`System/` 四类
 职责目录，主系统文件留在子域根；没有 `*System.cs` 的 `Session/` 保持扁平。`Session/` 与
 `TileEntity/` 的命名空间不与目录同名，这是既定的目录与命名空间解耦事实，不在移动时顺手修正：

@@ -1,7 +1,7 @@
 using System.Numerics;
-using Terraria.Session;
+using Terraria.Unshared.Session;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Kind of world-item change another domain may request.</summary>
 public enum WorldItemRequestKind : byte

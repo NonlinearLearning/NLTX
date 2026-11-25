@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>One world sign: the tile it hangs on and the text it stores.</summary>
 /// <remarks>

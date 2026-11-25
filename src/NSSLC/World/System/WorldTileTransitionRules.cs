@@ -1,6 +1,6 @@
-using Terraria.Liquid;
+using Terraria.Share.Liquid;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Pure tile transition rules: what a tile becomes after a break or a place, and whether the

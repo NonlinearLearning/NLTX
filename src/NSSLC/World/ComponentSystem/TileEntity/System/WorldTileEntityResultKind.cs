@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Outcome of one applied <see cref="WorldTileEntityRequest"/>.</summary>
 public enum WorldTileEntityResultKind : byte

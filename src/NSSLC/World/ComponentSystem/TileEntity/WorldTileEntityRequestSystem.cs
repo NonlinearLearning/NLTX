@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Applies chest, sign and tile entity intentions against the world table.</summary>
 /// <remarks>

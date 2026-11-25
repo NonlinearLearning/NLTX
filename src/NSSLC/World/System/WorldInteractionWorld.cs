@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Port owned by the authoritative world implementation. It must not be implemented by the ECS

@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 [Flags]
 public enum WorldInteractionPermission : byte {

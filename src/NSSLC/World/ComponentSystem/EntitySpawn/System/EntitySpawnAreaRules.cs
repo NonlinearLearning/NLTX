@@ -1,11 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using Terraria.Session;
-using Terraria.Liquid;
-using Terraria.World;
+using Terraria.Unshared.Session;
+using Terraria.Share.Liquid;
+using Terraria.Unshared.World;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>
 /// Port of Version4 <c>Spawner.GetSpawnArea</c>, <c>FindSpawnTile</c>, <c>HasTileSpawnSpace</c>,

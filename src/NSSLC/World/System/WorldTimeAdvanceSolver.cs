@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Pure validation and derivation rules for the world clock and revision counters.

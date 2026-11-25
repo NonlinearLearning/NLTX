@@ -1,4 +1,4 @@
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>Intentions a session may raise against a chest, a sign or a tile entity.</summary>
 public enum WorldTileEntityRequestKind : byte

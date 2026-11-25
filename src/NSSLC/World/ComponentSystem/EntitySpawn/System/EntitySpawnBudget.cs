@@ -1,4 +1,4 @@
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>Result of the Version4 <c>Spawner.GetSpawnRate</c> roll: divisor and nearby cap.</summary>
 /// <remarks>

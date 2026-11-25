@@ -1,4 +1,4 @@
-namespace Terraria.Session;
+namespace Terraria.Unshared.Session;
 
 /// <summary>Stable identity of one connection session, as seen by the gameplay domains.</summary>
 /// <remarks>

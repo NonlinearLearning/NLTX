@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.EntitySpawn;
+namespace Terraria.Unshared.EntitySpawn;
 
 /// <summary>Weighted, immutable spawn table consumed by <see cref="EntitySpawnSystem"/>.</summary>
 public sealed class EntitySpawnTable
@@ -19,7 +19,7 @@ public sealed class EntitySpawnTable
       throw new ArgumentException("A spawn table requires at least one candidate.", nameof(candidates));
     }
 
-    HashSet<EntityDefinitionId> seen = [];
+    HashSet<EntityId> seen = [];
     int totalWeight = 0;
     foreach (EntitySpawnCandidate candidate in source)
     {

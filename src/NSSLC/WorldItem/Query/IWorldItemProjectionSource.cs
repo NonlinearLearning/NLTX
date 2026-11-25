@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Narrow feed for the committed world-item changes that still need network publication.

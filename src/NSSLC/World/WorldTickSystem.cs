@@ -3,9 +3,9 @@ using System.Diagnostics;
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>
 /// Advances one authoritative <see cref="WorldRuntime" /> from the ECS tick context.

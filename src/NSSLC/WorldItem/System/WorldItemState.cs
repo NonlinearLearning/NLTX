@@ -1,8 +1,8 @@
 using System.Numerics;
-using Terraria.Session;
-using Terraria.Item;
+using Terraria.Unshared.Session;
+using Terraria.Share.Items;
 
-namespace Terraria.World;
+namespace Terraria.Unshared.World;
 
 /// <summary>One authoritative world item occupying a Version4 item slot.</summary>
 /// <remarks>
