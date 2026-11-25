@@ -17,7 +17,7 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 | --- | --- |
 | [AI](Share/AI/README.md) | HTN/GOAP 统一计算契约、AI 绑定和有序意图 |
 | [Attributes](Share/Attributes/README.md) | 基础属性、来源分类、限时属性修饰器、Buff 与状态效果 |
-| [Combat](Share/Combat/README.md) | 生命、伤害、减伤、保护窗口和战斗状态组件 |
+| [Combat](Share/Combat/README.md) | 生命、伤害、减伤、无敌窗口与战斗状态组件 |
 | [Entity](Share/Entity/README.md) | 实体定义、组件组合、初始化契约、实体生命周期边界和 Arch 组织入口 |
 | [Inventory](Share/Inventory/README.md) | 广义库存能力、槽位规则和跨实体物品转移 |
 | [Item](Share/Item/README.md) | 物品定义、无实体物品堆和实体化物品状态 |
@@ -28,7 +28,7 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 | 目录 | 内容 |
 | --- | --- |
 | [Chat](Chat/) | 聊天请求、命令分派、有界历史和广播队列 |
-| [ItemUse](ItemUse/) | 玩家物品使用请求、门闸和内容侧使用定义 |
+| [ItemUse](Share/ItemUse/) | 玩家物品使用请求、门闸和内容侧使用定义 |
 | [Npc](Npc/) | NPC AI 事实、意图、引导行为和运行时适配 |
 | [Player](Player/) | 玩家输入请求、战斗结果、死亡与重生状态 |
 | [Projectile](Projectile/) | 投射物行为、生命周期、AI 与战斗接线 |
@@ -38,7 +38,7 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 ### `World/ComponentSystem/` 下的语义子域
 
 刷怪、会话和 Tile 实体不独立成项目根领域，而是 `World/ComponentSystem/` 下的语义子域：
-它们与世界运行时共享同一权威世界边界，按 [ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md)
+它们与世界运行时共享同一权威世界边界，按 [ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md)
 §3.4 视为独立领域再分。
 
 | 子域 | 内容 | 命名空间 |
@@ -75,7 +75,7 @@ Arch 运行时的交互系统会把 Arch 句柄限制在明确的适配入口；
 `Share/Physics/Liquid`、`Share/Physics/SpatialQuery`、`Share/ItemUse/Content`、
 `Share/Attributes/Contribution`）保持扁平，不建空的四类目录。`Share/AI/BasicFramework/Goap`、
 `Share/AI/BasicFramework/Htn` 是移植库，`Share/AI/BasicFramework/Examples` 是示例集，三者保留来源结构。
-规则正文见 [ECS 文件组织设计约束](../../Context/架构设计/ECS文件组织设计约束.md) §3.4。
+规则正文见 [ECS 文件组织设计约束](../../Context/架构约束/ECS文件组织设计约束.md) §3.4。
 
 ## 一次实体更新
 
@@ -120,8 +120,9 @@ Inventory 是共享的持有能力。`InventoryComponent` 通过槽位定义组�
 `AttributeSystem` 负责来源移除和时限推进。Buff、装备、饰品、武器、Boss、敌怪、NPC 和
 友好生物只是来源分类，不构成实体继承树。Buff 的周期行为和战斗系统的受击结算仍由各自
 领域负责。Player 不拥有装备槽或 Buff/Debuff 数值的私有状态组件；服务器的
-`AttributeSetComponent` 保存 Player 基础防御和基础抗性，`ProtectionWindowComponent` 保存保护窗口，Inventory 与 Buff
-的数值贡献由 `AttributeModifier` 聚合，保护窗口由 Combat 规则消费。生命池不进入属性系统；当前生命、最大生命、最小生命和存活状态由
+`AttributeSetComponent` 保存 Player 基础防御和基础抗性，受击免疫窗口由共享
+`ImmunityWindowComponent` 按 6 个伤害通道分槽保存（NPC 侧按攻击者分槽），Inventory 与 Buff
+的数值贡献由 `AttributeModifier` 聚合，免疫窗口由 Combat 规则消费。生命池不进入属性系统；当前生命、最大生命、最小生命和存活状态由
 `Share/Combat/LifeComponent` 单独承载。`LifeRegeneration` 仅可表示恢复速率贡献，不能表示生命池
 本身。
 

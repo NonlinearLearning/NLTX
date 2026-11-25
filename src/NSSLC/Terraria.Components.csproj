@@ -24,4 +24,10 @@
     <Compile Include="World/**/*.cs" />
     <Compile Include="WorldItem/**/*.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- P1 影子装配对照需要同时调用 Build 与 BuildLegacy（两者都是 internal）。 -->
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+      <_Parameter1>Terraria.Projectile</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
 </Project>
