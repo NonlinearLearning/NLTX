@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>Chooses one request without applying it to an entity.</summary>
 public static class MovementIntentResolver

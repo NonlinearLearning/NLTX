@@ -1,4 +1,4 @@
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 public enum SpatialSimulationStatus : byte
 {

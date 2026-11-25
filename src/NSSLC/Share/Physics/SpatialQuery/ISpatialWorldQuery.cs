@@ -1,8 +1,8 @@
 using System.Numerics;
-using Terraria.Liquid;
-using Terraria.Movement;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// Read-only world boundary used by spatial simulation. Implementations provide detached,

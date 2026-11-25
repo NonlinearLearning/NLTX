@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// Describes the geometry used by spatial queries. Collision response belongs to a system.

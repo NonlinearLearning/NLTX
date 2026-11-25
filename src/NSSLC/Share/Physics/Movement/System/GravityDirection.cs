@@ -1,4 +1,4 @@
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// 表示实体当前采用的重力方向。

@@ -1,12 +1,13 @@
 using System.Numerics;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Vector guarantees that simulation code relies on.</summary>
 /// <remarks>
 /// 这两个操作此前在多个域里各自实现了一份逐字节相同的私有副本：
 /// <c>IsFinite(Vector2)</c> 见于 <c>Communication/GameCommunicationAdapter</c>、
-/// <c>Projectile/ProjectileSimulationSystem</c>、<c>Share/Physics/Liquid/LiquidSimulation</c>、
+/// <c>Projectile/ProjectileSimulationSystem</c>（已于内容组合分解 P2 删除）、
+/// <c>Share/Physics/Liquid/LiquidSimulation</c>、
 /// <c>World/Solver/WorldTileMotionSolver</c> 四处；<c>MoveTowards</c> 见于
 /// <c>Projectile/ProjectileHomingAiBehavior</c> 与 <c>Share/SpatialSimulationSystem</c> 两处。
 ///

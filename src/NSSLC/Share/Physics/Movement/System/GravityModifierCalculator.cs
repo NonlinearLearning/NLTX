@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// 负责无副作用地计算当前帧的重力状态。

@@ -1,9 +1,9 @@
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// Advances and recalculates gravity projections for entities with complete gravity state.

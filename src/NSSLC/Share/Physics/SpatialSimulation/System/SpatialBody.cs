@@ -1,4 +1,4 @@
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Pairs a detached spatial snapshot with its entity-collision policy.</summary>
 public readonly record struct SpatialBody<TEntity>(

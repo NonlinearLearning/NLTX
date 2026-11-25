@@ -1,4 +1,4 @@
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Declares broad-phase participation and filtering for entity contacts.</summary>
 public readonly record struct EntityCollisionCapabilityComponent(

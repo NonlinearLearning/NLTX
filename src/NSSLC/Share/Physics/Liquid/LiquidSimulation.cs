@@ -1,10 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Numerics;
-using Terraria.Physics;
-using Terraria.World;
+using Terraria.Share.Physics;
+using Terraria.Unshared.World;
 
-namespace Terraria.Liquid;
+namespace Terraria.Share.Liquid;
 
 /// <summary>
 /// Owns the deterministic tile-level liquid simulation: the settle queue, the per-pass
@@ -591,7 +591,7 @@ internal sealed class LiquidSimulation
       LiquidInteractionCapabilityComponent capability)
   {
     if (!capability.Enabled || capability.AffectedLiquids == LiquidContactFlags.None ||
-        !Terraria.Physics.SimulationVector.IsFinite(position) || !Terraria.Physics.SimulationVector.IsFinite(colliderSize) ||
+        !Terraria.Share.Physics.SimulationVector.IsFinite(position) || !Terraria.Share.Physics.SimulationVector.IsFinite(colliderSize) ||
         colliderSize.X <= 0f || colliderSize.Y <= 0f)
     {
       return new SpatialLiquidContact(LiquidContactFlags.None, 0);
@@ -663,7 +663,7 @@ internal readonly record struct LiquidStepOutcome(
 /// <summary>One tile the liquid pass rewrote, with enough state for the caller to journal it.</summary>
 /// <remarks>
 /// 液面步进的内部产物，只有坐标与前后状态——它是"这一步改写了什么"，不是"要投影给客户端
-/// 什么"。调用方（<c>WorldRuntime</c>）负责把它投影成 <c>Terraria.World.WorldMutation</c>，
+/// 什么"。调用方（<c>WorldRuntime</c>）负责把它投影成 <c>Terraria.Unshared.World.WorldMutation</c>，
 /// 那一步才补上掉落信息。
 ///
 /// 刻意不直接复用 <c>WorldMutation</c>：那会让液面逻辑依赖世界投影模型，并被迫携带

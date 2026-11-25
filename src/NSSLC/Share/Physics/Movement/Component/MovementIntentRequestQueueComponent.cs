@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>Tick-scoped queue of movement intents requested by other domains.</summary>
 /// <remarks>

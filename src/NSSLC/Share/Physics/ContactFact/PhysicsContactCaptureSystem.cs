@@ -4,10 +4,10 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Captures geometry-only contacts into the world-scoped Physics contact queue component.</summary>
 public sealed class PhysicsContactCaptureSystem : BaseSystem<ArchWorld, EcsServerTickContext>
@@ -54,9 +54,9 @@ public sealed class PhysicsContactCaptureSystem : BaseSystem<ArchWorld, EcsServe
           SpatialEntitySnapshot<ArchEntity> snapshot = new(
               entity,
               location,
-              World.TryGet(entity, out Terraria.Movement.VelocityComponent velocity)
+              World.TryGet(entity, out Terraria.Share.Movement.VelocityComponent velocity)
                   ? velocity
-                  : Terraria.Movement.VelocityComponent.Stationary,
+                  : Terraria.Share.Movement.VelocityComponent.Stationary,
               collider);
           bodies.Add(new SpatialBody<ArchEntity>(snapshot, capability));
         });

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// Declares movement limits and jump capability. It contains no movement algorithm.

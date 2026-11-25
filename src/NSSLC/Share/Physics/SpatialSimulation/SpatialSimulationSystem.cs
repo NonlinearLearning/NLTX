@@ -1,9 +1,9 @@
 using System;
 using System.Numerics;
-using Terraria.Liquid;
-using Terraria.Movement;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// Calculates one entity's movement from detached state and a spatial frame. The system does
@@ -74,18 +74,52 @@ public sealed class SpatialSimulationSystem
       velocity = GravityIntegration.Apply(velocity, gravity, deltaTime);
     }
 
-    SpatialTileMotionResult motion = tileCollision.Enabled
-        ? frame.World.Move(
-            entity.Location.Coordinates,
-            velocity * deltaTime,
-            entity.Collider.Size,
-            tileCollision,
-            gravity.Direction)
-        : new SpatialTileMotionResult(
-            entity.Location.Coordinates + velocity * deltaTime,
-            velocity * deltaTime,
-            false,
-            false);
+    // 子步：把同一段位移切成 N 段分别碰撞。总位移不变，只是碰撞检测更细，
+    // 因此高速实体不会一帧跨过整面墙。撞到东西就停在该子步，剩余子步不再推进——
+    // 否则会沿着墙继续滑，等价于把碰撞结果又抹掉。
+    int substepCount = Math.Max(1, entity.Substep.Count);
+    float substepDelta = deltaTime / substepCount;
+    Vector2 position = entity.Location.Coordinates;
+    Vector2 motionVelocity = velocity;
+    bool collidedX = false;
+    bool collidedY = false;
+    int contactSubstep = 0;
+    TileContactGeometry contact = default;
+    for (int substep = 0; substep < substepCount; substep++)
+    {
+      Vector2 step = motionVelocity * substepDelta;
+      SpatialTileMotionResult stepResult = tileCollision.Enabled
+          ? frame.World.Move(position, step, entity.Collider.Size, tileCollision, gravity.Direction)
+          : new SpatialTileMotionResult(position + step, step, false, false);
+      if (!stepResult.IsFinite)
+      {
+        return SpatialSimulationResult<TEntity>.Rejected(
+            entity.Entity,
+            frame.Revision,
+            SpatialSimulationStatus.Rejected,
+            "The world returned a non-finite spatial result.");
+      }
+
+      position = stepResult.Position;
+      if (tileCollision.Enabled)
+      {
+        motionVelocity = stepResult.Velocity / substepDelta;
+      }
+
+      collidedX |= stepResult.CollidedX;
+      collidedY |= stepResult.CollidedY;
+      if (stepResult.CollidedX || stepResult.CollidedY)
+      {
+        // 记住"第几个子步撞的"：命中顺序（先撞谁）只能靠这个序号表达。
+        contactSubstep = substep;
+        contact = stepResult.Contact;
+        break;
+      }
+    }
+
+    // 重新组装时要把接触几何一起带上，否则子步循环里查到的"撞了哪块瓦片"就丢了。
+    SpatialTileMotionResult motion = new(
+        position, motionVelocity * substepDelta, collidedX, collidedY, contact);
     if (!motion.IsFinite)
     {
       return SpatialSimulationResult<TEntity>.Rejected(
@@ -103,10 +137,13 @@ public sealed class SpatialSimulationSystem
         : new SpatialLiquidContact(LiquidContactFlags.None, 0);
     GroundingComponent grounding = ResolveGrounding(motion, gravity, velocity.Y);
     var commit = new SpatialCommit(
-        new Terraria.Entity.LocationComponent(motion.Position),
+        new Terraria.Share.Entities.LocationComponent(motion.Position),
         new VelocityComponent(motion.Velocity / deltaTime),
         grounding,
-        liquid.ToComponent());
+        liquid.ToComponent(),
+        motion.Contact,
+        velocity,
+        contactSubstep);
     return SpatialSimulationResult<TEntity>.Applied(
         entity.Entity,
         frame.Revision,
@@ -130,7 +167,7 @@ public sealed class SpatialSimulationSystem
     float maximum = movement.MaximumSpeed;
     desired.X = Math.Clamp(desired.X, -maximum, maximum);
     desired.Y = Math.Clamp(desired.Y, -maximum, maximum);
-    return Terraria.Physics.SimulationVector.MoveTowards(current, desired, movement.Acceleration * deltaTime);
+    return Terraria.Share.Physics.SimulationVector.MoveTowards(current, desired, movement.Acceleration * deltaTime);
   }
 
   private static Vector2 ResolveFreeVelocity(
@@ -145,7 +182,7 @@ public sealed class SpatialSimulationSystem
       desired = Vector2.Normalize(desired) * movement.MaximumSpeed;
     }
 
-    return Terraria.Physics.SimulationVector.MoveTowards(current, desired, movement.Acceleration * deltaTime);
+    return Terraria.Share.Physics.SimulationVector.MoveTowards(current, desired, movement.Acceleration * deltaTime);
   }
 
   /// <summary>

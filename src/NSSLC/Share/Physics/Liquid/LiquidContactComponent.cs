@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Liquid;
+namespace Terraria.Share.Liquid;
 
 /// <summary>Stores the liquid contact committed by the spatial simulation.</summary>
 public readonly record struct LiquidContactComponent(

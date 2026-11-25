@@ -1,4 +1,4 @@
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>Declares whether an entity participates in gravity simulation.</summary>
 public readonly record struct GravityCapabilityComponent(

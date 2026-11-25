@@ -1,6 +1,6 @@
-using Terraria.World;
+using Terraria.Unshared.World;
 
-namespace Terraria.Liquid;
+namespace Terraria.Share.Liquid;
 
 /// <summary>
 /// Binds the concrete dense tile store and world dimensions to the seam the liquid algorithm

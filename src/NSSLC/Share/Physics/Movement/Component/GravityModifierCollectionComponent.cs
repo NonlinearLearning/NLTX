@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// 保存实体当前活动的重力修饰器，并维护来源序号。

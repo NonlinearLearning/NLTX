@@ -3,12 +3,13 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Liquid;
-using Terraria.Movement;
-using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
+using Terraria.Share.Entities;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
+using Terraria.Share.Relationships;
+using MovementVelocityComponent = Terraria.Share.Movement.VelocityComponent;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// Runs the local spatial step for every entity with the required spatial composition.
@@ -22,17 +23,20 @@ namespace Terraria.Physics;
 public sealed class SpatialSimulationCoordinatorSystem : BaseSystem<ArchWorld, EcsServerTickContext>
 {
   private readonly ISpatialWorldQuery _spatialWorld;
+  private readonly IEntityRuntimeHandleResolver? _handles;
   private readonly SpatialSimulationSystem _simulation;
   private readonly QueryDescription _query;
 
   public SpatialSimulationCoordinatorSystem(
       ArchWorld world,
       ISpatialWorldQuery spatialWorld,
-      SpatialSimulationSystem? simulation = null)
+      SpatialSimulationSystem? simulation = null,
+      IEntityRuntimeHandleResolver? handles = null)
       : base(world ?? throw new ArgumentNullException(nameof(world)))
   {
     ArgumentNullException.ThrowIfNull(spatialWorld);
     _spatialWorld = spatialWorld;
+    _handles = handles;
     _simulation = simulation ?? new SpatialSimulationSystem();
     _query = new QueryDescription()
         .WithAll<
@@ -42,12 +46,24 @@ public sealed class SpatialSimulationCoordinatorSystem : BaseSystem<ArchWorld, E
             GroundingComponent>();
   }
 
+  /// <summary>瓦片接触队列存在时返回它；不存在返回 null，调用方据此跳过接触捕获。</summary>
+  private TileContactQueueComponent? TryGetTileContactQueue()
+  {
+    TileContactQueueComponent? queue = null;
+    QueryDescription query = new QueryDescription().WithAll<TileContactQueueComponent>();
+    World.Query(in query, (ref TileContactQueueComponent component) => queue = component);
+    return queue;
+  }
+
   public override void Update(in EcsServerTickContext context)
   {
     long tick = context.Tick;
     float deltaTime = context.DeltaTime;
     SpatialWorldRevision revision = _spatialWorld.Revision;
     SpatialFrame frame = new SpatialFrame(tick, revision, _spatialWorld);
+    // 瓦片接触队列可选：没有它的世界照样跑空间推进，只是没人订阅接触事实。
+    TileContactQueueComponent? tileContacts = TryGetTileContactQueue();
+    tileContacts?.BeginCapture(tick, revision);
     World.Query(
         in _query,
         (ArchEntity entity,
@@ -75,13 +91,18 @@ public sealed class SpatialSimulationCoordinatorSystem : BaseSystem<ArchWorld, E
               entity, out LiquidContactComponent existingLiquid)
               ? existingLiquid
               : new LiquidContactComponent(LiquidContactFlags.None, 0);
+          SubstepCapabilityComponent substep = World.TryGet(
+              entity, out SubstepCapabilityComponent declaredSubsteps)
+              ? declaredSubsteps
+              : SubstepCapabilityComponent.Single;
           SpatialEntitySnapshot<ArchEntity> snapshot = new SpatialEntitySnapshot<ArchEntity>(
               entity,
               location,
               velocity,
               collider,
               grounding,
-              liquidContact);
+              liquidContact,
+              substep);
           SpatialSimulationResult<ArchEntity> result = _simulation.Simulate(
               in frame,
               in snapshot,
@@ -96,6 +117,20 @@ public sealed class SpatialSimulationCoordinatorSystem : BaseSystem<ArchWorld, E
               _spatialWorld.Revision != revision)
           {
             return;
+          }
+
+          if (tileContacts is not null &&
+              result.Commit.HasTileContact &&
+              _handles is not null &&
+              _handles.TryGetHandle(entity, out EntityRuntimeHandle contactHandle))
+          {
+            tileContacts.Add(new TileContactFact(
+                contactHandle,
+                result.Commit.TileContact,
+                result.Commit.IncomingVelocity,
+                tick,
+                revision,
+                result.Commit.Substep));
           }
 
           SpatialCommit commit = result.Commit;

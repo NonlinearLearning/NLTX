@@ -1,7 +1,7 @@
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>Locates the single entity that carries the movement intent request queue.</summary>
 public static class MovementIntentRequestQueue

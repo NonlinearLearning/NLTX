@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// Deterministic geometric contact produced by the shared entity collision subsystem.

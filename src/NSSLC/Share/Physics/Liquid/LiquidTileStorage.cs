@@ -1,6 +1,6 @@
-using Terraria.World;
+using Terraria.Unshared.World;
 
-namespace Terraria.Liquid;
+namespace Terraria.Share.Liquid;
 
 /// <summary>
 /// The tile access surface the liquid algorithm needs: read and write single tiles by

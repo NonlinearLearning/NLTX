@@ -1,4 +1,4 @@
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Declares how an entity participates in tile collision queries.</summary>
 public readonly record struct TileCollisionCapabilityComponent(

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Liquid;
+namespace Terraria.Share.Liquid;
 
 [Flags]
 public enum LiquidContactFlags : byte

@@ -1,6 +1,6 @@
-using Terraria.Liquid;
+using Terraria.Share.Liquid;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>World query output describing liquid touching an entity hitbox.</summary>
 public readonly record struct SpatialLiquidContact(

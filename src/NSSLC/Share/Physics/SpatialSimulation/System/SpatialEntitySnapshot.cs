@@ -1,8 +1,8 @@
-using Terraria.Entity;
-using Terraria.Liquid;
-using Terraria.Movement;
+using Terraria.Share.Entities;
+using Terraria.Share.Liquid;
+using Terraria.Share.Movement;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// Detached spatial state captured from one ECS entity for one simulation step.
@@ -16,7 +16,8 @@ public readonly record struct SpatialEntitySnapshot<TEntity>
       VelocityComponent velocity,
       ColliderComponent collider,
       GroundingComponent? grounding = null,
-      LiquidContactComponent? liquidContact = null)
+      LiquidContactComponent? liquidContact = null,
+      SubstepCapabilityComponent? substep = null)
   {
     Entity = entity;
     Location = location;
@@ -24,6 +25,7 @@ public readonly record struct SpatialEntitySnapshot<TEntity>
     Collider = collider;
     Grounding = grounding ?? GroundingComponent.Airborne;
     LiquidContact = liquidContact ?? new LiquidContactComponent(LiquidContactFlags.None, 0);
+    Substep = substep ?? SubstepCapabilityComponent.Single;
   }
 
   public TEntity Entity { get; }
@@ -37,5 +39,8 @@ public readonly record struct SpatialEntitySnapshot<TEntity>
   public GroundingComponent Grounding { get; }
 
   public LiquidContactComponent LiquidContact { get; }
+
+  /// <summary>本次推进要切成的子步数量。</summary>
+  public SubstepCapabilityComponent Substep { get; }
 
 }

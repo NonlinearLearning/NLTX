@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Numerics;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// Performs deterministic broad-phase AABB contact checks over detached spatial bodies.

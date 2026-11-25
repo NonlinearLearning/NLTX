@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Owns current and maximum breath capacity for an entity.</summary>
 public sealed class BreathComponent

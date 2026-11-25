@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// Stores world-space velocity in units per second. A spatial step applies

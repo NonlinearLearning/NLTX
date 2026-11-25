@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// 保存实体在没有方向覆盖时选择的重力方向。

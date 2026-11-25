@@ -2,10 +2,10 @@ using System;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
 using ArchEntity = Arch.Core.Entity;
-using Terraria.Entity;
-using Terraria.Relationships;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>Installs the movement intents other domains requested.</summary>
 /// <remarks>

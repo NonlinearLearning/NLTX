@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// Tick-scoped queue of geometric contacts captured during one simulation tick.

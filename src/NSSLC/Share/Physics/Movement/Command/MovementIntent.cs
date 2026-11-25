@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>Identifies the domain that produced a one-step movement request.</summary>
 public enum MovementIntentSource : byte

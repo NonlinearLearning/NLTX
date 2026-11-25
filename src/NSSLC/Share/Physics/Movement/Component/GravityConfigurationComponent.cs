@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// 保存实体的基础重力配置。它不是当前帧的派生结果。

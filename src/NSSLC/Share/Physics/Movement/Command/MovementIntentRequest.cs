@@ -1,6 +1,6 @@
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>One movement intent a producing domain asked the Movement domain to install.</summary>
 /// <remarks>

@@ -1,4 +1,4 @@
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// 表示重力修饰器作用的通道。

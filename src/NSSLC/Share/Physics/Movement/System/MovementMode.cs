@@ -1,4 +1,4 @@
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>Describes how a movement capability interprets velocity and gravity.</summary>
 public enum MovementMode : byte

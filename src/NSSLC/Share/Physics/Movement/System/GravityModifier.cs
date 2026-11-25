@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// 表示一个可追踪、可过期的重力来源贡献。

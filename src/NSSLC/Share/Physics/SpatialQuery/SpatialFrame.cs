@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// Immutable world input shared by all entities in one spatial batch.

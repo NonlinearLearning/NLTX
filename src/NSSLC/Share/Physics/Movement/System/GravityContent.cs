@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// 参考客户端中与重力相关的 Buff 内容样例。

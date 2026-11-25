@@ -1,4 +1,4 @@
-namespace Terraria.Movement;
+namespace Terraria.Share.Movement;
 
 /// <summary>
 /// 保存重力修饰器求值后的当前帧投影，供移动和碰撞系统读取。

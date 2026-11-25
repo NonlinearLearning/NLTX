@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Stores the last committed support contact for jump and movement rules.</summary>
 public readonly record struct GroundingComponent

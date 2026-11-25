@@ -1,7 +1,7 @@
 using System;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Owns mount identity and the optional runtime mount entity relation.</summary>
 public sealed class MountStateComponent

@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Identifies the world snapshot used by one spatial simulation batch.</summary>
 public readonly record struct SpatialWorldRevision(ulong Epoch, long Version)

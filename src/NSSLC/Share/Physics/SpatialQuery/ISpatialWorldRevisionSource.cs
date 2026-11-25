@@ -1,4 +1,4 @@
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Supplies the current authoritative world revision to a commit adapter.</summary>
 public interface ISpatialWorldRevisionSource

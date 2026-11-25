@@ -1,8 +1,8 @@
 using System;
 using System.Numerics;
-using Terraria.Movement;
+using Terraria.Share.Movement;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>
 /// One tick of vertical gravity integration, shared by every simulation that advances a

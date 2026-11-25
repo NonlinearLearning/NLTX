@@ -1,6 +1,6 @@
-using Terraria.World;
+using Terraria.Unshared.World;
 
-namespace Terraria.Liquid;
+namespace Terraria.Share.Liquid;
 
 /// <summary>Deterministic liquid blocking rule used by the tile-level liquid algorithm.</summary>
 /// <remarks>

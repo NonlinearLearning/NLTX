@@ -1,7 +1,7 @@
 using System;
 using System.Numerics;
 
-namespace Terraria.Entity;
+namespace Terraria.Share.Entities;
 
 /// <summary>
 /// Stores an entity's authoritative world-space origin. The coordinate is the collider origin

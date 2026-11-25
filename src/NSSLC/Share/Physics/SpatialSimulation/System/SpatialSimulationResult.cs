@@ -1,6 +1,6 @@
 using System;
 
-namespace Terraria.Physics;
+namespace Terraria.Share.Physics;
 
 /// <summary>Pure spatial calculation output associated with one entity and one world frame.</summary>
 public readonly record struct SpatialSimulationResult<TEntity>
