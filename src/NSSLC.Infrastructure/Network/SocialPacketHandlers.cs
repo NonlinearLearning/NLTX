@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 using Terraria.Network;
 using Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
 namespace NSSLC.Infrastructure.Network;
 

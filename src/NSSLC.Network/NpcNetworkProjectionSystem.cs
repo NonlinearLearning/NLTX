@@ -5,14 +5,14 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
+using Terraria.Share.Combat;
 using Terraria.Diagnostics;
-using Terraria.Entity;
-using Terraria.Movement;
-using Terraria.Npc;
-using Terraria.Physics;
-using Terraria.Relationships;
-using MovementVelocityComponent = Terraria.Movement.VelocityComponent;
+using Terraria.Share.Entities;
+using Terraria.Share.Movement;
+using Terraria.Unshared.Npc;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
+using MovementVelocityComponent = Terraria.Share.Movement.VelocityComponent;
 
 
 namespace Terraria.Network;

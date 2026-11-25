@@ -1,4 +1,4 @@
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 using Terraria.WorldGeneration.Systems;
 
 namespace NSSLC.Infrastructure.Network;

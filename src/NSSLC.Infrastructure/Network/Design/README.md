@@ -11,7 +11,7 @@
 对本仓库当前服务端的测试结果见
 [服务端现状测试](2026-10-05-current-server-probe.md)：无界面真实客户端已通过世界数据、
 出生区段、入服确认、脚本化行走/跳跃控制和远端区段请求。当前可运行的窄范围宿主见
-[NSSLC.Tools.NetworkServer](../../../NSSLC.Tools.NetworkServer/README.md)。
+`src/NSSLC.Server` 的 `-networktest` 宿主与 `Build/runtime/` 下的探针。
 
 前轮只交付设计文档；用户后续明确要求按报告实现，并将测试交给其他 AI。
 生产代码位于本目录上一级 Network，应用端口位于 NSSLC.Application/Network；
@@ -23,9 +23,9 @@
 2. [网络领域模型与网关职责](2026-10-03-network-domain-and-gateway.md)：关系、握手状态机、拦截及转发。
 3. [消息读写 API 与文件布局](2026-10-03-packet-io-api.md)：普通 packet 类型桥接、完整帧、读写完成语义和生成代码接入。
 4. [缓冲、发送、连接与重试](2026-10-03-buffer-connection-retry.md)：内存拥有期、背压、慢连接、取消和断线恢复。
-5. [全部 162 个消息的处理矩阵](D:/ProjectItem/SourceCode/Net/NetWork/docs/plans/2026-10-03-network-special-packet-matrix.md)：逐 ID 源码依据、建议 owner 和开放限制；另列包 82 的 15 个模块。
-6. [NetCoreServer 网络研究](D:/ProjectItem/SourceCode/Net/NetWork/docs/research/2026-10-03-netcoreserver-gateway-evidence.md)：版本证据、官方源码、.NET 缓冲和重试资料。
-7. [调查与交付报告](D:/ProjectItem/SourceCode/Net/NetWork/docs/reports/2026-10-03-network-gateway-design-report.md)：结论、证据限制、交付清单、实施顺序与验收目标。
+5. 全部 162 个消息的处理矩阵（外部资料，原路径 `D:/ProjectItem/SourceCode/Net/NetWork/docs/plans/2026-10-03-network-special-packet-matrix.md`，不在本仓库内）：逐 ID 源码依据、建议 owner 和开放限制；另列包 82 的 15 个模块。
+6. NetCoreServer 网络研究（外部资料，原路径 `D:/ProjectItem/SourceCode/Net/NetWork/docs/research/2026-10-03-netcoreserver-gateway-evidence.md`）：版本证据、官方源码、.NET 缓冲和重试资料。
+7. 调查与交付报告（外部资料，原路径 `D:/ProjectItem/SourceCode/Net/NetWork/docs/reports/2026-10-03-network-gateway-design-report.md`）：结论、证据限制、交付清单、实施顺序与验收目标。
 8. [实施报告](2026-10-03-network-gateway-implementation.md)：实际实现范围、验证与限制。
 9. [宿主接入说明](2026-10-03-network-host-integration.md)：事实表、owner 端口、启动、缓存与重连。
 10. [真实客户端无界面网络测试](2026-10-05-headless-real-client.md)：原客户端协议收发、运行脚本与验证范围。

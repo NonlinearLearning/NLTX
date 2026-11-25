@@ -1,6 +1,6 @@
-using Terraria.Entity;
-using Terraria.Relationships;
-using Terraria.Session;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.Session;
 
 namespace Terraria.Network;
 

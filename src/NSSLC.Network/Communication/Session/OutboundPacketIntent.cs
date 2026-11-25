@@ -1,4 +1,4 @@
-using Terraria.Session;
+using Terraria.Unshared.Session;
 using System;
 using System.Collections.Generic;
 

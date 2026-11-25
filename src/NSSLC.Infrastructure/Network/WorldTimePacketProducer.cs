@@ -2,7 +2,7 @@ using Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
 using Terraria.Network;
 using Terraria.NonAuthoritative.Persistence;
 using Terraria.NonAuthoritative.Simulation;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 using Terraria.WorldSession.Components;
 
 namespace NSSLC.Infrastructure.Network;

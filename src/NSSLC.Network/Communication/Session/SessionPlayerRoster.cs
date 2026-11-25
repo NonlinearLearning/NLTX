@@ -4,12 +4,12 @@ using System.Numerics;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Combat;
-using Terraria.Entity;
-using Terraria.Movement;
-using Terraria.Physics;
-using Terraria.Relationships;
-using Terraria.Session;
+using Terraria.Share.Combat;
+using Terraria.Share.Entities;
+using Terraria.Share.Movement;
+using Terraria.Share.Physics;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.Session;
 
 namespace Terraria.Network;
 

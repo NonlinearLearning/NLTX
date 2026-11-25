@@ -1,6 +1,6 @@
 using System;
 
-using Terraria.Npc;
+using Terraria.Unshared.Npc;
 
 namespace Terraria.Network;
 

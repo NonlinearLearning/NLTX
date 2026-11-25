@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.IO.Compression;
 using System.Text;
 using Terraria.Diagnostics;
-using Terraria.Liquid;
-using Terraria.World;
+using Terraria.Share.Liquid;
+using Terraria.Unshared.World;
 
 namespace Terraria.Network;
 

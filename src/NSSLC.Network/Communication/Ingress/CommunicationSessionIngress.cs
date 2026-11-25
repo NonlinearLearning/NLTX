@@ -1,4 +1,4 @@
-using Terraria.Session;
+using Terraria.Unshared.Session;
 namespace Terraria.Network;
 
 public sealed class CommunicationSessionIngress : IDisposable

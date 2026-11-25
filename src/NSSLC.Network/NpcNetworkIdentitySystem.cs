@@ -4,8 +4,8 @@ using Arch.Core;
 using Arch.System;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.EntitySpawn;
+using Terraria.Share.Entities;
+using Terraria.Unshared.EntitySpawn;
 
 namespace Terraria.Network;
 

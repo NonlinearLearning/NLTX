@@ -1,5 +1,5 @@
 using System.Net;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 using Terraria.Network;
 
 namespace NSSLC.Infrastructure.Network;

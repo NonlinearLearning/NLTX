@@ -1,6 +1,6 @@
 using Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
 using Terraria.NetWork.Prototype.PacketDesignCompiler.Wire;
-using Terraria.Projectile;
+using Terraria.Unshared.Projectiles;
 
 namespace NSSLC.Infrastructure.Network;
 

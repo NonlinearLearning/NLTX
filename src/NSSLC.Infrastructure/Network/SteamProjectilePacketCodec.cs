@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Numerics;
 using Terraria.Network;
 using Terraria.NetWork.Prototype.PacketDesignCompiler.Wire;
-using Terraria.Projectile;
+using Terraria.Unshared.Projectiles;
 
 namespace NSSLC.Infrastructure.Network;
 

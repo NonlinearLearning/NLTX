@@ -56,6 +56,6 @@ dotnet run --project Test/NSSLC.Infrastructure.Network.Verification/NSSLC.Infras
 该验证覆盖明确列出的网络分支，不代表完整游戏入服或生产游戏 owner 已完成。
 
 完整复制哈希、构建/验证命令与退出码、MSBuild 输出属性及结果保存在
-`Build/diagnostics/PocketIntegration/`。
+`Build/diagnostics/PocketIntegration/`（该目录在 `.gitignore` 内，属本地证据区，当前工作区已清理）。
 回退本次接入时恢复网络与生成工具的项目引用、类型调用及对应测试；只移除本次复制
 的 Pocket 文件和新增夹具，不回退工作区其他任务的修改。

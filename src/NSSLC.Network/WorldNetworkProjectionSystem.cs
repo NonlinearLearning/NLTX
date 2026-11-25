@@ -3,9 +3,9 @@ using System.Numerics;
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
-using Terraria.Session;
-using Terraria.World;
+using Terraria.Share.Entities;
+using Terraria.Unshared.Session;
+using Terraria.Unshared.World;
 
 
 namespace Terraria.Network;
@@ -231,10 +231,10 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
       stream.WriteByte(tile.LiquidAmount);
       stream.WriteByte(tile.Liquid switch
       {
-        Terraria.Liquid.LiquidContactFlags.Water => 0,
-        Terraria.Liquid.LiquidContactFlags.Lava => 1,
-        Terraria.Liquid.LiquidContactFlags.Honey => 2,
-        Terraria.Liquid.LiquidContactFlags.Shimmer => 3,
+        Terraria.Share.Liquid.LiquidContactFlags.Water => 0,
+        Terraria.Share.Liquid.LiquidContactFlags.Lava => 1,
+        Terraria.Share.Liquid.LiquidContactFlags.Honey => 2,
+        Terraria.Share.Liquid.LiquidContactFlags.Shimmer => 3,
         _ => 0
       });
     }
@@ -271,7 +271,7 @@ public sealed class WorldNetworkProjectionSystem : BaseSystem<ArchWorld, EcsServ
     WriteInt16(stream, checked((short)Math.Clamp(mutation.Item.Item.Quantity, 1, short.MaxValue)));
     stream.WriteByte(mutation.Item.Item.Prefix);
     stream.WriteByte(0);
-    WriteInt16(stream, Terraria.Item.ItemIdRules.ToNetworkType(mutation.Item.Item.ItemId));
+    WriteInt16(stream, Terraria.Share.Items.ItemIdRules.ToNetworkType(mutation.Item.Item.ItemId));
     return stream.ToArray();
   }
 

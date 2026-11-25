@@ -1,7 +1,7 @@
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Entity;
+using Terraria.Share.Entities;
 
 namespace Terraria.Network;
 

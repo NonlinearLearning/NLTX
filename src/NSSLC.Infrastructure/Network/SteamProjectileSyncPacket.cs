@@ -1,4 +1,4 @@
-using Terraria.Projectile;
+using Terraria.Unshared.Projectiles;
 
 namespace NSSLC.Infrastructure.Network;
 

@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Terraria.Network;
 using Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 using Terraria.WorldStorage;
 
 namespace NSSLC.Infrastructure.Network;

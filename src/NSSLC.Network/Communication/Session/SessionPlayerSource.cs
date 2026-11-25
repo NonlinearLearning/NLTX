@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using ArchWorld = Arch.Core.World;
-using Terraria.Relationships;
-using Terraria.Session;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.Session;
 
 namespace Terraria.Network;
 

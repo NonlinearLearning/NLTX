@@ -1,6 +1,6 @@
 using System.Net;
 using Terraria.Diagnostics;
-using Terraria.Session;
+using Terraria.Unshared.Session;
 
 namespace Terraria.Network;
 

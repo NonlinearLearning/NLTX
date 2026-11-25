@@ -3,7 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Terraria.Network;
 using Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 using Terraria.WorldGeneration.Components;
 
 namespace NSSLC.Infrastructure.Network;

@@ -3,23 +3,23 @@ using System.Numerics;
 using Arch.Core;
 using ArchEntity = Arch.Core.Entity;
 using ArchWorld = Arch.Core.World;
-using Terraria.Session;
-using Terraria.Combat;
-using Terraria.Session;
-using Terraria.Entity;
-using Terraria.Session;
-using Terraria.Inventory;
-using Terraria.Session;
-using Terraria.Movement;
-using Terraria.Session;
-using Terraria.Player;
-using Terraria.Session;
-using Terraria.Relationships;
-using Terraria.Session;
-using Terraria.World;
+using Terraria.Unshared.Session;
+using Terraria.Share.Combat;
+using Terraria.Unshared.Session;
+using Terraria.Share.Entities;
+using Terraria.Unshared.Session;
+using Terraria.Share.Inventory;
+using Terraria.Unshared.Session;
+using Terraria.Share.Movement;
+using Terraria.Unshared.Session;
+using Terraria.Unshared.Player;
+using Terraria.Unshared.Session;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.Session;
+using Terraria.Unshared.World;
 
-using Terraria.Session;
-using Terraria.Chat;
+using Terraria.Unshared.Session;
+using Terraria.Unshared.Chat;
 
 namespace Terraria.Network;
 
@@ -47,7 +47,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
 
   private readonly ArchWorld _world;
   private readonly IEntityRuntimeResolver _runtimeResolver;
-  private readonly CombatAttackDefinitionCatalog _attackDefinitions;
+  private readonly CombatAttackCatalog _attackDefinitions;
   private readonly IWorldItemQuery _worldItems;
   private readonly GameCommunicationOptions _options;
   private WorldItemRequestQueueComponent? _itemRequests;
@@ -58,7 +58,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
   public GameCommunicationAdapter(
       ArchWorld world,
       IEntityRuntimeResolver runtimeResolver,
-      CombatAttackDefinitionCatalog attackDefinitions,
+      CombatAttackCatalog attackDefinitions,
       IWorldItemQuery worldItems,
       GameCommunicationOptions? options = null)
   {
@@ -290,9 +290,9 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
       return Array.Empty<OutboundPacketIntent>();
     }
 
-    CombatAttackDefinitionId? definitionId =
+    CombatAttackId? definitionId =
         _options.AttackDefinitionResolver(npcSlot, clientDamage);
-    if (definitionId is not CombatAttackDefinitionId definition ||
+    if (definitionId is not CombatAttackId definition ||
         !_attackDefinitions.TryGet(definition, out _))
     {
       return Array.Empty<OutboundPacketIntent>();
@@ -376,7 +376,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
     }
 
     if (offset != payload.Length || stack < 0 || itemType < 0 ||
-        !Terraria.Physics.SimulationVector.IsFinite(position) || !Terraria.Physics.SimulationVector.IsFinite(velocity))
+        !Terraria.Share.Physics.SimulationVector.IsFinite(position) || !Terraria.Share.Physics.SimulationVector.IsFinite(velocity))
     {
       throw new ArgumentException("Packet 21 contains invalid item facts.", nameof(payload));
     }
@@ -384,7 +384,7 @@ public sealed class GameCommunicationAdapter : ICommunicationPacketHandler
     // 包 21 携带的是协议 itemType。未知类型无法进入权威模型，因此在这里丢弃，
     // 而不是先写进状态再投影给所有客户端。stack 为 0 表示"清除该槽位"，
     // 不携带物品身份，不参与校验。
-    if (stack > 0 && !Terraria.Item.ItemIdRules.TryFromNetworkType(itemType, out _))
+    if (stack > 0 && !Terraria.Share.Items.ItemIdRules.TryFromNetworkType(itemType, out _))
     {
       return Array.Empty<OutboundPacketIntent>();
     }

@@ -16,7 +16,7 @@
 | [MessageBuffer.GetData](D:/TRbackup/Version4/Terraria/MessageBuffer.cs:141) 先检查编号、State 和握手例外 | 完整帧后先按 ID 做准入，再进行昂贵解码；状态机集中维护 |
 | 当前 [PacketAllDefinitions](D:/ProjectItem/SourceCode/Net/NetWork/src/Packets/PacketBasicCodecs.cs:2696) 注册完整格式；56/69/85 分方向 | 格式目录与准入目录分开；布局双向不表示业务双向许可 |
 | [opaque 定义](D:/ProjectItem/SourceCode/Net/NetWork/src/Packets/PacketOpaqueCodecs.cs:67) 只保存原始 body | 默认禁用业务派发；93 是握手白名单例外，但没有足够语义依据，需专门能力配置 |
-| [NLTX 架构边界](D:/TRbackup/NLTX/Context/架构设计/ECS领域与基础设施架构边界.md) 规定基础设施用普通 .NET 类型、端口由内层拥有 | Socket/队列/重试不是 ECS Component；游戏权限和世界提交在内层 |
+| [NLTX 架构边界](D:/TRbackup/NLTX/Context/架构约束/ECS领域与基础设施架构边界.md) 规定基础设施用普通 .NET 类型、端口由内层拥有 | Socket/队列/重试不是 ECS Component；游戏权限和世界提交在内层 |
 
 源码版本中许多接收 case 为 break 或存在不可达残留。本文以明确的源码行为为事实，游戏意图及未来替代行为标为建议；不会把死代码当作当前可用处理器。
 

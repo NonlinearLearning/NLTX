@@ -1,4 +1,4 @@
-using Terraria.Session;
+using Terraria.Unshared.Session;
 using System.Net;
 using System.Net.Sockets;
 

@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using Arch.Core;
 using Arch.System;
 using ArchWorld = Arch.Core.World;
-using Terraria.Chat;
-using Terraria.Entity;
-using Terraria.Relationships;
-using Terraria.Session;
+using Terraria.Unshared.Chat;
+using Terraria.Share.Entities;
+using Terraria.Share.Relationships;
+using Terraria.Unshared.Session;
 
 namespace Terraria.Network;
 

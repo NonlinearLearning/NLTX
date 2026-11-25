@@ -3,7 +3,7 @@ using System.Linq;
 
 using Terraria.Network;
 using Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
-using Terraria.Projectile;
+using Terraria.Unshared.Projectiles;
 
 namespace NSSLC.Infrastructure.Network;
 

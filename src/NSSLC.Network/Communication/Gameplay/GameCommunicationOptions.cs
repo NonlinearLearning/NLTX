@@ -1,5 +1,5 @@
-using Terraria.Combat;
-using Terraria.Relationships;
+using Terraria.Share.Combat;
+using Terraria.Share.Relationships;
 
 namespace Terraria.Network;
 
@@ -10,7 +10,7 @@ public sealed class GameCommunicationOptions
   public const float DefaultMaximumVelocity = 50f;
 
   /// <summary>Maps a wire NPC slot and client damage value to an attack definition.</summary>
-  public Func<short, short, CombatAttackDefinitionId?>? AttackDefinitionResolver { get; init; }
+  public Func<short, short, CombatAttackId?>? AttackDefinitionResolver { get; init; }
 
   /// <summary>Maps the protocol NPC slot to the authoritative runtime handle.</summary>
   public Func<short, EntityRuntimeHandle?>? NpcResolver { get; init; }

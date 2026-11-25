@@ -1,6 +1,6 @@
 namespace Terraria.Network;
 
-using Terraria.World;
+using Terraria.Unshared.World;
 
 /// <summary>Small authoritative facts needed by the Version4 join handshake.</summary>
 public sealed class TerrariaProtocolOptions

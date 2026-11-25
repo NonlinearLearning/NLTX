@@ -2,7 +2,7 @@ using System.Net;
 using System.Threading.Channels;
 using Terraria.Network;
 using Terraria.NetWork.Prototype.PacketDesignCompiler.Sample;
-using Terraria.Relationships;
+using Terraria.Share.Relationships;
 
 namespace NSSLC.Infrastructure.Network;
 
